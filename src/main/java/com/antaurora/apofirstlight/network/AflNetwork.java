@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "45";
+    private static final String PROTOCOL = "46";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -139,6 +139,17 @@ public final class AflNetwork {
                 com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::decode,
                 com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        nextId = com.antaurora.apofirstlight.inventory.grid.GridPackets.register(channel, nextId);
+    }
+
+    /** Grid Inventory V0: item sizes and the pockets, to their owner. */
+    public static void grid(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Grid Inventory V0 (client): one grid action on the inventory page. */
+    public static void gridToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** Survivor Death and Succession V0: the death summary, the mode and name prompts, identities, to one player. */

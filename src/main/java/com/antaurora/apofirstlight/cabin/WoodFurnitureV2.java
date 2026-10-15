@@ -2,23 +2,25 @@ package com.antaurora.apofirstlight.cabin;
 
 import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.block.WallOutletBlock;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.energy.PowerPlugs;
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
+import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
+import com.antaurora.apofirstlight.meshshape.AflOverhangPickBlock;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +33,6 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
@@ -44,11 +45,11 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -57,14 +58,17 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Wood Furniture V2 (docs/models/wood_furniture_v2.md, 2026-10-15): the bedroom and storage furniture of the forest start
  * home B (M4 round 2 interior). User 2026-10-15: a Mesh wooden bed, wardrobe, nightstand and tool rack; an old big steel
  * chest freezer beside the commercial one; an AFL storage chest in place of the vanilla chest, vanilla logic with our
- * own ID. Mesh blocks ({@link CabinPieces}, pieces cabin_mesh/furniture/, tools/build-wood-furniture-v2.mjs), drawn facing
- * north:
+ * own ID (2026-10-15: a two-cell blanket chest instead). Mesh blocks (tools/build-wood-furniture-v2.mjs), drawn facing north:
+ * the bed and tool rack {@link CabinPieces} (cabin_mesh/furniture/); the wardrobe, nightstand, storage chest and freezer AFL
+ * Animated Block Meshes (Furniture Mesh V1, 2026-10-15, tools/furniture/furniture-mesh.mjs: doors, drawer and lids move
+ * smoothly, the master cell's block entity the host, the resting piece chunk-drawn):
  * <ul>
  * <li>{@link Bed}: a vanilla bed (sleep, spawn point, the nether's explosion, the bounce), two cells; facing = foot to head.</li>
  * <li>{@link Wardrobe}: two cells high, 27 slots; {@code open} while anyone has it open (the doors swing out).</li>
@@ -72,13 +76,13 @@ import java.util.Locale;
  * {@code nightstand}).</li>
  * <li>{@link ToolRack}: on a wall, three pegs for long tools and a shelf for two small items, the gun rack's hands-only
  * logic; on round logs it stands on a pad ({@link LogMount} kind 12).</li>
- * <li>{@link StorageChest}: a vanilla chest (27, double 54, hoppers) with a board chest's look; {@code open} raises the lid.</li>
+ * <li>{@link StorageChest}: a frame-and-panel blanket chest over two cells across, 27 slots; the lid raised by the player.</li>
  * <li>{@link VintageFreezer}: two cells across, 27 slots, a plug-in appliance (cord, pilot lamp, compressor, cold mist
  * while open and powered).</li>
  * </ul>
  * Mining (AGENTS.md audit): the wood pieces on the axe, no tier, no correct-tool requirement (vanilla wood); the freezer
  * as the commercial chest freezer (pickaxe, iron tier, correct tool required). Each drops itself (two-cell pieces from
- * one cell: the bed's head, the wardrobe's lower, the freezer's left) and its contents.
+ * one cell: the bed's head, the wardrobe's lower, the chest's and freezer's left) and its contents.
  */
 public final class WoodFurnitureV2 {
     public static BlockEntityType<WoodToolRackBlockEntity> TOOL_RACK;
@@ -156,13 +160,34 @@ public final class WoodFurnitureV2 {
 
     /**
      * A wood cabinet against a wall (facing = its front) whose things a {@link WoodCounterBlockEntity} keeps, a chest screen;
-     * {@code open} while anyone has it open. The master cell holds the block entity (one-cell cabinets: their own).
+     * {@code open}: its doors / drawer / lid open, opened and closed by the player ({@link FurnitureOpening}, regions from
+     * its Mesh Shape profile). The master cell holds the block entity (one-cell cabinets: their own).
      */
-    abstract static class Cabinet extends BaseEntityBlock implements CabinPieces, WoodFurniture.Storage {
-        Cabinet(Properties p) { super(p); }
+    abstract static class Cabinet extends BaseEntityBlock implements WoodFurniture.Storage, AflMeshInteractionBlock, MeshHitMultiCell {
+        private final ResourceLocation shapeProfile;
+
+        Cabinet(String id, Properties p) {
+            super(p);
+            shapeProfile = FurnitureOpening.profile(id);
+        }
+
+        @Override
+        public ResourceLocation meshShapeProfile() { return shapeProfile; }
+
+        @Override
+        public String meshShapeState(BlockState state) { return state.getValue(OPEN) ? "open" : "closed"; }
+
+        @Override
+        public @Nullable String interactionHintKey(Level level, BlockState state, BlockPos pos, String region) {
+            return FurnitureOpening.hintKey(level, state, master(state, pos), region);
+        }
 
         /** The cell with the block entity. */
         BlockPos master(BlockState state, BlockPos pos) { return pos; }
+
+        /** The master draws the whole piece (Furniture Mesh V1): every cell hits on its mesh. */
+        @Override
+        public BlockPos meshHitMaster(BlockState state, BlockPos pos) { return master(state, pos); }
 
         boolean isMaster(BlockState state) { return true; }
 
@@ -185,25 +210,18 @@ public final class WoodFurnitureV2 {
         @SuppressWarnings("deprecation")
         public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) { return false; }
 
+        /** Closed: open the doors / drawer / lid; open: the interior's screen (search or view), or close them. */
         @Override
         @SuppressWarnings("deprecation")
         public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-            if (level.isClientSide) return InteractionResult.SUCCESS;
-            if (level.getBlockEntity(master(state, pos)) instanceof WoodCounterBlockEntity be) player.openMenu(be);
-            return InteractionResult.CONSUME;
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-            if (level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) be.recheckOpen();
+            return FurnitureOpening.use(this, state, level, pos, master(state, pos), player);
         }
 
         @Override
         @SuppressWarnings("deprecation")
         public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
             if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) {
-                Containers.dropContents(level, pos, be);
+                be.dropContentsOnce();
                 level.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, level, pos, newState, moved);
@@ -211,21 +229,21 @@ public final class WoodFurnitureV2 {
 
         @Override
         public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-            if (stack.hasCustomHoverName() && level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) be.setCustomName(stack.getHoverName());
+            if (!(level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be)) return;
+            if (!level.isClientSide) be.markPlacedByPlayer();
+            if (stack.hasCustomHoverName()) be.setCustomName(stack.getHoverName());
         }
 
         @Override
         @SuppressWarnings("deprecation")
         public boolean hasAnalogOutputSignal(BlockState state) { return true; }
 
+        /** Comparator fullness from revealed slots only, so it never hints at unsearched loot. */
         @Override
         @SuppressWarnings("deprecation")
         public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-            return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(master(state, pos)));
+            return level.getBlockEntity(master(state, pos)) instanceof WoodCounterBlockEntity be ? AflContainerSearch.revealedAnalogSignal(be) : 0;
         }
-
-        @Override
-        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
 
         @Override
         public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 20; }
@@ -249,7 +267,7 @@ public final class WoodFurnitureV2 {
         }
 
         Wardrobe(Properties p) {
-            super(p);
+            super("wooden_wardrobe", p);
             registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(HALF, DoubleBlockHalf.LOWER).setValue(OPEN, false));
         }
 
@@ -258,6 +276,9 @@ public final class WoodFurnitureV2 {
 
         @Override
         BlockPos master(BlockState state, BlockPos pos) { return state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below(); }
+
+        @Override
+        public int meshShapeCell(BlockState state) { return state.getValue(HALF) == DoubleBlockHalf.UPPER ? 1 : 0; }
 
         @Override
         boolean isMaster(BlockState state) { return state.getValue(HALF) == DoubleBlockHalf.LOWER; }
@@ -328,14 +349,6 @@ public final class WoodFurnitureV2 {
         public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
             return (state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER : UPPER)[CabinBlocks.turn(state.getValue(FACING))];
         }
-
-        @Override
-        public void cabinPieces(BlockState state, int flags, Sink sink) {
-            int r = CabinBlocks.turn(state.getValue(FACING));
-            String half = state.getValue(HALF) == DoubleBlockHalf.LOWER ? "lower" : "upper";
-            sink.add("furniture/wardrobe_body_" + half, r);
-            sink.add("furniture/wardrobe_doors_" + (state.getValue(OPEN) ? "open_" : "closed_") + half, r);
-        }
     }
 
     // ---------------------------------------------------------------------------------------------- nightstand
@@ -350,7 +363,7 @@ public final class WoodFurnitureV2 {
         }
 
         Nightstand(Properties p) {
-            super(p);
+            super("wooden_nightstand", p);
             registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(OPEN, false));
         }
 
@@ -375,13 +388,6 @@ public final class WoodFurnitureV2 {
         @SuppressWarnings("deprecation")
         public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
             return SHAPES[CabinBlocks.turn(state.getValue(FACING))];
-        }
-
-        @Override
-        public void cabinPieces(BlockState state, int flags, Sink sink) {
-            int r = CabinBlocks.turn(state.getValue(FACING));
-            sink.add("furniture/nightstand_body", r);
-            sink.add(state.getValue(OPEN) ? "furniture/nightstand_drawer_open" : "furniture/nightstand_drawer_closed", r);
         }
     }
 
@@ -570,78 +576,16 @@ public final class WoodFurnitureV2 {
         public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
     }
 
-    // -------------------------------------------------------------------------------------------- storage chest
+    // ----------------------------------------------------------------------------------- two cells across
 
     /**
-     * A wooden storage chest: vanilla's chest (ChestBlock: 27 slots, two side by side join into one long chest of 54,
-     * hoppers, comparators, waterlogging) with a board chest's look; {@code open} (the lid up) while anyone has it open.
-     * Chest types as vanilla: left is the north frame's x 0..1 of a double (its partner to +x), right 1..2.
+     * A cabinet over two cells across: left = the master (the block entity), the north frame's x 0..1; right x 1..2, at
+     * {@code facing.getClockWise()} (the block's own left and right, as vanilla's chest: from the front the left half is
+     * on the right). Placed from the left cell; each half's profile state is its side and the lid (`left_open` ...), the
+     * regions over the whole piece in each side's frame; one half gone, the other goes (the master drops the piece and its
+     * things; the right half broken in creative or without the right tool: no drop).
      */
-    public static final class StorageChest extends ChestBlock implements CabinPieces {
-        public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
-        private static final VoxelShape[][] SHAPES = new VoxelShape[3][4];
-
-        static {
-            double y = 7.92, z0 = 3.68, z1 = 12.32;   // the lid's top; the plinth's / lid's depth
-            double[][] boxes = {{0.48, 0, z0, 15.52, y, z1}, {0.48, 0, z0, 16, y, z1}, {0, 0, z0, 15.52, y, z1}};
-            for (int t = 0; t < 3; t++) for (int r = 0; r < 4; r++) SHAPES[t][r] = CabinBlocks.turned(r, boxes[t]);
-        }
-
-        StorageChest(Properties p) {
-            super(p, () -> CHEST);
-            registerDefaultState(defaultBlockState().setValue(OPEN, false));
-        }
-
-        @Override
-        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-            super.createBlockStateDefinition(builder);
-            builder.add(OPEN);
-        }
-
-        @Override
-        public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new StorageChestBlockEntity(pos, state); }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
-
-        private static int type(BlockState state) {
-            return switch (state.getValue(TYPE)) { case SINGLE -> 0; case LEFT -> 1; case RIGHT -> 2; };
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-            return SHAPES[type(state)][CabinBlocks.turn(state.getValue(FACING))];
-        }
-
-        @Override
-        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
-
-        @Override
-        public void cabinPieces(BlockState state, int flags, Sink sink) {
-            int r = CabinBlocks.turn(state.getValue(FACING));
-            String t = "furniture/chest_" + state.getValue(TYPE).getSerializedName() + "_";
-            sink.add(t + "body", r);
-            sink.add(t + (state.getValue(OPEN) ? "lid_open" : "lid_closed"), r);
-        }
-
-        @Override
-        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 20; }
-
-        @Override
-        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
-    }
-
-    // --------------------------------------------------------------------------------------- vintage freezer
-
-    /**
-     * A 1960s chest deep freezer over two cells across (left = the master, the north frame's x 0..1; right x 1..2), 160 x 74
-     * cm, 90 cm high: one hinged lid ({@code open} while anyone has it open, the commercial freezer's lids slide instead),
-     * 27 slots, a pilot lamp ({@code lit}: the freezer has power), its cord from a C14 inlet low on the back (sneak with an
-     * empty hand: the plug into the hand, as every appliance's).
-     */
-    public static final class VintageFreezer extends Cabinet {
+    public abstract static class Wide extends Cabinet {
         public enum Part implements StringRepresentable {
             LEFT, RIGHT;
 
@@ -650,8 +594,154 @@ public final class WoodFurnitureV2 {
         }
 
         public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
-        public static final BooleanProperty LIT = BlockStateProperties.LIT;
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+
+        Wide(String id, Properties p) { super(id, p); }
+
+        /** From the left (master) cell toward the right one: the north frame's +x. */
+        static Direction toRight(BlockState state) { return state.getValue(FACING).getClockWise(); }
+
+        @Override
+        BlockPos master(BlockState state, BlockPos pos) { return state.getValue(PART) == Part.LEFT ? pos : pos.relative(toRight(state).getOpposite()); }
+
+        @Override
+        boolean isMaster(BlockState state) { return state.getValue(PART) == Part.LEFT; }
+
+        @Override
+        public String meshShapeState(BlockState state) { return state.getValue(PART).getSerializedName() + (state.getValue(OPEN) ? "_open" : "_closed"); }
+
+        /** The cell with the block entity of either half. */
+        public static BlockPos masterPosition(BlockPos pos, BlockState state) {
+            return state.getValue(PART) == Part.LEFT ? pos : pos.relative(state.getValue(FACING).getCounterClockWise());
+        }
+
+        /** A north-frame point (blocks, from the master cell's corner; x across both cells) in the world. */
+        public static Vec3 local(BlockPos master, Direction facing, double x, double y, double z) {
+            return WallOutletBlock.local(master, facing, (x - 0.5) * 16, y * 16, (z - 0.5) * 16);
+        }
+
+        @Override
+        public void setOpen(Level level, BlockPos pos, BlockState state, boolean open) {
+            BlockPos m = master(state, pos);
+            for (BlockPos p : new BlockPos[]{m, m.relative(toRight(state))}) {
+                BlockState s = level.getBlockState(p);
+                if (s.is(this)) level.setBlock(p, s.setValue(OPEN, open), 3);
+            }
+        }
+
+        @Override
+        public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
+            Direction facing = context.getHorizontalDirection().getOpposite();
+            BlockPos right = context.getClickedPos().relative(facing.getClockWise());
+            if (!context.getLevel().getBlockState(right).canBeReplaced(context) || !context.getLevel().getWorldBorder().isWithinBounds(right)) return null;
+            return defaultBlockState().setValue(FACING, facing);
+        }
+
+        @Override
+        public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+            level.setBlock(pos.relative(toRight(state)), state.setValue(PART, Part.RIGHT), 3);
+            super.setPlacedBy(level, pos, state, placer, stack);
+        }
+
+        /** The other half gone: this one goes too (the master drops the piece and its things). */
+        @Override
+        @SuppressWarnings("deprecation")
+        public BlockState updateShape(BlockState state, Direction d, BlockState neighbour, LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+            Direction toOther = state.getValue(PART) == Part.LEFT ? toRight(state) : toRight(state).getOpposite();
+            if (d != toOther) return state;
+            return neighbour.is(this) && neighbour.getValue(PART) != state.getValue(PART) && neighbour.getValue(FACING) == state.getValue(FACING)
+                    ? state : Blocks.AIR.defaultBlockState();
+        }
+
+        /** The right half broken in creative or without the right tool: the master goes without a drop (its things still drop). */
+        @Override
+        public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+            if (!level.isClientSide && (player.isCreative() || !player.hasCorrectToolForDrops(state)) && state.getValue(PART) == Part.RIGHT) {
+                BlockPos m = master(state, pos);
+                BlockState ms = level.getBlockState(m);
+                if (ms.is(this) && ms.getValue(PART) == Part.LEFT) {
+                    level.setBlock(m, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
+                    level.levelEvent(player, 2001, m, Block.getId(ms));
+                }
+            }
+            super.playerWillDestroy(level, pos, state, player);
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------- storage chest
+
+    /**
+     * A frame-and-panel blanket chest over two cells across (user 2026-10-15: concept A of design/buildings/
+     * forest_start_home_v1/m4_sheets/chest_concepts.png, one piece over two cells, no joining of two chests), 124 x 50 cm,
+     * 60 cm high: 27 slots kept by the left cell ({@link StorageChestBlockEntity}); the lid opened and closed by the
+     * player, the screen from the open chest ({@link FurnitureOpening}: regions lid / interior). The open lid stands at the
+     * back up to 1.10 over the floor, above the cells: picked there too.
+     */
+    public static final class StorageChest extends Wide implements AflOverhangPickBlock {
+        /** [part][open][turn]. */
+        private static final VoxelShape[][][] SHAPES = new VoxelShape[2][2][4];
+
+        static {
+            // tools/build-wood-furniture-v2.mjs CHEST: the case and mouldings to 0.565 (x 0.366..1.634, z 0.236..0.756); the
+            // lid to 0.598, overhanging (x 0.355..1.645, z 0.225..0.754); open, the lid at the back (z 0.658..0.790) to the cell's top
+            for (int r = 0; r < 4; r++) {
+                SHAPES[0][0][r] = CabinBlocks.turned(r, new double[]{5.856, 0, 3.776, 16, 9.04, 12.096}, new double[]{5.68, 9.04, 3.6, 16, 9.568, 12.064});
+                SHAPES[0][1][r] = CabinBlocks.turned(r, new double[]{5.856, 0, 3.776, 16, 9.04, 12.096}, new double[]{5.68, 9.04, 10.53, 16, 16, 12.64});
+                SHAPES[1][0][r] = CabinBlocks.turned(r, new double[]{0, 0, 3.776, 10.144, 9.04, 12.096}, new double[]{0, 9.04, 3.6, 10.32, 9.568, 12.064});
+                SHAPES[1][1][r] = CabinBlocks.turned(r, new double[]{0, 0, 3.776, 10.144, 9.04, 12.096}, new double[]{0, 9.04, 10.53, 10.32, 16, 12.64});
+            }
+        }
+
+        StorageChest(Properties p) {
+            super("wooden_storage_chest", p);
+            registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(PART, Part.LEFT).setValue(OPEN, false));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, PART, OPEN); }
+
+        @Override
+        public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return isMaster(state) ? new StorageChestBlockEntity(pos, state) : null; }
+
+        /** The open lid above the cells (tools/build-wood-furniture-v2.mjs chestShapes: to 1.096). */
+        @Override
+        public List<AABB> overhangPickBoxes(BlockGetter level, BlockState state, BlockPos pos) {
+            if (!state.getValue(OPEN)) return List.of();
+            BlockPos m = master(state, pos);
+            Direction f = state.getValue(FACING);
+            return List.of(new AABB(local(m, f, 0.355, 1.0, 0.658), local(m, f, 1.645, 1.1, 0.792)));
+        }
+
+        @Override
+        public int slots() { return 27; }
+
+        @Override
+        public double soundHeight() { return 0.6; }
+
+        /** A wooden lid on its hinges (vanilla's chest). */
+        @Override
+        public SoundEvent openSound() { return SoundEvents.CHEST_OPEN; }
+
+        @Override
+        public SoundEvent closeSound() { return SoundEvents.CHEST_CLOSE; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+            return SHAPES[state.getValue(PART).ordinal()][state.getValue(OPEN) ? 1 : 0][CabinBlocks.turn(state.getValue(FACING))];
+        }
+    }
+
+    // --------------------------------------------------------------------------------------- vintage freezer
+
+    /**
+     * A 1960s chest deep freezer over two cells across ({@link Wide}: left = the master), 160 x 74
+     * cm, 90 cm high: one hinged lid ({@code open}: raised by the player, the commercial freezer's lids slide instead),
+     * 27 slots, a pilot lamp ({@code lit}: the freezer has power), its cord from a C14 inlet low on the back (sneak with an
+     * empty hand: the plug into the hand, as every appliance's).
+     */
+    public static final class VintageFreezer extends Wide implements AflOverhangPickBlock {
+        public static final BooleanProperty LIT = BlockStateProperties.LIT;
         /** tools/build-wood-furniture-v2.mjs FREEZER: the inlet (x, y) on the back plane; the back. */
         public static final double[] INLET = {0.38, 0.16};
         public static final double BACK = 0.92;
@@ -665,30 +755,21 @@ public final class WoodFurnitureV2 {
         }
 
         VintageFreezer(Properties p) {
-            super(p);
+            super("vintage_chest_freezer", p);
             registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(PART, Part.LEFT).setValue(OPEN, false).setValue(LIT, false));
         }
 
         @Override
         protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, PART, OPEN, LIT); }
 
-        /** From the left (master) cell toward the right one: the north frame's +x. */
-        private static Direction toRight(BlockState state) { return state.getValue(FACING).getClockWise(); }
-
+        /** The open lid stands up to 1.61 over the floor, above the cells: picked there too (tools/build-wood-furniture-v2.mjs FREEZER_SHAPES). */
         @Override
-        BlockPos master(BlockState state, BlockPos pos) { return state.getValue(PART) == Part.LEFT ? pos : pos.relative(toRight(state).getOpposite()); }
-
-        @Override
-        boolean isMaster(BlockState state) { return state.getValue(PART) == Part.LEFT; }
-
-        /** The cell with the block entity (the cord's owner) of either half. */
-        public static BlockPos masterPosition(BlockPos pos, BlockState state) {
-            return state.getValue(PART) == Part.LEFT ? pos : pos.relative(state.getValue(FACING).getCounterClockWise());
-        }
-
-        /** A north-frame point (blocks, from the master cell's corner; x across both cells) in the world. */
-        public static Vec3 local(BlockPos master, Direction facing, double x, double y, double z) {
-            return WallOutletBlock.local(master, facing, (x - 0.5) * 16, y * 16, (z - 0.5) * 16);
+        public List<AABB> overhangPickBoxes(BlockGetter level, BlockState state, BlockPos pos) {
+            if (!state.getValue(OPEN)) return List.of();
+            BlockPos m = master(state, pos);
+            Direction f = state.getValue(FACING);
+            AABB lid = new AABB(local(m, f, 0.195, 1.0, 0.767), local(m, f, 1.805, 1.61, 0.985));
+            return List.of(lid);
         }
 
         @Override
@@ -718,54 +799,7 @@ public final class WoodFurnitureV2 {
         @Override
         public float soundPitch() { return 0.7F; }
 
-        @Override
-        public void setOpen(Level level, BlockPos pos, BlockState state, boolean open) {
-            BlockPos m = master(state, pos);
-            for (BlockPos p : new BlockPos[]{m, m.relative(toRight(state))}) {
-                BlockState s = level.getBlockState(p);
-                if (s.is(this)) level.setBlock(p, s.setValue(OPEN, open), 3);
-            }
-        }
-
-        @Override
-        public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
-            Direction facing = context.getHorizontalDirection().getOpposite();
-            BlockPos right = context.getClickedPos().relative(facing.getClockWise());
-            if (!context.getLevel().getBlockState(right).canBeReplaced(context) || !context.getLevel().getWorldBorder().isWithinBounds(right)) return null;
-            return defaultBlockState().setValue(FACING, facing);
-        }
-
-        @Override
-        public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-            level.setBlock(pos.relative(toRight(state)), state.setValue(PART, Part.RIGHT), 3);
-            super.setPlacedBy(level, pos, state, placer, stack);
-        }
-
-        /** The other half gone: this one goes too (the master drops the freezer and its things). */
-        @Override
-        @SuppressWarnings("deprecation")
-        public BlockState updateShape(BlockState state, Direction d, BlockState neighbour, LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
-            Direction toOther = state.getValue(PART) == Part.LEFT ? toRight(state) : toRight(state).getOpposite();
-            if (d != toOther) return state;
-            return neighbour.is(this) && neighbour.getValue(PART) != state.getValue(PART) && neighbour.getValue(FACING) == state.getValue(FACING)
-                    ? state : Blocks.AIR.defaultBlockState();
-        }
-
-        /** The right half broken in creative or without the right tool (a pickaxe of iron): the master goes without a drop (its things still drop). */
-        @Override
-        public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-            if (!level.isClientSide && (player.isCreative() || !player.hasCorrectToolForDrops(state)) && state.getValue(PART) == Part.RIGHT) {
-                BlockPos m = master(state, pos);
-                BlockState ms = level.getBlockState(m);
-                if (ms.is(this) && ms.getValue(PART) == Part.LEFT) {
-                    level.setBlock(m, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
-                    level.levelEvent(player, 2001, m, Block.getId(ms));
-                }
-            }
-            super.playerWillDestroy(level, pos, state, player);
-        }
-
-        /** Sneak with an empty hand: the plug; else the freezer opens. */
+        /** Sneak with an empty hand: the plug; else the lid / the interior as every cabinet. */
         @Override
         @SuppressWarnings("deprecation")
         public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
@@ -787,15 +821,6 @@ public final class WoodFurnitureV2 {
         @SuppressWarnings("deprecation")
         public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
             return SHAPES[state.getValue(PART).ordinal()][CabinBlocks.turn(state.getValue(FACING))];
-        }
-
-        @Override
-        public void cabinPieces(BlockState state, int flags, Sink sink) {
-            int r = CabinBlocks.turn(state.getValue(FACING));
-            String side = state.getValue(PART) == Part.LEFT ? "left" : "right";
-            sink.add("furniture/freezer_body_" + side, r);
-            sink.add("furniture/freezer_lid_" + (state.getValue(OPEN) ? "open_" : "closed_") + side, r);
-            if (state.getValue(PART) == Part.LEFT) sink.add(state.getValue(LIT) ? "furniture/freezer_lamp_lit" : "furniture/freezer_lamp_off", r);
         }
 
         @Override

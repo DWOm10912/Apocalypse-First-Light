@@ -7,10 +7,6 @@ import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -18,7 +14,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Wood Furniture V2 (docs/models/wood_furniture_v2.md, 2026-10-15): the vintage chest freezer's master (its left cell):
- * 27 slots as plain storage ({@link WoodCounterBlockEntity}: the lid up while anyone has it open), and the power of a
+ * 27 slots ({@link WoodCounterBlockEntity}: the lid opened and closed by the player, a world copy searched), and the power of a
  * plug-in appliance, the commercial chest freezer's ({@link CompressorAppliance} on its balance, machine_balance/
  * chest_freezer.json, and its compressor sounds): a detachable cord from the C14 inlet low on the back ({@link PlugCord}),
  * the pilot lamp ({@code lit}) while the freezer has power, the compressor in cycles. Food keeps the same as anywhere
@@ -90,30 +86,35 @@ public class VintageFreezerBlockEntity extends WoodCounterBlockEntity implements
         power.save(tag);
     }
 
-    /** Clients: the compressor and the cord (never the items). */
+    /** Clients: the search's completion (search or view), the compressor and the cord (never the items). */
     @Override
     public CompoundTag getUpdateTag() {
-        CompoundTag tag = new CompoundTag();
+        CompoundTag tag = super.getUpdateTag();
         power.save(tag);
         power.plugCord().writeSync(tag);
         return tag;
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
-
-    @Override
-    public void handleUpdateTag(CompoundTag tag) { power.load(tag); }
-
-    @Override
-    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
-        if (packet.getTag() != null) handleUpdateTag(packet.getTag());
+    public void handleUpdateTag(CompoundTag tag) {
+        super.handleUpdateTag(tag);
+        power.load(tag);
     }
 
-    /** Both cells, the lid's swing and the cord's reach. */
+    /** The mesh's envelope (both cells, the lid's swing) and the cord's reach. */
     @Override
-    public AABB getRenderBoundingBox() {
-        BlockPos other = worldPosition.relative(facing().getClockWise());
-        return power.plugCord().renderBounds(new AABB(worldPosition).minmax(new AABB(other)).expandTowards(0, 1, 0));
+    public AABB getRenderBoundingBox() { return power.plugCord().renderBounds(super.getRenderBoundingBox()); }
+
+    /** The pilot lamp: the unlit set, or the lit one (full bright, LabPBR emission) while the freezer has power. */
+    @Override
+    public boolean meshPartVisible(String part) {
+        return switch (part) {
+            case "lights" -> !lit();
+            case "lights_lit" -> lit();
+            default -> true;
+        };
     }
+
+    @Override
+    public boolean meshPartEmissive(String part) { return "lights_lit".equals(part); }
 }

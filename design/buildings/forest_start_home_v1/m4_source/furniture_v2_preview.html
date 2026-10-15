@@ -26,15 +26,15 @@ scene.add(sun);
 const P = [];   // [piece, turn, x, y, z]
 const F = 'furniture/';
 P.push([F + 'bed_head', 0, 0, 0, 1], [F + 'bed_foot', 0, 0, 0, 0]);
-P.push([F + 'chest_single_body', 0, 0, 0, -1], [F + 'chest_single_lid_closed', 0, 0, 0, -1]);
+P.push([F + 'chest_body_left', 0, 0, 0, -1], [F + 'chest_body_right', 0, 1, 0, -1], [F + 'chest_lid_closed_left', 0, 0, 0, -1], [F + 'chest_lid_closed_right', 0, 1, 0, -1]);
 P.push([F + 'nightstand_body', 0, 1, 0, 1], [F + 'nightstand_drawer_closed', 0, 1, 0, 1]);
 for (const n of ['radio/body', 'radio/dial_off', 'radio/slider_off', 'radio/crank_0']) P.push([n, 0, 1, 0.66, 1]);
 for (const [x, s] of [[3, 'closed'], [4, 'open']]) P.push([F + 'wardrobe_body_lower', 0, x, 0, 1], [F + 'wardrobe_body_upper', 0, x, 1, 1],
   [F + `wardrobe_doors_${s}_lower`, 0, x, 0, 1], [F + `wardrobe_doors_${s}_upper`, 0, x, 1, 1]);
 P.push([F + 'tool_rack', 0, 6, 1, 1]);
 P.push([F + 'nightstand_body', 0, 7, 0, 1], [F + 'nightstand_drawer_open', 0, 7, 0, 1]);
-P.push([F + 'chest_left_body', 0, 8, 0, 1], [F + 'chest_right_body', 0, 9, 0, 1], [F + 'chest_left_lid_open', 0, 8, 0, 1], [F + 'chest_right_lid_open', 0, 9, 0, 1]);
-P.push([F + 'chest_single_body', 0, 10, 0, 1], [F + 'chest_single_lid_open', 0, 10, 0, 1]);
+P.push([F + 'chest_body_left', 0, 8, 0, 1], [F + 'chest_body_right', 0, 9, 0, 1], [F + 'chest_lid_open_left', 0, 8, 0, 1], [F + 'chest_lid_open_right', 0, 9, 0, 1]);
+P.push([F + 'chest_body_left', 0, 10, 0, 1], [F + 'chest_body_right', 0, 11, 0, 1], [F + 'chest_lid_closed_left', 0, 10, 0, 1], [F + 'chest_lid_closed_right', 0, 11, 0, 1]);
 P.push([F + 'freezer_body_left', 0, 12, 0, 1], [F + 'freezer_body_right', 0, 13, 0, 1], [F + 'freezer_lid_closed_left', 0, 12, 0, 1],
   [F + 'freezer_lid_closed_right', 0, 13, 0, 1], [F + 'freezer_lamp_lit', 0, 12, 0, 1]);
 P.push([F + 'freezer_body_left', 0, 15, 0, 1], [F + 'freezer_body_right', 0, 16, 0, 1], [F + 'freezer_lid_open_left', 0, 15, 0, 1],

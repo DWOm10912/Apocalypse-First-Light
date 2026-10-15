@@ -32,7 +32,7 @@
 
 `energy/EnergyBatteries`（服务端）：
 - `storedInInventory(player)`：玩家身上所有能量电池的总电量；
-- `drawFromInventory(player, amount, simulate)`：按格子顺序（主背包、快捷栏，再是副手）从电池里取电，每块电池受它每次 128 FE 的限制，不需要界面。
+- `drawFromInventory(player, amount, simulate)`：按格子顺序（主背包、快捷栏，再是副手；2026-10-14 网格背包 V0 分支起最后是口袋、胸挂、背包）从电池里取电，每块电池受它每次 128 FE 的限制，不需要界面。
 
 现在还没有工具调用它。
 

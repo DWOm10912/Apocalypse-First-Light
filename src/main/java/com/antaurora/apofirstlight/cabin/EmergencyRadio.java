@@ -51,7 +51,9 @@ import java.util.Locale;
  * ({@link CabinPieces}, pieces cabin_mesh/radio/, tools/build-emergency-radio-v1.mjs) drawn facing north, 40 x 20 x 17.5
  * cm (the first draft's 20 cm the user found far too small in game); on a wooden table, kitchen counter or office desk
  * under it the pieces sink onto its top ({@code surface}), the whole body in that cell: the crosshair and bullets find it
- * from the side too ({@link MeshHitReachesDown}).
+ * from the side too ({@link MeshHitReachesDown}). The crank's arm is an AFL Animated Block Mesh (emergency_radio_crank,
+ * 2026-10-15): it turns on smoothly while held, drawn by the block entity renderer ({@link EmergencyRadioBlockEntity} its
+ * host, a profile per surface); the rest are pieces drawn by the chunk.
  * <ul>
  * <li>Right-click the front, top or back: the AM / FM / OFF slide switch ({@code on}; V1 knows FM and OFF). Right-click the
  * crank's end (the left end seen from the front) and hold: the crank turns a quarter each 4 ticks ({@code crank}) and winds
@@ -245,8 +247,7 @@ public final class EmergencyRadio {
             float dy = -state.getValue(SURFACE).sink;
             sink.add("radio/body", r, dy);
             sink.add(state.getValue(LIT) ? "radio/dial_lit" : "radio/dial_off", r, dy);
-            sink.add(state.getValue(ON) ? "radio/slider_fm" : "radio/slider_off", r, dy);
-            sink.add("radio/crank_" + state.getValue(CRANK), r, dy);
+            sink.add(state.getValue(ON) ? "radio/slider_fm" : "radio/slider_off", r, dy);   // the crank: an animated mesh
         }
     }
 }

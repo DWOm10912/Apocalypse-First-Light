@@ -522,3 +522,7 @@ coverage 每页20个AFL物品，报告来源：
 ## 装备栏（2026-10-03）
 
 玩家所有 Curios 栏位（背部、手腕、耳部，以及其它模组加的栏位）里的物品都计入携带质量，来源 `equipment:apocalypse_firstlight:curios`，负担系数 1.0（`equipment/AflEquipmentSlots` 在启动时用 `PlayerMassSources.registerExtraEquipment` 注册）。见 `equipment_slots_v1.md`。以后的背包对物品栏内容的负担分摊（约 0.90）还没做。
+
+2026-10-14 网格背包 V0（分支 `feature/inventory-grid-v0`，用户 2026-10-14 实机 PASS）：口袋（玩家能力 `apocalypse_firstlight:pockets`）里的物品计入携带质量，来源 `equipment:apocalypse_firstlight:pockets`，负担系数 1.0（`inventory/grid/Pockets.java` 启动时注册）。胸挂、背包里的东西存在物品 NBT 的 `Items` 列表里，跟着胸挂 / 背包一起按 Curios 来源计重（通用容器读取本来就读 `Items`）。三件测试装备的质量：野战胸挂 0.9 kg、帆布背包 1.0 kg、登山背包 1.8 kg（`item_mass/core_v1.json`，估计值）。
+
+2026-10-14 武器位（同一分支，代码完成，未经游戏内验证）：新物品质量 枪背带 0.15 kg、手枪枪套 0.25 kg（`item_mass/core_v1.json`，估计值）。装在枪上的背带只是一个 NBT 标记，不另算质量。“手上”拿着的东西在原版快捷栏第 3 格，照旧按 36 格计重；它原来在网格里的位置只是留空，不重复计算。

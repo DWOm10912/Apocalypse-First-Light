@@ -7,12 +7,15 @@
 //   node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR -> writes the outputs into DIR only (offline review)
 // The printed stats give each item's renderer vertical offset (0.5 - height / 32, for AflStaticMeshItemClient) and, for
 // worn items, where the body anchor ends up after bake re-centres the mesh (wornAnchor, px).
+// Worn gear (spec.worn) is authored in its body part's frame (body, right leg or head; see TORSO / LEG / EAR below) and
+// prints `origin`: the bake shift, which its renderer undoes (translate -origin / 16) to wear it in place. spec.hud also
+// writes the HUD weapon-list silhouette (textures/gui/melee/<id>_hud.png).
 // Items are authored at icon size (px), like the material meshes. Materials follow the AFL rules: plain surfaces, no
 // painted marks or text, coated rather than bare metal on large faces, glass F0 10 with enough alpha to survive shaders.
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {Part, extrude, revolve, area2} from './cube-slab-mesh-lib.mjs';
+import {Part, extrude, revolve, area2, newell, png} from './cube-slab-mesh-lib.mjs';
 import {bake} from './build-material-meshes-v1.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -133,10 +136,422 @@ function wiringWrench() {
   icon: {view: [90, 225, 0], coverage: 0.4, mat: {steel: [186, 188, 194], dip: [206, 50, 42], collar: [240, 194, 48]}}};
 }
 
+// ---------------------------------------------------------------- swept bars and body-wrapped straps (2026-10-14)
+
+const add3 = (a, b) => a.map((v, i) => v + b[i]), sub3 = (a, b) => a.map((v, i) => v - b[i]), mul3 = (a, k) => a.map(v => v * k);
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const unit = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+
+/** Rings of vertex ids joined into a tube (quads, split by Part.face when twisted); open ends get a fan cap. */
+function loft(part, rings, centres, {closed = false, mat = () => part.mat, capMat = null} = {}) {
+  const n = rings.length, m = rings[0].length;
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const A = rings[i], B = rings[(i + 1) % n], axis = mul3(add3(centres[i], centres[(i + 1) % n]), 0.5);
+    for (let j = 0; j < m; j++) {
+      const k = (j + 1) % m, ids = [A[j], A[k], B[k], B[j]];
+      const mid = mul3(ids.reduce((s, id) => add3(s, part.v[id]), [0, 0, 0]), 0.25);
+      part.face(ids, sub3(mid, axis), 'side', mat(i));
+    }
+  }
+  if (!closed) for (const [i, nb] of [[0, 1], [n - 1, n - 2]]) {
+    const c = part.vtx(centres[i]), dir = sub3(centres[i], centres[nb]);
+    for (let j = 0; j < m; j++) part.face([c, rings[i][j], rings[i][(j + 1) % m]], dir, 'cap', capMat ?? mat(Math.min(i, n - 2)));
+  }
+}
+/** One ring: 2D section points (u along n, v along b) placed at p. */
+const ringAt = (part, p, n, b, pts) => pts.map(([u, v]) => part.vtx(add3(p, add3(mul3(n, u), mul3(b, v)))));
+/** A hexagonal bar section, corners on +-n, flats facing +-b: half extent t along n, half flat width w along b. */
+const hexSection = (t, w) => Array.from({length: 6}, (_, k) => { const a = k * Math.PI / 3; return [t * Math.cos(a), w / 0.8660254 * Math.sin(a)]; });
+
+/**
+ * A body shell: an inner box and a radius, the surface every strap lies on (a rounded box around the body part with its
+ * skin overlay layer, the corners rounded so a strap running over the box's edge never cuts into it).
+ */
+const clampBox = (p, s) => p.map((v, k) => Math.max(s.lo[k], Math.min(s.hi[k], v)));
+const outward = (p, s) => { const d = sub3(p, clampBox(p, s)); return Math.hypot(...d) < 1e-9 ? [0, 0, 1] : unit(d); };
+/** p moved onto the shell surface, lifted by `lift` (a strap's half thickness). */
+const onShell = (p, s, lift = 0) => add3(clampBox(p, s), mul3(outward(p, s), s.r + lift));
+/** Where the ray from c (inside the inner box) along u leaves the shell lifted by `lift`. */
+function shellHit(c, u, s, lift) {
+  const R = s.r + lift, f = t => Math.hypot(...sub3(add3(c, mul3(u, t)), clampBox(add3(c, mul3(u, t)), s))) - R;
+  let a = 0, b = 1; while (f(b) < 0) b *= 2;
+  for (let i = 0; i < 40; i++) { const m = (a + b) / 2; if (f(m) < 0) a = m; else b = m; }
+  return add3(c, mul3(u, b));
+}
+/** Points around the shell in the plane through c spanned by e1, e2, from angle a0 to a1 (degrees). */
+const shellArc = (c, e1, e2, a0, a1, step, s, lift) => {
+  const n = Math.max(1, Math.round(Math.abs(a1 - a0) / step));
+  return Array.from({length: n + 1}, (_, i) => { const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return shellHit(c, add3(mul3(e1, Math.cos(a)), mul3(e2, Math.sin(a))), s, lift); });
+};
+/** Points along a polyline, about `step` apart, each pressed onto the shell. */
+const shellLine = (pts, step, s, lift) => {
+  const out = [pts[0]];
+  for (let i = 0; i + 1 < pts.length; i++) { const n = Math.max(1, Math.round(Math.hypot(...sub3(pts[i + 1], pts[i])) / step));
+    for (let k = 1; k <= n; k++) out.push(add3(pts[i], mul3(sub3(pts[i + 1], pts[i]), k / n))); }
+  return out.map(p => onShell(p, s, lift));
+};
+/**
+ * A flat strap (webbing) along points on a shell: rectangular section, `width` across the strap (tangent to the body),
+ * `thick` outward. Closed straps (belts) join up; open ones get end caps.
+ */
+function strap(part, pts, s, {width, thick, closed = false, mat}) {
+  const n = pts.length, rings = [], tw = [[thick / 2, width / 2], [thick / 2, -width / 2], [-thick / 2, -width / 2], [-thick / 2, width / 2]];
+  for (let i = 0; i < n; i++) {
+    const prev = pts[closed ? (i - 1 + n) % n : Math.max(i - 1, 0)], next = pts[closed ? (i + 1) % n : Math.min(i + 1, n - 1)];
+    const T = unit(sub3(next, prev)), b = unit(cross3(T, outward(pts[i], s))), nn = cross3(b, T);
+    rings.push(ringAt(part, pts[i], nn, b, tw));
+  }
+  loft(part, rings, pts, {closed, mat: () => mat ?? part.mat});
+}
+
+/**
+ * Crowbar (2026-10-14, replaces the V1 cuboid model): a forged hexagonal wrecking bar, 0.87 px across flats, 27 px over
+ * all. The lower end bends 22 degrees to +X into a flattened chisel; the upper end is a gooseneck (radius 1.75 px, 185
+ * degrees) ending in a split nail claw whose V slot widens toward the tips. Red powder coat on the bar, bare forged steel
+ * on the last 1.25 px of the chisel and from the gooseneck's lower half to the claw (real bars come painted, the working
+ * ends worn bright). Authored in the V1 cuboid model's frame (shaft on x = 0 along +Y, the claw bent to -X, z across), so
+ * the first-person rig (CrowbarFirstPerson: crowbar_model bone = (frame - [0, 3.8, 0]) x 0.65) keeps its grip.
+ */
+function crowbar() {
+  const B = 'crowbar', bar = new Part('bar', B, 'coat'), Z = [0, 0, 1];
+  // centreline in the XY plane: chisel tip -> lower bend (cubic) -> shaft -> gooseneck arc
+  const bez = (P, t) => { const u = 1 - t; return [0, 1].map(k => u * u * u * P[0][k] + 3 * u * u * t * P[1][k] + 3 * u * t * t * P[2][k] + t * t * t * P[3][k]); };
+  const lower = [[1.0, -5.0], [0.55, -3.9], [0, -2.9], [0, -1.9]];
+  const C = [-1.75, 20.3], R = 1.75, ARC = 185;
+  const path2 = [...Array.from({length: 11}, (_, i) => bez(lower, i / 10)),
+    ...[2.5, 7, 11.5, 16, 18.8].map(y => [0, y]),
+    ...Array.from({length: 19}, (_, i) => { const a = ARC * i / 18 * Math.PI / 180; return [C[0] + R * Math.cos(a), C[1] + R * Math.sin(a)]; })];
+  const path = path2.map(([x, y]) => [x, y, 0]);
+  const arc = [0]; for (let i = 1; i < path.length; i++) arc.push(arc[i - 1] + Math.hypot(...sub3(path[i], path[i - 1])));
+  const arcStart = arc[16], total = arc[arc.length - 1], T = 0.5, W = T * 0.8660254;
+  const size = s => s < 1.15 ? [0.07 + (T - 0.07) * Math.pow(s / 1.15, 0.8), 0.56 - (0.56 - W) * (s / 1.15)] : [T, W];
+  const frame = i => { const t = unit(sub3(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)])); return {n: [-t[1], t[0], 0], b: Z}; };
+  const rings = path.map((p, i) => { const {n, b} = frame(i), [t, w] = size(arc[i]); return ringAt(bar, p, n, b, hexSection(t, w)); });
+  const steelFrom = arcStart + (total - arcStart) * 0.55;
+  loft(bar, rings, path, {mat: i => (arc[i] + arc[i + 1]) / 2 < 1.25 || (arc[i] + arc[i + 1]) / 2 > steelFrom ? 'steel' : 'coat'});
+  // split claw: two prongs carrying on along the arc's end tangent, starting inside the bar's end
+  const a1 = ARC * Math.PI / 180, end = path[path.length - 1], tan = [-Math.sin(a1), Math.cos(a1), 0], nrm = [-tan[1], tan[0], 0];
+  const prongs = [];
+  for (const side of [-1, 1]) {
+    const prong = new Part('claw_' + (side < 0 ? 'a' : 'b'), B, 'steel'), steps = 6, len = 1.15, from = -0.18;
+    const P = [], Rg = [];
+    for (let k = 0; k <= steps; k++) {
+      const f = k / steps, s = from + (len - from) * f, off = side * (0.235 + 0.09 * f);
+      const p = add3(add3(end, mul3(tan, s)), mul3(Z, off)); P.push(p);
+      Rg.push(ringAt(prong, p, nrm, Z, hexSection(0.42 - 0.34 * Math.pow(f, 1.2), 0.2 - 0.03 * f)));
+    }
+    loft(prong, Rg, P);
+    prongs.push(prong);
+  }
+  return {PARTS: [bar, ...prongs], MATS: {
+    coat: {c: [150, 38, 32], hl: 10, sm: 128, se: 140, f0: 22},     // red powder coat, satin
+    steel: {c: [104, 106, 108], hl: 14, sm: 96, se: 120, f0: 230},  // bare forged steel, worn bright but rough
+  },
+  // the V1 model's transforms (gui is the 2D icon now)
+  display: {
+    firstperson_righthand: {rotation: [0, -18, -12], translation: [1.25, 1.5, -0.5], scale: [0.75, 0.75, 0.75]},
+    firstperson_lefthand: {rotation: [0, 18, 12], translation: [1.25, 1.5, -0.5], scale: [0.75, 0.75, 0.75]},
+    thirdperson_righthand: {rotation: [0, 0, -8], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7]},
+    thirdperson_lefthand: {rotation: [0, 0, 8], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7]},
+    ground: {rotation: [0, 0, 90], translation: [0, -2, 0], scale: [0.52, 0.52, 0.52]},
+    fixed: {rotation: [0, -90, -30], translation: [0, 0, 0], scale: [0.55, 0.55, 0.55]},
+  },
+  icon: {view: [0, 0, -45], coverage: 0.3, mat: {coat: [176, 44, 36], steel: [150, 152, 156]}},
+  // HUD weapon list (plan 10): side view, claw to the left curling up (screen x = -y, screen up = -x)
+  hud: {screen: p => [-p[1], -p[0]], toward: [0, 0, -1], scale: 40},
+  // where the V1 frame's origin lands in the baked mesh (the first-person rig and the item's old vertical place need it)
+  worn: true};
+}
+
+// Body frame: origin at the body's pivot (neck, top centre of the torso), +X to the player's left, +Y up (torso y -12..0),
+// +Z to the front (torso z -2..2). The renderers turn the body part's model space (+Y down, -Z front) into it with a
+// 180 degree turn about X. The shell clears the skin's jacket layer (0.25) by 0.3 px on the flat faces.
+const TORSO = {lo: [-3.6, -11.6, -1.6], hi: [3.6, -0.4, 1.6], r: 0.95};
+// Right-leg frame (the holster): origin at the hip joint, +X outward (the player's right), +Y up (leg y -12..0), +Z to
+// the back (leg z -2..2); the renderer turns the leg's model space into it with a 180 degree turn about Z.
+const LEG = {lo: [-1.6, -11.6, -1.6], hi: [1.6, -0.4, 1.6], r: 0.95};
+const NYLON = {hl: 6, sm: 64, se: 76, f0: 20};   // woven nylon / canvas: dielectric, matte
+const rr = (u0, v0, u1, v1, r, seg = 3) => orient(roundRect(u0, v0, u1, v1, r, seg), true);
+/** A box extruded along Z (front plate, pouch): outline in (x, y), z from z0 to z1. */
+const slabZ = (part, x0, y0, x1, y1, z0, z1, r, c) => extrude(part, 'z', {outer: rr(x0, y0, x1, y1, r), holes: []}, z0, z1, c);
+
+/**
+ * Field chest rig (test gear, grid [1x2][1x2][1x2][2x2]): a front panel across the chest with three rifle magazine
+ * pouches and one larger utility pouch, each with a closed flap; an H harness (shoulder straps over the shoulders and
+ * down the back to the waist strap) and a waist strap around the body. Ranger-green nylon, dark plastic buckle tabs.
+ */
+function fieldChestRig() {
+  const B = 'field_chest_rig', parts = [];
+  const panel = new Part('panel', B, 'nylon'); slabZ(panel, -4.1, -9.4, 4.1, -4.0, 2.4, 2.85, 0.5, 0.12); parts.push(panel);
+  const pouch = (name, x0, x1, depth) => {
+    const body = new Part(name, B, 'nylon'); slabZ(body, x0, -8.9, x1, -5.6, 2.68, 2.85 + depth, 0.25, 0.14);
+    const flap = new Part(name + '_flap', B, 'flap'); slabZ(flap, x0 - 0.06, -6.45, x1 + 0.06, -5.42, 2.8, 2.95 + depth, 0.22, 0.1);   // backs inside the panel, apart
+    const tab = new Part(name + '_tab', B, 'buckle'); slabZ(tab, (x0 + x1) / 2 - 0.28, -6.75, (x0 + x1) / 2 + 0.28, -6.25, 2.95 + depth - 0.05, 3.1 + depth, 0.08, 0);
+    parts.push(body, flap, tab);
+  };
+  pouch('mag_1', -3.95, -2.45, 0.95); pouch('mag_2', -2.3, -0.8, 0.95); pouch('mag_3', -0.65, 0.85, 0.95); pouch('utility', 1.05, 3.95, 1.15);
+  // shoulder straps: over the shoulder in the plane x = +-2.9, front from the panel's top, down the back into the waist strap
+  for (const x of [-2.9, 2.9]) {
+    const sh = new Part('shoulder_' + (x < 0 ? 'r' : 'l'), B, 'nylon');
+    // lifted 0.02 more than the waist strap where they overlap on the back: no shared surface
+    strap(sh, shellArc([x, -5.0, 0], [0, 0, 1], [0, 1, 0], 6, 240, 4, TORSO, 0.13), TORSO, {width: 0.9, thick: 0.22});
+    parts.push(sh);
+  }
+  const waist = new Part('waist', B, 'nylon');
+  strap(waist, shellArc([0, -9.75, 0], [0, 0, 1], [1, 0, 0], 0, 354, 6, TORSO, 0.11), TORSO, {width: 0.85, thick: 0.22, closed: true});
+  parts.push(waist);
+  return {PARTS: parts, MATS: {
+    nylon: {c: [76, 82, 62], ...NYLON},          // ranger green
+    flap: {c: [70, 76, 57], ...NYLON},           // the same cloth, a shade darker so the flaps read
+    buckle: {c: [38, 39, 40], hl: 8, sm: 120, se: 120, f0: 22},   // black acetal buckle tabs
+  }, atlas: 512, icon: {view: [10, 20, 0], coverage: 0.45, hide: ['shoulder_r', 'shoulder_l', 'waist'], mat: {nylon: [90, 98, 74], flap: [58, 64, 48]}}, worn: true};
+}
+
+/** Shoulder straps for a backpack: from the bag's top at the back over the shoulder, down the front to y_end. */
+function packStraps(B, x, yEnd, mat, width = 0.85) {
+  const out = [];
+  for (const sx of [-x, x]) {
+    const s = new Part('strap_' + (sx < 0 ? 'r' : 'l'), B, mat), c = [sx, -4.0, 0];
+    const a0 = Math.atan2(yEnd + 4.0, 2.6) * 180 / Math.PI;   // front end
+    // lift 0.12: on the chest the strap stays inside the chest rig's panel (z 2.4..2.85) when both are worn
+    strap(s, shellArc(c, [0, 0, 1], [0, 1, 0], a0, 180 + 35, 4, TORSO, 0.12), TORSO, {width, thick: 0.3});
+    out.push(s);
+  }
+  return out;
+}
+
+/**
+ * Canvas backpack (test gear, 5x6 grid): a small waxed-canvas rucksack. Main bag 5.8 x 7.3 x 2.65 px on the back with
+ * rounded edges, a top flap over the top and the upper front, a front pocket, two leather closure straps with steel
+ * buckles, shoulder straps down to the chest.
+ */
+function canvasBackpack() {
+  const B = 'canvas_backpack', parts = [];
+  const body = new Part('body', B, 'canvas');
+  extrude(body, 'x', {outer: rr(-5.0, -9.3, -2.35, -2.0, 0.9, 4), holes: []}, -2.9, 2.9, 0.35); parts.push(body);
+  // top flap: a band around the body's top-front rounded corner (corner centre z -4.1, y -2.9, r 0.9)
+  const cz = -4.1, cy = -2.9, arcPts = (r, a0, a1) => Array.from({length: 7}, (_, i) => { const a = (a0 + (a1 - a0) * i / 6) * Math.PI / 180; return [cz + r * Math.cos(a), cy + r * Math.sin(a)]; });
+  const flapOutline = [[-2.4, -1.73], ...arcPts(1.17, 90, 180), [-5.27, -5.2], [-5.03, -5.2], ...arcPts(0.93, 180, 90), [-2.4, -1.97]];
+  const flap = new Part('flap', B, 'canvas_dark'); extrude(flap, 'x', {outer: orient(flapOutline, true), holes: []}, -3.05, 3.05, 0.08); parts.push(flap);
+  const pocket = new Part('pocket', B, 'canvas');
+  extrude(pocket, 'z', {outer: rr(-2.2, -8.6, 2.2, -5.6, 0.45), holes: []}, -5.85, -4.9, 0.25); parts.push(pocket);
+  for (const x of [-1.45, 1.45]) {
+    const upper = new Part('closure_' + (x < 0 ? 'r' : 'l'), B, 'leather');
+    slabZ(upper, x - 0.27, -5.75, x + 0.27, -3.6, -5.42, -5.2, 0.06, 0); parts.push(upper);
+    const buckle = new Part('buckle_' + (x < 0 ? 'r' : 'l'), B, 'steel');
+    extrude(buckle, 'z', {outer: rr(x - 0.36, -6.35, x + 0.36, -5.75, 0.08), holes: [orient(roundRect(x - 0.2, -6.2, x + 0.2, -5.9, 0.04), false)]}, -5.98, -5.82, 0);
+    parts.push(buckle);
+  }
+  parts.push(...packStraps(B, 1.95, -6.6, 'leather'));
+  return {PARTS: parts, MATS: {
+    canvas: {c: [122, 112, 84], ...NYLON},                          // waxed cotton canvas, khaki
+    canvas_dark: {c: [112, 102, 76], ...NYLON},
+    leather: {c: [98, 66, 44], hl: 8, sm: 92, se: 100, f0: 20},     // oiled leather straps
+    steel: {c: [92, 94, 96], hl: 14, sm: 120, se: 140, f0: 230},    // blackened steel buckles
+  }, atlas: 512, icon: {view: [15, 150, 0], coverage: 0.45, hide: ['strap_r', 'strap_l']}, worn: true};
+}
+
+/**
+ * Hiking backpack (test gear, 6x10 grid): an internal-frame trekking pack, 6.8 x 9.4 x 4 px body up to shoulder height
+ * (higher would run into the head), a lid on top, a front stretch pocket, two side compression straps per side, padded
+ * shoulder straps with a sternum strap, and a padded hip belt around the waist.
+ */
+function hikingBackpack() {
+  const B = 'hiking_backpack', parts = [];
+  const body = new Part('body', B, 'shell');
+  extrude(body, 'x', {outer: rr(-6.35, -10.8, -2.35, -1.4, 1.1, 4), holes: []}, -3.4, 3.4, 0.5); parts.push(body);
+  const lid = new Part('lid', B, 'trim');
+  extrude(lid, 'x', {outer: rr(-6.65, -1.75, -2.45, -0.25, 0.6, 4), holes: []}, -3.5, 3.5, 0.4); parts.push(lid);
+  const pocket = new Part('pocket', B, 'mesh');
+  extrude(pocket, 'z', {outer: rr(-2.5, -9.6, 2.5, -4.0, 0.8), holes: []}, -6.75, -6.15, 0.25); parts.push(pocket);
+  for (const x of [-3.4, 3.4]) for (const y of [-4.2, -7.6]) {
+    const c = new Part('compression_' + (x < 0 ? 'r' : 'l') + (y < -5 ? '2' : '1'), B, 'trim');
+    const v0 = x - 0.12 * Math.sign(x), v1 = x + 0.16 * Math.sign(x);
+    extrude(c, 'y', {outer: rr(-6.0, Math.min(v0, v1), -2.8, Math.max(v0, v1), 0.08), holes: []}, y - 0.28, y + 0.28, 0);
+    parts.push(c);
+  }
+  parts.push(...packStraps(B, 1.95, -6.8, 'trim', 1.0));
+  const sternum = new Part('sternum', B, 'trim');
+  strap(sternum, shellLine([[-2.1, -3.6, 2.7], [2.1, -3.6, 2.7]], 0.5, TORSO, 0.42), TORSO, {width: 0.35, thick: 0.14}); parts.push(sternum);
+  const hip = new Part('hip_belt', B, 'trim');
+  strap(hip, shellArc([0, -11.0, 0], [0, 0, 1], [1, 0, 0], 0, 354, 6, TORSO, 0.2), TORSO, {width: 1.2, thick: 0.4, closed: true}); parts.push(hip);
+  return {PARTS: parts, MATS: {
+    shell: {c: [60, 70, 82], ...NYLON},                            // slate-blue ripstop
+    trim: {c: [42, 44, 46], ...NYLON},                             // black nylon: lid, straps, belt
+    mesh: {c: [52, 58, 66], hl: 4, sm: 50, se: 60, f0: 20},        // stretch pocket, darker and duller
+  }, atlas: 512, icon: {view: [15, 150, 0], coverage: 0.45, hide: ['strap_r', 'strap_l', 'sternum', 'hip_belt'], mat: {shell: [78, 92, 110], trim: [60, 62, 66]}}, worn: true};
+}
+
+/**
+ * Gun sling (item): a rolled two-point sling, four tight turns of olive webbing (0.65 px wide, about 1.3 m) with the
+ * free end and its snap hook hanging off the roll.
+ */
+function gunSling() {
+  const B = 'gun_sling', web = new Part('roll', B, 'web'), N = 96, P = [], rings = [];
+  for (let i = 0; i <= N; i++) { const a = 4 * 2 * Math.PI * i / N, r = 0.6 + 0.6 * i / N; P.push([r * Math.cos(a), r * Math.sin(a), 0]); }
+  P.push(add3(P[N], [0.04, 0.8, 0]), add3(P[N], [0.1, 1.45, 0]));   // the free end leaves along the roll's tangent (+Y at the last turn's end)
+  for (let i = 0; i < P.length; i++) {
+    const t = unit(sub3(P[Math.min(i + 1, P.length - 1)], P[Math.max(i - 1, 0)])), n = [t[1], -t[0], 0];
+    rings.push(ringAt(web, P[i], n, [0, 0, 1], [[0.06, 0.32], [0.06, -0.32], [-0.06, -0.32], [-0.06, 0.32]]));
+  }
+  loft(web, rings, P);
+  const tip = P[P.length - 1], hook = new Part('snap_hook', B, 'steel');
+  extrude(hook, 'z', {outer: rr(tip[0] - 0.3, tip[1] - 0.1, tip[0] + 0.3, tip[1] + 1.0, 0.25), holes: [orient(roundRect(tip[0] - 0.13, tip[1] + 0.3, tip[0] + 0.13, tip[1] + 0.75, 0.1), false)]}, -0.12, 0.12, 0);
+  return {PARTS: [web, hook], MATS: {
+    web: {c: [84, 88, 66], ...NYLON},
+    steel: {c: [70, 72, 74], hl: 14, sm: 120, se: 140, f0: 230},
+  }, icon: {view: [25, 30, 0], coverage: 0.4}};
+}
+
+/**
+ * Gun sling worn (no item, drawn with a slung primary on the back): the strap across the body, over the left shoulder
+ * (where the muzzle rides) and down across the chest to the right hip, round the back. One closed band in the plane
+ * through the torso that holds that diagonal.
+ */
+function gunSlingWorn() {
+  const B = 'gun_sling_worn', web = new Part('strap', B, 'web');
+  const d = unit([-6.9, -10.5, 0]), c = [-0.6, -5.4, 0];
+  // lift 0.4: over every other strap and 0.04 clear of the chest rig's panel (it passes behind the pouches)
+  strap(web, shellArc(c, d, [0, 0, 1], 0, 354, 6, TORSO, 0.4), TORSO, {width: 0.55, thick: 0.12, closed: true});
+  return {PARTS: [web], MATS: {web: {c: [84, 88, 66], ...NYLON}}, meshOnly: true, worn: true};
+}
+
+/**
+ * Pistol holster: a drop-leg holster on the outside of the right thigh. A moulded black shell (open at the top, cut back
+ * at the rear for the grip), a nylon platform behind it, two leg straps round the thigh. Leg frame; the holstered pistol
+ * is placed by the renderer with its muzzle 0.25 px above the shell's bottom and its slide's top against the shell's
+ * front wall (CarriedWeaponsLayer: HOLSTER_* constants). The holstered pistol is drawn as large as in the hand in third
+ * person (P9 6.06 px long, 3.6 px from slide top to grip bottom, 0.92 px wide; 2026-10-15: at its real length, 3.2 px,
+ * it was hardly visible), and the shell is cut for that size as on a real holster: the front edge covers the slide to
+ * about a fifth of its length from the rear, the rear wall (z 1.0, deep enough for slide, frame and trigger guard) stops
+ * just below the grip, which leaves the holster to the rear. 1.3 px wide, so the wider Blackridge .50 (1.28 px) fits.
+ */
+export const HOLSTER = {mid: 3.25, bottom: -7.4, front: -1.05};
+function pistolHolster() {
+  const B = 'pistol_holster', parts = [];
+  const plate = new Part('platform', B, 'nylon');
+  extrude(plate, 'x', {outer: rr(-1.15, -7.6, 1.15, -1.9, 0.45), holes: []}, 2.28, 2.56, 0.08); parts.push(plate);
+  const {mid, bottom, front} = HOLSTER, hw = 0.65;
+  const outline = orient([[front, bottom + 0.35], [front + 0.35, bottom], [0.6, bottom], [1.0, bottom + 0.4], [1.0, -2.85], [0.3, -2.5], [front, -2.4]], true);
+  const shell = new Part('shell', B, 'shell'); extrude(shell, 'x', {outer: outline, holes: []}, mid - hw, mid + hw, 0.14); parts.push(shell);
+  for (const y of [-2.9, -6.3]) {
+    const s = new Part('leg_strap_' + (y > -4 ? '1' : '2'), B, 'nylon');
+    strap(s, shellArc([0, y, 0], [1, 0, 0], [0, 0, 1], 0, 352, 8, LEG, 0.07), LEG, {width: 0.6, thick: 0.14, closed: true});
+    parts.push(s);
+  }
+  const drop = new Part('drop_strap', B, 'nylon');
+  extrude(drop, 'x', {outer: rr(-0.35, -2.0, 0.35, -0.2, 0.1), holes: []}, 2.3, 2.48, 0); parts.push(drop);
+  return {PARTS: parts, MATS: {
+    shell: {c: [42, 44, 46], hl: 10, sm: 150, se: 150, f0: 22},     // moulded black kydex, semi-gloss
+    nylon: {c: [50, 52, 50], ...NYLON},                             // black nylon platform and straps
+  }, icon: {view: [10, 55, 0], coverage: 0.4, hide: ['leg_strap_1', 'leg_strap_2'], mat: {shell: [66, 68, 72], nylon: [100, 102, 98]}}, worn: true};
+}
+
+// Head frame (the ear muffs): origin at the head's pivot (neck), +X to the player's left, +Y up (head y 0..8), +Z to the
+// front (head z -4..4); the hat layer reaches 4.5. Same turn about X as the body frame.
+const EAR = {y: 3.3, z: -0.2};
+/**
+ * Simple hearing protection (2026-10-14, replaces the V1 cuboid model; same look): two leather-covered cups with a
+ * wool cushion ring against the head, on a spring-steel headband that runs in a rounded rectangle over the head (clear
+ * of the hat layer's corners) into a small yoke on top of each cup. The cushions sit 0.05 px off the head's sides (user,
+ * 2026-10-15: the first cut stood clear of the hat layer and looked loose); a skin's hat layer at the ears is hidden
+ * inside the cups.
+ */
+function simpleHearingProtection() {
+  const B = 'simple_hearing_protection', parts = [];
+  for (const side of [-1, 1]) {
+    const cup = new Part('cup_' + (side < 0 ? 'r' : 'l'), B, 'leather');
+    const prof = [[4.22, 0], [4.22, 1.42], [4.38, 1.58], [4.82, 1.56], [5.14, 1.34], [5.32, 0.86], [5.38, 0]].map(([x, r]) => [side * x, r]);
+    revolve(cup, -EAR.z, EAR.y, orient(prof, true), 16); zToX(cup); parts.push(cup);
+    const pad = new Part('cushion_' + (side < 0 ? 'r' : 'l'), B, 'wool');
+    const ring = [[4.05, 0.78], [4.05, 1.38], [4.12, 1.5], [4.3, 1.52], [4.3, 0.78]].map(([x, r]) => [side * x, r]);
+    revolve(pad, -EAR.z, EAR.y, orient(ring, true), 16); zToX(pad); parts.push(pad);
+    const yoke = new Part('yoke_' + (side < 0 ? 'r' : 'l'), B, 'steel');
+    extrude(yoke, 'x', {outer: rr(EAR.z - 0.32, 4.55, EAR.z + 0.32, 5.1, 0.1), holes: []}, side < 0 ? -5.05 : 4.55, side < 0 ? -4.55 : 5.05, 0.06);
+    parts.push(yoke);
+  }
+  const BAND = {lo: [-3.4, 4.9, EAR.z], hi: [3.4, 7.3, EAR.z], r: 1.4};   // sides at |x| 4.8, top y 8.7 (hat layer 8.5)
+  const band = new Part('headband', B, 'steel');
+  strap(band, shellLine([[4.8, 4.9, EAR.z], [4.8, 7.3, EAR.z], [4.8, 8.7, EAR.z], [-4.8, 8.7, EAR.z], [-4.8, 7.3, EAR.z], [-4.8, 4.9, EAR.z]], 0.3, BAND, 0),
+    BAND, {width: 0.55, thick: 0.16});
+  parts.push(band);
+  return {PARTS: parts, MATS: {
+    leather: {c: [72, 52, 44], hl: 8, sm: 96, se: 104, f0: 20},     // dark brown leather cups
+    wool: {c: [178, 168, 148], hl: 4, sm: 40, se: 50, f0: 20},      // undyed wool felt cushions
+    steel: {c: [118, 120, 122], hl: 14, sm: 130, se: 150, f0: 230}, // spring-steel band, satin
+  }, icon: {view: [15, 35, 0], coverage: 0.15, mat: {steel: [170, 172, 176]}}, worn: true};
+}
+
+/**
+ * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
+ * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
+ * outline; 2x supersampled. spec.hud: screen(p) -> [x right, y up], toward = the direction to the viewer, scale px / unit.
+ */
+function drawHud(PARTS, {screen, toward, scale}) {
+  const tris = [];
+  for (const part of PARTS) for (const f of part.f) {
+    const P = f.ids.map(i => part.v[i]), n = unit(newell(P));
+    for (let k = 1; k + 1 < P.length; k++) tris.push({P: [P[0], P[k], P[k + 1]], n});
+  }
+  const S = scale * 2, all = tris.flatMap(t => t.P.map(screen));
+  const lo = [0, 1].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1].map(k => Math.max(...all.map(q => q[k])));
+  const pad = 2, W = Math.ceil((hi[0] - lo[0]) * scale) + 2 * pad, H = Math.ceil((hi[1] - lo[1]) * scale) + 2 * pad;
+  const W2 = W * 2, H2 = H * 2, depth = new Float64Array(W2 * H2).fill(-Infinity), shade = new Float64Array(W2 * H2);
+  const toPx = p => { const [x, y] = screen(p); return [(x - lo[0]) * S + pad * 2, (hi[1] - y) * S + pad * 2, dot3(p, toward)]; };
+  // light from the top left, toward the viewer
+  const sx = screen([1, 0, 0]), sy = screen([0, 1, 0]), sz = screen([0, 0, 1]);
+  const fromScreen = (x, y) => [0, 1, 2].map(k => x * [sx, sy, sz][k][0] + y * [sx, sy, sz][k][1]);
+  const L = unit(add3(mul3(unit(fromScreen(-1, 1)), 0.55), toward));
+  for (const {P, n} of tris) {
+    if (dot3(n, toward) <= 0) continue;
+    const Q = P.map(toPx), x0 = Math.max(0, Math.floor(Math.min(...Q.map(q => q[0])))), x1 = Math.min(W2 - 1, Math.ceil(Math.max(...Q.map(q => q[0]))));
+    const y0 = Math.max(0, Math.floor(Math.min(...Q.map(q => q[1])))), y1 = Math.min(H2 - 1, Math.ceil(Math.max(...Q.map(q => q[1]))));
+    const area = (Q[1][0] - Q[0][0]) * (Q[2][1] - Q[0][1]) - (Q[2][0] - Q[0][0]) * (Q[1][1] - Q[0][1]);
+    if (Math.abs(area) < 1e-9) continue;
+    const lum = 150 + 52 * Math.max(0, dot3(n, L));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const px = x + 0.5, py = y + 0.5;
+      const w0 = ((Q[1][0] - px) * (Q[2][1] - py) - (Q[2][0] - px) * (Q[1][1] - py)) / area;
+      const w1 = ((Q[2][0] - px) * (Q[0][1] - py) - (Q[0][0] - px) * (Q[2][1] - py)) / area, w2 = 1 - w0 - w1;
+      if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
+      const z = w0 * Q[0][2] + w1 * Q[1][2] + w2 * Q[2][2], i = y * W2 + x;
+      if (z > depth[i]) { depth[i] = z; shade[i] = lum; }
+    }
+  }
+  const filled = i => depth[i] > -Infinity, rgba = Buffer.alloc(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    let a = 0, g = 0;
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const X = x * 2 + dx, Y = y * 2 + dy, i = Y * W2 + X;
+      if (!filled(i)) continue;
+      // outline: a sample within 2 supersamples of empty space reads darker
+      let rim = false;
+      for (let oy = -2; oy <= 2 && !rim; oy++) for (let ox = -2; ox <= 2; ox++) {
+        const XX = X + ox, YY = Y + oy;
+        if (XX < 0 || YY < 0 || XX >= W2 || YY >= H2 || !filled(YY * W2 + XX)) { rim = true; break; }
+      }
+      a++; g += rim ? shade[i] * 0.72 : shade[i];
+    }
+    if (!a) continue;
+    const v = Math.round(g / a), o = (y * W + x) * 4;
+    rgba[o] = rgba[o + 1] = rgba[o + 2] = v; rgba[o + 3] = Math.round(255 * a / 4);
+  }
+  return {buf: png(rgba, W, H), W, H};
+}
+
 export const ITEMS = {
   clinical_thermometer: clinicalThermometer,
   wrist_thermometer: wristThermometer,
   wiring_wrench: wiringWrench,
+  crowbar,
+  field_chest_rig: fieldChestRig,
+  canvas_backpack: canvasBackpack,
+  hiking_backpack: hikingBackpack,
+  gun_sling: gunSling,
+  gun_sling_worn: gunSlingWorn,
+  pistol_holster: pistolHolster,
+  simple_hearing_protection: simpleHearingProtection,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -152,6 +567,13 @@ if (isMain) {
     const shift = [-(lo[0] + hi[0]) / 2, -lo[1], -(lo[2] + hi[2]) / 2];
     const {outputs, stats} = bake(id, spec);
     if (spec.anchor) stats.wornAnchor = spec.anchor.map((v, k) => +(v + shift[k] - (k === 1 ? (hi[1] - lo[1]) / 2 : 0)).toFixed(4));
+    // worn gear is authored in a body-part frame: its renderer translates by -origin / 16 to put it back there
+    if (spec.worn) stats.origin = shift.map(v => +v.toFixed(4));
+    if (spec.hud) {
+      const {buf, W, H} = drawHud(spec.PARTS, spec.hud);
+      outputs.push([path.join(ROOT, `src/main/resources/assets/apocalypse_firstlight/textures/gui/melee/${id}_hud.png`), buf]);
+      stats.hud = [W, H];
+    }
     console.log(JSON.stringify(stats));
     for (const [file, data] of outputs) {
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);

@@ -75,6 +75,7 @@ final class AuthoringFixtureRegistry {
     // Wood Furniture V2 (2026-10-15): the bed's head the way it faces (foot to head); the vintage freezer's right half at facing.getClockWise()
     private static final Multiblock BED=new Multiblock("part",List.of("foot","head"),(a,f,p)->p.equals("head")?a.relative(f):a);
     private static final Multiblock VINTAGE_FREEZER=new Multiblock("part",List.of("left","right"),(a,f,p)->p.equals("right")?a.relative(f.getClockWise()):a);
+    private static final Multiblock STORAGE_CHEST=VINTAGE_FREEZER;
     private static final Multiblock DUMPSTER=new Multiblock("part",List.of("master","secondary"),
             (a,f,p)->CommercialDumpsterBlock.partPosition(a,f,CommercialDumpsterBlock.Part.valueOf(constant(p))));
     private static final Multiblock FUEL_DISPENSER=new Multiblock("cell",List.of("a0","b0","a1","b1","a2","b2"),
@@ -191,8 +192,8 @@ final class AuthoringFixtureRegistry {
                     .notes("Wood Furniture V2 (2026-10-15): 9 slots, top at 0.66 (an emergency radio on it sinks to the top); facing = the drawer."),
             new Def(A+"wooden_tool_rack",storage,"storage").facing(H4).inventory().support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Wood Furniture V2 (2026-10-15): wall rack, facing = away from the wall; three peg pairs for long tools and a two-place shelf (the gun rack's BlockEntity, starts empty). log is computed from the wall (on round logs it stands on pad 12)."),
-            new Def(A+"wooden_storage_chest",storage,"storage").facing(H4).fixed("type","single","waterlogged","false","open","false").inventory().support(Support.NONE)
-                    .notes("Wood Furniture V2 (2026-10-15): a vanilla chest (ChestBlock, 27 slots) with its own ID and mesh. Single only; double-chest pairing is not authored."),
+            new Def(A+"wooden_storage_chest",storage,"storage").facing(H4).multi(STORAGE_CHEST).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15, blanket chest): 2 wide, 27 slots, the lid opened by the player. Anchor = left master (BlockEntity); right at facing.getClockWise()."),
             new Def(A+"vintage_chest_freezer",storage,"storage").facing(H4).multi(VINTAGE_FREEZER).fixed("open","false","lit","false").inventory().support(Support.FLOOR)
                     .notes("Wood Furniture V2 (2026-10-15): 2 wide, 27 slots, a plug-in appliance (cord from the back). Anchor = left master (BlockEntity); right at facing.getClockWise(); lit is runtime (power)."),
             new Def(A+"modern_office_desk",safe,"office").facing(H4).multi(DESK).support(Support.FLOOR)

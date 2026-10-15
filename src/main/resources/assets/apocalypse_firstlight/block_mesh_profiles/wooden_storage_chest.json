@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/wooden_storage_chest.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/furniture/wooden_storage_chest.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.339375,
+    -0.015625,
+    0.209375,
+    1.660625,
+    1.111258,
+    0.805429
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lid": {
+      "pivot": [
+        0.5,
+        0.565,
+        0.258
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 12,
+      "easing": "ease_in_out",
+      "transforms": {
+        "lid": {
+          "rotation": [
+            80,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

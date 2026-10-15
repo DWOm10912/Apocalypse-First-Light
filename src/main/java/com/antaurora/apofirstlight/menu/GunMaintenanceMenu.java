@@ -16,9 +16,10 @@ public final class GunMaintenanceMenu extends AbstractContainerMenu {
         if(level!=null&&level.isClientSide&&level.getBlockEntity(bench.getBlockPos()) instanceof GunMaintenanceBenchBlockEntity live)return live;
         return bench;
     }
-    public int originSlotFor(java.util.UUID viewer){
-        var b=synchronizedBench();int slot=b.originHotbarSlot();
-        return b.originMetadataReady()&&!b.isEmpty()&&viewer.equals(b.originPlayerUUID())&&slot>=0&&slot<9?slot:-1;
+    /** The viewer's own gun on the bench: where it came from (a hotbar index or a GridSource), else -1. */
+    public int originFor(java.util.UUID viewer){
+        var b=synchronizedBench();int source=b.originSource();
+        return b.originMetadataReady()&&!b.isEmpty()&&viewer.equals(b.originPlayerUUID())&&source>=0?source:-1;
     }
     public boolean canShowTakeButton(java.util.UUID viewer){
         var b=synchronizedBench();return b.originMetadataReady()&&!b.isEmpty()&&!viewer.equals(b.originPlayerUUID());
@@ -47,6 +48,12 @@ public final class GunMaintenanceMenu extends AbstractContainerMenu {
         // the root position/dimension; stillValid rejects another world, removed root, or excess distance.
         if(button==RETURN_GUN&&!player.getUUID().equals(bench.originPlayerUUID()))return false;
         boolean moved=button==RETURN_GUN||button==TAKE_GUN?bench.takeBack(player):button>=0&&button<9&&bench.insertFrom(player,button);
+        if(moved){broadcastChanges();player.inventoryMenu.broadcastChanges();}return moved;
+    }
+    /** The gun picker's request (GunMaintenancePackets): a gun from a hotbar index or a grid entry onto the bench. */
+    public boolean insert(Player player,int source,ItemStack expected){
+        if(player.level().isClientSide || player.containerMenu!=this || !stillValid(player))return false;
+        boolean moved=bench.insertFrom(player,source,expected);
         if(moved){broadcastChanges();player.inventoryMenu.broadcastChanges();}return moved;
     }
 }

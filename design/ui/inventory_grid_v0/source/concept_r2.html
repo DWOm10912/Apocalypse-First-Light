@@ -1,0 +1,441 @@
+<!doctype html>
+<!--
+  AFL inventory grid V0 concept (docs/ui/afl_inventory_grid_v0_concept.md).
+  Round 2 (plan doc 10): concept_r2.html?f=hud_gun | hud_item | inv, rendered at 1920x1080 by headless Chrome.
+  Layout units are GUI units (u); the concept draws them at 4 px (GUI scale 4, the vanilla auto scale at 1080p).
+  icons/mc/ holds vanilla textures extracted locally from the Minecraft client jar (git-ignored), e.g.
+  unzip -j client-extra.jar assets/minecraft/textures/item/bread.png -d icons/mc
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: AFLSans; src: url(../../../../src/main/resources/assets/apocalypse_firstlight/font/afl_sans_sc.ttf); }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: AFLSans, sans-serif; color: #E8E4DC; }
+  .a { position: absolute; box-sizing: border-box; }
+  .bg { inset: 0; background: url(bg_forest.jpg) center / cover; }
+  .dim { inset: 0; background: rgba(8, 9, 10, 0.70); }
+  .panel { background: rgba(16, 16, 16, 0.62); border: 1px solid rgba(232, 228, 220, 0.28); border-radius: 16px; box-shadow: 0 0 12px rgba(0, 0, 0, 0.22); }
+  .lbl { color: #A8A49C; white-space: nowrap; line-height: 1; }
+  .box { background: rgba(16, 16, 16, 0.62); border: 1px solid rgba(232, 228, 220, 0.28); border-radius: 10px; }
+  .box.filled { background: rgba(30, 33, 36, 0.72); }
+  .cellgrid { border: 1px solid rgba(232, 228, 220, 0.28); border-radius: 6px; background-color: rgba(10, 10, 10, 0.55); }
+  .item { background: rgba(38, 41, 44, 0.86); border: 1px solid rgba(232, 228, 220, 0.24); border-radius: 6px; }
+  .lit { background: radial-gradient(ellipse at 50% 45%, rgba(104, 108, 112, 0.62), rgba(38, 41, 44, 0.86) 75%) !important; }
+  .px { image-rendering: pixelated; }
+  .cnt { color: #E8E4DC; text-shadow: 0 0 3px #000, 0 0 2px #000; line-height: 1; }
+  .key { background: rgba(232, 228, 220, 0.92); color: #16181A; border-radius: 10px; text-align: center; line-height: 1; }
+  .tip { background: rgba(16, 16, 16, 0.86); border: 1px solid rgba(232, 228, 220, 0.28); border-radius: 12px; box-shadow: 0 0 12px rgba(0, 0, 0, 0.3); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const U = 4, CELL = 18;
+const frame = new URLSearchParams(location.search).get('f') || 'inv_full';
+const stage = document.getElementById('stage');
+const AFL = '../../../../src/main/resources/assets/apocalypse_firstlight/textures/item/';
+const MC = 'icons/mc/';
+
+function el(cls, x, y, w, h, parent = stage, css = '') {
+  const d = document.createElement('div');
+  d.className = 'a ' + cls;
+  d.style.cssText = `left:${x * U}px;top:${y * U}px;` + (w != null ? `width:${w * U}px;` : '') +
+      (h != null ? `height:${h * U}px;` : '') + css;
+  parent.appendChild(d);
+  return d;
+}
+function text(str, x, y, size, color, parent = stage, css = '') {
+  const d = el('lbl', x, y, null, null, parent, `font-size:${size * U}px;` + (color ? `color:${color};` : '') + css);
+  d.textContent = str;
+  return d;
+}
+function img(src, x, y, w, h, parent = stage, pixel = true, css = '') {
+  const i = document.createElement('img');
+  i.src = src;
+  i.className = 'a' + (pixel ? ' px' : '');
+  i.style.cssText = `left:${x * U}px;top:${y * U}px;width:${w * U}px;height:${h * U}px;` + css;
+  parent.appendChild(i);
+  return i;
+}
+
+// ---- icons: flat 16 px icons drawn at an integer scale, gun renders cropped to their measured bounds
+const GUN = {   // [file, minX, minY, maxX, maxY] of the 256x256 inventory render
+  br51: ['br51_01_inventory.png', 15, 64, 240, 192],
+  hr55: ['hr55_inventory.png', 15, 64, 240, 192],
+  silverwood: ['silverwood_12_inventory.png', 14, 77, 242, 178],
+  p9: ['p9_01_inventory.png', 23, 48, 233, 207],
+  blackridge: ['blackridge_50_inventory.png', 15, 43, 240, 212],
+};
+function gun(key, x, y, w, h, parent, pad = 1.5) {
+  const [file, x0, y0, x1, y1] = GUN[key];
+  const bw = x1 - x0, bh = y1 - y0, k = Math.min((w - 2 * pad) / bw, (h - 2 * pad) / bh);
+  const dw = bw * k, dh = bh * k, ox = x + (w - dw) / 2, oy = y + (h - dh) / 2;
+  const box = el('', ox, oy, dw, dh, parent, 'overflow:hidden;');
+  img(AFL + file, -x0 * k, -y0 * k, 256 * k, 256 * k, box, false);
+}
+function flat(src, x, y, w, h, parent, scale) {   // a 16 px icon centred in the w x h box at an integer scale
+  const s = scale ?? Math.max(1, Math.floor(Math.min(w, h) / 16));
+  img(src, x + (w - 16 * s) / 2, y + (h - 16 * s) / 2, 16 * s, 16 * s, parent);
+}
+function water(x, y, w, h, parent) {   // potion + tinted overlay, as the water bottle item renders
+  const s = 1, ox = x + (w - 16) / 2, oy = y + (h - 16) / 2;
+  img(MC + 'potion.png', ox, oy, 16, 16, parent);
+  el('px', ox, oy, 16, 16, parent, `background:#3F76E4;-webkit-mask:url(${MC}potion_overlay.png) 0 0 / 100% 100%;` +
+      'mask:url(' + MC + 'potion_overlay.png) 0 0 / 100% 100%;image-rendering:pixelated;-webkit-mask-mode:alpha;');
+}
+function cube(src, x, y, size, parent) {   // a block drawn the way the GUI draws it: three faces, top lightest
+  const s = size * U, half = s / 2;
+  const wrap = el('', x, y, size, size, parent, 'perspective:none;');
+  const face = (css, shade) => {
+    const f = document.createElement('div');
+    f.className = 'a px';
+    f.style.cssText = `width:${s * 0.62}px;height:${s * 0.62}px;background:url(${src}) 0 0 / 100% 100%;image-rendering:pixelated;` +
+        `transform-origin:0 0;filter:brightness(${shade});` + css;
+    wrap.appendChild(f);
+  };
+  const k = s * 0.62, c = Math.cos(Math.PI / 6), sn = 0.5;
+  face(`left:${half}px;top:${s * 0.06}px;transform:matrix(${c},${sn},${-c},${sn},0,0);`, 1.0);
+  face(`left:${half - k * c}px;top:${s * 0.06 + k * sn}px;transform:matrix(${c},${sn},0,1,0,0);`, 0.80);
+  face(`left:${half}px;top:${s * 0.06 + k}px;transform:matrix(${c},${-sn},0,1,0,0);`, 0.62);
+}
+// an item in its own box; icon, block, gun render or water bottle, plus the stack count
+function itemBox(x, y, w, h, parent, opt = {}) {
+  const b = el('item' + (opt.gun ? ' lit' : ''), x, y, w, h, parent, opt.css || '');
+  const iw = w, ih = h;
+  if (opt.gun) gun(opt.gun, 0, 0, iw, ih, b);
+  else if (opt.water) water(0, 0, iw, ih, b);
+  else if (opt.cube) cube(opt.cube, (iw - opt.cubeSize) / 2, (ih - opt.cubeSize) / 2, opt.cubeSize, b);
+  else if (opt.icon) flat(opt.icon, 0, 0, iw, ih, b, opt.scale);
+  if (opt.n != null) {
+    const c = text(String(opt.n), 0, 0, 5.2, null, b, `left:auto;top:auto;right:${U * 1.2}px;bottom:${U * 0.9}px;`);
+    c.classList.add('cnt');
+  }
+  return b;
+}
+
+// ---- grids
+function grid(x, y, cols, rows, parent) {
+  const g = el('cellgrid', x, y, cols * CELL, rows * CELL, parent,
+      `background-image:linear-gradient(to right, rgba(232,228,220,0.10) 1px, transparent 1px),` +
+      `linear-gradient(to bottom, rgba(232,228,220,0.10) 1px, transparent 1px);` +
+      `background-size:${CELL * U}px ${CELL * U}px;background-position:-1px -1px;`);
+  return g;
+}
+function place(g, col, row, w, h, opt) {   // an item occupying w x h cells of grid g
+  return itemBox(col * CELL + 0.25, row * CELL + 0.25, w * CELL - 0.5, h * CELL - 0.5, g, opt);
+}
+
+// ---- slots
+function slot(label, x, y, w, h, opt = {}) {
+  text(label, x + 0.5, y - 6.2, 5.2);
+  const b = el('box' + (opt.item ? ' filled' : '') + (opt.item && opt.item.gun ? ' lit' : ''), x, y, w, h);
+  if (opt.key) text(opt.key, 1.6, 1.2, 4.6, '#6C6A66', b);
+  if (opt.item) {
+    const o = opt.item;
+    if (o.gun) gun(o.gun, 0, 0, w, h, b, 2.5);
+    else if (o.svg) { b.insertAdjacentHTML('beforeend', o.svg(w, h)); }
+    else if (o.icon) flat(o.icon, 0, 0, w, h, b, o.scale);
+  }
+  return b;
+}
+
+// placeholder icons for gear that does not exist yet (rig, backpack): plain vector shapes, clearly not final art
+const RIG = (w, h) => `<svg class="a" style="left:0;top:0" width="${w * U}" height="${h * U}" viewBox="0 0 28 28">
+  <g fill="#5F6644" stroke="#2C301F" stroke-width="0.6">
+    <path d="M8 5 L11 5 L12.5 9 L15.5 9 L17 5 L20 5 L21 10 L21.5 23 L6.5 23 L7 10 Z"/>
+    <rect x="8" y="13" width="2.6" height="5.5" rx="0.6" fill="#6C7450"/><rect x="11.2" y="13" width="2.6" height="5.5" rx="0.6" fill="#6C7450"/>
+    <rect x="14.4" y="13" width="2.6" height="5.5" rx="0.6" fill="#6C7450"/><rect x="17.4" y="12.5" width="3" height="6" rx="0.6" fill="#6C7450"/>
+  </g></svg>`;
+const PACK = (w, h) => `<svg class="a" style="left:0;top:0" width="${w * U}" height="${h * U}" viewBox="0 0 28 28">
+  <g fill="#5A5E44" stroke="#2A2C20" stroke-width="0.6">
+    <path d="M8.5 7 Q8.5 4.5 11 4.5 L17 4.5 Q19.5 4.5 19.5 7 L20.5 22 Q20.5 24 18.5 24 L9.5 24 Q7.5 24 7.5 22 Z"/>
+    <path d="M9.5 8 L18.5 8 L18.5 10.5 L9.5 10.5 Z" fill="#666A4E"/>
+    <rect x="10" y="15" width="8" height="6.5" rx="1" fill="#666A4E"/>
+  </g></svg>`;
+
+function keycap(k, label, xRight, y) {   // right-aligned "key + verb"
+  const t = text(label, 0, 0, 5.6, '#E8E4DC');
+  t.style.left = 'auto';
+  t.style.right = `${(480 - xRight) * U}px`;
+  t.style.top = `${(y + 0.6) * U}px`;
+  const lw = t.getBoundingClientRect().width / U;
+  const kw = Math.max(9, k.length * 3.6 + 4);
+  const kc = el('key', xRight - lw - 2.5 - kw, y, kw, 7.2, stage, `font-size:${5 * U}px;padding-top:${1.1 * U}px;`);
+  kc.textContent = k;
+  return xRight - lw - 2.5 - kw - 6;
+}
+
+// ======================================================================= round 2 (plan doc 10): weapon positions + quick bindings
+// frames: ?f=hud_gun (holding the primary) | hud_item (holding a bound item, no holster worn) | inv (E screen)
+
+const cover = (x, y, w, h, dx, dy) => el('', x / U, y / U, w / U, h / U, stage,
+    `background:url(bg_forest.jpg) ${-(x + dx)}px ${-(y + dy)}px / 1920px 1080px;`);
+function background() {
+  el('bg', 0, 0);
+  // the screenshot still shows the old hotbar and an interaction hint: cover them with the ground nearby
+  el('', 520 / U, 972 / U, 880 / U, 108 / U, stage, 'background:url(bg_forest.jpg) -520px -862px / 1920px 1080px;');
+  cover(872, 752, 172, 50, 0, 52);
+}
+
+const HOLSTER = (w, h) => `<svg class="a" style="left:0;top:0" width="${w * U}" height="${h * U}" viewBox="0 0 24 24">
+  <g fill="#4A3F33" stroke="#221C16" stroke-width="0.6">
+    <path d="M7 4 L15 4 L15.5 7 L17.5 7.5 L17 11 L15 11.5 L14 20 Q13.6 21 12.6 21 L10 21 Q9 21 9 20 L8.5 11 Q6.6 10.6 6.6 8.6 Z"/>
+    <path d="M7.6 4.6 L14.6 4.6 L14.8 7.4 L7.8 7.4 Z" fill="#5A4D3E"/>
+    <circle cx="11.2" cy="9.4" r="0.9" fill="#8C8478" stroke="none"/>
+  </g></svg>`;
+const SLING_BADGE = (parent, w, h) => {   // small "sling fitted" tag in the bottom-left corner of the primary box
+  const b = el('', 1.4, h - 7.0, 13.5, 5.6, parent, 'background:rgba(232,228,220,0.14);border-radius:6px;');
+  text('背带', 2.0, 0.55, 4.2, '#C9C4BA', b);
+};
+const bindBadge = (parent, n, w) =>   // amber key number on an item bound to 4-9
+  text(String(n), 0, 0, 4.4, '#16181A', parent,
+      `left:auto;right:${U * 0.6}px;top:${U * 0.6}px;background:#E0A84A;border-radius:5px;padding:${U * 0.3}px ${U * 0.75}px;`);
+
+// a white silhouette right-aligned at xR, height h (guns keep their render's aspect)
+function silhouette(o, xR, y, h, opacity) {
+  if (o.gun) {
+    const [, x0, y0, x1, y1] = GUN[o.gun];
+    const w = h * (x1 - x0) / (y1 - y0);
+    const box = el('', xR - w, y, w, h, stage, `filter:brightness(0) invert(1) drop-shadow(0 0 2px rgba(0,0,0,0.7));opacity:${opacity};`);
+    gun(o.gun, 0, 0, w, h, box, 0);
+    return w;
+  }
+  const box = el('', xR - h, y, h, h, stage, `filter:brightness(0) invert(1) drop-shadow(0 0 2px rgba(0,0,0,0.7));opacity:${opacity};`);
+  flat(o.icon, 0, 0, h, h, box, 1);
+  return h;
+}
+
+// ======================================================================= HUD
+function survival() {   // unchanged survival group (survival_hud_v1.md), drawn roughly for context
+  const cy = 270 - 48, cx = 240;
+  const svg = [];
+  const arc = (x, y, r0, r1, a0, a1, color) => {
+    const p = (r, a) => [x + r * Math.cos(a * Math.PI / 180), y + r * Math.sin(a * Math.PI / 180)];
+    const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
+    const lg = a1 - a0 > 180 ? 1 : 0;
+    return `<path d="M${x0} ${y0} A${r1} ${r1} 0 ${lg} 1 ${x1} ${y1} L${x2} ${y2} A${r0} ${r0} 0 ${lg} 0 ${x3} ${y3} Z" fill="${color}"/>`;
+  };
+  const OFF = 'rgba(60,60,60,0.55)', LINE = 'rgba(232,228,220,0.28)';
+  const ring = (x, color, fill) => {
+    svg.push(`<circle cx="${x}" cy="${cy}" r="8.625" fill="rgba(16,16,16,0.45)"/>`);
+    for (let i = 0; i < 10; i++) {
+      const a0 = -90 + i * 36 + 2.6, a1 = -90 + (i + 1) * 36 - 2.6;
+      svg.push(arc(x, cy, 8.625 - 2.415, 8.625, a0, a1, i < fill ? color : OFF));
+    }
+    svg.push(`<circle cx="${x}" cy="${cy}" r="8.625" fill="none" stroke="${LINE}" stroke-width="0.3"/>`);
+  };
+  const crescent = (x, open, color, fill) => {
+    const a0 = open + 42.3, a1 = open + 360 - 42.3, r1 = 7.015, r0 = r1 - 1.78;
+    svg.push(`<circle cx="${x}" cy="${cy}" r="3.34" fill="rgba(16,16,16,0.35)"/>`);
+    svg.push(arc(x, cy, r0, r1, a0, a1, OFF));
+    const span = a1 - a0;
+    if (open === 0) svg.push(arc(x, cy, r0, r1, a0, a0 + span * fill, color));
+    else svg.push(arc(x, cy, r0, r1, a1 - span * fill, a1, color));
+  };
+  crescent(cx - 34.16, 0, '#C9C4BA', 0.85);
+  crescent(cx + 34.16, 180, '#4D8FD1', 0.6);
+  ring(cx - 21.39, '#C8383A', 10);
+  ring(cx + 21.39, '#D9892E', 8);
+  svg.push(`<text x="${cx - 21.39}" y="${cy - 0.6}" fill="#D84A4A" font-size="4.6" text-anchor="middle">&#9829;</text>`);
+  svg.push(`<text x="${cx - 21.39}" y="${cy + 4.4}" fill="#E8E4DC" font-size="3.4" text-anchor="middle" font-family="AFLSans">20</text>`);
+  svg.push(`<defs><linearGradient id="bz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5A5E64"/><stop offset="1" stop-color="#2A2C2F"/></linearGradient>` +
+      `<linearGradient id="tp" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5A8FD0"/><stop offset="0.55" stop-color="#C9C4BA"/><stop offset="1" stop-color="#D9892E"/></linearGradient></defs>`);
+  svg.push(`<circle cx="${cx}" cy="${cy}" r="${10.925 + 1.32 + 0.4}" fill="#1A1B1D" stroke="${LINE}" stroke-width="0.3"/>`);
+  svg.push(`<circle cx="${cx}" cy="${cy}" r="${10.925 + 1.32}" fill="url(#bz)"/>`);
+  svg.push(`<circle cx="${cx}" cy="${cy}" r="10.925" fill="#1D2024"/>`);
+  svg.push(arc(cx, cy, 12.9, 13.7, -150, -30, 'url(#tp)'));
+  svg.push(`<path d="M${cx - 1.2} ${cy - 15.4} L${cx + 1.2} ${cy - 15.4} L${cx} ${cy - 13.6} Z" fill="#E8E4DC"/>`);
+  svg.push(`<line x1="${cx}" y1="${cy}" x2="${cx - 3.2}" y2="${cy - 9}" stroke="#E8E4DC" stroke-width="0.7" stroke-linecap="round"/>`);
+  svg.push(`<circle cx="${cx}" cy="${cy}" r="1.3" fill="#BDB8AE"/>`);
+  svg.push(`<text x="${cx}" y="${cy - 16.6}" fill="#E8E4DC" font-size="3.6" text-anchor="middle" font-family="AFLSans">7°C</text>`);
+  stage.insertAdjacentHTML('beforeend', `<svg class="a" style="left:0;top:0" width="1920" height="1080" viewBox="0 0 480 270">${svg.join('')}</svg>`);
+}
+
+// quick bindings 4-9: what the key takes into the hand, with the total in pockets + rig
+const BINDS = (heldPlanks) => [
+  {key: 4, water: true, n: 2},
+  {key: 5, icon: MC + 'bread.png', n: 5},
+  {key: 6, icon: MC + 'cooked_beef.png', n: 2},
+  {key: 7, cube: MC + 'oak_planks.png', n: 56, sel: heldPlanks},
+  {key: 8, icon: MC + 'torch.png', n: heldPlanks ? 0 : 12, out: heldPlanks},
+  {key: 9},
+];
+function bindCell(o, x, y, w, h, parent, opt = {}) {
+  const lift = o.sel ? -3 : 0;
+  const b = el('', x, y, w, h, parent, `border-radius:10px;` + (o.sel
+      ? 'background:rgba(30,33,36,0.72);border:1px solid rgba(232,228,220,0.55);'
+      : o.key && !o.n && !o.water && !o.icon && !o.cube
+          ? 'border:1px dashed rgba(232,228,220,0.22);'
+          : `background:rgba(16,16,16,${opt.box ? 0.62 : 0.28});` + (opt.box ? 'border:1px solid rgba(232,228,220,0.28);' : '')));
+  const inner = el('', 0, lift, w, h, b, o.out ? 'filter:grayscale(1) brightness(0.55);' : '');
+  if (o.water) water(0, 0, w, h, inner);
+  else if (o.cube) cube(o.cube, (w - 15) / 2, (h - 15) / 2 + 0.5, 15, inner);
+  else if (o.icon) flat(o.icon, 0, 0, w, h, inner, 1);
+  if (o.n != null) text(String(o.n), 0, 0, 5.2, o.out ? '#8C8880' : null, inner,
+      `left:auto;top:auto;right:${U * 1.2}px;bottom:${U * 0.6}px;`).classList.add('cnt');
+  text(String(o.key), 1.5, 1.0, 4.4, o.sel ? '#A8A49C' : '#6C6A66', b);
+  if (o.sel) el('', w / 2 - 4, h - 2.4, 8, 1.4, b, 'background:#E0A84A;border-radius:4px;');
+  return b;
+}
+
+function hud(holdingItem) {
+  background();
+  survival();
+
+  // bottom bar: six quick bindings (4-9); the weight bar stays on top of it
+  const binds = BINDS(holdingItem);
+  const total = 4 + binds.length * 22 + (binds.length - 1) * 2;
+  const bx = 240 - total / 2, by = 270 - 24;
+  el('', bx, 270 - 29, total, 3.2, stage, 'background:rgba(16,16,16,0.62);border-radius:6px;border:1px solid rgba(232,228,220,0.22);');
+  el('', bx + 0.5, 270 - 28.5, (total - 1) * 0.62, 2.2, stage, 'background:#C9C4BA;border-radius:5px;');
+  for (const f of [0.5, 0.7, 0.9]) el('', bx + total * f, 270 - 29, 0.35, 3.2, stage, 'background:rgba(232,228,220,0.55);');
+  el('panel', bx, by, total, 24, stage, 'border-radius:12px;');
+  binds.forEach((o, i) => bindCell(o, bx + 2 + i * 24, by + 2, 22, 20, stage));
+
+  // weapon list, bottom right (CS2): primary, pistol, melee top to bottom, key numbers on the right;
+  // the one in hand is big and bright, the others small; the ammo block sits under the list only while a gun is held
+  const xR = 480 - 18, keyX = 480 - 13;
+  const rows = [
+    {key: '1', gun: 'br51', name: 'BR51 步枪', held: !holdingItem},
+    {key: '2', gun: 'p9', name: 'P9-01 制式手枪', grey: holdingItem},
+    {key: '3', icon: MC + 'iron_axe.png', name: '铁斧'},
+  ];
+  let y = holdingItem ? 270 - 62 : 270 - 98;
+  // soft shade behind the list so white silhouettes read on bright ground
+  el('', 480 - 130, y - 8, 130, 270 - y + 8, stage,
+      'background:radial-gradient(ellipse at 100% 70%, rgba(8,9,10,0.55), rgba(8,9,10,0.25) 55%, transparent 80%);');
+  for (const r of rows) {
+    const h = r.held ? 20 : 11;
+    const op = r.held ? 1 : r.grey ? 0.32 : 0.75;
+    const w = silhouette(r, xR, y, h, op);
+    text(r.key, keyX, y + h / 2 - 2.6, 5.2, r.held ? '#FFFFFF' : '#A8A49C');
+    if (r.held) text(r.name, xR - w - 2, y + h / 2 - 2.8, 5.6, '#FFFFFF', stage,
+        `left:auto;right:${(480 - (xR - w - 3)) * U}px;`);
+    if (r.grey) text('无枪套', xR - w - 3, y + h / 2 - 2.6, 4.8, '#8C8880', stage,
+        `left:auto;right:${(480 - (xR - w - 3)) * U}px;`);
+    y += h + 4;
+  }
+  if (!holdingItem) {
+    // ammo + fire mode under the list, right-aligned with it
+    el('', 480 - 70, y + 1, 60, 0.3, stage, 'background:rgba(255,255,255,0.5);');
+    text('30', 0, y + 4, 11, '#FFFFFF', stage, `left:auto;right:${(480 - (xR - 22)) * U}px;`);
+    text('| 90', 0, y + 7.2, 7, '#D0D0D0', stage, `left:auto;right:${(480 - xR) * U}px;`);
+    text('全自动', 0, y + 17.5, 5.2, '#9FC7D9', stage, `left:auto;right:${(480 - xR) * U}px;`);
+  }
+}
+
+// ======================================================================= inventory layer (E)
+function inventory() {
+  background();
+  cover(930, 516, 58, 52, 62, 0);   // no crosshair behind an open screen
+  const dim = el('dim', 0, 0);
+
+  text('Jake Miller', 10, 6.5, 8.5 * 0.9, '#E8E4DC');
+  let kx = keycap('E', '关闭', 470, 6);
+  kx = keycap('R', '旋转', kx, 6);
+  keycap('4–9', '绑定', kx, 6);
+
+  // -- column A: paper doll, then the weapon area
+  el('panel', 10, 20, 140, 242);
+  const L = 15, R = 117, BOX = 28;
+  const left = ['头部', '面部', '耳部', '手表'], right = ['内衬', '外套', '防弹衣', '手套'];
+  for (let i = 0; i < 4; i++) {
+    const yy = 28 + i * 35;
+    slot(left[i], L, yy, BOX, BOX, left[i] === '手表' ? {item: {icon: AFL + 'wrist_thermometer.png'}} : {});
+    slot(right[i], R, yy, BOX, BOX);
+  }
+  img('character_m01.png', 40, 22, 80, 150, stage);
+
+  // row 1: the one primary (on the back, needs a sling) + the hands box for big items
+  const p = slot('主武器', 15, 180, 63, 28, {key: '1', item: {gun: 'br51'}});
+  SLING_BADGE(p, 63, 28);
+  const hands = el('box', 82, 180, 63, 28, stage, 'border-style:dashed;background:rgba(16,16,16,0.40);');
+  text('手上', 82.5, 180 - 6.2, 5.2);
+  text('大件拖到这里拿着', 0, 11.2, 4.8, '#6C6A66', hands, 'left:0;right:0;text-align:center;');
+
+  // row 2: pistol + holster (gear) + melee
+  slot('手枪', 15, 219, 41, 24, {key: '2', item: {gun: 'p9'}});
+  slot('枪套', 60, 219, 24, 24, {item: {svg: HOLSTER}});
+  slot('近战', 105, 219, 40, 24, {key: '3', item: {icon: MC + 'iron_axe.png', scale: 1}});
+
+  // weight + warmth
+  const kg = 16.2;
+  text('负重', 15, 251.8, 5.2);
+  el('', 29, 253.6, 46, 2.4, stage, 'background:rgba(232,228,220,0.16);border-radius:4px;');
+  el('', 29, 253.6, 46 * kg / 30, 2.4, stage, 'background:#D9D4CA;border-radius:4px;');
+  text(`${kg.toFixed(1)} / 30 kg`, 78, 251.6, 5.2, '#E8E4DC');
+  text('舒适', 113, 251.8, 5.2);
+  text('≥ 14°C', 124.5, 251.6, 5.2, '#E8E4DC');
+
+  // -- column B: carried storage; bound items carry their amber key number
+  const BX = 161;
+  let y = 31;
+  const pocketItems = [{icon: MC + 'bread.png', n: 2, bind: 5}, {icon: AFL + 'clinical_thermometer.png'},
+    {icon: MC + 'torch.png', n: 12, bind: 8}, {icon: AFL + 'energy_battery.png'}];
+  pocketItems.forEach((o, i) => {
+    const g = grid(BX + i * 20, y, 1, 1);
+    const b = place(g, 0, 0, 1, 1, o);
+    if (o.bind) bindBadge(b, o.bind);
+  });
+  y += CELL + 12;
+
+  slot('胸挂', BX, y, BOX, BOX, {item: {svg: RIG}});
+  {
+    const gx = BX + BOX + 6;
+    const p1 = grid(gx, y, 1, 2), p2 = grid(gx + 20, y, 1, 2), p3 = grid(gx + 40, y, 1, 2), p4 = grid(gx + 60, y, 2, 2);
+    bindBadge(place(p1, 0, 0, 1, 2, {water: true}), 4);
+    place(p2, 0, 0, 1, 2, {water: true});
+    place(p3, 0, 0, 1, 2, {icon: AFL + 'wiring_wrench.png'});
+    bindBadge(place(p4, 0, 0, 1, 1, {icon: MC + 'bread.png', n: 3}), 5);
+    bindBadge(place(p4, 1, 0, 1, 1, {icon: MC + 'cooked_beef.png', n: 2}), 6);
+    // hovering the planks, pressing 7: binding them
+    const pl = place(p4, 0, 1, 1, 1, {cube: MC + 'oak_planks.png', cubeSize: 13, n: 56});
+    pl.style.borderColor = 'rgba(232,228,220,0.70)';
+    pl.style.background = 'rgba(52,56,60,0.92)';
+    bindBadge(pl, 7);
+    stage.insertAdjacentHTML('beforeend', `<svg class="a" style="left:${(gx + 60 + 5) * U}px;top:${(y + 21) * U}px" width="40" height="56" viewBox="0 0 10 14">
+      <path d="M1 1 L1 11 L3.6 8.6 L5.4 12.6 L7 11.9 L5.3 8 L8.8 8 Z" fill="#F2EFEA" stroke="#16181A" stroke-width="0.8" stroke-linejoin="round"/></svg>`);
+    y += 2 * CELL + 12;
+  }
+
+  slot('背包', BX, y, BOX, BOX, {item: {svg: PACK}});
+  {
+    const g = grid(BX + BOX + 6, y, 5, 6);
+    place(g, 0, 0, 5, 2, {gun: 'hr55'});
+    place(g, 0, 2, 2, 3, {icon: MC + 'iron_pickaxe.png', scale: 2});
+    place(g, 2, 2, 1, 2, {water: true});
+    place(g, 3, 2, 1, 1, {icon: MC + 'cooked_beef.png', n: 4});
+    place(g, 4, 2, 1, 1, {icon: MC + 'bread.png', n: 3});
+    place(g, 3, 3, 1, 1, {cube: MC + 'oak_planks.png', cubeSize: 13, n: 64});
+    place(g, 4, 3, 1, 1, {icon: AFL + 'insulated_copper_wire.png', n: 16});
+    place(g, 2, 4, 1, 1, {icon: AFL + 'steel_scrap.png', n: 8});
+    place(g, 3, 4, 1, 2, {icon: AFL + 'geiger_counter.png'});
+    y += 6 * CELL + 6;
+  }
+  const panelB = el('panel', 156, 20, 150, y - 20 + 4);
+  stage.insertBefore(panelB, dim.nextSibling);
+  text('口袋', BX + 0.5, 31 - 6.2, 5.2);
+
+  // the binding row replaces the old quick slots 6-9: it shows what 4-9 take, it stores nothing
+  el('panel', 156, 234, 150, 28);
+  text('绑定', 161, 242.4, 5.2);
+  BINDS(false).forEach((o, i) => bindCell(o, 177 + i * 21.5, 237, 20, 22, stage, {box: !!(o.n != null || o.water)}));
+
+  // tooltip for the hovered planks
+  const tx = BX + BOX + 6 + 60 + 22, ty = 31 + CELL + 12 + 2 * CELL - 8;
+  const t = el('tip', tx, ty, 66, 30);
+  text('橡木木板', 4, 3.6, 6.2, '#E8E4DC', t);
+  text('0.15 kg × 56', 4, 12.8, 5.2, '#A8A49C', t);
+  text('1×1', 50, 12.8, 5.2, '#A8A49C', t);
+  text('绑定到 7', 4, 21.5, 5.2, '#E0A84A', t);
+}
+
+document.fonts.load(`${8 * U}px AFLSans`).then(() => {
+  if (frame === 'hud_gun') hud(false); else if (frame === 'hud_item') hud(true); else inventory();
+  document.body.dataset.ready = '1';
+});
+</script>
+</body>
+</html>

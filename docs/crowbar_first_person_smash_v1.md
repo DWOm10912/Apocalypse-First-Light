@@ -1,5 +1,7 @@
 # Crowbar First-Person / Vending Glass Smash V1
 
+> 2026-10-14：撬棍换成了 AFL 网格 + LabPBR（[装备网格 V1](models/equipment_meshes_v1.md)“2026-10-14 新增”）。第一人称的骨骼和动画没变：`CrowbarFirstPerson` 把 `crowbar_model` 的 17 个 V1 方块藏起来（还留在 geo 里当动画参照），在同一骨骼上画网格。`crowbar.bbmodel` 现在是网格源，`tools/build-crowbar-viewmodel.mjs` 读的是 V1 方块，**不要再跑**（会读不到方块）；生成 V1 物品的 `tools/build-crowbar-assets.mjs` 已删除。`textures/item/crowbar.png` 现在是 16×16 物品栏图标，第一人称只是还引用它（方块已藏）。
+
 ## 审查与取舍
 
 - `CrowbarItem` 是普通单目标近战 Item：6伤害、13 tick蓄力、480耐久，无自定义右键/使用持续时间；此次保留该物品和攻击逻辑。

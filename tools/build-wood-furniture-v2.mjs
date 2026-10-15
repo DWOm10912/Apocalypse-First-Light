@@ -10,8 +10,8 @@
 //   wooden_nightstand     52 cm wide, top at 66 cm: a drawer over an open shelf (open: the drawer pulled out); the
 //                         emergency radio sits on it
 //   wooden_tool_rack      on a wall: a peg board with three pairs of pegs (long tools hang head up) under a small shelf
-//   wooden_storage_chest  a board chest with a breadboard lid, iron strap hinges, a hasp and end handles (vanilla chest
-//                         logic: joins a second one into a long double chest; open: the lid raised)
+//   wooden_storage_chest  two cells: a frame-and-panel blanket chest on bracket feet, waist moulding, an overhanging lid,
+//                         an escutcheon and end handles; inside a till (open: the lid raised)
 //   vintage_chest_freezer two cells: a rounded cream enamel cabinet, one hinged lid with a chrome latch handle, a pilot
 //                         lamp and thermostat knob, a louvred kick plate; inside a frosted liner and a wire basket
 // Every piece is drawn facing north (front at z 0, the back / wall at z 1); pieces over two cells are drawn whole and cut
@@ -25,6 +25,8 @@ import {fileURLToPath} from 'node:url';
 import {renderX} from './cabin/cabin-art.mjs';
 import {FURNITURE_V2_TEXTURES} from './furniture/wood-furniture-v2-art.mjs';
 import {Piece, solid, cylinder, mirroredX, clipped, serialise, newell, dot, sub, cross, norm, add, scl} from './cabin/cabin-geo.mjs';
+import {furnitureMesh} from './furniture/furniture-mesh.mjs';
+import {bounds, state, profile} from './furniture/furniture-shapes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -38,7 +40,7 @@ export const BLOCKS = [
   {id: 'wooden_wardrobe', mass: 55, carry: 'oversized', tool: 'axe', en: 'Wooden Wardrobe', zh: '木衣柜'},
   {id: 'wooden_nightstand', mass: 9, carry: 'bulky', tool: 'axe', en: 'Wooden Nightstand', zh: '木床头柜'},
   {id: 'wooden_tool_rack', mass: 3, carry: 'bulky', tool: 'axe', en: 'Wooden Tool Rack', zh: '木质工具架'},
-  {id: 'wooden_storage_chest', mass: 16, carry: 'oversized', tool: 'axe', en: 'Wooden Storage Chest', zh: '木储物箱'},
+  {id: 'wooden_storage_chest', mass: 30, carry: 'oversized', tool: 'axe', en: 'Wooden Storage Chest', zh: '木储物箱'},
   {id: 'vintage_chest_freezer', mass: 75, carry: 'oversized', tool: 'pickaxe', tier: 'needs_iron_tool', en: 'Vintage Chest Freezer', zh: '老式冷柜'},
 ];
 
@@ -250,14 +252,15 @@ function wardrobeDoor() {
   cylinder(pc, IRON, IRON, 'z', [x1 - 0.035, 1.06], z0 - 0.024, z0, 0.012, 10, 'a');
   return pc;
 }
-function wardrobePieces() {
-  const body = wardrobeBody(), d = wardrobeDoor();
-  const closed = new Piece('c').merge(d).merge(mirroredX(d));
-  const sw = swungOut(d, WD.left[0], WARDROBE_FRONT, 's'), open = new Piece('o').merge(sw).merge(mirroredX(sw));
-  const out = [];
-  for (const [src, name] of [[body, 'wardrobe_body'], [closed, 'wardrobe_doors_closed'], [open, 'wardrobe_doors_open']])
-    out.push(cut(src, 1, 0, 1, 0, `furniture/${name}_lower`), cut(src, 1, 1, 2, 1, `furniture/${name}_upper`));
-  return out;
+/**
+ * The animated mesh (tools/furniture/furniture-mesh.mjs, 2026-10-15): the body, and each door its own bone hinged on its
+ * outer stile at the front (x WD.left[0] and mirrored); 'open' swings both a quarter out, 10 ticks.
+ */
+function wardrobeMesh() {
+  const d = wardrobeDoor();
+  return {id: 'wooden_wardrobe', bones: [{name: 'body', pivot: [0.5, 0, 0.5], pieces: [wardrobeBody()]},
+    {name: 'door_left', pivot: [WD.left[0], 0, WARDROBE_FRONT], pieces: [d]}, {name: 'door_right', pivot: [1 - WD.left[0], 0, WARDROBE_FRONT], pieces: [mirroredX(d)]}],
+    open: {ticks: 10, transforms: {door_left: {rotation: [0, 90, 0]}, door_right: {rotation: [0, -90, 0]}}}};
 }
 
 // =============================================================================================== nightstand
@@ -310,59 +313,90 @@ function toolRack() {
 }
 
 // =============================================================================================== storage chest
-// A board chest, 92 x 52 cm and 50 cm high, standing free in the cell (single) or two joined along x (double, 192 cm,
-// one long box and lid): a 6 cm plinth 1 cm proud, 2 cm walls to 0.47, a floor at 0.08; a 2.5 cm breadboard lid with a
-// skirt round front and ends, on two iron strap hinges at the back (axis y 0.47, z 0.76); a hasp at the front, drop
-// handles at the ends. Open: the lid raised 75 degrees. Vanilla chest types: left = the north frame's x 0..1 of a
-// double (its partner east), right = 1..2, moved back.
-export const CHEST = {x0: 0.04, z0: 0.24, z1: 0.76, rim: 0.47, lid: 0.495, open: 75};
-function chestBody(len) {
-  const {x0, z0, z1, rim} = CHEST, x1 = len - x0, pc = new Piece('b');
+// A frame-and-panel blanket chest over two cells across (left = the master, x 0..1; right 1..2; user 2026-10-15: concept A
+// of design/buildings/forest_start_home_v1/m4_sheets/chest_concepts.png, one piece over two cells, no joining of two), 124
+// x 50 cm, 60 cm high to the lid's top (blanket chests run 109-124 cm wide, 46-53 deep, 51-58 high). Bracket feet (8 cm)
+// under a base moulding; the case of 2 cm walls, framed outside (stiles, rails, muntins 1 cm proud) round three recessed
+// front panels and one panel each end; a waist moulding round front and ends; a 3.3 cm lid overhanging 2.5 cm, two
+// battens under it, on two butt hinges at the back (axis y 0.565, z 0.758). Inside: the floor at 0.135, a till (an open
+// tray) across the left end. An iron escutcheon on the top rail, drop handles on the ends' top rails. Open: the lid raised
+// 80 degrees, its front edge up to 1.10 (over the cells: AflOverhangPickBlock).
+export const CHEST = {x0: 0.38, x1: 1.62, z0: 0.25, z1: 0.75, feet: 0.08, base: 0.115, waist: 0.54, rim: 0.565, lid: 0.598, open: 80,
+  frame: 0.01, wall: 0.03, rail: [0.17, 0.5], endRail: [0.17, 0.42], hinges: [0.66, 1.34]};
+const CHEST_HINGE = [0, CHEST.rim, CHEST.z1 + 0.008];
+/** Bracket feet at the four corners, h high, each two boards a run long, stepped down at the inner end. */
+function bracketFeet(x0, x1, z0, z1, h, run = 0.13) {
+  const b = [], t = 0.024, o = 0.012;
+  for (const [cx, sx] of [[x0, 1], [x1, -1]]) for (const [cz, sz] of [[z0, 1], [z1, -1]]) {
+    const X = (a, c) => [Math.min(cx + sx * a, cx + sx * c), Math.max(cx + sx * a, cx + sx * c)];
+    const Z = (a, c) => [Math.min(cz + sz * a, cz + sz * c), Math.max(cz + sz * a, cz + sz * c)];
+    const [xa, xb] = X(-o, run), [xs, xt] = X(run, run + 0.05), [za, zb] = Z(-o, -o + t), [ta, tb] = X(-o, -o + t), [zc, zd] = Z(-o, run), [zs, zt] = Z(run, run + 0.05);
+    b.push([TRIM, [xa, 0, za], [xb, h, zb]], [TRIM, [xs, h * 0.55, za], [xt, h, zb]], [TRIM_V, [ta, 0, zc], [tb, h, zd]], [TRIM_V, [ta, h * 0.55, zs], [tb, h, zt]]);
+  }
+  return b;
+}
+function chestBody() {
+  const {x0, x1, z0, z1, feet, base, waist, rim, frame: f, wall: w, rail, endRail} = CHEST, pc = new Piece('cb');
+  const fx = [x0 + 0.075, x1 - 0.075], muntin = 0.04, pw = (fx[1] - fx[0] - 2 * muntin) / 3;
+  const ends = [[x0, x0 + f], [x1 - f, x1]].flatMap(([a, b]) => [
+    [TRIM_V, [a, base, z0], [b, waist, z0 + 0.065]], [TRIM_V, [a, base, z1 - 0.055], [b, waist, z1]],
+    [TRIM, [a, base, z0], [b, endRail[0], z1]], [TRIM, [a, endRail[1], z0], [b, waist, z1]]]);
   solid(pc, [
-    [{all: TRIM, u: TRIM}, [x0 - 0.01, 0, z0 - 0.01], [x1 + 0.01, 0.06, z1 + 0.01]],
-    [{all: TRIM, s: INSIDE}, [x0, 0.06, z0], [x1, rim, z0 + 0.02]], [{all: TRIM, n: INSIDE}, [x0, 0.06, z1 - 0.02], [x1, rim, z1]],
-    [{all: TRIM, e: INSIDE}, [x0, 0.06, z0 + 0.02], [x0 + 0.02, rim, z1 - 0.02]], [{all: TRIM, w: INSIDE}, [x1 - 0.02, 0.06, z0 + 0.02], [x1, rim, z1 - 0.02]],
-    [INSIDE, [x0 + 0.02, 0.06, z0 + 0.02], [x1 - 0.02, 0.08, z1 - 0.02]],
+    // the walls (the panels outside, the inside face in), the floor, the till across the left end
+    [{all: TRIM, n: PANEL, s: INSIDE, u: TOP}, [x0 + f, base, z0 + f], [x1 - f, rim, z0 + w]],
+    [{all: TRIM, n: INSIDE, u: TOP}, [x0 + f, base, z1 - 0.02], [x1 - f, rim, z1]],
+    [{all: TRIM, w: PANEL, e: INSIDE, u: TOP}, [x0 + f, base, z0 + w], [x0 + w, rim, z1 - 0.02]],
+    [{all: TRIM, e: PANEL, w: INSIDE, u: TOP}, [x1 - w, base, z0 + w], [x1 - f, rim, z1 - 0.02]],
+    [INSIDE, [x0 + w, base, z0 + w], [x1 - w, base + 0.02, z1 - 0.02]],
+    [INSIDE, [x0 + w, 0.4, z0 + w], [x0 + 0.25, 0.41, z1 - 0.02]], [INSIDE, [x0 + 0.24, 0.41, z0 + w], [x0 + 0.25, 0.5, z1 - 0.02]],
+    // the front frame: stiles, rails, two muntins; the ends' frames
+    [TRIM_V, [x0, base, z0], [fx[0], waist, z0 + f]], [TRIM_V, [fx[1], base, z0], [x1, waist, z0 + f]],
+    [TRIM, [x0, base, z0], [x1, rail[0], z0 + f]], [TRIM, [x0, rail[1], z0], [x1, waist, z0 + f]],
+    [TRIM_V, [fx[0] + pw, rail[0], z0], [fx[0] + pw + muntin, rail[1], z0 + f]], [TRIM_V, [fx[1] - pw - muntin, rail[0], z0], [fx[1] - pw, rail[1], z0 + f]],
+    ...ends,
+    // the waist moulding round the front and ends, the base moulding, the feet
+    [{all: TRIM, u: TOP}, [x0 - 0.012, waist, z0 - 0.012], [x1 + 0.012, rim, z0 + w]],
+    [{all: TRIM, u: TOP}, [x0 - 0.012, waist, z0 + w], [x0 + w, rim, z1]], [{all: TRIM, u: TOP}, [x1 - w, waist, z0 + w], [x1 + 0.012, rim, z1]],
+    [{all: TRIM, u: TOP}, [x0 - 0.014, feet, z0 - 0.014], [x1 + 0.014, base, z1 + 0.006]],
+    ...bracketFeet(x0, x1, z0, z1, feet),
   ]);
-  // the hasp's staple on the front, middle; drop handles at both ends (plate, two loops, the bar hanging)
-  // the hinges' lower leaves on the back wall (the knuckle and upper leaf go with the lid)
-  for (const hx of len > 1 ? [0.3, len - 0.3] : [0.22, 0.78]) solid(pc, [[IRON, [hx - 0.02, rim - 0.05, z1], [hx + 0.02, rim, z1 + 0.004]]]);
-  const mx = len / 2;
-  solid(pc, [[IRON, [mx - 0.03, 0.39, z0 - 0.004], [mx + 0.03, 0.43, z0]], [IRON, [mx - 0.008, 0.4, z0 - 0.016], [mx + 0.008, 0.42, z0 - 0.004]]]);
+  // the escutcheon on the top rail, the keyhole in it
+  const mx = (x0 + x1) / 2;
+  solid(pc, [[IRON, [mx - 0.015, 0.503, z0 - 0.003], [mx + 0.015, 0.537, z0]]]);
+  solid(pc, [[CAST, [mx - 0.0035, 0.508, z0 - 0.0035], [mx + 0.0035, 0.526, z0 - 0.003]]]);
+  // drop handles on the ends' top rails: the plate, two loops, the bar hanging
+  const zc = (z0 + z1) / 2, y = 0.525;
   for (const [x, s] of [[x0, -1], [x1, 1]]) {
     const out = d => x + s * d, lo = (a, b) => [Math.min(out(a), out(b)), Math.max(out(a), out(b))];
     const [p0, p1] = lo(0, 0.004), [l0, l1] = lo(0.004, 0.016), [b0, b1] = lo(0.012, 0.024);
-    solid(pc, [[IRON, [p0, 0.33, 0.43], [p1, 0.4, 0.57]], [IRON, [l0, 0.37, 0.445], [l1, 0.382, 0.457]], [IRON, [l0, 0.37, 0.543], [l1, 0.382, 0.555]],
-      [IRON, [b0, 0.335, 0.445], [b1, 0.347, 0.555]], [IRON, [b0, 0.347, 0.445], [b1, 0.37, 0.457]], [IRON, [b0, 0.347, 0.543], [b1, 0.37, 0.555]]]);
+    solid(pc, [[IRON, [p0, y - 0.07, zc - 0.07], [p1, y, zc + 0.07]], [IRON, [l0, y - 0.03, zc - 0.055], [l1, y - 0.018, zc - 0.043]],
+      [IRON, [l0, y - 0.03, zc + 0.043], [l1, y - 0.018, zc + 0.055]], [IRON, [b0, y - 0.065, zc - 0.055], [b1, y - 0.053, zc + 0.055]],
+      [IRON, [b0, y - 0.053, zc - 0.055], [b1, y - 0.03, zc - 0.043]], [IRON, [b0, y - 0.053, zc + 0.043], [b1, y - 0.03, zc + 0.055]]]);
   }
+  // the hinges' lower leaves on the back (the knuckle and upper leaf go with the lid)
+  for (const hx of CHEST.hinges) solid(pc, [[IRON, [hx - 0.025, rim - 0.045, z1], [hx + 0.025, rim, z1 + 0.004]]]);
   return pc;
 }
-/** The lid, closed: the board, the skirt under its front and ends, the strap hinges on top, the hasp hanging over the staple. */
-function chestLid(len) {
-  const {x0, z0, z1, rim, lid} = CHEST, x1 = len - x0, pc = new Piece('l');
+/** The lid, closed: the board (overhanging front and ends), two battens under its ends, the hinges' upper leaves and knuckles. */
+function chestLid() {
+  const {x0, x1, z0, z1, rim, lid, wall: w} = CHEST, pc = new Piece('cl');
   solid(pc, [
-    [{u: TOP, d: INSIDE, all: TRIM}, [x0 - 0.014, rim, z0 - 0.014], [x1 + 0.014, lid, z1 + 0.004]],
-    [TRIM, [x0 - 0.014, 0.448, z0 - 0.014], [x1 + 0.014, rim, z0]],
-    [TRIM, [x0 - 0.014, 0.448, z0], [x0, rim, z1]], [TRIM, [x1, 0.448, z0], [x1 + 0.014, rim, z1]],
+    [{u: TOP, d: INSIDE, all: TRIM}, [x0 - 0.025, rim, z0 - 0.025], [x1 + 0.025, lid, z1 + 0.004]],
+    [INSIDE, [x0 + w + 0.005, rim - 0.018, z0 + w + 0.005], [x0 + w + 0.045, rim, z1 - 0.025]],
+    [INSIDE, [x1 - w - 0.045, rim - 0.018, z0 + w + 0.005], [x1 - w - 0.005, rim, z1 - 0.025]],
   ]);
-  const hinges = len > 1 ? [0.3, len - 0.3] : [0.22, 0.78];
-  for (const hx of hinges) {
-    solid(pc, [[IRON, [hx - 0.02, lid, z1 - 0.2], [hx + 0.02, lid + 0.004, z1 + 0.004]], [IRON, [hx - 0.02, rim, z1 + 0.004], [hx + 0.02, lid + 0.004, z1 + 0.008]]]);
-    cylinder(pc, IRON, IRON, 'x', [rim, z1 + 0.008], hx - 0.02, hx + 0.02, 0.007, 8, 'ab');
+  for (const hx of CHEST.hinges) {
+    solid(pc, [[IRON, [hx - 0.025, rim, z1 + 0.004], [hx + 0.025, lid - 0.004, z1 + 0.008]]]);
+    cylinder(pc, IRON, IRON, 'x', [rim, z1 + 0.008], hx - 0.025, hx + 0.025, 0.006, 8, 'ab');
   }
-  const mx = len / 2;
-  solid(pc, [[IRON, [mx - 0.014, 0.385, z0 - 0.02], [mx + 0.014, 0.448, z0 - 0.016]], [IRON, [mx - 0.014, 0.448, z0 - 0.02], [mx + 0.014, 0.46, z0 - 0.014]]]);
   return pc;
 }
-function chestPieces() {
-  const out = [];
-  const lidOpen = l => rotated(l, [0, CHEST.rim, CHEST.z1 + 0.008], 'x', CHEST.open * Math.PI / 180);
-  const b1 = chestBody(1), l1 = chestLid(1);
-  out.push(moved(b1, [0, 0, 0], 'furniture/chest_single_body'), moved(l1, [0, 0, 0], 'furniture/chest_single_lid_closed'), moved(lidOpen(l1), [0, 0, 0], 'furniture/chest_single_lid_open'));
-  const b2 = chestBody(2), l2 = chestLid(2), o2 = lidOpen(l2);
-  for (const [src, name] of [[b2, 'body'], [l2, 'lid_closed'], [o2, 'lid_open']])
-    out.push(cut(src, 0, 0, 1, 0, `furniture/chest_left_${name}`), cut(src, 0, 1, 2, 1, `furniture/chest_right_${name}`));
-  return out;
+const chestLidOpen = l => rotated(l, CHEST_HINGE, 'x', CHEST.open * Math.PI / 180);
+/** The animated mesh (2026-10-15): the body over both cells, the lid a bone on the hinges' axis; 'open' raises it CHEST.open degrees, 12 ticks. */
+function chestMesh() {
+  return {id: 'wooden_storage_chest', bones: [{name: 'body', pivot: [0.5, 0, 0.5], pieces: [chestBody()]},
+    {name: 'lid', pivot: [1, CHEST_HINGE[1], CHEST_HINGE[2]], pieces: [chestLid()]}],
+    open: {ticks: 12, transforms: {lid: {rotation: [CHEST.open, 0, 0]}}}};
 }
 
 // =============================================================================================== vintage chest freezer
@@ -417,61 +451,131 @@ function freezerLid() {
   cylinder(pc, CHROME, CHROME, 'z', [1.0, 0.846], zf - 0.014, zf - 0.006, 0.006, 12, 'a');
   return pc;
 }
-function freezerPieces() {
-  const body = freezerBody(), lid = freezerLid();
-  const open = rotated(lid, [0, FREEZER.lid0, FREEZER.z1 + 0.005], 'x', FREEZER.open * Math.PI / 180);
-  const out = [];
-  for (const [src, name] of [[body, 'body'], [lid, 'lid_closed'], [open, 'lid_open']])
-    out.push(cut(src, 0, 0, 1, 0, `furniture/freezer_${name}_left`), cut(src, 0, 1, 2, 1, `furniture/freezer_${name}_right`));
-  // the pilot lamp on its own (left cell), unlit and lit (the glow texture: full bright, LabPBR emission)
-  for (const [lit, name] of [[false, 'freezer_lamp_off'], [true, 'freezer_lamp_lit']]) {
-    const pc = new Piece('furniture/' + name), [lx, ly] = FREEZER.lamp;
-    const c = [lx, ly, FREEZER.z0 - 0.006], r = 0.011, h = 0.008, seg = 12, rings = 3;
-    for (let k = 0; k < rings; k++) for (let i = 0; i < seg; i++) {
-      const at = (kk, ii) => { const phi = kk / rings * Math.PI / 2, a = ii / seg * Math.PI * 2, rr = r * Math.cos(phi);
-        return {p: [c[0] + rr * Math.cos(a), c[1] + rr * Math.sin(a), c[2] - h * Math.sin(phi)], n: norm([Math.cos(phi) * Math.cos(a), Math.cos(phi) * Math.sin(a), -Math.sin(phi) * r / h])}; };
-      if (k === rings - 1) continue;
-      const q = [at(k, i), at(k, i + 1), at(k + 1, i + 1), at(k + 1, i)];
-      polyOut(pc, lit ? LAMP_GLOW : LAMP, q.map(v => v.p), scl(add(q[0].n, q[2].n), 0.5), {n: q.map(v => v.n)});
-    }
-    const capPts = Array.from({length: seg}, (_, i) => { const phi = (rings - 1) / rings * Math.PI / 2, a = i / seg * Math.PI * 2, rr = r * Math.cos(phi); return [c[0] + rr * Math.cos(a), c[1] + rr * Math.sin(a), c[2] - h * Math.sin(phi)]; });
-    polyOut(pc, lit ? LAMP_GLOW : LAMP, capPts, [0, 0, -1]);
-    out.push(pc);
+/** The pilot lamp (left cell), unlit or lit (the glow texture: full bright, LabPBR emission). */
+function freezerLamp(lit) {
+  const pc = new Piece('lamp'), [lx, ly] = FREEZER.lamp;
+  const c = [lx, ly, FREEZER.z0 - 0.006], r = 0.011, h = 0.008, seg = 12, rings = 3;
+  for (let k = 0; k < rings; k++) for (let i = 0; i < seg; i++) {
+    const at = (kk, ii) => { const phi = kk / rings * Math.PI / 2, a = ii / seg * Math.PI * 2, rr = r * Math.cos(phi);
+      return {p: [c[0] + rr * Math.cos(a), c[1] + rr * Math.sin(a), c[2] - h * Math.sin(phi)], n: norm([Math.cos(phi) * Math.cos(a), Math.cos(phi) * Math.sin(a), -Math.sin(phi) * r / h])}; };
+    if (k === rings - 1) continue;
+    const q = [at(k, i), at(k, i + 1), at(k + 1, i + 1), at(k + 1, i)];
+    polyOut(pc, lit ? LAMP_GLOW : LAMP, q.map(v => v.p), scl(add(q[0].n, q[2].n), 0.5), {n: q.map(v => v.n)});
   }
-  return out;
+  const capPts = Array.from({length: seg}, (_, i) => { const phi = (rings - 1) / rings * Math.PI / 2, a = i / seg * Math.PI * 2, rr = r * Math.cos(phi); return [c[0] + rr * Math.cos(a), c[1] + rr * Math.sin(a), c[2] - h * Math.sin(phi)]; });
+  polyOut(pc, lit ? LAMP_GLOW : LAMP, capPts, [0, 0, -1]);
+  return pc;
+}
+/**
+ * The animated mesh (2026-10-15): the cabinet over both cells, the lid a bone on its hinge axis ('open': FREEZER.open
+ * degrees up, 14 ticks), the lamp as 'lights' (unlit) and 'lights_lit' (lit, emissive, not in the item icon), as the
+ * commercial chest freezer's.
+ */
+function freezerMesh() {
+  return {id: 'vintage_chest_freezer', bones: [{name: 'body', pivot: [0.5, 0, 0.5], pieces: [freezerBody()]},
+    {name: 'lid', pivot: [1, FREEZER.lid0, FREEZER.z1 + 0.005], pieces: [freezerLid()]},
+    {name: 'lights', pivot: [0.5, 0, 0.5], pieces: [freezerLamp(false)]}, {name: 'lights_lit', pivot: [0.5, 0, 0.5], pieces: [freezerLamp(true)], hidden: true}],
+    open: {ticks: 14, transforms: {lid: {rotation: [FREEZER.open, 0, 0]}}}};
 }
 
-export function pieces() {
-  const ns = nightstandBody();
-  return [...bedPieces(), ...wardrobePieces(), ns, nightstandDrawer(0, 'furniture/nightstand_drawer_closed'),
-    nightstandDrawer(NS_DRAWER_OUT, 'furniture/nightstand_drawer_open'), toolRack(), moved(toolRack(), [0, 0, -LOG_DEPTH], 'furniture/tool_rack_log'),
-    ...chestPieces(), ...freezerPieces()];
+// =============================================================================================== shapes
+// The Mesh Shape profiles of the storage (cabin/FurnitureOpening, docs/rendering/mesh_shape_runtime_v1.md), from the pieces
+// drawn: closed, the doors / drawer / lid (open them); open, those swung out (close them) and the open interior (search /
+// view). Regions are grown 1 cm so their edges are easy to hit.
+const grow = ([a, b], e = 0.01) => [a.map(v => v - e), b.map(v => v + e)];
+function wardrobeShapes() {
+  const d = wardrobeDoor(), sw = swungOut(d, WD.left[0], WARDROBE_FRONT, 's');
+  const body = [[0, 0, 0.335], [1, 1.96, 0.925]], [lo, hi] = bounds(d), left = bounds(sw), right = bounds(mirroredX(sw));
+  const knob = [WD.left[1] - 0.035, 1.06, WARDROBE_FRONT - 0.012], swung = ([x, y, z]) => [WD.left[0] + (z - WARDROBE_FRONT), y, WARDROBE_FRONT - (x - WD.left[0])];
+  return profile({
+    closed: state({physical: [body], regions: {door: [[grow([lo, [1 - lo[0], hi[1], hi[2]]])], [0.5, knob[1], knob[2]]]}}),
+    open: state({physical: [body], selection: [body, left, right], regions: {
+      door: [[grow(left), grow(right)], swung(knob)],
+      interior: [[[[left[1][0], lo[1], 0.325], [right[0][0], hi[1], WARDROBE_FRONT + 0.04]]], [0.5, 1.1, WARDROBE_FRONT]]}}),
+  }, 2);
 }
+function nightstandShapes() {
+  const body = [[0.23, 0, 0.51], [0.77, NIGHTSTAND_TOP, 0.925]];
+  const [lo, hi] = bounds(nightstandDrawer(0, 'c')), [olo, ohi] = bounds(nightstandDrawer(NS_DRAWER_OUT, 'o'));
+  const front = 0.52 - NS_DRAWER_OUT, knob = [0.5, 0.55, 0.508];
+  return profile({
+    closed: state({physical: [body], regions: {drawer: [[grow([[lo[0], lo[1], lo[2]], [hi[0], hi[1], 0.545]])], knob]}}),
+    open: state({physical: [body], selection: [body, [olo, [ohi[0], ohi[1], 0.52]]], regions: {
+      drawer: [[grow([olo, [ohi[0], ohi[1], front + 0.02]])], [0.5, 0.55, knob[2] - NS_DRAWER_OUT]],
+      interior: [[[[olo[0] + 0.006, 0.495, front + 0.02], [ohi[0] - 0.006, 0.612, 0.52]]], [0.5, 0.6, (front + 0.52) / 2]]}}),
+  });
+}
+/** Two cells across: each side's state in its own frame (the right one 1 block over), the regions over the whole freezer. */
+function freezerShapes() {
+  const {x0, x1, z0, z1, top, well} = FREEZER, lid = freezerLid();
+  const open = rotated(lid, [0, FREEZER.lid0, FREEZER.z1 + 0.005], 'x', FREEZER.open * Math.PI / 180);
+  const [lo, hi] = bounds(lid), [olo, ohi] = bounds(open);
+  const cut = ([a, b], c0, c1) => [[Math.max(a[0], c0), a[1], a[2]], [Math.min(b[0], c1), b[1], b[2]]];
+  const states = {};
+  for (const [side, c0, dx] of [['left', 0, 0], ['right', 1, -1]]) {
+    const body = cut([[x0, 0, z0], [x1, top, z1]], c0, c0 + 1);
+    states[side + '_closed'] = state({physical: [body], selection: [body, cut([lo, hi], c0, c0 + 1)], regions: {lid: [[grow([lo, hi])], [1.0, 0.862, lo[2]]]}}, dx);
+    states[side + '_open'] = state({physical: [body], selection: [body, cut([olo, ohi], c0, c0 + 1)], regions: {
+      lid: [[grow([olo, ohi])], [1.0, ohi[1] - 0.04, olo[2]]],
+      interior: [[[[well[0], top - 0.08, well[1]], [well[2], top + 0.008, well[3]]]], [1.0, top, (well[1] + well[3]) / 2]]}}, dx);
+  }
+  return profile(states);
+}
+/** The chest, as the freezer: each side's state in its own frame, the lid and interior regions over the whole chest. */
+function chestShapes() {
+  const {x0, x1, z0, z1, rim, lid: top, wall: w} = CHEST, lid = chestLid(), open = chestLidOpen(lid);
+  const [lo, hi] = bounds(lid), [olo, ohi] = bounds(open);
+  const cutX = ([a, b], c0, c1) => [[Math.max(a[0], c0), a[1], a[2]], [Math.min(b[0], c1), b[1], b[2]]];
+  const states = {};
+  for (const [side, c0, dx] of [['left', 0, 0], ['right', 1, -1]]) {
+    const body = cutX([[x0 - 0.014, 0, z0 - 0.014], [x1 + 0.014, rim, z1 + 0.006]], c0, c0 + 1);
+    states[side + '_closed'] = state({physical: [body], selection: [body, cutX([lo, hi], c0, c0 + 1)],
+      regions: {lid: [[grow([lo, hi])], [1.0, (rim + top) / 2, lo[2]]]}}, dx);
+    states[side + '_open'] = state({physical: [body], selection: [body, cutX([olo, ohi], c0, c0 + 1)], regions: {
+      lid: [[grow([olo, ohi])], [1.0, ohi[1] - 0.04, olo[2]]],
+      interior: [[[[x0 + w, rim - 0.08, z0 + w], [x1 - w, rim + 0.008, z1 - 0.02]]], [1.0, rim, (z0 + z1) / 2]]}}, dx);
+  }
+  return profile(states);
+}
+
+/** The animated mesh (2026-10-15): the body, the drawer a bone; 'open' pulls it NS_DRAWER_OUT out, 7 ticks. */
+function nightstandMesh() {
+  return {id: 'wooden_nightstand', bones: [{name: 'body', pivot: [0.5, 0, 0.5], pieces: [nightstandBody()]},
+    {name: 'drawer', pivot: [0.5, 0.55, 0.52], pieces: [nightstandDrawer(0, 'drawer')]}],
+    open: {ticks: 7, transforms: {drawer: {translation: [0, 0, -NS_DRAWER_OUT]}}}};
+}
+
+/** The pieces still drawn by the cabin kit (no moving parts): the bed, the tool rack. */
+export function pieces() {
+  return [...bedPieces(), toolRack(), moved(toolRack(), [0, 0, -LOG_DEPTH], 'furniture/tool_rack_log')];
+}
+
+/**
+ * The furniture with moving parts, as AFL Animated Block Meshes (tools/furniture/furniture-mesh.mjs, 2026-10-15: the
+ * cabin pieces swapped between closed and open in one frame; user: "之前的那些模型，打开都有流畅的动画").
+ */
+export function meshes() {
+  return [wardrobeMesh(), nightstandMesh(), chestMesh(), freezerMesh()].map(m => furnitureMesh(ROOT, {...m, dir: 'furniture', texPrefix: TEX, particle: PARTICLE[m.id]}));
+}
+export const MESH_IDS = ['wooden_wardrobe', 'wooden_nightstand', 'wooden_storage_chest', 'vintage_chest_freezer'];
 
 // =============================================================================================== models, states, loot
 // "item": [piece, turn, dx, dy, dz]; two-cell pieces get a display that fits them (the cabin door's for the wardrobe)
 const ITEMS = {
   wooden_bed: [['furniture/bed_head', 0, 0, 0, 0.5], ['furniture/bed_foot', 0, 0, 0, -0.5]],
-  wooden_wardrobe: [['furniture/wardrobe_body_lower', 0], ['furniture/wardrobe_doors_closed_lower', 0], ['furniture/wardrobe_body_upper', 0, 0, 1, 0], ['furniture/wardrobe_doors_closed_upper', 0, 0, 1, 0]],
-  wooden_nightstand: [['furniture/nightstand_body', 0], ['furniture/nightstand_drawer_closed', 0]],
   wooden_tool_rack: [['furniture/tool_rack', 0]],
-  wooden_storage_chest: [['furniture/chest_single_body', 0], ['furniture/chest_single_lid_closed', 0]],
-  vintage_chest_freezer: [['furniture/freezer_body_left', 0, -0.5, 0, 0], ['furniture/freezer_lid_closed_left', 0, -0.5, 0, 0],
-    ['furniture/freezer_body_right', 0, 0.5, 0, 0], ['furniture/freezer_lid_closed_right', 0, 0.5, 0, 0], ['furniture/freezer_lamp_off', 0, -0.5, 0, 0]],
 };
 const T = (r, t, s) => ({rotation: r, translation: t, scale: [s, s, s]});
-const DISPLAY_TALL = {gui: T([30, 225, 0], [0, -2.5, 0], 0.38), ground: T([0, 0, 0], [0, 3, 0], 0.2), fixed: T([0, 0, 0], [0, -4, 0], 0.4),
-  thirdperson_righthand: T([75, 45, 0], [0, 1, 0], 0.25), firstperson_righthand: T([0, 45, 0], [0, -2, 0], 0.3), firstperson_lefthand: T([0, 225, 0], [0, -2, 0], 0.3)};
 const DISPLAY_LONG = {gui: T([30, 225, 0], [0, 0, 0], 0.36), ground: T([0, 0, 0], [0, 3, 0], 0.18), fixed: T([0, 0, 0], [0, 0, 0], 0.4),
   thirdperson_righthand: T([75, 45, 0], [0, 2, 0], 0.22), firstperson_righthand: T([0, 45, 0], [0, 0, 0], 0.26), firstperson_lefthand: T([0, 225, 0], [0, 0, 0], 0.26)};
-const DISPLAY = {wooden_bed: DISPLAY_LONG, wooden_wardrobe: DISPLAY_TALL, vintage_chest_freezer: DISPLAY_LONG};
+const DISPLAY = {wooden_bed: DISPLAY_LONG};
 const PARTICLE = {wooden_bed: TEX + TRIM, wooden_wardrobe: TEX + TRIM_V, wooden_nightstand: TEX + TRIM_V, wooden_tool_rack: TEX + TRIM_V,
   wooden_storage_chest: TEX + TRIM, vintage_chest_freezer: TEX + ENAMEL};
-/** Loot: the block itself (the bed only from its head, as vanilla; the wardrobe from its lower half, the freezer from its master half). */
+/** Loot: the block itself (the bed only from its head, as vanilla; the wardrobe from its lower half, the chest and freezer from their master half). */
 const loot = id => {
   const cond = [{condition: 'minecraft:survives_explosion'}];
   if (id === 'wooden_bed') cond.push({condition: 'minecraft:block_state_property', block: NS + id, properties: {part: 'head'}});
-  if (id === 'vintage_chest_freezer') cond.push({condition: 'minecraft:block_state_property', block: NS + id, properties: {part: 'left'}});
+  if (id === 'vintage_chest_freezer' || id === 'wooden_storage_chest') cond.push({condition: 'minecraft:block_state_property', block: NS + id, properties: {part: 'left'}});
   if (id === 'wooden_wardrobe') cond.push({condition: 'minecraft:block_state_property', block: NS + id, properties: {half: 'lower'}});
   return json({type: 'minecraft:block', pools: [{rolls: 1, bonus_rolls: 0, entries: [{type: 'minecraft:item', name: NS + id}], conditions: cond}], random_sequence: `${NS}blocks/${id}`});
 };
@@ -481,15 +585,20 @@ export function outputs() {
   const texOut = (name, maps) => maps.forEach((m, i) => out.push([path.join(ASSETS, 'textures/block/furniture', name + ['', '_s', '_n'][i] + '.png'), m]));
   for (const [name, [make, height]] of Object.entries(FURNITURE_V2_TEXTURES)) texOut(name, renderX(make(), {height}));
   for (const pc of pieces()) out.push([path.join(ASSETS, 'cabin_mesh', pc.name + '.json'), JSON.stringify(serialise(pc, TEX)) + '\n']);
+  for (const [id, make] of [['wooden_wardrobe', wardrobeShapes], ['wooden_nightstand', nightstandShapes], ['vintage_chest_freezer', freezerShapes], ['wooden_storage_chest', chestShapes]])
+    out.push([path.join(DATA, 'apocalypse_firstlight/mesh_shapes', id + '.json'), make()]);
   const bm = id => `${NS}block/furniture/${id}`;
   for (const {id} of BLOCKS) {
-    const model = {parent: 'minecraft:block/block', loader: NS + 'cabin', textures: {particle: PARTICLE[id]}, item: ITEMS[id]};
-    if (DISPLAY[id]) model.display = DISPLAY[id];
-    out.push([path.join(ASSETS, 'models/block/furniture', id + '.json'), json(model)]);
+    if (!MESH_IDS.includes(id)) {
+      const model = {parent: 'minecraft:block/block', loader: NS + 'cabin', textures: {particle: PARTICLE[id]}, item: ITEMS[id]};
+      if (DISPLAY[id]) model.display = DISPLAY[id];
+      out.push([path.join(ASSETS, 'models/block/furniture', id + '.json'), json(model)]);
+      out.push([path.join(ASSETS, 'models/item', id + '.json'), json({parent: bm(id)})]);
+    }
     out.push([path.join(ASSETS, 'blockstates', id + '.json'), json({variants: {'': {model: bm(id)}}})]);
-    out.push([path.join(ASSETS, 'models/item', id + '.json'), json({parent: bm(id)})]);
     out.push([path.join(DATA, 'apocalypse_firstlight/loot_tables/blocks', id + '.json'), loot(id)]);
   }
+  for (const m of meshes()) out.push(...m.outputs);
   return out;
 }
 
@@ -534,5 +643,6 @@ if (isMain) {
     const pcs = pieces();
     console.log(`wrote ${out.length} files (${pcs.length} mesh pieces)`);
     for (const p of pcs) console.log('  ' + p.name, serialise(p, TEX).quads.length);
+    for (const m of meshes()) console.log('  mesh ' + JSON.stringify(m.stats));
   }
 }

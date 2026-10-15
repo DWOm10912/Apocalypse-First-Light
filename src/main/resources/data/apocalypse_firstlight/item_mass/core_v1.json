@@ -115,6 +115,26 @@
       "unit_mass_kg": 0.3,
       "estimated": true
     },
+    "apocalypse_firstlight:field_chest_rig": {
+      "unit_mass_kg": 0.9,
+      "estimated": true
+    },
+    "apocalypse_firstlight:canvas_backpack": {
+      "unit_mass_kg": 1.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:hiking_backpack": {
+      "unit_mass_kg": 1.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:gun_sling": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pistol_holster": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:clinical_thermometer": {
       "unit_mass_kg": 0.02,
       "estimated": true

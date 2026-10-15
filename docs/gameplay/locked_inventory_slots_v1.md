@@ -2,6 +2,36 @@
 
 状态：**Locked Inventory Slots V1 Result = 全部 PASS**。2026-09-29 用户确认已完成实机测试，并要求将本轮验收项目全部标记为 PASS。此前唯一一次 `compileJava --offline` 已通过；本次仅更新验收记录，没有重新编译或启动测试。
 
+## 2026-10-15 容器界面里的网格、配件返还（分支 `feature/inventory-grid-v0`，代码完成，未经游戏内验证）
+
+见 [afl_inventory_grid_v0_plan.md](../ui/afl_inventory_grid_v0_plan.md) 第 13 节：
+
+- 网格动作（`GridActions`）不再只认背包界面：任何打开的、菜单里有玩家物品栏格子的容器界面都可以，光标用那个界面自己的。
+- 新动作 `TO_CONTAINER`：Shift 点网格里的东西，按容器菜单自己的 Shift 规则放进去。做法是把它临时放进一个空的锁定主栏格让菜单搬；菜单没搬走的、搬到玩家其它格子的，都拿回网格原位。搬的过程中 `LockedInventoryMenuMixin` 不把剩余塞进网格（`GridActions.movingIntoContainer()`）。
+- `AttachmentInteractionCore`：配件来源可以是网格里的东西（`GridSource` 编码）；换下的配件和多余子弹按正常拾取顺序放回（`Inventory.add`，生存 / 冒险进网格），放不下才掉地上。以前是直接写进开放的前 4 格，会落进武器位或“手上”。失败回滚同时恢复 36 格和网格（`PlayerGrids.snapshot`）。
+
+## 2026-10-14 武器位和快捷绑定（分支 `feature/inventory-grid-v0`，代码完成，未经游戏内验证）
+
+替换了下一节里“快捷栏分工”和“只找 6–9”两条，见 [afl_inventory_grid_v0_plan.md](../ui/afl_inventory_grid_v0_plan.md) 第 10 节：
+
+- 生存 / 冒险开放 4 格（`getUnlockedInventorySlots` = 4）：0 主武器（枪上要有背带标记 `AflSling`）、1 手枪（要穿手枪套，Curios 栏 `holster`）、2 近战、3 “手上”（快捷绑定 4–9 和 E 界面“手上”框共用）。4–8 和 9–35 一样锁定，里面的旧东西是溢出。
+- `HotbarRoles.accepts(player, index, stack)` 是“这格收不收这件”的判断，`PlayerStorageCapacity.rejects` 调它；“手上”收任何东西，但只有绑定和“手上”框会往里放。
+- `isGenericTarget` 在生存 / 冒险一格都不算：`getFreeSlot`、合并都找不到快捷栏，捡到的普通物品直接进网格，也不会叠到手上那叠里。武器照旧先进它的空武器位（`InventoryGridMixin`）。
+- 界面里 Shift 转移（`moveItemStackTo`）不进“手上”；原版找不到位置的剩余，在服务器上放进网格（`LockedInventoryMenuMixin`）。
+- 配方书的空位预检在生存 / 冒险按网格空格数（`PlayerGrids.View.freeCells`）。
+- 不该在快捷栏里的东西（旧存档、卸了背带的枪）不在手上时，`Loadout` 每秒尝试放进网格，放不下就留着当溢出。
+
+## 2026-10-14 网格背包 V0 改动（分支 `feature/inventory-grid-v0`，阶段 1，用户 2026-10-14 实机 PASS；前两条已被上一节替换）
+
+见 [afl_inventory_grid_v0_plan.md](../ui/afl_inventory_grid_v0_plan.md)。本页下面的规则仍然有效，改了这些：
+
+- **快捷栏有了分工**（`inventory/HotbarRoles.java`）：键 1–2 主武器、3–4 副武器、5 近战，6–9 什么都能放。武器栏只收对应武器（物品标签 `apocalypse_firstlight:weapons/primary|secondary|melee`；没打标签的 Native 枪按类型：手枪算副武器，其它算主武器）。`PlayerStorageCapacity.rejects(...)` 是“这格收不收这件”的统一判断：锁定格，或武器栏放非对应物品，都拒绝。旧存档里放在武器栏的非武器算溢出：能取，不能放。
+- **自动找位置只找 6–9**（`isGenericTarget`）：`getFreeSlot`、合并、配方书空位统计都不再把武器栏算进去。捡起武器时先放进它那一类的空武器栏（`InventoryGridMixin`），满了才走普通流程。
+- **放不下的进网格**：`Inventory.add` 原版流程结束后还有剩余，就按 口袋 → 胸挂 → 背包 放进网格（服务端、生存 / 冒险）。`placeItemBackInInventory`（关闭界面时手上的东西、合成剩余）也走同一路径，都放不下才丢在地上。
+- **背包不再解锁原版格子**：`StorageExpander` 接口还在，但 AFL 的背包用自己的网格，所以生存 / 冒险的原版容量固定是快捷栏 9 格；9–35 只剩“溢出”用途，在新 E 界面右边的“溢出”区显示，只能取出。
+- **生存 / 冒险按 E 打开的是 AFL 背包界面**，不再是原版物品栏；灰色遮罩和锁定提示现在只在箱子、机器等容器界面里出现。`locked.hint` 文案改为“物品放进口袋、胸挂和背包的格子”。
+- 创造 / 旁观不变：完整 36 格，没有武器栏分工。
+
 ## 唯一容量策略
 
 2026-10-03 更新：生存 / 冒险模式的容量改为“快捷栏 9 格 + 背部栏物品提供的格数”，最多 36（`inventory/StorageExpander`，见 `equipment_slots_v1.md`）。V1 还没有提供格数的背包，所以下表的 9 格仍然是当前实际值。
@@ -37,7 +67,7 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 - `LockedInventoryWrapperMixin`：Forge `InvWrapper.insertItem` / `isItemValid` 共用策略，覆盖 PlayerMainInvWrapper / PlayerInvWrapper 的正常插入，包括 simulate；提取及直接状态恢复不变。
 - `LockedInventoryRecipeMixin`：配方书清空合成格的空间预检只统计合法空位，避免把锁定空格误判成可用空间；不锁定合成格。
 
-这些共同侧校验在服务端执行，客户端镜像用于正常操作预测。现有 AFL 售货/货架物品返还调用 Inventory.add；维护台 `GunMaintenanceBenchBlockEntity.takeBack` 用 getFreeSlot 查找回退空位。`AttachmentInteractionCore` 的附件/多余弹药返还只在统一容量内合并和找空位，失败回滚仍完整恢复 36 格快照，取用 Overflow 中的附件仍允许。枪械与附件玩法参数不变。
+这些共同侧校验在服务端执行，客户端镜像用于正常操作预测。现有 AFL 售货/货架物品返还调用 Inventory.add；维护台 `GunMaintenanceBenchBlockEntity.takeBack` 2026-10-15 起：放枪的人取回时原位空着并且按武器位规则收这把枪才回原位（原位也可以是网格里的位置），否则走 `Inventory.add`，都放不下掉在脚边；不再用 getFreeSlot（第 10 节以后它在生存模式找不到格子，枪只会掉地上）。维护台底部改成只列枪的选枪栏，见 [维护台附件交互](../native_guns/attachments/gun_maintenance_attachment_interaction_v1.md)“选枪栏和取回”。`AttachmentInteractionCore` 的附件/多余弹药返还 2026-10-15 起走 `Inventory.add`（生存 / 冒险进网格，见本页开头），失败回滚恢复 36 格和网格快照，取用 Overflow 中的附件仍允许。枪械与附件玩法参数不变。
 
 ## GUI 与提示
 
@@ -48,7 +78,7 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 | 状态 | 中文 | English |
 |---|---|---|
 | locked | 未解锁的背包栏位 | Locked inventory slot |
-| locked.hint | 装备背包可增加储物空间 | Equip a backpack to increase storage capacity |
+| locked.hint | 物品放进口袋、胸挂和背包的格子（2026-10-14 前：装备背包可增加储物空间） | Items go into the pocket, rig and backpack grids |
 | overflow | 超出当前储物容量 | Exceeds current storage capacity |
 | overflow.hint | 可以取出物品，但无法放入新的物品 | Items can be removed, but new items cannot be inserted |
 

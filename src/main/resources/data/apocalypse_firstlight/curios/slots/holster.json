@@ -1,0 +1,6 @@
+{
+  "order": 80,
+  "icon": "apocalypse_firstlight:item/empty_slot_holster",
+  "use_native_gui": false,
+  "validators": ["curios:tag"]
+}

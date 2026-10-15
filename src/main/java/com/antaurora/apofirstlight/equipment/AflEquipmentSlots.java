@@ -29,10 +29,16 @@ import java.util.Optional;
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class AflEquipmentSlots {
-    /** Curios slot type ids: the shared presets for back and wrist (so other mods' backpacks / bracelets fit), AFL's own ears. */
-    public static final String BACK = "back", WRIST = "bracelet", EARS = "ears";
-    /** The inventory page's column right of the player model, top to bottom (the off-hand slot is below them). */
-    public static final List<String> INVENTORY_PAGE = List.of(BACK, WRIST, EARS);
+    /**
+     * Curios slot type ids: the shared presets for back and wrist (so other mods' backpacks / bracelets fit), AFL's own
+     * ears, chest rig (Grid Inventory V0, docs/ui/afl_inventory_grid_v0_plan.md) and pistol holster (plan 10).
+     */
+    public static final String BACK = "back", WRIST = "bracelet", EARS = "ears", RIG = "rig", HOLSTER = "holster";
+    /**
+     * The AFL slots added to the inventory menu, in menu order (indices 46..50). The vanilla inventory page shows the
+     * first three in the column right of the player model; the AFL inventory page places all of them itself.
+     */
+    public static final List<String> INVENTORY_PAGE = List.of(BACK, WRIST, EARS, RIG, HOLSTER);
     private AflEquipmentSlots() {}
 
     @SubscribeEvent public static void setup(FMLCommonSetupEvent event) {
@@ -84,6 +90,25 @@ public final class AflEquipmentSlots {
         if (sound != null) player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound.soundEvent(),
                 SoundSource.PLAYERS, sound.volume(), sound.pitch());
         return true;
+    }
+
+    /**
+     * Pickup (Grid Inventory V0): puts one of the stack into the first of AFL's page slots that is empty and takes it,
+     * like Tarkov wears a picked-up rig or backpack when its slot is free. Server side; false when no slot is free.
+     */
+    public static boolean wearIfFree(Player player, ItemStack stack) {
+        if (stack.isEmpty() || player.level().isClientSide) return false;
+        for (String id : INVENTORY_PAGE) {
+            var stacks = stacks(player, id);
+            if (stacks.isEmpty() || !stacks.get().getStackInSlot(0).isEmpty() || !canHold(player, id, stack)) continue;
+            var one = stack.split(1);
+            stacks.get().setStackInSlot(0, one);
+            var sound = CuriosApi.getCurio(one).map(c -> c.getEquipSound(context(player, id))).orElse(null);
+            if (sound != null) player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound.soundEvent(),
+                    SoundSource.PLAYERS, sound.volume(), sound.pitch());
+            return true;
+        }
+        return false;
     }
 
     /** Every stack in the player's Curios slots. */

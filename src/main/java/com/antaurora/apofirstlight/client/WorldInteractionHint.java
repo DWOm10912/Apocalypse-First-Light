@@ -64,7 +64,10 @@ public final class WorldInteractionHint {
         Target target=null;
         if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
         Vec3 nozzleIn=NozzleFillView.localOpening();   // the fuel nozzle in an opening: a click takes it out
+        // ground items (GroundItemPick): an item lying nearer than the block looked at comes before the block's own action
+        var ground=nozzleIn==null?GroundItemPick.offer(mc):null;
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
+        else if(ground!=null) target=new Target(ground.label(),ground.anchor());
         // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
         else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
@@ -119,6 +122,7 @@ public final class WorldInteractionHint {
     private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keysFor(Minecraft mc,Component label) {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
+        if(key.contains(".ground_item.")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
@@ -517,11 +521,8 @@ public final class WorldInteractionHint {
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Chair)
             return mc.player.isSecondaryUseActive()||mc.player.isPassenger()||com.antaurora.apofirstlight.cabin.FurnitureSeat.occupied(mc.level,pos)
                     ?null:new Target(Component.translatable(k+"chair.sit"),null);
-        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Counter) return new Target(Component.translatable(k+"cabinet.open"),null);
-        // Wood Furniture V2: the wardrobe, nightstand, storage chest and vintage freezer open; the bed sleeps; the tool rack as the gun rack
-        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Wardrobe||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Nightstand
-                ||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.StorageChest||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.VintageFreezer)
-            return mc.player.isSecondaryUseActive()?null:new Target(Component.translatable(k+"cabinet.open"),null);
+        // the counters, wardrobe, nightstand, storage chest and vintage freezer: their Mesh Shape regions (cabin/FurnitureOpening), in meshInteraction below
+        // Wood Furniture V2: the bed sleeps; the tool rack as the gun rack
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Bed) return mc.player.isSecondaryUseActive()?null:new Target(Component.translatable(k+"bed.sleep"),null);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack&&mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity tools){
             var held=mc.player.getMainHandItem();

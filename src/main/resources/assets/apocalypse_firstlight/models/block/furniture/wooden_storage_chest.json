@@ -1,17 +1,6 @@
 {
-  "parent": "minecraft:block/block",
-  "loader": "apocalypse_firstlight:cabin",
+  "loader": "apocalypse_firstlight:static_mesh",
   "textures": {
     "particle": "apocalypse_firstlight:block/furniture/wood"
-  },
-  "item": [
-    [
-      "furniture/chest_single_body",
-      0
-    ],
-    [
-      "furniture/chest_single_lid_closed",
-      0
-    ]
-  ]
+  }
 }

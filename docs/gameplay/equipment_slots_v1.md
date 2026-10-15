@@ -16,6 +16,10 @@
 | 背部 | `back`（Curios 预设） | x 77, y 8 | 带 `curios:back` 标签的物品（AFL 暂时没有；其它模组的背包可以） | AFL 背包：解锁储物格 |
 | 手腕 | `bracelet`（Curios 预设） | x 77, y 26 | 带 `curios:bracelet` 标签的物品：腕式温度计（2026-10-03） | 生存监测仪 |
 | 耳部 | `ears`（AFL 自定义） | x 77, y 44 | 简易隔音耳罩（`curios:ears` 标签） | 其它听力防护 |
+| 胸挂 | `rig`（AFL 自定义，2026-10-14 网格背包 V0，分支未合并） | 原版物品栏页不显示（放在屏外）；AFL 背包界面里在中栏“胸挂” | 野战胸挂（`curios:rig` 标签） | 更多胸挂 |
+| 枪套 | `holster`（AFL 自定义，2026-10-14 武器位，分支未合并，未经游戏内验证） | 原版物品栏页不显示；AFL 背包界面里在人物下方手枪框旁边 | 手枪枪套（`curios:holster` 标签）：右键穿上；手枪位（键 2）有东西时脱不下来 | 刀鞘（未定） |
+
+2026-10-14 网格背包 V0（分支 `feature/inventory-grid-v0`，用户 2026-10-14 实机 PASS）：背部栏现在能放 AFL 的帆布背包、登山背包（`curios:back` 标签），胸挂栏放野战胸挂。它们的东西存在物品自己的 NBT 里（`Items` 列表），脱下、丢在地上、放进箱子都跟着走；网格物品不能放进网格。菜单里第 4 个 AFL 格排在索引 49（背部 46、手腕 47、耳部 48、胸挂 49）。生存 / 冒险按 E 打开 AFL 背包界面，四个栏位都由它摆放，见 [afl_inventory_grid_v0_plan.md](../ui/afl_inventory_grid_v0_plan.md)。
 
 - 只装 Curios 本身不会给玩家任何栏位；这 3 个栏位由 AFL 的数据文件分配给玩家（`data/apocalypse_firstlight/curios/entities/afl_player.json`）。背部、手腕用 Curios 的预设类型，这样其它模组的背包、手镯也能放进来；耳部是 AFL 自己的类型。
 - 3 个栏位的定义都设置了 `use_native_gui: false`，所以不显示在 Curios 自己的侧面板里。如果玩家的所有栏位都不在 Curios 面板上，物品栏里的 Curios 按钮也会隐藏；装了其它会加栏位的模组时，那些模组的栏位照常出现在 Curios 面板里，按钮也保留。
@@ -77,3 +81,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 8. `/aflweight`：耳罩的质量计入（来源 `equipment:apocalypse_firstlight:curios`）。
 9. 切创造模式：物品栏里看不到这 3 格，快捷栏显示正常、没有被盖住。
 10. 旧存档里戴在头上的耳罩：仍然有隔音效果，可以从头盔栏取下。
+
+2026-10-14 武器位（同一分支，代码完成，未经游戏内验证）：新加枪套栏 `holster`（`data/apocalypse_firstlight/curios/slots/holster.json`，`afl_player.json` 加入），菜单索引 50（背部 46、手腕 47、耳部 48、胸挂 49、枪套 50）。穿着手枪套，手枪才能放进手枪位（键 2），见 [afl_inventory_grid_v0_plan.md](../ui/afl_inventory_grid_v0_plan.md) 第 10 节。
+
+2026-10-14 身上的装备（同一分支，代码完成，未经游戏内验证）：胸挂、帆布背包、登山背包、手枪枪套、隔音耳罩换成 AFL 网格 + LabPBR，戴着时由各自的 Curios 渲染器（`ClientEquipmentSlots.WornMeshRenderer`）画在躯干 / 右腿 / 头上，跟着身体动。见 [装备网格 V1](../models/equipment_meshes_v1.md) 和 [afl_inventory_grid_v0_plan.md](../ui/afl_inventory_grid_v0_plan.md) 第 11 节。

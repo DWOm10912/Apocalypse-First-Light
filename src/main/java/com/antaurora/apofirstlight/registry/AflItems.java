@@ -534,6 +534,23 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.temperature.ClinicalThermometerItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> WRIST_THERMOMETER = ITEMS.register("wrist_thermometer",
             () -> new com.antaurora.apofirstlight.temperature.WristThermometerItem(new Item.Properties().stacksTo(1)));
+    // Grid Inventory V0 test gear (docs/ui/afl_inventory_grid_v0_plan.md 7): a rig with four separate pouches, a 5x6
+    // backpack, and a 6x10 one that makes the right column scroll; placeholder icons, nothing drawn on the body
+    public static final RegistryObject<Item> FIELD_CHEST_RIG = ITEMS.register("field_chest_rig",
+            () -> new com.antaurora.apofirstlight.inventory.grid.GridGearItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.RIG,
+                    com.antaurora.apofirstlight.inventory.grid.GridLayout.of(1, 2, 1, 2, 1, 2, 2, 2), new Item.Properties()));
+    public static final RegistryObject<Item> CANVAS_BACKPACK = ITEMS.register("canvas_backpack",
+            () -> new com.antaurora.apofirstlight.inventory.grid.GridGearItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK,
+                    com.antaurora.apofirstlight.inventory.grid.GridLayout.of(5, 6), new Item.Properties()));
+    public static final RegistryObject<Item> HIKING_BACKPACK = ITEMS.register("hiking_backpack",
+            () -> new com.antaurora.apofirstlight.inventory.grid.GridGearItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK,
+                    com.antaurora.apofirstlight.inventory.grid.GridLayout.of(6, 10), new Item.Properties()));
+    // Weapon positions (docs/ui/afl_inventory_grid_v0_plan.md 10): a sling fitted to a long gun carries it on the back
+    // (key 1), a worn holster carries the pistol (key 2); placeholder icons
+    public static final RegistryObject<Item> GUN_SLING = ITEMS.register("gun_sling",
+            () -> new com.antaurora.apofirstlight.inventory.grid.GunSlingItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> PISTOL_HOLSTER = ITEMS.register("pistol_holster",
+            () -> new com.antaurora.apofirstlight.inventory.grid.PistolHolsterItem(new Item.Properties()));
 
     private AflItems() {
     }

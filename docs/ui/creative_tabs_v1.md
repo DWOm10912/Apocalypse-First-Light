@@ -25,7 +25,7 @@
 | 6 | `firearms` | 枪械 / Firearms | BR51 | 手枪（P9-01、Blackridge .50）→ 步枪（BR51-01、HR55、C.A.T.）→ 霰弹枪（Silverwood 12） |
 | 7 | `attachments` | 配件 / Attachments | 步枪红点 | 按槽位排列：瞄具 → 枪口 → 弹匣；同一槽位内手枪用在前、步枪用在后（枪口：手枪消音器、7.62×51mm 步枪消音器、12.7×55mm 重型消音器；弹匣：P9 28 发、BR51 35 发、BR51 50 发弹鼓） |
 | 8 | `ammunition` | 弹药 / Ammunition | 7.62×51mm 步枪弹 | 与枪械页同序：9×19mm、.50 AE、7.62×51mm、12.7×55mm、12 Gauge |
-| 9 | `melee_and_equipment` | 近战与装备 / Melee & Equipment | 撬棍 | 撬棍、简易隔音耳罩、盖革计数器 |
+| 9 | `melee_and_equipment` | 近战与装备 / Melee & Equipment | 撬棍 | 撬棍、简易隔音耳罩、盖革计数器；网格背包 V0 分支（2026-10-14，未合并）加了野战胸挂、帆布背包、登山背包、枪背带、手枪枪套 |
 | 10 | `survival_supplies` | 生存补给 / Survival Supplies | 纯净水瓶 | 脏水瓶、煮沸水瓶、纯净水瓶（2026-10-03 口渴 V1 新增此页；以后放饮料、食物、药品） |
 
 ## 规则

@@ -12,7 +12,13 @@
 //   its arm drawn in four quarter turns.
 // Every piece is drawn facing north (the front at z < 0.5); the block turns them and lowers them onto a table, counter or
 // desk under it (CabinPieces.Sink dy).
-// Writes textures (block/radio/*.png + _s / _n), mesh pieces (cabin_mesh/radio/), the block / item model, blockstate and loot
+// The crank turns as an AFL Animated Block Mesh (emergency_radio_crank, tools/furniture/furniture-mesh.mjs, 2026-10-15: the
+// cabin pieces showed its four quarters, one frame each): only the arm, drawn by the block entity renderer, a wrapping
+// channel 'crank' (the block's crank quarter / 4, a quarter in 4 ticks, linear, so a held crank turns on without a stop);
+// one profile per surface the radio stands on (its origin lowered as the pieces sink). The rest stay cabin pieces;
+// radio/crank_0 is the item's arm.
+// Writes textures (block/radio/*.png + _s / _n), mesh pieces (cabin_mesh/radio/), the crank's mesh (geo, sidecar, profiles,
+// atlas block/radio/emergency_radio_crank, src/main/blockbench/radio/), the block / item model, blockstate and loot
 // table. Tags, item mass, lang and the stamina cost are edited by hand; --check audits them.
 //   node tools/build-emergency-radio-v1.mjs            -> writes every output
 //   node tools/build-emergency-radio-v1.mjs --check    -> verifies every output is up to date and the hand-edited data
@@ -22,6 +28,7 @@ import {fileURLToPath} from 'node:url';
 import {renderX} from './cabin/cabin-art.mjs';
 import {RADIO_TEXTURES, renderDial, NEEDLE_U} from './radio/emergency-radio-art.mjs';
 import {Piece, solid, cylinder, serialise, newell, dot, sub, add, scl, norm} from './cabin/cabin-geo.mjs';
+import {furnitureMesh} from './furniture/furniture-mesh.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -297,7 +304,21 @@ function bodyPiece() {
 }
 
 export function pieces() {
-  return [bodyPiece(), dialPiece(false), dialPiece(true), sliderPiece('off'), sliderPiece('fm'), ...[0, 1, 2, 3].map(crankPiece)];
+  return [bodyPiece(), dialPiece(false), dialPiece(true), sliderPiece('off'), sliderPiece('fm'), crankPiece(0)];
+}
+
+/** How far the radio sinks into the cell under it on each surface (EmergencyRadio.Surface#sink; the nightstand top 0.66). */
+export const SURFACE_SINK = {floor: 0, table: 0.24, counter: 0.10, desk: 2.5 / 16, nightstand: 1 - 0.66};
+/**
+ * The crank as an animated mesh: the arm (quarter 0, down) on a bone at the hub's axis (x along the crank's shaft);
+ * 'crank' wraps a whole turn, -360 degrees about x (down, to the back, up, to the front, as the old quarters), 16 ticks a
+ * turn. Profiles emergency_radio_crank_<surface>.
+ */
+export function crankMesh() {
+  return furnitureMesh(ROOT, {id: 'emergency_radio_crank', dir: 'radio', texPrefix: TEX, particle: TEX + STEEL, part: true,
+    bones: [{name: 'crank', pivot: [X(16.3), Y(CRANK.y), Z(CRANK.z)], pieces: [crankPiece(0)]}],
+    animations: {crank: {duration_ticks: 16, easing: 'linear', wrap: true, transforms: {crank: {rotation: [-360, 0, 0]}}}},
+    lifts: Object.fromEntries(Object.entries(SURFACE_SINK).map(([k, v]) => [k, -v]))});
 }
 
 // =============================================================================================== models, states, loot
@@ -325,6 +346,7 @@ export function outputs() {
   texOut('dial', renderDial(false));
   texOut('dial_glow', renderDial(true));
   for (const pc of pieces()) out.push([path.join(ASSETS, 'cabin_mesh', pc.name + '.json'), JSON.stringify(serialise(pc, TEX)) + '\n']);
+  out.push(...crankMesh().outputs);
   const model = `${NS}block/radio/${id}`;
   out.push([path.join(ASSETS, 'models/block/radio', id + '.json'), json({parent: 'minecraft:block/block', loader: NS + 'cabin',
     textures: {particle: TEX + PAINT}, item: ITEM, display: DISPLAY})]);
@@ -372,6 +394,7 @@ if (isMain) {
     const pcs = pieces();
     for (const p of pcs) console.log('  ' + p.name, serialise(p, TEX).quads.length);
     console.log(`wrote ${out.length} files (${pcs.length} mesh pieces)`);
+    console.log('  mesh ' + JSON.stringify(crankMesh().stats));
     for (const e of audit()) console.log('audit: ' + e);
   }
 }

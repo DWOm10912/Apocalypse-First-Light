@@ -2,7 +2,7 @@
 
 状态（2026-09-30）：**坐标契约修复已实现，修复后实机验证待用户完成**。
 - `compileJava --offline` 一次 PASS。
-- 第一个正式接入是 `industrial_locker`（见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)）。2026-10-02 起 `metal_trash_can` 也用（单格，`closed` / `open`，区域 `lid` / `mouth`，见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)）。
+- 第一个正式接入是 `industrial_locker`（见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)）。2026-10-02 起 `metal_trash_can` 也用（单格，`closed` / `open`，区域 `lid` / `mouth`，见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)）。2026-10-15 老宅木家具只用交互这一层（选框和碰撞还是方块自己手写的）：`wooden_counter`（两种柜子共用）、`wooden_wardrobe`（`cells_y` 2）、`wooden_nightstand`、`wooden_storage_chest` 和 `vintage_chest_freezer`（两格宽：每格一套状态，右半格的坐标往左挪一格），区域 `door` / `drawer` / `lid` / `interior`，由 `tools/build-wood-furniture-v1.mjs` / `-v2.mjs` 经 `tools/furniture/furniture-shapes.mjs` 从拼块写出，见 [wood_furniture_v2.md](../models/wood_furniture_v2.md)。
 
 ## 五层彼此独立
 

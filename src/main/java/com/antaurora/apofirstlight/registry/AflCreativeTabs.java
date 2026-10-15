@@ -247,7 +247,12 @@ public final class AflCreativeTabs {
     public static final RegistryObject<CreativeModeTab> MELEE_AND_EQUIPMENT = tab("melee_and_equipment", AMMUNITION, AflItems.CROWBAR,
             AflItems.CROWBAR,
             AflItems.SIMPLE_HEARING_PROTECTION,
-            AflItems.GEIGER_COUNTER);
+            AflItems.GEIGER_COUNTER,
+            AflItems.FIELD_CHEST_RIG,
+            AflItems.CANVAS_BACKPACK,
+            AflItems.HIKING_BACKPACK,
+            AflItems.GUN_SLING,
+            AflItems.PISTOL_HOLSTER);
 
     // Thirst V1: water first; later drinks, food and medicine
     public static final RegistryObject<CreativeModeTab> SURVIVAL_SUPPLIES = tab("survival_supplies", MELEE_AND_EQUIPMENT,

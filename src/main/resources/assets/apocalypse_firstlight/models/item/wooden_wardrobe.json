@@ -1,3 +1,94 @@
 {
-  "parent": "apocalypse_firstlight:block/furniture/wooden_wardrobe"
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/wood_v"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        0.619,
+        -3.268,
+        -0.892
+      ],
+      "scale": [
+        0.421,
+        0.421,
+        0.421
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        1.84,
+        -0.314
+      ],
+      "scale": [
+        0.151,
+        0.151,
+        0.151
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -2.081,
+        -0.564
+      ],
+      "scale": [
+        0.271,
+        0.271,
+        0.271
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        225,
+        0
+      ],
+      "translation": [
+        0.266,
+        1.809,
+        -1.284
+      ],
+      "scale": [
+        0.181,
+        0.181,
+        0.181
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0.319,
+        -0.667,
+        0.319
+      ],
+      "scale": [
+        0.217,
+        0.217,
+        0.217
+      ]
+    }
+  }
 }

@@ -10,8 +10,8 @@ import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IWailaClientRegistration;
 
 /**
- * Wood Furniture V2 (docs/models/wood_furniture_v2.md, 2026-10-15): aiming at a wardrobe's upper half or a vintage
- * freezer's right half shows the cell that keeps the things (its contents and, for the freezer, the cord), as the other
+ * Wood Furniture V2 (docs/models/wood_furniture_v2.md, 2026-10-15): aiming at a wardrobe's upper half or the right half
+ * of a storage chest or vintage freezer shows the cell that keeps the things (its contents and, for the freezer, the cord), as the other
  * AFL multiblocks do.
  */
 final class WoodFurnitureV2JadeRedirect {
@@ -24,8 +24,8 @@ final class WoodFurnitureV2JadeRedirect {
             BlockPos pos = block.getPosition(), master;
             if (state.getBlock() instanceof WoodFurnitureV2.Wardrobe && state.getValue(WoodFurnitureV2.Wardrobe.HALF) == DoubleBlockHalf.UPPER)
                 master = pos.below();
-            else if (state.getBlock() instanceof WoodFurnitureV2.VintageFreezer && state.getValue(WoodFurnitureV2.VintageFreezer.PART) == WoodFurnitureV2.VintageFreezer.Part.RIGHT)
-                master = WoodFurnitureV2.VintageFreezer.masterPosition(pos, state);
+            else if (state.getBlock() instanceof WoodFurnitureV2.Wide && state.getValue(WoodFurnitureV2.Wide.PART) == WoodFurnitureV2.Wide.Part.RIGHT)
+                master = WoodFurnitureV2.Wide.masterPosition(pos, state);
             else return accessor;
             Level level = block.getLevel();
             BlockState masterState = level.getBlockState(master);

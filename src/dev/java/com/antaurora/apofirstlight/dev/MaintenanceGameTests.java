@@ -29,12 +29,13 @@ public final class MaintenanceGameTests {
         var pendingMenu=new GunMaintenanceMenu(3,p.getInventory(),pending);
         var pendingGun=new ItemStack(AflItems.P9_01.get());
         pending.setItem(0,pendingGun.copy());
-        h.assertTrue(!pendingMenu.canShowTakeButton(p.getUUID())&&pendingMenu.originSlotFor(p.getUUID())==-1,"slot before metadata hides return controls");
-        var snapshot=pending.saveWithoutMetadata();snapshot.putUUID("OriginPlayerUUID",p.getUUID());snapshot.putInt("OriginHotbarSlot",4);
+        h.assertTrue(!pendingMenu.canShowTakeButton(p.getUUID())&&pendingMenu.originFor(p.getUUID())==-1,"slot before metadata hides return controls");
+        var snapshot=pending.saveWithoutMetadata();snapshot.putUUID("OriginPlayerUUID",p.getUUID());snapshot.remove("OriginSource");snapshot.remove("OriginRotated");snapshot.putInt("OriginHotbarSlot",4);
         pending.load(snapshot);
-        h.assertTrue(!pendingMenu.canShowTakeButton(p.getUUID())&&pendingMenu.originSlotFor(p.getUUID())==4,"owner snapshot restores placeholder only");
+        // OriginHotbarSlot: a save from before the gun picker still names its origin
+        h.assertTrue(!pendingMenu.canShowTakeButton(p.getUUID())&&pendingMenu.originFor(p.getUUID())==4,"owner snapshot restores placeholder only");
         pending.setItem(0,pendingGun.copy());
-        h.assertTrue(pendingMenu.originSlotFor(p.getUUID())==4,"identical slot after metadata preserves readiness");
+        h.assertTrue(pendingMenu.originFor(p.getUUID())==4,"identical slot after metadata preserves readiness");
         snapshot.putUUID("OriginPlayerUUID",other.getUUID());pending.load(snapshot);
         h.assertTrue(pendingMenu.canShowTakeButton(p.getUUID()),"confirmed other owner shows take");
         snapshot.remove("OriginPlayerUUID");pending.load(snapshot);
@@ -46,25 +47,35 @@ public final class MaintenanceGameTests {
         for(var item:new Item[]{AflItems.P9_01.get(),AflItems.BR51_01.get()}){
             var gun=new ItemStack(item);gun.getOrCreateTag().putString("MaintenanceTestNBT","preserved");
             var attachment=new net.minecraft.nbt.CompoundTag();attachment.put("SIGHT",new ItemStack(AflItems.PISTOL_RED_DOT.get()).save(new net.minecraft.nbt.CompoundTag()));gun.getOrCreateTag().put("AflAttachments",attachment);
-            p.getInventory().setItem(4,gun);h.assertTrue(menu.clickMenuButton(p,4)&&p.getInventory().getItem(4).isEmpty(),"true transfer");
-            h.assertTrue(menu.originSlotFor(p.getUUID())==4&&!menu.canShowTakeButton(p.getUUID()),"owner placeholder metadata");
-            h.assertTrue(second.originSlotFor(other.getUUID())==-1&&second.canShowTakeButton(other.getUUID()),"non owner button metadata");
+            int hand=com.antaurora.apofirstlight.inventory.HotbarRoles.HAND_SLOT;
+            p.getInventory().setItem(hand,gun);h.assertTrue(menu.clickMenuButton(p,hand)&&p.getInventory().getItem(hand).isEmpty(),"true transfer");
+            h.assertTrue(menu.originFor(p.getUUID())==hand&&!menu.canShowTakeButton(p.getUUID()),"owner placeholder metadata");
+            h.assertTrue(second.originFor(other.getUUID())==-1&&second.canShowTakeButton(other.getUUID()),"non owner button metadata");
             h.assertTrue(!second.clickMenuButton(other,GunMaintenanceMenu.RETURN_GUN),"forged owner return rejected");
-            h.assertTrue(!menu.clickMenuButton(p,4),"replay insertion rejected");menu.removed(p);h.assertTrue(!bench.isEmpty(),"close persists");
+            h.assertTrue(!menu.clickMenuButton(p,hand),"replay insertion rejected");menu.removed(p);h.assertTrue(!bench.isEmpty(),"close persists");
             var saved=bench.saveWithoutMetadata();bench.load(saved);h.assertTrue(ItemStack.matches(gun,bench.getItem(0)),"save load full NBT");
-            h.assertTrue(menu.clickMenuButton(p,9)&&ItemStack.matches(gun,p.getInventory().getItem(4)),"origin return");
+            h.assertTrue(menu.clickMenuButton(p,9)&&ItemStack.matches(gun,p.getInventory().getItem(hand)),"origin return");
             h.assertTrue(!second.clickMenuButton(other,9),"second taker cannot duplicate");
-            h.assertTrue(!second.clickMenuButton(other,GunMaintenanceMenu.TAKE_GUN)&&!second.canShowTakeButton(other.getUUID())&&menu.originSlotFor(p.getUUID())==-1,"owner wins race and clears both entrypoints");
+            h.assertTrue(!second.clickMenuButton(other,GunMaintenanceMenu.TAKE_GUN)&&!second.canShowTakeButton(other.getUUID())&&menu.originFor(p.getUUID())==-1,"owner wins race and clears both entrypoints");
         }
-        h.assertTrue(menu.clickMenuButton(p,4),"insert for occupied origin");p.getInventory().setItem(4,new ItemStack(Items.DIRT));
-        h.assertTrue(menu.clickMenuButton(p,9)&&p.getInventory().getItem(1).getItem()==AflItems.BR51_01.get(),"hotbar fallback");
-        h.assertTrue(menu.clickMenuButton(p,1),"insert for main inventory fallback");
-        for(int i=0;i<9;i++)p.getInventory().setItem(i,new ItemStack(Items.STONE,64));
-        h.assertTrue(menu.clickMenuButton(p,9)&&p.getInventory().getItem(9).is(AflItems.BR51_01.get()),"main inventory fallback");
-        p.getInventory().setItem(1,p.getInventory().removeItemNoUpdate(9));
-        h.assertTrue(menu.clickMenuButton(p,1),"insert for other player");
+        // origin taken: the normal pickup order (no sling, no backpack: nothing takes the rifle, it lands at the feet)
+        int hand=com.antaurora.apofirstlight.inventory.HotbarRoles.HAND_SLOT;
+        h.assertTrue(menu.clickMenuButton(p,hand),"insert for occupied origin");p.getInventory().setItem(hand,new ItemStack(Items.DIRT));
+        var near=new AABB(root).inflate(4);
+        h.assertTrue(menu.clickMenuButton(p,9)&&bench.isEmpty()&&level.getEntitiesOfClass(ItemEntity.class,near,e->e.getItem().is(AflItems.BR51_01.get())).size()==1,
+                "origin taken, nothing takes it: at the feet");
+        var lying=level.getEntitiesOfClass(ItemEntity.class,near,e->e.getItem().is(AflItems.BR51_01.get())).get(0);
+        var rifle=lying.getItem().copy();lying.discard();
+        // with a sling it goes to the primary position by the pickup order
+        com.antaurora.apofirstlight.inventory.grid.GunSling.fit(rifle);
+        p.getInventory().setItem(com.antaurora.apofirstlight.inventory.HotbarRoles.PRIMARY_SLOT,ItemStack.EMPTY); // the stone from "reject normal item"
+        p.getInventory().setItem(hand,rifle);
+        h.assertTrue(menu.clickMenuButton(p,hand),"insert for primary fallback");p.getInventory().setItem(hand,new ItemStack(Items.DIRT));
+        h.assertTrue(menu.clickMenuButton(p,9)&&p.getInventory().getItem(com.antaurora.apofirstlight.inventory.HotbarRoles.PRIMARY_SLOT).is(AflItems.BR51_01.get()),
+                "origin taken: a slung rifle goes to the primary position");
+        h.assertTrue(menu.clickMenuButton(p,com.antaurora.apofirstlight.inventory.HotbarRoles.PRIMARY_SLOT),"insert for other player");
         h.assertTrue(second.clickMenuButton(other,GunMaintenanceMenu.TAKE_GUN)&&other.getInventory().getItem(0).getItem()==AflItems.BR51_01.get(),"other player's inventory only");
-        h.assertTrue(!menu.clickMenuButton(p,GunMaintenanceMenu.RETURN_GUN)&&menu.originSlotFor(p.getUUID())==-1,"non owner wins race and owner stale request rejected");
+        h.assertTrue(!menu.clickMenuButton(p,GunMaintenanceMenu.RETURN_GUN)&&menu.originFor(p.getUUID())==-1,"non owner wins race and owner stale request rejected");
         h.assertTrue(second.clickMenuButton(other,0),"insert for full inventory");
         for(int i=0;i<36;i++)other.getInventory().setItem(i,new ItemStack(Items.STONE,64));
         h.assertTrue(second.clickMenuButton(other,9)&&bench.isEmpty(),"full inventory safe drop");

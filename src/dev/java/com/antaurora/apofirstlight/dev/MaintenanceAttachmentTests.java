@@ -26,7 +26,7 @@ public final class MaintenanceAttachmentTests {
         var am=new GunMaintenanceMenu(61,a.getInventory(),bench);var bm=new GunMaintenanceMenu(62,b.getInventory(),bench);a.containerMenu=am;b.containerMenu=bm;
         var slot=NativeAttachment.Slot.MUZZLE;var accessory=AflItems.RIFLE_SUPPRESSOR_01.get();
         for(int trial=0;trial<20;trial++){
-            bench.clearContent();a.getInventory().clearContent();b.getInventory().clearContent();
+            bench.clearContent();clearAll(a);clearAll(b);
             a.getInventory().setItem(4,new ItemStack(AflItems.BR51_01.get()));h.assertTrue(am.clickMenuButton(a,4),"rifle bench fixture");
             a.getInventory().setItem(23,new ItemStack(accessory));b.getInventory().setItem(23,new ItemStack(accessory));
             var ar=request(a,bench,slot,23);var br=request(b,bench,slot,23);
@@ -90,7 +90,7 @@ public final class MaintenanceAttachmentTests {
         a.setPos(root.getX(),root.getY(),root.getZ());b.setPos(root.getX(),root.getY(),root.getZ());
         var am=new GunMaintenanceMenu(51,a.getInventory(),bench);var bm=new GunMaintenanceMenu(52,b.getInventory(),bench);a.containerMenu=am;b.containerMenu=bm;
         for(int trial=0;trial<20;trial++){
-            bench.clearContent();a.getInventory().clearContent();b.getInventory().clearContent();
+            bench.clearContent();clearAll(a);clearAll(b);
             a.getInventory().setItem(4,new ItemStack(AflItems.P9_01.get()));h.assertTrue(am.clickMenuButton(a,4),"attachment fixture");
             a.getInventory().setItem(23,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));b.getInventory().setItem(23,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));
             var ar=request(a,bench,NativeAttachment.Slot.MUZZLE,23);var br=request(b,bench,NativeAttachment.Slot.MUZZLE,23);
@@ -98,7 +98,7 @@ public final class MaintenanceAttachmentTests {
             h.assertTrue(MaintenanceAttachmentTransaction.commit(winner,trial%2==0?ar:br),"first install");
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(loser,trial%2==0?br:ar),"stale install rejected");
             h.assertTrue(winner.getInventory().getItem(23).isEmpty()&&loser.getInventory().getItem(23).getCount()==1,"exactly one consumed");
-            h.assertTrue(am.originSlotFor(a.getUUID())==4&&bm.canShowTakeButton(b.getUUID()),"attachment preserves return metadata");
+            h.assertTrue(am.originFor(a.getUUID())==4&&bm.canShowTakeButton(b.getUUID()),"attachment preserves return metadata");
             a.getInventory().setItem(24,new ItemStack(AflItems.PISTOL_RED_DOT.get()));
             h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,NativeAttachment.Slot.SIGHT,24)),"sight installed");
             h.assertTrue(!NativeAttachments.activeSight(bench.getItem(0)).isEmpty()&&!NativeAttachments.active(bench.getItem(0),NativeAttachment.Slot.MUZZLE).isEmpty(),"both slots");
@@ -115,6 +115,9 @@ public final class MaintenanceAttachmentTests {
             var invalid=request(a,bench,NativeAttachment.Slot.SIGHT,-1);a.containerMenu=a.inventoryMenu;
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(a,invalid),"closed menu rejected");a.containerMenu=am;
         }
+        // nothing takes it: no backpack, every pocket and vanilla slot full
+        clearAll(a);com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(a,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK).ifPresent(s->s.setStackInSlot(0,ItemStack.EMPTY));
+        for(int k=0;k<4;k++)a.getInventory().add(new ItemStack(Items.STONE,64));
         for(int i=0;i<36;i++)a.getInventory().setItem(i,new ItemStack(Items.STONE,64));
         h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,NativeAttachment.Slot.SIGHT,-1)),"full inventory detach");
         h.assertTrue(level.getEntitiesOfClass(ItemEntity.class,new AABB(root).inflate(5),e->e.getItem().is(AflItems.PISTOL_RED_DOT.get())).stream().mapToInt(e->e.getItem().getCount()).sum()==1,"exactly one drop");
@@ -122,5 +125,14 @@ public final class MaintenanceAttachmentTests {
         bench.clearContent();a.containerMenu=a.inventoryMenu;b.containerMenu=b.inventoryMenu;
         com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[MAINTENANCE ATTACHMENTS] 20 alternating races, replace/remove, origin, persistence, full drop PASS");
     }
-    private static int count(ServerPlayer p,Item item){int n=0;for(int i=0;i<36;i++)if(p.getInventory().getItem(i).is(item))n+=p.getInventory().getItem(i).getCount();return n;}
+    /**
+     * Empty vanilla slots and pockets, and a fresh canvas backpack: what comes off a gun goes in by the pickup order now
+     * (docs/ui/afl_inventory_grid_v0_plan.md 13), and 1x2 magazines do not fit the 1x1 pockets.
+     */
+    private static void clearAll(ServerPlayer p){p.getInventory().clearContent();var pk=com.antaurora.apofirstlight.inventory.grid.Pockets.of(p);if(pk!=null)pk.set(new net.minecraft.nbt.ListTag());
+        com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(p,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK)
+                .ifPresent(s->s.setStackInSlot(0,new ItemStack(AflItems.CANVAS_BACKPACK.get())));}
+    /** Vanilla slots and grids: what comes off a gun goes in by the pickup order (plan 13). */
+    private static int count(ServerPlayer p,Item item){int n=0;for(int i=0;i<36;i++)if(p.getInventory().getItem(i).is(item))n+=p.getInventory().getItem(i).getCount();
+        for(var s:com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(p))if(s.is(item))n+=s.getCount();return n;}
 }

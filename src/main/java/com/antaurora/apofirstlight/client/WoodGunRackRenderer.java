@@ -85,7 +85,8 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
         else shelf(s, WoodFurniture.GunRack.SHELF_X[k - 3], pose, buffers, light, seed);
     }
 
-    private static double length(ItemStack s, boolean pistol) {
+    /** Real overall length (m) of a gun stack (also the body-worn guns, client/inventory/CarriedWeaponsLayer). */
+    public static double length(ItemStack s, boolean pistol) {
         String id = s.getItem() instanceof NativeGunItem g ? g.definition().id().getPath() : "";
         return LENGTH.getOrDefault(id, pistol ? 0.21 : 1.0);
     }

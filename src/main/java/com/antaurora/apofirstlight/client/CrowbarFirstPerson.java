@@ -24,12 +24,20 @@ import software.bernie.geckolib.renderer.GeoObjectRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import software.bernie.geckolib.util.*;
 
-/** Independent FP object: source-authored smash_glass + Native's canonical skinned right-arm locator. */
+/**
+ * Independent FP object: source-authored smash_glass + Native's canonical skinned right-arm locator. The bar is the
+ * crowbar's mesh (tools/build-equipment-meshes-v1.mjs, 2026-10-14) drawn on the crowbar_model bone; the bone's V1 cuboids
+ * stay in the geo only as the animation's reference and are hidden.
+ */
 @Mod.EventBusSubscriber(modid="apocalypse_firstlight",value=Dist.CLIENT)
 public final class CrowbarFirstPerson {
     private static final ViewModel VIEW=new ViewModel();
     private static Renderer renderer;
     private static ResourceLocation resource(String path){return new ResourceLocation("apocalypse_firstlight",path);}
+    private static final ResourceLocation MESH=resource("geo/crowbar.geo.json"),MESH_TEXTURE=resource("textures/item/crowbar_mesh.png");
+    /** The bake shift of the crowbar mesh (build stats "origin"), the V1 frame's y offset and scale in the viewmodel. */
+    private static final float[] MESH_ORIGIN={1.456F,5.0271F,0F};
+    private static final float MESH_FRAME_Y=3.8F,FP_SCALE=.65F;
     private static final class ViewModel implements GeoAnimatable {
         final AnimatableInstanceCache cache=GeckoLibUtil.createInstanceCache(this);
         double ticks;boolean right;
@@ -56,6 +64,17 @@ public final class CrowbarFirstPerson {
     private static final class Renderer extends GeoObjectRenderer<ViewModel> {
         Renderer(){super(new Model());addRenderLayer(new GeoRenderLayer<>(this){
             @Override public void renderForBone(PoseStack pose,ViewModel v,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,float partial,int light,int overlay){
+                if(bone.getName().equals("crowbar_model")){
+                    // crowbar_model = (V1 frame - MESH_FRAME_Y) x FP_SCALE (tools/build-crowbar-viewmodel.mjs); the bake moved the V1
+                    // frame's origin by MESH_ORIGIN
+                    pose.pushPose();
+                    try{
+                        pose.scale(FP_SCALE,FP_SCALE,FP_SCALE);
+                        pose.translate(-MESH_ORIGIN[0]/16F,-(MESH_ORIGIN[1]+MESH_FRAME_Y)/16F,-MESH_ORIGIN[2]/16F);
+                        AflStaticMeshItemRenderer.drawMesh(MESH,MESH_TEXTURE,pose,buffers,light,overlay);
+                    }finally{pose.popPose();buffers.getBuffer(type);}
+                    return;
+                }
                 if(!bone.getName().equals("right_hand_anchor"))return;
                 var locator=NativeRenderMatrices.detachedCopy(pose);RenderUtils.translateToPivotPoint(locator,bone);
                 try{NativePlayerArmRenderer.renderFullSize(locator,v.right,buffers,light,overlay);}finally{buffers.getBuffer(type);}
@@ -63,6 +82,7 @@ public final class CrowbarFirstPerson {
         });}
         @Override public void preRender(PoseStack pose,ViewModel v,BakedGeoModel model,MultiBufferSource buffers,VertexConsumer buffer,boolean reRender,float partial,int light,int overlay,float r,float g,float b,float a){
             super.preRender(pose,v,model,buffers,buffer,reRender,partial,light,overlay,r,g,b,a);
+            model.getBone("crowbar_model").ifPresent(bone->bone.setHidden(true));   // its layer draws the mesh instead
             pose.translate(-.5,-.51,-.5); // GeoObject's world-object centering is not a camera-space rig offset.
         }
     }

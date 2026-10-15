@@ -33,7 +33,7 @@ public final class ExtendedMagazineTests {
         var ammo=net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(d.ammoType());
         h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.BR51_01.get()),new ItemStack(magItem)),"BR51 incompatible");
         for(int count:new int[]{0,5,17,19,28}){
-            bench.clearContent();p.getInventory().clearContent();q.getInventory().clearContent();
+            bench.clearContent();clearAll(p);clearAll(q);
             p.getInventory().setItem(4,new ItemStack(AflItems.P9_01.get()));
             h.assertTrue(menu.clickMenuButton(p,4),"Place P9");
             h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),d)==17,"Standard17");
@@ -61,6 +61,9 @@ public final class ExtendedMagazineTests {
         for(int i=0;i<28;i++)h.assertTrue(NativeGunAmmo.consumeOne(bench.getItem(0),d),"28 rounds can fire");
         h.assertTrue(!NativeGunAmmo.consumeOne(bench.getItem(0),d),"29th cannot fire");
         NativeGunAmmo.set(bench.getItem(0),d,28);
+        // nothing takes the rounds: no backpack, every pocket and vanilla slot full
+        clearAll(p);com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(p,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK).ifPresent(s->s.setStackInSlot(0,ItemStack.EMPTY));
+        for(int k=0;k<4;k++)p.getInventory().add(new ItemStack(Items.STONE,64));
         for(int i=0;i<36;i++)p.getInventory().setItem(i,new ItemStack(Items.STONE,64));
         level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(root).inflate(5)).forEach(net.minecraft.world.entity.Entity::discard);
         h.assertTrue(MaintenanceAttachmentTransaction.commit(p,request(p,bench,-1)),"Full inventory detach");
@@ -70,5 +73,14 @@ public final class ExtendedMagazineTests {
         drops.forEach(net.minecraft.world.entity.Entity::discard);bench.clearContent();p.containerMenu=p.inventoryMenu;q.containerMenu=q.inventoryMenu;
         h.succeed();
     }
-    private static int count(ServerPlayer p,Item item){return p.getInventory().items.stream().filter(s->s.is(item)).mapToInt(ItemStack::getCount).sum();}
+    /**
+     * Empty vanilla slots and pockets, and a fresh canvas backpack: what comes off a gun goes in by the pickup order now
+     * (docs/ui/afl_inventory_grid_v0_plan.md 13), and 1x2 magazines do not fit the 1x1 pockets.
+     */
+    private static void clearAll(ServerPlayer p){p.getInventory().clearContent();var pk=com.antaurora.apofirstlight.inventory.grid.Pockets.of(p);if(pk!=null)pk.set(new net.minecraft.nbt.ListTag());
+        com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(p,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK)
+                .ifPresent(s->s.setStackInSlot(0,new ItemStack(AflItems.CANVAS_BACKPACK.get())));}
+    /** Vanilla slots and grids: what comes off a gun goes in by the pickup order (plan 13). */
+    private static int count(ServerPlayer p,Item item){return p.getInventory().items.stream().filter(s->s.is(item)).mapToInt(ItemStack::getCount).sum()
+            +com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(p).stream().filter(s->s.is(item)).mapToInt(ItemStack::getCount).sum();}
 }

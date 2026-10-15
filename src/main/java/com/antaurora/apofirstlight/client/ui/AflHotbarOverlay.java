@@ -26,7 +26,9 @@ import java.util.List;
  * item positions as vanilla (182 x 22 at the bottom centre, items at x = centre - 88 + 20 i; one GUI px higher), so the
  * survival cluster, the load bar and the item name keep their places. The selected item lifts and the amber pill
  * follows it ({@link AflItemStrip}); the off-hand item gets its own tile on the off-hand side; the attack indicator, when
- * set to "hotbar", is a small ring gauge where vanilla draws its sword. Items keep vanilla's pick-up pop.
+ * set to "hotbar", is a small ring gauge where vanilla draws its sword. Items keep vanilla's pick-up pop. In Survival /
+ * Adventure the cells are the six quick bindings instead (LoadoutHud, docs/ui/afl_inventory_grid_v0_plan.md 10); the
+ * weapons are listed at the bottom right.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class AflHotbarOverlay {
@@ -52,7 +54,9 @@ public final class AflHotbarOverlay {
         if (mc.options.hideGui || !replaces() || !(mc.getCameraEntity() instanceof Player player)) return;
         gui.setupOverlayRenderState(true, false);
         int centre = width / 2, seedBase = 1;
-        STRIP.render(g, centre - 90, height - 22, 9, player.getInventory().selected, -1, true, 1,
+        if (com.antaurora.apofirstlight.client.inventory.LoadoutHud.active(player))
+            com.antaurora.apofirstlight.client.inventory.LoadoutHud.bindBar(g, mc, player, width, height);
+        else STRIP.render(g, centre - 90, height - 22, 9, player.getInventory().selected, -1, true, 1,
                 (graphics, i, x, y) -> slot(graphics, mc, player, player.getInventory().items.get(i), x, y, partial, seedBase + i));
         ItemStack offhand = player.getOffhandItem();
         HumanoidArm side = player.getMainArm().getOpposite();

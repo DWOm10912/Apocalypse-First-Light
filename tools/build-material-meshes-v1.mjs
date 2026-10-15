@@ -16,7 +16,7 @@ import {Part, extrude, area2, unwrap, paint, png, readPng, zFightLevels, add, su
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BB = path.join(ROOT, 'src/main/blockbench'), ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
-const ATLAS = 256, PAD = 2;
+const ATLAS = 256, ATLAS_DEFAULT = ATLAS, PAD = 2;
 function assert(c, m) { if (!c) throw new Error(m); }
 const orient = (L, ccw) => (area2(L) > 0) === ccw ? L : L.slice().reverse();
 const circle = (cu, cv, r, n, phase = Math.PI / n) => Array.from({length: n}, (_, i) => [cu + r * Math.cos(phase + 2 * Math.PI * i / n), cv + r * Math.sin(phase + 2 * Math.PI * i / n)]);
@@ -236,6 +236,7 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
  * xray: material names drawn only where nothing else is behind them (glass: what is inside shows through it),
  * seamless: part names that get no darker seam around them (a one-pixel needle would leave a dark cross),
  * depthSeam: icon px; a part passing in front of itself by more than this also gets the seam (the turns of a coil).
+ * hide: part names left out of the icon and its fit (straps of worn gear that wrap a body the icon does not show).
  */
 function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5, xray = [], seamless = [], depthSeam = Infinity} = {}) {
   // centreY: the mesh is drawn centred like the item renderer does (rests on y = 0, offset by half its height)
@@ -284,8 +285,10 @@ const GUI = [30, 225, 0];
  * display: per-context ItemTransforms replacing the size rule below (a long thin tool is held like a vanilla handheld).
  * A material with alpha (0..255) is glass: its islands get that Base Color alpha and every part made only of such
  * materials goes to the mesh's translucent layer (AflHybridMeshRendering); the icon draws it through iconOpts.xray.
+ * atlas: atlas size in texels (default 256; big worn gear such as backpacks takes 512 to keep the texel density).
+ * meshOnly: no item model and no icon (a mesh drawn only by code, e.g. a strap worn on the body).
  */
-export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}}) {
+export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}, atlas: ATLAS = ATLAS_DEFAULT, meshOnly = false}) {
   const gui = iconOpts.view ?? GUI;
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
@@ -336,7 +339,8 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
 
   // inventory view fitted to 14 of 16 slot pixels from the projected mesh (used to draw the 2D icon); the world views share
   // one size rule (longest side normalised to 12 px) so every material is held at the same apparent size
-  const centred = PARTS.flatMap(p => p.v).map(q => [q[0], q[1] - size[1] / 2, q[2]]), rot = R3(gui);
+  const iconParts = PARTS.filter(p => !(iconOpts.hide ?? []).includes(p.name));
+  const centred = iconParts.flatMap(p => p.v).map(q => [q[0], q[1] - size[1] / 2, q[2]]), rot = R3(gui);
   const pr = centred.map(rot), px = pr.map(q => q[0]), py = pr.map(q => q[1]);
   const w = Math.max(...px) - Math.min(...px), h = Math.max(...py) - Math.min(...py), s = r3(14 / Math.max(w, h));
   const cx = (Math.max(...px) + Math.min(...px)) / 2, cy = (Math.max(...py) + Math.min(...py)) / 2, k = 12 / Math.max(...size);
@@ -360,8 +364,9 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     [path.join(BB, id + '.bbmodel'), JSON.stringify(source)],
     [path.join(ASSETS, `geo/${id}.geo.json`), JSON.stringify(geo, null, 2) + '\n'],
     [path.join(ASSETS, `meshes/${id}.aflmesh.json`), serializeCompact(sidecar)],
-    [path.join(ASSETS, `models/item/${id}.json`), JSON.stringify(itemModel, null, 2) + '\n'],
-    [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(PARTS, MATS, iconView, size[1] / 2, iconOpts)],
+    // meshOnly: a mesh drawn by code only (no item: no item model, no icon)
+    ...(meshOnly ? [] : [[path.join(ASSETS, `models/item/${id}.json`), JSON.stringify(itemModel, null, 2) + '\n'],
+      [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(iconParts, MATS, iconView, size[1] / 2, iconOpts)]]),
     ...['', '_s', '_n'].flatMap((x, i) => [[path.join(BB, `textures/${atlasName}${x}.png`), PNGS[i]], [path.join(ASSETS, `textures/item/${atlasName}${x}.png`), PNGS[i]]]),
   ];
   const zf = zFightLevels(PARTS, new Map());

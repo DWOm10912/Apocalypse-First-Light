@@ -68,6 +68,9 @@ public final class NativeSuppressorTests {
         var restored=new net.minecraft.world.entity.item.ItemEntity(h.getLevel(),p.getX(),p.getY(),p.getZ(),ItemStack.EMPTY);restored.load(dropTag);
         h.assertTrue(ItemStack.matches(gun,restored.getItem()),"drop entity save/load");
         p.setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY);p.setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);
+        // Survival picks a pistol up only into the pistol position (holster worn) or the grids (docs/ui/afl_inventory_grid_v0_plan.md 10)
+        com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(p,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.HOLSTER)
+                .ifPresent(s->s.setStackInSlot(0,new ItemStack(AflItems.PISTOL_HOLSTER.get())));
         var pickup=restored.getItem().copy();h.assertTrue(p.getInventory().add(pickup)&&pickup.isEmpty(),"pickup inventory");
         var picked=p.getInventory().items.stream().filter(s->s.is(AflItems.P9_01.get())).findFirst().orElseThrow();
         h.assertTrue(ItemStack.matches(gun,picked),"pickup preserves both");

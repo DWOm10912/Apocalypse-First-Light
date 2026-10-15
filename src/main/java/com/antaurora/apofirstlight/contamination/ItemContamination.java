@@ -84,17 +84,22 @@ public final class ItemContamination {
         return getPerItemSourceRate(level) * Math.max(0, count);
     }
 
-    /** Hotbar/main inventory and offhand only; armor and nested inventories are intentionally excluded. */
+    /**
+     * Hotbar/main inventory, offhand and the player's grids (pockets, rig, backpack: Grid Inventory V0, they replace the
+     * main inventory); armor and other nested inventories are intentionally excluded.
+     */
     public static double getPlayerCarriedSourceRate(Player player) {
         if (player == null) return 0.0D;
         return sumStackSourceRates(player.getInventory().items)
-                + sumStackSourceRates(player.getInventory().offhand);
+                + sumStackSourceRates(player.getInventory().offhand)
+                + sumStackSourceRates(com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(player));
     }
 
     public static int getPlayerContaminatedStackCount(Player player) {
         if (player == null) return 0;
         return countContaminatedStacks(player.getInventory().items)
-                + countContaminatedStacks(player.getInventory().offhand);
+                + countContaminatedStacks(player.getInventory().offhand)
+                + countContaminatedStacks(com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(player));
     }
 
     public static double sumStackSourceRates(Iterable<ItemStack> stacks) {

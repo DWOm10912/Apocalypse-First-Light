@@ -55,6 +55,16 @@ public final class AflStaticMeshItemClient {
             // Building Wiring V1: the wire hank (material meshes, 0.5 - 5.545 / 32) and the wrench (equipment meshes, 0.5 - 1.144 / 32)
             bind(AflItems.INSULATED_COPPER_WIRE.get(), "insulated_copper_wire", "insulated_copper_wire_mesh", 0.326722);
             bind(AflItems.WIRING_WRENCH.get(), "wiring_wrench", "wiring_wrench_mesh", 0.464246);
+            // Crowbar mesh (2026-10-14, equipment meshes): authored in the V1 cuboid model's frame, whose origin the bake moves
+            // up 5.0271 px; (-0.8 - 5.0271) / 16 keeps the bar where the V1 model held it (its display transforms are kept)
+            bind(AflItems.CROWBAR.get(), "crowbar", "crowbar_mesh", -0.36419375);
+            // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
+            bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
+            bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);
+            bind(AflItems.HIKING_BACKPACK.get(), "hiking_backpack", "hiking_backpack_mesh", 0.111875);
+            bind(AflItems.GUN_SLING.get(), "gun_sling", "gun_sling_mesh", 0.385235);
+            bind(AflItems.PISTOL_HOLSTER.get(), "pistol_holster", "pistol_holster_mesh", 0.26875);
+            bind(AflItems.SIMPLE_HEARING_PROTECTION.get(), "simple_hearing_protection", "simple_hearing_protection_mesh", 0.280324);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(
@@ -81,6 +91,11 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.METAL_TRASH_CAN.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/metal_trash_can.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/metal_trash_can.png"), 0.0, 0.0), "metal_trash_can");
+            // Furniture Mesh V1 (tools/furniture/furniture-mesh.mjs, 2026-10-15): each piece's mesh and atlas, closed, the lamp unlit; views fitted by the generator
+            for (String id : new String[]{"wooden_kitchen_counter", "wooden_sink_counter", "wooden_wardrobe", "wooden_nightstand", "wooden_storage_chest", "vintage_chest_freezer"})
+                bind(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(ApocalypseFirstLight.MOD_ID, id)), () -> new AflStaticMeshItemRenderer(
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + id + ".geo.json"),
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/furniture/" + id + ".png"), 0.0, 0.0), id);
             // Water Dispenser V2 (tools/build-water-dispenser-v2.mjs): the block's mesh and atlas, lights off; views fitted by the generator
             bind(AflItems.WATER_DISPENSER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/water_dispenser.geo.json"),

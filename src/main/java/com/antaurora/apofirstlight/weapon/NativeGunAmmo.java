@@ -1,5 +1,7 @@
 package com.antaurora.apofirstlight.weapon;
 
+import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -68,6 +70,10 @@ public final class NativeGunAmmo {
             ItemStack stack = inventory.getItem(i);
             if (matches(stack, definition)) result += stack.getCount();
         }
+        // Grid Inventory V0: then the pockets, the rig and the backpack (the client reads its synced copies)
+        for (ItemStack stack : PlayerGrids.stacks(inventory.player)) {
+            if (matches(stack, definition)) result += stack.getCount();
+        }
         return result;
     }
 
@@ -87,6 +93,20 @@ public final class NativeGunAmmo {
             stack.shrink(take);
             remaining -= take;
             loaded += take;
+        }
+        if (remaining > 0 && !inventory.player.level().isClientSide) {
+            var grids = PlayerGrids.view(inventory.player);
+            int fromGrids = 0;
+            for (ItemStack stack : grids.stacks()) {
+                if (remaining <= 0) break;
+                if (!matches(stack, definition)) continue;
+                int take = Math.min(remaining, stack.getCount());
+                stack.shrink(take);
+                remaining -= take;
+                fromGrids += take;
+            }
+            if (fromGrids > 0) grids.commit();
+            loaded += fromGrids;
         }
         set(gun, definition, current + loaded);
         inventory.setChanged();

@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "weapon_classes": {
+    "pistol": "2x1",
+    "smg": "3x2",
+    "rifle": "5x2",
+    "precision_rifle": "5x2",
+    "machine_gun": "5x2",
+    "shotgun": "5x2",
+    "special": "3x2"
+  },
+  "items": {
+    "apocalypse_firstlight:crowbar": "1x3",
+    "apocalypse_firstlight:pistol_holster": "1x2",
+    "apocalypse_firstlight:jerry_can": "3x3",
+    "apocalypse_firstlight:geiger_counter": "1x2",
+    "apocalypse_firstlight:wiring_wrench": "1x2",
+    "apocalypse_firstlight:dirty_water_bottle": "1x2",
+    "apocalypse_firstlight:boiled_water_bottle": "1x2",
+    "apocalypse_firstlight:purified_water_bottle": "1x2",
+    "apocalypse_firstlight:p9_01_extended_magazine": "1x2",
+    "apocalypse_firstlight:br51_extended_magazine_35": "1x2",
+    "apocalypse_firstlight:br51_drum_magazine_50": "2x2",
+    "minecraft:potion": "1x2",
+    "minecraft:splash_potion": "1x2",
+    "minecraft:lingering_potion": "1x2",
+    "minecraft:bow": "2x3",
+    "minecraft:crossbow": "3x2",
+    "minecraft:shield": "2x3",
+    "minecraft:trident": "1x4",
+    "minecraft:fishing_rod": "1x3"
+  },
+  "tag_defaults": [
+    { "tag": "minecraft:swords", "priority": 10, "size": "1x3" },
+    { "tag": "minecraft:axes", "priority": 10, "size": "2x3" },
+    { "tag": "minecraft:pickaxes", "priority": 10, "size": "2x3" },
+    { "tag": "minecraft:shovels", "priority": 10, "size": "1x3" },
+    { "tag": "minecraft:hoes", "priority": 10, "size": "1x3" },
+    { "tag": "forge:armors/helmets", "priority": 5, "size": "2x2" },
+    { "tag": "forge:armors/chestplates", "priority": 5, "size": "3x3" },
+    { "tag": "forge:armors/leggings", "priority": 5, "size": "2x3" },
+    { "tag": "forge:armors/boots", "priority": 5, "size": "2x2" }
+  ]
+}

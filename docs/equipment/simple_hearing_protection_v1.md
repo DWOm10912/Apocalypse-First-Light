@@ -14,7 +14,18 @@
 - 右键戴到耳部栏，耳部栏原来有东西就交换；可从物品栏的耳部栏取下。装备音为 `minecraft:item.armor.equip_leather`。
 - Tooltip 仅显示灰色、非斜体介绍；中英文介绍均写明缓解耳鸣和降低外界声音，不再重复追加功能行。不公开精确百分比，不更改武器属性颜色。
 
-## 已验收资产与运行时模型
+## 网格模型（2026-10-14，替换下一节的 V1 方块模型，未经游戏内验证）
+
+用户 2026-10-14 要求“隔音耳罩也可以顺便 mesh 化”。现在是 AFL 网格 + LabPBR，由 `tools/build-equipment-meshes-v1.mjs` 的 `simple_hearing_protection` 生成（详见 [装备网格 V1](../models/equipment_meshes_v1.md)“2026-10-14 新增”）：
+
+- 外观照旧：皮面耳杯、羊毛垫圈、弹簧钢头箍；按头部坐标建模。
+- 可编辑源 `src/main/blockbench/simple_hearing_protection.bbmodel`（覆盖了 V1 的源，旧源在 git 历史里）；`geo/`、`meshes/` 下同名文件；贴图集 `textures/item/simple_hearing_protection_mesh{,_s,_n}.png`；物品模型改成 `forge:separate_transforms`，物品栏是网格画的 2D 图标 `textures/item/simple_hearing_protection.png`（覆盖了 V1 的 64×64 贴图）。
+- 戴在耳部栏时由 `ClientEquipmentSlots.WornMeshRenderer`（头部坐标）画，不再用 HeadItemRenderer + `ItemDisplayContext.HEAD`。手持、掉落、展示框由 `AflStaticMeshItemRenderer` 画。
+- `client/model/HearingProtectionModelLoader.java` 已删除。
+- 旧存档戴在头盔栏的耳罩：原版 `CustomHeadLayer` 画物品的 HEAD 场合，网格物品模型的 head 用的是默认变换，位置不会对。只影响旧存档，没有处理。
+- 听觉防护的逻辑没有改。
+
+## 已验收资产与运行时模型（V1，2026-10-14 起已被上一节替换）
 
 - 可编辑源：`src/main/blockbench/simple_hearing_protection.bbmodel`，本轮未改。
 - 导出输入：`E:/Download/simple_hearing_protection.json` 和同名 `.png`，本轮未改。

@@ -1,0 +1,69 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/wooden_wardrobe.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/furniture/wooden_wardrobe.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.015625,
+    -0.015625,
+    -0.110125,
+    1.015625,
+    1.975625,
+    0.940625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "door_left": {
+      "pivot": [
+        -0.456,
+        0,
+        -0.14
+      ]
+    },
+    "door_right": {
+      "pivot": [
+        0.456,
+        0,
+        -0.14
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "door_left": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        "door_right": {
+          "rotation": [
+            0,
+            -90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

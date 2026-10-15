@@ -31,7 +31,7 @@ public final class AflHudEvents {
     private static final Set<ResourceLocation> LIFTED = Set.of(VanillaGuiOverlay.ITEM_NAME.id(), VanillaGuiOverlay.RECORD_OVERLAY.id());
     private static final Set<ResourceLocation> FIELD_VIEW_HIDDEN = Set.of(VanillaGuiOverlay.CROSSHAIR.id(), VanillaGuiOverlay.HOTBAR.id(),
             VanillaGuiOverlay.ITEM_NAME.id(), VanillaGuiOverlay.JUMP_BAR.id(), VanillaGuiOverlay.POTION_ICONS.id(),
-            com.antaurora.apofirstlight.client.ui.AflHotbarOverlay.ID);
+            com.antaurora.apofirstlight.client.ui.AflHotbarOverlay.ID, com.antaurora.apofirstlight.client.inventory.LoadoutHud.WEAPON_LIST);
     /** Overlays whose pose this handler pushed in Pre (popped in Post). */
     private static final Set<ResourceLocation> PUSHED = new HashSet<>();
 

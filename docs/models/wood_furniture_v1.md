@@ -77,8 +77,9 @@
   - 上面一个抽屉面（0.69..0.855）。水槽柜的是假抽屉面；抽屉不单独存东西；
   - 下面两扇框板门（0.118..0.684）：门框 + 凹进去的 V 槽面板，铁拉手。
 - 开门：
-  - 有人打开时方块状态 `open=true`，两扇门绕外侧前边各转 90° 朝外开，看得到柜体、隔板、柜底；
-  - 没人开着了，`tick` 复查后关上，像原版木桶；
+  - 按[可搜索容器的统一两步](../gameplay/progressive_container_search_v1.md)（`cabin/FurnitureOpening`）（2026-10-15 起；原来是右键直接开界面、没人开着就自动关）：对着门右键开门（`open=true`，两扇门绕外侧前边各转 90° 朝外开，8 tick 平滑转（2026-10-15 起，以前是一下子换），看得到柜体、隔板、柜底，不开界面）；
+  - 网格（2026-10-15，Furniture Mesh V1）：两种柜子是 AFL 动画网格（[Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)），骨骼 `body` / `door_left` / `door_right`，通道 `open`，方块实体 `WoodCounterBlockEntity` 是宿主；静止时区块画。几何、材质同原来的拼块，导出方法见 [Wood Furniture V2](wood_furniture_v2.md) 第 2 节；门开着时对着两门之间的柜里右键开界面；对着开着的门右键关门；关掉界面门还开着；
+  - 交互区域：Mesh Shape profile `data/apocalypse_firstlight/mesh_shapes/wooden_counter.json`（两种柜子共用，`closed` 区域 `door`，`open` 区域 `door` / `interior`），`tools/build-wood-furniture-v1.mjs` 从门的拼块写出；台面和抽屉面不是交互区域，对着台面右键照常放东西；
   - 开关声 `wood_cabinet_open` / `_close`（用户的素材，2026-10-14，[老宅音效 V1](../audio/forest_home_sounds_v1.md)），在门的位置，3 格，同时发同半径的感染者噪声；原来是原版木桶声。
 - 存储：
   - 原版箱子界面：木质橱柜 9 × 2 = 18 格，水槽柜 9 × 1 = 9 格；
@@ -87,8 +88,8 @@
   - 拆掉时东西掉出来。
 - 战利品表：
   - 用原版的 `RandomizableContainerBlockEntity`，第一次打开时抽战利品表；
-  - **不接逐格搜索**：开局老宅自家的容器打开就是普通储物（计划 P5，用户 2026-10-12 定）；
-  - 以后要把橱柜放进需要搜索的世界结构，得先接 [逐格搜索](../gameplay/progressive_container_search_v1.md)。
+  - 2026-10-15 接上 [逐格搜索](../gameplay/progressive_container_search_v1.md)（40 ticks/格 ±15%）：带战利品表又不是玩家放的柜子第一次开界面要逐格搜，玩家放的、空的打开就是普通储物；
+  - 开局老宅自家容器不用搜的豁免（计划 P5，用户 2026-10-12 定）**还没做**。
 - 水槽柜：
   - 搪瓷水槽外径 64 × 42 cm，沿下 19 cm 深，壁厚 2 cm，翻边高出台面 1.2 cm，在 x 0.10..0.74；
   - 铸铁手压泵在右侧台面（x 0.875, z 0.63）：法兰、泵筒到 1.12、泵头到 1.24，出水嘴伸到水槽上方；
@@ -150,6 +151,7 @@
     - 实体 cutout / solid 类绘制，贴图是方块图集或图集里的一张图；
     - 每个四边形离本格不超过 1.1 格，纹理坐标不出贴图；
   - 不进区块的（半透明层、附魔光效等）由渲染器每帧按录下的顶点重放，开光影时不画进阴影；
+  - 2026-10-15 录制器另开了 `record` / `Replay`：整段画法录一次、在任意位置回放（不交给区块），给地上的枪用（[网格背包计划](../ui/afl_inventory_grid_v0_plan.md) 第 12 节）；枪架本身的行为不变；
   - 区块剔除背面，渲染器从来不剔，所以：
     - 封闭零件的面原样进区块；
     - 其他面补一个反面；
@@ -176,9 +178,9 @@
 | `cast_iron` | 手压泵、排水件：老铸铁黑漆，几块淡锈 | — |
 | `enamel` | 水槽：米白搪瓷，光滑 | — |
 
-- 中性成品木色：
-  - 面色 FACE [142, 112, 82]，晚材 LATE [112, 86, 62]；
-  - 像上过中棕色木器漆，再罩一层油或半哑光清漆。
+- 成品木色（2026-10-15 起，和 V2 共用）：
+  - 胡桃木油饰面，面色 FACE [106, 82, 63]，晚材 LATE [80, 57, 38]；
+  - 之前是中性中棕 FACE [142, 112, 82]、LATE [112, 86, 62]，用户觉得丑，研究和对比见 [Wood Furniture V2](wood_furniture_v2.md) 第 3 节"家具木色"。
 - 比六种木板都暗（木板 L 62.1 红栎 .. 84.7 红枫），所以放在哪种木头的屋子里都像上过漆的家具，不像第七种木头。
 - 色相 70 在红栎（63.8）和白栎（77.9）之间。
 
@@ -207,7 +209,8 @@
   | 对着 | 提示 | 显示在哪 |
   |---|---|---|
   | 椅子 | 坐下 / Sit | 准星 |
-  | 两种柜子 | 打开 / Open | 准星 |
+  | 两种柜子的门（关着 / 开着） | 打开 / Open、关上 / Close | 拉手处 |
+  | 开着的柜里 | 搜索 / Search 或 查看 / View | 柜里 |
   | 枪架 | 挂上 / Hang（长枪）、放上 / Put（搁板）、取下 / Take（空手） | 那一格的位置 |
 
   - 只看主手，副手的情况不提示。
@@ -218,7 +221,7 @@
   - en_us / zh_cn 逐行对齐。
 - 创造栏：AFL 建筑方块，跟在小屋外饰包后面（`CabinBlocks#tabs`）。
 - Jade：用默认的方块名。没有专门的层。
-- 准星和选框（2026-10-13 晚）：桌、椅、两种柜子按拼块网格选中，选框是网格的折边，子弹也按网格打（[Mesh Hit Runtime V1](../rendering/mesh_hit_runtime_v1.md) 0.7 节）。下面各款"选框和碰撞"里的盒子现在只管碰撞。**枪架除外**，仍是盒子：枪是方块实体画的，不在网格里，用网格的话瞄枪会穿过去，取枪的槽位也算不出来。没在游戏里看过。
+- 准星和选框（2026-10-13 晚）：桌、椅按拼块网格选中，选框是网格的折边，子弹也按网格打（[Mesh Hit Runtime V1](../rendering/mesh_hit_runtime_v1.md) 0.7 节）；两种柜子 2026-10-15 起按动画网格算（同文档 0.6 节），门开着按开着的姿势。下面各款"选框和碰撞"里的盒子现在只管碰撞。**枪架除外**，仍是盒子：枪是方块实体画的，不在网格里，用网格的话瞄枪会穿过去，取枪的槽位也算不出来。没在游戏里看过。
 - 开发搭建桥（`src/dev/.../AuthoringFixtureRegistry`）：
   - 两种柜子：`STORAGE_WITH_INVENTORY`，`open=false`，需要地面；
   - 枪架：`STORAGE_WITH_INVENTORY`，需要背后的墙（`ATTACHED_OPPOSITE_FACING`）；
@@ -239,7 +242,7 @@
   - `src/main/java/com/antaurora/apofirstlight/cabin/`：
     - `WoodFurniture.java`：四个方块类 + 方块实体类型和座位实体的注册；
     - `FurnitureSeat.java`；
-    - `WoodCounterBlockEntity.java`（2026-10-15 起格数和开关声从 `WoodFurniture.Storage` 接口读，V2 的衣柜、床头柜、老式冷柜共用它，见 [Wood Furniture V2](wood_furniture_v2.md)）；
+    - `WoodCounterBlockEntity.java`（2026-10-15 起格数和开关声从 `WoodFurniture.Storage` 接口读，V2 的衣柜、床头柜、老式冷柜共用它，见 [Wood Furniture V2](wood_furniture_v2.md)；同日起实现 `AflAnimatedMeshHost`，柜子不再是 `CabinPieces`）；
     - `WoodGunRackBlockEntity.java`；
     - 注册接在 `CabinBlocks`（同一个 Mesh 加载器、同一串 ID）；
     - `CabinMeshModel.EXTRA`：方块实体可以经模型数据往小屋方块的区块里加 cutout 层的四边形（现在只有枪架用）。
@@ -251,20 +254,19 @@
     - `AflBlockEntityRenderers`（枪架 BER，座位用 `NoopRenderer`）；
     - `WorldInteractionHint`。
 - 生成器：
-  - `tools/build-wood-furniture-v1.mjs`：Mesh 部件、方块 / 物品模型、方块状态、战利品表。`--check` 核对所有输出是最新的，并审标签、质量、搬运标签、语言；
+  - `tools/build-wood-furniture-v1.mjs`：Mesh 部件、方块 / 物品模型、方块状态、战利品表；两种柜子经 `tools/furniture/furniture-mesh.mjs` 写成动画网格（`counterMesh`、`meshes()`）。`--check` 核对所有输出是最新的，并审标签、质量、搬运标签、语言；
   - `tools/furniture/wood-furniture-art.mjs`：贴图。
-  - 几何是程序生成的，生成器就是可编辑源，没有 `.bbmodel`（同 [木材建筑方块 V1](wood_building_blocks_v1.md)）。
+  - 几何是程序生成的，生成器就是可编辑源（同 [木材建筑方块 V1](wood_building_blocks_v1.md)）；两种柜子另有生成器写出的 `src/main/blockbench/furniture/wooden_{kitchen,sink}_counter.bbmodel`。
 - 资源：
   - `blockstates/wooden_*.json`；
-  - `models/block/furniture/wooden_*.json`（加载器 `apocalypse_firstlight:cabin`）；
-  - `models/item/wooden_*.json`；
-  - `cabin_mesh/furniture/*.json`：38 个部件，约 1568 个四边形：
+  - `models/block/furniture/wooden_*.json`（加载器 `apocalypse_firstlight:cabin`；两种柜子是 `static_mesh`）；
+  - `models/item/wooden_*.json`（两种柜子是 `builtin/entity`）；
+  - `cabin_mesh/furniture/*.json`：V1 的 34 个部件，1121 个四边形：
     - 桌子 2 × 16 种拼法；
     - 椅子 113；
-    - 橱柜柜体 71；
-    - 门（关）52 / 门（开）76；
-    - 水槽柜柜体 248；
-    - 枪架 102。
+    - 枪架 102；
+    - 柜子的 `counter_body`、`counter_doors_{closed,open}`、`sink_body` 2026-10-15 删了（改成动画网格）；
+  - 两种柜子：`geo/`、`meshes/`、`block_mesh_profiles/` 下的 `wooden_{kitchen,sink}_counter`，图集 `textures/block/furniture/wooden_{kitchen,sink}_counter{,_s,_n}.png`（橱柜 768 × 512、246 个三角形；水槽柜 768 × 768、600 个）；
   - `textures/block/furniture/`；
   - `data/apocalypse_firstlight/loot_tables/blocks/wooden_*.json`。
 - 数据：
@@ -279,8 +281,8 @@
 
 ## 7. 没做 / 已知限制
 
-- 没有合成配方。计划是任何木板都能做，等工匠台或配方那一轮。
-- 柜子不接逐格搜索（见上）。
+- 没有合成配方。用户 2026-10-15 定的做法：在木匠台上，用任意树种的 AFL 木头加油漆做。木匠台和家具用的油漆都还没有（现在只有路面漆），配方等木匠台那一轮（[木材体系计划](../dev/wood_system_plan_v1.md)）。
+- 老宅自家柜子不用搜的豁免还没做（见上）。
 - 手压泵不出水；抽屉不单独存东西。
 - 枪的真实全长是手写表，新枪加进来要补，否则按 1.0 m / 0.21 m。
 - 区块画枪的代价（推算，没测）：
@@ -321,3 +323,5 @@
   - 生存挖掘：五件家具的工具 / 等级标签、`requiresCorrectToolForDrops` 和空手、木斧拆的掉落都对（和其他 M2 方块一起，16 个方块 37 次拆）；
   - 没测：开门动画、关门的 `tick` 复查、起身位置、头部转角，这些要客户端看。
 - **还没实机测**：坐、开关柜门、生存挖掘掉落，等用户实机测。
+- 2026-10-15（两步开合 + 搜索，游戏关着）：`--check` CHECK OK（83 个输出，多了 `mesh_shapes/wooden_counter.json`）；编译通过；`ForestHomeM2GameTests` 重跑 **PASS**：假玩家按视线对门开门（不出界面）、对柜里出 18 / 9 格、对开着的门关上。提示和开合在客户端里的样子没测。
+- 2026-10-15（Furniture Mesh V1，柜子改成动画网格，游戏关着）：`--check` CHECK OK（99 个输出）；`compileJava compileDevJava` 通过；`ForestHomeM2GameTests` **PASS**（柜子开合、界面同上）。门的动画、铰链位置、物品图标、区块和渲染器之间的交接没在客户端看过。

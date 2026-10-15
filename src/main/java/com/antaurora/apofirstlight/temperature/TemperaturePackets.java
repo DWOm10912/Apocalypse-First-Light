@@ -16,17 +16,19 @@ public final class TemperaturePackets {
      * core / ambient in °C (ambient for a future readout device); coldness / heat / danger 0..1 for the orb, computed
      * by the server from its numbers; swayScale: weapon sway × this while shivering; trend −1 (cooling) .. +1 (warming):
      * where the core is heading, for the dial's arrows; target −1 .. +1: the core's target temperature on the dial's scale
-     * (its heat − coldness), for the target frame.
+     * (its heat − coldness), for the target frame; comfortMin °C: the lowest felt temperature the worn insulation keeps
+     * comfortable (comfortLow − insulation), for the inventory page.
      */
     public record State(float core, float ambient, float coldness, float heat, float danger, float swayScale, float trend,
-                        float target) {}
+                        float target, float comfortMin) {}
 
     public static int register(SimpleChannel channel, int id) {
         channel.registerMessage(id++, State.class, (p, b) -> {
             b.writeFloat(p.core()); b.writeFloat(p.ambient()); b.writeFloat(p.coldness()); b.writeFloat(p.heat());
             b.writeFloat(p.danger()); b.writeFloat(p.swayScale()); b.writeFloat(p.trend()); b.writeFloat(p.target());
+            b.writeFloat(p.comfortMin());
         }, b -> new State(b.readFloat(), b.readFloat(), b.readFloat(), b.readFloat(), b.readFloat(), b.readFloat(), b.readFloat(),
-                b.readFloat()),
+                b.readFloat(), b.readFloat()),
                 TemperaturePackets::handleState, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
