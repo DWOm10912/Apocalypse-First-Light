@@ -24,7 +24,7 @@
     - 用户重测：烟囱冒烟 **PASS**（同日）；
   - 用户自己把烟管穿过的那格屋面修回去了；
   - 用户把烟管穿过的那格屋面换成了烟管，屋面上留了一个洞。原设计不用换：烟管正上方的屋面格自己画"烟管穿过 + 防水套 + 泛水板"（[Cabin Exterior V1](cabin_exterior_v1.md)，`roof/<材料>_pipe_<形状>`），烟管从它上面接着往上；
-  - 提出缺煎肉之类的声音：现在只有柴火噼啪声，煮东西没有声音（见第 8 节）。
+  - 提出缺煎肉之类的声音：现在只有柴火噼啪声，煮东西没有声音（见第 8 节）。2026-10-14 用用户的 Firefly 素材补上了炉火、煎炒、烧水循环和开关门、添柴（[老宅音效 V1](../audio/forest_home_sounds_v1.md)），用户 2026-10-15 实机听过，PASS。
 - **还没单独验证**：开门的火焰和光、交互提示、炉子的 Jade（用户没提问题，但没有明确说测过）。
 - 生存挖掘和掉落：2026-10-14 M2 收尾的 GameTest（`ForestHomeM2GameTests`）验过：炉子空手、石镐拆不掉东西，铁镐掉自己；钢板、烟管木镐不掉、石镐掉；石板空手不掉、木镐掉。没在游戏里实机确认。
 
@@ -76,7 +76,7 @@
 | 属性 | 值 | 意思 |
 |---|---|---|
 | `facing` | 水平四向 | 炉子的长边朝哪边（朝屋里）。放的时候朝着放的人 |
-| `open` | true / false | 装柴门开着 |
+| `open` | true / false | 装柴门开着（门 10 tick 平滑转开 / 合上，2026-10-15 起；见第 7 节"炉门动画"） |
 | `lit` | true / false | 在烧 |
 | `load` | 0..3 | 炉膛里还剩几根柴（按剩下的燃料折算，进位） |
 
@@ -93,10 +93,10 @@
    - 拿着打火石或火焰弹，炉子没烧、里面有柴：点火。打火石掉 1 点耐久，火焰弹用掉 1 个；
    - 其他：关门。
 
-声音：
-- 开关门：铁活板门；
-- 添柴：放木头；
-- 点火：打火石 / 火焰弹；
+声音（2026-10-14 起，[老宅音效 V1](../audio/forest_home_sounds_v1.md)；声音和感染者噪声同一半径）：
+- 开关门：`box_stove_door_open` / `_close`，4 格；
+- 添柴：`box_stove_add_wood`，3 格；
+- 点火：打火石 / 火焰弹（原版）；
 - 放上：放金属；
 - 拿下：捡东西。
 
@@ -152,9 +152,11 @@
 - 每 3 tick 一团；刚点火后 300 tick 内每 2 tick 一团，而且更浓；
 - 96 格内能看见。
 
-声音：
-- 营火噼啪声，48 格内；
-- 开门时更响更勤（每 tick 2.5 %，音量 0.7），关门时每 tick 1.2 %，音量 0.35。
+声音（2026-10-14 起不在 `BoxStoveFire` 里，原来的随机营火噼啪声删掉了）：
+- 烧着：炉火循环 `box_stove_fire_loop`，4 格；
+- 炉上有脏水在煮：烧水循环 `box_stove_boil_loop`，6 格；有别的东西在煮：煎炒循环 `box_stove_fry_loop`，8 格；煮好了就停；
+- 循环由 `client/BlockLoopSoundController` 放，淡入 10 tick；服务端每 40 tick 发一次 `MACHINE` 噪声，半径取正在放的最响的那个；
+- 开门关门炉火一样响。
 
 ### 提示、Jade
 
@@ -289,14 +291,21 @@ node tools/afl_minecraft_mcp/forest_home_b_m1.mjs stove
 
 ## 7. 技术
 
+- 炉门动画（2026-10-15）：用户实机发现炉门开关是一下子换的（关 / 开两个拼块）。改成 AFL 动画网格（[Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)），只有门这一件：
+  - 网格 `box_stove_door`（生成器同一个 `door()` 部件，经 `tools/furniture/furniture-mesh.mjs` 导出，图集 512 × 512、652 个三角形，材质还是 `cast_iron` / `cast_iron_edge` / `soot` 等 240 px LabPBR）；骨骼 `door` 铰在门端靠墙那条竖线（框架 x 0、z 0.58），通道 `open` 跟着方块状态 `open`，转 90°，10 tick，`ease_in_out`，开到的位置和原来的开门拼块一样；
+  - `BoxStoveBlockEntity` 是宿主，`BoxStoveRenderer` 先画门（`AflAnimatedBlockMeshRenderer`）再画炉顶的东西，可见距离 128 格；
+  - 炉身、炉膛里的柴、背后的钢板还是拼块、由区块画（钢板要看邻居，没法放进网格）。方块模型不是 `static_mesh`，所以门关着时也由渲染器画，不进区块；128 格外看不到门；
+  - 命中网格：拼块和门的网格合在一起（`MeshHitModels#own`），门开着按开着的姿势；门转动的那几 tick 只有拼块；
+  - 物品图标里的门仍用拼块 `stove/door_closed`；`stove/door_open` 删了。
 - 准星和选框（2026-10-13 晚）：炉子、隔热板按拼块网格选中，选框是网格的折边，子弹也按网格打（[Mesh Hit Runtime V1](../rendering/mesh_hit_runtime_v1.md) 0.7 节）；碰撞不变。放锅 / 取锅的位置（`spotAt`）按命中点算：网格的炉顶板在 0.56、炉盖 0.5615 … 0.567，都在 `TOP − 0.01 … TOP + 0.02` 里，所以照常能用；锅是方块实体画的，不在网格里，瞄锅时射线落到下面的炉顶上，取的就是那个位置。没在游戏里看过。
 - 生成器 `tools/build-box-stove-v1.mjs`，贴图在 `tools/stove/box-stove-art.mjs`。
   - `node tools/build-box-stove-v1.mjs` 写出全部；
-  - `--check` 核对输出是否最新，也审查手改的数据：标签、等级、噪声、重量、搬运、语言、燃料标签、温度热源。当前 `CHECK OK (91 outputs)`。
+  - `--check` 核对输出是否最新，也审查手改的数据：标签、等级、噪声、重量、搬运、语言、燃料标签、温度热源。当前 `CHECK OK (100 outputs)`（2026-10-15，多了炉门网格）。
 - 输出：
   - 贴图：`textures/block/stove/*.png`（`cast_iron`、`cast_iron_edge`、`soot`、`nickel`、`firebrick`、`ash`、`firewood_bark`、`firewood_end`、`heat_shield`、`ceramic`、`flagstone_top_0..8`），每张带 `_s` / `_n`（LabPBR）。
   - 拼块：
-    - `cabin_mesh/stove/`：`body` 698 个四边形，`door_closed` / `door_open` 各 334，`load_1..3`；
+    - `cabin_mesh/stove/`：`body` 698 个四边形，`door_closed` 334（只给物品图标用），`load_1..3`；
+  - 炉门网格：`geo/`、`meshes/`、`block_mesh_profiles/` 下的 `box_stove_door`，图集 `textures/block/stove/box_stove_door{,_s,_n}.png`，可编辑源 `src/main/blockbench/stove/box_stove_door.bbmodel`（生成器写出）；
     - `cabin_mesh/shield/`：`panel_0..15`。
   - 方块 / 物品模型、方块状态、战利品表。
 - 材质：
@@ -306,21 +315,25 @@ node tools/afl_minecraft_mcp/forest_home_b_m1.mjs stove
   - 只有镍件用金属 F0。
 - Java：
   - `cabin/BoxStove`：方块、钢板、拼接、动作；
-  - `cabin/BoxStoveBlockEntity`：燃料、做饭、存档、同步；
-  - `client/BoxStoveRenderer`：炉顶的东西平放，按 FIXED 模型缩到 18 cm；
+  - `cabin/BoxStoveBlockEntity`：燃料、做饭、存档、同步；炉门网格的宿主（`AflAnimatedMeshHost`）；
+  - `client/BoxStoveRenderer`：炉门（动画网格）；炉顶的东西平放，按 FIXED 模型缩到 18 cm；
   - `client/BoxStoveFire`：火、光晕、烟、声音；
   - `compat/jade/BoxStoveJadeProvider`；
   - 注册在 `CabinBlocks`，烟管的钢板旗标在 `CabinBlocks.StovePipe`。
 - 离线预览 `design/buildings/forest_start_home_v1/m2_source/stove_preview.html`：
   - 由 `m1_source/serve.cjs` 提供，three.js；
-  - 拼块、钢板旗标和老宅一样，左边开门烧着（火焰是示意），右边关门冷炉。
+  - 拼块、钢板旗标和老宅一样，左边开门烧着（火焰是示意），右边关门冷炉。2026-10-15 起开门拼块删了，页面里读不到它；没改页面。
 
 ## 8. 已知问题、以后
 
 - 开头「状态」里列的"还没验证"。
-- 煮东西没有声音（没有煎肉的滋滋声、水开的咕嘟声），仓库里也没有这类素材；要用户出 Firefly 素材再接（不用合成的声音）。
+- 炉门动画（2026-10-15）：生成器 `--check` OK（100 个输出）、编译通过、`ForestHomeM2GameTests` PASS（炉门的 profile、网格、图集都在）；**没在客户端看过**：转的方向、铰链位置、门和炉身的光照是否一致（门由渲染器按方块实体光照画，炉身由区块画）。
+- ~~煮东西没有声音~~：2026-10-14 接了用户的煎炒、烧水素材（[老宅音效 V1](../audio/forest_home_sounds_v1.md)），用户 2026-10-15 实机听过，PASS。
+- 炉火循环不随开门关门变响。
 - 烟管穿屋面靠屋面格自己画烟管：烟管格不能当屋面用，换掉屋面就是一个洞。
-- 烟管穿楼板（老宅阁楼 (8, 4, 1)）的那格没有楼板，烟管周围是一个 1 m 的方洞。现实里那里是一块防火封板 / 吊顶支撑盒，还没做。
+- ~~烟管穿楼板（老宅阁楼 (8, 4, 1)）的那格没有楼板，烟管周围是一个 1 m 的方洞~~。2026-10-14 修了：烟管穿木板楼板（2026-10-14，M2 收尾）：烟管格上下都是烟管、同高的四个邻格里至少两面是木板（AFL 各树种的木板 `WoodBlocks.Planks`，或原版 `minecraft:planks`）时，这一格画成楼板：白栎木板面（直接用 `block/wood/white_oak_planks` 的贴图，按方块面投影，和旁边的楼板接得上）围着 30 cm 见方的钢支撑盒，天花板下一块 40 cm 见方的黑钢装饰板，楼板上一块同样大的防火封板，烟管从中间穿过；碰撞和选框是整格，阁楼上能踩。零件 `cabin_mesh/pipe/stove_pipe_floor`，`CabinBlocks.StovePipe` 的 flags 第 8 位。生成器检查、编译通过，**还没进游戏看**；老宅里那一格本来就是烟管，世界不用改，重启后生效。
+- 楼板格的木板面固定是白栎；别的树种的楼板里穿烟管，颜色会对不上（V1 老宅只有白栎）。
+- 烟管方块不挡光（`noOcclusion`），楼板格会漏一点光到阁楼 / 屋里。
 - 一格只能放一个方块，所以炉子和烟管背后的钢板只有旁边有钢板时才画。钢板只挂一边也行，两边都挂最完整。
 - 装不满的那部分柴直接浪费，没有提示。
 - 风门只是外观，不影响烧得快慢。

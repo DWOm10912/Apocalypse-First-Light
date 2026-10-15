@@ -72,6 +72,10 @@ final class AuthoringFixtureRegistry {
     // CommercialGlassDoubleDoorBlock keeps its helper private; this mirrors it: second leaf at facing.getClockWise().
     private static final Multiblock GLASS_DOOR=new Multiblock("part",List.of("lower_left","lower_right","upper_left","upper_right"),
             (a,f,p)->{BlockPos column=p.endsWith("right")?a.relative(f.getClockWise()):a;return p.startsWith("upper")?column.above():column;});
+    // Wood Furniture V2 (2026-10-15): the bed's head the way it faces (foot to head); the vintage freezer's right half at facing.getClockWise()
+    private static final Multiblock BED=new Multiblock("part",List.of("foot","head"),(a,f,p)->p.equals("head")?a.relative(f):a);
+    private static final Multiblock VINTAGE_FREEZER=new Multiblock("part",List.of("left","right"),(a,f,p)->p.equals("right")?a.relative(f.getClockWise()):a);
+    private static final Multiblock STORAGE_CHEST=VINTAGE_FREEZER;
     private static final Multiblock DUMPSTER=new Multiblock("part",List.of("master","secondary"),
             (a,f,p)->CommercialDumpsterBlock.partPosition(a,f,CommercialDumpsterBlock.Part.valueOf(constant(p))));
     private static final Multiblock FUEL_DISPENSER=new Multiblock("cell",List.of("a0","b0","a1","b1","a2","b2"),
@@ -96,6 +100,11 @@ final class AuthoringFixtureRegistry {
     /** The enclosure gate: cells c<col>r<row>, 2 x 2, anchor c0r0, columns along facing.getClockWise(). */
     private static final Multiblock ENCLOSURE_GATE=new Multiblock("cell",List.of("c0r0","c1r0","c0r1","c1r1"),
             (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
+    /** The tube farm gate: cells c<col>r<row>, 4 x 2, anchor c0r0 (the hinge post), columns along facing.getClockWise(). */
+    private static final Multiblock TUBE_FARM_GATE=new Multiblock("cell",List.of("c0r0","c1r0","c2r0","c3r0","c0r1","c1r1","c2r1","c3r1"),
+            (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
+    /** The rural mailbox: cells r0 (anchor, master) and r1 above it. */
+    private static final Multiblock RURAL_MAILBOX=new Multiblock("cell",List.of("r0","r1"),(a,f,p)->a.above(p.charAt(1)-'0'));
     /** The diesel generator: cells c<col>r<row>, 3 x 2, anchor c0r0 (the block's master, holding the block entity, is c1r0), columns along facing.getClockWise(). */
     private static final Multiblock DIESEL_GENERATOR=new Multiblock("cell",List.of("c0r0","c1r0","c2r0","c0r1","c1r1","c2r1"),
             (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
@@ -175,6 +184,18 @@ final class AuthoringFixtureRegistry {
                     .notes("Wood Furniture V1 (2026-10-13): the cabinet with an enamel sink and a cast-iron pitcher pump (looks only), 9 slots; the pump handle reaches 12 cm over the cell at facing.getClockWise() (keep a counter or air there, not a wall)."),
             new Def(A+"wooden_gun_rack",storage,"storage").facing(H4).inventory().support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Wood Furniture V1 (2026-10-13): wall rack, facing = away from the wall; three notches for long guns and a two-place shelf, items kept in its BlockEntity (starts empty). Long guns overhang its cell up to 20 cm each side."),
+            new Def(A+"wooden_bed",safe,"furniture").facing(H4).multi(BED).fixed("occupied","false").support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): a vanilla bed (BedBlock) drawn as a mesh, 2 long. Anchor = foot; facing = foot to head (the head at anchor.relative(facing)). No BlockEntity is created."),
+            new Def(A+"wooden_wardrobe",storage,"storage").facing(H4).multi(TWO_TALL).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): 2 tall, 27 slots on the lower half; facing = the doors, its back against a wall. Doors start shut; open is runtime."),
+            new Def(A+"wooden_nightstand",storage,"storage").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): 9 slots, top at 0.66 (an emergency radio on it sinks to the top); facing = the drawer."),
+            new Def(A+"wooden_tool_rack",storage,"storage").facing(H4).inventory().support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Wood Furniture V2 (2026-10-15): wall rack, facing = away from the wall; three peg pairs for long tools and a two-place shelf (the gun rack's BlockEntity, starts empty). log is computed from the wall (on round logs it stands on pad 12)."),
+            new Def(A+"wooden_storage_chest",storage,"storage").facing(H4).multi(STORAGE_CHEST).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15, blanket chest): 2 wide, 27 slots, the lid opened by the player. Anchor = left master (BlockEntity); right at facing.getClockWise()."),
+            new Def(A+"vintage_chest_freezer",storage,"storage").facing(H4).multi(VINTAGE_FREEZER).fixed("open","false","lit","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): 2 wide, 27 slots, a plug-in appliance (cord from the back). Anchor = left master (BlockEntity); right at facing.getClockWise(); lit is runtime (power)."),
             new Def(A+"modern_office_desk",safe,"office").facing(H4).multi(DESK).support(Support.FLOOR)
                     .notes("3 wide. Anchor = center; left at facing.getCounterClockWise(), right at facing.getClockWise()."),
             new Def(A+"modern_office_chair",safe,"office").facing(H4),
@@ -259,6 +280,10 @@ final class AuthoringFixtureRegistry {
                     .notes("Fuel Stop A1 details V1 (2026-10-09): a packaged rooftop unit, 2 long x 1 deep x 2 high on its roof curb; anchor c0r0, the second column at facing.getClockWise(). The rain hood sticks 0.19 m out of the west (counter-clockwise) end. Look only (no power) in V1."),
             new Def(A+"enclosure_gate",safe,"utility").facing(H4).multi(ENCLOSURE_GATE).variant("hinge","right","left").fixed("open","false").support(Support.NONE)
                     .notes("Trash enclosure V1 (2026-10-09): one steel gate leaf with its own hinge post, 2 wide x 2 high; facing = the outside (the leaf opens toward it), the leaf hangs at the back of its cells. hinge=right: the post in the anchor column c0; hinge=left: in c1 (facing.getClockWise()). A pair closes a 4-cell opening between cmu_screen_wall runs that start in the cells behind."),
+            new Def(A+"tube_farm_gate",safe,"utility").facing(H4).multi(TUBE_FARM_GATE).variant("sign","none","front","back").fixed("open","false").fixed("swing","back").support(Support.NONE)
+                    .notes("Rural Driveway V1 (2026-10-14): a 12 ft five-rail galvanised tube gate on two round wood posts, 4 wide x 2 high; facing = the front (toward the road). Hinge post in the anchor column c0, latch post + chain in c3 (facing.getClockWise()). The leaf hangs across the cells' middle and opens 90 degrees away from the player who uses it; open is runtime. sign = the PRIVATE DRIVE sign on the leaf, readable from the front / back, or none."),
+            new Def(A+"rural_mailbox",storage,"storage").facing(H4).multi(RURAL_MAILBOX).fixed("open","false").variant("flag","false","true").inventory().support(Support.FLOOR)
+                    .notes("Rural Driveway V1 (2026-10-14): a black steel rural mailbox on a 4 x 4 post, 1 cell, 2 high; facing = the door (toward the road). 5 slots (hopper screen), plain storage. flag = the red flag up. Set beside the drive mouth on the right as seen from the road, about 0.5 m off the shoulder."),
             new Def(A+"diesel_generator",safe,"utility").facing(H4).multi(DIESEL_GENERATOR).fixed("open","false").fixed("fill","false").support(Support.NONE)
                     .notes("Diesel standby generator V1 (2026-10-09): a canopy genset on its sub-base fuel tank, 3 long x 1 deep x 2 high; facing = the front (service doors, instrument panel). Anchor c0r0; the master and its block entity are c1r0 (the middle column), whose back face centre is the standard steel power port (a power cable in the cell behind it). Placed off and empty (0 L): fuel with a jerry can at the fill box on the tank step."),
             new Def(A+"portable_diesel_generator",safe,"utility").facing(H4).fixed("cap","false").support(Support.FLOOR)

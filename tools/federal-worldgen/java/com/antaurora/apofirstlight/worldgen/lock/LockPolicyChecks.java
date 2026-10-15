@@ -74,12 +74,58 @@ public final class LockPolicyChecks {
         for (int k = 0; k < 100; k++) h = h.withBaseline(base, new WorldgenLockRecord.HistoryEntry(k, "soft", "k" + k));
         check("history is bounded and keeps the first entry", h.history().size() <= 64 && h.history().get(0).event().equals("create"));
 
+        gated(base, rec);
+
         System.out.println(failed == 0 ? "lock policy: all cases PASS" : "lock policy: " + failed + " FAILED");
         if (failed > 0) System.exit(1);
     }
 
     static Verdict eval(WorldgenLockRecord stored, WorldgenFingerprint current, boolean initialized, String token) {
         return WorldgenLockPolicy.evaluate(stored, current, RULES, initialized, token);
+    }
+
+    /** Gated systems (WorldgenGates; the Main / C3 contract, section 10): per-world switches. */
+    static void gated(WorldgenFingerprint base, WorldgenLockRecord rec) {
+        List<WorldgenSystem> withRoads = new ArrayList<>(RULES);
+        withRoads.add(new WorldgenSystem(WorldgenGates.ROAD_NETWORK, "road_network_c3#1", Severity.HARD, "roads"));
+        withRoads.add(new WorldgenSystem(WorldgenGates.START_AREA, "forest_home_b#1", Severity.HARD, "start"));
+        Map<String, String> pr = probes("p1", "d1", "b1");
+        pr.put(WorldgenGates.ROAD_NETWORK, "r1");
+        WorldgenFingerprint roads = fp(withRoads, 4, "aaaa", pr, tiles(0, 0, 0));
+
+        Verdict created = WorldgenLockPolicy.evaluate(null, roads, withRoads, false, "");
+        expect("gated: new world", created, Action.CREATE);
+        check("  ... records the gated systems on", WorldgenGates.on(created.effective()).containsAll(List.of(WorldgenGates.ROAD_NETWORK, WorldgenGates.START_AREA)));
+        Verdict adopted = WorldgenLockPolicy.evaluate(null, roads, withRoads, true, "");
+        expect("gated: legacy world adopted", adopted, Action.ADOPT_LEGACY);
+        check("  ... every gated system off, its probe dropped", WorldgenGates.on(adopted.effective()).isEmpty()
+                && !adopted.effective().probes().containsKey(WorldgenGates.ROAD_NETWORK));
+        check("  ... and its baseline is the pre-gate fingerprint", adopted.effective().id().equals(base.id()));
+
+        Verdict older = WorldgenLockPolicy.evaluate(rec, roads, withRoads, true, "");
+        expect("gated: world recorded before the gated systems", older, Action.MATCH);
+        check("  ... they stay off for it, as a note", WorldgenGates.on(older.effective()).isEmpty()
+                && older.notes().stream().anyMatch(n -> n.contains("gated systems off")));
+        WorldgenFingerprint roadsSoft = fp(with(withRoads, "forest", "vanilla_trees"), 4, "aaaa", pr, tiles(0, 0, 0));
+        Verdict soft = WorldgenLockPolicy.evaluate(rec, roadsSoft, withRoads, true, "");
+        expect("gated: SOFT change on that world", soft, Action.UPDATE_SOFT);
+        check("  ... the new baseline does not switch them on", WorldgenGates.on(soft.effective()).isEmpty());
+
+        WorldgenLockRecord roadRec = record(created.effective());
+        expect("gated: world created with them, same build", WorldgenLockPolicy.evaluate(roadRec, roads, withRoads, true, ""), Action.MATCH);
+        check("  ... they stay on", WorldgenGates.on(WorldgenLockPolicy.evaluate(roadRec, roads, withRoads, true, "").effective())
+                .contains(WorldgenGates.ROAD_NETWORK));
+        List<WorldgenSystem> roads2 = with(withRoads, WorldgenGates.ROAD_NETWORK, "road_network_c3#2");
+        Map<String, String> pr2 = probes("p1", "d1", "b1");
+        pr2.put(WorldgenGates.ROAD_NETWORK, "r2");
+        Verdict bump = WorldgenLockPolicy.evaluate(roadRec, fp(roads2, 4, "aaaa", pr2, tiles(0, 0, 0)), roads2, true, "");
+        expect("gated: road rules bumped (HARD)", bump, Action.BLOCK);
+        check("  ... the road probe is explained by the declared change", bump.findings().size() == 1
+                && bump.findings().get(0).system().equals(WorldgenGates.ROAD_NETWORK));
+        Verdict silentRoads = WorldgenLockPolicy.evaluate(roadRec, fp(withRoads, 4, "aaaa", pr2, tiles(0, 0, 0)), withRoads, true, "");
+        expect("gated: road output changed, nothing declared", silentRoads, Action.BLOCK);
+        check("  ... says so", silentRoads.findings().stream().anyMatch(f -> f.system().equals("probe:" + WorldgenGates.ROAD_NETWORK)));
+        expect("gated: world with roads opened by a build without them", WorldgenLockPolicy.evaluate(roadRec, base, RULES, true, ""), Action.BLOCK);
     }
 
     static void expect(String name, Verdict v, Action want) {

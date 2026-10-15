@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.cabin;
 
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -54,7 +55,9 @@ import java.util.Optional;
  * Box Stove V1 (docs/models/box_stove_v1.md, 2026-10-13): the cast-iron box stove and its heat shield, the forest start
  * home B's heating and cooking (docs/worldgen/forest_start_home_b_v1_plan.md, M2 F1; user 2026-10-13: stove A, the heat
  * shield a block of its own). Mesh blocks ({@link CabinPieces}, pieces cabin_mesh/stove/ and cabin_mesh/shield/,
- * tools/build-box-stove-v1.mjs), drawn facing north (front at z 0, the wall at z 1; the stove's door end at x 0).
+ * tools/build-box-stove-v1.mjs), drawn facing north (front at z 0, the wall at z 1; the stove's door end at x 0). The
+ * loading door is an AFL Animated Block Mesh (box_stove_door, 2026-10-15): it swings, drawn by the block entity renderer
+ * ({@link BoxStoveBlockEntity} its host); the rest are pieces drawn by the chunk.
  * <ul>
  * <li>{@link Stove}: burns wood (item tags {@code apocalypse_firstlight:stove_fuel/logs | wood | kindling}); the door opens
  * on a right-click (fuel goes in, a flint and steel or fire charge lights it), the top takes two things to cook (anything
@@ -77,6 +80,12 @@ public final class BoxStove {
     /** In the north frame (tools/build-box-stove-v1.mjs): the top plate's height, the two cook spots on it (x, z). */
     public static final double TOP = 0.56;
     public static final double[][] SPOTS = {{0.11, 0.46}, {0.31, 0.46}};
+    /**
+     * Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): the loading door, a split dropped in,
+     * and the loops while they run (the fire, a pot boiling, a pan frying; client BlockLoopSoundController, and
+     * BoxStoveBlockEntity's machine noise every 2 s).
+     */
+    public static final double DOOR_RADIUS = 4, WOOD_RADIUS = 3, FIRE_RADIUS = 4, BOIL_RADIUS = 6, FRY_RADIUS = 8;
 
     private BoxStove() {}
 
@@ -272,12 +281,12 @@ public final class BoxStove {
             switch (a) {
                 case OPEN, CLOSE -> {
                     level.setBlock(pos, state.setValue(OPEN, a == Action.OPEN), 3);
-                    level.playSound(null, pos, a == Action.OPEN ? SoundEvents.IRON_TRAPDOOR_OPEN : SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.7F, 0.85F);
+                    noisy(level, player, state, pos, a == Action.OPEN ? AflSounds.BOX_STOVE_DOOR_OPEN.get() : AflSounds.BOX_STOVE_DOOR_CLOSE.get(), DOOR_RADIUS);
                 }
                 case FUEL -> {
                     stove.addFuel(fuelTicks(held));
                     if (!creative) held.shrink(1);
-                    level.playSound(null, pos, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 0.8F, 0.9F);
+                    noisy(level, player, state, pos, AflSounds.BOX_STOVE_ADD_WOOD.get(), WOOD_RADIUS);
                 }
                 case LIGHT -> {
                     stove.light();
@@ -302,6 +311,13 @@ public final class BoxStove {
                 default -> {}
             }
             return InteractionResult.CONSUME;
+        }
+
+        /** At the loading door, heard as far as its noise; the pitch varies 2 % at most (the takes are timed to the door). */
+        private static void noisy(Level level, Player player, BlockState state, BlockPos pos, net.minecraft.sounds.SoundEvent sound, double radius) {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, doorPoint(state, pos), sound, radius,
+                        0.98F + level.random.nextFloat() * 0.04F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, ForgeRegistries.BLOCKS.getKey(state.getBlock()));
         }
 
         /** The top is hot while it burns (like a magma block; stepping carefully is safe). */
@@ -329,8 +345,7 @@ public final class BoxStove {
         @Override
         public void cabinPieces(BlockState state, int flags, Sink sink) {
             int r = CabinBlocks.turn(state.getValue(FACING)), load = state.getValue(LOAD);
-            sink.add("stove/body", r);
-            sink.add(state.getValue(OPEN) ? "stove/door_open" : "stove/door_closed", r);
+            sink.add("stove/body", r);   // the door: an animated mesh (BoxStoveBlockEntity)
             if (load > 0) sink.add("stove/load_" + load, r);
             if ((flags & 1) != 0) sink.add("shield/panel_" + (flags >> 1 & 15), r);
         }

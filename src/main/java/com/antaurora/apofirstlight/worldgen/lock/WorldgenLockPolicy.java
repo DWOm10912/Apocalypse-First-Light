@@ -21,6 +21,8 @@ import java.util.TreeSet;
  *   <li>any HARD change: {@link Action#BLOCK}, the world is not opened and nothing is written, unless the world's
  *   server config carries this exact change's token: {@link Action#ACCEPT_HARD} (recorded in the history).</li>
  * </ul>
+ * Gated systems ({@link WorldgenGates}) are compared on the world's effective fingerprint: a gated system the record
+ * lacks is off for the world, not a change; {@link Verdict#effective} is what the world records.
  */
 public final class WorldgenLockPolicy {
     private WorldgenLockPolicy() {}
@@ -29,19 +31,26 @@ public final class WorldgenLockPolicy {
 
     public record Finding(String system, Severity severity, String stored, String current, String note) {}
 
-    /** notes: informational lines (e.g. a plan cache format change) that do not count as findings. */
-    public record Verdict(Action action, List<Finding> findings, List<String> notes, String token) {
+    /**
+     * notes: informational lines (e.g. a plan cache format change) that do not count as findings; effective: the
+     * running fingerprint as this world has it (WorldgenGates.effective), the one to record.
+     */
+    public record Verdict(Action action, List<Finding> findings, List<String> notes, String token, WorldgenFingerprint effective) {
         public boolean hard() { return findings.stream().anyMatch(f -> f.severity() == Severity.HARD); }
     }
 
-    public static Verdict evaluate(WorldgenLockRecord stored, WorldgenFingerprint current, List<WorldgenSystem> rules,
+    public static Verdict evaluate(WorldgenLockRecord stored, WorldgenFingerprint running, List<WorldgenSystem> rules,
                                    boolean worldInitialized, String acceptToken) {
-        Objects.requireNonNull(current);
+        Objects.requireNonNull(running);
+        WorldgenFingerprint current = WorldgenGates.effective(stored, running, worldInitialized);
         if (stored == null)
-            return new Verdict(worldInitialized ? Action.ADOPT_LEGACY : Action.CREATE, List.of(), List.of(), "");
+            return new Verdict(worldInitialized ? Action.ADOPT_LEGACY : Action.CREATE, List.of(),
+                    worldInitialized && current != running ? List.of("gated systems off for an adopted world: " + offList(running, current)) : List.of(),
+                    "", current);
         WorldgenFingerprint was = stored.fingerprint();
         List<Finding> findings = new ArrayList<>();
         List<String> notes = new ArrayList<>();
+        if (current != running) notes.add("gated systems off for this world (not in its record): " + offList(running, current));
         if (stored.schema() > WorldgenLockRecord.SCHEMA)
             notes.add("the lock record was written by a newer AFL build (schema " + stored.schema() + ")");
         if (was.seed() != current.seed())
@@ -91,7 +100,8 @@ public final class WorldgenLockPolicy {
             } else if (noise) {
                 findings.add(new Finding("probe:" + p, Severity.SOFT, a, b, "follows the floating-point plan difference"));
             } else {
-                findings.add(new Finding("probe:" + p, Severity.HARD, a, b, switch (p) {
+                findings.add(new Finding("probe:" + p, Severity.HARD, a, b, WorldgenGates.gated(p)
+                        ? "the " + p + " output changed without a declared version change" : switch (p) {
                     case WorldgenFingerprint.PROBE_DENSITY -> "the chunk terrain density changed without a declared version change "
                             + "(another mod or data pack replacing overworld noise settings, or an undeclared AFL change)";
                     case WorldgenFingerprint.PROBE_BIOMES -> "the overworld biomes changed without a declared version change "
@@ -107,7 +117,13 @@ public final class WorldgenLockPolicy {
         if (findings.isEmpty()) action = Action.MATCH;
         else if (findings.stream().noneMatch(f -> f.severity() == Severity.HARD)) action = Action.UPDATE_SOFT;
         else action = token.equals(acceptToken == null ? "" : acceptToken.trim()) ? Action.ACCEPT_HARD : Action.BLOCK;
-        return new Verdict(action, List.copyOf(findings), List.copyOf(notes), token);
+        return new Verdict(action, List.copyOf(findings), List.copyOf(notes), token, current);
+    }
+
+    private static String offList(WorldgenFingerprint running, WorldgenFingerprint effective) {
+        List<String> off = new ArrayList<>();
+        for (String id : running.systems().keySet()) if (!effective.systems().containsKey(id)) off.add(id);
+        return String.join(", ", off);
     }
 
     private static boolean changed(WorldgenFingerprint a, WorldgenFingerprint b, String id) {
@@ -120,7 +136,9 @@ public final class WorldgenLockPolicy {
         return switch (probe) {
             case WorldgenFingerprint.PROBE_DENSITY -> plan || changed(a, b, "terrain_density");
             case WorldgenFingerprint.PROBE_BIOMES -> plan || changed(a, b, "ecology");
-            default -> plan || changed(a, b, "river_carving") || changed(a, b, "ecology");
+            // a gated system's probe carries the system's id (WorldgenGates)
+            default -> WorldgenGates.gated(probe) ? plan || changed(a, b, probe)
+                    : plan || changed(a, b, "river_carving") || changed(a, b, "ecology");
         };
     }
 

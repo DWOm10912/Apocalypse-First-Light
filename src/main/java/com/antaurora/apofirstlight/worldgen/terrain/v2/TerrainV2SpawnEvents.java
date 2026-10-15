@@ -48,7 +48,8 @@ public final class TerrainV2SpawnEvents {
             ApocalypseFirstLight.LOGGER.warn("[AFL Terrain V2] no plain spawn cell within {} blocks; vanilla spawn search", SEARCH_RADIUS);
             return;
         }
-        int y = (int) Math.ceil(plan.heightAt(xz[0] + 0.5, xz[1] + 0.5));
+        // C3.2: a spawn on a road stands on the finished surface (cut or fill), not the planned ground
+        int y = (int) Math.ceil(access.apocalypse$roadWorksRef().height(xz[0], xz[1], plan.heightAt(xz[0] + 0.5, xz[1] + 0.5)));
         ServerLevelData data = event.getSettings();
         data.setSpawn(new BlockPos(xz[0], y, xz[1]), 0.0F);
         event.setCanceled(true);

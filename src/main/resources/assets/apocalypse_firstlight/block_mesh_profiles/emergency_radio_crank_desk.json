@@ -1,0 +1,49 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/emergency_radio_crank.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/radio/emergency_radio_crank.png",
+  "origin": [
+    0,
+    -0.15625,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.691875,
+    -0.142625,
+    0.413625,
+    0.753125,
+    0.030125,
+    0.586375
+  ],
+  "parts": {
+    "crank": {
+      "pivot": [
+        0.2075,
+        0.1,
+        0
+      ]
+    }
+  },
+  "animations": {
+    "crank": {
+      "duration_ticks": 16,
+      "easing": "linear",
+      "wrap": true,
+      "transforms": {
+        "crank": {
+          "rotation": [
+            -360,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

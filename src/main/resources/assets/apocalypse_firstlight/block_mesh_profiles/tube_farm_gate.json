@@ -1,0 +1,92 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/tube_farm_gate.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/tube_farm_gate.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.014088,
+    -0.015625,
+    -3.137909,
+    4.014088,
+    1.665625,
+    4.137909
+  ],
+  "parts": {
+    "frame": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "swing": {
+      "pivot": [
+        -0.322,
+        0,
+        0
+      ]
+    },
+    "leaf": {
+      "pivot": [
+        -0.322,
+        0,
+        0
+      ],
+      "parent": "swing"
+    },
+    "sign_front": {
+      "pivot": [
+        -0.322,
+        0,
+        0
+      ],
+      "parent": "leaf"
+    },
+    "sign_back": {
+      "pivot": [
+        -0.322,
+        0,
+        0
+      ],
+      "parent": "leaf"
+    }
+  },
+  "animations": {
+    "open_front": {
+      "duration_ticks": 24,
+      "easing": "ease_in_out",
+      "transforms": {
+        "swing": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    },
+    "open_back": {
+      "duration_ticks": 24,
+      "easing": "ease_in_out",
+      "transforms": {
+        "leaf": {
+          "rotation": [
+            0,
+            -90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

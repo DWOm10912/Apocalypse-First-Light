@@ -97,6 +97,55 @@ public final class ColdMist {
         last[1] = open[1];
     }
 
+    // tools/build-wood-furniture-v2.mjs FREEZER, north-frame blocks from the master's corner: the well, its rim, the cabinet ends
+    private static final double V_WELL_X0 = .3, V_WELL_X1 = 1.7, V_WELL_Z0 = .27, V_WELL_Z1 = .83, V_RIM = .835, V_FRONT = .18,
+            V_END_X0 = .2, V_END_X1 = 1.8;
+
+    /**
+     * Client tick of the vintage chest freezer's master (Wood Furniture V2, WoodFurnitureV2.VintageFreezer#getTicker), only
+     * while it has power: its lid is steel, so nothing shows while closed; open, wisps rise from the whole well and mist
+     * wells over the front rim and the ends (the raised lid stands over the back); the lid going up lets out a burst.
+     */
+    public static void vintageFreezerTick(Level level, BlockPos master, Direction facing, boolean powered, boolean open, BlockEntity freezer) {
+        double scale = scale(level, master);
+        if (scale <= 0 || !powered) {
+            LAST_OPEN.remove(freezer);
+            return;
+        }
+        double now = open ? 1 : 0;
+        double[] last = LAST_OPEN.computeIfAbsent(freezer, ignored -> new double[]{now});
+        RandomSource random = level.random;
+        // the well is 1.6 commercial halves wide: rates scaled to match
+        double share = (V_WELL_X1 - V_WELL_X0) * 16 / HALF_WIDTH * scale;
+        if (open) {
+            for (int i = count(random, WISP_RATE * share); i-- > 0; )
+                vintage(level, master, facing, Kind.WISP, between(random, V_WELL_X0 + .04, V_WELL_X1 - .04), between(random, V_RIM - .08, V_RIM - .02),
+                        between(random, V_WELL_Z0 + .05, V_WELL_Z1 - .05), drift(random), between(random, .002, .004), drift(random));
+            for (int i = count(random, SPILL_FRONT_RATE * share); i-- > 0; )
+                vintage(level, master, facing, Kind.SPILL, between(random, V_WELL_X0 + .04, V_WELL_X1 - .04), between(random, V_RIM + .012, V_RIM + .03),
+                        between(random, V_FRONT - .08, V_FRONT - .01), drift(random), 0, -between(random, .009, .013));
+            for (int end = 0; end < 2; end++) {
+                double outward = end == 0 ? -1 : 1, x = end == 0 ? V_END_X0 : V_END_X1;
+                for (int i = count(random, SPILL_END_RATE * scale); i-- > 0; )
+                    vintage(level, master, facing, Kind.SPILL, x + outward * between(random, .01, .08), between(random, V_RIM + .012, V_RIM + .03),
+                            between(random, V_WELL_Z0 + .1, V_WELL_Z1 - .1), outward * between(random, .009, .013), 0, drift(random));
+            }
+        }
+        if (now > last[0])
+            for (int i = count(random, LID_BURST * share / 2); i-- > 0; )
+                vintage(level, master, facing, Kind.BURST, between(random, V_WELL_X0, V_WELL_X1), between(random, V_RIM - .1, V_RIM),
+                        between(random, V_WELL_Z0 + .06, V_WELL_Z1 - .06), drift(random), between(random, .006, .012),
+                        random.nextInt(3) == 0 ? -between(random, .004, .008) : drift(random));
+        last[0] = now;
+    }
+
+    /** North-frame blocks from the master's corner (the vintage freezer's frame); velocity in the source axes. */
+    private static void vintage(Level level, BlockPos master, Direction facing, Kind kind, double x, double y, double z,
+                                double vx, double vy, double vz) {
+        emit(level, kind, com.antaurora.apofirstlight.cabin.WoodFurnitureV2.VintageFreezer.local(master, facing, x, y, z),
+                MeshSourceFrame.toWorldDirection(facing, vx, vy, vz));
+    }
+
     /** The uncovered part of one half, x0..x1; outward: +1 when its outer end is the master's (+x), -1 the slave's. */
     private static void openHalf(Level level, BlockPos master, Direction facing, RandomSource random, double scale,
                                  double x0, double x1, int outward) {
@@ -145,8 +194,10 @@ public final class ColdMist {
     /** Source px position, blocks/tick velocity (source axes: +x the viewer's left, -z the front). */
     private static void spawn(Level level, BlockPos master, Direction facing, Kind kind, double x, double y, double z,
                               double vx, double vy, double vz) {
-        Vec3 at = MeshSourceFrame.toWorld(master, facing, x, y, z);
-        Vec3 velocity = MeshSourceFrame.toWorldDirection(facing, vx, vy, vz);
+        emit(level, kind, MeshSourceFrame.toWorld(master, facing, x, y, z), MeshSourceFrame.toWorldDirection(facing, vx, vy, vz));
+    }
+
+    private static void emit(Level level, Kind kind, Vec3 at, Vec3 velocity) {
         var particle = Minecraft.getInstance().particleEngine.createParticle(AflParticles.COLD_MIST.get(),
                 at.x, at.y, at.z, velocity.x, velocity.y, velocity.z);
         if (!(particle instanceof ColdMistParticle mist)) return;

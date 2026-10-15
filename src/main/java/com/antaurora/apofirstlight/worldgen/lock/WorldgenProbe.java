@@ -25,7 +25,10 @@ import java.util.Map;
  *   <li>{@code density}: the noise router's final density at 16 x 16 columns x 7 heights (-40 .. 130), quantised to
  *   1/1024 (the overworld noise settings, the Plan*Density functions, caves);</li>
  *   <li>{@code biomes}: the biome source's noise biome at 32 x 32 columns x 3 heights (Y0, Y64, Y80): the AFL ecology
- *   mapping through TerraBlender's parameter list (initialised at ServerAboutToStart, before this runs).</li>
+ *   mapping through TerraBlender's parameter list (initialised at ServerAboutToStart, before this runs);</li>
+ *   <li>{@code road_network} (federal, C3.2; a gated system's probe): the digest of the planned road network JSON
+ *   (RoadNetworkRuntime: the plan's routes, profiles and structures). The first load of a seed plans it (about 8 s) and
+ *   caches it; the density probe runs before the works are bound, so it never depends on them.</li>
  * </ul>
  * About 3 600 evaluations, tens of milliseconds, on the server thread while the world loads.
  */
@@ -43,6 +46,8 @@ final class WorldgenProbe {
         probes.put(WorldgenFingerprint.PROBE_PLAN, pf.queryDigest());
         probes.put(WorldgenFingerprint.PROBE_DENSITY, density(level, plan));
         probes.put(WorldgenFingerprint.PROBE_BIOMES, biomes(level, plan));
+        if (plan.federal() && rules.stream().anyMatch(r -> r.id().equals(WorldgenGates.ROAD_NETWORK)))
+            probes.put(WorldgenGates.ROAD_NETWORK, com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.get(seed, plan, pf.planDigest()).digest());
         return new WorldgenFingerprint(profile.lockProfile, seed, WorldgenSystem.versions(rules),
                 plan.federal() ? TerrainPlanSurface.FORMAT_LAYERS : TerrainPlanSurface.FORMAT,
                 pf.planDigest(), probes, pf.tiles());

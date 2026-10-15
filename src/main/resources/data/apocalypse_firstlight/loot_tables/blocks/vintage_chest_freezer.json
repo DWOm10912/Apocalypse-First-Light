@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:vintage_chest_freezer"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        },
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "apocalypse_firstlight:vintage_chest_freezer",
+          "properties": {
+            "part": "left"
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "apocalypse_firstlight:blocks/vintage_chest_freezer"
+}

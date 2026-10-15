@@ -1,0 +1,4 @@
+# AFL Rural Driveway V1 rural mailbox (shut, flag down, item)
+newmtl mailbox
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/rural_mailbox

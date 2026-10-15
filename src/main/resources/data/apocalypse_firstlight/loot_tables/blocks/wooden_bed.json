@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:wooden_bed"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        },
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "apocalypse_firstlight:wooden_bed",
+          "properties": {
+            "part": "head"
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "apocalypse_firstlight:blocks/wooden_bed"
+}

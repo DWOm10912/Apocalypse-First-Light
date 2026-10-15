@@ -22,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Hit meshes by block state (docs/rendering/mesh_hit_runtime_v1.md): every block of this mod whose state resolves (its
  * blockstate JSON, or {@link MeshHitProvider}) to Forge OBJ models has one, unless listed in {@link #EXCLUDED}; so does
- * every AFL animated mesh block (its block entity an AflAnimatedMeshHost, AnimatedMeshHits). Every cell of a
+ * every AFL animated mesh block (its block entity an AflAnimatedMeshHost, AnimatedMeshHits), and road_structure (the
+ * road network's drawn bridge mesh inside its cell, RoadStructureHits). Every cell of a
  * {@link MeshHitMultiCell} block has its master's whole model. Models load on first use and stay (they come from the jar,
  * not a resource pack); both sides build the same.
  */
@@ -147,8 +148,20 @@ public final class MeshHitModels {
 
     @Nullable
     private static Shape own(BlockGetter level, BlockPos pos, BlockState state) {
-        if (state.hasBlockEntity() && level.getBlockEntity(pos) instanceof AflAnimatedMeshHost host) return AnimatedMeshHits.shape(host);
+        if (state.hasBlockEntity() && level.getBlockEntity(pos) instanceof AflAnimatedMeshHost host) {
+            Shape moving = AnimatedMeshHits.shape(host);
+            // cabin pieces with one moving part as an animated mesh (the box stove's door, the radio's crank, 2026-10-15):
+            // both; while the part moves (no animated shape yet) the pieces alone
+            if (!CabinMeshHits.covers(state)) return moving;
+            Shape pieces = CabinMeshHits.shape(level, pos, state);
+            if (moving == null || pieces == null) return pieces == null ? moving : pieces;
+            List<Placed> both = new ArrayList<>(pieces.parts);
+            both.addAll(moving.parts);
+            return new Shape(both);
+        }
         if (CabinMeshHits.covers(state)) return CabinMeshHits.shape(level, pos, state);
+        // a bridge's invisible collision: the road network's drawn mesh inside the cell (RoadStructureHits)
+        if (state.getBlock() instanceof com.antaurora.apofirstlight.block.RoadStructureBlock) return RoadStructureHits.shape(level, pos);
         if (state.getBlock() instanceof MeshHitAssembled assembled)
             return ASSEMBLED.computeIfAbsent(List.copyOf(assembled.meshHitPieces(level, pos, state)), MeshHitModels::merged).orElse(null);
         if (state.getBlock() instanceof MeshHitProvider provider) {

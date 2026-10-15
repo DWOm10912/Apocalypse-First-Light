@@ -2,7 +2,7 @@
 
 森林开局 B「溪谷老宅」M2 的 F4（[实现计划](../worldgen/forest_start_home_b_v1_plan.md) 包 F）。外形来自用户花钱请人做的纯 cube 模型（54 个方块，概念图「地堡收音机」BR-10）。我把它 Mesh 化，做成游戏方块。
 
-用户 2026-10-14 定：**先不做接收信号**。V1 能摇、能开关、表盘会亮，不出声、不收广播。
+用户 2026-10-14 定：**先不做接收信号**。V1 能摇、能开关、表盘会亮，不收广播；2026-10-14 起有摇柄、开关声和开着时的底噪（[老宅音效 V1](../audio/forest_home_sounds_v1.md)），没有调频和广播声。
 
 状态：
 - 代码、资源、生成器 `--check`、编译、GameTest 都通过；离线网页预览看过外观；
@@ -23,8 +23,8 @@
   | `facing` | 四个水平方向 | 正面朝向；放的时候正面朝着放的人 |
   | `on` | true / false | 拨动开关在 FM / OFF |
   | `lit` | true / false | 在播：开着而且有电；表盘和电源灯发光 |
-  | `crank` | 0..3 | 摇柄转到第几个四分之一圈 |
-  | `surface` | `floor` / `table` / `counter` / `desk` | 放在什么上面，决定往下沉多少 |
+  | `crank` | 0..3 | 摇柄转到第几个四分之一圈（摇柄网格按它连续转，见第 4 节） |
+  | `surface` | `floor` / `table` / `counter` / `desk` / `nightstand` | 放在什么上面，决定往下沉多少 |
 
 - 创造栏：AFL 建筑方块，跟在小屋方块后面（`CabinBlocks#tabs`，排在石板后面）。
 
@@ -41,6 +41,7 @@
   | 木桌 `wooden_table` | `table` | 0.24 格 | 桌面在 0.76 |
   | 木质橱柜 / 木质水槽柜 | `counter` | 0.10 格 | 台面在 0.90 |
   | 现代办公桌 `ModernOfficeDeskBlock` | `desk` | 2.5/16 格 | 桌面在 13.5/16 |
+  | 木床头柜 `wooden_nightstand`（2026-10-15，[Wood Furniture V2](wood_furniture_v2.md)） | `nightstand` | 0.34 格 | 台面在 0.66 |
   | 别的顶面中间结实的方块 | `floor` | 0 | 直接放在上面 |
   | 都不是 | — | — | 放不了 |
 
@@ -59,15 +60,15 @@
   - 满电 24000 tick（20 分钟），从空摇满要 80 秒；
   - 每四分之一圈扣耐力 0.4（`costs.crank`，每秒 2 点，和挖掘一样，打断恢复）。摇满一次要 160 点，比满耐力（100）多，中间会力竭一次；
   - 力竭时每下只充 48 tick（×0.8，`winded.dig_speed`，[耐力系统](../gameplay/stamina_system_v1.md)）；
-  - 声音：原版弩上弦（中段）当占位，音量 0.2，音调随转角 1.5–1.8。
+  - 声音：`emergency_radio_crank`，8 段 0.2 s 棘轮声随机一段，3 格（2026-10-14，[老宅音效 V1](../audio/forest_home_sounds_v1.md)；原来是原版弩上弦当占位）。
 - 开关：
   - 开机拨到 FM，关机拨到 OFF。V1 只有这两档，AM 档没做；
-  - 声音：原版拉杆，音量 0.25，开 1.8、关 1.6。
+  - 声音：`emergency_radio_switch_on` / `_off`，2 格（2026-10-14；原来是原版拉杆）。
 - 播：
   - 开着而且有电时 `lit`：表盘背光（暖黄）和电源灯（红）发光，方块光 2；
   - 电每 tick 少 1，客户端同步往下数（提示和 Jade 用）；
   - 电用完：灯灭，开关还在 FM；再摇就又亮；
-  - V1 不出声。
+  - 开着且有电时放底噪循环 `emergency_radio_static_loop`，12 格；服务端每 40 tick 发一次同半径的 `MACHINE` 噪声（2026-10-14）。还没有调频和广播。
 - 拆：电量跟着物品走（战利品表 `copy_nbt`：`Charge` → `BlockEntityTag.Charge`），再放下还是那么多电；开关状态不带，放下是关着的。
 
 ## 4. 模型和材质
@@ -80,16 +81,24 @@
   | `body` | 1176 | 一直画 |
   | `dial_off` / `dial_lit` | 30 / 30 | `lit` 关 / 开 |
   | `slider_off` / `slider_fm` | 26 / 26 | `on` 关 / 开 |
-  | `crank_0` .. `crank_3` | 60 × 4 | 按 `crank` |
+  | `crank_0` | 60 | 只给物品图标用 |
 
-  一个状态画 1292 个四边形。
+  一个状态区块画 1232 个四边形。
+- 摇柄动画（2026-10-15）：用户实机发现摇柄是跳帧的（四个四分之一圈各一个拼块）。改成 AFL 动画网格（[Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)），只有摇臂这一件：
+  - 网格 `emergency_radio_crank`（生成器同一个摇臂部件，经 `tools/furniture/furniture-mesh.mjs` 导出，图集 512 × 256、112 个三角形）；骨骼 `crank` 的轴在摇柄座外端（x 0.7075、y 0.1、z 0.5）；
+  - 通道 `crank` 是环绕通道（`wrap`，0 和 1 是同一个姿势），值 = `crank` / 4，绕 x 转 −360°（下 → 后 → 上 → 前，和原来四个拼块一样），一整圈 16 tick、`linear`：按住右键每 4 tick 进一格，摇臂正好 4 tick 转完四分之一圈，连着转不停顿；3 → 0 走短的那边，往前转；
+  - 放在桌子、柜台等上面时整台往下沉：每种 `surface` 一份 profile `emergency_radio_crank_<surface>.json`，`origin` 的 y 是 −下沉量（生成器 `SURFACE_SINK`，要和 `EmergencyRadio.Surface` 一致，GameTest 核对）；
+  - `EmergencyRadioBlockEntity` 是宿主，渲染器 `AflAnimatedBlockMeshRenderer`（新注册），可见距离 128 格。方块模型不是 `static_mesh`，所以摇臂停着时也由渲染器画；
+  - 命中网格：拼块和摇臂合在一起，摇臂按朝下的姿势算（`meshChannelAffectsHits` false）；判定摇不摇还是按 x ≥ 0.696，不受影响；
+  - 拨动开关（`slider_off` / `slider_fm`）、表盘亮灭仍是拼块，一下子换（真实的拨动开关也是一下子拨过去）；
+  - `crank_1` .. `crank_3` 删了。
 - 正面（从左到右看）：
   - 喇叭：黑钢板，圆角方框里冲 12 道横槽，后面是黑布，四角各一颗螺丝；
   - 表盘窗：黑色边框，刻度单独一张图，红色指针；
   - 下面：大的调台旋钮（右）、小的音量旋钮、红色电源灯、AM / FM / OFF 拨动开关。
 - 顶上：钢带提手，两个用螺丝固定的脚；右后角一根镀铬拉杆天线。
 - 背面：一块素钢铭牌（不印字），电池盖带一道边，四角螺丝。
-- 左端（+x）：折叠摇柄，cube 模型里没有，按计划 F4 的"手摇充电"加的。黑色轴座 + 钢帽，钢摇臂长 2.5 px（约 6 cm），电木把手；四个转角各一个拼块。
+- 左端（+x）：折叠摇柄，cube 模型里没有，按计划 F4 的"手摇充电"加的。黑色轴座 + 钢帽，钢摇臂长 2.5 px（约 6 cm），电木把手；摇臂是动画网格（见上）。
 - 机壳是倒角钢盒，倒角磨出钢色。
 - 贴图在 `textures/block/radio/`，240 texel = 1 m，LabPBR（`_s`、`_n`），由 `tools/radio/emergency-radio-art.mjs` 生成：
 
@@ -149,7 +158,9 @@
 
 - 代码（`src/main/java/com/antaurora/apofirstlight/`）：
   - `cabin/EmergencyRadio.java`：方块、方块实体类型注册、放法、操作；
-  - `cabin/EmergencyRadioBlockEntity.java`：电量、充电、放电、同步；
+  - `cabin/EmergencyRadioBlockEntity.java`：电量、充电、放电、同步；摇柄网格的宿主（`AflAnimatedMeshHost`）；
+  - `client/AflBlockEntityRenderers.java`：收音机的渲染器（摇柄）；
+  - `meshhit/MeshHitModels.java`：拼块 + 动画网格合成一个命中网格；
   - `cabin/CabinBlocks.java`：注册（同一串 ID、同一个 Mesh 加载器）；
   - `cabin/CabinPieces.java`：`Sink.add` 多了下沉量 `dy`；
   - `cabin/CabinMeshModel.java`：发光面；
@@ -159,14 +170,15 @@
   - `client/WorldInteractionHint.java`；
   - `stamina/StaminaConfig.java`。
 - 生成器：
-  - `tools/build-emergency-radio-v1.mjs`：拼块、方块 / 物品模型、方块状态、战利品表；`--check` 核对输出是最新的，并审标签、质量、搬运标签、语言、耐力消耗；
+  - `tools/build-emergency-radio-v1.mjs`：拼块、摇柄网格（`crankMesh`，经 `tools/furniture/furniture-mesh.mjs`）、方块 / 物品模型、方块状态、战利品表；`--check` 核对输出是最新的，并审标签、质量、搬运标签、语言、耐力消耗；
   - `tools/radio/emergency-radio-art.mjs`：贴图和表盘；
   - `tools/cabin/cabin-art.mjs` 的 `renderX` 多了自发光 `e`。
 - 可编辑源：`src/main/blockbench/emergency_radio_cube_v1.bbmodel`，用户的 cube 模型原样（和下载的文件一样）。游戏里的 Mesh 是生成器按从它量出来的尺寸算的，不从 `.bbmodel` 导出。
 - 资源：
   - `blockstates/emergency_radio.json`；
   - `models/block/radio/emergency_radio.json`（加载器 `apocalypse_firstlight:cabin`）、`models/item/emergency_radio.json`；
-  - `cabin_mesh/radio/*.json`（9 个拼块）；
+  - `cabin_mesh/radio/*.json`（6 个拼块）；
+  - 摇柄：`geo/`、`meshes/` 下的 `emergency_radio_crank`，`block_mesh_profiles/emergency_radio_crank_{floor,table,counter,desk,nightstand}.json`，图集 `textures/block/radio/emergency_radio_crank{,_s,_n}.png`，生成器写出的源 `src/main/blockbench/radio/emergency_radio_crank.bbmodel`；
   - `textures/block/radio/`；
   - `data/apocalypse_firstlight/loot_tables/blocks/emergency_radio.json`。
 - 数据：`minecraft:mineable/pickaxe`、`noise_metal_blocks`、`item_mass/afl_content_v1.json`、`stamina/stamina_v1.json`。
@@ -182,8 +194,8 @@
 
 ## 8. 没做 / 已知限制
 
-- 不收信号，不出声：用户定**下一轮做调频和发声**（2026-10-14）；底噪、广播文字、广播声音和计划 P8 剧情钩子一起，声音要 Firefly 素材。
-- 摇和开关的声音是原版占位。
+- 不收信号：用户定**下一轮做调频和发声**（2026-10-14）；广播文字、广播声音和计划 P8 剧情钩子一起。底噪循环 2026-10-14 已经接了（用户的素材，开着且有电就放，不随调频变）。
+- ~~摇和开关的声音是原版占位~~：2026-10-14 换成用户的素材，加了底噪循环（[老宅音效 V1](../audio/forest_home_sounds_v1.md)），用户 2026-10-15 实机听过，PASS。
 - 只有 FM / OFF 两档，没有 AM 档；调台、音量旋钮不能转；天线不能拉。
 - 表盘窗没有玻璃片。
 - 没有合成配方。
@@ -206,3 +218,4 @@
   - 小屋屋面 GameTest（`cabin_roof`）回归通过（`Sink` 接口改了）。
 - 2026-10-14（同日，用户实机，放在草地上）：20 cm 太小。放大到 40 cm 后：生成器 `--check` OK（52 个输出）；量了网格包围盒，都在格子里（x 0.30..0.74，高到 0.33），和 Java 的碰撞盒对得上；GameTest `ForestHomeM2GameTests` 按新的点击位置重跑 PASS；预览图重出。
 - 2026-10-14（同日，用户重启游戏实机）：**暂时 PASS**，"功能都正常"。用户没有单独说每一项（光影下的外观、Jade、生存挖掘），按"功能都正常"记。
+- 2026-10-15（摇柄动画，游戏关着）：生成器 `--check` OK（63 个输出）；编译通过；`ForestHomeM2GameTests` PASS：剩下 5 个拼块都在、下沉量对；五份摇柄 profile 都在，`origin` 的 y 等于 −下沉量；摇柄、炉门的网格和图集都在；收音机的方块实体是宿主；从侧面看还是选中收音机。**没在客户端看过**：转的方向、按住时是否连贯（网络晚到一 tick 会顿一下）、摇臂和机身的光照是否一致。

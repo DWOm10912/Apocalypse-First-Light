@@ -36,6 +36,8 @@ public final class WorldgenLockCommand {
                 .append(", plan ").append(r.fingerprint().planDigest()).append('\n');
         r.fingerprint().systems().forEach((k, v) -> sb.append("  ").append(k).append(" = ").append(v).append('\n'));
         r.fingerprint().probes().forEach((k, v) -> sb.append("  probe ").append(k).append(" = ").append(v).append('\n'));
+        var on = WorldgenGates.on(r.fingerprint());
+        sb.append("gated systems on: ").append(on.isEmpty() ? "none" : String.join(", ", on)).append('\n');
         String findings = WorldgenLockPolicy.describe(s.verdict());
         if (!findings.isEmpty()) sb.append("at load:\n").append(findings);
         sb.append("history: ").append(r.history().size()).append(" entr").append(r.history().size() == 1 ? "y" : "ies");

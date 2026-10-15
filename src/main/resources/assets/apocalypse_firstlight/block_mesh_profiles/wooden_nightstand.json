@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/wooden_nightstand.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/furniture/wooden_nightstand.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.214375,
+    -0.015625,
+    0.241375,
+    0.785625,
+    0.675625,
+    0.940625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "drawer": {
+      "pivot": [
+        0,
+        0.55,
+        0.02
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 7,
+      "easing": "ease_in_out",
+      "transforms": {
+        "drawer": {
+          "translation": [
+            0,
+            0,
+            -0.24
+          ]
+        }
+      }
+    }
+  }
+}

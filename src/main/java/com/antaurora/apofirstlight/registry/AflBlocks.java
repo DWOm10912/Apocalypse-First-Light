@@ -250,6 +250,16 @@ public final class AflBlocks {
     public static final RegistryObject<Block> ENCLOSURE_GATE = BLOCKS.register("enclosure_gate",
             () -> new com.antaurora.apofirstlight.block.EnclosureGateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    /**
+     * Rural Driveway V1 (forest start home M3a): the tube farm gate (galvanised tube on wood posts) and the roadside mailbox
+     * (steel box on a wood post). Pickaxe + stone for now: AFL mining tiers are to be redone (user, 2026-10-14).
+     */
+    public static final RegistryObject<Block> TUBE_FARM_GATE = BLOCKS.register("tube_farm_gate",
+            () -> new com.antaurora.apofirstlight.block.TubeFarmGateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> RURAL_MAILBOX = BLOCKS.register("rural_mailbox",
+            () -> new com.antaurora.apofirstlight.block.RuralMailboxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0F, 3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> ROOFTOP_UNIT = BLOCKS.register("rooftop_unit",
             () -> new com.antaurora.apofirstlight.block.RooftopUnitBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
@@ -603,6 +613,19 @@ public final class AflBlocks {
     public static final RegistryObject<Block> GRADED_TURF = BLOCKS.register("graded_turf",
             () -> new com.antaurora.apofirstlight.block.GradedTurfBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
                     .mapColor(net.minecraft.world.level.material.MapColor.GRASS).strength(0.6F).sound(SoundType.GRASS).noOcclusion()));
+    // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
+    // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
+    public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",
+            () -> new com.antaurora.apofirstlight.block.RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
+                    .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion()
+                    .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
+    public static final RegistryObject<Block> ROAD_STRUCTURE = BLOCKS.register("road_structure",
+            () -> new com.antaurora.apofirstlight.block.RoadStructureBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
+                    .strength(6.0F, 15.0F).sound(SoundType.STONE)
+                    .mapColor(net.minecraft.world.level.material.MapColor.STONE).requiresCorrectToolForDrops().noLootTable().noOcclusion()
+                    // the shape follows the bridge mesh per position (RoadStructureBlock); still solid for heightmaps and fills
+                    .dynamicShape().forceSolidOn()
+                    .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
     public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",

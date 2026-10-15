@@ -1,0 +1,4 @@
+# AFL Rural Driveway V1 tube farm gate (closed, no sign, item)
+newmtl gate
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/tube_farm_gate

@@ -552,5 +552,97 @@
   "drum_bung_close": {
     "subtitle": "subtitles.apocalypse_firstlight.drum_bung_close",
     "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 10, "pitch": 0.85}]
+  },
+  "box_stove_door_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.box_stove_door_open",
+    "sounds": [{"name": "apocalypse_firstlight:box_stove/door_open", "attenuation_distance": 4}]
+  },
+  "box_stove_door_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.box_stove_door_close",
+    "sounds": [{"name": "apocalypse_firstlight:box_stove/door_close", "attenuation_distance": 4}]
+  },
+  "box_stove_add_wood": {
+    "subtitle": "subtitles.apocalypse_firstlight.box_stove_add_wood",
+    "sounds": [{"name": "apocalypse_firstlight:box_stove/add_wood", "attenuation_distance": 3}]
+  },
+  "box_stove_fire_loop": {
+    "subtitle": "subtitles.apocalypse_firstlight.box_stove_fire_loop",
+    "sounds": [{"name": "apocalypse_firstlight:box_stove/fire_loop", "attenuation_distance": 4}]
+  },
+  "box_stove_boil_loop": {
+    "subtitle": "subtitles.apocalypse_firstlight.box_stove_boil_loop",
+    "sounds": [{"name": "apocalypse_firstlight:box_stove/boil_loop", "attenuation_distance": 6}]
+  },
+  "box_stove_fry_loop": {
+    "subtitle": "subtitles.apocalypse_firstlight.box_stove_fry_loop",
+    "sounds": [{"name": "apocalypse_firstlight:box_stove/fry_loop", "attenuation_distance": 8}]
+  },
+  "emergency_radio_switch_on": {
+    "subtitle": "subtitles.apocalypse_firstlight.emergency_radio_switch_on",
+    "sounds": [{"name": "apocalypse_firstlight:emergency_radio/switch_on", "attenuation_distance": 2}]
+  },
+  "emergency_radio_switch_off": {
+    "subtitle": "subtitles.apocalypse_firstlight.emergency_radio_switch_off",
+    "sounds": [{"name": "apocalypse_firstlight:emergency_radio/switch_off", "attenuation_distance": 2}]
+  },
+  "emergency_radio_crank": {
+    "subtitle": "subtitles.apocalypse_firstlight.emergency_radio_crank",
+    "sounds": [{"name": "apocalypse_firstlight:emergency_radio/crank_1", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_2", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_3", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_4", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_5", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_6", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_7", "attenuation_distance": 3}, {"name": "apocalypse_firstlight:emergency_radio/crank_8", "attenuation_distance": 3}]
+  },
+  "emergency_radio_static_loop": {
+    "subtitle": "subtitles.apocalypse_firstlight.emergency_radio_static_loop",
+    "sounds": [{"name": "apocalypse_firstlight:emergency_radio/static_loop", "attenuation_distance": 12}]
+  },
+  "wood_cabinet_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.wood_cabinet_open",
+    "sounds": [{"name": "apocalypse_firstlight:wood_cabinet/open", "attenuation_distance": 3}]
+  },
+  "wood_cabinet_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.wood_cabinet_close",
+    "sounds": [{"name": "apocalypse_firstlight:wood_cabinet/close", "attenuation_distance": 3}]
+  },
+  "lamp_pull_chain": {
+    "subtitle": "subtitles.apocalypse_firstlight.lamp_pull_chain",
+    "sounds": [{"name": "apocalypse_firstlight:lamp_switch/pull_chain_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:lamp_switch/pull_chain_2", "attenuation_distance": 2}]
+  },
+  "wall_switch_click": {
+    "subtitle": "subtitles.apocalypse_firstlight.wall_switch_click",
+    "sounds": [{"name": "apocalypse_firstlight:lamp_switch/wall_switch", "attenuation_distance": 2}]
+  },
+  "power_plug_in": {
+    "subtitle": "subtitles.apocalypse_firstlight.power_plug_in",
+    "sounds": [{"name": "apocalypse_firstlight:power_plug/plug_in", "attenuation_distance": 2}]
+  },
+  "power_plug_out": {
+    "subtitle": "subtitles.apocalypse_firstlight.power_plug_out",
+    "sounds": [{"name": "apocalypse_firstlight:power_plug/plug_out", "attenuation_distance": 2}]
+  },
+  "rural_mailbox_flag_up": {
+    "subtitle": "subtitles.apocalypse_firstlight.rural_mailbox_flag_up",
+    "sounds": [{"name": "apocalypse_firstlight:rural_mailbox/flag_up", "attenuation_distance": 3}]
+  },
+  "rural_mailbox_flag_down": {
+    "subtitle": "subtitles.apocalypse_firstlight.rural_mailbox_flag_down",
+    "sounds": [{"name": "apocalypse_firstlight:rural_mailbox/flag_down", "attenuation_distance": 3}]
+  },
+  "tube_farm_gate_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.tube_farm_gate_open",
+    "sounds": [{"name": "apocalypse_firstlight:tube_farm_gate/open", "attenuation_distance": 8}]
+  },
+  "tube_farm_gate_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.tube_farm_gate_close",
+    "sounds": [{"name": "apocalypse_firstlight:tube_farm_gate/close", "attenuation_distance": 8}]
+  },
+  "tree_chop": {
+    "subtitle": "subtitles.apocalypse_firstlight.tree_chop",
+    "sounds": [{"name": "apocalypse_firstlight:tree_felling/chop_1", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:tree_felling/chop_2", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:tree_felling/chop_3", "attenuation_distance": 10}]
+  },
+  "tree_crack": {
+    "subtitle": "subtitles.apocalypse_firstlight.tree_crack",
+    "sounds": [{"name": "apocalypse_firstlight:tree_felling/crack", "attenuation_distance": 12}]
+  },
+  "tree_crash": {
+    "subtitle": "subtitles.apocalypse_firstlight.tree_crash",
+    "sounds": [{"name": "apocalypse_firstlight:tree_felling/crash", "attenuation_distance": 24}]
   }
 }

@@ -37,6 +37,9 @@ import java.util.List;
  *   world's serverconfig/apocalypse_firstlight-worldgen.toml accepts exactly that change.</li>
  * </ul>
  * Only AFL Terrain V2 overworlds are locked; another generator (flat, a data-pack world) is left alone.
+ * <p>
+ * The world records its effective fingerprint (WorldgenGates: without the gated systems it does not have), and the
+ * gated systems on for it are bound to the overworld's RandomState here, before the first chunk.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class WorldgenLockEvents {
@@ -65,6 +68,7 @@ public final class WorldgenLockEvents {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) level.getChunkSource().randomState();
         if (!access.apocalypse$hasTerrainPlan()) {
             ApocalypseFirstLight.LOGGER.info("[AFL worldgen lock] overworld has no AFL Terrain V2 plan; not locked");
+            WorldgenGateState.bind(level.getChunkSource().randomState(), java.util.Set.of());
             last = null;
             return;
         }
@@ -88,16 +92,20 @@ public final class WorldgenLockEvents {
         WorldgenLockPolicy.Verdict v = WorldgenLockPolicy.evaluate(stored, current, rules, initialized, WorldgenLockConfig.acceptToken());
         long now = System.currentTimeMillis();
         String report = WorldgenLockPolicy.describe(v);
+        WorldgenFingerprint running = current;
+        current = v.effective();
+        WorldgenFingerprint eff = current;
         WorldgenLockRecord next = switch (v.action()) {
-            case CREATE -> new WorldgenLockRecord(WorldgenLockRecord.SCHEMA, WorldgenLockRecord.CREATED, now, builtBy(), current,
-                    List.of(new WorldgenLockRecord.HistoryEntry(now, "created", "profile " + current.profile() + ", fingerprint " + current.id())));
-            case ADOPT_LEGACY -> new WorldgenLockRecord(WorldgenLockRecord.SCHEMA, WorldgenLockRecord.ADOPTED, now, builtBy(), current,
+            case CREATE -> new WorldgenLockRecord(WorldgenLockRecord.SCHEMA, WorldgenLockRecord.CREATED, now, builtBy(), eff,
+                    List.of(new WorldgenLockRecord.HistoryEntry(now, "created", "profile " + eff.profile() + ", fingerprint " + eff.id()
+                            + (WorldgenGates.on(eff).isEmpty() ? "" : ", gated systems on: " + String.join(", ", WorldgenGates.on(eff))))));
+            case ADOPT_LEGACY -> new WorldgenLockRecord(WorldgenLockRecord.SCHEMA, WorldgenLockRecord.ADOPTED, now, builtBy(), eff,
                     List.of(new WorldgenLockRecord.HistoryEntry(now, "adopted", "world from before the lock; " + legacyEvidence(file.getParent())
-                            + "; baseline fingerprint " + current.id())));
-            case UPDATE_SOFT -> stored.withBaseline(current, new WorldgenLockRecord.HistoryEntry(now, "soft_change",
-                    stored.fingerprint().id() + " -> " + current.id() + "\n" + report));
-            case ACCEPT_HARD -> stored.withBaseline(current, new WorldgenLockRecord.HistoryEntry(now, "accepted_change",
-                    "token " + v.token() + ": " + stored.fingerprint().id() + " -> " + current.id() + " by " + builtBy() + "\n" + report));
+                            + "; baseline fingerprint " + eff.id() + (eff == running ? "" : "; gated systems off"))));
+            case UPDATE_SOFT -> stored.withBaseline(eff, new WorldgenLockRecord.HistoryEntry(now, "soft_change",
+                    stored.fingerprint().id() + " -> " + eff.id() + "\n" + report));
+            case ACCEPT_HARD -> stored.withBaseline(eff, new WorldgenLockRecord.HistoryEntry(now, "accepted_change",
+                    "token " + v.token() + ": " + stored.fingerprint().id() + " -> " + eff.id() + " by " + builtBy() + "\n" + report));
             case MATCH, BLOCK -> stored;
         };
         switch (v.action()) {
@@ -120,6 +128,9 @@ public final class WorldgenLockEvents {
             }
         }
         last = new Status(server, next, current, v);
+        WorldgenGateState.bind(level.getChunkSource().randomState(), WorldgenGates.on(next.fingerprint()));
+        if (!WorldgenGates.on(next.fingerprint()).isEmpty())
+            ApocalypseFirstLight.LOGGER.info("[AFL worldgen lock] gated systems on for this world: {}", String.join(", ", WorldgenGates.on(next.fingerprint())));
         if (next != stored) write(level, file, next);
     }
 

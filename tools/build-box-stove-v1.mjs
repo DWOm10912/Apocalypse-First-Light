@@ -14,7 +14,11 @@
 //                      rubble on its sides (MacroTileModel, its separate top group)
 // Every piece is drawn facing north (the front at z 0, the wall at z 1); the stove's door end is x 0 (in the house, facing
 // south, that is the east end toward the chairs).
-// Writes textures (block/stove/*.png + _s / _n), mesh pieces (cabin_mesh/stove/, cabin_mesh/shield/), block / item models,
+// The loading door swings as an AFL Animated Block Mesh (box_stove_door, tools/furniture/furniture-mesh.mjs, 2026-10-15:
+// the cabin pieces swapped it closed / open in one frame): only the door, drawn by the block entity renderer; the body,
+// the splits and the shield sheet behind it stay cabin pieces drawn by the chunk. stove/door_closed is the item's door.
+// Writes textures (block/stove/*.png + _s / _n), mesh pieces (cabin_mesh/stove/, cabin_mesh/shield/), the door's mesh
+// (geo, sidecar, profile, atlas block/stove/box_stove_door, src/main/blockbench/stove/), block / item models,
 // blockstates, loot tables. Tags, item mass, the temperature source and lang are edited by hand; --check audits them.
 //   node tools/build-box-stove-v1.mjs            -> writes every output
 //   node tools/build-box-stove-v1.mjs --check    -> verifies every output is up to date and the hand-edited data
@@ -24,6 +28,7 @@ import {fileURLToPath} from 'node:url';
 import {renderX} from './cabin/cabin-art.mjs';
 import {STOVE_TEXTURES, flagstoneTopTiles, FL_COLS, FL_ROWS} from './stove/box-stove-art.mjs';
 import {Piece, solid, cylinder, serialise, newell, dot, sub, add, scl} from './cabin/cabin-geo.mjs';
+import {furnitureMesh} from './furniture/furniture-mesh.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -165,10 +170,6 @@ function door() {
   for (const [a, b] of [[0.26, 0.29], [0.40, 0.43]]) cylinder(pc, EDGE, EDGE, 'y', [HZ + 0.002, -0.008], a, b, 0.008, 10, 'ab');
   return pc;
 }
-/** A piece swung a quarter about the vertical line (hx, hz): (dx, dz) -> (dz, -dx), out of the door end toward -x. */
-function swungOut(pc, hx, hz, name) {
-  return new Piece(name).merge(pc, ([x, y, z]) => [hx + (z - hz), y, hz - (x - hx)], ([nx, ny, nz]) => [nz, ny, -nx]);
-}
 /** The splits on the ash bed: one, two or three (the load: the fuel left in logs' worth). */
 const SPLITS = [[0.045, 0.10, 0.54, 0.237, 0.43], [0.038, 0.17, 0.55, 0.229, 0.52], [0.035, 0.15, 0.51, 0.300, 0.474]];
 export const FLAMES = [[0.30, 0.22, 0.47, 0.24, 0.17], [0.42, 0.21, 0.45, 0.22, 0.15], [0.20, 0.21, 0.47, 0.18, 0.13]];   // x, base y, z, width, height
@@ -180,8 +181,16 @@ function loads() {
   });
 }
 function stovePieces() {
-  const d = door();
-  return [body(), d, swungOut(d, 0, HZ, 'stove/door_open'), ...loads()];
+  return [body(), door(), ...loads()];
+}
+/**
+ * The loading door as an animated mesh: one bone hinged on the vertical line x 0, z HZ (the wall side); 'open' swings it
+ * a quarter out of the door end toward the wall, (dx, dz) -> (dz, -dx), where the old open piece stood. 10 ticks.
+ */
+export function doorMesh() {
+  return furnitureMesh(ROOT, {id: 'box_stove_door', dir: 'stove', texPrefix: TEX, particle: TEX + IRON, part: true,
+    bones: [{name: 'door', pivot: [0, 0, HZ], pieces: [door()]}],
+    animations: {open: {duration_ticks: 10, easing: 'ease_in_out', transforms: {door: {rotation: [0, 90, 0]}}}}});
 }
 
 // =============================================================================================== the heat shield
@@ -220,6 +229,7 @@ export function outputs() {
   for (const [name, [make, height]] of Object.entries(STOVE_TEXTURES)) texOut(name, renderX(make(), {height}));
   flagstoneTopTiles().forEach((maps, t) => texOut('flagstone_top_' + t, maps));
   for (const pc of pieces()) out.push([path.join(ASSETS, 'cabin_mesh', pc.name + '.json'), JSON.stringify(serialise(pc, TEX)) + '\n']);
+  out.push(...doorMesh().outputs);
   const bm = id => `${NS}block/stove/${id}`;
   for (const {id} of BLOCKS) {
     if (id === 'flagstone') {
@@ -276,6 +286,7 @@ if (isMain) {
     const pcs = pieces();
     const quads = pcs.reduce((s, p) => s + serialise(p, TEX).quads.length, 0);
     console.log(`wrote ${out.length} files (${pcs.length} mesh pieces, ${quads} quads)`);
+    console.log('  mesh ' + JSON.stringify(doorMesh().stats));
     for (const p of pcs.filter(p => !p.name.startsWith('shield/') || p.name === 'shield/panel_0' || p.name === 'shield/panel_15')) console.log('  ' + p.name, serialise(p, TEX).quads.length);
     const errs = audit();
     for (const e of errs) console.log('audit: ' + e);

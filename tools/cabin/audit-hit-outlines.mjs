@@ -118,8 +118,6 @@ export const LOOKS = {
   'board and batten': [R('siding/brown_core', 0), R('siding/brown_battens', 0)],
   'table single': [R('furniture/table_x_0', 0)],
   'chair': [R('furniture/chair', 0)],
-  'counter closed': [R('furniture/counter_body', 0), R('furniture/counter_doors_closed', 0)],
-  'sink counter open': [R('furniture/sink_body', 0), R('furniture/counter_doors_open', 0)],
   'box stove closed': [R('stove/body', 0), R('stove/door_closed', 0)],
 };
 

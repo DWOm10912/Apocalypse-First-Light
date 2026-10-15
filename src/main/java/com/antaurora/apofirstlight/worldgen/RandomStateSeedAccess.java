@@ -10,4 +10,12 @@ public interface RandomStateSeedAccess {
     com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$terrainPlanSurface();
     /** The profile of that plan (null without a plan). */
     com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$terrainProfile();
+    /** The gated generation systems on for this world (WorldgenGates; empty until the version lock binds them). C3. */
+    java.util.Set<String> apocalypse$worldgenGates();
+    void apocalypse$setWorldgenGates(java.util.Set<String> on);
+    /** The terrain works this router's plan density applies (C3.2; filled by RoadNetworkRuntime.bind, else empty). */
+    com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef apocalypse$roadWorksRef();
+    /** The road network bound to this world (null: no roads generated here). C3.2. */
+    com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network apocalypse$roadNetwork();
+    void apocalypse$setRoadNetwork(com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network network);
 }

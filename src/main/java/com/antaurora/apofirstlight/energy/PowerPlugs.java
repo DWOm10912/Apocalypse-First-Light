@@ -8,8 +8,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -225,7 +223,7 @@ public final class PowerPlugs {
             if (cord.host() != null) cord.unplug();
             carry(player, cord);
         }
-        level.playSound(null, ownerPos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.4F, 0.7F);
+        click(level, player, cord.geometry().exit(), false);
         return InteractionResult.CONSUME;
     }
 
@@ -250,7 +248,7 @@ public final class PowerPlugs {
         CARRIED.remove(player.getUUID());
         cord.plugInto(host, socket);
         setUsed(level, host, socket, true);
-        level.playSound(null, host, SoundEvents.STONE_BUTTON_CLICK_ON, SoundSource.BLOCKS, 0.5F, 0.8F);
+        click(level, player, socketPoint(level, host, socket), true);
         return InteractionResult.CONSUME;
     }
 
@@ -268,7 +266,7 @@ public final class PowerPlugs {
         if (cord != null) {
             cord.unplug();
             carry(server, cord);
-            level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.5F, 0.7F);
+            click(level, player, socketPoint(level, pos, aimed), false);
         } else setUsed(level, pos, aimed, false);   // stale flag
         return InteractionResult.CONSUME;
     }
@@ -284,9 +282,19 @@ public final class PowerPlugs {
         if (cord != null) {
             cord.unplug();
             carry(server, cord);
-            level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.5F, 0.7F);
+            click(level, player, socketPoint(level, pos, aimed), false);
         } else level.setBlock(pos, WallOutletBlock.withUsed(state, aimed, false), 3);   // stale flag
         return InteractionResult.CONSUME;
+    }
+
+    /** Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): a plug pushed in or pulled out. */
+    public static final double PLUG_RADIUS = 2;
+
+    private static void click(Level level, Player player, Vec3 at, boolean in) {
+        if (level instanceof net.minecraft.server.level.ServerLevel server)
+            com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, at,
+                    in ? com.antaurora.apofirstlight.registry.AflSounds.POWER_PLUG_IN.get() : com.antaurora.apofirstlight.registry.AflSounds.POWER_PLUG_OUT.get(),
+                    PLUG_RADIUS, 0.97F + level.random.nextFloat() * 0.06F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, null);
     }
 
     public static void tell(Player player, String key) {

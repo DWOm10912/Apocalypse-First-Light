@@ -51,6 +51,10 @@
 | `river_carving` | `federal_water#1` | HARD | 区块里的河水、湖水、河岸与湖岸 |
 | `ecology` | `ecology_federal#1` | HARD | 联邦分区、地表群系映射、联邦群系 JSON、地表规则分支 |
 | `forest` | 同 r1 | SOFT | 天然树木 |
+| `road_network`（开关，C3.2） | `afl_road_network_c3_v1#c3.2#interstate_ew:county_seat-valley_town#surface4` | HARD | 公共道路路线、路面、碰撞、桥（[C3](federal_highways_c3.md) 第 10 节；surface2 = 桥改成网格 + `road_structure` 碰撞，2026-10-14；surface3 = 桥下天然地面保留、碰撞跟网格、翼墙压顶，2026-10-15；surface4 = 结构方块站在地面顶块上，不再顶掉它，2026-10-15） |
+| `terrain_works`（开关，C3.2） | `road_works_r4#1` | HARD | 道路挖填、边坡、边沟进入地形 |
+
+联邦世界还有探针 `road_network`：路网 JSON 的摘要（开关子系统的探针，世界没有这个开关时去掉）。第一次加载一个种子会规划一次路网（约 8 s），之后读 `afl_cache/road_network/` 的缓存。
 
 `terrain_plan` 的历史版本：#1 Phase 2 r1 高度，#2 Phase 2b 河流，#3 岸线扭曲，#4 生态阶段。这几次都发生在 2026-10-10，当时还没有版本锁。规划器标签一直是 r1，所以早期世界无法事后区分是哪个版本，只能按旧世界（LEGACY）处理。
 
@@ -80,9 +84,39 @@
   - 能被已声明的变化解释的，只记注释；
   - 不能解释的按 HARD 处理，并说明原因，比如另一个模组或数据包替换了主世界噪声设置或群系，或者 AFL 有一次没声明的修改。
 - **种子或 profile 不同**：HARD。
-- **未知子系统**：新出现的、或者消失的子系统 id 一律按 HARD 处理。
+- **未知子系统**：新出现的、或者消失的子系统 id 一律按 HARD 处理。**按世界开关的子系统例外**（见下一节）：记录里没有的，对这个世界是关的，不算变化。
 - **记录文件存在但读不出来**：拦截，文件原样保留。
 - **不受锁的世界**：没有 Terrain V2 规划的主世界（超平坦、数据包世界）不上锁。
+
+## 按世界的开关（C3.1，2026-10-14）
+
+[Main/C3 接口契约](main_c3_interface_contract_v1.md)第 10 节、第 12 节第 5 条：开关和版本锁由 C 统一负责，只有这一份。
+
+**开关子系统**（`WorldgenGates.GATED`）：
+
+| id | 归属 | 内容 |
+|---|---|---|
+| `road_network` | C | 公共道路网络（路线、路面、桥、排水） |
+| `terrain_works` | C | 施工层：路基等工程怎样应用到密度 |
+| `start_area` | Main | 老宅开局：选址、预留、放置（Main 按这里的规则登记） |
+
+**规则**：
+
+- 新建世界：这个构建声明了的开关子系统全部打开，并记进记录；
+- 已有记录的世界：记录里有这个子系统才打开；版本不同照常算 HARD；记录里有、构建里没有的，也照常算 HARD；
+- 记录里没有的：对这个世界关闭，**不算变化**（结果仍是 MATCH，只记一条注释）。旧世界的新区块不会长出半截路或半栋房子；
+- 领养的旧世界：全部关闭；
+- SOFT 变化让基线前移时，也不会把关着的开关打开。
+
+**实现**：
+
+- 判定用这个世界的**有效指纹**（`WorldgenGates.effective`）：运行中的规则，去掉这个世界没有的开关子系统和它们的探针（开关子系统的探针 id 和子系统 id 相同）；`Verdict.effective` 就是要写进记录的指纹；
+- 开关子系统的探针变了而没有声明版本变化，按 HARD 报"输出变了但没声明"；
+- `WorldgenLockEvents` 在判定之后、第一个区块之前，把这个世界打开的开关绑到主世界的 RandomState（`RandomStateSeedAccess.apocalypse$setWorldgenGates`）；不受锁的主世界和其他维度没有绑定，全部关闭；
+- 生成代码查询：`WorldgenGateState.enabled(level, WorldgenGates.ROAD_NETWORK)`，或者区块生成里拿得到的 `RandomState`；
+- `/afl worldgen lock` 多一行"gated systems on"。
+
+**现在的状态**（C3.2，2026-10-14）：联邦规则声明了 `road_network` 和 `terrain_works`。C3.2 之后新建的联邦世界两者都打开并记录；之前建的联邦世界（记录里没有）照旧关闭，加载时只多一条说明；r1 世界没有这两个子系统。`start_area` 由 Main 登记。绑定开关时同时绑定路网（`RoadNetworkRuntime.bind`）：施工层挂到这个世界的 RandomState 上，在第一个区块之前。
 
 ## 拦截之后怎么办
 
@@ -115,7 +149,8 @@
 - **只增不复用**，同时在本文档的历史表里加一行。
 - **HARD 还是 SOFT**：会造成接缝的用 HARD；只影响新区块装饰的用 SOFT。
 - **改存储格式**（`TerrainPlanSurface.FORMAT`、缓存文件名、压缩方式）时不要升兼容版本：数值摘要相同，锁就会判 MATCH。
-- **新的世界生成系统**（例如六州国家模板、国家公路实体）接入正式生成时，在 `WorldgenRules.current` 里加一个子系统 id。旧世界没有这个 id，会被拦截。这是有意的：新系统只能用于新世界，或者显式接受。
+- **新的世界生成系统**（例如六州国家模板）接入正式生成时，在 `WorldgenRules.current` 里加一个子系统 id。旧世界没有这个 id，会被拦截。这是有意的：新系统只能用于新世界，或者显式接受。
+- **能对旧世界关掉的新系统**（道路、施工层、老宅开局）用开关子系统：id 加进 `WorldgenGates.GATED`，旧世界自动关闭，不会被拦。生成代码必须查 `WorldgenGateState.enabled`，关着时完全不生成。
 
 ## 文件
 
@@ -132,6 +167,9 @@
 | `worldgen/lock/WorldgenLockConfig.java` | 每个世界的 SERVER 配置 `acceptWorldgenChange`，注册在 `ApocalypseFirstLight` 构造函数里 |
 | `worldgen/lock/WorldgenLockException.java` | 拦截用的异常 |
 | `worldgen/lock/WorldgenLockCommand.java` | `/afl worldgen lock` |
+| `worldgen/lock/WorldgenGates.java` | 开关子系统清单、有效指纹（纯 Java，C3.1） |
+| `worldgen/lock/WorldgenGateState.java` | 绑到 RandomState 的开关、`enabled` 查询（C3.1） |
+| `worldgen/RandomStateSeedAccess.java` / `mixin/RandomStateSeedMixin.java` | 开关集合存在 RandomState 上（C3.1 新增两个方法） |
 | `worldgen/terrain/v2/TerrainPlanFingerprint.java` | 规划数值摘要、查询摘要、分块摘要与比较 |
 | `tools/federal-worldgen/java/.../lock/LockPolicyChecks.java` | 判定表离线测试（`bash tools/federal-worldgen/run.sh lock`） |
 
@@ -143,7 +181,8 @@
   - 声明的规划变化：拦截、错误令牌、正确令牌，以及令牌绑定到具体变化；
   - 浮点级差异、未声明的规划变化（含位置）、未声明的密度变化（提示另一个模组）、声明的密度变化；
   - 换种子、新出现的子系统；
-  - 领养后保持 LEGACY；历史有上限。
+  - 领养后保持 LEGACY；历史有上限；
+  - 开关（C3.1，17 条）：新世界打开并记录；领养全部关闭、探针去掉、基线等于没有开关时的指纹；旧记录 MATCH 且关闭（只有注释）；旧记录上的 SOFT 变化不会打开；带开关创建的世界保持打开；开关版本升级 BLOCK 且探针差异被声明解释；开关输出变了没声明 BLOCK；带开关的世界被没有开关的构建打开 BLOCK。
 - 规划指纹的确定性（离线，种子 -295378578869149513）：
   - 两次独立构建的 r1 规划指纹相同：`8d712b1dd53f3bd3 / 90287ece05fe7a5c`；
   - 尺度测试用的参数化副本也得到同一个指纹；
@@ -164,6 +203,7 @@
 - **覆盖不到的规则**：雕刻器、地表规则、地物（features）只靠声明的版本号覆盖，探针测不到。
 - **旧世界领养**：领养不等于验证。2026-10-14 之前的 Terrain V2 世界（包括用户的测试世界）在第一次用新构建打开时会被领养，数据目录里多一个小文件，其他都不动。如果它们是在 `terrain_plan` #1–#3 时期生成的，旧区块与新区块之间的接缝早已存在，锁无法发现。
 - **ADR-11 的其他部分还没有接这套锁**：Highway、道路施工快照、结构资产 digest。
+- **开关的实机流程**：C3.2 在隔离客户端里测了新建联邦世界（开关打开、道路生成）和重开；C3.2 之前建的联邦世界重开（开关应保持关闭）见 [C3](federal_highways_c3.md) 10.8。
 
 ## 实机验收建议（由用户决定是否进行；新建、重开、LEGACY、BLOCK 已由 C2 测试客户端测过）
 

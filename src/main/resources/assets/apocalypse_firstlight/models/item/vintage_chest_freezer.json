@@ -1,0 +1,94 @@
+{
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/enamel"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        3.628,
+        1.642,
+        -2.626
+      ],
+      "scale": [
+        0.583,
+        0.583,
+        0.583
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -1.464,
+        3.146,
+        -0.113
+      ],
+      "scale": [
+        0.183,
+        0.183,
+        0.183
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -2.632,
+        0.263,
+        -0.203
+      ],
+      "scale": [
+        0.329,
+        0.329,
+        0.329
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        225,
+        0
+      ],
+      "translation": [
+        1.363,
+        3.582,
+        -0.126
+      ],
+      "scale": [
+        0.219,
+        0.219,
+        0.219
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        1.637,
+        1.21,
+        -1.339
+      ],
+      "scale": [
+        0.263,
+        0.263,
+        0.263
+      ]
+    }
+  }
+}

@@ -1,14 +1,13 @@
 package com.antaurora.apofirstlight.cabin;
 
 import com.antaurora.apofirstlight.block.ModernOfficeDeskBlock;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.meshhit.MeshHitReachesDown;
 import com.antaurora.apofirstlight.stamina.PlayerStamina;
 import com.antaurora.apofirstlight.stamina.StaminaConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -52,7 +51,9 @@ import java.util.Locale;
  * ({@link CabinPieces}, pieces cabin_mesh/radio/, tools/build-emergency-radio-v1.mjs) drawn facing north, 40 x 20 x 17.5
  * cm (the first draft's 20 cm the user found far too small in game); on a wooden table, kitchen counter or office desk
  * under it the pieces sink onto its top ({@code surface}), the whole body in that cell: the crosshair and bullets find it
- * from the side too ({@link MeshHitReachesDown}).
+ * from the side too ({@link MeshHitReachesDown}). The crank's arm is an AFL Animated Block Mesh (emergency_radio_crank,
+ * 2026-10-15): it turns on smoothly while held, drawn by the block entity renderer ({@link EmergencyRadioBlockEntity} its
+ * host, a profile per surface); the rest are pieces drawn by the chunk.
  * <ul>
  * <li>Right-click the front, top or back: the AM / FM / OFF slide switch ({@code on}; V1 knows FM and OFF). Right-click the
  * crank's end (the left end seen from the front) and hold: the crank turns a quarter each 4 ticks ({@code crank}) and winds
@@ -71,6 +72,11 @@ public final class EmergencyRadio {
     public static final int CAPACITY = 24000, WIND = 60;
     /** In the north frame: the crank's end begins here (the case runs x 0.3..0.7, the crank stands out to 0.74). */
     public static final double CRANK_X = 0.696;
+    /**
+     * Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): the switch, the crank, and the static
+     * while it plays (client BlockLoopSoundController; EmergencyRadioBlockEntity's machine noise every 2 s).
+     */
+    public static final double SWITCH_RADIUS = 2, CRANK_RADIUS = 3, STATIC_RADIUS = 12;
 
     private EmergencyRadio() {}
 
@@ -84,7 +90,8 @@ public final class EmergencyRadio {
 
     /** What it stands on: the floor of its cell (a full top under it), or a piece of furniture whose top is lower. */
     public enum Surface implements StringRepresentable {
-        FLOOR(0), TABLE(0.24F), COUNTER(0.10F), DESK(2.5F / 16);
+        // NIGHTSTAND: Wood Furniture V2 (2026-10-15), the nightstand top at 0.66
+        FLOOR(0), TABLE(0.24F), COUNTER(0.10F), DESK(2.5F / 16), NIGHTSTAND(1 - WoodFurnitureV2.Nightstand.TOP);
 
         /** How far the radio sinks into the cell under it (blocks). */
         public final float sink;
@@ -101,6 +108,7 @@ public final class EmergencyRadio {
         Block b = level.getBlockState(below).getBlock();
         if (b instanceof WoodFurniture.Table) return Surface.TABLE;
         if (b instanceof WoodFurniture.Counter) return Surface.COUNTER;
+        if (b instanceof WoodFurnitureV2.Nightstand) return Surface.NIGHTSTAND;
         if (b instanceof ModernOfficeDeskBlock) return Surface.DESK;
         return Block.canSupportCenter(level, below, Direction.UP) ? Surface.FLOOR : null;
     }
@@ -209,18 +217,25 @@ public final class EmergencyRadio {
                     BlockState next = state.setValue(ON, a == Action.ON);
                     level.setBlock(pos, next, 3);
                     radio.switched(next);
-                    level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.25F, a == Action.ON ? 1.8F : 1.6F);
+                    noisy(level, player, state, pos, a, a == Action.ON ? AflSounds.EMERGENCY_RADIO_SWITCH_ON.get() : AflSounds.EMERGENCY_RADIO_SWITCH_OFF.get(), SWITCH_RADIUS);
                 }
                 case CRANK -> {
                     level.setBlock(pos, state.cycle(CRANK), 2);
                     boolean winded = player instanceof ServerPlayer sp && PlayerStamina.winded(sp);
                     radio.wind(winded ? Math.round(WIND * (float) StaminaConfig.get().winded.digSpeed) : WIND);
                     if (player instanceof ServerPlayer sp) PlayerStamina.spend(sp, StaminaConfig.get().costs.crank, false);
-                    level.playSound(null, pos, SoundEvents.CROSSBOW_LOADING_MIDDLE, SoundSource.BLOCKS, 0.2F, 1.5F + 0.1F * state.getValue(CRANK));
+                    noisy(level, player, state, pos, a, AflSounds.EMERGENCY_RADIO_CRANK.get(), CRANK_RADIUS);
                 }
                 default -> { return InteractionResult.PASS; }
             }
             return InteractionResult.CONSUME;
+        }
+
+        /** At the switch or the crank, heard as far as its noise (the crank: one of eight 0.2 s ratchet slices a quarter). */
+        private static void noisy(Level level, Player player, BlockState state, BlockPos pos, Action a, net.minecraft.sounds.SoundEvent sound, double radius) {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, promptPoint(state, pos, a), sound, radius,
+                        0.98F + level.random.nextFloat() * 0.04F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, ForgeRegistries.BLOCKS.getKey(state.getBlock()));
         }
 
         @Override
@@ -232,8 +247,7 @@ public final class EmergencyRadio {
             float dy = -state.getValue(SURFACE).sink;
             sink.add("radio/body", r, dy);
             sink.add(state.getValue(LIT) ? "radio/dial_lit" : "radio/dial_off", r, dy);
-            sink.add(state.getValue(ON) ? "radio/slider_fm" : "radio/slider_off", r, dy);
-            sink.add("radio/crank_" + state.getValue(CRANK), r, dy);
+            sink.add(state.getValue(ON) ? "radio/slider_fm" : "radio/slider_off", r, dy);   // the crank: an animated mesh
         }
     }
 }

@@ -1,0 +1,29 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.emergency_radio_crank",
+        "texture_width": 512,
+        "texture_height": 256,
+        "visible_bounds_width": 3,
+        "visible_bounds_height": 3,
+        "visible_bounds_offset": [
+          0,
+          1,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "crank",
+          "pivot": [
+            -3.32,
+            1.6,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

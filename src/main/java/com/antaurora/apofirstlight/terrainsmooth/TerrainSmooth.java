@@ -19,6 +19,8 @@ import net.minecraft.world.level.block.HugeMushroomBlock;
 import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import com.antaurora.apofirstlight.block.GradedTurfBlock;
+import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
@@ -147,7 +149,10 @@ public final class TerrainSmooth {
         if (s.isAir()) return AIR;
         if (!s.getFluidState().isEmpty()) return FLUID;
         Block b = s.getBlock();
-        if (b instanceof BushBlock || b instanceof SnowLayerBlock) return COVER;
+        // a bridge's invisible collision (road_structure, under the client's mesh) covers the ground like a plant: the ground
+        // under it is its column's surface and smooths with its neighbours, so where a skewed wall leaves part of a cell
+        // uncovered that ground meets the ground in front without a block step (docs/worldgen/federal_highways_c3.md 10.11)
+        if (b instanceof BushBlock || b instanceof SnowLayerBlock || b instanceof RoadStructureBlock) return COVER;
         if (ground(b)) return NATURAL;
         if (s.is(BlockTags.LEAVES)) return LEAF;
         if (s.is(BlockTags.LOGS) || b instanceof VineBlock || b instanceof HugeMushroomBlock || b == Blocks.COCOA || b == Blocks.BEE_NEST) return TREE;
@@ -225,6 +230,12 @@ public final class TerrainSmooth {
         public int cell(int x, int y, int z) {
             LevelChunk c = chunk(x >> 4, z >> 4);
             return c == null ? UNKNOWN : TerrainSmooth.cell(c.getBlockState(pos.set(x, y, z)));
+        }
+
+        @Override
+        public float turf(int x, int y, int z, int k) {
+            BlockState s = chunk(x >> 4, z >> 4) == null ? null : chunk(x >> 4, z >> 4).getBlockState(pos.set(x, y, z));
+            return s != null && s.getBlock() instanceof GradedTurfBlock ? y + GradedTurfBlock.corners(s)[k] : Float.NaN;
         }
 
         @Override

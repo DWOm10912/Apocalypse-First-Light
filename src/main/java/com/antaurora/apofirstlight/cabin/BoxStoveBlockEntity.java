@@ -1,16 +1,21 @@
 package com.antaurora.apofirstlight.cabin;
 
+import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
+import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,8 +27,13 @@ import org.jetbrains.annotations.Nullable;
  * (twice the recipe's smoker time); the result stays on the stove until taken. Without the fire the progress cools away.
  * The cook-top items and the fuel go to clients (client BoxStoveRenderer draws the items; the fuel is the prompt's: the
  * client burns its copy down in step).
+ * <p>The loading door's host (AFL Animated Block Mesh, 2026-10-15, docs/rendering/animated_block_mesh_runtime_v1.md): profile
+ * box_stove_door, channel 'open' the block's {@code open}; only the door is in the mesh, so the renderer draws it at rest
+ * too (the block model is the cabin one, not static_mesh).
  */
-public class BoxStoveBlockEntity extends BlockEntity {
+public class BoxStoveBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
+    private static final ResourceLocation DOOR = new ResourceLocation(com.antaurora.apofirstlight.ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/box_stove_door.json");
+    private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private final NonNullList<ItemStack> items = NonNullList.withSize(BoxStove.SPOTS.length, ItemStack.EMPTY);
     private final int[] progress = new int[BoxStove.SPOTS.length], total = new int[BoxStove.SPOTS.length];
     private int fuel;
@@ -34,12 +44,60 @@ public class BoxStoveBlockEntity extends BlockEntity {
 
     public BoxStoveBlockEntity(BlockPos pos, BlockState state) { super(BoxStove.STOVE, pos, state); }
 
+    // ------------------------------------------------------------------------------------ the door's mesh
+
+    @Override
+    public ResourceLocation meshProfile() { return DOOR; }
+
+    @Override
+    public AflBlockMeshAnimationState meshAnimation() { return meshAnimation; }
+
+    @Override
+    public Direction meshFacing() { return getBlockState().getValue(BoxStove.Stove.FACING); }
+
+    @Override
+    public void refreshMeshAnimationTargets() { AflAnimatedMeshHost.refreshTargets(level, DOOR, meshAnimation, this::meshChannelTarget); }
+
+    @Override
+    public boolean meshChannelTarget(String channel) { return "open".equals(channel) && getBlockState().getValue(BoxStove.Stove.OPEN); }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        refreshMeshAnimationTargets();
+    }
+
+    @Override
+    public void setBlockState(BlockState state) {
+        super.setBlockState(state);
+        refreshMeshAnimationTargets();
+    }
+
+    /** The cell (the cook top) and the door's swing. */
+    @Override
+    public AABB getRenderBoundingBox() { return new AABB(worldPosition).minmax(AflAnimatedMeshHost.renderBounds(worldPosition, DOOR, meshFacing())); }
+
     public int fuel() { return fuel; }
 
     public ItemStack item(int spot) { return items.get(spot); }
 
     /** The cook progress of a spot, 0..1 (0 when nothing cooks there). */
     public float cooked(int spot) { return total[spot] <= 0 ? 0 : Math.min(1F, progress[spot] / (float) total[spot]); }
+
+    /**
+     * What the cook top sounds like while the fire burns (both sides: the client's loops, the server's noise): water
+     * boiling (a dirty-water item cooking), a pan frying (anything else cooking). A finished result is quiet.
+     */
+    public boolean boiling() { return cooking(true); }
+
+    public boolean frying() { return cooking(false); }
+
+    private boolean cooking(boolean water) {
+        if (!getBlockState().getValue(BoxStove.Stove.LIT)) return false;
+        for (int k = 0; k < items.size(); k++)
+            if (total[k] > 0 && !items.get(k).isEmpty() && items.get(k).getItem() instanceof com.antaurora.apofirstlight.thirst.ThirstWaterItem == water) return true;
+        return false;
+    }
 
     /** Whether {@code ticks} more fuel goes in (it must fit by half at least). */
     public boolean fits(int ticks) { return fuel + ticks / 2 <= BoxStove.CAPACITY; }
@@ -113,7 +171,17 @@ public class BoxStoveBlockEntity extends BlockEntity {
             done = true;
         }
         if (done) changed();
+        // the loops' noise, every 2 s while they run (the loudest one; heard as far as the client's loop carries)
+        if (state.getValue(BoxStove.Stove.LIT) && level instanceof net.minecraft.server.level.ServerLevel server
+                && server.getGameTime() % NOISE_INTERVAL == Math.floorMod(worldPosition.asLong(), NOISE_INTERVAL)) {
+            double radius = frying() ? BoxStove.FRY_RADIUS : boiling() ? BoxStove.BOIL_RADIUS : BoxStove.FIRE_RADIUS;
+            com.antaurora.apofirstlight.noise.NoiseSystem.emit(new com.antaurora.apofirstlight.noise.NoiseEvent(null, worldPosition.getCenter(),
+                    com.antaurora.apofirstlight.noise.NoiseType.MACHINE, server.getGameTime(),
+                    net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(state.getBlock()), radius), server);
+        }
     }
+
+    private static final int NOISE_INTERVAL = 40;
 
     /** Client: the fuel burns down here too (for the prompt). */
     public void clientBurn(BlockState state) {

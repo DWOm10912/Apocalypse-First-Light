@@ -123,5 +123,6 @@ public final class AflJadePlugin implements IWailaPlugin {
         }
         PriceSignJadeProvider.registerRedirect(registration);
         PavementMarkingJadeRedirect.register(registration);
+        WoodFurnitureV2JadeRedirect.register(registration);
     }
 }

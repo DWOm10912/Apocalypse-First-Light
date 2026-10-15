@@ -4,10 +4,8 @@ import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.WeaponClass;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -15,7 +13,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -49,8 +46,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wood Furniture V1 (docs/models/wood_furniture_v1.md, 2026-10-13): the generic wood furniture, first placed in the forest
  * start home B (M2.1). One set for every wood (user 2026-10-13: any planks make it, recipes later), in a neutral stained
- * finish; the building materials stay per species. Mesh blocks ({@link CabinPieces}, pieces cabin_mesh/furniture/,
- * tools/build-wood-furniture-v1.mjs), drawn facing north:
+ * finish; the building materials stay per species. Mesh blocks (tools/build-wood-furniture-v1.mjs), drawn facing north: the
+ * table, chair and gun rack {@link CabinPieces} (cabin_mesh/furniture/); the counters AFL Animated Block Meshes (Furniture
+ * Mesh V1, 2026-10-15, tools/furniture/furniture-mesh.mjs: the doors swing smoothly, the resting piece chunk-drawn):
  * <ul>
  * <li>{@link Table}: 76 cm, joins the tables beside it (north / east / south / west, like a fence) into one top.</li>
  * <li>{@link Chair}: right-click sits (an invisible {@link FurnitureSeat}), sneak stands up; facing = where the sitter looks.</li>
@@ -72,8 +70,9 @@ public final class WoodFurniture {
     /** Called from CabinBlocks#register: the block entity types (after the blocks) and the seat entity. */
     static void register(RegisterEvent event) {
         event.register(net.minecraftforge.registries.ForgeRegistries.Keys.BLOCK_ENTITY_TYPES, helper -> {
+            // Wood Furniture V2 (2026-10-15): the wardrobe and nightstand keep their things the same way
             COUNTER = BlockEntityType.Builder.of(WoodCounterBlockEntity::new, CabinBlocks.block("wooden_kitchen_counter"),
-                    CabinBlocks.block("wooden_sink_counter")).build(null);
+                    CabinBlocks.block("wooden_sink_counter"), CabinBlocks.block("wooden_wardrobe"), CabinBlocks.block("wooden_nightstand")).build(null);
             GUN_RACK = BlockEntityType.Builder.of(WoodGunRackBlockEntity::new, CabinBlocks.block("wooden_gun_rack")).build(null);
             helper.register(CabinBlocks.id("wooden_counter"), COUNTER);
             helper.register(CabinBlocks.id("wooden_gun_rack"), GUN_RACK);
@@ -86,6 +85,27 @@ public final class WoodFurniture {
     }
 
     private static final double[][] NONE = {};
+
+    /**
+     * Furniture whose things a {@link WoodCounterBlockEntity} keeps (the counters; Wood Furniture V2, 2026-10-15: the
+     * wardrobe, the nightstand, the vintage chest freezer): its slot count (9, 18 or 27: a 9 x 1, 2 or 3 chest screen),
+     * where and how its doors sound, and how it shows open.
+     */
+    public interface Storage {
+        int slots();
+
+        /** Sets the open look of the furniture at pos (every cell it has). */
+        void setOpen(Level level, BlockPos pos, BlockState state, boolean open);
+
+        /** Height of the doors' sound over the block entity's cell (blocks); it plays 0.4 out of the front. */
+        default double soundHeight() { return 0.4; }
+
+        default net.minecraft.sounds.SoundEvent openSound() { return com.antaurora.apofirstlight.registry.AflSounds.WOOD_CABINET_OPEN.get(); }
+
+        default net.minecraft.sounds.SoundEvent closeSound() { return com.antaurora.apofirstlight.registry.AflSounds.WOOD_CABINET_CLOSE.get(); }
+
+        default float soundPitch() { return 1.0F; }
+    }
 
     // ---------------------------------------------------------------------------------------------------- table
 
@@ -246,9 +266,11 @@ public final class WoodFurniture {
     /**
      * A wooden base cabinet, 90 cm high and 60 cm deep, its back against a wall (facing = the doors' side): the
      * kitchen counter (a drawer over two doors, 18 slots) or the sink counter (a drop-in enamel sink and a cast-iron pitcher
-     * pump, 9 slots under the sink; the pump is looks only in V1). {@code open} while someone has the cabinet open.
+     * pump, 9 slots under the sink; the pump is looks only in V1). {@code open}: the doors swung out, opened and closed by
+     * the player ({@link FurnitureOpening}, Mesh Shape profile wooden_counter: door / interior).
      */
-    public static final class Counter extends BaseEntityBlock implements CabinPieces {
+    public static final class Counter extends BaseEntityBlock implements Storage, com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock {
+        private static final net.minecraft.resources.ResourceLocation SHAPE_PROFILE = FurnitureOpening.profile("wooden_counter");
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
         private static final VoxelShape[] SHAPES = new VoxelShape[4], SINK_SHAPES = new VoxelShape[4];
@@ -272,7 +294,11 @@ public final class WoodFurniture {
         public boolean sink() { return sink; }
 
         /** Slots of this cabinet: 18 (the kitchen counter) or 9 (under the sink). */
+        @Override
         public int slots() { return sink ? 9 : 18; }
+
+        @Override
+        public void setOpen(Level level, BlockPos pos, BlockState state, boolean open) { level.setBlock(pos, state.setValue(OPEN, open), 3); }
 
         @Override
         protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, OPEN); }
@@ -314,26 +340,30 @@ public final class WoodFurniture {
         @Override
         public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new WoodCounterBlockEntity(pos, state); }
 
+        /** Doors closed: open them; open: the interior's screen (search or view), or close them. */
         @Override
         @SuppressWarnings("deprecation")
         public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-            if (level.isClientSide) return InteractionResult.SUCCESS;
-            if (level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) player.openMenu(be);
-            return InteractionResult.CONSUME;
+            return FurnitureOpening.use(this, state, level, pos, pos, player);
         }
 
         @Override
-        @SuppressWarnings("deprecation")
-        public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-            if (level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) be.recheckOpen();
+        public @Nullable String interactionHintKey(Level level, BlockState state, BlockPos pos, String region) {
+            return FurnitureOpening.hintKey(level, state, pos, region);
         }
+
+        @Override
+        public net.minecraft.resources.ResourceLocation meshShapeProfile() { return SHAPE_PROFILE; }
+
+        @Override
+        public String meshShapeState(BlockState state) { return state.getValue(OPEN) ? "open" : "closed"; }
 
         @Override
         @SuppressWarnings("deprecation")
         public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
             if (!state.is(newState.getBlock())) {
                 if (level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) {
-                    Containers.dropContents(level, pos, be);
+                    be.dropContentsOnce();
                     level.updateNeighbourForOutputSignal(pos, this);
                 }
             }
@@ -342,27 +372,20 @@ public final class WoodFurniture {
 
         @Override
         public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-            if (stack.hasCustomHoverName() && level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be) be.setCustomName(stack.getHoverName());
+            if (!(level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be)) return;
+            if (!level.isClientSide) be.markPlacedByPlayer();
+            if (stack.hasCustomHoverName()) be.setCustomName(stack.getHoverName());
         }
 
         @Override
         @SuppressWarnings("deprecation")
         public boolean hasAnalogOutputSignal(BlockState state) { return true; }
 
+        /** Comparator fullness from revealed slots only, so it never hints at unsearched loot. */
         @Override
         @SuppressWarnings("deprecation")
         public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-            return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
-        }
-
-        @Override
-        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
-
-        @Override
-        public void cabinPieces(BlockState state, int flags, Sink sink) {
-            int r = CabinBlocks.turn(state.getValue(FACING));
-            sink.add(this.sink ? "furniture/sink_body" : "furniture/counter_body", r);
-            sink.add(state.getValue(OPEN) ? "furniture/counter_doors_open" : "furniture/counter_doors_closed", r);
+            return level.getBlockEntity(pos) instanceof WoodCounterBlockEntity be ? com.antaurora.apofirstlight.containersearch.AflContainerSearch.revealedAnalogSignal(be) : 0;
         }
 
         @Override

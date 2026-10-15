@@ -117,10 +117,11 @@ byKey / byIndex
 
 **将来接入时的要求**：
 1. **硬条件**：干燥陆地、S1、河谷；
-2. **避让**：
-   - 离开公路走廊保留带：州际 60 m 半宽、州道 30 m 半宽，再加缓冲；
-   - 本种子的州际公路 `interstate_ew` 从开局圆里穿过；
-3. **生成规则**：老宅如果要改规划高度（比如场地平整），对应的规则要在版本锁里升 `terrain_plan`。
+2. **避让**（2026-10-14 C3 更正）：
+   - 避让的对象是 **C3 重算的新路线**（[federal_highways_c3.md](federal_highways_c3.md)，`RoadNetworkPlan` 的硬区和软区），**不再是本文的 C1 走廊**：C1 的走廊是 50 m 折线，C3 在 C2 地形上重算后位置变了，C1 走廊不能当选址依据（[Main/C3 接口契约](main_c3_interface_contract_v1.md)第 12 节第 2 条）；
+   - 硬区：路基加填挖边坡（每 2 m 一个半宽，约 ±25–45 m）；软区：州际 60 m、州道 30 m 半宽；
+   - 本种子的州际 `interstate_ew` 仍从开局圆里穿过（C3 示范段 county_seat→valley_town）；
+3. **生成规则**（2026-10-14 更正）：老宅场地平整**不改规划高度**。先用 beardifier（结构自带的地形适配），以后改走 C3 的施工层 `terrain_works`；规划面（`terrain_plan`）不因老宅改变。老宅的选址、预留和放置规则由 Main 按版本锁的"按世界的开关"登记成 `start_area`（[版本锁](worldgen_version_lock_v1.md)）。
 
 ## 3. 宏观分布原型（D）
 
@@ -342,7 +343,7 @@ bash tools/federal-worldgen/run.sh checks
   - 山地 +3×、海岸湿地 +1.5×、高原 +0.6×、湖区 +0.3×、丘陵 +0.2×；
   - 离岸 250 m 内再 ×1.6；
   - 海不可通行。
-  - 已有走廊用过的格打 0.75 折，鼓励共线，让道路在互通处相会，不并排跑。
+  - 已有走廊用过的格打 0.75 折，鼓励共线，让道路在互通处相会，不并排跑。（C3 取消了这个折扣：有了真实路基以后，它把州道吸到州际的路基上，见 [C3](federal_highways_c3.md)。）
 - **可选地形**（`Terrain` 接口，传入规划高度）：
   - 坡度 2 % 以上开始加价，5 % 以上急剧加价；
   - 进入水面一次 +600（桥）。
@@ -448,7 +449,7 @@ bash tools/federal-worldgen/run.sh checks
 | `docs/worldgen/terrain_v2_phase2_generation_v1.md` | 加一条说明 | 同上 |
 | 新包 `worldgen/lock`、`worldgen/federal`，新文件 `TerrainPlanFingerprint` | 都是新增 | 无文本冲突 |
 | **行为** | 合并后，Main 的 Terrain V2 测试世界（含老宅测试世界）第一次加载时会被领养（写一个小 .dat，不动区块） | 以后 Main 若改了区块输出却没升版本号，这些世界会被拦下。改地形、河流、群系、地表规则时要同步升 `WorldgenRules` 里的版本 |
-| **行为** | 老宅 M4 如果改规划高度（场地平整） | 需要升 `terrain_plan`，否则锁会报"未声明的规划变化" |
+| **行为** | 老宅 M4 场地平整（2026-10-14 更正） | 不改规划高度：先用 beardifier，以后用 C3 的 `terrain_works`；老宅规则登记为按世界开关的 `start_area`，不升 `terrain_plan` |
 | 未改 | 老宅、暗线、配电、家具、出生流程、语言文件、混入（mixin） | — |
 
 ## 10. C2 / C3 建议

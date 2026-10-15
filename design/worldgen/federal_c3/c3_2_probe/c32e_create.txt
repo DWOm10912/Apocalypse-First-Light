@@ -1,0 +1,867 @@
+world c32e tag create seed -295378578869149513
+plan afl_federal_plan_c2_v1 rivers 71
+spawn 404 106 -408
+generator NoiseBasedChunkGenerator apocalypse_firstlight:federal_experimental, biome source MultiNoiseBiomeSource with 25 possible biomes, federal 8/8
+dedicated server: no level-type -> NoiseBasedChunkGenerator apocalypse_firstlight:federal_experimental; level-type=minecraft:normal -> NoiseBasedChunkGenerator minecraft:overworld; level-type=minecraft:flat -> FlatLevelSource
+heap_used_mb_at_start 2748
+sites 10
+site road 0 at -2718 1613: 25 chunks in 2853 ms (114.1 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.62, within 1 block 84.8%
+  steps inside chunks: mean 0.052, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.053, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 100%
+  plan: height 96.9, water class 0, shore 127, stable 12, slope 0.024, state s2, plan biome temperate_grassland
+  roads: columns as built / expected: PAVED 1098/1098 TURF 2005/2005
+  roads: blocks above a finished column 0; collision top vs design max 0.028 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 900 at -2094 973: 25 chunks in 2279 ms (91.2 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.68, within 1 block 79.0%
+  steps inside chunks: mean 0.055, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.064, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 100%
+  plan: height 85.9, water class 0, shore 127, stable 12, slope 0.019, state s2, plan biome temperate_grassland
+  roads: columns as built / expected: PAVED 1877/1877 TURF 3104/3104
+  roads: blocks above a finished column 0; collision top vs design max 0.026 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 1800 at -1530 275: 25 chunks in 2178 ms (87.1 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 1.03, within 1 block 45.3%
+  steps inside chunks: mean 0.043, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.048, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:wet_prairie 100%
+  plan: height 78.5, water class 0, shore 127, stable 12, slope 0.000, state s2, plan biome wet_prairie
+  roads: columns as built / expected: PAVED 1846/1846 TURF 3006/3006
+  roads: blocks above a finished column 0; collision top vs design max 0.035 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 2700 at -976 -427: 25 chunks in 2255 ms (90.2 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.71, within 1 block 70.5%
+  steps inside chunks: mean 0.059, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.059, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 100%
+  plan: height 86.8, water class 0, shore 127, stable 10, slope 0.028, state s2, plan biome temperate_grassland
+  roads: columns as built / expected: PAVED 1841/1841 TURF 3099/3099
+  roads: blocks above a finished column 0; collision top vs design max 0.029 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 3600 at -171 -823: 25 chunks in 2327 ms (93.1 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.61, within 1 block 84.3%
+  steps inside chunks: mean 0.055, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.052, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 100%
+  plan: height 95.8, water class 0, shore 127, stable 8, slope 0.028, state s1, plan biome temperate_grassland
+  roads: columns as built / expected: PAVED 1850/1850 TURF 3077/3077
+  roads: blocks above a finished column 0; collision top vs design max 0.029 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 4500 at 623 -1218: 25 chunks in 2292 ms (91.7 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 1.66, within 1 block 37.2%
+  steps inside chunks: mean 0.067, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.064, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:oak_hickory_woodland 35%, afl:temperate_grassland 27%, afl:ridge_oak_forest 22%, afl:mixed_mesophytic_forest 16%
+  plan: height 98.7, water class 0, shore 127, stable 5, slope 0.041, state s1, plan biome oak_hickory_woodland
+  roads: columns as built / expected: PAVED 1864/1864 TURF 3107/3107
+  roads: blocks above a finished column 0; collision top vs design max 0.029 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 5400 at 1473 -1432: 25 chunks in 2278 ms (91.1 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 1.11, within 1 block 50.8%
+  steps inside chunks: mean 0.079, >=4: 4 of 12000, max 4
+  steps across chunk borders: mean 0.100, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:oak_hickory_woodland 100%
+  plan: height 103.7, water class 0, shore 127, stable 4, slope 0.082, state s1, plan biome oak_hickory_woodland
+  roads: columns as built / expected: PAVED 1864/1864 TURF 3418/3418
+  roads: blocks above a finished column 0; collision top vs design max 0.029 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 6300 at 2317 -1128: 25 chunks in 2704 ms (108.2 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.91, within 1 block 60.5%
+  steps inside chunks: mean 0.066, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.077, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:oak_hickory_woodland 98%, afl:temperate_grassland 3%
+  plan: height 107.2, water class 0, shore 127, stable 4, slope 0.021, state s1, plan biome oak_hickory_woodland
+  roads: columns as built / expected: PAVED 1871/1871 TURF 3297/3297
+  roads: blocks above a finished column 0; collision top vs design max 0.030 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 6598 at 2606 -1058: 25 chunks in 2514 ms (100.6 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.55, within 1 block 92.1%
+  steps inside chunks: mean 0.091, >=4: 33 of 12000, max 9
+  steps across chunk borders: mean 0.095, >=4: 3 of 640, max 8
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:oak_hickory_woodland 86%, afl:temperate_grassland 15%
+  plan: height 108.5, water class 0, shore 127, stable 4, slope 0.030, state s1, plan biome oak_hickory_woodland
+  roads: columns as built / expected: PAVED 1100/1100 TURF 2178/2178
+  roads: blocks above a finished column 0; collision top vs design max 0.032 m; under the deck: water 0 (top - m vs planned ground), solid 0
+site road 1630 at -1634 409: 25 chunks in 3128 ms (125.1 ms/chunk)
+  ground vs plan: 5902 land columns, mean |diff| 2.51, within 1 block 24.8%
+  steps inside chunks: mean 0.211, >=4: 131 of 12000, max 9
+  steps across chunk borders: mean 0.242, >=4: 7 of 640, max 9
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:riparian_forest 50%, afl:wet_prairie 49%, afl:temperate_grassland 2%
+  plan: height 77.9, water class 0, shore 127, stable 12, slope 0.000, state s2, plan biome riparian_forest
+  roads: columns as built / expected: PAVED 1400/1400 TURF 2572/2572 DECK 401/401 ABUTMENT 43/43 BARRIER 228/228 OPEN 1129/1129
+  roads: blocks above a finished column 0; collision top vs design max 0.030 m; under the deck: water 900 (top -1 m vs planned ground), solid 0
+roads: dropped 10 armor stands 2 m above the pavement
+  stand at station 450 offset +12.9: y 92.031, pavement 92.005, diff +0.026, on ground true
+  stand at station 450 offset -12.9: y 91.969, pavement 91.962, diff +0.007, on ground true
+  stand at station 2050 offset +12.9: y 80.813, pavement 80.801, diff +0.011, on ground true
+  stand at station 2050 offset -12.9: y 80.969, pavement 80.952, diff +0.017, on ground true
+  stand at station 3150 offset +12.9: y 92.750, pavement 92.743, diff +0.007, on ground true
+  stand at station 3150 offset -12.9: y 92.750, pavement 92.743, diff +0.007, on ground true
+  stand at station 5450 offset +12.9: y 103.875, pavement 103.845, diff +0.030, on ground true
+  stand at station 5450 offset -12.9: y 104.094, pavement 104.055, diff +0.039, on ground true
+  stand at station 1630 offset +12.9: y 81.625, pavement 81.606, diff +0.019, on ground true
+  stand at station 1630 offset -12.9: y 81.750, pavement 81.734, diff +0.016, on ground true
+roads: armor stands resting 10/10, worst |y - pavement| 0.039 m
+total probe time ms 34151
+heap_used_mb_after_gc 1873
+verify block hashes against c32d_baseline.txt: same 191, different 59, not in baseline 0 (decoration order noise expected; not decisive)
+verify road columns against c32d_baseline.txt: same 250, different 0, not in baseline 0
+VERIFY ROADS PASS
+verify terrain signatures against c32d_baseline.txt: same 250, different 0, not in baseline 0
+VERIFY PASS
+lock record present, 12836 bytes
+chunk -10 -50 1fe669ca2296d039
+chunk -10 -51 d813dbd03517fa38
+chunk -10 -52 72856d7a2229112b
+chunk -10 -53 a264b721536e17ca
+chunk -10 -54 f8365e03a79e318f
+chunk -101 23 3bafe1166b82edd8
+chunk -101 24 f68f7c2184848f99
+chunk -101 25 4454fbcca8741599
+chunk -101 26 514d634dcaa30dc2
+chunk -101 27 b5633b82ff56af35
+chunk -102 23 f6deef6f5b478a6e
+chunk -102 24 3b13f156b99b1d5b
+chunk -102 25 36290311d19dc90
+chunk -102 26 4ff9666e054b3378
+chunk -102 27 24f872c774f437ad
+chunk -103 23 b05ca2413f96d6cc
+chunk -103 24 8a5ef1890c3c5c87
+chunk -103 25 afe0aec2a1005fb9
+chunk -103 26 12d3e16fc18fa110
+chunk -103 27 8e7782d39433aede
+chunk -104 23 449f391a8c0f2479
+chunk -104 24 1b4db799ef40c414
+chunk -104 25 cab044a461283855
+chunk -104 26 c51fbf065937dcd0
+chunk -104 27 58942df97eb6a103
+chunk -105 23 63f492a4629d7840
+chunk -105 24 dbe36fcb28f4e010
+chunk -105 25 e7a19ae50ca33b1e
+chunk -105 26 ab206fed00d2475f
+chunk -105 27 3a4ba1ffa67688d8
+chunk -11 -50 3a6d0ce59bc3aa0f
+chunk -11 -51 ff6203b6e5ecb80c
+chunk -11 -52 877a019a24bdec4a
+chunk -11 -53 e20c921c9157a9bd
+chunk -11 -54 d5406f42a69ed5de
+chunk -12 -50 5faec7f6a47d0c39
+chunk -12 -51 7775f59a682dfa84
+chunk -12 -52 6781637938b66ce2
+chunk -12 -53 29a24794cb24c315
+chunk -12 -54 e179fb759b0caee9
+chunk -129 58 527b35a553b855c1
+chunk -129 59 ec27d4a042d074a6
+chunk -129 60 5c8f19dbbee5da6b
+chunk -129 61 16bd864639b8a7ce
+chunk -129 62 849b6ad42f0881cf
+chunk -13 -50 abdd148024ec66a6
+chunk -13 -51 e20d2cc0de9ab650
+chunk -13 -52 17b98c5570096a0e
+chunk -13 -53 57bd23f44353e28b
+chunk -13 -54 c6b9aa9edc76f45c
+chunk -130 58 229c71d83709e36a
+chunk -130 59 57f07afc0a47f2ea
+chunk -130 60 7abe5edde2c1960a
+chunk -130 61 73f1929d1ad034ea
+chunk -130 62 9e86311be24a994c
+chunk -131 58 27e5a5a5c17d3c40
+chunk -131 59 a7311e5c5ea472f9
+chunk -131 60 13a414591f0f2b33
+chunk -131 61 6be8d564b42fbb57
+chunk -131 62 5177b5b253ef133e
+chunk -132 58 1cbed79e9d8d3b5d
+chunk -132 59 2acbc448c2b70428
+chunk -132 60 8e23ce6c70b04baf
+chunk -132 61 5451b188b56eae44
+chunk -132 62 b64dc9e2af0c62ce
+chunk -133 58 a0ef290c98eae96a
+chunk -133 59 5713e6f82b4e03df
+chunk -133 60 66dabd330d25d7d
+chunk -133 61 75abe1ca24a19c2f
+chunk -133 62 456b99f0ebd32f17
+chunk -168 100 70b1533a9df274f2
+chunk -168 101 878bfd3e26d414c6
+chunk -168 102 4ad28b5e3e1f96a8
+chunk -168 98 51e8f3dad8525720
+chunk -168 99 e0b7604bf6612e15
+chunk -169 100 1f8e3d3c6b1a72b1
+chunk -169 101 7200b4a0ad4a3483
+chunk -169 102 69696d6dae7befce
+chunk -169 98 c909e852a37aacc
+chunk -169 99 23b5e08f6f22354b
+chunk -170 100 67e91313cd9b6713
+chunk -170 101 e5a3420a376e5f42
+chunk -170 102 931a96cec40aea22
+chunk -170 98 942c88c4b877ad6a
+chunk -170 99 e40e5b0cf6367863
+chunk -171 100 69a3dca4f7fb6992
+chunk -171 101 d6514bb81d5da928
+chunk -171 102 9df4d2bc904df5b0
+chunk -171 98 3afb7b19d934dd08
+chunk -171 99 db97251e42fb1876
+chunk -172 100 5bf85dae386d28ea
+chunk -172 101 2bdf0368f96789e2
+chunk -172 102 c656f7595c016a9
+chunk -172 98 44ec4ad62de46aff
+chunk -172 99 6555b8f8b87f2a63
+chunk -59 -25 38183320c61ab53c
+chunk -59 -26 44f06b9a7d7277ed
+chunk -59 -27 155482c6f8b9510d
+chunk -59 -28 640847c6a7ce6148
+chunk -59 -29 9736b7bc44b82ab8
+chunk -60 -25 d972de37ec3c028c
+chunk -60 -26 ca8d41d4ebab047e
+chunk -60 -27 afe37955151415a8
+chunk -60 -28 81c0c7e12aa71ae7
+chunk -60 -29 587f46c3f4bda7ac
+chunk -61 -25 dead3b1f9f84d4ce
+chunk -61 -26 ed4aefcfcd5c6ca5
+chunk -61 -27 5d42b39d1c781ff9
+chunk -61 -28 8fe236250986fe1
+chunk -61 -29 d171c1ffce5ddb7
+chunk -62 -25 85c673e2f0b1538
+chunk -62 -26 a3d91b12d1f9a6
+chunk -62 -27 cf0f0bc8679c4906
+chunk -62 -28 6f920bf1365fcae5
+chunk -62 -29 d19c4021dcc8d934
+chunk -63 -25 dd5819c766b1361b
+chunk -63 -26 524a82c6d1f67375
+chunk -63 -27 689837c266601109
+chunk -63 -28 2e8b5c2486e47d81
+chunk -63 -29 39ef871d3ea57417
+chunk -9 -50 417ad60d08c042a2
+chunk -9 -51 9abe131ff670ed5b
+chunk -9 -52 66d0c24b88c33bea
+chunk -9 -53 4dbb1a1821da6423
+chunk -9 -54 a679cd41c79be40d
+chunk -94 15 a433970f7a6ccd3a
+chunk -94 16 934f24406ed64eb2
+chunk -94 17 d05eb10350a9fffe
+chunk -94 18 b9d60b6cac373781
+chunk -94 19 cbdd135c4b7b739a
+chunk -95 15 6e072aee1535647e
+chunk -95 16 386fb42e2762fe51
+chunk -95 17 a7be6cc879efa8cb
+chunk -95 18 165fbb8635572ba
+chunk -95 19 273ac8af287d5e0e
+chunk -96 15 b452b3c4a531154e
+chunk -96 16 caff632fa1e19a89
+chunk -96 17 c5c7c3c761603bc9
+chunk -96 18 ee526a8da5afb37e
+chunk -96 19 a3cfad8dc6b3eca
+chunk -97 15 ecee2ad06ace23b3
+chunk -97 16 2b4a91c5a743d4f0
+chunk -97 17 897998cc2e204482
+chunk -97 18 c867898e84773c79
+chunk -97 19 ef65611c362a3e6b
+chunk -98 15 47026100cf91f8dc
+chunk -98 16 91cade8229fc6400
+chunk -98 17 b2809f43dd0b8a2a
+chunk -98 18 e6215213518f7da
+chunk -98 19 cde912bbafdc6162
+chunk 142 -69 b1f4b8b32b82387d
+chunk 142 -70 27cdcdb4e909786
+chunk 142 -71 438cc1a8baaed7aa
+chunk 142 -72 9b7de06ee984ac4
+chunk 142 -73 131133d6ead44a1
+chunk 143 -69 54278c4d7678f9a9
+chunk 143 -70 a5197f3754bd9657
+chunk 143 -71 771a64914a16bd65
+chunk 143 -72 b11d6ae987fe83bb
+chunk 143 -73 5381e36515a1f021
+chunk 144 -69 d561f5dc275c5cf8
+chunk 144 -70 8eae8c141ea6a2fe
+chunk 144 -71 c9333d5178fa16e6
+chunk 144 -72 41ff0756b8daa869
+chunk 144 -73 6ed12eea8fde46ec
+chunk 145 -69 613a66dff9d9bb59
+chunk 145 -70 7b5270b4eec89ee3
+chunk 145 -71 336da41fad5bd4da
+chunk 145 -72 49403d1f0ace4b4
+chunk 145 -73 f1185ed6b004b780
+chunk 146 -69 de8ff8d49c344fff
+chunk 146 -70 e4849d45d755b2bf
+chunk 146 -71 b086c54f6d7f5d96
+chunk 146 -72 acbe74e27197bd6b
+chunk 146 -73 e962a87fdc9fbaf7
+chunk 160 -65 a12592dc06f5d561
+chunk 160 -66 b3f92d47a925d5ee
+chunk 160 -67 cb5d451d547e6979
+chunk 160 -68 85602e0ed4d16313
+chunk 160 -69 f92984bd88336f91
+chunk 161 -65 193837f353cb6fa3
+chunk 161 -66 1d1b97d217b8db1e
+chunk 161 -67 cc8bac469dfe96ec
+chunk 161 -68 6adf7bc6f1b3d75c
+chunk 161 -69 423b5a6fce8ee676
+chunk 162 -65 df4457af4510c7ed
+chunk 162 -66 410bf0dae343ea1f
+chunk 162 -67 a1e2ac805234b9a6
+chunk 162 -68 1dd05bf897f1ceb9
+chunk 162 -69 24834926c82384d0
+chunk 163 -65 d2cfade6c0197098
+chunk 163 -66 fca21d37e5e35ad
+chunk 163 -67 91231425d25370ad
+chunk 163 -68 72eda77aa86efc13
+chunk 163 -69 bcfec3c947ae9c2
+chunk 164 -65 4b4fb355a56b12b2
+chunk 164 -66 d07d96b463bac9b9
+chunk 164 -67 860be6b6208cb736
+chunk 164 -68 e084b3f5136ba4ff
+chunk 164 -69 b61f9491740332f2
+chunk 36 -75 f82efe8b8ba4c9fc
+chunk 36 -76 394a7372264d4116
+chunk 36 -77 60a19fcc368c265f
+chunk 36 -78 fc5b5608df49e2bd
+chunk 36 -79 ae775413086305a7
+chunk 37 -75 c87447b1a4fd4388
+chunk 37 -76 216384d4ab0939b8
+chunk 37 -77 9ae3a17b869d1e72
+chunk 37 -78 b50c05126e3ab0c
+chunk 37 -79 4e99e82b09a23c1c
+chunk 38 -75 f33da846e0c263db
+chunk 38 -76 7228613c98a8cfad
+chunk 38 -77 762cc373f2457141
+chunk 38 -78 d8b3200e96085eb0
+chunk 38 -79 fef8dd9415e22068
+chunk 39 -75 a2467f30fb1f5b2d
+chunk 39 -76 5de443271cf6b729
+chunk 39 -77 7413d5e00bdf9c39
+chunk 39 -78 ac156cb8b3501aec
+chunk 39 -79 5d2b237137a3247c
+chunk 40 -75 4eaac297567db815
+chunk 40 -76 d99713852b93cce4
+chunk 40 -77 da8de913d6285097
+chunk 40 -78 ea2bfb3d420986a5
+chunk 40 -79 2d144ce09c3085bb
+chunk 90 -88 8a2f2820807b2afb
+chunk 90 -89 b7033f1f5e5e7a4
+chunk 90 -90 2793fe48ebb775f9
+chunk 90 -91 4a3772274eac1bc2
+chunk 90 -92 2be35ea51f33dc61
+chunk 91 -88 da5ca17269828bfd
+chunk 91 -89 e2665efe276f8cc1
+chunk 91 -90 685b535b222c99e0
+chunk 91 -91 755c0f127f2f0584
+chunk 91 -92 4cf0439757bc1ff0
+chunk 92 -88 53de6db11fbf6f6d
+chunk 92 -89 9caf50b00a5b27d2
+chunk 92 -90 c952c04e5265915b
+chunk 92 -91 1ff76ad105bd42df
+chunk 92 -92 52ebc4a393665306
+chunk 93 -88 f7af57e95fde830a
+chunk 93 -89 7ca17a1045ce4589
+chunk 93 -90 84e76bda745fdad4
+chunk 93 -91 58d20f2687d69dce
+chunk 93 -92 baf9643c7cc3eb6b
+chunk 94 -88 a5e6d5eb96ee79cf
+chunk 94 -89 300139087bca2a19
+chunk 94 -90 12817b1c86d6d44
+chunk 94 -91 ed98c3eda0dc6e75
+chunk 94 -92 5e8c6503406e3915
+terrain -10 -50 1748469b453795ea
+terrain -10 -51 85b3ffbfe8791c35
+terrain -10 -52 54464e402f7eeea4
+terrain -10 -53 8e48a59dfb2d96b3
+terrain -10 -54 3ef6a499f58c67b1
+terrain -101 23 9a6b77679ef81b53
+terrain -101 24 7f6e493f1cf7a15a
+terrain -101 25 b18707a43eef4ea
+terrain -101 26 717e0188cd432dc8
+terrain -101 27 a3c2239d376bf15
+terrain -102 23 6e05902d27941e82
+terrain -102 24 e7d412b7a9f1fec3
+terrain -102 25 6cc368ef792381e7
+terrain -102 26 32d904be0043b3c7
+terrain -102 27 8ec8818912903869
+terrain -103 23 2f87ebefa7e8b0a1
+terrain -103 24 3a81f7eb38642aca
+terrain -103 25 10e4e4fb08c240d0
+terrain -103 26 3fe21157d7e8cde9
+terrain -103 27 cb4c518bea986558
+terrain -104 23 5b89db93f8962029
+terrain -104 24 64575f37dee51b6f
+terrain -104 25 cb8ee725d64206c1
+terrain -104 26 3f041d86e5b6ceef
+terrain -104 27 460c17f1f3b4b93d
+terrain -105 23 2d0aa735e4b9195a
+terrain -105 24 39e12282fc5fb9f4
+terrain -105 25 ea2466ca56881245
+terrain -105 26 84e9fdb1b815072
+terrain -105 27 b09c1d1b42ca197a
+terrain -11 -50 e151d6c67b4b96c9
+terrain -11 -51 feed3c054d80a6a0
+terrain -11 -52 63d5fdb88faf2e67
+terrain -11 -53 87697d2db485a0c6
+terrain -11 -54 6f0b2689df4a5118
+terrain -12 -50 1e5e291b5ec6fa6c
+terrain -12 -51 d35beddf5616823
+terrain -12 -52 9f2dcc3845c076cc
+terrain -12 -53 51364f709829e505
+terrain -12 -54 4bda78ef03477005
+terrain -129 58 e91277c61b5d9284
+terrain -129 59 5e685f73ddae08ec
+terrain -129 60 327508d54e73927a
+terrain -129 61 2207054c530f7bea
+terrain -129 62 d479f5bea5a49e1e
+terrain -13 -50 d7d052dc4526fc98
+terrain -13 -51 314616ed711b82d0
+terrain -13 -52 8211795dc82838f8
+terrain -13 -53 a8cad4655bf583d2
+terrain -13 -54 fe78966b315a9b7c
+terrain -130 58 f20c5dcd4cc6a2d5
+terrain -130 59 b13f70761a57e38c
+terrain -130 60 6c355ee551b17e8a
+terrain -130 61 e15afcfd37b2310e
+terrain -130 62 26114363d6c7048a
+terrain -131 58 1ef447a3cc241991
+terrain -131 59 c17233062454727d
+terrain -131 60 896275a72d899a40
+terrain -131 61 13e85e1a405e8b4c
+terrain -131 62 b7c6ec4e29dabf3b
+terrain -132 58 4b2cad1f6c1d2d65
+terrain -132 59 5907a854dcf9d446
+terrain -132 60 44e70074cb9c07df
+terrain -132 61 5398ff0ee1dce475
+terrain -132 62 d9cf62f378c71647
+terrain -133 58 a841429890f56943
+terrain -133 59 f91280dc9dbc6492
+terrain -133 60 ef305b588369507f
+terrain -133 61 fe7cb2673b6b0460
+terrain -133 62 d3eed7bed65617e8
+terrain -168 100 9df40771bbb43d31
+terrain -168 101 3c7e52c3d2a08119
+terrain -168 102 8154521b6f2ff2fa
+terrain -168 98 f3583cf94c81b81c
+terrain -168 99 6a6ba749b17bd0ad
+terrain -169 100 b7165d4326d344a2
+terrain -169 101 6c9cb35cb6ddddbe
+terrain -169 102 3ccde906e2d4afb6
+terrain -169 98 baa0106cbc74ae24
+terrain -169 99 b30a6ad6b2ff3c4b
+terrain -170 100 2bee744be3066e6d
+terrain -170 101 e0de461cb2facc11
+terrain -170 102 142ca9cc6f75efaa
+terrain -170 98 ea7b27c5af1a61ce
+terrain -170 99 a0b04cd8c816fc21
+terrain -171 100 a460c791d11bea83
+terrain -171 101 ccc9ee5dc7465245
+terrain -171 102 76078a8c687b98c4
+terrain -171 98 ba04a2baaabc3add
+terrain -171 99 f638e1bcfb87ba4d
+terrain -172 100 dd72c3a2a2ed3c6
+terrain -172 101 f5e45ebdca48863c
+terrain -172 102 240a9a7b22f5e7fc
+terrain -172 98 8a23a597600985bf
+terrain -172 99 8a23a597600985bf
+terrain -59 -25 1cb9fecd41858cfc
+terrain -59 -26 a1d1fd196db92436
+terrain -59 -27 1b7e3d71c945c9e8
+terrain -59 -28 365064d923bfbe3b
+terrain -59 -29 6677581b1ce37770
+terrain -60 -25 d479f5bea5a49e1e
+terrain -60 -26 b0aea9662dfc4772
+terrain -60 -27 d15900c95eae4437
+terrain -60 -28 ef13aa15ddfdd54f
+terrain -60 -29 3851bd38cd78e116
+terrain -61 -25 b00e1e4a95d0f215
+terrain -61 -26 da9a9feb77d9d355
+terrain -61 -27 d0f8b35794c6f389
+terrain -61 -28 815ef18475d30e2d
+terrain -61 -29 9b18b826536180e2
+terrain -62 -25 7f319b1b8691068c
+terrain -62 -26 40bc0140777f0ca2
+terrain -62 -27 9bc309311f00fb94
+terrain -62 -28 1cdbb4365e2478dc
+terrain -62 -29 5cb22fb15a448865
+terrain -63 -25 297ce97945e7497f
+terrain -63 -26 57d68d51a663f03
+terrain -63 -27 397d4dd5feb316ed
+terrain -63 -28 3d6c35453aff616e
+terrain -63 -29 6bdc9db459f99698
+terrain -9 -50 7292f83d0f07fb86
+terrain -9 -51 af16eed25d7b85e
+terrain -9 -52 12500ff3f1415c1c
+terrain -9 -53 c8d102f6218f6399
+terrain -9 -54 241ec487fddfbeca
+terrain -94 15 8ece788916268683
+terrain -94 16 2daf3d9194487259
+terrain -94 17 171904a9b796f92e
+terrain -94 18 e9fb7db740ad1510
+terrain -94 19 e9fb7db740ad1510
+terrain -95 15 c5ee8b2598dfb74d
+terrain -95 16 baea0142359a9f6c
+terrain -95 17 4da1fda46a901b1
+terrain -95 18 b77e2a7a657dfcd5
+terrain -95 19 422ffb8b5eb1dde6
+terrain -96 15 b5e5e689a02fe09f
+terrain -96 16 ea80014a56df4ec4
+terrain -96 17 9574f6d63343739c
+terrain -96 18 73cc1c54dbc70355
+terrain -96 19 3bb883a1ca733e6c
+terrain -97 15 73716658580e9776
+terrain -97 16 3320bdf0ad966ec4
+terrain -97 17 40a664239286f6d6
+terrain -97 18 f75997a37272f302
+terrain -97 19 a1d2bf914194433b
+terrain -98 15 e9fb7db740ad1510
+terrain -98 16 474c75e9d9817ee2
+terrain -98 17 79152464e6e63f91
+terrain -98 18 c7fbfd9da5c710a6
+terrain -98 19 918d6a2acd162fe6
+terrain 142 -69 d40a3e1a4ac72db0
+terrain 142 -70 5035fa879781da3d
+terrain 142 -71 9e4bd45c817b2579
+terrain 142 -72 e9f7922a2bc9765c
+terrain 142 -73 199496c900c15bc2
+terrain 143 -69 2d06b6cdc66bc0fb
+terrain 143 -70 12dc8d5bbf8988b8
+terrain 143 -71 53fda80aa6045c5e
+terrain 143 -72 9da64cfa7ec6fef3
+terrain 143 -73 2f30c329b90776c1
+terrain 144 -69 4224dde3328d0bf5
+terrain 144 -70 4d2eaf0b5f9adddd
+terrain 144 -71 cf230db2a5b8ec3e
+terrain 144 -72 a44bb5bd032f6179
+terrain 144 -73 110a776f315da844
+terrain 145 -69 cef03b67b19c98d4
+terrain 145 -70 b1885968e6fd4e82
+terrain 145 -71 68957bd416787a6
+terrain 145 -72 57576c845cbed5c7
+terrain 145 -73 e7e9e56373a306e3
+terrain 146 -69 7e9f9979da11133e
+terrain 146 -70 cb1fa4adbc05fa0d
+terrain 146 -71 ff64d29701b7762f
+terrain 146 -72 e13e07a26d80b018
+terrain 146 -73 cc771983f8125ba5
+terrain 160 -65 b3474dd8f8733197
+terrain 160 -66 6b0dbfc9a0260d09
+terrain 160 -67 92711318aeb173d6
+terrain 160 -68 bcffc05f481bb065
+terrain 160 -69 b3a2f178691a90e4
+terrain 161 -65 207aabb912bb9320
+terrain 161 -66 4bfd72b84c893f91
+terrain 161 -67 8059158843c5215
+terrain 161 -68 5f579c4f29471e7c
+terrain 161 -69 fbfe5889382b35c
+terrain 162 -65 899d2f9fe2d0bdf6
+terrain 162 -66 d0c1285ac0790b14
+terrain 162 -67 f8d20c708d784e80
+terrain 162 -68 27507d01bb95b5e6
+terrain 162 -69 c621782ae09476e5
+terrain 163 -65 668aa0df1ad64fe3
+terrain 163 -66 40a8fe185fa6989c
+terrain 163 -67 f4a05ea7c4e5c6cc
+terrain 163 -68 365fc93c2eb403ee
+terrain 163 -69 ef8ef4886df1c23
+terrain 164 -65 1dc0b84a0f3c8c99
+terrain 164 -66 c861b440c18e4eba
+terrain 164 -67 186b1a5ec9c20691
+terrain 164 -68 84ecedfee6b39af2
+terrain 164 -69 9dab3f7899de5546
+terrain 36 -75 f0c2ca2f433abcdd
+terrain 36 -76 ed3843980264b901
+terrain 36 -77 9c910fa8cba06282
+terrain 36 -78 34c22a32a0d33c3f
+terrain 36 -79 1dc71f23f192517a
+terrain 37 -75 f74a79ed8a2d65f3
+terrain 37 -76 ac8d9cefd4f94bf6
+terrain 37 -77 5abe96ae3eb55945
+terrain 37 -78 a4b5edbd1133af8b
+terrain 37 -79 ebcc48e01cb68de7
+terrain 38 -75 756ad5c716aa0323
+terrain 38 -76 b883b03c78ca5e1d
+terrain 38 -77 4de252901da881eb
+terrain 38 -78 503278a3b0e6d617
+terrain 38 -79 465aaa8af122cb40
+terrain 39 -75 f4bfc29e6fc9ec3b
+terrain 39 -76 67337cd4e42449bb
+terrain 39 -77 cead818518b7224f
+terrain 39 -78 d13805ebebef6165
+terrain 39 -79 4890870947c4c097
+terrain 40 -75 948785b80c77faa1
+terrain 40 -76 534db006b84741a3
+terrain 40 -77 2f47ee443796f53d
+terrain 40 -78 b72b7f4b0e00efff
+terrain 40 -79 766fe241ee8a61ba
+terrain 90 -88 f6cff2009a29e081
+terrain 90 -89 7a7e8e04d5debb75
+terrain 90 -90 25d2867a61d0521c
+terrain 90 -91 997b8af07715ab4b
+terrain 90 -92 3c438a9512c42bab
+terrain 91 -88 faefa1cf1335194a
+terrain 91 -89 757eff4f9e99eaca
+terrain 91 -90 753c6d68c268a83f
+terrain 91 -91 ef41bdce9e446a09
+terrain 91 -92 cfdfc4d7c2594bc2
+terrain 92 -88 98d0c07ac93572a6
+terrain 92 -89 ce2c1f2b37bd7e6
+terrain 92 -90 7939235697b6f25e
+terrain 92 -91 d533e36d294305d5
+terrain 92 -92 ea997951a80f5a77
+terrain 93 -88 35e683c2b33aba5f
+terrain 93 -89 db9d6cb6005ad58d
+terrain 93 -90 584876f419b9fbfb
+terrain 93 -91 f5a795f24ba3655b
+terrain 93 -92 187a0bcfc16bd8c3
+terrain 94 -88 e3d107fca6d27685
+terrain 94 -89 bb4096afd4228229
+terrain 94 -90 57dd421a713cdf37
+terrain 94 -91 5fd78988bbef8d3f
+terrain 94 -92 77571f94dfb4d021
+road -10 -50 b6b557bd4d9e3930
+road -10 -51 3b9d048b84ddb4ec
+road -10 -52 ff9013df9f21b257
+road -10 -53 213e6df13e1901a6
+road -10 -54 51f1f7677c943d03
+road -101 23 2bb428d35fb07a3
+road -101 24 275b7ad1185861bf
+road -101 25 400604c6d9f42d56
+road -101 26 6f31818353fcd0c3
+road -101 27 d2f42df9dcadb6bb
+road -102 23 c281e074cc7f8d1a
+road -102 24 8763deb1df16c408
+road -102 25 c2e9adfb86c94e43
+road -102 26 46f983f17543ad99
+road -102 27 b2f8ef7ff5c4a38c
+road -103 23 90987f15c59f5173
+road -103 24 3ad34da9cfb41bd7
+road -103 25 624698febfa64e5a
+road -103 26 412e858ca9e73c27
+road -103 27 9448f811af9bc5ba
+road -104 23 209e7f9df84ffe2a
+road -104 24 761c8ff41fc1065b
+road -104 25 97c67c9d781ccdf8
+road -104 26 ae4511fdf59fa5d
+road -104 27 ac0f96e247d3a32b
+road -105 23 8fa32ef909599e08
+road -105 24 93e2861016d54be6
+road -105 25 c28098fcbe088561
+road -105 26 98190b21d3f2054b
+road -105 27 f5240814bfe37e5
+road -11 -50 f8e42f7ea11efda0
+road -11 -51 b966a31f5ef2cfa8
+road -11 -52 f53ee053ecc7b7a4
+road -11 -53 60cfa7c8526d3dcf
+road -11 -54 3656e609eb12c466
+road -12 -50 db65926039e079b7
+road -12 -51 f43591c6e823d327
+road -12 -52 3968eebef2475bf1
+road -12 -53 1666d08a12e8bbb7
+road -12 -54 51d2a3551d8455f0
+road -129 58 8cca60ce74883978
+road -129 59 46f47c24d7dd166e
+road -129 60 c595f2dabf212c1a
+road -129 61 27ab5900222e5d1e
+road -129 62 none
+road -13 -50 8b07737b4959a4fc
+road -13 -51 833f609d2837737b
+road -13 -52 a473dff78f4c47e7
+road -13 -53 b4d49b4b9d54d08b
+road -13 -54 none
+road -130 58 5a8287d8e3525d47
+road -130 59 b65ac1fe85278c6
+road -130 60 f5e663dec90558b7
+road -130 61 72f8b9c42e74ffae
+road -130 62 ea06d3e5a8044122
+road -131 58 5c1d810fec1b2369
+road -131 59 e9f203a65eda4374
+road -131 60 ad4158f97b641cd8
+road -131 61 e418e25ed5d4267e
+road -131 62 e862718c6425495f
+road -132 58 5c945a9bc8c698dc
+road -132 59 2d230082a107e540
+road -132 60 882215d79d851f4f
+road -132 61 d79860162a461d9
+road -132 62 ce841f182f8ba906
+road -133 58 none
+road -133 59 fbda76dfe1e63f82
+road -133 60 87a28dd858e5d8bc
+road -133 61 ac4da155dc8c9b3c
+road -133 62 7b0ab7c4350f3a04
+road -168 100 3b7930c13f2c9c3d
+road -168 101 c217486702f12ae3
+road -168 102 none
+road -168 98 9435d5605a006796
+road -168 99 23511a6ab20b69dc
+road -169 100 fd3a7b69eb0a3b80
+road -169 101 4ee5fa97dd41543
+road -169 102 2418cbe7063e40d1
+road -169 98 712d32ff153a87f6
+road -169 99 4695b06ddb3670cb
+road -170 100 891bf5623cdd0ecc
+road -170 101 3c5410edf08776bb
+road -170 102 739a5bb6c708e2c0
+road -170 98 b3f84ebd2aac9006
+road -170 99 8c2ab3c706f26329
+road -171 100 772da9508e03561
+road -171 101 none
+road -171 102 none
+road -171 98 3733a4c937d43159
+road -171 99 c366af508f4d9c27
+road -172 100 none
+road -172 101 none
+road -172 102 none
+road -172 98 none
+road -172 99 1d4a1acc660bdfbc
+road -59 -25 none
+road -59 -26 b634269eb21d4ca
+road -59 -27 105a988d9fba29eb
+road -59 -28 c4afda9e9e9475d1
+road -59 -29 9a50d34e6a67db53
+road -60 -25 none
+road -60 -26 aad86d60b43b81e
+road -60 -27 7e72acb98f8cf2d5
+road -60 -28 31a6de7a10b60c24
+road -60 -29 431956c6097ac2f8
+road -61 -25 5538e7d452c974ac
+road -61 -26 6d3738b22ce09baa
+road -61 -27 eeacf257bc24adac
+road -61 -28 b5a1d510942012d
+road -61 -29 2318f443155896da
+road -62 -25 225e4b92b1bd099
+road -62 -26 871e0759e6b88cdc
+road -62 -27 765859ae5e02409b
+road -62 -28 3e12fc8befb8d957
+road -62 -29 fd8e8915c8a51ac
+road -63 -25 4ea0994b27664b2d
+road -63 -26 e0778f873b99ff2d
+road -63 -27 d4cbc9ea20fbc92
+road -63 -28 e1f324ab6e51f1d
+road -63 -29 fd3c116211fa5b84
+road -9 -50 37f301ffdae66b98
+road -9 -51 1da11a1b41b47475
+road -9 -52 c8f4893845d4937
+road -9 -53 dc8a6c1263ba7c5c
+road -9 -54 e9c1d5c97289d325
+road -94 15 69e9774bf734917b
+road -94 16 3f033064ea663738
+road -94 17 d6a606a16f87d4bc
+road -94 18 8f7aa2e579bd9ad7
+road -94 19 none
+road -95 15 8d92bb756a05cda8
+road -95 16 102fd120a02f9fc0
+road -95 17 d89e2338635a5948
+road -95 18 be418c71b07df793
+road -95 19 7e75993e3704d5a0
+road -96 15 30699907558e9879
+road -96 16 e3cb5f6d8fcdd2ba
+road -96 17 ce7e80b4d890cca
+road -96 18 81c16f0f6f6225a6
+road -96 19 bc409f2df1da2a49
+road -97 15 db22133a1f19b98
+road -97 16 1597beb6660a35bd
+road -97 17 c2672583bfeea7fe
+road -97 18 d103746bd2ef2d04
+road -97 19 f38ee866eef7623a
+road -98 15 none
+road -98 16 50667817f5c3b025
+road -98 17 b17225e4f4406617
+road -98 18 75946b6560625b2
+road -98 19 94c976412cf74806
+road 142 -69 none
+road 142 -70 4ec2d700fe8d3048
+road 142 -71 cf0354bbf0b19af1
+road 142 -72 fe7c57f709ab053c
+road 142 -73 e054fef3a35af133
+road 143 -69 c07f580e53e1285e
+road 143 -70 a897975e4c433729
+road 143 -71 8cd64ffb9025cb22
+road 143 -72 874b2ca70737a75
+road 143 -73 be20abe17c64a30a
+road 144 -69 f51d06d732ba3d57
+road 144 -70 f21e4912ff59933d
+road 144 -71 8976a4cd16aa1015
+road 144 -72 524760e4466faed1
+road 144 -73 af44c0f6b8adb286
+road 145 -69 7971b850fd14489f
+road 145 -70 66b96ce282e4ec42
+road 145 -71 f6eb91510089cd5a
+road 145 -72 48bd6ebedacc003d
+road 145 -73 d7a96dff064f5478
+road 146 -69 ef68cf378ff6c655
+road 146 -70 e5da114898df1474
+road 146 -71 5455ccfedc0cf84d
+road 146 -72 aa347ac7032daa7
+road 146 -73 2247f39a88b2ed99
+road 160 -65 777dd1bc61d021b9
+road 160 -66 b6e4f70d52b5014b
+road 160 -67 5b248565d3cdda59
+road 160 -68 d0c61a0ef090040a
+road 160 -69 b413b3989b31a254
+road 161 -65 c8664b608152582e
+road 161 -66 4d2ed61b405c42cc
+road 161 -67 6b9b4d927c462769
+road 161 -68 de1b2494437dcb7d
+road 161 -69 e1e822486b2062bb
+road 162 -65 80df516527568eac
+road 162 -66 d19007f702e462fa
+road 162 -67 1ecbe1a4a1cba49c
+road 162 -68 624b314a422b9267
+road 162 -69 ddb9c62bafbe5684
+road 163 -65 none
+road 163 -66 none
+road 163 -67 5dcbadf29e5f81b8
+road 163 -68 fbe30f5c346128c1
+road 163 -69 88bb89f17fcd6f4d
+road 164 -65 none
+road 164 -66 none
+road 164 -67 none
+road 164 -68 none
+road 164 -69 none
+road 36 -75 91b713e57eb26452
+road 36 -76 f0ee98f6f101d333
+road 36 -77 984ab3e3f186e606
+road 36 -78 9d11c43552fad188
+road 36 -79 none
+road 37 -75 13653ae63af158fe
+road 37 -76 6ff19aa6642989a6
+road 37 -77 bf500be3f53ab81f
+road 37 -78 5b69227cec861ea7
+road 37 -79 4208815b767855b9
+road 38 -75 94baadee2c9c1a47
+road 38 -76 8ec7136eb05295f8
+road 38 -77 4c8929269a413c1f
+road 38 -78 66efe1c80cc3a2cf
+road 38 -79 8b32609641a9c16f
+road 39 -75 5a0d60402e9baf7e
+road 39 -76 3a726d38b5ac32b1
+road 39 -77 715c2a112e54ba09
+road 39 -78 84cacb8a212dc0ad
+road 39 -79 68f75a71cc409192
+road 40 -75 20ebc29bda441d78
+road 40 -76 97d30ec0e93116c6
+road 40 -77 40cfba31b7ced2cf
+road 40 -78 a82b16da4fe8e986
+road 40 -79 d3a80a5c7ac49aa7
+road 90 -88 9c837d1ab44e45d7
+road 90 -89 68266b2d10ff5422
+road 90 -90 598045db4c872599
+road 90 -91 8c7740a7bc9b2d0c
+road 90 -92 deac1e86538eb23e
+road 91 -88 b0911cc37ef652bc
+road 91 -89 de8102e2d732aaa5
+road 91 -90 46ac8ea3c72987d
+road 91 -91 910c7c004d307f27
+road 91 -92 2156e0f1489cb35c
+road 92 -88 95a1f4e00dee8e47
+road 92 -89 f251678aebd3736f
+road 92 -90 a3c393138c340fcf
+road 92 -91 c7ae18198a05a52a
+road 92 -92 8aea104f45e24240
+road 93 -88 dce59438f787f6d
+road 93 -89 3ad976a10a444e42
+road 93 -90 5189380d8f88e041
+road 93 -91 fb29be00aa2f6fbb
+road 93 -92 744230c4b2245240
+road 94 -88 8d263ed7026be5e3
+road 94 -89 d67f7551d7690de8
+road 94 -90 1ed8546e69ae232e
+road 94 -91 43c9b9dd46135262
+road 94 -92 none

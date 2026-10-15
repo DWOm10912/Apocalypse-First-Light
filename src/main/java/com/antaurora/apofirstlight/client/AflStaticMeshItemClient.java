@@ -91,6 +91,11 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.METAL_TRASH_CAN.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/metal_trash_can.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/metal_trash_can.png"), 0.0, 0.0), "metal_trash_can");
+            // Furniture Mesh V1 (tools/furniture/furniture-mesh.mjs, 2026-10-15): each piece's mesh and atlas, closed, the lamp unlit; views fitted by the generator
+            for (String id : new String[]{"wooden_kitchen_counter", "wooden_sink_counter", "wooden_wardrobe", "wooden_nightstand", "wooden_storage_chest", "vintage_chest_freezer"})
+                bind(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(ApocalypseFirstLight.MOD_ID, id)), () -> new AflStaticMeshItemRenderer(
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + id + ".geo.json"),
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/furniture/" + id + ".png"), 0.0, 0.0), id);
             // Water Dispenser V2 (tools/build-water-dispenser-v2.mjs): the block's mesh and atlas, lights off; views fitted by the generator
             bind(AflItems.WATER_DISPENSER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/water_dispenser.geo.json"),

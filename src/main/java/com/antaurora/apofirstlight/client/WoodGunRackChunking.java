@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.cabin.CabinMeshModel;
-import com.antaurora.apofirstlight.cabin.WoodFurniture;
 import com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
@@ -22,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.event.TickEvent;
@@ -108,7 +108,8 @@ public final class WoodGunRackChunking {
         /** Its host, not the block entity: the host map is weak in the block entity, and model data keeps copies alive. */
         private final Host host;
         final long seq, generation;
-        final Direction facing;
+        /** The rack's state when recorded (facing; a tool rack's pad): the drawing holds for that state only. */
+        final BlockState state;
         final ItemStack[] stacks;
         final Leftover[][] leftovers;
         /** Per quad: DefaultVertexFormat.BLOCK data with the drawn colour (ABGR) and its sprite. */
@@ -117,12 +118,12 @@ public final class WoodGunRackChunking {
         @SuppressWarnings("unchecked")
         private final List<BakedQuad>[] baked = new List[3];
 
-        Copy(Host host, long seq, long generation, Direction facing, ItemStack[] stacks, Leftover[][] leftovers,
+        Copy(Host host, long seq, long generation, BlockState state, ItemStack[] stacks, Leftover[][] leftovers,
              List<int[]> quads, List<TextureAtlasSprite> sprites) {
             this.host = host;
             this.seq = seq;
             this.generation = generation;
-            this.facing = facing;
+            this.state = state;
             this.stacks = stacks;
             this.leftovers = leftovers;
             this.quads = quads.toArray(int[][]::new);
@@ -161,9 +162,9 @@ public final class WoodGunRackChunking {
             return List.copyOf(out);
         }
 
-        /** The chunk draws slot k for this stack at this facing (the renderer replays only its leftovers). */
-        boolean has(int k, ItemStack stack, Direction facing) {
-            return this.facing == facing && generation == VextrisMeshes.generation() && sameStack(stacks[k], stack);
+        /** The chunk draws slot k for this stack in this rack state (the renderer replays only its leftovers). */
+        boolean has(int k, ItemStack stack, BlockState state) {
+            return this.state == state && generation == VextrisMeshes.generation() && sameStack(stacks[k], stack);
         }
 
         /** Slot k's leftovers at the renderer's pose (the block's origin); drawn light where the drawing left it unset. */
@@ -302,11 +303,11 @@ public final class WoodGunRackChunking {
 
     /** Records the contents when they differ from the last recording; true when it did. */
     private static boolean refresh(WoodGunRackBlockEntity rack, Host h) {
-        Direction facing = rack.getBlockState().getValue(WoodFurniture.GunRack.FACING);
+        BlockState state = rack.getBlockState();
         long generation = VextrisMeshes.generation();
         Copy old = h.requested;
-        if (old != null && old.facing == facing && old.generation == generation && same(old, rack)) return false;
-        Copy copy = record(rack, h, ++h.seq, generation, facing);
+        if (old != null && old.state == state && old.generation == generation && same(old, rack)) return false;
+        Copy copy = record(rack, h, ++h.seq, generation, state);
         h.requested = copy;
         h.data = ModelData.builder().with(CabinMeshModel.EXTRA, copy).build();
         return true;
@@ -332,7 +333,7 @@ public final class WoodGunRackChunking {
 
     // ------------------------------------------------------------------------------------------- recording
 
-    private static Copy record(WoodGunRackBlockEntity rack, Host h, long seq, long generation, Direction facing) {
+    private static Copy record(WoodGunRackBlockEntity rack, Host h, long seq, long generation, BlockState state) {
         var stacks = new ItemStack[WoodGunRackBlockEntity.SLOTS];
         var leftovers = new Leftover[WoodGunRackBlockEntity.SLOTS][];
         var quads = new ArrayList<int[]>();
@@ -344,12 +345,12 @@ public final class WoodGunRackChunking {
             if (!s.isEmpty()) {
                 var recorder = new Recorder();
                 // light 0: whatever light a vertex carries afterwards was set by the drawing itself (full bright parts)
-                WoodGunRackRenderer.slot(k, s, facing, new PoseStack(), recorder, 0, rack.getBlockPos().hashCode() + k);
+                WoodGunRackRenderer.slot(k, s, state, new PoseStack(), recorder, 0, rack.getBlockPos().hashCode() + k);
                 for (var e : recorder.streams.entrySet()) split(e.getKey(), e.getValue(), quads, sprites, kept);
             }
             leftovers[k] = kept.toArray(Leftover[]::new);
         }
-        return new Copy(h, seq, generation, facing, stacks, leftovers, quads, sprites);
+        return new Copy(h, seq, generation, state, stacks, leftovers, quads, sprites);
     }
 
     private static Kind kind(RenderType type) {

@@ -15,6 +15,10 @@ package com.antaurora.apofirstlight.terrainsmooth;
  * four differ by at most one, every block touching the point reads all four inside its window, so the window never
  * changes the answer.
  * <p>
+ * A graded_turf column (the road's earthworks, docs/worldgen/federal_highways_c3.md 10.4) has its own corner heights:
+ * a corner point it touches takes the turf's height there (clamped to what each natural block can draw), so the natural
+ * ground meets the earthworks without a step (2026-10-15).
+ * <p>
  * Geometry key (long, -1 = the block keeps its vanilla shape): corner heights nw, ne, sw, se above B's floor in quarters
  * (bits 0-15, 4 each, 0..8), then for the N, S, W, E sides the neighbour's surface at the two ends of that edge (bottom of
  * the visible side band, clamped to the top; bits 16-47).
@@ -38,6 +42,9 @@ public final class SmoothRules {
 
         /** y of the column's natural surface block, or NO_SURFACE (see #surface(Cells, int, int, int, int)) */
         int surface(int x, int z);
+
+        /** Absolute height of corner k (nw, ne, sw, se) of a graded_turf block at (x, y, z); NaN for any other block. */
+        default float turf(int x, int y, int z, int k) { return Float.NaN; }
     }
 
     private SmoothRules() {}
@@ -98,18 +105,25 @@ public final class SmoothRules {
         return cell == NATURAL && open(above) && c.surface(x, z) == top;
     }
 
-    /** Height of the corner whose four columns are col[(oj + b) * 3 + oi + a], a, b in {0, 1}; NaN when pinned. */
-    static float corner(long[] col, int oi, int oj, int mode) {
+    /**
+     * Height of the corner whose four columns are col[(oj + b) * 3 + oi + a], a, b in {0, 1}; NaN when pinned. A turf
+     * column among them (turf[index], its four absolute corner heights) gives its height at this point.
+     */
+    static float corner(long[] col, float[][] turf, int oi, int oj, int mode) {
         int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0;
+        float t = Float.NaN;
+        boolean pinned = false;
         for (int j = oj; j <= oj + 1; j++) for (int i = oi; i <= oi + 1; i++) {
             long c = col[j * 3 + i];
-            if (kind(c) != K_NAT) return Float.NaN;
+            if (turf[j * 3 + i] != null) { if (Float.isNaN(t)) t = turf[j * 3 + i][(oi + 1 - i) + 2 * (oj + 1 - j)]; continue; }
+            if (kind(c) != K_NAT) { pinned = true; continue; }
             int h = height(c);
             lo = Math.min(lo, h);
             hi = Math.max(hi, h);
             sum += h;
         }
-        if (hi - lo > 1) return Float.NaN;
+        if (!Float.isNaN(t)) return t;
+        if (pinned || hi - lo > 1) return Float.NaN;
         return mode == MODE_A ? lo : sum * 0.25F;
     }
 
@@ -127,11 +141,20 @@ public final class SmoothRules {
         long[] col = new long[9];
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++)
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, x + i - 1, y, z + j - 1);
+        // graded_turf columns read at this level: their corner heights
+        float[][] turf = new float[9][];
+        for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) {
+            long n = col[j * 3 + i];
+            if (kind(n) != K_FIXED) continue;
+            int tx = x + i - 1, ty = height(n) - 1, tz = z + j - 1;
+            if (Float.isNaN(c.turf(tx, ty, tz, 0))) continue;
+            turf[j * 3 + i] = new float[]{c.turf(tx, ty, tz, 0), c.turf(tx, ty, tz, 1), c.turf(tx, ty, tz, 2), c.turf(tx, ty, tz, 3)};
+        }
         int h = y + 1;
         float[] abs = new float[4];
         boolean flat = true;
         for (int k = 0; k < 4; k++) {
-            float v = corner(col, CORNER[k][0], CORNER[k][1], mode);
+            float v = corner(col, turf, CORNER[k][0], CORNER[k][1], mode);
             abs[k] = Float.isNaN(v) ? h : v;
             if (abs[k] != h) flat = false;
         }
@@ -143,17 +166,19 @@ public final class SmoothRules {
             // a neighbour whose top is above this block's cell is counted on to hide this side up to its surface; with a cavity
             // at this level (the ground under an overhang, blasted out) it does not: draw the whole side
             boolean hollow = height(n) > y + 1 && (n & SOLID_HERE) == 0;
-            int qa = Math.min(q(abs[SIDE[s][1]] - y), hollow ? 0 : lower(n, col, SIDE[s][1], mode, y));
-            int qb = Math.min(q(abs[SIDE[s][2]] - y), hollow ? 0 : lower(n, col, SIDE[s][2], mode, y));
+            int qa = Math.min(q(abs[SIDE[s][1]] - y), hollow ? 0 : lower(n, col, turf, SIDE[s][0], SIDE[s][1], mode, y));
+            int qb = Math.min(q(abs[SIDE[s][2]] - y), hollow ? 0 : lower(n, col, turf, SIDE[s][0], SIDE[s][2], mode, y));
             g |= (long) qa << (16 + 8 * s) | (long) qb << (20 + 8 * s);
         }
         return g;
     }
 
     /** Bottom of B's side band at a corner, in quarters above B's floor: the neighbour column's surface there. */
-    private static int lower(long n, long[] col, int cornerIndex, int mode, int y) {
+    private static int lower(long n, long[] col, float[][] turf, int index, int cornerIndex, int mode, int y) {
+        int oi = CORNER[cornerIndex][0], oj = CORNER[cornerIndex][1];
+        if (turf[index] != null) return q(turf[index][(oi + 1 - index % 3) + 2 * (oj + 1 - index / 3)] - y);
         return switch (kind(n)) {
-            case K_NAT -> { float v = corner(col, CORNER[cornerIndex][0], CORNER[cornerIndex][1], mode); yield q((Float.isNaN(v) ? height(n) : v) - y); }
+            case K_NAT -> { float v = corner(col, turf, oi, oj, mode); yield q((Float.isNaN(v) ? height(n) : v) - y); }
             case K_FIXED, K_HIGH -> q(height(n) - y);
             default -> 0;   // water, a drop of two or more, not loaded: the whole side shows
         };

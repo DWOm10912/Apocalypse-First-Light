@@ -1,6 +1,6 @@
 # AFL 网格背包 V0：实施计划
 
-状态：**阶段 1 用户实机 PASS（2026-10-14）**，编译和 GameTest 通过。武器位和快捷栏重做（第 10 节）、装备网格和身上的装备（第 11 节）代码 2026-10-14 完成，**用户实机 PASS**（第 11 节 2026-10-15 第一次检查，第 10 节和耳罩、捡起即穿的修正在 2026-10-15 合并前检查）；地上的物品（第 12 节）用户实机 PASS（2026-10-15）；容器界面里的网格和配件（第 13 节）**代码已完成、编译和 GameTest 通过**，用户实机试用时发现 Shift 放进熔炉会刷物品，已修，修复用户实机 PASS，其余部分（拖进拖出、Shift 移动、容器不收时留在原位、维护台配件从网格取）在合并前检查里用户实机 PASS（2026-10-15）；维护台选枪栏（第 13 节末）和身上的枪的枪套、多人同步（第 14 节）用户实机 PASS（2026-10-15）；第 1、3、5 节里被它替换的说法已经改成现在的行为。 用户同日让这个分支开工（“开始做这个分支的内容”）。下面的方案是我按概念图定的默认做法，偏离概念图的地方在第 6 节单独列出，实现时的取舍在第 9 节，等用户在第一次实机检查时一起确认。没有提交，没有合并进 master。
+状态：**阶段 1 用户实机 PASS（2026-10-14）**，编译和 GameTest 通过。武器位和快捷栏重做（第 10 节）、装备网格和身上的装备（第 11 节）代码 2026-10-14 完成，**用户实机 PASS**（第 11 节 2026-10-15 第一次检查，第 10 节和耳罩、捡起即穿的修正在 2026-10-15 合并前检查）；地上的物品（第 12 节）用户实机 PASS（2026-10-15）；容器界面里的网格和配件（第 13 节）**代码已完成、编译和 GameTest 通过**，用户实机试用时发现 Shift 放进熔炉会刷物品，已修，修复用户实机 PASS，其余部分（拖进拖出、Shift 移动、容器不收时留在原位、维护台配件从网格取）在合并前检查里用户实机 PASS（2026-10-15）；维护台选枪栏（第 13 节末）和身上的枪的枪套、多人同步（第 14 节）用户实机 PASS（2026-10-15）；第 1、3、5 节里被它替换的说法已经改成现在的行为。 用户同日让这个分支开工（“开始做这个分支的内容”）。下面的方案是我按概念图定的默认做法，偏离概念图的地方在第 6 节单独列出，实现时的取舍在第 9 节，等用户在第一次实机检查时一起确认。2026-10-15 用户让合并：分支提交为 `49622f52`，再把 master `d083892e` 合进分支，协议号定为 46，见文末“合并进 master”。
 
 - 分支：`feature/inventory-grid-v0`，从 master `47140c87` 开出，工作区 `D:/Minecraft Modding/AFL-survivor-v0`。
 - 布局和用户决定：[afl_inventory_grid_v0_concept.md](afl_inventory_grid_v0_concept.md)；调研：[afl_unified_ui_v0_research.md](afl_unified_ui_v0_research.md)。
@@ -550,7 +550,7 @@
   - 枪套里的枪：手枪位的枪，要穿着枪套，拿在手上时不算；
   - 创造、旁观什么都不画。
 - 发送时机：每 tick 比较一次，物品连 NBT 一起比，有变化才发给正在看这个玩家的人（`TRACKING_ENTITY`）。拿在手上的枪不在 `Shown` 里，开火改弹药不会触发发送。别人开始看到这个玩家时（`PlayerEvent.StartTracking`）补发一次；玩家下线时清掉记录。
-- 新包 `GridPackets.CarriedSync`（实体 id、背上的枪、背带、枪套里的枪），加在 `GridPackets.register` 最后。`GridPackets` 在注册时记下频道，直接按 `TRACKING_ENTITY` 发，`AflNetwork` 没改。协议号这个分支仍是 44，合并进 master 时统一改。
+- 新包 `GridPackets.CarriedSync`（实体 id、背上的枪、背带、枪套里的枪），加在 `GridPackets.register` 最后。`GridPackets` 在注册时记下频道，直接按 `TRACKING_ENTITY` 发，`AflNetwork` 没改。协议号这个分支当时是 44，2026-10-15 合并进 master 时定为 46。
 - 客户端按实体 id 存收到的数据，退出世界时清空（`CarriedWeaponsLayer.Session`）。`CarriedWeaponsLayer`：
   - 自己照旧读物品栏（也走 `CarriedWeaponsSync.of`，规则只有一份）；
   - 别的玩家读收到的数据，没收到就什么都不画。
@@ -579,3 +579,22 @@
    - 拖进拖出、Shift 移动；
    - 容器满了或者不收时，东西留在原位，地上不多出一份；
    - 维护台配件可以从口袋、胸挂、背包里取。
+
+## 合并进 master（2026-10-15）
+
+用户 2026-10-15 让这个 worktree 合并进 master，完成后通知 Main。
+
+- 分支提交：`49622f52`（这个阶段的全部改动，198 个文件）；合并前的检查点分支 `checkpoint/inventory-grid-v0-pre-merge-20261015`。
+- 把 master `d083892e`（含木家具材质 V2、C3.2 桥网格、M4 第一轮）合进分支，`--no-ff`。
+- 冲突只有 `AflNetwork`：
+  - 协议号 44（分支）/ 45（master）→ **46**；
+  - 包注册顺序：先 master 的 C3.2 道路包 `RoadNetworkS2CPacket`，再 `GridPackets.register`；分支的 `grid` / `gridToServer` 两个发送方法保留。
+- 其余 9 个两边都改的文件 git 自动合并，逐个检查过：
+  - mixins json 是两边的并集，没有重复；
+  - en_us / zh_cn 各 1102 个键，没有重复，逐行对齐；
+  - `wood_furniture_v1.md`、`WorldInteractionHint` 相对 master 只多本分支的几行。
+- 验证：
+  - 编译通过；
+  - 默认 GameTest 85 项失败 16 项，名单和合并前一样（都是 master 原有的）；
+  - 工作台命名空间 28 项，只有 `p9_reload` “Before mag-in” 失败（master 原有）。
+- 合并后这个分支相对 master 可以快进。master 检出在 Main 的工作区，D 不改 Main 的工作区，所以 master 的快进交给 Main 做。

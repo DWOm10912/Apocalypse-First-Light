@@ -17,7 +17,7 @@ Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 SIGHT with [Rifle 
 - 点一下放上台。台上是自己放的枪时，原来那格留半透明的影子，点影子取回；别人放的枪照旧显示右边的取回按钮。
 - 修改策略不允许的枪（C.A.T.）照旧在客户端给拒绝提示，服务器也再查一遍。
 
-**上台请求**：原版的按钮包只带一个字节，装不下网格位置，所以加了 `GridPackets.BenchInsert`（容器 id、来源、预期的枪）。来源是快捷栏号（0–8）或 `GridSource` 编码（和配件从网格取用同一套）。服务器在 `GunMaintenanceMenu.insert` → `GunMaintenanceBenchBlockEntity.insertFrom(player, source, expected)` 里核对：菜单还开着、台子可用而且空着、来源处还是同一把枪（物品和 NBT 完全一致）、策略允许，才把枪从那里拿走放上台。旧的按钮路径（按钮 0–8 = 从快捷栏那格放上台）还在，GameTest 和旧探针用。包加在 `GridPackets.register` 的最后，协议号这个分支仍是 44，合并进 master 时统一改。
+**上台请求**：原版的按钮包只带一个字节，装不下网格位置，所以加了 `GridPackets.BenchInsert`（容器 id、来源、预期的枪）。来源是快捷栏号（0–8）或 `GridSource` 编码（和配件从网格取用同一套）。服务器在 `GunMaintenanceMenu.insert` → `GunMaintenanceBenchBlockEntity.insertFrom(player, source, expected)` 里核对：菜单还开着、台子可用而且空着、来源处还是同一把枪（物品和 NBT 完全一致）、策略允许，才把枪从那里拿走放上台。旧的按钮路径（按钮 0–8 = 从快捷栏那格放上台）还在，GameTest 和旧探针用。包加在 `GridPackets.register` 的最后，协议号这个分支当时是 44，2026-10-15 合并进 master 时定为 46。
 
 **原位**：台子记 `OriginSource`（快捷栏号或 `GridSource`）和 `OriginRotated`（网格里转没转），替换原来的 `OriginHotbarSlot`；旧存档只有 `OriginHotbarSlot` 时照读。菜单的 `originFor(viewer)` 返回自己那把枪的来源，否则 -1。
 

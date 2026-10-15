@@ -63,6 +63,9 @@ public final class C2Probe {
 
     record Site(String name, int x, int z, int radius) {}
 
+    /** roads=1 (C3.2): tick the dropped armor stands are read at (C3RoadProbe), -1 before they are dropped */
+    private static int standsRead = -1;
+
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (C2Harness.active() && ticks < 0) ticks = 0;
@@ -78,8 +81,15 @@ public final class C2Probe {
             if (ticks == 40 && C2Harness.ARGS.containsKey("look")) look(server, level);
             if (ticks == start) begin(level);
             else if (ticks > start && sites != null && next < sites.size()) site(level, sites.get(next++));
-            else if (ticks > start && sites != null && next == sites.size()) {
+            else if (ticks > start && sites != null && next == sites.size() && C3RoadProbe.active() && standsRead < 0) {
+                C3RoadProbe.dropStands(level, C2Probe::line);
+                standsRead = ticks + 600;
+            } else if (ticks > start && sites != null && next == sites.size() && C3RoadProbe.active() && ticks < standsRead && !C3RoadProbe.allResting()) {
+                // armor stands falling onto the pavement
+            } else if (ticks > start && sites != null && next == sites.size()) {
                 next++;
+                if (C3RoadProbe.active()) C3RoadProbe.readStands(level, C2Probe::line);
+                if (C3RoadProbe.DUMP.length() > 0) C2Harness.writeReport(C2Harness.arg("world", "w") + "_" + C2Harness.arg("tag", "t") + "_roaddump.txt", C3RoadProbe.DUMP.toString());
                 finish(level);
             } else if (ticks > start && sites != null && next == sites.size() + 1 && ticks % 20 == 0) {
                 ticks = -100000;
@@ -123,8 +133,17 @@ public final class C2Probe {
                 + C2Plan.serverDefault(level.getServer(), "minecraft:flat"));
         line("heap_used_mb_at_start " + usedMb(false));
         sites = new ArrayList<>();
-        sites.add(new Site("spawn", spawn.getX(), spawn.getZ(), 4));
-        if (plan != null) sites.addAll(C2Plan.sites(level, plan, spawn));
+        // the bridge's hit meshes as a bullet meets them (collision context), around the look point (2026-10-15)
+        if (C3RoadProbe.active() && C2Harness.ARGS.containsKey("look")) {
+            String[] xz = C2Harness.arg("look", "").split(",");
+            line("road hits (server, bullets): " + C3HitCheck.run(level, Integer.parseInt(xz[0].trim()), Integer.parseInt(xz[1].trim()), 24,
+                    net.minecraft.world.level.ClipContext.Block.COLLIDER));
+        }
+        if (C3RoadProbe.active()) sites.addAll(C3RoadProbe.sites(level));
+        else {
+            sites.add(new Site("spawn", spawn.getX(), spawn.getZ(), 4));
+            if (plan != null) sites.addAll(C2Plan.sites(level, plan, spawn));
+        }
         line("sites " + sites.size());
         C2Harness.log("probing " + sites.size() + " sites");
     }
@@ -209,6 +228,7 @@ public final class C2Probe {
         line("  water faces " + waterFaces + ", water over air " + waterOverAir + ", flowing fluid " + flowing + ", snow blocks " + snow);
         line("  biomes " + top(biomes, 6));
         if (plan != null) line("  " + C2Plan.siteInfo(plan, s.x, s.z));
+        if (C3RoadProbe.active()) C3RoadProbe.check(level, s, chunks, x0, z0, w, C2Probe::line);
     }
 
     private static void finish(ServerLevel level) {
@@ -217,6 +237,7 @@ public final class C2Probe {
         StringBuilder hashes = new StringBuilder();
         chunkHashes.forEach((k, v) -> hashes.append("chunk ").append(k).append(' ').append(v).append('\n'));
         terrainHashes.forEach((k, v) -> hashes.append("terrain ").append(k).append(' ').append(v).append('\n'));
+        C3RoadProbe.HASHES.forEach((k, v) -> hashes.append("road ").append(k).append(' ').append(v).append('\n'));
         String verify = C2Harness.arg("verify", "");
         if (!verify.isEmpty()) {
             try {
@@ -224,6 +245,11 @@ public final class C2Probe {
                 int[] blocks = compare(lines, "chunk ", chunkHashes);
                 line("verify block hashes against " + verify + ": same " + blocks[0] + ", different " + blocks[1]
                         + ", not in baseline " + blocks[2] + " (decoration order noise expected; not decisive)");
+                if (C3RoadProbe.active()) {
+                    int[] rd = compare(lines, "road ", C3RoadProbe.HASHES);
+                    line("verify road columns against " + verify + ": same " + rd[0] + ", different " + rd[1] + ", not in baseline " + rd[2]);
+                    line("VERIFY ROADS " + (rd[1] == 0 && rd[0] > 0 ? "PASS" : "FAIL"));
+                }
                 int[] ter = compare(lines, "terrain ", terrainHashes);
                 if (ter[0] + ter[1] == 0) line("verify terrain: the baseline has no terrain signatures");
                 else {
@@ -254,7 +280,7 @@ public final class C2Probe {
             else if (b.equals(e.getValue())) out[0]++;
             else { out[1]++; if (diffs.size() < 8) diffs.add(e.getKey()); }
         }
-        if (!diffs.isEmpty() && base.size() > 0 && prefix.startsWith("terrain")) line("  first different terrain chunks " + diffs);
+        if (!diffs.isEmpty() && base.size() > 0 && !prefix.startsWith("chunk")) line("  first different terrain chunks " + diffs);
         return out;
     }
 
@@ -317,7 +343,7 @@ public final class C2Probe {
         return (rt.totalMemory() - rt.freeMemory()) >> 20;
     }
 
-    private static void line(String s) {
+    static void line(String s) {
         report.append(s).append('\n');
         C2Harness.log(s);
     }

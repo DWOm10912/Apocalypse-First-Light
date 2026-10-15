@@ -18,8 +18,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -197,7 +195,8 @@ public final class FellingServer {
         player.swing(InteractionHand.MAIN_HAND, false);
         double sa = FellingRules.sideAngle(side), rad = FellingRules.trunkRadius(form, cut);
         double px = cx + Math.cos(sa) * rad, pz = cz + Math.sin(sa) * rad;
-        level.playSound(null, px, cy, pz, SoundEvents.WOOD_BREAK, SoundSource.BLOCKS, 0.9F, 0.8F + 0.25F * level.random.nextFloat());
+        com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(level, player, new net.minecraft.world.phys.Vec3(px, cy, pz), com.antaurora.apofirstlight.registry.AflSounds.TREE_CHOP.get(), CHOP_RADIUS,
+                0.96F + 0.08F * level.random.nextFloat(), com.antaurora.apofirstlight.noise.NoiseType.BLOCK_BREAK, null);
         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, chips(species)), px, cy, pz, 8, 0.12, 0.08, 0.12, 0.12);
         if (c.result() == FellingLedger.Result.FELL) {
             CHOP_NANOS.add(System.nanoTime() - t0);
@@ -300,7 +299,7 @@ public final class FellingServer {
         journal.ledger.fell(root.asLong(), fall.getUUID());
         journal.setDirty();
         clear(level, root, rootState, layout);
-        level.playSound(null, px, py, pz, SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR, SoundSource.BLOCKS, 1.0F, 0.7F);
+        com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(level, player, new net.minecraft.world.phys.Vec3(px, py, pz), com.antaurora.apofirstlight.registry.AflSounds.TREE_CRACK.get(), CRACK_RADIUS, 1.0F, com.antaurora.apofirstlight.noise.NoiseType.BLOCK_BREAK, null);
         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, chips(species)), px, py, pz, 24, 0.3, 0.1, 0.3, 0.15);
         FELLS.increment();
         FELL_NANOS.add(System.nanoTime() - t0);
@@ -386,13 +385,18 @@ public final class FellingServer {
         return new double[]{e.getX() + dx * s * Math.sin(a), e.getY() + s * Math.cos(a), e.getZ() + dz * s * Math.sin(a)};
     }
 
+    /**
+     * Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): an axe chop, the trunk cracking as
+     * the tree goes (fell), the crash of trunk and crown on the ground (impact). One take: the crack is its first 2.75 s.
+     */
+    public static final double CHOP_RADIUS = 10, CRACK_RADIUS = 12, CRASH_RADIUS = 24;
+
     static void impact(ServerLevel level, FallingTree e) {
         var form = TreeForms.grow(e.species, e.variant);
         double length = form.crownTop - e.cut;
         double[] mid = along(e, length * 0.6);
-        level.playSound(null, mid[0], mid[1], mid[2], SoundEvents.GENERIC_BIG_FALL, SoundSource.BLOCKS, 2.0F, 0.5F);
-        level.playSound(null, mid[0], mid[1], mid[2], SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, SoundSource.BLOCKS, 0.8F, 0.5F);
-        level.playSound(null, mid[0], mid[1], mid[2], SoundEvents.AZALEA_LEAVES_BREAK, SoundSource.BLOCKS, 1.5F, 0.8F);
+        com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(level, null, new net.minecraft.world.phys.Vec3(mid[0], mid[1], mid[2]), com.antaurora.apofirstlight.registry.AflSounds.TREE_CRASH.get(), CRASH_RADIUS,
+                0.97F + 0.06F * level.random.nextFloat(), com.antaurora.apofirstlight.noise.NoiseType.BLOCK_BREAK, null);
         var leaves = new BlockParticleOption(ParticleTypes.BLOCK, TreeBlocks.crown(e.species, true).defaultBlockState());
         var wood = new BlockParticleOption(ParticleTypes.BLOCK, chips(e.species));
         for (int i = 1; i <= 6; i++) {

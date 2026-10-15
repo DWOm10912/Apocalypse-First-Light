@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "44";
+    private static final String PROTOCOL = "46";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -133,6 +133,12 @@ public final class AflNetwork {
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.wiring.WiringPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.survivor.SurvivorPackets.register(channel, nextId);
+        // C3.2 road network: the built routes, for the client's pavement mesh
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket.class,
+                com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::encode,
+                com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::decode,
+                com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.inventory.grid.GridPackets.register(channel, nextId);
     }
 
@@ -159,6 +165,11 @@ public final class AflNetwork {
     /** Survivor Death and Succession V0 (client): the host's mode choice, the first survivor's name choice. */
     public static void survivorToServer(Object packet) {
         if (channel != null) channel.sendToServer(packet);
+    }
+
+    /** C3.2: the overworld's built routes, to one player (login). */
+    public static void sendRoadNetwork(ServerPlayer player, com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Building Wiring V1: the wiring view (nodes near the player, the wrench's selection), to one player. */

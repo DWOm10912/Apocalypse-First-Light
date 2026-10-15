@@ -1,0 +1,48 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/box_stove_door.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/stove/box_stove_door.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.255625,
+    0.224375,
+    0.324375,
+    0.025625,
+    0.465625,
+    0.650825
+  ],
+  "parts": {
+    "door": {
+      "pivot": [
+        -0.5,
+        0,
+        0.08
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "door": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

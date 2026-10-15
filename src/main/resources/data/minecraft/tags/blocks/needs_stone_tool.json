@@ -2,12 +2,15 @@
   "replace": false,
   "values": [
     "apocalypse_firstlight:asphalt",
+    "apocalypse_firstlight:road_surface",
     "apocalypse_firstlight:fused_ground",
     "apocalypse_firstlight:green_standing_seam_roof",
     "apocalypse_firstlight:galvanized_corrugated_roof",
     "apocalypse_firstlight:rusty_corrugated_roof",
     "apocalypse_firstlight:stove_pipe",
     "apocalypse_firstlight:stove_heat_shield",
-    "apocalypse_firstlight:woven_wire_fence"
+    "apocalypse_firstlight:woven_wire_fence",
+    "apocalypse_firstlight:tube_farm_gate",
+    "apocalypse_firstlight:rural_mailbox"
   ]
 }
