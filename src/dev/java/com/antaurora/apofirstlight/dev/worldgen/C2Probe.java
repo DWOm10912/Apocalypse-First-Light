@@ -7,6 +7,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -52,6 +53,8 @@ public final class C2Probe {
     private C2Probe() {}
 
     private static int ticks = -1;
+    /** tick the probe begins at: 40, later with look=X,Z (the client meshes the area first) */
+    private static int start = 40;
     private static List<Site> sites;
     private static int next;
     private static StringBuilder report;
@@ -72,12 +75,13 @@ public final class C2Probe {
         MinecraftServer server = event.getServer();
         ServerLevel level = server.overworld();
         try {
-            if (ticks == 40) begin(level);
-            else if (ticks > 40 && sites != null && next < sites.size()) site(level, sites.get(next++));
-            else if (ticks > 40 && sites != null && next == sites.size()) {
+            if (ticks == 40 && C2Harness.ARGS.containsKey("look")) look(server, level);
+            if (ticks == start) begin(level);
+            else if (ticks > start && sites != null && next < sites.size()) site(level, sites.get(next++));
+            else if (ticks > start && sites != null && next == sites.size()) {
                 next++;
                 finish(level);
-            } else if (ticks > 40 && sites != null && next == sites.size() + 1 && ticks % 20 == 0) {
+            } else if (ticks > start && sites != null && next == sites.size() + 1 && ticks % 20 == 0) {
                 ticks = -100000;
                 C2HarnessClient.quit();
             }
@@ -90,6 +94,21 @@ public final class C2Probe {
     }
 
     // ------------------------------------------------------------------ sites
+    /**
+     * look=X,Z (rendering checks, 2026-10-14): puts the test player on the ground there, looking a little down, and
+     * waits lookSeconds (default 45) before the probe, so the client meshes that area (C2HarnessClient#quit logs the
+     * terrain smoothing counters of those meshes).
+     */
+    private static void look(MinecraftServer server, ServerLevel level) {
+        String[] xz = C2Harness.arg("look", "").split(",");
+        int x = Integer.parseInt(xz[0].trim()), z = Integer.parseInt(xz[1].trim());
+        level.getChunk(x >> 4, z >> 4);
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) p.teleportTo(level, x + 0.5, y + 1, z + 0.5, 0F, 30F);
+        start = 40 + 20 * Integer.parseInt(C2Harness.arg("lookSeconds", "45"));
+        C2Harness.log("looking at " + x + " " + y + " " + z + " for " + (start - 40) / 20 + " s before the probe");
+    }
+
     private static void begin(ServerLevel level) {
         t0 = System.nanoTime();
         report = new StringBuilder();

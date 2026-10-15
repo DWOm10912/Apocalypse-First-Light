@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.dev.worldgen;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.terrainsmooth.client.TerrainSmoothClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.GenericDirtMessageScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -60,6 +61,9 @@ public final class C2HarnessClient {
         Minecraft mc = Minecraft.getInstance();
         mc.tell(() -> {
             C2Harness.log("probe done: saving and quitting");
+            C2Harness.log("terrain smooth client meshes: " + TerrainSmoothClient.candidates.sum() + " natural surface tops, "
+                    + TerrainSmoothClient.sloped.sum() + " sloped, " + TerrainSmoothClient.quadBuilds.sum() + " slope meshes built, "
+                    + TerrainSmoothClient.plantsMoved.sum() + " plants moved, " + TerrainSmoothClient.snowSkins.sum() + " snow skins");
             if (mc.level != null) mc.level.disconnect();
             mc.clearLevel(new GenericDirtMessageScreen(Component.literal("AFL C2 probe: saving")));
             mc.stop();

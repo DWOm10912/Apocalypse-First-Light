@@ -39,8 +39,9 @@ import java.util.concurrent.atomic.LongAdder;
 import static com.antaurora.apofirstlight.terrainsmooth.SmoothRules.*;
 
 /**
- * Terrain Smooth V1 (docs/worldgen/terrain_smooth_v1.md), the common half: natural surface slopes in mode B on the nine
- * natural ground blocks (GROUND; podzol, mud and clay since 2026-10-12) of the overworld, for collision, selection and suffocation on both sides (the client half draws
+ * Terrain Smooth V1 (docs/worldgen/terrain_smooth_v1.md), the common half: natural surface slopes in mode B on the
+ * natural ground blocks (GROUND; podzol, mud and clay since 2026-10-12; snow block, red sand and the seven badlands
+ * terracottas since 2026-10-14, for the federal snow peaks, canyons and steppe) of the overworld, for collision, selection and suffocation on both sides (the client half draws
  * them, TerrainSmoothClient). Nothing is written to the world: the slopes are computed from the blocks.
  * <ul>
  *   <li>State: one Side per logical side. The server reads TerrainSmoothConfig when it starts and sends its state to every
@@ -61,7 +62,9 @@ public final class TerrainSmooth {
     /** the approved look: gentle two-block slopes */
     public static final int MODE = SmoothRules.MODE_B;
     public static final Block[] GROUND = {Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.SAND, Blocks.GRAVEL, Blocks.STONE,
-            Blocks.PODZOL, Blocks.MUD, Blocks.CLAY};
+            Blocks.PODZOL, Blocks.MUD, Blocks.CLAY,
+            Blocks.SNOW_BLOCK, Blocks.RED_SAND, Blocks.TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA, Blocks.YELLOW_TERRACOTTA,
+            Blocks.BROWN_TERRACOTTA, Blocks.RED_TERRACOTTA, Blocks.LIGHT_GRAY_TERRACOTTA};
 
     /** One logical side's session state and counters. */
     public static final class Side {
@@ -126,9 +129,12 @@ public final class TerrainSmooth {
     /** The overworld only. */
     public static boolean applies(Level level) { return level.dimension() == Level.OVERWORLD; }
 
+    /** GROUND (also the tag minecraft:snow_layer_can_survive_on, so snow stays on a sloped top: its face is no longer full). */
     public static boolean ground(Block b) {
         return b == Blocks.GRASS_BLOCK || b == Blocks.DIRT || b == Blocks.COARSE_DIRT || b == Blocks.SAND || b == Blocks.GRAVEL || b == Blocks.STONE
-                || b == Blocks.PODZOL || b == Blocks.MUD || b == Blocks.CLAY;
+                || b == Blocks.PODZOL || b == Blocks.MUD || b == Blocks.CLAY
+                || b == Blocks.SNOW_BLOCK || b == Blocks.RED_SAND || b == Blocks.TERRACOTTA || b == Blocks.WHITE_TERRACOTTA || b == Blocks.ORANGE_TERRACOTTA
+                || b == Blocks.YELLOW_TERRACOTTA || b == Blocks.BROWN_TERRACOTTA || b == Blocks.RED_TERRACOTTA || b == Blocks.LIGHT_GRAY_TERRACOTTA;
     }
 
     /** A smoothed top's collision: the slope boxes; mud's sit SmoothShapes.MUD_SINK lower, as vanilla mud's (feet sink in a little). */

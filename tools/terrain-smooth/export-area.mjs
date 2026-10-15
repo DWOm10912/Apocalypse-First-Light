@@ -3,7 +3,8 @@
 // must have saved the area (quit to the title screen first).
 //   node tools/terrain-smooth/export-area.mjs <world dir> <minX> <minZ> <size> <minY> <maxY> <out file>
 // Each block becomes one byte: the TerrainSmooth#cell kind (bits 0-2: 0 air, 1 cover, 2 leaf, 3 fluid, 4 natural, 5 other,
-// 6 unknown, 7 tree), for natural ground the block (bits 3-5: 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone),
+// 6 unknown, 7 tree), for natural ground the block (bits 3-6: 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone,
+// 7 podzol, 8 mud, 9 clay, 10 snow block, 11 red sand, 12 any of the seven terracottas),
 // and a second byte the water surface height above the block's floor in 1/16 (0 = no water), as vanilla's fluid
 // pushing reads it. The area grows by 2 columns on every side (the shapes read their neighbours).
 // Header (big-endian int32): minX, minZ, width, depth, minY, height.
@@ -65,7 +66,9 @@ function state(dir, x, y, z) {
   return pal[Number((BigInt.asUintN(64, word) >> BigInt((i % per) * bits)) & ((1n << BigInt(bits)) - 1n))];
 }
 
-const NATURAL = {'grass_block': 1, 'dirt': 2, 'coarse_dirt': 3, 'sand': 4, 'gravel': 5, 'stone': 6, 'podzol': 7, 'mud': 8, 'clay': 9};   // TerrainSmooth.GROUND
+const NATURAL = {'grass_block': 1, 'dirt': 2, 'coarse_dirt': 3, 'sand': 4, 'gravel': 5, 'stone': 6, 'podzol': 7, 'mud': 8, 'clay': 9,
+  'snow_block': 10, 'red_sand': 11, 'terracotta': 12, 'white_terracotta': 12, 'orange_terracotta': 12, 'yellow_terracotta': 12,
+  'brown_terracotta': 12, 'red_terracotta': 12, 'light_gray_terracotta': 12};   // TerrainSmooth.GROUND (the terracottas walk alike)
 const ALWAYS_WET = new Set(['water', 'bubble_column', 'seagrass', 'tall_seagrass', 'kelp', 'kelp_plant']);
 // vanilla BushBlock subclasses (and snow layers): SmoothWorld#cell counts them as cover
 const COVER = new Set(['grass', 'tall_grass', 'fern', 'large_fern', 'dead_bush', 'dandelion', 'poppy', 'blue_orchid', 'allium', 'azure_bluet',

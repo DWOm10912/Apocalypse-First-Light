@@ -37,7 +37,7 @@ final class PhysicsCheck {
         /** water surface above the floor of cell (x, y, z), 0..1, or 0 without water (FluidState#getHeight) */
         default double water(int x, int y, int z) { return 0; }
 
-        /** natural ground block of a cell (GROUND, export-area.mjs): 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone, 7 podzol, 8 mud, 9 clay */
+        /** natural ground block of a cell (GROUND, export-area.mjs): 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone, 7 podzol, 8 mud, 9 clay, 10 snow block, 11 red sand, 12 terracotta */
         default int ground(int x, int y, int z) { return 1; }
     }
 
