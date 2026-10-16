@@ -19,7 +19,9 @@ import com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef;
  *   floor from the planned surface down to the hard depth 2 x (stable - 6): plains / coastal plain / marsh 12, the
  *   plain-to-foothill blend in between, foothills and the fold belt 0 (their cave mouths stay). plan_caves takes
  *   max(caves, floor), so nothing opens there at all. The depth is measured from the exact planned surface of the
- *   column (cached per column), never from the 4-block flat cache, so the floor cannot add blocks above the plan.</li>
+ *   column (cached per column), never from the 4-block flat cache, so the floor cannot add blocks above the plan.
+ *   Tunnel V1 (2026-10-16): also the rock a tunnel keeps round its bores and under its approaches (TunnelWorks#rock), up
+ *   to the finished ground, in every terrain class (a bore lies far under any stable layer).</li>
  * </ul>
  * The carvers get the same depth in mixin/WorldCarverStabilityMixin, lava lakes in mixin/LakeFeatureStabilityMixin.
  */
@@ -49,8 +51,11 @@ public record PlanStabilityDensity(DensityFunction height, boolean hard, Terrain
         int stable = surface.stableDepth(context.blockX(), context.blockZ());
         if (hard) {
             int hd = hardDepth(stable);
+            double top = Columns.height(surface, works, context.blockX(), context.blockZ()), depth = top - context.blockY();
+            // a tunnel's rock round its bores and under its approaches, up to the ground (Tunnel V1, TunnelWorks#rock)
+            double[] rock = Columns.rock(works, context.blockX(), context.blockZ());
+            if (rock != null && context.blockY() >= rock[0] && context.blockY() <= rock[1] && depth > 0) return FLOOR;
             if (hd <= 0) return NONE;
-            double depth = Columns.height(surface, works, context.blockX(), context.blockZ()) - context.blockY();
             return depth > 0 && depth <= hd ? FLOOR : NONE;
         }
         if (stable <= 0) return 0;
@@ -75,6 +80,24 @@ public record PlanStabilityDensity(DensityFunction height, boolean hard, Terrain
         private final double[] heights = new double[256];
         private final TerrainPlanSurface[] owners = new TerrainPlanSurface[256];
         private final Object[] worksOwners = new Object[256];
+        private final long[] rockKeys = new long[256];
+        private final Object[] rockOwners = new Object[256];
+        private final double[][] rocks = new double[256][];
+
+        /** RoadWorksRef#rock per block column, cached like the height (null: no tunnel's rock there). */
+        static double[] rock(RoadWorksRef ref, int x, int z) {
+            Object w = ref == null ? null : ref.get();
+            if (w == null) return null;
+            Columns c = LOCAL.get();
+            int i = (x & 15) | ((z & 15) << 4);
+            long key = ((long) x << 32) ^ (z & 0xffffffffL);
+            if (c.rockOwners[i] != w || c.rockKeys[i] != key) {
+                c.rocks[i] = ref.rock(x, z);
+                c.rockKeys[i] = key;
+                c.rockOwners[i] = w;
+            }
+            return c.rocks[i];
+        }
 
         static double height(TerrainPlanSurface surface, RoadWorksRef ref, int x, int z) {
             Columns c = LOCAL.get();

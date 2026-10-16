@@ -7,6 +7,8 @@ allprojects {
         minecraft.runs.client {
             workingDirectory project.file('build/federal-c2-client')
             property 'afl.c2', (project.findProperty('c2') ?: '')
+            // -ProadGpu=false: the road chunks submitted per vertex (RoadClient.GPU), for frame time comparisons
+            if (project.findProperty('roadGpu')) property 'afl.roadGpu', project.findProperty('roadGpu')
         }
     }
 }

@@ -102,6 +102,7 @@ public final class WorldInteractionHint {
             if(target==null) target=boxStove(mc,hit);
             if(target==null) target=emergencyRadio(mc,hit);
             if(target==null) target=woodFurniture(mc,hit);
+            if(target==null) target=tunnelFixture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         // the T15 pickup (docs/vehicles/first_pickup_v0_design.md 8.2): the part looked at, resolved as a click is
@@ -162,6 +163,7 @@ public final class WorldInteractionHint {
         if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
+        if(key.endsWith(".tunnel_fixture.dismantle")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyAttack));
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }
@@ -171,6 +173,17 @@ public final class WorldInteractionHint {
         VIEW.transform(v);PROJECTION.transform(v);
         if(v.w<=.05f) return null;
         return new float[]{(v.x/v.w*.5f+.5f)*width,(.5f-v.y/v.w*.5f)*height};
+    }
+
+    /**
+     * Tunnel fixtures (Tunnel parts removable V1.1): with the crowbar "Take down" (hold attack); hitting one with anything
+     * else says the crowbar is needed (not shown just for looking: a tunnel is full of them).
+     */
+    private static Target tunnelFixture(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK||!(mc.level.getBlockState(hit.getBlockPos()).getBlock() instanceof com.antaurora.apofirstlight.block.TunnelFixtureBlock)) return null;
+        if(com.antaurora.apofirstlight.block.TunnelFixtureBlock.tool(mc.player.getMainHandItem()))
+            return new Target(Component.translatable("hint.apocalypse_firstlight.tunnel_fixture.dismantle"),null);
+        return mc.options.keyAttack.isDown()?new Target(Component.translatable("hint.apocalypse_firstlight.tunnel_fixture.needs_crowbar"),null):null;
     }
 
     private static Target vendingMachine(Minecraft mc,BlockHitResult hit) {

@@ -164,6 +164,15 @@ public final class CrossSection {
         return -c.lane(side) * (lanesOut - crown) - c.outer(side) * (v - lanesOut);
     }
 
+    /** #pavement(Cross, double) from the lane slope of u's side alone (no Cross; the same result). */
+    public double pavement(double lane, double u) {
+        double v = Math.abs(u);
+        if (!paved(v)) throw new IllegalArgumentException("NOT_PAVED " + u);
+        if (v <= crown) return -innerSlope(lane) * (crown - v);
+        if (v <= lanesOut) return -lane * (v - crown);
+        return -lane * (lanesOut - crown) - outerSlope(lane) * (v - lanesOut);
+    }
+
     /** Median turf height relative to E, |u| <= halfMedian (divided only): a round-bottomed swale between the inner shoulder edges. */
     public double median(Cross c, double u) {
         double left = pavement(c, -halfMedian) - TURF_DROP, right = pavement(c, halfMedian) - TURF_DROP;

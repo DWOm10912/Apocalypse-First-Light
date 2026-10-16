@@ -116,6 +116,7 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(GeneratorInletJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.GeneratorInletBoxBlock.class);
         registration.registerBlockComponent(BoxStoveJadeProvider.INSTANCE, com.antaurora.apofirstlight.cabin.BoxStove.Stove.class);
         registration.registerBlockComponent(EmergencyRadioJadeProvider.INSTANCE, com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio.class);
+        registration.registerBlockComponent(TunnelFixtureJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.TunnelFixtureBlock.class);
         for (Class<? extends net.minecraft.world.level.block.Block> trunk : java.util.List.of(com.antaurora.apofirstlight.tree.TreeBlocks.Root.class,
                 com.antaurora.apofirstlight.tree.TreeBlocks.Wood.class, com.antaurora.apofirstlight.tree.TreeBlocks.Stump.class)) {
             registration.registerBlockComponent(TreeSpeciesJadeProvider.INSTANCE, trunk);

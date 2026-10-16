@@ -19,9 +19,12 @@ public final class RoadNetworkStage {
      * The terrain works rules (RoadWorks.surface, CrossSection, the earthworks columns); bump when they change (2: the R2
      * state section, the works of several roads combined, pier columns on the ground; 3: the turf's outer edge cut to the
      * natural surface the noise makes, RoadWorks#naturalTop; 4: the embankment continues over a box culvert's stream,
-     * turf under the walls' copings, group D).
+     * turf under the walls' copings, group D; 5: tunnels, Tunnel V1: the mountain kept over a bore, the portals' mounds,
+     * the approach cuts, TunnelWorks#surface; 6: Tunnel V1 fix 2026-10-16: the shelf runs on under the walls, a bench at
+     * the wall's top behind them, never natural over the density's rock bands, the rock kept round the bores and under the
+     * approaches against caves and carvers, TunnelWorks#rock).
      */
-    public static final int WORKS_VERSION = 4;
+    public static final int WORKS_VERSION = 6;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -29,9 +32,15 @@ public final class RoadNetworkStage {
      * from the mesh; 4: the structure stands on the ground's top block instead of replacing it; 5: the R2 state section
      * with its centre line, undivided decks, piers, slab culverts; 6: the biome's plants on graded turf; 7: none on the turf beside the pavement, RoadWorks#bare;
      * 8: box culverts, wing walls to the embankment's reach as continuous strips, walls on the lowest ground in front,
-     * structure waterlogged in water, group D; 9: multi-column bents, their cap beams and columns, group E).
+     * structure waterlogged in water, group D; 9: multi-column bents, their cap beams and columns, group E; 10: tunnels,
+     * Tunnel V1: built tunnel spans, bores and cross passages carved, lining and portals of road_structure, the drawn
+     * lining and the equipment parts, solid lane lines through a tunnel; 11: Tunnel V1 fix 2026-10-16: walls, lead-ins and a
+     * portal's front stand on the road's finish, RoadWorks.TUNNEL_OVER, the walls' caps and backfill collision; 12: the
+     * tunnel equipment's collision, TunnelPartSolids, 2026-10-16; 13: the equipment and the handrail segments as
+     * removable fixture blocks, TunnelFixtures / TunnelFixtureBlock, 2026-10-16; 14: the wall parts' boxes from the wall's face
+     * out (they hang on any wall), no collision for the thin ones, 2026-10-16).
      */
-    public static final int SURFACE_VERSION = 9;
+    public static final int SURFACE_VERSION = 14;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {

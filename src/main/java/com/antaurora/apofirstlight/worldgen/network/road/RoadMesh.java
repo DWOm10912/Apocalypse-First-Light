@@ -12,7 +12,8 @@ import java.util.TreeSet;
  *   <li>"asphalt": both carriageways (R2: both halves) and their shoulders, the 30-degree safety edges along the sides
  *   and the ends; texture period 4 m both ways, the lateral period measured outward from the median edge (R2: the
  *   centreline);</li>
- *   <li>R4 markings: "yellow" inner edge line, "white" outer edge line and the 3 m / 12 m lane line;</li>
+ *   <li>R4 markings: "yellow" inner edge line, "white" outer edge line and the 3 m / 12 m lane line, solid through a
+ *   tunnel and RoadDesign.NO_PASS_LEAD before and after it;</li>
  *   <li>R2 markings (C3.3a): "white" edge lines, and the "yellow" centre line: a 3 m / 12 m broken line where passing is
  *   allowed, two solid lines 0.10 m apart in the no-passing zones (RoadDesign.noPassing: curves, crests, bridges, the
  *   ends);</li>
@@ -45,7 +46,16 @@ public final class RoadMesh {
 
     private static double wEdge(CrossSection sec) { return sec.edge - sec.halfMedian; }
 
-    public enum Material { ASPHALT, WHITE, YELLOW, CONCRETE }
+    /**
+     * Drawn materials: the solid pass (asphalt, concrete, a tunnel's wall panels, its arch, steel) and the marking pass
+     * (lines, a tunnel's slot drains); PART: an equipment part's own texture (TunnelParts: atlas UVs already).
+     */
+    public enum Material {
+        ASPHALT, WHITE, YELLOW, CONCRETE, TUNNEL_PANEL, TUNNEL_ARCH, STEEL, DRAIN, PART;
+
+        /** Drawn in the solid pass (and hit by rays, meshhit/RoadStructureHits); the others are paint on it. */
+        public boolean solid() { return this != WHITE && this != YELLOW && this != DRAIN; }
+    }
 
     public record Vertex(double x, double y, double z, double u, double v) {
         Vertex lerp(Vertex b, double t) { return new Vertex(x + (b.x - x) * t, y + (b.y - y) * t, z + (b.z - z) * t, u + (b.u - u) * t, v + (b.v - v) * t); }
@@ -99,7 +109,8 @@ public final class RoadMesh {
                     patch(world, d, Material.YELLOW, side, s0, s1, 0, LINE / 2, 0.5, 1, vCell);
                 }
                 line(world, d, Material.WHITE, side, s0, s1, wOut, vCell);
-                if (dash) for (int q = 1; q < sec.lanes; q++) line(world, d, Material.WHITE, side, s0, s1, wIn + q * sec.lane, vCell);
+                // solid lane lines in a tunnel and its lead (no lane changes, Tunnel V1)
+                if (dash || d.solidLanes(s0)) for (int q = 1; q < sec.lanes; q++) line(world, d, Material.WHITE, side, s0, s1, wIn + q * sec.lane, vCell);
                 bevel(world, d, side, s0, s1, wEdge, wEdge + CrossSection.BEVEL_RUN, vCell);
                 if (sec.divided) bevel(world, d, side, s0, s1, 0, -CrossSection.BEVEL_RUN, vCell);
             }

@@ -127,7 +127,17 @@ public final class AflCreativeTabs {
             AflItems.HEAT_RESISTANT_INTAKE_PUMP,
             AflItems.INDUSTRIAL_WASTE_BUCKET,
             AflItems.GUN_MAINTENANCE_BENCH,
-            AflItems.PRECISION_FABRICATION_STATION);
+            AflItems.PRECISION_FABRICATION_STATION,
+            // Tunnel parts removable V1.1: the small tunnel parts (the egress signs and name plates in every variant)
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.LUMINAIRE),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.CCTV),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.LANE_SIGNAL),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.HEADLIGHT_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.CLEARANCE_PLATE),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.EGRESS_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.NAME_PLATE),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.EMERGENCY_CABINET),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.HANDRAIL));
 
     public static final RegistryObject<CreativeModeTab> FURNITURE = tab("furniture", INDUSTRY, AflItems.VENDING_MACHINE,
             AflItems.INDUSTRIAL_LOCKER,
@@ -280,10 +290,16 @@ public final class AflCreativeTabs {
                         else if (item.get() instanceof com.antaurora.apofirstlight.item.CurbBlockItem curb) curb.variants().forEach(output::accept);
                         // channel letters: A..Z (Fuel Stop A1 details V1)
                         else if (item.get() instanceof com.antaurora.apofirstlight.item.ChannelLetterBlockItem letter) letter.variants().forEach(output::accept);
+                        // tunnel fixtures: each egress sign and name plate (Tunnel parts removable V1.1)
+                        else if (item.get() instanceof com.antaurora.apofirstlight.item.TunnelFixtureItem fixture) fixture.variants().forEach(output::accept);
                         else output.accept(item.get());
                     }))
                     .build();
         });
+    }
+
+    private static Supplier<? extends Item> tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind kind) {
+        return AflItems.TUNNEL_FIXTURE_ITEMS.get(kind);
     }
 
     private AflCreativeTabs() {

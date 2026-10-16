@@ -4,6 +4,8 @@
 
 2026-10-10 补充：Vextris 依赖已从 `0.1.0-dev` 升级到首个公开 Alpha **`0.1.0-alpha.1`**（见下面的“升级到 Vextris 0.1.0-alpha.1”）。
 
+2026-10-16 补充（`feature/federal-tunnels`，未合并）：道路、桥、隧道接显卡缓存，依赖升到 **`io.github.dwom10912:vextris:0.1.1-alpha.4`**（`build.gradle` 坐标和仓库组、`gradle.properties` 的 `vextris_version` / `vextris_repo=../Vextris/build/internal-repo`、mods.toml `[0.1.1-alpha.4,0.2.0-alpha)`）。用法见 `docs/worldgen/federal_highways_c3.md` 10.5。
+
 ## 结论
 
 - AFL 现在依赖独立的 Mesh 库 **Vextris 0.1.0-alpha.1**（作者 Antaurora，仓库 `D:/Minecraft Modding/Vextris`，Apache-2.0）。迁移时用的是 `0.1.0-dev`，两者的类文件逐字节相同。

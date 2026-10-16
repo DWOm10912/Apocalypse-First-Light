@@ -171,7 +171,9 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 
 21 种新材料：steel_billet 1；lead_brick 0.75（第一版 2，2026-10-03 改）；tungsten_filament 0.05；silver_scrap、cemented_carbide_blank、steel_scrap 各 0.25；plastic_scrap、plastic_pellets 各 0.1；bauxite、alumina、galena、sphalerite、cassiterite、pentlandite、electrolytic_nickel、wolframite、tungsten_oxide、tungsten_powder、spodumene_concentrate、lithium_carbonate、tungsten_carbide_powder 各 0.5。
 
-其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
+其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。
+
+隧道部件物品（[隧道 V1](../worldgen/federal_tunnels_v1.md) 第 7 节"可拆部件"，2026-10-16，写在 `afl_content_v1.json`）：tunnel_luminaire 14、tunnel_cctv 4、tunnel_lane_signal 22、tunnel_headlight_sign 45、tunnel_clearance_plate 8、tunnel_egress_sign 3、tunnel_name_plate 30、tunnel_emergency_cabinet 40、tunnel_handrail 12（一段 2.4 m 的方管连两个支架）。按实物估：隧道 LED 灯具连支架、监控球机、车道控制灯箱、开灯牌连两根立柱、铝牌、紧急柜（灭火器另算）。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
 
 以上是 core_v1.json：6 组 gun 定义 + 46 个普通 item override（42 AFL、4 Vanilla）。其余 87 个 AFL 物品见下文“携带质量 V1”（2026-10-03 之前它们没有规则，全部是 250 g fallback）。完整 live Registry 的来源与缺失数量通过 coverage 查看，不把静态列表宣称为运行时覆盖结果。
 

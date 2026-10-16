@@ -227,4 +227,9 @@ public final class AflBlockEntities {
 
     private AflBlockEntities() {
     }
+
+    /** Tunnel parts removable V1.1: every cell of a tunnel fixture, all kinds (TunnelFixtureBlockEntity). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity>> TUNNEL_FIXTURE =
+            BLOCK_ENTITIES.register("tunnel_fixture", () -> BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity::new,
+                    AflBlocks.TUNNEL_FIXTURES.values().stream().map(RegistryObject::get).toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
 }

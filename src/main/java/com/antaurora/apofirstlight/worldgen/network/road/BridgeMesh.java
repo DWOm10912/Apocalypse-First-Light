@@ -236,31 +236,45 @@ public final class BridgeMesh {
     }
 
     /**
-     * The collision boxes of a road_structure block at (x, y, z), block-local {x0, y0, z0, x1, y1, z1}: solid() on 8 x 8
+     * The collision boxes of a road_structure block at (x, y, z), block-local {x0, y0, z0, x1, y1, z1}: solid() and a
+     * tunnel's solids (TunnelWorks#solids: the lining, the walkways, the portals; several intervals per point) on 8 x 8
      * columns of the block, heights to 1/32, runs along x merged. Empty where the mesh has nothing in the block.
      */
     public static List<double[]> boxes(RoadWorks works, int x, int y, int z) {
         List<double[]> out = new ArrayList<>();
         for (int j = 0; j < 8; j++) {
             int start = -1;
-            double runLo = 0, runHi = 0;
+            double[] run = null;
             for (int i = 0; i <= 8; i++) {
-                double lo = Double.NaN, hi = Double.NaN;
-                if (i < 8) {
-                    double[] c = solid(works, x + (i + 0.5) / 8, z + (j + 0.5) / 8);
-                    if (c != null) {
-                        lo = Math.max(0, Math.round((c[0] - y) * 32) / 32.0);
-                        hi = Math.min(1, Math.round((c[1] - y) * 32) / 32.0);
-                        if (!(hi > lo)) lo = hi = Double.NaN;
-                    }
-                }
-                if (start >= 0 && lo == runLo && hi == runHi) continue;
-                if (start >= 0) out.add(new double[]{start / 8.0, runLo, j / 8.0, i / 8.0, runHi, (j + 1) / 8.0});
-                start = Double.isNaN(lo) ? -1 : i;
-                runLo = lo;
-                runHi = hi;
+                double[] cur = i < 8 ? clipped(works, x + (i + 0.5) / 8, y, z + (j + 0.5) / 8) : null;
+                if (start >= 0 && Arrays.equals(cur, run)) continue;
+                if (start >= 0) for (int k = 0; k < run.length; k += 2) out.add(new double[]{start / 8.0, run[k], j / 8.0, i / 8.0, run[k + 1], (j + 1) / 8.0});
+                start = cur == null ? -1 : i;
+                run = cur;
             }
         }
+        return out;
+    }
+
+    /** The solid intervals at world point (x, z) within block row y, block-local and quantised to 1/32; null: none. */
+    private static double[] clipped(RoadWorks works, double x, int y, double z) {
+        double[] c = solid(works, x, z), t = TunnelWorks.solids(works, x, z);
+        if (c == null && t == null) return null;
+        double[] all = c == null ? t : t == null ? c : concat(c, t);
+        double[] out = new double[all.length];
+        int n = 0;
+        for (int k = 0; k + 1 < all.length; k += 2) {
+            double lo = Math.max(0, Math.round((all[k] - y) * 32) / 32.0), hi = Math.min(1, Math.round((all[k + 1] - y) * 32) / 32.0);
+            if (!(hi > lo)) continue;
+            out[n++] = lo;
+            out[n++] = hi;
+        }
+        return n == 0 ? null : Arrays.copyOf(out, n);
+    }
+
+    private static double[] concat(double[] a, double[] b) {
+        double[] out = Arrays.copyOf(a, a.length + b.length);
+        System.arraycopy(b, 0, out, a.length, b.length);
         return out;
     }
 
@@ -421,6 +435,8 @@ public final class BridgeMesh {
         if (any) tris = RoadMesh.without(tris, removed);
         if (!dug.isEmpty()) tris.addAll(RoadCells.walls(rs, cells, dug, cx, cz));
         tris.addAll(repairs(expect, found, cells));
+        // the tunnels (Tunnel V1): drawn whole, never cut by broken cells (no damage scan for their cells yet)
+        tris.addAll(TunnelMesh.chunk(works, cx, cz));
         return tris;
     }
 

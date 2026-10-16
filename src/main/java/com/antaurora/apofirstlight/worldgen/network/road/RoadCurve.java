@@ -138,16 +138,19 @@ public final class RoadCurve {
     /**
      * Frame at station s into out: {x, z, tx, tz, curvature}. Beyond the ends: the straight extension (curvature 0).
      */
-    public void frame(double s, double[] out) {
+    public void frame(double s, double[] out) { frame(s, out, new int[1]); }
+
+    /** #frame(double, double[]) with the caller's span buffer (no allocation; the same result). */
+    public void frame(double s, double[] out, int[] span) {
         if (s < 0 || s > length) {
             double e = s < 0 ? 0 : length;
-            frame(e, out);
+            frame(e, out, span);
             out[0] += out[2] * (s - e);
             out[1] += out[3] * (s - e);
             out[4] = 0;
             return;
         }
-        int[] sp = new int[1];
+        int[] sp = span;
         double t = param(s + offset, sp);
         double x = pos(px, sp[0], t), z = pos(pz, sp[0], t);
         double vx = d1(px, sp[0], t), vz = d1(pz, sp[0], t), ax = d2(px, sp[0], t), az = d2(pz, sp[0], t);
@@ -177,6 +180,12 @@ public final class RoadCurve {
      * either end, on the straight extensions); null farther out. Unique wherever maxDist is below the curve's radius.
      */
     public double[] local(double x, double z, double maxDist, double ext) {
+        Scratch k = new Scratch();
+        return local(x, z, maxDist, ext, k) ? new double[]{k.s, k.u} : null;
+    }
+
+    /** #local(double, double, double, double) into k.s / k.u, false where that gives null (no allocation; the same result). */
+    public boolean local(double x, double z, double maxDist, double ext, Scratch k) {
         int r = (int) Math.ceil((maxDist + STEP) / BUCKET);
         int cx = (int) Math.floor(x / BUCKET) - bx0, cz = (int) Math.floor(z / BUCKET) - bz0;
         int best = -1;
@@ -192,25 +201,35 @@ public final class RoadCurve {
             }
         if (best < 0) {
             // beyond the indexed curve: only the straight end extensions can still be near
-            if (ext <= 0) return null;
+            if (ext <= 0) return false;
             best = Math.hypot(x - sx[0], z - sz[0]) <= Math.hypot(x - sx[sx.length - 1], z - sz[sz.length - 1]) ? 0 : sx.length - 1;
-            if (Math.min(Math.hypot(x - sx[0], z - sz[0]), Math.hypot(x - sx[sx.length - 1], z - sz[sz.length - 1])) > maxDist + ext) return null;
+            if (Math.min(Math.hypot(x - sx[0], z - sz[0]), Math.hypot(x - sx[sx.length - 1], z - sz[sz.length - 1])) > maxDist + ext) return false;
         }
         double s = Math.min(length, best * STEP);
-        double[] f = new double[5];
+        double[] f = k.f;
         for (int it = 0; it < 10; it++) {
-            frame(s, f);
+            frame(s, f, k.span);
             double along = (x - f[0]) * f[2] + (z - f[1]) * f[3];
             double next = Math.max(-ext, Math.min(length + ext, s + along));
             if (Math.abs(next - s) < 1e-9) { s = next; break; }
             s = next;
         }
-        frame(s, f);
+        frame(s, f, k.span);
         double along = (x - f[0]) * f[2] + (z - f[1]) * f[3];
-        if (Math.abs(along) > 0.01) return null;
+        if (Math.abs(along) > 0.01) return false;
         double u = -(x - f[0]) * f[3] + (z - f[1]) * f[2];
-        if (Math.abs(u) > maxDist) return null;
-        return new double[]{s, u};
+        if (Math.abs(u) > maxDist) return false;
+        k.s = s;
+        k.u = u;
+        return true;
+    }
+
+    /** Reusable buffers of the allocation-free lookups (one per thread: the road ground query, RoadSurfaceQuery). */
+    public static final class Scratch {
+        final double[] f = new double[5];
+        final int[] span = new int[1];
+        /** #local's result: station and lateral offset. */
+        public double s, u;
     }
 
     /** Smallest radius along the curve, sampled every 2 m (infinite when straight). */

@@ -57,6 +57,14 @@ public final class RoadWorks {
      * culvert's bed block less one, the chunk pass lays the culvert under the finish.
      */
     public static final int CULVERT_BODY = 1 << 20;
+    /** PAVED column data flag: a bore's pavement (Tunnel V1): the bore is carved above it (TunnelWorks#cells), not the sky. */
+    public static final int TUNNEL_PAVED = 1 << 21;
+    /**
+     * PAVED / TURF column data flag: a tunnel's works stand on this finish (TunnelWorks.ON_GROUND: retaining walls,
+     * lead-ins, a portal's front): TunnelWorks#cells from the finish's top up to roof, on an approach (roof MAX_VALUE) up to
+     * the works' top and the sky cleared above. The ground runs on under the concrete (Tunnel V1, 2026-10-16).
+     */
+    public static final int TUNNEL_OVER = 1 << 22;
     /** CULVERT column data: the square reaches the channel, a wall, the roofed channel; keeps the natural ground (Culvert.Cell). */
     public static final int C_CHANNEL = 1, C_WALL = 2, C_ROOF = 4, C_KEEP = 8;
 
@@ -134,6 +142,17 @@ public final class RoadWorks {
 
     public List<RoadDesign> roads() { return roads; }
 
+    private volatile TunnelFixtures.Index parts;
+
+    /** The tunnels' equipment parts as fixtures (TunnelFixtures, by column), built on first use. */
+    public TunnelFixtures.Index parts() {
+        TunnelFixtures.Index p = parts;
+        if (p == null) synchronized (this) {
+            if ((p = parts) == null) parts = p = TunnelFixtures.Index.of(roads);
+        }
+        return p;
+    }
+
     public boolean isEmpty() { return roads.isEmpty(); }
 
     /** Whether any road's works or clearance can reach into this chunk (a cheap test before any per-column work). */
@@ -147,6 +166,9 @@ public final class RoadWorks {
     private RoadDesign[] near(double x, double z) {
         return byChunk.get(key(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16)));
     }
+
+    /** The roads whose works can reach the chunk of (x, z), or null (shared: do not modify). */
+    public RoadDesign[] roadsNear(double x, double z) { return near(x, z); }
 
     // ------------------------------------------------------------------ box culverts (group D)
 
@@ -224,12 +246,21 @@ public final class RoadWorks {
      * Finished surface at (x, z) over the natural ground g there; NaN where the works leave the ground natural. A point
      * on a formation takes that road's; elsewhere the works of every road reaching it combine (the class comment).
      */
-    public double surface(double x, double z, double g) {
+    public double surface(double x, double z, double g) { return surface(x, z, g, false); }
+
+    /**
+     * The density's height at (x, z) over the planned ground g: #surface, but in front of a tunnel's headwall and walls the
+     * rock is kept over the band the chunk pass clears (TunnelWorks#surface), so the noise's interpolation never slopes
+     * the ground behind them down to the road.
+     */
+    public double densitySurface(double x, double z, double g) { return surface(x, z, g, true); }
+
+    private double surface(double x, double z, double g, boolean density) {
         RoadDesign[] near = near(x, z);
         if (near == null) return Double.NaN;
         if (near.length == 1) {
             double[] l = near[0].local(x, z, REACH);
-            return l == null ? Double.NaN : surface(new Hit(near[0], l[0], l[1]), x, z, g);
+            return l == null ? Double.NaN : surface(new Hit(near[0], l[0], l[1]), x, z, g, density);
         }
         Hit[] hs = new Hit[near.length];
         int n = 0;
@@ -240,12 +271,12 @@ public final class RoadWorks {
             Hit h = hs[n++] = new Hit(d, l[0], l[1]);
             if (onFormation(h) && (on == null || h.v() < on.v())) on = h;
         }
-        if (on != null) return surface(on, x, z, g);
-        if (n <= 1) return n == 0 ? Double.NaN : surface(hs[0], x, z, g);
+        if (on != null) return surface(on, x, z, g, density);
+        if (n <= 1) return n == 0 ? Double.NaN : surface(hs[0], x, z, g, density);
         double up = 0, down = 0;
         boolean any = false;
         for (int i = 0; i < n; i++) {
-            double f = surface(hs[i], x, z, g);
+            double f = surface(hs[i], x, z, g, density);
             if (Double.isNaN(f)) continue;
             any = true;
             up = Math.max(up, f - g);
@@ -255,7 +286,16 @@ public final class RoadWorks {
     }
 
     /** The finished surface of a point already located on a road (h at world x, z). */
-    public double surface(Hit h, double x, double z, double g) {
+    public double surface(Hit h, double x, double z, double g) { return surface(h, x, z, g, false); }
+
+    private double surface(Hit h, double x, double z, double g, boolean density) {
+        RoadDesign.Tunnel tn = TunnelWorks.near(h);
+        double open = open(h, x, z, g);
+        return tn == null ? open : TunnelWorks.surface(h, tn, g, open, density);
+    }
+
+    /** The finished surface of the open road (no tunnel) at a point already located on it. */
+    private double open(Hit h, double x, double z, double g) {
         RoadDesign d = h.road();
         CrossSection sec = d.section;
         double v = h.v(), sc = h.sc(), beyond = h.beyond();
@@ -377,13 +417,14 @@ public final class RoadWorks {
 
     /** RoadWorksRef#height at a cell corner. */
     private double cellHeight(int x, int z, Ground ground) {
-        double g = ground.at(x, z), f = surface(x + 0.5, z + 0.5, g);
+        double g = ground.at(x, z), f = densitySurface(x + 0.5, z + 0.5, g);
         return Double.isNaN(f) ? g : f;
     }
 
     /** Whether a point is inside a road's clearance (forest roots, spawn): within CLEAR + extra of a centreline, ends included. */
     public boolean clear(double x, double z, double extra) {
-        return hit(x, z, CLEAR + extra) != null;
+        Hit h = hit(x, z, CLEAR + extra);
+        return h != null && !TunnelWorks.overBores(h);
     }
 
     // ------------------------------------------------------------------ columns
@@ -408,7 +449,12 @@ public final class RoadWorks {
          * a box culvert's own cell (group D): y, layers its top concrete block (layers 0: water only), data C_* flags,
          * bottom the bed block less one (gravel under the channel); the water, the concrete and the open channel above
          */
-        CULVERT
+        CULVERT,
+        /**
+         * a tunnel's works (Tunnel V1, TunnelWorks): cells from bottom up to y by TunnelWorks#cells (road_structure, the
+         * carved bore, the mountain); data TunnelWorks.APPROACH_COLUMN: on an approach, cleared above y to the sky
+         */
+        TUNNEL
     }
 
     /**
@@ -416,10 +462,16 @@ public final class RoadWorks {
      * y + 1 (0: none; BARRIER: layers of y); data: turf corners (nw | ne << 4 | sw << 8 | se << 12 | shift << 16), for
      * a BARRIER BridgeMesh.WING when it is a wing wall rather than a parapet; bottom: the lowest deck
      * block (DECK, ABUTMENT, BARRIER) or the natural ground the clearing stops at (OPEN); paveLo / paveHi: the column's
-     * pavement height range (PAVED, DECK, ABUTMENT).
+     * pavement height range (PAVED, DECK, ABUTMENT); roof: the highest block the guard keeps (a tunnel's works under the
+     * mountain: the forest above them grows; Integer.MAX_VALUE: up to the sky).
      */
-    public record Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi) {
+    public record Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi, int roof) {
         public static final Column NONE = new Column(Kind.NONE, 0, 0, 0, 0, 0, 0, 0);
+
+        public Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi) {
+            this(kind, y, layers, upper, data, bottom, paveLo, paveHi, Integer.MAX_VALUE);
+        }
+
         /** The highest block this column's finish occupies. */
         public int top() { return upper > 0 ? y + 1 : y; }
     }
@@ -437,9 +489,19 @@ public final class RoadWorks {
             return new Column(Kind.CULVERT, cell.top(), cell.layers(), 0, data, cell.culvert().bed - 1, 0, 0);
         }
         Column c = finish(x, z, ground);
-        if (cell != null && (c.kind() == Kind.PAVED || c.kind() == Kind.TURF))
+        if (cell != null && (c.kind() == Kind.PAVED || c.kind() == Kind.TURF) && (c.data() & (TUNNEL_PAVED | TUNNEL_OVER)) == 0)
             return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | CULVERT_BODY, cell.culvert().bed - 1, c.paveLo(), c.paveHi());
         return c;
+    }
+
+    /**
+     * A finish with a tunnel's works standing on it (works: the TUNNEL column, TunnelWorks.ON_GROUND), or the finish
+     * itself (works null): TUNNEL_OVER, the works' roof (MAX_VALUE on an approach: cleared to the sky over the works).
+     */
+    private static Column over(Column c, Column works) {
+        if (works == null) return c;
+        int roof = (works.data() & TunnelWorks.APPROACH_COLUMN) != 0 ? Integer.MAX_VALUE : works.roof();
+        return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | TUNNEL_OVER, c.bottom(), c.paveLo(), c.paveHi(), roof);
     }
 
     /** The column's finish without a box culvert's cells (#column). */
@@ -450,12 +512,21 @@ public final class RoadWorks {
         double[] pave = pavedRange(d, x, z);
         boolean onRoute = centre.beyond() == 0;
         RoadDesign.Span span = onRoute ? d.span(centre.sc()) : null;
+        // a tunnel's bores, portals and approaches (Tunnel V1); null: the open road's finish (an approach's pavement and shelf)
+        RoadDesign.Tunnel tunnel = TunnelWorks.near(centre);
+        // works standing on finished ground (TunnelWorks.ON_GROUND): the open road's finish under them, the works above
+        Column over = null;
+        if (tunnel != null) {
+            Column t = TunnelWorks.column(centre, tunnel, x, z, pave);
+            if (t != null && (t.data() & TunnelWorks.ON_GROUND) == 0) return t;
+            over = t;
+        }
         if (span == null) {
             // a column touching a span from outside belongs to the earthworks; one inside a span is handled below
-            if (pave != null) return paved(Kind.PAVED, pave, 0);
+            if (pave != null) return over(paved(Kind.PAVED, pave, 0), over);
             // a column on planned water stays water even where a dry corner reaches the works (a stream beside the road,
             // C3.3a), unless the embankment fills it over a box culvert (group D)
-            if (!onFormation(centre) && water.wet(x + 0.5, z + 0.5) && !filled(x + 0.5, z + 0.5)) return Column.NONE;
+            if (over == null && !onFormation(centre) && water.wet(x + 0.5, z + 0.5) && !filled(x + 0.5, z + 0.5)) return Column.NONE;
             double[] q = new double[4];
             boolean any = false;
             int k = 0;
@@ -467,8 +538,10 @@ public final class RoadWorks {
                 double g = ground.at(x + a, z + b), f = surface(x + a, z + b, g);
                 boolean natural = Double.isNaN(f);
                 Hit h = natural ? null : hit(x + a, z + b, REACH);
-                // toward the daylight line the turf meets the natural surface as drawn, not the planned ground (group B)
-                double w = natural ? 1 : toNatural(h, f - g);
+                // toward the daylight line the turf meets the natural surface as drawn, not the planned ground (group B);
+                // not by a tunnel, whose density keeps rock over the band it clears (its natural tops are not the ground there)
+                double w = tunnel != null ? 0 : natural ? 1 : toNatural(h, f - g);
+                if (tunnel != null && natural) f = g;
                 if (w > 0) {
                     if (tops == null) tops = naturalTops(x, z, ground);
                     double n = naturalSurface(tops, a, b);
@@ -477,6 +550,12 @@ public final class RoadWorks {
                 if (!natural) {
                     any = true;
                     if (h != null && underPavement(h)) f = Math.floor(f * 8 + 1e-9) / 8;
+                }
+                // under a tunnel's works the ground in front runs on: a corner in or behind the concrete keeps the floor
+                if (over != null) {
+                    any = true;
+                    if (TunnelWorks.behind(d, tunnel, x + a, z + b)) f = over.paveHi();
+                    else f = Math.min(f, over.paveHi());
                 }
                 // a corner under a wall's coping (a bridge's wing walls, a box culvert's headwall and mouth walls) lies
                 // COPING under it, never over it: the earth is retained by the wall, not drawn through it (group D)
@@ -501,7 +580,7 @@ public final class RoadWorks {
             // corner order nw, ne, sw, se = (x, z), (x + 1, z), (x, z + 1), (x + 1, z + 1)
             int[] fit = fit(q);
             int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | (bare(x, z) ? BARE : 0);
-            return new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0);
+            return over(new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0), over);
         }
         // on a bridge span: the collision of the bridge mesh (BridgeMesh; docs 10.11), every column chosen by its centre
         CrossSection sec = d.section;

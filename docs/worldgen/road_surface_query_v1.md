@@ -1,0 +1,136 @@
+# 道路接地查询 RoadSurfaceQuery V1
+
+日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，已同步到 master `7507bd11`，同步后离线回归仍 PASS），未提交、未合并。
+状态：**已实现，离线回归通过，隔离客户端探针在新建测试世界 `rsq1` 里通过（13 个隧道探针窗口，2026-10-16）**。Main 那边还没接（见第 7 节），车上还没用到它，**没有实机开车测过**。
+
+和 Main 的约定：Main 工作目录里的 `docs/vehicles/first_pickup_v0_design.md` 第 5 / 5.1 节（2026-10-16 双方确认）。
+
+## 1. 做什么
+
+车轮落在道路上时，方块碰撞是一级级台阶（路面方块按 1/32 格分层，土坡按 1/8 格），车会抖。这个查询直接按道路设计给出连续的地面：车轮接地点 (x, z) 下面、离 yHint 最近的道路表面的**高度、单位法线（朝上）、表面种类、是否挡车**。不是道路的地方返回空，车辆照旧用自己的地形 / 方块层。
+
+- 类：`src/main/java/com/antaurora/apofirstlight/worldgen/network/road/RoadSurfaceQuery.java`
+- 不依赖 Main 的任何类；Main 在 `LevelVehicleWorld#ground` 开头调用它。
+
+## 2. 接口
+
+```java
+@Nullable RoadSurfaceQuery.Hit RoadSurfaceQuery.sample(Level level, double x, double z, double yHint)
+record Hit(double height, double nx, double ny, double nz, Surface surface, boolean blocking)
+enum Surface { ASPHALT, CONCRETE, TURF }
+
+// 不分配对象的版本（每个线程自己留一个 Out）：
+boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, RoadSurfaceQuery.Out out)
+```
+
+- 返回 null（或 false）= Main 那边的 `valid = false`。
+- `yHint` = 车轮中心减半径（上一个子步的值）。多层（桥上 / 桥下、隧道上方的山）时取离 yHint 最近、且在 **1.5 m**（`LAYER`）以内的那层。
+- 只给表面种类，不给抓地力。抓地力归 Main：沥青 1.0（含隧道、桥面、桥台、路肩）、混凝土 0.95、草皮 0.70。
+- 服务端线程和客户端主线程都调用，每辆车每 tick 约 100 次。
+
+## 3. 规则
+
+先按道路设计算出 (x, z) 处的路面（`pavement`，纯计算，不读世界）：所有可能经过这个区块的道路里，(x, z) 落在铺装带（内路肩边到外路肩边，桩号在路线上）的那些，取设计路面高度离 yHint 最近、且在 1.5 m 以内的那条。
+
+然后从 yHint + 1.5 m 往下扫这一列方块，到 yHint − 1.5 m 下一格为止，第一个碰到的东西决定结果：
+
+| 碰到的 | 结果 |
+|---|---|
+| 空气、隧道部件方块（`tunnel_fixture`） | 跳过（部件是车身要撞的方块，不是地面） |
+| `road_surface`，顶面在设计路面下 0.6 m 到上 0.1 m 之间 | **沥青**，高度和法线按设计路面（连续，含路拱、超高、纵坡） |
+| `road_surface`，不在设计路面下（桥面边条等） | 沥青，方块碰撞顶面，法线朝上 |
+| `graded_turf`，顶面在设计路面下 0.6 m 到上 0.1 m 之间（路面边缘、倒角下的草皮） | 沥青，按设计路面 |
+| `graded_turf`，其他 | **草皮**，按方块画出来的两个三角形（西北–东南对角线分开）给高度和法线 |
+| 没有碰撞的方块（草、花、水） | 跳过 |
+| `road_structure`，顶面在设计路面下 0.6 m 到上 0.1 m 之间 | 沥青，按设计路面 |
+| `road_structure`，其他（桥的护栏墙、翼墙压顶、隧道检修道、隧道防撞墙、洞门，包括洞口压在路肩上的防撞墙） | **混凝土，blocking = true**，方块碰撞顶面，法线朝上 |
+| 别的方块（玩家放的、挖开后填的） | 返回空：交给车辆自己的方块层 |
+| 一直到底都没有 | 返回空 |
+
+- 路被挖掉、被别的方块盖住：返回空，不会凭设计"浮"出一层看不见的路。
+- 判断"这块是不是设计路面"的范围：方块顶面在设计路面下 0.6 m（`PAVE_MATCH`）到上 0.1 m（`COVER`）之间。高出 0.1 m 以上就是有东西立在路上（探针发现：隧道洞口的防撞墙压在铺装带的路肩上），按那块东西自己的顶面、挡车。第一版用的是上下各 0.6 m，会把高出路面半米的墙脚当成路面，探针查出来后改了。
+- `blocking` 的方块照旧保留真实的方块碰撞，车身撞它们；车轮不能"站"上去。
+- 区块没加载、世界没有道路网络（不是联邦世界）：返回空，不加载区块。
+
+### 法线
+
+- 沿桩号的坡度 Ys：中心差分，步长 0.05 m，路线两端夹住。
+- 横向坡度 Yu：中心差分，只在当前这一侧的铺装带里取（双幅路：[−edge, −halfMedian] 或 [halfMedian, edge]；单幅路：[−edge, edge]），所以路拱和路肩折点按设计保持尖角。
+- 换到世界坐标：切线 t = (tx, tz)，横向单位向量 L = (−tz, tx)；弯道上横向偏移 u 处每米桩号走 (1 − κu) 米：
+  `grad = Ys / (1 − κu) · t + Yu · L`，`n = (−gx, 1, −gz) / |…|`。
+
+## 4. 性能和一致性
+
+- `sample(..., Out)` 不分配对象：每线程缓冲（输出、方块坐标、曲线查找）；`RoadCurve#local / #frame` 和 `RoadDesign#pavementY` 各加了一个不分配的版本（`RoadCurve.Scratch`、`RoadDesign#pavementYAt`、`CrossSection#pavement(double, double)`），计算和原版本一模一样——离线回归逐点比对，结果完全相同（第 5 节）。世界生成仍用原来的版本，世界生成结果不变，不动版本锁。
+- `sample(Level, x, z, yHint)` 只多一个返回的 `Hit` 记录对象（约定里的接口）；要零分配就用 `Out` 版本。
+- 两端结果相同：单人游戏里服务端和客户端共用同一个道路网络对象（`RoadStructureBlock.boundWorks()`），方块也相同。**已知差异**：专用服务器上，服务端第一次新建网络时用的是刚算出的数据，客户端用的是 JSON 读回的数据（缓存里的数保留两位小数），两边高度可能差几毫米；服务器重启后都从同一份缓存读，就一样了。
+- 离线：单次 `pavement` 约 **1.06 µs**（含测试本身取样点的计算）。
+- 实际世界里（服务端线程，含读方块）：平均 **1.71 µs / 次**，各窗口 1.03–3.46 µs（205,456 次）。每辆车每 tick 约 100 次，约 0.17 ms；两端各算一次。
+
+## 5. 回归
+
+### 离线回归 `roadSurfaceCheck`
+
+```bash
+./gradlew roadSurfaceCheck --offline
+```
+
+- 文件：`src/test/java/com/antaurora/apofirstlight/worldgen/network/road/RoadSurfaceCheck.java`；gradle 任务 `roadSurfaceCheck`（不进 `check`，因为要一份道路网络缓存文件；默认读种子 4 的 `build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json`，`-ProadNetwork=<文件>` 换别的）。
+- 做法：用网络 JSON 重建全部道路（和客户端一样：建好、写出、读回），每条路沿桩号每 **0.25 m** 一个点，横向在铺装带上每 0.5 m 一条线（两侧、车道、车道线、路肩），yHint 用上一个点的结果（像车一样）。
+- 检查：有没有空洞；拿到的是不是这条路自己的路面（不是别的路）；不分配版本和原版本是否完全一致；相邻点高度的二阶差（折角）；法线每步转角；每 4 m 用 ±1 cm 的世界坐标差分比对解析法线；单次耗时。
+- 阈值：空洞 0、不一致 0、二阶差 ≤ 0.01 m、法线每步转角 ≤ 1°、法线误差 ≤ 0.25°。
+
+种子 4 结果（2026-10-16）：**PASS**
+
+| 项 | 结果 |
+|---|---|
+| 道路 / 采样点 | 21 条 / 11,845,860 点（14,809,236 次调用） |
+| 空洞 | 0 |
+| 不分配版本和原版本不一致 | 0 |
+| 取到别的路 | 0 |
+| 每 0.25 m 高度变化最大 | 0.0211 m |
+| 二阶差最大 | 0.0049 m（`sh_mountain:pass_village-farm_town_north` s=2380.25，u=−6.00） |
+| 法线每步转角最大 | 0.55°（同一处，超高渐变） |
+| 解析法线 vs 差分 | 739,804 点，最大 0.098° |
+| 单次耗时 | 1.05 µs |
+
+### 隔离客户端探针
+
+`C3RoadProbe#ground`（`src/dev/java/com/antaurora/apofirstlight/dev/worldgen/C3RoadProbe.java`）：在每个探针窗口里，对已建好的 PAVED / DECK / ABUTMENT / TURF / BARRIER / TUNNEL 列各取 4 个点（格内 0.25 / 0.75），yHint 用这一列自己的碰撞顶面，在真实世界上调用 `sample`：设计路面上的点必须是沥青、不挡车、高度等于设计值；其他列按种类统计返回什么；记录每次调用耗时。
+
+新建测试世界 `rsq1`（联邦实验预设，种子 4，`roads=1;only=tunnels`，13 个隧道探针窗口：洞口、洞中、洞外 30 m、横通道、桥头）：
+
+```bash
+./gradlew runClient --offline -PaflWithoutShaders -I src/dev/federal-c2-client.init.gradle -Pc2="mode=create;world=rsq1;preset=apocalypse_firstlight:federal_experimental;seed=4;tag=rsq1;roads=1;only=tunnels;minutes=20"
+```
+
+第一次（`rsq1_rsq1.txt`）：设计路面上 93,082 点里有 520 点返回混凝土挡车。查下来都在隧道洞口，防撞墙立在路肩上，查询是对的；但同时发现 0.6 m 的上限太宽（墙脚高出路面 0.5 m 也当路面），改成上限 0.1 m（第 3 节），探针也区分"路上立着混凝土"和"空着的路面"。
+
+改后重开同一世界（`rsq1_rsq1b.txt`）：**全部符合**
+
+| 项 | 结果 |
+|---|---|
+| 设计路面上的点 | 93,082 / 93,082 符合；其中 520 点上面立着混凝土（洞口防撞墙），返回混凝土、挡车、墙顶高度 |
+| 空着的路面：查询高度 vs 设计 | 最大 0.000000 m |
+| 空着的路面：查询高度 vs 方块碰撞顶面 | 最大 0.099 m（就是方块台阶的大小，车不再跟着台阶抖） |
+| PAVED 列 | 沥青 88,988，混凝土挡车 520，空 0 |
+| DECK / ABUTMENT 列（桥面 / 桥台） | 沥青 3,288 / 368，空 0 |
+| BARRIER 列（桥的护栏墙、翼墙） | 混凝土挡车 1,108 / 1,108 |
+| TURF 列 | 草皮 74,930，沥青 5,018（路面边缘下的草皮），混凝土挡车 3,432（立在草皮列上的洞门、墙），空 2,544（被山体 / 自然方块盖住） |
+| TUNNEL 列 | 混凝土挡车 2,292（检修道、防撞墙），空 22,968（隧道墙体上面是山，第一个碰到的是岩石：交给车辆自己的方块层） |
+| 每次调用 | 平均 1.71 µs，1.03–3.46 µs |
+
+没测的：客户端那一侧的调用（单人游戏两端共用同一个网络对象，方块相同）；专用服务器；真车在路上开。
+
+## 6. 没做 / 限制
+
+- 路口、互通（C3.3b）还没有，所以没有"两条路的路面重叠"的情况；做路口时要复查"取最近的那层"在路口里是否合适。
+- 隧道部件（扶手、标志等）不算地面，也不挡车轮；它们的方块碰撞照旧。
+- 护栏墙等 `blocking` 处只给方块碰撞顶面，法线朝上；不给墙的侧面法线（车身碰撞由方块负责）。
+- 没有实车测过：Main 接上调用、皮卡在路上开过之后才知道实际效果。
+
+## 7. 和 Main 的交接
+
+1. 两边的分支都进 master 后（合并由用户决定），C 通知 Main。
+2. Main 在 `LevelVehicleWorld#ground` 开头调用 `RoadSurfaceQuery.sample`，返回空就走原来的地形 / 方块层；接好后通知 C。
+3. Main 物理第 3 包要真实道路上的测试坐标：用种子 4 的联邦实验世界，坐标由 C 在那时给。

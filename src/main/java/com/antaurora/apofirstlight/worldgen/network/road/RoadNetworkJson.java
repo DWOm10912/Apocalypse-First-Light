@@ -116,8 +116,8 @@ public final class RoadNetworkJson {
         return out;
     }
 
-    /** Structure kinds C3.3a builds (tunnels are not built yet). */
-    public static final List<String> BUILT_KINDS = List.of("BRIDGE", "VIADUCT", "CULVERT", "DEEP_CUT");
+    /** Structure kinds the stage builds (Tunnel V1 adds TUNNEL). */
+    public static final List<String> BUILT_KINDS = List.of("BRIDGE", "VIADUCT", "CULVERT", "DEEP_CUT", "TUNNEL");
 
     /** Why C3.3a cannot build a route (an unknown class, a structure kind it does not build), or null. */
     public static String buildable(RouteData r) {
@@ -139,8 +139,8 @@ public final class RoadNetworkJson {
     /**
      * The design of a route: its class's cross-section; bridges and viaducts as deck spans of the class's depth, with
      * piers where a span is longer than BridgeMesh.MAX_SPAN, wing walls to the JSON's reach; culverts as box culverts
-     * where the JSON has one for them (group D), else as slab culvert spans; deep cuts are earthworks; tunnels are
-     * refused (not built yet). A trim window renumbers the stations from its start and drops what lies outside.
+     * where the JSON has one for them (group D), else as slab culvert spans; deep cuts are earthworks; tunnels as
+     * RoadDesign.Tunnel (Tunnel V1). A trim window renumbers the stations from its start and drops what lies outside.
      */
     public static RoadDesign design(RouteData r) { return design(r, true); }
 
@@ -158,6 +158,7 @@ public final class RoadNetworkJson {
         RoadProfile profile = RoadProfile.of(java.util.Arrays.copyOfRange(e, i0, i1 + 1));
         double deck = deckDepth(r.roadClass());
         List<double[]> raw = new ArrayList<>();
+        List<RoadDesign.Tunnel> tunnels = new ArrayList<>();
         for (Structure s : r.structures()) {
             double s0 = s.s0() - a, s1 = s.s1() - a;
             switch (s.kind()) {
@@ -171,6 +172,10 @@ public final class RoadNetworkJson {
                     raw.add(new double[]{s0 - pad, s1 + pad, CULVERT_DEPTH});
                 }
                 case "DEEP_CUT" -> { }
+                case "TUNNEL" -> {
+                    if (s1 < 0 || s0 > profile.length) continue;
+                    tunnels.add(new RoadDesign.Tunnel(Math.max(0, s0), Math.min(profile.length, s1)));
+                }
                 default -> throw new IllegalArgumentException("structure " + s.kind() + " on " + r.id() + " is not built yet");
             }
         }
@@ -186,7 +191,8 @@ public final class RoadNetworkJson {
                 if (Math.abs(w[0] - a - s0) < 0.02 && Math.abs(w[1] - a - s1) < 0.02) reach = new double[]{w[2], w[3], w[4], w[5]};
             spans.add(new RoadDesign.Span(s0, s1, q[2], piers, reach));
         }
-        return new RoadDesign(r.id(), CrossSection.of(r.roadClass()), curve, profile, spans, r.culverts());
+        tunnels.sort((p, q) -> Double.compare(p.s0(), q.s0()));
+        return new RoadDesign(r.id(), CrossSection.of(r.roadClass()), curve, profile, spans, r.culverts(), tunnels);
     }
 
     /** Spans closer than this (or overlapping: a culvert's pad over a bridge's end) become one span, m. */
