@@ -22,6 +22,27 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
     private final String idle;
     private MeshModel mesh;
     private boolean skipMeshShadow;
+    /**
+     * Player skeleton (docs/dev/player_skeleton_v1_design.md 13): the gun it draws in third person plays its clips (it
+     * is placed against the eye as in first person, so the clips fit; the hands follow its anchors), and one bone may be
+     * held at its bind pose (the draw / put-away clips' whole-gun move, which the skeleton replaces with its own path).
+     */
+    private static boolean skeletonAnimated;
+    private static String skeletonStill;
+
+    /** Set around one skeleton draw of a gun; {@link #skeletonDrawEnd} after. */
+    public static void skeletonDraw(boolean animated, String still) {
+        skeletonAnimated = animated;
+        skeletonStill = still;
+    }
+
+    public static void skeletonDrawEnd() {
+        skeletonAnimated = false;
+        skeletonStill = null;
+    }
+
+    /** The bone held still for the skeleton's draw, or null. */
+    protected static String skeletonStill() { return skeletonStill; }
 
     protected NativeGunContextRenderer(GeoModel<T> model, String idle) {
         super(model);
@@ -42,7 +63,7 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         try {
             boolean third = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
-            if (!(item instanceof NativeGunItem) || !third) {
+            if (!(item instanceof NativeGunItem) || !third || skeletonAnimated) {
                 super.actuallyRender(pose,item,baked,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
                 return;
             }

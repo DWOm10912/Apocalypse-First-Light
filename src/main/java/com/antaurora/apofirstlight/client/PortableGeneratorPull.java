@@ -28,7 +28,6 @@ import net.minecraftforge.client.event.MovementInputUpdateEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderHighlightEvent;
-import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -301,12 +300,11 @@ public final class PortableGeneratorPull {
         return new double[]{pitch, yaw, roll};
     }
 
-    @SubscribeEvent
-    public static void cameraShake(ViewportEvent.ComputeCameraAngles event) {
+    /** Camera director shake source (client/camera/CameraSources): the pull's shake, eased in and out with the bent view. */
+    public static void cameraShake(Camera camera, float partial, com.antaurora.apofirstlight.client.camera.CameraShake out) {
         PortableDieselGeneratorBlockEntity g = qteSet();
         Minecraft mc = Minecraft.getInstance();
         if (g == null || mc.player == null || !mc.options.getCameraType().isFirstPerson()) return;
-        float partial = (float) event.getPartialTick();
         double k = blend(partial);
         // the shake follows the pull (and the catch's shudder, which outlasts the pull: it runs from the pull's start, kept
         // on this side after the server's reset)
@@ -314,9 +312,7 @@ public final class PortableGeneratorPull {
         double age = start == Long.MIN_VALUE ? -1 : mc.level.getGameTime() - start + partial;
         if (k <= 0 || age < 0 || age > 60) return;
         double[] d = shake(age, g.running());
-        event.setPitch((float) (event.getPitch() + d[0] * k));
-        event.setYaw((float) (event.getYaw() + d[1] * k));
-        event.setRoll((float) (event.getRoll() + d[2] * k));
+        out.add(d[0] * k, d[1] * k, d[2] * k);
     }
 
     // ---- first person: the arm in the world ----
@@ -336,6 +332,7 @@ public final class PortableGeneratorPull {
     public static void renderArm(PortableDieselGeneratorBlockEntity g, float partialTick, PoseStack pose, MultiBufferSource buffers) {
         Minecraft mc = Minecraft.getInstance();
         if (qte == null || !qte.equals(g.getBlockPos()) || !mc.options.getCameraType().isFirstPerson()) return;
+        if (com.antaurora.apofirstlight.client.skeleton.SkeletonActions.drawsArms()) return;   // the skeleton's own arm
         double k = blend(partialTick);
         if (k <= 0) return;
         Camera camera = mc.gameRenderer.getMainCamera();
@@ -361,6 +358,27 @@ public final class PortableGeneratorPull {
         int light = LevelRenderer.getLightColor(g.getLevel(), BlockPos.containing(hand));
         NativePlayerArmRenderer.render(pose, true, buffers, light, OverlayTexture.NO_OVERLAY);
         pose.popPose();
+    }
+
+    // ---- player skeleton (client/skeleton/SkeletonActions, player_actions/machine/generator_pull) ----
+
+    /** The structure point (px) the free hand presses on: the frame top's near corner on the holder's left (clear of the first-person view's middle). */
+    private static final Vec3 BRACE = new Vec3(13.2, 10.784, 12.4);
+
+    /** The set a player holds or pulls, or null. */
+    @Nullable
+    public static PortableDieselGeneratorBlockEntity heldSet(Player player) {
+        return setOf(player);
+    }
+
+    /** The action's anchors (world): the grip now, the grip at rest, the brace; and the handle's travel 0..1. */
+    public static Vec3[] anchors(PortableDieselGeneratorBlockEntity g, float partialTick) {
+        return new Vec3[]{grip(g, partialTick), PortableDieselGeneratorBlock.handle(g.getBlockPos(), g.getBlockState(), 0),
+                PortableDieselGeneratorBlock.world(g.getBlockPos(), g.getBlockState(), BRACE)};
+    }
+
+    public static float travel(PortableDieselGeneratorBlockEntity g, float partialTick) {
+        return (float) Mth.clamp(g.meshAnimation().sample("pull", g.getLevel().getGameTime() + partialTick), 0, 1);
     }
 
     // ---- third person (mixin client.HumanoidModelPullMixin) ----

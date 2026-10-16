@@ -1,0 +1,44 @@
+{
+ "format_version": "1.8.0",
+ "animations": {
+  "item.thermometer_armpit": {
+   "loop": true,
+   "animation_length": 1,
+   "bones": {
+    "upper_arm_l": {
+     "rotation": [-6, 0, -1]
+    },
+    "forearm_l": {
+     "rotation": [-30, 0, 0]
+    }
+   }
+  },
+  "item.nozzle_fill": {
+   "loop": true,
+   "animation_length": 1,
+   "bones": {
+    "chest": {
+     "rotation": [12, 0, 0]
+    }
+   }
+  },
+  "item.nozzle_fill_low": {
+   "loop": true,
+   "animation_length": 1,
+   "bones": {
+    "chest": {
+     "rotation": [58, 0, 0]
+    }
+   }
+  },
+  "item.jerry_can_pour_lean": {
+   "loop": true,
+   "animation_length": 1,
+   "bones": {
+    "chest": {
+     "rotation": [40, 0, 0]
+    }
+   }
+  }
+ }
+}

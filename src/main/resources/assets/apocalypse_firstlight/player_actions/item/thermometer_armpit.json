@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "about": "Clinical thermometer under the armpit while it measures (item use). The hand with it goes across to the other armpit; the other arm presses it in. docs/dev/player_actions_v1_plan.md 4.1",
+  "clip": "item.thermometer_armpit",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 50,
+  "blend": {"in": 0.4, "out": 0.3},
+  "hands": {
+    "right": [{"at": 0.0, "target": "socket:armpit_l", "blend": 0.4, "pole": [-0.5, 0.5, -1.0], "roll": 0}]
+  },
+  "events": [],
+  "check": {"use_ticks": 60}
+}

@@ -21,7 +21,10 @@ import java.util.*;
 @Mod.EventBusSubscriber(modid="apocalypse_firstlight",value=Dist.CLIENT)
 public final class CrowbarSmashClient {
     private record Playing(SimpleSoundInstance sound,int start,boolean impact){}
+    /** Another player's smash as this client sees it (its third-person body, client/skeleton/SkeletonActions): impact -1 until confirmed. */
+    private record Other(UUID action,int start,int impact){}
     private static final Map<UUID,Playing> SOUNDS=new HashMap<>();
+    private static final Map<UUID,Other> OTHERS=new HashMap<>();
     private static CrowbarSmashPacket current;
     private static int clock,start,slot,impactAt;
     private static net.minecraft.client.multiplayer.ClientLevel actionLevel;
@@ -33,13 +36,27 @@ public final class CrowbarSmashClient {
         return committed?Math.min(CrowbarSmashTimeline.DURATION,CrowbarSmashTimeline.IMPACT+clock-impactAt+partial)
                 :Math.min(CrowbarSmashTimeline.IMPACT-1,clock-start+partial);
     }
+    /** A player's smash, in ticks since it started (the own one as elapsed), or -1 for none. */
+    public static double elapsed(net.minecraft.world.entity.player.Player player,float partial){
+        var mc=Minecraft.getInstance();
+        if(player==mc.player)return active()?elapsed(partial):-1;
+        var o=OTHERS.get(player.getUUID());if(o==null)return -1;
+        return o.impact()>=0?Math.min(CrowbarSmashTimeline.DURATION,CrowbarSmashTimeline.IMPACT+clock-o.impact()+partial)
+                :Math.min(CrowbarSmashTimeline.IMPACT-1,clock-o.start()+partial);
+    }
     public static void receive(CrowbarSmashPacket p){
         var mc=Minecraft.getInstance();if(mc.player==null||mc.level==null)return;
         if(p.phase()==CrowbarSmashAction.START){
             if(SOUNDS.containsKey(p.action()))return;
             if(current!=null&&current.action().equals(p.action()))return;
             if(p.player().equals(mc.player.getUUID())){current=p;start=clock;slot=mc.player.getInventory().selected;tool=mc.player.getMainHandItem();committed=false;actionLevel=mc.level;}
+            else OTHERS.put(p.player(),new Other(p.action(),clock,-1));
         }else{
+            var other=OTHERS.get(p.player());
+            if(other!=null&&other.action().equals(p.action())){
+                if(p.phase()==CrowbarSmashAction.IMPACT&&other.impact()<0)OTHERS.put(p.player(),new Other(other.action(),other.start(),clock));
+                if(p.phase()==CrowbarSmashAction.CANCEL||p.phase()==CrowbarSmashAction.END)OTHERS.remove(p.player());
+            }
             if(p.phase()==CrowbarSmashAction.IMPACT){
                 var old=SOUNDS.get(p.action());
                 if(old==null||!old.impact()){
@@ -68,9 +85,11 @@ public final class CrowbarSmashClient {
     }
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;var mc=Minecraft.getInstance();
-        if(mc.level==null||mc.player==null){for(var s:SOUNDS.values())mc.getSoundManager().stop(s.sound());SOUNDS.clear();current=null;return;}
+        if(mc.level==null||mc.player==null){for(var s:SOUNDS.values())mc.getSoundManager().stop(s.sound());SOUNDS.clear();OTHERS.clear();current=null;return;}
         if(mc.isPaused())return;clock++;
         SOUNDS.entrySet().removeIf(s->clock-s.getValue().start()>CrowbarSmashTimeline.DURATION+10);
+        OTHERS.values().removeIf(o->o.impact()>=0?CrowbarSmashTimeline.IMPACT+clock-o.impact()>=CrowbarSmashTimeline.DURATION
+                :clock-o.start()>CrowbarSmashTimeline.DURATION+100);
         if(current==null)return;
         if(mc.level!=actionLevel||mc.screen!=null||!mc.player.isAlive()||mc.player.isSpectator()||mc.player.isSleeping()
                 ||mc.player.getInventory().selected!=slot||!mc.player.getMainHandItem().is(AflItems.CROWBAR.get())

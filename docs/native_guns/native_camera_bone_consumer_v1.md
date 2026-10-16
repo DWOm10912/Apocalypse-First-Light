@@ -6,7 +6,7 @@
 ## 范围与入口
 
 - `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeCameraBoneConsumer.java`
-  使用 Forge `ViewportEvent.ComputeCameraAngles`，只修改该事件的 pitch/yaw/roll。
+  只修改视角的 pitch/yaw/roll。2026-10-16 起不再自己订阅 Forge `ViewportEvent.ComputeCameraAngles`，改为镜头导演晃动层的一个来源（`cameraShake`，登记在 `client/camera/CameraSources`），每帧仍在同一个事件里被调用，本帧动画采样的共享不变；见 [camera_director_v1_plan.md](../dev/camera_director_v1_plan.md)。
 - 当前 P9 与其他 configured gun 均由 `NativeAnimatedWeaponRenderer.java` 的 GeoModel 在 `handleAnimations` 前共享本帧时间；旧 `P901Model.java` 已退役。
 - 消费者面向带 animation asset 与 `camera` bone 的 `NativeGunItem`，按下述动作白名单决定是否应用；没有 P9/BR51 类别判断，不改枪械战斗配置。
 - 白名单：`inspect`、`inspect_empty`、`reload_tactical`、`reload_empty`、`draw`、`put_away`。

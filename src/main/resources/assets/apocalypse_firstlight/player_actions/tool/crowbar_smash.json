@@ -1,0 +1,33 @@
+{
+  "format_version": 1,
+  "about": "Crowbar smashing a vending machine's glass (interaction/CrowbarSmashAction; seconds = client/CrowbarSmashClient's elapsed ticks / 20, impact at 0.6 s = CrowbarSmashTimeline IMPACT, done at 1.65 s). First and third person alike (the skeleton on: client/CrowbarFirstPerson's view model is not drawn, its impact knock on the camera stays). Starts and ends in item/crowbar's hold: both hands on the bar (as item/crowbar; the left stays at the end, the right slides down next to it for the swing and back up after 1.4 s), the hands go up in front of the face, the bar up and out to the right (in the own first person: low at the screen's right, the bar out of its top right, first_person anchors, so the hands show and keep out of the camera: Minecraft's arms are too short to cross the body over the head and too thick to pass the eye), down along the look, rests on the glass to 1.05 s, back to the hold; the chest winds up and swings through. docs/dev/player_actions_v1_plan.md 10, 11, 12",
+  "clip": "tool.crowbar_smash",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "body",
+  "blend": {"in": 0.0, "out": 0.3},
+  "view_anchors": {
+    "windup": {"offset": [0.12, 0.05, 0.21], "first_person": [0.15, -0.28, 0.25]},
+    "strike": {"look": true, "offset": [0.12, -0.3, 0.4], "first_person": [0.08, -0.26, 0.5]}
+  },
+  "prop": {
+    "id": "crowbar",
+    "keys": [
+      {"at": 0.0, "frame": "shoulder_r", "point": "grip", "pos": [5.7, 6.2, -6.0], "rot": [-90.0, -60.6, -113.5], "blend": 0},
+      {"at": 0.001, "frame": "anchor:windup", "point": "grip", "pos": [0, 0, 0], "rot": [-90.0, -51.3, -95.9], "blend": 0.4},
+      {"at": 0.45, "frame": "anchor:strike", "point": "grip", "pos": [0, 0, 0], "rot": [-180.0, -83.9, 72.4], "blend": 0.15},
+      {"at": 1.05, "frame": "shoulder_r", "point": "grip", "pos": [5.7, 6.2, -6.0], "rot": [-90.0, -60.6, -113.5], "blend": 0.55}
+    ]
+  },
+  "hands": {
+    "right": [
+      {"at": 0.0, "target": "prop:grip_high", "blend": 0, "roll": 0},
+      {"at": 0.001, "target": "prop:grip", "blend": 0.35, "pole": [-1.0, -0.6, 0.3], "roll": 0},
+      {"at": 0.45, "target": "prop:grip", "blend": 0.15, "pole": [-0.6, 1.0, 0.3], "roll": 0},
+      {"at": 1.4, "target": "prop:grip_high", "blend": 0.2, "roll": 0}
+    ],
+    "left": [{"at": 0.0, "target": "prop:grip_end", "blend": 0, "roll": 0}]
+  },
+  "events": []
+}

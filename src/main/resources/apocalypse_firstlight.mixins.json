@@ -6,7 +6,7 @@
   "refmap": "apocalypse_firstlight.refmap.json",
   "client": ["client.MaintenanceCameraMixin", "client.MaintenanceGameRendererMixin", "client.RestroomDoorPickMixin", "client.HearingProtectionSoundEngineMixin", "client.LockedInventoryTooltipMixin", "client.AflMeshShapePickMixin", "client.LocalPlayerWeightSprintMixin", "client.HumanoidModelThermometerMixin", "client.EntityRenderDispatcherFireMixin", "client.LevelRendererFireTrackMixin", "client.BaseFireBlockSmokeMixin",
     "client.TerrainParticleSampleMixin",
-    "client.MeshHitPickMixin", "client.HumanoidModelPullMixin", "client.PortableGeneratorCameraMixin", "client.ExplosionSoundMixin", "client.LevelRendererBreakSoundMixin", "client.ItemInHandLayerNozzleMixin", "client.CreateWorldFederalDefaultMixin",
+    "client.MeshHitPickMixin", "client.HumanoidModelPullMixin", "client.PortableGeneratorCameraMixin", "client.ExplosionSoundMixin", "client.LevelRendererBreakSoundMixin", "client.ItemInHandLayerNozzleMixin", "client.EntityRenderDispatcherShadowMixin", "client.CameraDirectorMixin", "client.MouseHandlerLookLockMixin", "client.CreateWorldFederalDefaultMixin",
     "client.SurvivorSkinPlayerInfoMixin",
     "client.AflTrueTypeDefinitionMixin", "client.AflFontSetMixin", "client.AflWindowGuiScaleMixin",
     "client.AflFontTextureMixin", "client.AflFontStringOutputMixin",

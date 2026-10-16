@@ -39,7 +39,9 @@
     "right_leg": "thigh_r", "left_leg": "thigh_l"
   },
   "sockets": {
-    "eye": {"bone": "head", "pos": [0, 27.63, -2.5]}
+    "eye": {"bone": "head", "pos": [0, 27.63, -2.5]},
+    "armpit_l": {"bone": "chest", "pos": [3.0, 19.5, -4.8]},
+    "armpit_r": {"bone": "chest", "pos": [-3.0, 19.5, -4.8]}
   },
   "limits_deg": {
     "forearm_r": {"x": [-145, 0], "y": [-90, 90]},

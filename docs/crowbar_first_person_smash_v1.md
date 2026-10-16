@@ -8,7 +8,7 @@
 - 售货机使用单一注册ID `vending_machine`，`broken`属性选择BER的两套玻璃模型，下半BE保存4×3展示槽。此次保留模型、掉落破损标记、库存迁移及拿放逻辑。（当时的情况。现在：2026-10-01 起内容是 9 格可搜索容器；同一天售货机换成 V2 Mesh 模型，`broken` 只是不画玻璃、没有残片，砸玻璃的区域换成新窗口，动作、音效和时间轴不变，见 [vending_machine_v2.md](models/vending_machine_v2.md)。）
 - `MaintenanceAttachmentHud` 和 `WorldInteractionHint`（原 `VendingMachineHint`，2026-09-29 改名，售货机逻辑不变，同一提示也用于工业储物柜） 已共用 `AttachmentHintStyle`：150ms渐入淡出、灰字、深灰底、无文字阴影（2026-10-06 起改为圆角标签、暖白字、带键帽，见 [afl_overlay_ui_style_v1.md](ui/afl_overlay_ui_style_v1.md)）。继续复用；动作中提示淡出。
 - Native第一人称入口是`RenderHandEvent`，枪械Geo骨骼定位点经`NativeHandBinding`交给`NativePlayerArmRenderer`绘制玩家皮肤和袖子。此次复用这两项接触坐标/渲染能力，抽取模板中的右臂Classic/Slim预览结构。
-- `NativeCameraBoneConsumer` 当前是BR51限定的枪械动画消费者；撬棍使用自身动作时钟的短促命中镜头反馈。没有接入枪械弹药、ADS、射击控制器或枪械recoil状态。
+- `NativeCameraBoneConsumer` 当前是BR51限定的枪械动画消费者；撬棍使用自身动作时钟的短促命中镜头反馈（2026-10-16 起是镜头导演晃动层的一个来源 `CrowbarFirstPerson#cameraShake`，公式在 `kick`，数值没变，见 [camera_director_v1_plan.md](dev/camera_director_v1_plan.md)）。没有接入枪械弹药、ADS、射击控制器或枪械recoil状态。
 
 ## 资源与时间轴
 
@@ -41,7 +41,7 @@
 
 新增有方向限制的`CrowbarSmashPacket`（S2C START/IMPACT/CANCEL/END）和`Cancel`（C2S动作UUID）；C2S不能提交破碎，不能取消别人的动作。本功能当时将`AflNetwork`协议从24升为25；厕所隔间门报文接入后当前为26，双方需同版。广播给跟踪玩家及本人，单次动作无逐帧/逐tick广播。
 
-START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_machine_break`。取消停止对应声音；已提交的破碎不回滚。恢复期间禁止该玩家提前打开售货机（当时是拿放展示物，2026-10-01 起是搜索界面）。独立多人延迟环境仍待验证。
+START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_machine_break`。2026-10-16 起客户端也按玩家记下别人的 START / IMPACT 时刻（`CrowbarSmashClient#elapsed(Player, partial)`），人物骨架开着时，别人和自己按 F5 看到第三人称的砸击动作（玩家动作 `tool/crowbar_smash`：右手举到肩上、沿视线砸下，躯干后仰再前压）。同日第 2 轮起，骨架开着时自己第一人称也用这个身体动作，本文的视图模型不画（用户反馈第三人称的动作好看）；命中时的镜头小抖（`CrowbarFirstPerson#cameraShake`）照旧。同日第 3 轮（用户：静态手持难看、砸得太快看不见手、这么长的撬棍应该双手斜握）：骨架开着时，拿着撬棍就是身体动作 `item/crowbar`（双手斜握：左手在左腰握直端，右手在上面、右胸前，弯钩在前；同日第 4 轮按用户意见改为左手在下、右手在上；普通挥击两手一起，右手滑到左手旁边），本文的待机视图模型也不画；砸玻璃也改为双手，从斜握开始、回到斜握；自己第一人称有单独的锚点，蓄力时双手在画面右下方、砸下时在中下方，全过程看得到手。骨架关着时仍是本文的视图模型。网络包和协议号不变。见 [player_actions_v1_plan.md](dev/player_actions_v1_plan.md) 第 10、11、12 节，**还没进游戏验证**。取消停止对应声音；已提交的破碎不回滚。恢复期间禁止该玩家提前打开售货机（当时是拿放展示物，2026-10-01 起是搜索界面）。独立多人延迟环境仍待验证。
 
 ## 变更文件
 

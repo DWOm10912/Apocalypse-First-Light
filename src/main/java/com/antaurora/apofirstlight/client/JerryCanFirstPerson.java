@@ -20,7 +20,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
@@ -196,18 +195,18 @@ public final class JerryCanFirstPerson {
         }
     }
 
-    /** The view turns opposite the camera bone (as the guns', weapon/client/NativeCameraBoneConsumer). */
-    @SubscribeEvent
-    public static void camera(ViewportEvent.ComputeCameraAngles event) {
+    /**
+     * The view turns opposite the camera bone (as the guns', weapon/client/NativeCameraBoneConsumer); a camera director
+     * shake source (client/camera/CameraSources).
+     */
+    public static void cameraShake(net.minecraft.client.Camera camera, float partial, com.antaurora.apofirstlight.client.camera.CameraShake out) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
-        if (player == null || event.getCamera().getEntity() != player || !mc.options.getCameraType().isFirstPerson()
+        if (player == null || camera.getEntity() != player || !mc.options.getCameraType().isFirstPerson()
                 || !isCan(player.getMainHandItem()) || System.nanoTime() - cameraFrame > 100_000_000L) return;
         if (!Float.isFinite(cameraX) || !Float.isFinite(cameraY) || !Float.isFinite(cameraZ)) return;
         float mirror = player.getMainArm() == HumanoidArm.RIGHT ? 1F : -1F;
-        event.setPitch(event.getPitch() - cameraX);
-        event.setYaw(event.getYaw() - cameraY * mirror);
-        event.setRoll(event.getRoll() - cameraZ * mirror);
+        out.add(-cameraX, -cameraY * mirror, -cameraZ * mirror);
     }
 
     @SubscribeEvent

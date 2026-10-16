@@ -423,6 +423,13 @@ tasks.register('skeletonCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.skeleton.PlayerSkeletonCheck'
 }
 
+// Camera director V1 (docs/dev/camera_director_v1_plan.md): blend / stack / lock math and the moved shake sources.
+tasks.register('cameraCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.client.camera.CameraDirectorCheck'
+}
+
 // WG-01 pure contract regression; no world bootstrap or new test dependencies.
 tasks.register('terrainContractTest', JavaExec) {
     dependsOn tasks.named('testClasses')

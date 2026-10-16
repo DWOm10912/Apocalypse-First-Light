@@ -540,6 +540,10 @@
   - 网格 origin 变成 `[-0.605, 7.6, 0]`，`ClientEquipmentSlots` 里枪套渲染器的常数跟着改。
   - 枪口位置不变（y -7.15）。Blackridge .50 更长，尾部会到胯部附近。
 - 背上的长枪照旧按真实长度，用户已 PASS，没改。
+- 骨骼人物 P2 第一段（2026-10-15，分支 `feature/player-skeleton-p2`，默认关，**用户实机 NOT PASS**，掏枪路线要按吊带重新设计，见 [gun_handling_reference_v1.md](../dev/gun_handling_reference_v1.md) 第 4.3 节）：
+  - 骨架打开时，BR51 从背上、P9 从枪套掏出和收回，起点和终点就是这里的挂点（`CarriedWeaponsLayer.backFrame / thighFrame`）；
+  - 枪在路上时，挂点上不画它；
+  - 枪套里的手枪仍是上面的尺寸；拿到手上是实物大小，掏枪路上逐渐缩小（[player_skeleton_v1_design.md](../dev/player_skeleton_v1_design.md) 第 13 节）。
 - `--check` 另外报临床体温计、腕式温度计、接线扳手三件“过期”，是误报：重新生成出来的内容和仓库里的一模一样，只是工作区里这几个文件是 CRLF 换行（`core.autocrlf=true` 检出时转的），生成器写的是 LF，按字节比较就判成不一样。仓库里存的是 LF，和生成结果一致，不用处理。
 
 ### 别的玩家身上的枪：服务器同步

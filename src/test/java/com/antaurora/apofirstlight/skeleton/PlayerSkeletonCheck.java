@@ -35,11 +35,41 @@ public final class PlayerSkeletonCheck {
     public static void main(String[] args) throws Exception {
         SkeletonRig rig = SkeletonRig.get();
         HumanoidPoser poser = new HumanoidPoser(rig, SkeletonClips.locomotion());
+        if (System.getenv("AFL_LAB6") != null) {
+            SupportLab.reloadEnd(rig, poser);
+            return;
+        }
+        if (System.getenv("AFL_LAB5") != null) {
+            SupportLab.debugRight(rig, poser);
+            return;
+        }
+        if (System.getenv("AFL_LAB4") != null) {
+            SupportLab.extended(rig, poser);
+            return;
+        }
+        if (System.getenv("AFL_LAB3") != null) {
+            SupportLab.shoulder(rig, poser);
+            return;
+        }
+        if (System.getenv("AFL_LAB2") != null) {
+            SupportLab.run(rig, poser);
+            return;
+        }
+        if (System.getenv("AFL_SNAP_ACTIONS") != null) {   // the player actions alone, with their pictures
+            System.exit(ActionCheck.run(rig, poser, System.getenv("AFL_SNAP_ACTIONS")) > 0 ? 1 : 0);
+        }
+        if (System.getenv("AFL_SNAP") != null) {
+            SkeletonSnapshot.run(rig, poser, System.getenv("AFL_SNAP"));
+            return;
+        }
         restPixels(rig, false);
         restPixels(rig, true);
         joints(rig);
         rifle(rig, poser);
+        clips(rig, poser);
+        grips(rig, poser);
         clearance(rig, poser);
+        failures += ActionCheck.run(rig, poser, null);
         if (failures > 0) {
             System.out.println("\nskeleton checks: " + failures + " FAILED");
             System.exit(1);
@@ -54,13 +84,13 @@ public final class PlayerSkeletonCheck {
 
     // ------------------------------------------------------------------ mesh capture
 
-    private record Quad(Vector3f[] p, float[] u, float[] v, int part, boolean overlay, int index) {
+    record Quad(Vector3f[] p, float[] u, float[] v, int part, boolean overlay, int index) {
         Vector3f normal() {
             return new Vector3f(p[2]).sub(p[0]).cross(new Vector3f(p[3]).sub(p[1])).normalize();
         }
     }
 
-    private static List<Quad> mesh(SkeletonPose pose, boolean slim, boolean overlays, java.util.function.IntPredicate parts) {
+    static List<Quad> mesh(SkeletonPose pose, boolean slim, boolean overlays, java.util.function.IntPredicate parts) {
         List<Quad> quads = new ArrayList<>();
         SkeletonRig rig = pose.rig;
         for (int i = 0; i < rig.skin.size(); i++) {
@@ -240,40 +270,31 @@ public final class PlayerSkeletonCheck {
 
     // ------------------------------------------------------------------ 3. BR51 reach
 
-    private static RifleStance.Profile br51Profile() throws Exception {
-        try (var in = PlayerSkeletonCheck.class.getClassLoader().getResourceAsStream("data/apocalypse_firstlight/native_guns/br51_01.json")) {
+    private static GunStance.Profile br51Profile() throws Exception {
+        return profile("br51_01");
+    }
+
+    private static GunStance.Profile profile(String gun) throws Exception {
+        try (var in = PlayerSkeletonCheck.class.getClassLoader().getResourceAsStream("data/apocalypse_firstlight/native_guns/" + gun + ".json")) {
             JsonObject p = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject()
                     .getAsJsonObject("ads").getAsJsonObject("profile");
             JsonArray aim = p.getAsJsonArray("aim"), rot = p.getAsJsonArray("ads_rotation");
-            return new RifleStance.Profile(aim.get(0).getAsFloat(), aim.get(1).getAsFloat(), aim.get(2).getAsFloat(),
+            return new GunStance.Profile(aim.get(0).getAsFloat(), aim.get(1).getAsFloat(), aim.get(2).getAsFloat(),
                     p.get("eye_relief").getAsFloat(), p.get("scale").getAsFloat(),
                     rot.get(0).getAsFloat(), rot.get(1).getAsFloat(), rot.get(2).getAsFloat());
         }
     }
 
     /** Render-origin frame (blocks, world axes) to model blocks, body yaw 0 (LivingEntityRenderer#render). */
-    private static Matrix4f toModel() {
+    static Matrix4f toModel() {
         return new Matrix4f().translation(0, 1.501F, 0).scale(1F / 0.9375F).scale(-1, -1, 1).rotateY(rad(-180F));
     }
 
-    private static Vector3f eyeO(boolean crouch) {
+    static Vector3f eyeO(boolean crouch) {
         return new Vector3f(0, crouch ? 1.27F + 0.125F : 1.62F, 0);
     }
 
-    /** Fills the rifle part of an input; returns the gun's frame in model blocks. */
-    private static Matrix4f rifleInput(HumanoidPoser.Input in, GeoAnchorSampler gun, RifleStance.Profile profile, float aim) {
-        Matrix4f gunModel = toModel().mul(RifleStance.eye(eyeO(in.crouch > 0.5F), in.viewYaw, in.viewPitch))
-                .mul(RifleStance.inView(profile, RifleStance.realScale("br51_01"), aim));
-        RifleStance.handTarget(gunModel, gun.frame("right_hand_anchor", "static_idle", 0), true, in.slim, in.targetRight);
-        RifleStance.handTarget(gunModel, gun.frame("left_hand_anchor", "static_idle", 0), false, in.slim, in.targetLeft);
-        in.right = in.left = HumanoidPoser.ArmMode.IK;
-        in.poleLeft.set(0.15F, 1F, 0.25F);
-        in.shoulderRight.set(RifleStance.STOCK_SHOULDER);
-        RifleStance.supportSlide(new Matrix4f().scaling(16F).mul(gunModel), profile, in.slideLeft);
-        return gunModel;
-    }
-
-    private static HumanoidPoser.Input standing(boolean slim, float chestYaw, float viewYaw, float pitch, boolean rifle, boolean crouch) {
+    static HumanoidPoser.Input standing(boolean slim, float chestYaw, float viewYaw, float pitch, boolean rifle, boolean crouch) {
         HumanoidPoser.Input in = new HumanoidPoser.Input();
         in.slim = slim;
         in.crouch = crouch ? 1 : 0;
@@ -286,18 +307,17 @@ public final class PlayerSkeletonCheck {
     }
 
     private static void rifle(SkeletonRig rig, HumanoidPoser poser) throws Exception {
-        System.out.println("\nBR51 at real size (" + RifleStance.realScale("br51_01") + "), both hands by IK: reach = shoulder->wrist / arm length (<= 1 holds); slide = px the support hand moved back along the gun (max " + RifleStance.SUPPORT_SLIDE + ")");
-        GeoAnchorSampler gun = GeoAnchorSampler.resource("apocalypse_firstlight", "br51_01");
-        RifleStance.Profile profile = br51Profile();
+        System.out.println("\nBR51 at real size (" + GunStance.realScale("br51_01") + "), both hands by IK: reach = shoulder->wrist / arm length (<= 1 holds); slide = px the support hand moved back along the gun (max " + GunStance.SUPPORT_SLIDE + ")");
+        Gun br51 = Gun.of("br51_01");
         SkeletonPose pose = new SkeletonPose(rig);
         for (boolean crouch : new boolean[]{false, true}) for (float aim : new float[]{0, 1}) {
             StringBuilder line = new StringBuilder(String.format("  %-7s %-5s", crouch ? "crouch" : "stand", aim > 0 ? "ADS" : "ready"));
             for (float pitch : new float[]{-60, -30, 0, 30, 60}) {
                 float worstR = 0, worstL = 0, elbowR = 0, elbowL = 0, slide = 0;
                 for (boolean slim : new boolean[]{false, true}) {
-                    HumanoidPoser.Input in = standing(slim, RifleStance.CHEST_TWIST, 0, pitch, true, crouch);
-                    Matrix4f gm = rifleInput(in, gun, profile, aim);
-                    HumanoidPoser.Report r = poser.solve(in, pose);
+                    HumanoidPoser.Input in = standing(slim, GunStance.CHEST_TWIST, 0, pitch, true, crouch);
+                    HumanoidPoser.Report r = gunSolve(poser, in, pose, br51, 1, 0, aim, "static_idle", 0);
+                    Matrix4f gm = lastGun;
                     if (System.getenv("AFL_DEBUG") != null && !slim) {   // joint places in view space (cm), for tuning
                         View v = view(crouch, 0, pitch);
                         java.util.function.Function<Vector3f, String> cm = p -> {
@@ -328,6 +348,311 @@ public final class PlayerSkeletonCheck {
         }
     }
 
+    // ------------------------------------------------------------------ 3b. every clip of every carried gun (P2)
+
+    /** A gun the skeleton carries, as the client's SkeletonGunStance sees it. */
+    record Gun(String name, GunStance.Carried carried, GunStance.Profile profile, GeoAnchorSampler sampler, String still) {
+        static Gun of(String name) throws Exception {
+            GunStance.Carried c = GunStance.carried(name);
+            GeoAnchorSampler s = GeoAnchorSampler.resource("apocalypse_firstlight", c.asset());
+            String still = null;
+            for (String b = "right_hand_anchor"; b != null; b = s.parent(b)) if (s.animates("draw", b)) still = b;
+            return new Gun(name, c, PlayerSkeletonCheck.profile(name), s, still);
+        }
+    }
+
+    /**
+     * SkeletonGunStance#hold offline: the body solved first; the gun at its stance (a pistol between its two-handed ready
+     * and the eye by {@code raise}, any gun toward its lowered place by {@code lower}), both hands on its anchors as
+     * {@code clip} poses them at {@code t}, then the arms.
+     */
+    /** The gun frame (model blocks) and anchors' clip the last gunSolve placed. */
+    static Matrix4f lastGun = new Matrix4f();
+
+    static HumanoidPoser.Report gunSolve(HumanoidPoser poser, HumanoidPoser.Input in, SkeletonPose pose, Gun g,
+                                                 float raise, float lower, float aim, String clip, float t) {
+        HumanoidPoser.Report r = poser.solveBody(in, pose);
+        GunStance.Kind kind = g.carried().kind();
+        float real = g.carried().scale();
+        if (kind.readyHand == null) raise = 1F;
+        float up = raise * (1F - lower);
+        Matrix4f rightRest = g.sampler().frame("right_hand_anchor", "static_idle", 0F);
+        Matrix4f raised = toModel().mul(GunStance.eye(eyeO(in.crouch > 0.5F), in.viewYaw, in.viewPitch));
+        Vector3f back = raised.transformDirection(new Vector3f(0, 0, 1)).normalize();
+        Matrix4f chestSkin = pose.world[pose.rig.chest];
+        if (kind.pocket != null) {
+            // first person: aim takes the shouldered rifle to the eye (third person keeps it shouldered: labTp)
+            Matrix4f shouldered = GunStance.onShoulder(raised, chestSkin, g.profile(), kind, g.carried());
+            float toEye = labTp ? 0F : aim;
+            raised = toEye > 0 ? GunStance.blend(shouldered, raised.mul(GunStance.inView(g.profile(), kind, real, 1F)), toEye) : shouldered;
+        } else {
+            raised.mul(GunStance.inView(g.profile(), kind, real, aim));
+        }
+        Matrix4f chest = GunStance.chestView(pose.world[pose.rig.chest], pose.rig.pivot[pose.rig.chest]);
+        Matrix4f lowered = new Matrix4f(chest).mul(GunStance.lowInChest(g.profile(), kind, real, rightRest));
+        Matrix4f base = kind.readyHand == null ? raised
+                : GunStance.blend(new Matrix4f(chest).mul(GunStance.readyInChest(g.profile(), kind, real, rightRest)), raised, raise);
+        Matrix4f gun = GunStance.blend(lowered, base, 1F - lower);
+        float leftOn = kind == GunStance.Kind.RIFLE ? 1F : 1F - lower;
+        in.right = in.left = HumanoidPoser.ArmMode.IK;
+        in.ikRightWeight = 1F;
+        in.ikLeftWeight = leftOn;
+        in.shoulderRight.set(kind.shoulderRight).mul(up);
+        in.shoulderLeft.set(kind.shoulderLeft).mul(up * leftOn);
+        String still = clip.contains("draw") || clip.equals("put_away") ? g.still() : null;
+        Matrix4f rightAnchor = g.sampler().frame("right_hand_anchor", clip, t, still, "static_idle");
+        Matrix4f leftAnchor = g.sampler().frame("left_hand_anchor", clip, t, still, "static_idle");
+        boolean acting0 = clip.startsWith("reload") || clip.startsWith("inspect");
+        if (up > 0) gun = GunStance.inReach(kind, acting0 || labLeft != null ? null : g.carried().support(), poser, in, pose, gun, back,
+                rightAnchor, leftAnchor);
+        GunStance.handTarget(gun, rightAnchor, labR != null ? labR : kind.gripRight, true, in.slim, in.targetRight);
+        GunStance.handTarget(gun, leftAnchor, labL != null ? labL : kind.gripLeft, false, in.slim, in.targetLeft);
+        if (labLeft != null) labLeft.accept(gun, in);
+        GunStance.Support support = g.carried().support();
+        boolean acting = clip.startsWith("reload") || clip.startsWith("inspect");
+        boolean supportOn = support != null && labLeft == null && !acting;
+        in.right = in.left = HumanoidPoser.ArmMode.IK;
+        in.ikRightWeight = 1F;
+        in.ikLeftWeight = leftOn;
+        in.poleRight.set(labPoleR != null ? labPoleR : kind.poleRight);
+        in.poleLeft.set(labPoleL != null ? labPoleL : kind.poleLeft);
+        if (supportOn) {
+            GunStance.supportUnder(gun, support, in.slim, in.targetLeft);
+            in.poleLeft.set(support.pole());
+        }
+        GunStance.supportSlide(new Matrix4f().scaling(16F).mul(gun), g.profile(), kind.supportSlide, in.slideLeft);
+        in.shoulderRight.set(kind.shoulderRight).mul(up);
+        in.shoulderLeft.set(kind.shoulderLeft).mul(up * leftOn);
+        poser.solveArms(in, pose, r);
+        lastGun.set(gun);
+        return r;
+    }
+
+    private static void clips(SkeletonRig rig, HumanoidPoser poser) throws Exception {
+        System.out.println("\nevery clip at real size, hands on the clip's anchors by IK (pitch -60..60, stand / crouch, wide / slim; "
+                + "reach <= 1.02 holds; the left hand counts only where it is on the gun); draw / put_away hold their still bone");
+        SkeletonPose pose = new SkeletonPose(rig);
+        record Stance(String name, float raise, float lower, float aim) {
+            float up() { return raise * (1 - lower); }
+            boolean left(boolean rifle) { return rifle || lower < 0.5F; }
+        }
+        for (Gun g : new Gun[]{Gun.of("br51_01"), Gun.of("p9_01")}) {
+            boolean rifle = g.carried().kind() == GunStance.Kind.RIFLE;
+            Stance[] stances = rifle ? new Stance[]{new Stance("ready", 1, 0, 0), new Stance("ADS", 1, 0, 1), new Stance("sprint", 1, 1, 0)}
+                    : new Stance[]{new Stance("ready", 0, 0, 0), new Stance("raised", 1, 0, 0), new Stance("ADS", 1, 0, 1),
+                    new Stance("sprint", 0, 1, 0)};
+            System.out.println("  " + g.name() + " (" + g.carried().kind() + ", real " + g.carried().realScale() + ", still bone " + g.still() + ")");
+            List<String> names = new ArrayList<>(g.sampler().clips());
+            java.util.Collections.sort(names);
+            for (Stance st : stances) for (String clip : names) {
+                // NativeGunAds#action: no aiming while these play (the ready stance covers them)
+                if (st.aim() > 0 && (clip.contains("reload") || clip.equals("draw") || clip.equals("put_away") || clip.startsWith("inspect")))
+                    continue;
+                float length = g.sampler().length(clip);
+                float worstR = 0, worstL = 0, elbowR = 0, elbowL = 0;
+                StringBuilder bad = new StringBuilder();
+                float badFrom = -1, last = -1;
+                for (float t = 0; t <= length + 1e-4F; t += 0.05F) {
+                    boolean short_ = false;
+                    for (boolean crouch : new boolean[]{false, true}) for (float pitch = -60; pitch <= 60; pitch += 30)
+                        for (boolean slim : new boolean[]{false, true}) {
+                            float up = rifle ? 1 - st.lower() : st.up();
+                            HumanoidPoser.Input in = standing(slim, g.carried().kind().chestTwist * up, 0, pitch, rifle || st.raise() > 0.5F, crouch);
+                            HumanoidPoser.Report r = gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), clip, t);
+                            boolean left = st.left(rifle);
+                            worstR = Math.max(worstR, r.rightReach);
+                            elbowR = Math.max(elbowR, r.rightElbowDeg);
+                            if (left) {
+                                worstL = Math.max(worstL, r.leftReach);
+                                elbowL = Math.max(elbowL, r.leftElbowDeg);
+                            }
+                            if (r.rightReach > 1.02F || left && r.leftReach > 1.02F) short_ = true;
+                        }
+                    if (short_ && badFrom < 0) badFrom = t;
+                    if (!short_ && badFrom >= 0) {
+                        bad.append(String.format(" %.2f-%.2f s", badFrom, last));
+                        badFrom = -1;
+                    }
+                    last = t;
+                    if (length <= 0) break;
+                }
+                if (badFrom >= 0) bad.append(String.format(" %.2f-%.2f s", badFrom, last));
+                System.out.printf("    %-6s %-18s %5.2f s  R %.2f L %s  elbows %3.0f/%s%s%n", st.name(), clip, length, worstR,
+                        st.left(rifle) ? String.format("%.2f", worstL) : "  - ", elbowR,
+                        st.left(rifle) ? String.format("%3.0f", elbowL) : "  -", bad.length() > 0 ? "  hand short:" + bad : "");
+                if (bad.length() > 0) fail(g.name() + " " + st.name() + " " + clip + ": hand short at" + bad);
+            }
+            if (System.getenv("AFL_DEBUG") != null) for (Stance st : stances) {
+                StringBuilder b = new StringBuilder(String.format("DBG %s %s reach R/L by pitch:", g.name(), st.name()));
+                for (boolean crouch : new boolean[]{false, true}) for (boolean slim : new boolean[]{false, true}) {
+                    b.append(crouch ? " | crouch" : " | stand").append(slim ? " slim" : " wide");
+                    for (float pitch = -60; pitch <= 60; pitch += 30) {
+                        HumanoidPoser.Input in = standing(slim, g.carried().kind().chestTwist * st.up(), 0, pitch, rifle || st.raise() > 0.5F, crouch);
+                        HumanoidPoser.Report r = gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), "static_idle", 0);
+                        b.append(String.format(" %+.0f:%.2f/%.2f", pitch, r.rightReach, r.leftReach));
+                    }
+                }
+                System.out.println(b);
+            }
+            if (System.getenv("AFL_DEBUG") != null) for (Stance st : stances) {
+                // the anchor's authored arm axis against the IK forearm: how far the wrist must bend / twist
+                HumanoidPoser.Input in = standing(false, g.carried().kind().chestTwist * st.up(), 0, 0, rifle || st.raise() > 0.5F, false);
+                gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), "static_idle", 0);
+                StringBuilder b = new StringBuilder(String.format("DBG %s %s wrist:", g.name(), st.name()));
+                for (boolean right : new boolean[]{true, false}) {
+                    int fore = right ? rig.forearmR : rig.forearmL;
+                    Quaternionf foreW = pose.rotation(fore, new Quaternionf());
+                    Quaternionf want = (right ? in.targetRight : in.targetLeft).getUnnormalizedRotation(new Quaternionf()).normalize();
+                    Quaternionf rel = new Quaternionf(foreW).conjugate().mul(want);
+                    Vector3f yF = foreW.transform(new Vector3f(0, 1, 0)), yW = want.transform(new Vector3f(0, 1, 0));
+                    float bend = (float) Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, yF.dot(yW)))));
+                    Quaternionf twist = new Quaternionf(0, rel.y, 0, rel.w).normalize();
+                    float tw = (float) Math.toDegrees(2 * Math.acos(Math.min(1, Math.abs(twist.w))));
+                    b.append(String.format(" %s bend %.0f twist %.0f", right ? "R" : "L", bend, tw));
+                }
+                System.out.println(b);
+            }
+            if (System.getenv("AFL_DEBUG") != null) for (Stance st : stances) for (float pitch : new float[]{0, 60}) {
+                HumanoidPoser.Input in = standing(false, g.carried().kind().chestTwist * st.up(), 0, pitch, rifle || st.raise() > 0.5F, false);
+                gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), "static_idle", 0);
+                View v = view(false, 0, pitch);
+                StringBuilder b = new StringBuilder(String.format("DBG %s %s %+.0f view cm:", g.name(), st.name(), pitch));
+                int[] bs = {rig.upperArmR, rig.forearmR, rig.handR, rig.upperArmL, rig.forearmL, rig.handL};
+                String[] joint = {"shR", "elR", "wrR", "shL", "elL", "wrL"};
+                for (int k = 0; k < 6; k++) {
+                    Vector3f c = v.view(pose.point(bs[k], rig.pivot[bs[k]], new Vector3f()));
+                    b.append(String.format(" %s(%.0f %.0f %.0f)", joint[k], c.x * 100, c.y * 100, c.z * 100));
+                }
+                for (Quad q : mesh(pose, false, true, k -> true)) {
+                    if (!rig.skin.get(q.part()).part().equals("right_arm") || q.index() < 11) continue;
+                    Vector3f c = v.view(bilerp(q.p(), 0.5F, 0.5F));
+                    b.append(String.format(" q%d%s(%.0f %.0f %.0f)", q.index(), q.overlay() ? "L" : "", c.x * 100, c.y * 100, c.z * 100));
+                }
+                System.out.println(b);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ 3c. how the hands sit (gun_handling_reference_v1.md)
+
+    /** Tuning only (AFL_LAB): grips and poles tried in place of the kind's. */
+    private static GunStance.Grip labR, labL;
+    private static Vector3f labPoleR, labPoleL;
+    /** Tuning only (AFL_LAB2, SupportLab): sets the left hand's target in place of the anchor's. */
+    static java.util.function.BiConsumer<Matrix4f, HumanoidPoser.Input> labLeft;
+    /** Solve as third person (a shouldered rifle stays on the shoulder while aiming). */
+    static boolean labTp;
+
+    /** A held pose, measured: wrist, forearm twist, hand off its target (deg), elbow below the shoulder (deg), FP cover. */
+    record Hold(float wristR, float wristL, float twistR, float twistL, float errR, float errL, float dropR, float dropL,
+                        float coverR, float coverL, float centreR, float centreL) {}
+
+    private static float angle(Quaternionf q) {
+        return (float) Math.toDegrees(2 * Math.acos(Math.min(1, Math.abs(q.w))));
+    }
+
+    static Hold measure(SkeletonRig rig, SkeletonPose pose, HumanoidPoser.Input in, boolean crouch, float pitch) {
+        float[] wrist = new float[2], twist = new float[2], err = new float[2], drop = new float[2];
+        for (int k = 0; k < 2; k++) {
+            boolean right = k == 0;
+            int upper = right ? rig.upperArmR : rig.upperArmL, fore = right ? rig.forearmR : rig.forearmL, hand = right ? rig.handR : rig.handL;
+            wrist[k] = angle(pose.local[hand]);
+            Quaternionf f = pose.local[fore];
+            twist[k] = angle(new Quaternionf(0, f.y, 0, f.w).normalize());
+            Quaternionf want = (right ? in.targetRight : in.targetLeft).getUnnormalizedRotation(new Quaternionf()).normalize();
+            err[k] = angle(pose.rotation(hand, new Quaternionf()).conjugate().mul(want));
+            Vector3f sh = pose.point(upper, rig.pivot[upper], new Vector3f()), el = pose.point(fore, rig.pivot[fore], new Vector3f());
+            Vector3f d = el.sub(sh);   // model px, y down
+            drop[k] = (float) Math.toDegrees(Math.atan2(d.y, Math.sqrt(d.x * d.x + d.z * d.z)));
+        }
+        // first-person cover: share of a 48 x 27 screen grid (and of its middle third) each arm's skin covers
+        View v = view(crouch, 0, pitch);
+        boolean[][][] cells = new boolean[2][48][27];
+        for (Quad q : mesh(pose, in.slim, true, k -> true)) {
+            String part = rig.skin.get(q.part()).part();
+            int arm = part.equals("right_arm") ? 0 : part.equals("left_arm") ? 1 : -1;
+            if (arm < 0) continue;
+            for (int a = 0; a <= 16; a++) for (int b = 0; b <= 16; b++) {
+                float[] sc = v.screen(v.view(bilerp(q.p(), a / 16F, b / 16F)));
+                if (sc == null || Math.abs(sc[0]) > 1 || Math.abs(sc[1]) > 1) continue;
+                cells[arm][Math.min(47, (int) ((sc[0] + 1) / 2 * 48))][Math.min(26, (int) ((sc[1] + 1) / 2 * 27))] = true;
+            }
+        }
+        float[] cover = new float[2], centre = new float[2];
+        for (int arm = 0; arm < 2; arm++) {
+            int all = 0, mid = 0;
+            for (int x = 0; x < 48; x++) for (int y = 0; y < 27; y++) if (cells[arm][x][y]) {
+                all++;
+                if (x >= 16 && x < 32 && y >= 9 && y < 18) mid++;
+            }
+            cover[arm] = all / (48F * 27F);
+            centre[arm] = mid / (16F * 9F);
+        }
+        return new Hold(wrist[0], wrist[1], twist[0], twist[1], err[0], err[1], drop[0], drop[1], cover[0], cover[1], centre[0], centre[1]);
+    }
+
+    private static void grips(SkeletonRig rig, HumanoidPoser poser) throws Exception {
+        System.out.println("\nhow the hands sit (standing, wide, static_idle): wrist / forearm twist / hand off its target (deg), "
+                + "elbow below the shoulder (deg), first-person cover of the screen and of its middle (%)");
+        SkeletonPose pose = new SkeletonPose(rig);
+        record Stance(String gun, String name, float raise, float lower, float aim) {}
+        Stance[] stances = {new Stance("br51_01", "ready", 1, 0, 0), new Stance("br51_01", "ADS", 1, 0, 1),
+                new Stance("p9_01", "ready", 0, 0, 0), new Stance("p9_01", "raised", 1, 0, 0), new Stance("p9_01", "ADS", 1, 0, 1)};
+        Map<String, Gun> guns = new HashMap<>();
+        for (Stance st : stances) {
+            Gun g = guns.computeIfAbsent(st.gun(), k -> {
+                try { return Gun.of(k); } catch (Exception e) { throw new RuntimeException(e); }
+            });
+            boolean rifle = g.carried().kind() == GunStance.Kind.RIFLE;
+            StringBuilder line = new StringBuilder(String.format("  %-8s %-6s", g.name(), st.name()));
+            for (float pitch : new float[]{-30, 0, 30}) {
+                HumanoidPoser.Input in = standing(false, g.carried().kind().chestTwist * st.raise(), 0, pitch, rifle || st.raise() > 0.5F, false);
+                gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), "static_idle", 0);
+                Hold h = measure(rig, pose, in, false, pitch);
+                line.append(String.format(" | %+3.0f: wrist %2.0f/%2.0f twist %2.0f/%2.0f off %2.0f/%2.0f drop %3.0f/%3.0f cover %2.0f/%2.0f mid %2.0f/%2.0f",
+                        pitch, h.wristR(), h.wristL(), h.twistR(), h.twistL(), h.errR(), h.errL(), h.dropR(), h.dropL(),
+                        h.coverR() * 100, h.coverL() * 100, h.centreR() * 100, h.centreL() * 100));
+            }
+            System.out.println(line);
+        }
+        if (System.getenv("AFL_LAB") == null) return;
+        // tuning: per kind and hand, the elbow pole (chest frame) with the least wrist + twist / 2, and its elbow drop
+        for (String gunName : new String[]{"br51_01", "p9_01"}) {
+            Gun g = guns.get(gunName);
+            boolean rifle = g.carried().kind() == GunStance.Kind.RIFLE;
+            List<Stance> mine = new ArrayList<>();
+            for (Stance st : stances) if (st.gun().equals(gunName)) mine.add(st);
+            for (int side = 0; side < 2; side++) {
+                record Try(float cost, Vector3f pole, float wrist, float twist, float drop, float cover) {}
+                List<Try> tries = new ArrayList<>();
+                for (float px = -1; px <= 1.01F; px += 0.25F) for (float pz = -1; pz <= 1.01F; pz += 0.25F) {
+                    Vector3f pole = new Vector3f(side == 0 ? px : -px, 1F, pz);
+                    if (side == 0) labPoleR = pole;
+                    else labPoleL = pole;
+                    float wristSum = 0, twistSum = 0, dropSum = 0, coverSum = 0;
+                    int n = 0;
+                    for (Stance st : mine) for (float pitch : new float[]{-30, 0, 30}) {
+                        HumanoidPoser.Input in = standing(false, g.carried().kind().chestTwist * st.raise(), 0, pitch, rifle || st.raise() > 0.5F, false);
+                        gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), "static_idle", 0);
+                        Hold h = measure(rig, pose, in, false, pitch);
+                        wristSum += side == 0 ? h.wristR() : h.wristL();
+                        twistSum += side == 0 ? h.twistR() : h.twistL();
+                        dropSum += side == 0 ? h.dropR() : h.dropL();
+                        coverSum += side == 0 ? h.centreR() : h.centreL();
+                        n++;
+                    }
+                    tries.add(new Try(wristSum / n + twistSum / n / 2, pole, wristSum / n, twistSum / n, dropSum / n, coverSum / n));
+                }
+                labPoleR = labPoleL = null;
+                tries.sort((a, b) -> Float.compare(a.cost(), b.cost()));
+                StringBuilder b = new StringBuilder(String.format("LAB %s %s poles (x,z: wrist / twist / drop / mid cover %%):", gunName, side == 0 ? "R" : "L"));
+                for (Try t : tries) if (tries.indexOf(t) < 10 || Math.abs(t.pole().x) < 0.01F && Math.abs(t.pole().z) < 0.01F)
+                    b.append(String.format(" [%+.2f,%+.2f] %.0f/%.0f/%.0f/%.0f", t.pole().x, t.pole().z, t.wrist(), t.twist(), t.drop(), t.cover() * 100));
+                System.out.println(b);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ 4. camera clearance
 
     /** Skin nearer than this to the eye must not be visible (design 5.4: 2.4 x the 0.05 near plane). */
@@ -344,7 +669,7 @@ public final class PlayerSkeletonCheck {
      */
     private static final float SHOULDER_PITCH = 45F;
 
-    private record View(Matrix4f fromModel, float tanY, float tanX) {
+    record View(Matrix4f fromModel, float tanY, float tanX) {
         /** Model px -> view blocks (+x right, +y up, -z ahead). */
         Vector3f view(Vector3f modelPx) {
             Vector4f v = fromModel.transform(new Vector4f(modelPx.x / 16F, modelPx.y / 16F, modelPx.z / 16F, 1F));
@@ -363,9 +688,9 @@ public final class PlayerSkeletonCheck {
         }
     }
 
-    private static View view(boolean crouch, float yaw, float pitch) {
+    static View view(boolean crouch, float yaw, float pitch) {
         // view <- render-origin frame <- model blocks
-        Matrix4f eye = RifleStance.eye(eyeO(crouch), yaw, pitch).invert();
+        Matrix4f eye = GunStance.eye(eyeO(crouch), yaw, pitch).invert();
         Matrix4f fromModel = eye.mul(toModel().invert());
         float tanY = (float) Math.tan(rad(35F));
         return new View(fromModel, tanY, tanY * 16F / 9F);
@@ -376,13 +701,17 @@ public final class PlayerSkeletonCheck {
                 + "; >= " + NEAREST + ", with a gun >= " + NEAREST_GUN + "), shoulders in the top two thirds (view pitch within +-"
                 + SHOULDER_PITCH + "), lowest view pitch at which a hand shows (empty hands must not show looking level or up)");
         GeoAnchorSampler gun = GeoAnchorSampler.resource("apocalypse_firstlight", "br51_01");
-        RifleStance.Profile profile = br51Profile();
+        GunStance.Profile profile = br51Profile();
+        Gun p9 = Gun.of("p9_01"), br51 = Gun.of("br51_01");
+        // rifle: 0 none, 1 BR51 ready, 2 BR51 ADS, 3 P9 ready, 4 P9 raised, 5 P9 ADS
         record State(String name, float move, float run, boolean crouch, int rifle) {}
         State[] states = {
                 new State("idle", 0, 0, false, 0), new State("walk", 1, 0, false, 0), new State("run", 1, 1, false, 0),
                 new State("crouch", 0, 0, true, 0), new State("crouch walk", 1, 0, true, 0),
                 new State("BR51 ready", 0, 0, false, 1), new State("BR51 ADS", 0, 0, false, 2),
-                new State("BR51 walk", 1, 0, false, 1), new State("BR51 crouch ADS", 0, 0, true, 2)};
+                new State("BR51 walk", 1, 0, false, 1), new State("BR51 crouch ADS", 0, 0, true, 2),
+                new State("P9 ready", 0, 0, false, 3), new State("P9 ready walk", 1, 0, false, 3),
+                new State("P9 raised", 0, 0, false, 4), new State("P9 ADS", 0, 0, false, 5), new State("P9 crouch ADS", 0, 0, true, 5)};
         SkeletonPose pose = new SkeletonPose(rig);
         int head = rig.bone("head");
         for (State st : states) {
@@ -396,16 +725,20 @@ public final class PlayerSkeletonCheck {
             java.util.Arrays.fill(nearByPitch, Float.MAX_VALUE);
             for (boolean slim : new boolean[]{false, true})
                 for (float chest : new float[]{-45, 0, 45})
-                    for (float lag : st.rifle() > 0 ? new float[]{-RifleStance.CHEST_TWIST} : new float[]{-15, 0, 15})
+                    for (float lag : st.rifle() > 2 ? new float[]{0} : st.rifle() > 0 ? new float[]{-GunStance.CHEST_TWIST} : new float[]{-15, 0, 15})
                         for (float pitch = -90; pitch <= 90; pitch += 10)
                             for (float phase = 0; phase < (st.move() > 0 ? 1 : 0.01F); phase += 0.125F) {
                                 float viewYaw = chest + lag;
-                                HumanoidPoser.Input in = standing(slim, chest, viewYaw, pitch, st.rifle() > 0, st.crouch());
+                                HumanoidPoser.Input in = standing(slim, chest, viewYaw, pitch, st.rifle() > 0 && st.rifle() != 3, st.crouch());
                                 in.move = st.move();
                                 in.run = st.run();
                                 in.walkPhase = phase;
-                                if (st.rifle() > 0) rifleInput(in, gun, profile, st.rifle() == 2 ? 1 : 0);
-                                poser.solve(in, pose);
+                                if (st.rifle() > 2) {
+                                    gunSolve(poser, in, pose, p9, st.rifle() == 3 ? 0 : 1, 0, st.rifle() == 5 ? 1 : 0, "static_idle", 0);
+                                } else {
+                                    if (st.rifle() > 0) gunSolve(poser, in, pose, br51, 1, 0, st.rifle() == 2 ? 1 : 0, "static_idle", 0);
+                                    else poser.solve(in, pose);
+                                }
                                 View v = view(st.crouch(), viewYaw, pitch);
                                 for (Quad q : mesh(pose, slim, true, k -> true)) {
                                     String part = rig.skin.get(q.part()).part();

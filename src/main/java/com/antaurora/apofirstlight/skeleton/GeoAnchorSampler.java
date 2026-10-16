@@ -25,6 +25,7 @@ public final class GeoAnchorSampler {
 
     private final Map<String, Bone> bones = new HashMap<>();
     private final Map<String, Map<String, SkeletonClips.Channel[]>> clips = new HashMap<>();
+    private final Map<String, Float> lengths = new HashMap<>();
 
     public static GeoAnchorSampler load(InputStream geo, InputStream animation) throws IOException {
         GeoAnchorSampler s = new GeoAnchorSampler();
@@ -52,6 +53,7 @@ public final class GeoAnchorSampler {
                             ch.has("scale") ? SkeletonClips.channel(ch.get("scale")) : null});
                 }
                 s.clips.put(clip.getKey(), channels);
+                s.lengths.put(clip.getKey(), c.has("animation_length") ? c.get("animation_length").getAsFloat() : 0F);
             }
         }
         return s;
@@ -71,11 +73,44 @@ public final class GeoAnchorSampler {
 
     public boolean has(String bone) { return bones.containsKey(bone); }
 
+    /** A bone's parent, or null for a root (or an unknown bone). */
+    public String parent(String bone) {
+        Bone b = bones.get(bone);
+        return b == null ? null : b.parent;
+    }
+
+    /** The clip has a channel on this bone. */
+    public boolean animates(String clip, String bone) {
+        return clips.getOrDefault(clip, Map.of()).containsKey(bone);
+    }
+
+    /** The clips' names. */
+    public java.util.Set<String> clips() { return clips.keySet(); }
+
+    /** A clip's animation_length (s), 0 when it has none. */
+    public float length(String clip) { return lengths.getOrDefault(clip, 0F); }
+
     /** A bone's frame at its pivot (for an anchor bone: the anchor), clip at t seconds (null clip = rest). */
     public Matrix4f frame(String bone, String clip, float t) {
+        return frame(bone, clip, t, null);
+    }
+
+    /** As {@link #frame(String, String, float)}, with one bone ({@code still}) held at rest (client GunBones#frame). */
+    public Matrix4f frame(String bone, String clip, float t, String still) {
+        return frame(bone, clip, t, still, null);
+    }
+
+    /**
+     * As {@link #frame(String, String, float, String)} over a {@code base} clip: the bones the clip leaves out keep the
+     * base clip's channels, as the guns' "baseline" controller (the loaded idle) supplies them under the "action" one
+     * (ConfiguredNativeGunItem#registerControllers). Both are sampled at {@code t}.
+     */
+    public Matrix4f frame(String bone, String clip, float t, String still, String base) {
         Bone b = bones.get(bone);
         if (b == null) return null;
-        Map<String, SkeletonClips.Channel[]> anim = clip == null ? Map.of() : clips.getOrDefault(clip, Map.of());
+        Map<String, SkeletonClips.Channel[]> anim = new HashMap<>(base == null ? Map.of() : clips.getOrDefault(base, Map.of()));
+        if (clip != null) anim.putAll(clips.getOrDefault(clip, Map.of()));
+        if (still != null) anim.remove(still);
         return matrix(b, anim, t, new HashMap<>()).translate(b.px, b.py, b.pz);
     }
 

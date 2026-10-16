@@ -1,0 +1,27 @@
+{
+  "format_version": 1,
+  "about": "Crowbar in the main hand, first and third person alike (client/skeleton/SkeletonActions; replaces client/CrowbarFirstPerson's view model while the skeleton is on). Held two-handed across the body (the user, 2026-10-16: a bar this long is not held steady in one hand; the left hand low, the right above it): the left hand at the left of the belly on the straight end, the bar slanting up to the right and ahead, the right hand 0.3 block up it at the right of the chest, the claw ahead over the right shoulder. Seconds = the melee swing's progress x 0.3 (the vanilla attack swing): the right hand slides down next to the left, both cock it up at the right of the chest (the bar up and out to the right), chop down ahead, back. A vending machine smash is tool/crowbar_smash, which starts and ends in this hold. docs/dev/player_actions_v1_plan.md 12",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {"in": 0.0, "out": 0.2},
+  "prop": {
+    "id": "crowbar",
+    "keys": [
+      {"at": 0.0, "frame": "shoulder_r", "point": "grip", "pos": [5.7, 6.2, -6.0], "rot": [-90.0, -60.6, -113.5], "blend": 0},
+      {"at": 0.001, "frame": "shoulder_r", "point": "grip", "pos": [2.0, 1.5, -6.5], "rot": [-90.0, -51.3, -95.9], "blend": 0.09},
+      {"at": 0.1, "frame": "shoulder_r", "point": "grip", "pos": [3.5, 6.5, -7.0], "rot": [-180.0, -83.9, 72.4], "blend": 0.1},
+      {"at": 0.2, "frame": "shoulder_r", "point": "grip", "pos": [5.7, 6.2, -6.0], "rot": [-90.0, -60.6, -113.5], "blend": 0.1}
+    ]
+  },
+  "hands": {
+    "right": [
+      {"at": 0.0, "target": "prop:grip_high", "blend": 0, "roll": 0},
+      {"at": 0.001, "target": "prop:grip", "blend": 0.09, "roll": 0},
+      {"at": 0.2, "target": "prop:grip_high", "blend": 0.1, "roll": 0}
+    ],
+    "left": [{"at": 0.0, "target": "prop:grip_end", "blend": 0, "roll": 0}]
+  },
+  "events": []
+}

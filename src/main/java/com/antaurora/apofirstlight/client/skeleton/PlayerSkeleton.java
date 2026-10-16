@@ -4,11 +4,13 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.FirstPersonBody;
 import com.antaurora.apofirstlight.client.FirstPersonBodyConfig;
 import com.antaurora.apofirstlight.skeleton.HumanoidPoser;
-import com.antaurora.apofirstlight.skeleton.RifleStance;
 import com.antaurora.apofirstlight.skeleton.SkeletonClips;
 import com.antaurora.apofirstlight.skeleton.SkeletonPose;
 import com.antaurora.apofirstlight.skeleton.SkeletonRig;
 import com.antaurora.apofirstlight.skeleton.SkinMesh;
+import com.antaurora.apofirstlight.skeleton.action.ActionPose;
+import com.antaurora.apofirstlight.skeleton.action.PlayerAction;
+import com.antaurora.apofirstlight.skeleton.action.PlayerProps;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -43,6 +45,7 @@ import org.joml.Vector3f;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -58,11 +61,14 @@ import java.util.WeakHashMap;
  * (layers, armour, Curios follow chest, head, upper arms and thighs) and the body is drawn as the C-min skin mesh
  * ({@link SkinMesh}) in place of renderToBuffer; the head stays vanilla's;</li>
  * <li>hands: empty hands hang (the clips), an ordinary item takes vanilla's arm angles with a straight arm, the BR51
- * ({@link SkeletonGunStance}) is placed at real size against the eye and both hands reach for its anchors by IK.</li>
+ * ({@link SkeletonGunStance}) is placed against the eye and both hands reach for its anchors by IK; a player action
+ * ({@link SkeletonActions}: thermometer, recoil starter, fuel nozzle) poses the body and the hands it names;</li>
+ * <li>held items: drawn on the hand bone (ItemInHandLayer's translateToHand, {@link #translateToHand}), so they follow a
+ * bent elbow.</li>
  * </ul>
- * First person: when the hands are supported (empty, or the BR51 with the off hand empty) the vanilla hand pass is
- * cancelled, so looking ahead shows no hands; otherwise the old first-person view model stays and the body's arms are
- * hidden, as in the first-person body V1.
+ * First person: when the hands are supported (empty, the BR51 with the off hand empty, or a player action) the vanilla
+ * hand pass is cancelled, so looking ahead shows no hands; otherwise the old first-person view model stays and the body's
+ * arms are hidden, as in the first-person body V1.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class PlayerSkeleton {
@@ -73,6 +79,7 @@ public final class PlayerSkeleton {
             RIGHT_ARM = new Vector3f(-5, 2, 0), LEFT_ARM = new Vector3f(5, 2, 0),
             RIGHT_LEG = new Vector3f(-1.9F, 12, 0), LEFT_LEG = new Vector3f(1.9F, 12, 0);
 
+    private static final ModelPart HAND = new ModelPart(List.of(), Map.of());
     private static HumanoidPoser poser;
     private static boolean failed;
     private static long frame;
@@ -80,7 +87,7 @@ public final class PlayerSkeleton {
     private PlayerSkeleton() {
     }
 
-    private static HumanoidPoser poser() {
+    static HumanoidPoser poser() {
         if (poser == null && !failed) {
             try {
                 poser = new HumanoidPoser(SkeletonRig.get(), SkeletonClips.locomotion());
@@ -117,9 +124,9 @@ public final class PlayerSkeleton {
             crouch += (crouching - crouch) * 0.5F;   // as the camera eases its eye height
             run += ((p.isSprinting() ? 1 : 0) - run) * 0.35F;
             eyeHeight += (p.getEyeHeight() - eyeHeight) * 0.5F;
-            boolean rifle = SkeletonGunStance.holds(p);
-            float target = head + (rifle ? SkeletonGunStance.CHEST_TWIST : 0);
-            if (rifle) chest = target;
+            boolean gun = SkeletonGunStance.busy(p);
+            float target = head + SkeletonGunStance.chestTwist(p, 1F);
+            if (gun) chest = target;
             else {
                 chest += Mth.wrapDegrees(target - chest) * 0.35F;
                 float lag = Mth.wrapDegrees(target - chest);
@@ -158,10 +165,11 @@ public final class PlayerSkeleton {
             STATES.clear();
             CACHE.clear();
             SkeletonGunStance.clear();
+            SkeletonActions.clear();
             return;
         }
         if (mc.isPaused()) return;
-        SkeletonGunStance.tick(); // the own aim goes out even with the skeleton off here: the others may draw it
+        SkeletonGunStance.tick(enabled()); // the own aim goes out even with the skeleton off here: the others may draw it
         if (!enabled()) {
             STATES.clear();
             CACHE.clear();
@@ -172,18 +180,24 @@ public final class PlayerSkeleton {
 
     @SubscribeEvent
     public static void renderTick(TickEvent.RenderTickEvent event) {
-        if (event.phase == TickEvent.Phase.START) frame++;
+        if (event.phase == TickEvent.Phase.START) {
+            frame++;
+            SkeletonActions.newFrame();
+        }
     }
 
     // ---------------------------------------------------------------- per draw
 
-    /** One player's solved frame: the pose, and the gun's frame in model space (blocks) when the BR51 is held. */
+    /** One player's solved frame: the pose, and the gun the skeleton draws (its frame in model blocks), if any. */
     private static final class Solved {
         long frame;
         final SkeletonPose pose;
         boolean slim;
-        Matrix4f gun;
-        ItemStack gunStack = ItemStack.EMPTY;
+        SkeletonGunStance.Hold hold;
+        /** The prop the action holds (player actions S2) and its placement this frame (its model frame to model px), or null. */
+        PlayerProps.Prop prop;
+        final Matrix4f propPose = new Matrix4f();
+        boolean propOpen;
 
         Solved(SkeletonRig rig) {
             pose = new SkeletonPose(rig);
@@ -238,6 +252,8 @@ public final class PlayerSkeleton {
         Draw d = DRAWS.peek();
         if (d == null || d.player != entity || !(model instanceof PlayerModel<?> playerModel) || !supportedPose(d.player)) return;
         Matrix4f toModel = new Matrix4f(pose.last().pose()).invert().mul(d.head); // render-origin blocks -> model blocks
+        d.model = playerModel;
+        save(playerModel, d.saved);   // before the solve, which writes the parts for the gun's mounts
         Solved s = d.world ? CACHE.get(d.player) : null;
         if (s == null || s.frame != frame || !d.world) {
             if (s == null) s = new Solved(poser().rig());
@@ -247,13 +263,13 @@ public final class PlayerSkeleton {
                 failed = true;
                 poser = null;
                 ApocalypseFirstLight.LOGGER.error("[AFL skeleton] pose failed, the skeleton turns off", e);
+                restore(playerModel, d.saved);
+                d.model = null;
                 return;
             }
             s.frame = frame;
             if (d.world) CACHE.put(d.player, s);
         }
-        d.model = playerModel;
-        save(playerModel, d.saved);
         write(playerModel, s.pose);
         d.solved = s;
     }
@@ -280,16 +296,79 @@ public final class PlayerSkeleton {
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
-        if (d.solved.gun != null && !AflShaderCompat.activeShadowPass())
-            SkeletonGunStance.render(d.player, d.solved.gunStack, d.solved.gun, pose, d.buffers, light,
+        if (d.solved.hold != null && !AflShaderCompat.activeShadowPass())
+            SkeletonGunStance.render(d.solved.hold, pose, d.buffers, light,
                     d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts());
         return true;
     }
 
-    /** ItemInHandLayer: the BR51 the skeleton draws itself is not drawn again in the vanilla hand. */
+    /**
+     * ItemInHandLayer: the gun the skeleton draws itself is not drawn again in the vanilla hand, nor is the item that
+     * replaced it while the old gun is still on its way back to its mount.
+     */
     public static boolean ownsHeldItem(LivingEntity entity, ItemStack stack) {
         Draw d = DRAWS.peek();
-        return d != null && d.player == entity && d.solved != null && d.solved.gun != null && stack == d.solved.gunStack;
+        return d != null && d.player == entity && d.solved != null && d.solved.hold != null
+                && (stack == d.solved.hold.stack() || stack == d.player.getMainHandItem());
+    }
+
+    /**
+     * ItemInHandLayer#renderArmWithItem HEAD: the held item an action holds as its prop (player actions S2) is drawn where
+     * the action placed it, not in the hand. True: drawn (the vanilla hand item is skipped).
+     */
+    public static boolean drawProp(LivingEntity entity, ItemStack stack, PoseStack pose, MultiBufferSource buffers, int light) {
+        Draw d = DRAWS.peek();
+        if (d == null || d.player != entity || d.solved == null || d.solved.prop == null || stack != d.player.getMainHandItem()) return false;
+        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (id == null || !ApocalypseFirstLight.MOD_ID.equals(id.getNamespace()) || !d.solved.prop.holds(id.getPath())) return false;
+        pose.pushPose();
+        pose.scale(1F / 16F, 1F / 16F, 1F / 16F);   // model px
+        Matrix4f place = new Matrix4f(d.solved.propPose).mul(d.solved.prop.itemToLocal());   // item block units
+        pose.last().pose().mul(place);
+        Matrix3f normal = new Matrix3f().set(place).invert().transpose();   // mulPoseMatrix would leave the normals unturned
+        normal.scale(1F / (float) Math.cbrt(Math.abs(normal.determinant())));
+        pose.last().normal().mul(normal);
+        Minecraft mc = Minecraft.getInstance();
+        net.minecraft.world.level.block.state.BlockState open = d.solved.propOpen ? openState(d.solved.prop) : null;
+        if (open != null) {
+            // the block in its open state (the same geometry, block units as the item's): the jerry can's cap swung off
+            mc.getBlockRenderer().renderSingleBlock(open, pose, buffers, light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+                    net.minecraftforge.client.model.data.ModelData.EMPTY, null);
+        } else {
+            pose.translate(0.5F, 0.5F, 0.5F);   // ItemRenderer centres the model on 0
+            mc.getItemRenderer().renderStatic(d.player, stack, net.minecraft.world.item.ItemDisplayContext.NONE, false, pose, buffers,
+                    d.player.level(), light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, d.player.getId());
+        }
+        pose.popPose();
+        return true;
+    }
+
+    /** The prop's open block state (PlayerProps.Prop#openBlock, facing north, open), or null. */
+    private static net.minecraft.world.level.block.state.BlockState openState(PlayerProps.Prop prop) {
+        if (prop.openBlock() == null) return null;
+        net.minecraft.world.level.block.Block block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(
+                new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, prop.openBlock()));
+        if (block == null) return null;
+        net.minecraft.world.level.block.state.BlockState state = block.defaultBlockState();
+        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN))
+            state = state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN, true);
+        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING))
+            state = state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, net.minecraft.core.Direction.NORTH);
+        return state;
+    }
+
+    /**
+     * ItemInHandLayer#renderArmWithItem in place of the model's translateToHand: the hand bone's frame (as the vanilla arm
+     * part it replaces would be, slim shift included), so an item follows the hand. False: not a skeleton draw.
+     */
+    public static boolean translateToHand(LivingEntity entity, HumanoidArm arm, PoseStack pose) {
+        Draw d = DRAWS.peek();
+        if (d == null || d.player != entity || d.solved == null || d.model == null) return false;
+        boolean right = arm == HumanoidArm.RIGHT;
+        set(HAND, d.solved.pose.world[right ? d.solved.pose.rig.handR : d.solved.pose.rig.handL], right ? RIGHT_ARM : LEFT_ARM);
+        if (d.solved.slim) HAND.x += right ? 0.5F : -0.5F;
+        HAND.translateAndRotate(pose);
+        return true;
     }
 
     private static void solve(Draw d, PlayerModel<?> model, Matrix4f toModel, Solved out) {
@@ -312,23 +391,23 @@ public final class PlayerSkeleton {
         in.crouch = crouch;
         in.time = (p.tickCount + partial) / 20F;
         in.turnStep = s != null && s.turnTicks >= 0 ? (s.turnTicks + partial) / 20F : -1F;
-        boolean rifle = SkeletonGunStance.holds(p);
+        boolean gun = SkeletonGunStance.busy(p);
         float pelvis = s != null ? Mth.rotLerp(partial, s.pelvisO, s.pelvis) : body;
-        float chest = s != null ? Mth.rotLerp(partial, s.chestO, s.chest) : head + (rifle ? SkeletonGunStance.CHEST_TWIST : 0);
+        float chest = s != null ? Mth.rotLerp(partial, s.chestO, s.chest) : head + SkeletonGunStance.chestTwist(p, partial);
         in.rootYaw = Mth.wrapDegrees(pelvis - body);
         in.chestYaw = Mth.clamp(Mth.wrapDegrees(chest - pelvis), -WAIST, WAIST);
         in.viewYaw = Mth.wrapDegrees(head - body);
         in.viewPitch = pitch;
-        in.chestPitch = HumanoidPoser.chestPitch(pitch, rifle);
+        in.chestPitch = HumanoidPoser.chestPitch(pitch, SkeletonGunStance.gunUp(p, partial));
         // the eye: the camera's own position for the own first-person body, the entity's eye height otherwise
         Vec3 eye;
         Minecraft mc = Minecraft.getInstance();
         Camera camera = mc.gameRenderer.getMainCamera();
         boolean firstPerson = d.world && p == mc.player && !camera.isDetached();
         Vec3 offset = mc.getEntityRenderDispatcher().getRenderer(p).getRenderOffset(p, partial);
+        Vec3 origin = new Vec3(Mth.lerp(partial, p.xOld, p.getX()), Mth.lerp(partial, p.yOld, p.getY()),
+                Mth.lerp(partial, p.zOld, p.getZ())).add(offset);
         if (firstPerson) {
-            Vec3 origin = new Vec3(Mth.lerp(partial, p.xOld, p.getX()), Mth.lerp(partial, p.yOld, p.getY()),
-                    Mth.lerp(partial, p.zOld, p.getZ())).add(offset);
             eye = camera.getPosition().subtract(origin);
         } else {
             float eyeHeight = s != null ? Mth.lerp(partial, s.eyeHeightO, s.eyeHeight) : p.getEyeHeight();
@@ -339,23 +418,27 @@ public final class PlayerSkeleton {
         // arms
         in.vanillaRight.rotationZYX(model.rightArm.zRot, model.rightArm.yRot, model.rightArm.xRot);
         in.vanillaLeft.rotationZYX(model.leftArm.zRot, model.leftArm.yRot, model.leftArm.xRot);
-        out.gun = null;
-        out.gunStack = ItemStack.EMPTY;
-        if (rifle) {
-            float viewYaw = firstPerson ? camera.getYRot() : head, viewPitch = firstPerson ? camera.getXRot() : pitch;
-            Matrix4f gun = SkeletonGunStance.place(p, eye, viewYaw, viewPitch, partial, firstPerson);
-            if (gun != null) {
-                out.gun = new Matrix4f(toModel).mul(gun);
-                out.gunStack = p.getMainHandItem();
-                in.right = in.left = HumanoidPoser.ArmMode.IK;
-                SkeletonGunStance.handTarget(out.gunStack, out.gun, true, in.slim, in.targetRight);
-                SkeletonGunStance.handTarget(out.gunStack, out.gun, false, in.slim, in.targetLeft);
-                in.poleLeft.set(0.15F, 1F, 0.25F);
-                SkeletonGunStance.supportSlide(out.gunStack, out.gun, in.slideLeft);
-                in.shoulderRight.set(RifleStance.STOCK_SHOULDER);
-            }
+        if (p.isPassenger() && p.getVehicle() != null && p.getVehicle().shouldRiderSit()) {
+            in.legsVanilla = true;
+            in.vanillaRightLeg.rotationZYX(model.rightLeg.zRot, model.rightLeg.yRot, model.rightLeg.xRot);
+            in.vanillaLeftLeg.rotationZYX(model.leftLeg.zRot, model.leftLeg.yRot, model.leftLeg.xRot);
         }
-        if (out.gun == null) {
+        // a player action (not with a gun up: the gun has both hands): its clips, step and facing before the body
+        ActionPose.Moment action = gun ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
+        // the own first-person body leaves an action that keeps its view model alone (the view model is the hands)
+        if (action != null && firstPerson && action.action.firstPerson == PlayerAction.FirstPerson.VIEW_MODEL) action = null;
+        if (action != null && !ActionPose.body(in, poser().rig(), action)) action = null;
+        if (action != null && d.world) SkeletonActions.stepped(p, in.rootOffset, toModel);
+        HumanoidPoser.Report report = poser().solveBody(in, out.pose);
+        out.hold = null;
+        out.prop = null;
+        if (gun) {
+            // the gun hangs on the posed body (its mounts) or the eye; the arms reach for it
+            write(model, out.pose);
+            float viewYaw = firstPerson ? camera.getYRot() : head, viewPitch = firstPerson ? camera.getXRot() : pitch;
+            out.hold = SkeletonGunStance.hold(p, model, out.pose, in, eye, viewYaw, viewPitch, partial, firstPerson, toModel);
+        }
+        if (out.hold == null) {
             boolean rightMain = p.getMainArm() == HumanoidArm.RIGHT;
             ItemStack rightStack = rightMain ? p.getMainHandItem() : p.getOffhandItem();
             ItemStack leftStack = rightMain ? p.getOffhandItem() : p.getMainHandItem();
@@ -369,13 +452,27 @@ public final class PlayerSkeleton {
                 if (swingRight) in.vanillaRightWeight = w;
                 else in.vanillaLeftWeight = w;
             }
+            if (action != null) {
+                ActionPose.hands(in, out.pose, poser(), action);
+                if (action.prop != null) {
+                    out.prop = PlayerProps.get(action.action.prop);
+                    out.propPose.set(action.prop);
+                    out.propOpen = action.propOpen;
+                }
+            }
         }
-        if (p.isPassenger() && p.getVehicle() != null && p.getVehicle().shouldRiderSit()) {
-            in.legsVanilla = true;
-            in.vanillaRightLeg.rotationZYX(model.rightLeg.zRot, model.rightLeg.yRot, model.rightLeg.xRot);
-            in.vanillaLeftLeg.rotationZYX(model.leftLeg.zRot, model.leftLeg.yRot, model.leftLeg.xRot);
+        poser().solveArms(in, out.pose, report);
+        if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
+        if (d.world && out.prop != null) {
+            Matrix4f fromModel = new Matrix4f(toModel).invert();
+            Map<String, Vec3> points = new java.util.HashMap<>();
+            for (String name : out.prop.points().keySet()) {
+                Vector3f local = ActionPose.point(out.prop, name, action.mirror);
+                Vector3f w = fromModel.transformPosition(out.propPose.transformPosition(local).div(16F));
+                points.put(name, origin.add(w.x, w.y, w.z));
+            }
+            SkeletonActions.propPoints(p, points);
         }
-        poser().solve(in, out.pose);
     }
 
     /** The body yaw LivingEntityRenderer#render turns the model by (riders included). */
@@ -404,8 +501,10 @@ public final class PlayerSkeleton {
      * actions plays: reload, draw, inspect keep the old first-person rig in P1). Otherwise the old first-person view model.
      */
     public static boolean firstPersonHands(Player p) {
-        if (!enabled() || !supportedPose(p) || p.isUsingItem() || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
-        return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty() || SkeletonGunStance.holds(p);
+        if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
+        if (SkeletonActions.drawsFirstPerson(p)) return true;
+        if (p.isUsingItem()) return false;
+        return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty() || SkeletonGunStance.busy(p);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

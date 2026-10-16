@@ -1,0 +1,17 @@
+{
+  "about": "The jerry can as the skeleton holds it in third person (player actions S2, docs/dev/player_actions_v1_plan.md 10). Points, bounds: block units of models/block/jerry_can/body.obj (y up; the spout end at +x). Scale 0.85: about 0.46 m tall, 0.38 m long, 0.18 m thick, a real 20 L can.",
+  "items": ["jerry_can"],
+  "scale": 0.85,
+  "bounds": [[0.252, 0.0, 0.376], [0.748, 0.659, 0.624]],
+  "symmetry": "z",
+  "open_block": "jerry_can",
+  "points": {
+    "handle_rear": [0.3295, 0.641, 0.5],
+    "handle_mid": [0.4255, 0.641, 0.5],
+    "handle_front": [0.522, 0.641, 0.5],
+    "spout": [0.655, 0.659, 0.5],
+    "front_top": [0.71, 0.53, 0.5],
+    "under_front": [0.66, 0.0, 0.5],
+    "under_rear": [0.3, 0.0, 0.5]
+  }
+}

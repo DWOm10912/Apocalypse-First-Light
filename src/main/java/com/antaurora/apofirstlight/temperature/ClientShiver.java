@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.temperature;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -45,16 +44,21 @@ public final class ClientShiver {
         }
     }
 
-    @SubscribeEvent
-    public static void camera(ViewportEvent.ComputeCameraAngles event) {
+    /** Camera director shake source (client/camera/CameraSources): the burst under way, if any. */
+    public static void cameraShake(net.minecraft.client.Camera camera, float partial, com.antaurora.apofirstlight.client.camera.CameraShake out) {
         var mc = Minecraft.getInstance();
-        double t = (ticks + event.getPartialTick()) / 20.0 - burstStart;
-        if (t < 0 || t >= burstLength || mc.player == null || event.getCamera().getEntity() != mc.player
+        double t = (ticks + partial) / 20.0 - burstStart;
+        if (t < 0 || t >= burstLength || mc.player == null || camera.getEntity() != mc.player
                 || !mc.options.getCameraType().isFirstPerson() || mc.player.isScoping()) return;
+        double[] d = angles(t, burstLength, amplitude, phase);
+        out.add(d[0], d[1], d[2]);
+    }
+
+    /** The jitter {pitch, yaw, roll} (deg) at {@code t} seconds into a burst of this length, peak and phase. */
+    public static double[] angles(double t, double burstLength, double amplitude, double phase) {
         double a = Math.sin(Math.PI * t / burstLength) * amplitude, f = (t + phase) * JITTER_HZ * Math.PI * 2;
-        event.setYaw(event.getYaw() + (float)(a * YAW * Math.sin(f + 0.3)));
-        event.setPitch(event.getPitch() + (float)(a * PITCH * Math.sin(f * 1.31 + 1.7)));
-        event.setRoll(event.getRoll() + (float)(a * ROLL * Math.sin(f * 0.83 + 2.9)));
+        return new double[]{(float) (a * PITCH * Math.sin(f * 1.31 + 1.7)), (float) (a * YAW * Math.sin(f + 0.3)),
+                (float) (a * ROLL * Math.sin(f * 0.83 + 2.9))};
     }
 
     /** −1 when not shivering, else 0 at the second cold stage .. 1 at the third. */

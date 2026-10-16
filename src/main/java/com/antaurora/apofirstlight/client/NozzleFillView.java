@@ -238,6 +238,7 @@ public final class NozzleFillView {
     public static void renderArm(Vec3 grip, double k, BlockPos origin, Level level, PoseStack pose, MultiBufferSource buffers) {
         Minecraft mc = Minecraft.getInstance();
         if (k <= 0 || !mc.options.getCameraType().isFirstPerson()) return;
+        if (com.antaurora.apofirstlight.client.skeleton.SkeletonActions.drawsArms()) return;   // the skeleton's own arm
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 cam = camera.getPosition(), fwd = new Vec3(camera.getLookVector()), up = new Vec3(camera.getUpVector()), right = new Vec3(camera.getLeftVector()).scale(-1);
         Vec3 under = cam.add(fwd.scale(0.30)).add(up.scale(-0.62)).add(right.scale(0.26));   // out of view, low right
@@ -259,6 +260,18 @@ public final class NozzleFillView {
         pose.mulPose(new Quaternionf().setFromNormalized(basis));
         NativePlayerArmRenderer.render(pose, true, buffers, LevelRenderer.getLightColor(level, BlockPos.containing(hand)), OverlayTexture.NO_OVERLAY);
         pose.popPose();
+    }
+
+    // ---- player skeleton (client/skeleton/SkeletonActions, player_actions/item/nozzle_fill) ----
+
+    /** A player's nozzle in an opening or on its way: {grip in the opening, the opening} (world), or null. */
+    @Nullable
+    public static Vec3[] anchors(Player player, float partialTick) {
+        Held held = held(player);
+        if (held == null) return null;
+        Way way = way(held.dispenser(), held.nozzle(), partialTick);
+        if (way == null || held.dispenser().inserted(held.nozzle()) == null) return null;   // coming out: the hand lets go
+        return new Vec3[]{inserted(way.opening(), way.heading()).point(NozzleFill.GRIP), way.opening()};
     }
 
     // ---- third person ----

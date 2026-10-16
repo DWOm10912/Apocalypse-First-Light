@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -49,16 +48,19 @@ public final class NativeCameraBoneConsumer {
         };
     }
 
-    @SubscribeEvent
+    /**
+     * A camera director shake source (client/camera/CameraSources), called every frame where the ComputeCameraAngles
+     * handler was: it also prepares the frame's shared animation sample for the hand pass.
+     */
     @SuppressWarnings("unchecked")
-    public static void camera(ViewportEvent.ComputeCameraAngles event) {
+    public static void cameraShake(net.minecraft.client.Camera camera, float partial, com.antaurora.apofirstlight.client.camera.CameraShake out) {
         var mc = Minecraft.getInstance();
         var player = mc.player;
         // The event starts from the engine's fresh camera pose on EVERY frame. Returning is exact zero.
         if (player == null || mc.level == null || !player.isAlive() || player.isSpectator()
                 || player.isSleeping() || player.isScoping() || mc.screen != null || mc.getOverlay() != null
                 || !mc.isWindowActive() || !mc.options.getCameraType().isFirstPerson()
-                || event.getCamera().getEntity() != player) return;
+                || camera.getEntity() != player) return;
         var stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof NativeGunItem gun) || gun.animationAsset() == null) return;
         long id = GeoItem.getId(stack);
@@ -75,7 +77,7 @@ public final class NativeCameraBoneConsumer {
         var perspective = player.getMainArm() == HumanoidArm.RIGHT
                 ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
         var manager = gun.getAnimatableInstanceCache().getManagerForId(id);
-        var state = new AnimationState<>(gun, 0, 0, (float)event.getPartialTick(), false);
+        var state = new AnimationState<>(gun, 0, 0, partial, false);
         // Same data, model, manager and frame tick as GeoItemRenderer.actuallyRender.
         // GeoItem.getTick uses wall time, so explicitly reuse this sample in the later hand pass.
         preparedModel = model;
@@ -102,9 +104,7 @@ public final class NativeCameraBoneConsumer {
         // Gecko's loader negates runtime JSON X/Y; the exporter already negated author X/Y.
         // Thus these radians are author-space angles. Camera view rotation is their inverse.
         float pitch = -x * DEGREES, yaw = -y * DEGREES, roll = -z * DEGREES;
-        event.setPitch(event.getPitch() + pitch);
-        event.setYaw(event.getYaw() + yaw);
-        event.setRoll(event.getRoll() + roll);
+        out.add(pitch, yaw, roll);
         if (DEBUG && System.nanoTime() - lastDebug > 1_000_000_000L) {
             lastDebug = System.nanoTime();
             ApocalypseFirstLight.LOGGER.info("[Native Camera] bone=FOUND action={} rawRad={}/{}/{} mappedDeg={}/{}/{} scale=1 applied=YES",

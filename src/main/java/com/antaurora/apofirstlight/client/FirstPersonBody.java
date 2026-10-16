@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.skeleton.PlayerSkeleton;
+import com.antaurora.apofirstlight.client.skeleton.SkeletonActions;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
@@ -92,6 +93,7 @@ public final class FirstPersonBody {
         Pose pose = player.getPose();
         if (pose != Pose.STANDING && pose != Pose.CROUCHING) return false;
         if (player.isVisuallySwimming() || player.isFallFlying() || player.isAutoSpinAttack()) return false;
+        if (PlayerSkeleton.enabled() && SkeletonActions.cameraOnBody(camera)) return true;   // on the stepping body's own eye
         Vec3 eye = player.getPosition(minecraft.getFrameTime()), at = camera.getPosition();
         double dx = at.x - eye.x, dz = at.z - eye.z, up = at.y - eye.y - player.getEyeHeight();
         return dx * dx + dz * dz <= AWAY_LEVEL * AWAY_LEVEL && Math.abs(up) <= AWAY_UP;

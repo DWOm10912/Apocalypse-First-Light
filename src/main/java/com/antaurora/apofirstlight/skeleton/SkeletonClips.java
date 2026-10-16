@@ -153,6 +153,32 @@ public final class SkeletonClips {
         return locomotion;
     }
 
+    private static final Map<String, SkeletonClips> GROUPS = new HashMap<>();
+
+    /**
+     * An action group's clips ({@code animations/player/<group>.animation.json}, clip keys {@code <group>.<name>}; design
+     * 10.1), from the classpath; null when the group has no file.
+     */
+    public static synchronized SkeletonClips group(String group) {
+        if (GROUPS.containsKey(group)) return GROUPS.get(group);
+        String path = "assets/apocalypse_firstlight/animations/player/" + group + ".animation.json";
+        SkeletonClips clips = null;
+        try (InputStream in = SkeletonClips.class.getClassLoader().getResourceAsStream(path)) {
+            if (in != null) clips = load(SkeletonRig.get(), in);
+        } catch (IOException e) {
+            throw new IllegalStateException("player action clips " + path, e);
+        }
+        GROUPS.put(group, clips);
+        return clips;
+    }
+
+    /** A clip by its full key ({@code <group>.<name>}), or null. */
+    public static SkeletonClips.Clip byKey(String key) {
+        int dot = key.indexOf('.');
+        SkeletonClips g = dot > 0 ? group(key.substring(0, dot)) : null;
+        return g != null && g.has(key) ? g.get(key) : null;
+    }
+
     static Channel channel(JsonElement e) {
         if (e.isJsonArray() || e.isJsonPrimitive() || e.isJsonObject() && e.getAsJsonObject().has("vector")) {
             float[] v = vector(e, true);

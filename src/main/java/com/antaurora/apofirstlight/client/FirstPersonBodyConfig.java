@@ -20,8 +20,9 @@ public final class FirstPersonBodyConfig {
         builder.pop();
         builder.push("skeleton");
         SKELETON = builder.comment("Player skeleton V1 prototype (docs/dev/player_skeleton_v1_design.md): every player is drawn by the AFL skeleton",
-                        "(bending elbows and knees, one body for first and third person). Off by default while it is a prototype.")
-                .define("enabled", false);
+                        "(bending elbows and knees, one body for first and third person). On by default since 2026-10-16 (guns: known issues, see",
+                        "docs/dev/player_actions_v1_plan.md 13); off: the vanilla body and the old first-person view models.")
+                .define("enabled", true);
         builder.pop();
         SPEC = builder.build();
     }

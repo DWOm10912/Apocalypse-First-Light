@@ -22,6 +22,13 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
 
     @Override public void renderRecursively(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,
             boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
+        if (bone.getName().equals(skeletonStill())) {
+            // the player skeleton moves the whole gun itself during draw / put-away: this bone at its bind pose
+            var bind = bone.getInitialSnapshot();
+            bone.setPosX(bind.getOffsetX()); bone.setPosY(bind.getOffsetY()); bone.setPosZ(bind.getOffsetZ());
+            bone.setRotX(bind.getRotX()); bone.setRotY(bind.getRotY()); bone.setRotZ(bind.getRotZ());
+            bone.setScaleX(bind.getScaleX()); bone.setScaleY(bind.getScaleY()); bone.setScaleZ(bind.getScaleZ());
+        }
         if (item instanceof com.antaurora.apofirstlight.weapon.NativeGunItem gun
                 && gun.definition().actionType() == com.antaurora.apofirstlight.weapon.NativeActionType.BREAK_ACTION) {
             String name = bone.getName();

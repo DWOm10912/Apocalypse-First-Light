@@ -106,11 +106,14 @@ public final class CrowbarFirstPerson {
         var type=RenderType.entityCutoutNoCull(resource("textures/item/crowbar.png"));
         renderer.render(pose,VIEW,e.getMultiBufferSource(),type,e.getMultiBufferSource().getBuffer(type),e.getPackedLight());
     }
-    @SubscribeEvent public static void camera(ViewportEvent.ComputeCameraAngles e){
+    /** Camera director shake source (client/camera/CameraSources): the knock of the impact. */
+    public static void cameraShake(net.minecraft.client.Camera camera,float partial,com.antaurora.apofirstlight.client.camera.CameraShake out){
         var mc=Minecraft.getInstance();
-        if(!CrowbarSmashClient.active()||!mc.options.getCameraType().isFirstPerson()||e.getCamera().getEntity()!=mc.player)return;
-        double age=CrowbarSmashClient.elapsed((float)e.getPartialTick())-CrowbarSmashTimeline.IMPACT;
-        if(age>=0&&age<3){float kick=(float)(Math.sin(age/3*Math.PI)*(1-age/3));e.setPitch(e.getPitch()+kick*.8f);e.setRoll(e.getRoll()+kick*.25f);}
+        if(!CrowbarSmashClient.active()||!mc.options.getCameraType().isFirstPerson()||camera.getEntity()!=mc.player)return;
+        float kick=kick(CrowbarSmashClient.elapsed(partial)-CrowbarSmashTimeline.IMPACT);
+        if(kick!=0)out.add(kick*.8f,0,kick*.25f);
     }
+    /** The knock (0..1) at this many ticks after the impact: 3 ticks, rising and dying away. */
+    public static float kick(double age){return age>=0&&age<3?(float)(Math.sin(age/3*Math.PI)*(1-age/3)):0f;}
     private CrowbarFirstPerson(){}
 }

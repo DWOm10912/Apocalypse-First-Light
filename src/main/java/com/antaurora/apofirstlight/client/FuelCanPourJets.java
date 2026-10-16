@@ -74,11 +74,14 @@ public final class FuelCanPourJets {
     }
 
     /**
-     * The can's spout: in first person where the view model drew it (client/JerryCanFirstPerson's spout bone, moved from
-     * the hand pass to the world's view); otherwise where the pour pose holds it (FuelCanItem.spout, the server's too).
+     * The can's spout: where the player skeleton drew the can (player actions S2, client/skeleton/SkeletonActions#propPoint,
+     * first and third person); else in first person where the view model drew it (client/JerryCanFirstPerson's spout bone,
+     * moved from the hand pass to the world's view); otherwise where the pour pose holds it (FuelCanItem.spout).
      */
     private static Vec3 spout(Player player, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
+        Vec3 drawn = com.antaurora.apofirstlight.client.skeleton.SkeletonActions.propPoint(player, "spout");
+        if (drawn != null) return drawn;
         var fp = player == mc.player && mc.options.getCameraType().isFirstPerson() ? JerryCanFirstPerson.spout() : null;
         if (fp != null) return ViewFov.handToWorld(player, partialTick, fp.x(), fp.y(), fp.z());
         return FuelCanItem.spout(player, partialTick);

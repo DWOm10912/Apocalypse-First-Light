@@ -4,10 +4,12 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.MaintenanceGunRendering;
 import com.antaurora.apofirstlight.client.ClientEquipmentSlots;
 import com.antaurora.apofirstlight.client.WoodGunRackRenderer;
+import com.antaurora.apofirstlight.client.skeleton.SkeletonGunStance;
 import com.antaurora.apofirstlight.inventory.grid.CarriedWeaponsSync;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import com.antaurora.apofirstlight.skeleton.GunStance;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -23,6 +25,7 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix4f;
 
 import java.util.List;
 import java.util.Map;
@@ -36,9 +39,15 @@ import java.util.Map;
  * also with the gun in the hand); the holstered pistol (key 2, as large as in the hand in third person) muzzle down in the holster's shell on the outside of the
  * right thigh, slide to the front, grip up and to the rear, moving with the leg (the holster is drawn by its Curios
  * renderer, ClientEquipmentSlots). Neither gun is drawn while it is in the hand. Guns are drawn at their real length in
- * the gun bench's bind pose (as on the gun rack). A gun that clips gets its own offset in {@link #BACK_OFFSET} (like the
+ * the gun bench's bind pose (as on the gun rack), a long gun the skeleton carries at its body size
+ * (GunStance.Carried#bodyScale, BR51 1.25 x, as in the hands). A gun that clips gets its own offset in {@link #BACK_OFFSET} (like the
  * rack's per-gun lengths). The own player's weapons come from its inventory, the other players' from the server
  * (inventory/grid/CarriedWeaponsSync, same rules, 2026-10-15). The melee weapon is not drawn yet.
+ * <p>
+ * Player skeleton (docs/dev/player_skeleton_v1_design.md 13): {@link #backFrame} / {@link #thighFrame} are where a drawn
+ * gun starts and a gun put away ends (client/skeleton/SkeletonGunStance); while it is on its way the gun is not drawn
+ * here. The holstered pistol keeps its holster size (the hand's third-person size, which the holster shell was built for);
+ * a skeleton draw takes it to real size along the path (GunStance#blend scales).
  */
 public final class CarriedWeaponsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     private static final float PX = 1 / 16F;
@@ -71,43 +80,58 @@ public final class CarriedWeaponsLayer extends RenderLayer<AbstractClientPlayer,
             SLING.draw(pose, buffers, light);
             pose.popPose();
         }
-        if (shown.back().getItem() instanceof NativeGunItem) back(pose, buffers, light, shown.back());
-        if (shown.thigh().getItem() instanceof NativeGunItem) thigh(pose, buffers, light, shown.thigh());
+        if (shown.back().getItem() instanceof NativeGunItem && !SkeletonGunStance.hidesCarried(player, shown.back()))
+            draw(pose, buffers, light, shown.back(), backFrame(getParentModel(), shown.back()));
+        if (shown.thigh().getItem() instanceof NativeGunItem && !SkeletonGunStance.hidesCarried(player, shown.thigh()))
+            draw(pose, buffers, light, shown.thigh(), thighFrame(getParentModel(), shown.thigh()));
     }
 
-    private void back(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun) {
+    /** A carried gun in its bind pose at a model-space frame (blocks). */
+    public static void draw(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun, Matrix4f frame) {
+        if (frame == null) return;
+        pose.pushPose();
+        pose.mulPoseMatrix(frame);
+        MaintenanceGunRendering.renderBindPose(gun, pose, buffers, light);
+        pose.popPose();
+    }
+
+    /** The slung gun on the back: its model (bind pose, blocks) to the player model's frame (blocks), or null. */
+    public static Matrix4f backFrame(PlayerModel<?> model, ItemStack gun) {
         float surface = BACK_SURFACE;
         var e = extent(gun);
-        if (e == null) return;
-        double scale = WoodGunRackRenderer.length(gun, false) / (e[5] - e[2]);
-        float half = (float) ((e[3] - e[0]) * scale / 2);
+        if (e == null) return null;
         String id = ((NativeGunItem) gun.getItem()).definition().id().getPath();
+        // as large as in the hands (a long gun is larger than real on the body: GunStance.Carried#bodyScale)
+        double scale = WoodGunRackRenderer.length(gun, false) / (e[5] - e[2]) * GunStance.bodyScale(id);
+        float half = (float) ((e[3] - e[0]) * scale / 2);
         float[] o = BACK_OFFSET.getOrDefault(id, new float[3]);
-        pose.pushPose();
-        getParentModel().body.translateAndRotate(pose);
+        PoseStack pose = new PoseStack();
+        model.body.translateAndRotate(pose);
         pose.mulPose(Axis.ZP.rotationDegrees(180));   // body frame: y up, x the player's right, z toward the back
         pose.translate((o[0]) * PX, (BACK_Y + o[1]) * PX, surface * PX + half + 0.01F);
         pose.mulPose(Axis.ZP.rotationDegrees(BACK_TILT + o[2]));   // muzzle toward the left shoulder
         pose.mulPose(Axis.YP.rotationDegrees(90));    // the gun's top to the side, its flank against the back
         pose.mulPose(Axis.XP.rotationDegrees(90));    // muzzle (model -z) up
-        draw(pose, buffers, light, gun, e, scale);
-        pose.popPose();
+        pose.scale((float) scale, (float) scale, (float) scale);
+        pose.translate(-(e[0] + e[3]) / 2, -(e[1] + e[4]) / 2, -(e[2] + e[5]) / 2);
+        return new Matrix4f(pose.last().pose());
     }
 
-    private void thigh(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun) {
+    /** The holstered pistol on the right thigh: its model (bind pose, blocks) to the player model's frame (blocks), or null. */
+    public static Matrix4f thighFrame(PlayerModel<?> model, ItemStack gun) {
         var e = extent(gun);
-        if (e == null) return;
+        if (e == null) return null;
+        // the holster was sized for this (user PASS); a skeleton draw grows / shrinks it to real size along its path
         float scale = handScale(gun);
         if (!(scale > 0)) scale = (float) (WoodGunRackRenderer.length(gun, true) / (e[5] - e[2]));
-        pose.pushPose();
-        ClientEquipmentSlots.WornMeshRenderer.apply(getParentModel(), ClientEquipmentSlots.WornMeshRenderer.Part.RIGHT_LEG, pose);
+        PoseStack pose = new PoseStack();
+        ClientEquipmentSlots.WornMeshRenderer.apply(model, ClientEquipmentSlots.WornMeshRenderer.Part.RIGHT_LEG, pose);
         // the muzzle's top edge (model: min z, max y, mid x) to the pocket's floor at its front wall
         pose.translate(HOLSTER_X * PX, HOLSTER_MUZZLE_Y * PX, HOLSTER_FRONT_Z * PX);
         pose.mulPose(Axis.XP.rotationDegrees(-90));   // model (x, y, z) -> (x, z, -y): muzzle down, top to the front, grip to the rear
         pose.scale(scale, scale, scale);
         pose.translate(-(e[0] + e[3]) / 2, -e[4], -e[2]);
-        MaintenanceGunRendering.renderBindPose(gun, pose, buffers, light);
-        pose.popPose();
+        return new Matrix4f(pose.last().pose());
     }
 
     /**
@@ -119,12 +143,6 @@ public final class CarriedWeaponsLayer extends RenderLayer<AbstractClientPlayer,
         var probe = new PoseStack();
         model.applyTransform(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, probe, false);
         return probe.last().pose().getScale(new org.joml.Vector3f()).x();
-    }
-
-    private static void draw(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun, double[] e, double scale) {
-        pose.scale((float) scale, (float) scale, (float) scale);
-        pose.translate(-(e[0] + e[3]) / 2, -(e[1] + e[4]) / 2, -(e[2] + e[5]) / 2);
-        MaintenanceGunRendering.renderBindPose(gun, pose, buffers, light);
     }
 
     /** Model-space bounds of the whole gun {minX, minY, minZ, maxX, maxY, maxZ}, or null. */

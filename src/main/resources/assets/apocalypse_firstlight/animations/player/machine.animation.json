@@ -1,0 +1,45 @@
+{
+ "format_version": "1.8.0",
+ "animations": {
+  "machine.generator_pull": {
+   "loop": true,
+   "animation_length": 1,
+   "bones": {
+    "pelvis": {
+     "rotation": [35, 0, 0],
+     "position": [0, -3, 2]
+    },
+    "chest": {
+     "rotation": [35, 0, 0]
+    },
+    "thigh_r": {
+     "rotation": [-69.772, 0, 6]
+    },
+    "thigh_l": {
+     "rotation": [-93.273, 0, -6]
+    },
+    "shin_r": {
+     "rotation": [93.583, 0, 0]
+    },
+    "shin_l": {
+     "rotation": [74.286, 0, 0]
+    },
+    "foot_r": {
+     "rotation": [-58.811, 0, 0]
+    },
+    "foot_l": {
+     "rotation": [-16.013, 0, 0]
+    }
+   }
+  },
+  "machine.generator_pull_yank": {
+   "loop": true,
+   "animation_length": 1,
+   "bones": {
+    "chest": {
+     "rotation": [13, 20, 0]
+    }
+   }
+  }
+ }
+}

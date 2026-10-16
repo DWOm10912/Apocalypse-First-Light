@@ -1,0 +1,16 @@
+{
+  "format_version": 1,
+  "about": "Portable diesel generator recoil start (the QTE): the body steps up to the set and bends over it, the left hand presses on the frame, the right holds the T handle and goes with it; each yank brings the torso up and round (parameter: the handle's travel). docs/dev/player_actions_v1_plan.md 4.2",
+  "clip": "machine.generator_pull",
+  "param_clip": "machine.generator_pull_yank",
+  "layer": "full_body",
+  "mask": "full",
+  "priority": 60,
+  "blend": {"in": 0.5, "out": 0.4},
+  "approach": {"anchor": "handle_rest", "distance": 0.55, "side": 0.26, "max": 1.4, "pitch": 70},
+  "hands": {
+    "right": [{"at": 0.0, "target": "block:pull_grip", "blend": 0.5, "pole": [-1.0, 0.8, 0.5], "roll": 0}],
+    "left": [{"at": 0.0, "target": "block:brace", "blend": 0.5, "pole": [0.7, 1.0, 0.2], "roll": 0}]
+  },
+  "events": []
+}

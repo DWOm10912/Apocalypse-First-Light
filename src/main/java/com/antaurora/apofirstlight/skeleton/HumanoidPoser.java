@@ -39,6 +39,8 @@ public final class HumanoidPoser {
         public Vector3f eyeTarget;
         public float maxRootShift = 4.27F;
         public ArmMode right = ArmMode.CLIP, left = ArmMode.CLIP;
+        /** How much of an IK arm the IK takes (the rest is the clip's arm): a hand on its way to or off a target. */
+        public float ikRightWeight = 1F, ikLeftWeight = 1F;
         /** Model-space arm rotations from vanilla's setupAnim, for VANILLA arms and the punch blend of CLIP arms. */
         public final Quaternionf vanillaRight = new Quaternionf(), vanillaLeft = new Quaternionf();
         public float vanillaRightWeight, vanillaLeftWeight;
@@ -58,6 +60,18 @@ public final class HumanoidPoser {
          * forward and in, as a stock in the shoulder pocket does, before {@link #protraction} adds its reach.
          */
         public final Vector3f shoulderRight = new Vector3f(), shoulderLeft = new Vector3f();
+        /**
+         * An action's clips (docs/dev/player_actions_v1_plan.md 2.3), over the locomotion on the bones of its mask: the
+         * main clip at {@code actionTime} s by {@code actionWeight}, then the parameter clip (its first key) by
+         * {@code paramWeight}. {@code actionMirror}: authored for the right side, played for the left (bones _r / _l
+         * swapped, y and z turns negated). Null clips: none.
+         */
+        public SkeletonClips.Clip actionClip, paramClip;
+        public float actionTime, actionWeight, paramWeight;
+        public boolean[] actionMask;
+        public boolean actionMirror;
+        /** Model px the root moves (an action stepping up to what it works on), before the eye's own shift. */
+        public final Vector3f rootOffset = new Vector3f();
         /** Riding: the legs take vanilla's angles. */
         public boolean legsVanilla;
         public final Quaternionf vanillaRightLeg = new Quaternionf(), vanillaLeftLeg = new Quaternionf();
@@ -71,6 +85,9 @@ public final class HumanoidPoser {
         public float rightSlide, leftSlide;
         public float rightElbowDeg, leftElbowDeg;
         public final Vector3f rootShift = new Vector3f();
+        /** The clip's arms (local rotations upper, fore, hand right then left) before any arm solve, for re-solving. */
+        final Quaternionf[] clipArms = {new Quaternionf(), new Quaternionf(), new Quaternionf(), new Quaternionf(),
+                new Quaternionf(), new Quaternionf()};
     }
 
     private static final String IDLE = "locomotion.idle", WALK = "locomotion.walk", RUN = "locomotion.run",
@@ -83,12 +100,20 @@ public final class HumanoidPoser {
     private final SkeletonRig rig;
     private final SkeletonClips clips;
     private final float upperLength, foreLength;
+    /** Each bone's mirror (_r <-> _l; itself for the middle bones). */
+    private final int[] mirror;
 
     public HumanoidPoser(SkeletonRig rig, SkeletonClips clips) {
         this.rig = rig;
         this.clips = clips;
         upperLength = rig.pivot[rig.forearmR].distance(rig.pivot[rig.upperArmR]);
         foreLength = rig.pivot[rig.handR].distance(rig.pivot[rig.forearmR]);
+        mirror = new int[rig.size()];
+        for (int b = 0; b < rig.size(); b++) {
+            String n = rig.names[b];
+            String m = n.endsWith("_r") ? n.substring(0, n.length() - 2) + "_l" : n.endsWith("_l") ? n.substring(0, n.length() - 2) + "_r" : n;
+            mirror[b] = rig.find(m) >= 0 ? rig.find(m) : b;
+        }
     }
 
     public SkeletonRig rig() { return rig; }
@@ -102,10 +127,22 @@ public final class HumanoidPoser {
     }
 
     public Report solve(Input in, SkeletonPose pose) {
+        Report report = solveBody(in, pose);
+        solveArms(in, pose, report);
+        return report;
+    }
+
+    /**
+     * Everything but the arms (they keep the clip's): the game places a gun against the posed chest (a mount on the back,
+     * a holster) before it knows the hand targets, then calls {@link #solveArms}.
+     */
+    public Report solveBody(Input in, SkeletonPose pose) {
         Report report = new Report();
         pose.reset();
         locomotion(in, pose);
+        action(in, pose);
         pose.local[rig.root].rotationY(rad(in.rootYaw));
+        pose.offset[rig.root].add(in.rootOffset);
         Quaternionf chestClip = new Quaternionf(pose.local[rig.chest]);
         float twist = clamp(in.chestYaw, rig.limits[rig.chest], 1), bend = clamp(in.chestPitch, rig.limits[rig.chest], 0);
         // The turn of the upper body is taken at the hips, the torso turning as one piece: worn gear rides the chest frame
@@ -134,15 +171,52 @@ public final class HumanoidPoser {
             report.rootShift.set(dx, 0, dz);
             pose.update();
         }
-        chestWorld = pose.rotation(rig.chest, chestWorld);
-        arm(in, pose, report, true, chestWorld);
-        arm(in, pose, report, false, chestWorld);
         if (in.legsVanilla) {
             Quaternionf pelvisWorld = pose.rotation(rig.pelvis, new Quaternionf()).conjugate();
             legVanilla(pose, rig.thighR, rig.shinR, rig.footR, new Quaternionf(pelvisWorld).mul(in.vanillaRightLeg));
             legVanilla(pose, rig.thighL, rig.shinL, rig.footL, new Quaternionf(pelvisWorld).mul(in.vanillaLeftLeg));
         }
+        int[] arms = {rig.upperArmR, rig.forearmR, rig.handR, rig.upperArmL, rig.forearmL, rig.handL};
+        for (int i = 0; i < 6; i++) report.clipArms[i].set(pose.local[arms[i]]);
         return report;
+    }
+
+    /** The arms on a body from {@link #solveBody} (again, from the clip's arms, when the targets changed). */
+    public void solveArms(Input in, SkeletonPose pose, Report report) {
+        int[] arms = {rig.upperArmR, rig.forearmR, rig.handR, rig.upperArmL, rig.forearmL, rig.handL};
+        for (int i = 0; i < 6; i++) pose.local[arms[i]].set(report.clipArms[i]);
+        pose.offset[rig.upperArmR].zero();
+        pose.offset[rig.upperArmL].zero();
+        pose.updateFrom(rig.upperArmR);
+        pose.updateFrom(rig.upperArmL);
+        Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
+        arm(in, pose, report, true, chestWorld);
+        arm(in, pose, report, false, chestWorld);
+    }
+
+    /**
+     * After {@link #solveBody}, with the hand targets set: how far (model px) both targets must come back along {@code back}
+     * (unit, model px) for each wrist to be within the IK's reach of its shoulder (0.98 of the arm plus
+     * {@link Input#protraction}; the shoulder offsets included). 0 when they already are. A gun held out at arm's length
+     * (GunStance.Kind#sightDistance) comes back toward the eye by this much instead of leaving a hand short.
+     */
+    public float shortfall(Input in, SkeletonPose pose, Vector3f back) {
+        Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
+        float want = 0.98F * (upperLength + foreLength) + in.protraction, s = 0;
+        for (boolean right : new boolean[]{true, false}) {
+            if ((right ? in.right : in.left) != ArmMode.IK || (right ? in.ikRightWeight : in.ikLeftWeight) < 0.5F) continue;
+            int upper = right ? rig.upperArmR : rig.upperArmL, hand = right ? rig.handR : rig.handL;
+            Vector3f restPivot = rig.pivot[upper];
+            Vector3f wrist = (right ? in.targetRight : in.targetLeft).transformPosition(new Vector3f(rig.pivot[hand]).sub(restPivot));
+            Vector3f shoulder = pose.world[rig.chest].transformPosition(new Vector3f(restPivot))
+                    .add(chestWorld.transform(new Vector3f(right ? in.shoulderRight : in.shoulderLeft)));
+            Vector3f d = wrist.sub(shoulder);
+            if (d.length() <= want) continue;
+            // smallest t >= 0 with |d + t back| = want; past the closest approach, the closest approach
+            float b = d.dot(back), c = d.lengthSquared() - want * want, disc = b * b - c;
+            s = Math.max(s, Math.max(0, disc >= 0 ? -b - (float) Math.sqrt(disc) : -b));
+        }
+        return s;
     }
 
     private void locomotion(Input in, SkeletonPose pose) {
@@ -183,6 +257,34 @@ public final class HumanoidPoser {
         }
     }
 
+    /** The action's clips over the locomotion, on its mask's bones (plan 2.3: override, weighted). */
+    private void action(Input in, SkeletonPose pose) {
+        if (in.actionMask == null) return;
+        apply(in, pose, in.actionClip, in.actionTime, in.actionWeight);
+        apply(in, pose, in.paramClip, 0F, in.paramWeight);
+    }
+
+    private void apply(Input in, SkeletonPose pose, SkeletonClips.Clip clip, float time, float weight) {
+        if (clip == null || weight <= 0) return;
+        float w = Math.min(1F, weight);
+        Quaternionf q = new Quaternionf();
+        Vector3f p = new Vector3f();
+        for (int b = 0; b < rig.size(); b++) {
+            if (b >= in.actionMask.length || !in.actionMask[b]) continue;
+            int from = in.actionMirror ? mirror[b] : b;
+            if (clip.rotates(from)) {
+                clip.rotation(from, time, q);
+                if (in.actionMirror) q.set(q.x, -q.y, -q.z, q.w);   // mirrored across the body's middle (x)
+                pose.local[b].slerp(q, w).normalize();
+            }
+            if (clip.moves(from)) {
+                clip.position(from, time, p);
+                if (in.actionMirror) p.x = -p.x;
+                pose.offset[b].lerp(p, w);
+            }
+        }
+    }
+
     private boolean isLeg(int b) {
         return b == rig.thighR || b == rig.shinR || b == rig.footR || b == rig.thighL || b == rig.shinL || b == rig.footL;
     }
@@ -192,7 +294,18 @@ public final class HumanoidPoser {
         ArmMode mode = right ? in.right : in.left;
         Quaternionf toChest = new Quaternionf(chestWorld).conjugate();
         if (mode == ArmMode.IK) {
-            ik(in, pose, report, right, upper, fore, hand, chestWorld);
+            float w = clamp01(right ? in.ikRightWeight : in.ikLeftWeight);
+            if (w > 0) {
+                Quaternionf u = new Quaternionf(pose.local[upper]), f = new Quaternionf(pose.local[fore]),
+                        h = new Quaternionf(pose.local[hand]);
+                ik(in, pose, report, right, upper, fore, hand, chestWorld);
+                if (w < 1) {
+                    pose.local[upper].set(u.slerp(pose.local[upper], w));
+                    pose.local[fore].set(f.slerp(pose.local[fore], w));
+                    pose.local[hand].set(h.slerp(pose.local[hand], w));
+                    pose.offset[upper].mul(w);
+                }
+            }
         } else {
             Quaternionf vanilla = new Quaternionf(toChest).mul(right ? in.vanillaRight : in.vanillaLeft);
             float w = mode == ArmMode.VANILLA ? 1 : clamp01(right ? in.vanillaRightWeight : in.vanillaLeftWeight);
@@ -203,6 +316,42 @@ public final class HumanoidPoser {
             }
         }
         pose.updateFrom(upper);
+    }
+
+    /**
+     * After {@link #solveBody}: the forearm's frame (model rotation, +y toward the hand) the IK will give a wrist at
+     * {@code wrist} (model px) with no forearm twist, as {@link #ik} places the elbow (the shoulder's offset and reach
+     * included, no support slide). A hand turned this way needs no wrist bend and no twist (player actions V1: any other
+     * turn twists the 4 px box forearm like a rope).
+     */
+    public Quaternionf forearm(Input in, SkeletonPose pose, boolean right, Vector3f wrist) {
+        int upper = right ? rig.upperArmR : rig.upperArmL;
+        Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
+        Vector3f shoulder = pose.world[rig.chest].transformPosition(new Vector3f(rig.pivot[upper]))
+                .add(chestWorld.transform(new Vector3f(right ? in.shoulderRight : in.shoulderLeft)));
+        float reach = upperLength + foreLength;
+        Vector3f toTarget = new Vector3f(wrist).sub(shoulder);
+        float distance = toTarget.length();
+        float protract = Math.min(in.protraction, Math.max(0, distance - 0.98F * reach));
+        if (protract > 0 && distance > 1e-4F) shoulder.add(new Vector3f(toTarget).mul(protract / distance));
+        toTarget.set(wrist).sub(shoulder);
+        distance = toTarget.length();
+        float d = Math.max(0.15F * reach, Math.min(distance, 0.999F * reach));
+        Vector3f dir = distance > 1e-4F ? new Vector3f(toTarget).div(distance) : new Vector3f(0, 1, 0);
+        float cosElbow = (upperLength * upperLength + foreLength * foreLength - d * d) / (2 * upperLength * foreLength);
+        float flex = Math.min(ELBOW_MAX, (float) Math.PI - (float) Math.acos(Math.max(-1, Math.min(1, cosElbow))));
+        float reachD = (float) Math.sqrt(upperLength * upperLength + foreLength * foreLength + 2 * upperLength * foreLength * Math.cos(flex));
+        float cosShoulder = (upperLength * upperLength + reachD * reachD - foreLength * foreLength) / (2 * upperLength * reachD);
+        float shoulderAngle = (float) Math.acos(Math.max(-1, Math.min(1, cosShoulder)));
+        Vector3f pole = chestWorld.transform(new Vector3f(right ? in.poleRight : in.poleLeft));
+        Vector3f side = new Vector3f(pole).sub(new Vector3f(dir).mul(pole.dot(dir)));
+        if (side.lengthSquared() < 1e-8F) side.set(0, 0, 1).sub(new Vector3f(dir).mul(dir.z));
+        side.normalize();
+        Vector3f y = new Vector3f(dir).mul((float) Math.cos(shoulderAngle)).add(new Vector3f(side).mul((float) Math.sin(shoulderAngle))).normalize();
+        Vector3f z = new Vector3f(side).sub(new Vector3f(y).mul(side.dot(y))).normalize();
+        Vector3f x = new Vector3f(y).cross(z).normalize();
+        Quaternionf upperWorld = new Quaternionf().setFromNormalized(new Matrix4f().set3x3(new org.joml.Matrix3f(x, y, z)));
+        return upperWorld.mul(new Quaternionf().rotationX(-flex));
     }
 
     private void ik(Input in, SkeletonPose pose, Report report, boolean right, int upper, int fore, int hand, Quaternionf chestWorld) {
