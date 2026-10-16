@@ -29,9 +29,9 @@ public final class RoadNetworkStage {
      * from the mesh; 4: the structure stands on the ground's top block instead of replacing it; 5: the R2 state section
      * with its centre line, undivided decks, piers, slab culverts; 6: the biome's plants on graded turf; 7: none on the turf beside the pavement, RoadWorks#bare;
      * 8: box culverts, wing walls to the embankment's reach as continuous strips, walls on the lowest ground in front,
-     * structure waterlogged in water, group D).
+     * structure waterlogged in water, group D; 9: multi-column bents, their cap beams and columns, group E).
      */
-    public static final int SURFACE_VERSION = 8;
+    public static final int SURFACE_VERSION = 9;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {

@@ -508,7 +508,7 @@ public final class RoadWorks {
         double v = centre.v(), sc = centre.sc(), u = centre.u();
         double deckTop = d.datum(sc);
         boolean end = band(d, span, x, z);
-        // a column whose square reaches a pier's footprint stands on the ground like the abutment band (C3.3a)
+        // a column whose square reaches a bent column stands on the ground like the abutment band (C3.3a, group E)
         boolean pier = !end && pier(d, span, x, z);
         // under the girder the deck goes down to its soffit (rounded up: the collision stays inside the mesh), under the
         // slab's overhangs only the slab
@@ -516,6 +516,9 @@ public final class RoadWorks {
         if (pave != null) {
             Column c = paved(end || pier ? Kind.ABUTMENT : Kind.DECK, pave, 0);
             int bottom = girder ? (int) Math.ceil(deckTop - span.depth()) : (int) Math.ceil(pave[0] - BridgeMesh.SLAB);
+            // under a bent's cap beam the deck's cells reach down to its underside (group E)
+            double cap = end || pier ? Double.NaN : cap(d, span, x, z);
+            if (!Double.isNaN(cap)) bottom = Math.min(bottom, (int) Math.ceil(cap - 1e-9));
             return new Column(c.kind(), c.y(), c.layers(), c.upper(), 0, Math.min(bottom, c.y()), c.paveLo(), c.paveHi());
         }
         double outerW = v - sec.edge, innerW = sec.divided ? sec.halfMedian - v : Double.NaN;
@@ -575,24 +578,44 @@ public final class RoadWorks {
     }
 
     /**
-     * Whether column (x, z) of a span reaches a pier's footprint (C3.3a): the (station, lateral) box of its square meets
-     * the pier's band (BridgeMesh.PIER thick) under a girder.
+     * Whether column (x, z) of a span reaches a bent column (C3.3a; group E): its square comes within the column's radius
+     * of the column's centre.
      */
     public static boolean pier(RoadDesign d, RoadDesign.Span span, int x, int z) {
         if (span.piers().length == 0) return false;
+        double r = BridgeMesh.columnRadius(d.section);
+        for (double p : span.piers())
+            for (double u : BridgeMesh.columns(d.section)) {
+                double[] c = d.point(p, u);
+                double dx = Math.max(0, Math.max(x - c[0], c[0] - (x + 1))), dz = Math.max(0, Math.max(z - c[1], c[1] - (z + 1)));
+                if (dx * dx + dz * dz <= r * r) return true;
+            }
+        return false;
+    }
+
+    /**
+     * The underside of the bent cap beam (group E) that column (x, z) of a span reaches, or NaN: the (station, lateral) box
+     * of its square meets a cap's band (BridgeMesh.CAP_WIDTH along the road) under a girder; the lower one if it meets two.
+     */
+    public static double cap(RoadDesign d, RoadDesign.Span span, int x, int z) {
+        if (span.piers().length == 0) return Double.NaN;
         double s0 = Double.POSITIVE_INFINITY, s1 = Double.NEGATIVE_INFINITY, u0 = Double.POSITIVE_INFINITY, u1 = Double.NEGATIVE_INFINITY;
         for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
             double[] l = d.local(x + a, z + b, REACH + 2);
-            if (l == null) return false;
+            if (l == null) return Double.NaN;
             s0 = Math.min(s0, l[0]); s1 = Math.max(s1, l[0]); u0 = Math.min(u0, l[1]); u1 = Math.max(u1, l[1]);
         }
-        boolean band = false;
-        for (double p : span.piers()) band |= s0 <= p + BridgeMesh.PIER / 2 && s1 >= p - BridgeMesh.PIER / 2;
-        if (!band) return false;
-        CrossSection sec = d.section;
-        double gi = sec.edge - BridgeMesh.GIRDER_INSET, ga = sec.divided ? sec.halfMedian + BridgeMesh.GIRDER_INSET : -gi;
-        // the girder's lateral range on each side (undivided: one girder across the centre)
-        return u1 >= ga && u0 <= gi || u1 >= -gi && u0 <= -ga;
+        double out = Double.NaN;
+        for (double p : span.piers()) {
+            if (s0 > p + BridgeMesh.CAP_WIDTH / 2 || s1 < p - BridgeMesh.CAP_WIDTH / 2) continue;
+            for (int side : d.section.divided ? new int[]{-1, 1} : new int[]{1}) {
+                double[] g = BridgeMesh.girderRange(d.section, side);
+                if (u1 < g[0] || u0 > g[1]) continue;
+                double c = BridgeMesh.capBottom(d, span, p, side);
+                if (!(c >= out)) out = c;
+            }
+        }
+        return out;
     }
 
     /** A paved (or deck) column: the asphalt / deck top 2 cm under the lowest pavement point, collision to the mean. */

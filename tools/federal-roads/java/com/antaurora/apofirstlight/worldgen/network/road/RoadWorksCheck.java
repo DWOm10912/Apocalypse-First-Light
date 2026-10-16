@@ -133,6 +133,7 @@ public final class RoadWorksCheck {
         if ("1".equals(System.getenv("AFL_BRIDGES_ONLY"))) {   // the bridge checks alone (a quick rerun)
             markings(log, roads);
             bridges(log, roads, w1, ground);
+            bents(log, roads, w1, ground);
             return;
         }
 
@@ -350,6 +351,7 @@ public final class RoadWorksCheck {
                 cellsChecked, cellMismatch, cellChunks, cutBad, worstSplit, inHole, walls, wallBad);
 
         bridges(log, roads, w1, ground);
+        bents(log, roads, w1, ground);
 
         // field calls: what the density pays per column (surface over the planned ground), on every 8th chunk
         long b = System.nanoTime();
@@ -413,6 +415,50 @@ public final class RoadWorksCheck {
     }
 
     /** The bridge checks: expectations, collision against the mesh, the mesh, a damage run. */
+    /**
+     * Group E: the multi-column bents. Around every column (rings at 0.9 and 1.1 of its radius, 48 points each, and its
+     * centre): a point inside must be in a ground-standing cell (ABUTMENT) whose collision reaches the ground; a point
+     * outside but under the cap beam must have the deck's collision down to the cap's underside, exactly.
+     */
+    static void bents(PrintStream log, List<RoadDesign> roads, RoadWorks w, RoadWorks.Ground ground) {
+        int bents = 0, columns = 0, inside = 0, insideBad = 0, outside = 0, outsideBad = 0;
+        List<String> bad = new ArrayList<>();
+        for (RoadDesign d : roads)
+            for (RoadDesign.Span sp : d.spans)
+                for (double p : sp.piers()) {
+                    bents++;
+                    double r = BridgeMesh.columnRadius(d.section);
+                    for (double u : BridgeMesh.columns(d.section)) {
+                        columns++;
+                        double[] c = d.point(p, u);
+                        double cap = BridgeMesh.capBottom(d, sp, p, u < 0 ? -1 : 1);
+                        for (int k = -1; k < 96; k++) {
+                            boolean in = k < 48;
+                            double rr = k < 0 ? 0 : in ? 0.9 * r : 1.1 * r, a = 2 * Math.PI * Math.max(0, k % 48) / 48;
+                            double x = c[0] + rr * Math.cos(a), z = c[1] + rr * Math.sin(a);
+                            double[] sol = BridgeMesh.solid(w, x, z);
+                            RoadWorks.Column col = w.column((int) Math.floor(x), (int) Math.floor(z), ground);
+                            boolean ok;
+                            if (in) {
+                                inside++;
+                                ok = sol != null && sol[0] == Double.NEGATIVE_INFINITY && col.kind() == RoadWorks.Kind.ABUTMENT;
+                            } else {
+                                // outside the column: still under the cap (the cap band is wider than the column)
+                                outside++;
+                                ok = sol != null && Math.abs(sol[0] - cap) < 1e-9;
+                            }
+                            if (!ok) {
+                                if (in) insideBad++; else outsideBad++;
+                                if (bad.size() < 6) bad.add(String.format(Locale.ROOT, "%s s %.1f u %.2f at %.2f %.2f %s: %s %s", d.id, p, u, x, z,
+                                        in ? "inside" : "outside", sol == null ? "no collision" : String.format(Locale.ROOT, "%.2f..%.2f", sol[0], sol[1]), col.kind()));
+                            }
+                        }
+                    }
+                }
+        say(log, "bents (group E): %d bents, %d columns; points inside a column %d, without ground-standing collision %d; points beside a column under the cap %d, collision not down to the cap's underside %d %s",
+                bents, columns, inside, insideBad, outside, outsideBad, bad);
+    }
+
     static void bridges(PrintStream log, List<RoadDesign> roads, RoadWorks w, RoadWorks.Ground ground) {
         // the chunks near a span
         TreeSet<Long> chunks = new TreeSet<>();
@@ -487,7 +533,8 @@ public final class RoadWorksCheck {
                 if (e.kind() != c.kind() || e.top() != top || e.surface() != surface || e.layers() != layers || e.wing() != (c.data() == BridgeMesh.WING))
                     mismatch++;
                 int g = (int) Math.floor(ground.at(x + 0.5, z + 0.5));
-                int foot = c.bottom() <= g + 1 ? Math.min(c.bottom(), g + 1) : c.bottom();
+                // an abutment (or bent column) cell is filled down to the ground (RoadChunkPass)
+                int foot = c.kind() == RoadWorks.Kind.ABUTMENT || c.bottom() <= g + 1 ? Math.min(c.bottom(), g + 1) : c.bottom();
                 found.put(i, new BridgeMesh.Found(top, surface, layers, foot));
                 if (!RoadCells.inner(i)) continue;
                 if (e.wing()) wings++;
