@@ -146,7 +146,15 @@ final class C3RoadProbe {
                         boolean skipped = col.data() == com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh.WING && !top.is(AflBlocks.ROAD_STRUCTURE.get())
                                 && !top.isAir() && top.getFluidState().isEmpty();
                         if (skipped) { wingsSkipped++; natural = true; }
-                        else if (top != structure.setValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS, col.layers())) why = "barrier " + top;
+                        else if (!top.is(AflBlocks.ROAD_STRUCTURE.get()) || top.getValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS) != col.layers())
+                            why = "barrier " + top;
+                    }
+                    case CULVERT -> {
+                        // a box culvert's own cell (group D): its top concrete block, or the stream's water
+                        BlockState top = c.getBlockState(p.set(x, col.y(), z));
+                        if (col.layers() > 0 && (!top.is(AflBlocks.ROAD_STRUCTURE.get())
+                                || top.getValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS) != col.layers())) why = "culvert " + top;
+                        else if (col.layers() == 0 && !top.getFluidState().is(Fluids.WATER)) why = "culvert water " + top;
                     }
                     case OPEN -> {
                         int g = (int) Math.floor(n.plan().heightAt(x + 0.5, z + 0.5));

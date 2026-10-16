@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.terrainsmooth.client;
 
+import com.antaurora.apofirstlight.block.GradedTurfBlock;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -26,7 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Chunk model of a small plant (grass, ferns, flowers, saplings, both halves of tall plants; Terrain Smooth V1): standing
  * on a sloped natural surface top, it moves up or down to the sloped surface under its own (randomly offset) position,
- * so it neither floats over a lowered slope nor sinks into a raised one. Elsewhere exactly the vanilla model.
+ * so it neither floats over a lowered slope nor sinks into a raised one; on graded_turf (the road's earthworks, whose
+ * top is drawn with the same nw-se split) the same with the turf's corners. Elsewhere exactly the vanilla model.
  */
 final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Integer> SHIFT = new ModelProperty<>();   // in 1/64 block
@@ -41,9 +43,15 @@ final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
         ModelData base = super.getModelData(level, pos, state, data);
         int support = pos.getY() - 1;
         if (state.hasProperty(DoublePlantBlock.HALF) && state.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.UPPER) support--;
-        long g = TerrainSmoothClient.supportGeometry(level, new BlockPos(pos.getX(), support, pos.getZ()));
-        if (g < 0) return base;
-        float[] c = SmoothRules.corners(g);   // above the support's floor
+        BlockPos below = new BlockPos(pos.getX(), support, pos.getZ());
+        BlockState ground = level.getBlockState(below);
+        float[] c;   // above the support's floor
+        if (ground.getBlock() instanceof GradedTurfBlock) c = GradedTurfBlock.corners(ground);   // the road's turf (C3.3a group B)
+        else {
+            long g = TerrainSmoothClient.supportGeometry(level, below);
+            if (g < 0) return base;
+            c = SmoothRules.corners(g);
+        }
         Vec3 off = state.getOffset(level, pos);
         double fx = Math.max(0, Math.min(1, 0.5 + off.x)), fz = Math.max(0, Math.min(1, 0.5 + off.z));
         // the sloped top is drawn as triangles (nw, sw, se) and (nw, se, ne): split on the nw-se diagonal

@@ -51,8 +51,8 @@
 | `river_carving` | `federal_water#1` | HARD | 区块里的河水、湖水、河岸与湖岸 |
 | `ecology` | `ecology_federal#1` | HARD | 联邦分区、地表群系映射、联邦群系 JSON、地表规则分支 |
 | `forest` | 同 r1 | SOFT | 天然树木 |
-| `road_network`（开关，C3.2） | `afl_road_network_c3_v1#c3.3a#all#surface5` | HARD | 公共道路路线、路面、碰撞、桥（[C3](federal_highways_c3.md) 第 10、11 节；surface2 = 桥改成网格 + `road_structure` 碰撞，2026-10-14；surface3 = 桥下天然地面保留、碰撞跟网格、翼墙压顶，2026-10-15；surface4 = 结构方块站在地面顶块上，不再顶掉它，2026-10-15；C3.3a `c3.3a#all#surface5` = 全国 15 条路、州道断面、桥墩、涵洞，2026-10-15。C3.2 的值是 `#c3.2#interstate_ew:county_seat-valley_town#surface4`） |
-| `terrain_works`（开关，C3.2） | `road_works#2` | HARD | 道路挖填、边坡、边沟进入地形（C3.2 是 `road_works_r4#1`；C3.3a 起多条路、R2 断面、桥墩列、水边列保持水面） |
+| `road_network`（开关，C3.2） | `afl_road_network_c3_v1#c3.3a#all#surface8` | HARD | 公共道路路线、路面、碰撞、桥（[C3](federal_highways_c3.md) 第 10、11 节；surface2 = 桥改成网格 + `road_structure` 碰撞，2026-10-14；surface3 = 桥下天然地面保留、碰撞跟网格、翼墙压顶，2026-10-15；surface4 = 结构方块站在地面顶块上，不再顶掉它，2026-10-15；C3.3a `c3.3a#all#surface5` = 全国 15 条路、州道断面、桥墩、涵洞，2026-10-15；`surface6` = 路基草皮上长群系的植物（C3.3a B 组），2026-10-15；`surface7` = 铺装旁边的草皮格不长植物（B 组实机反馈），2026-10-15；`surface8` = 箱涵、连续翼墙、墙脚、含水的结构方块（C3.3a D 组），2026-10-15。C3.2 的值是 `#c3.2#interstate_ew:county_seat-valley_town#surface4`） |
+| `terrain_works`（开关，C3.2） | `road_works#4` | HARD | 道路挖填、边坡、边沟进入地形（C3.2 是 `road_works_r4#1`；C3.3a 起多条路、R2 断面、桥墩列、水边列保持水面；`#3` = 草皮外缘对齐噪声实际做出的自然地表，C3.3a B 组，2026-10-15；`#4` = 箱涵上路堤连续、涵洞处河道填平，C3.3a D 组，2026-10-15） |
 
 联邦世界还有探针 `road_network`：路网 JSON 的摘要（开关子系统的探针，世界没有这个开关时去掉）。第一次加载一个种子会规划一次路网（约 8 s），之后读 `afl_cache/road_network/` 的缓存。
 

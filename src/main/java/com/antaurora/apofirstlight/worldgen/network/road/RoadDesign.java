@@ -28,12 +28,23 @@ public final class RoadDesign {
 
     /**
      * A bridge span: stations s0 .. s1 lie on a deck (natural ground below), deck soffit depth in m; piers: the stations of
-     * its intermediate piers (C3.3a: spans longer than BridgeMesh.MAX_SPAN), each a wall pier under the girders.
+     * its intermediate piers (C3.3a: spans longer than BridgeMesh.MAX_SPAN), each a wall pier under the girders; reach:
+     * how far out (|u|) the wing walls run at each end and side, {s0 left (u < 0), s0 right, s1 left, s1 right}: to where
+     * the embankment meets the ground (group D; RoadStructures), BridgeMesh.WALL_REACH when the network JSON gives none.
      */
-    public record Span(double s0, double s1, double depth, double[] piers) {
+    public record Span(double s0, double s1, double depth, double[] piers, double[] reach) {
+        public Span(double s0, double s1, double depth, double[] piers) { this(s0, s1, depth, piers, null); }
+
         public Span(double s0, double s1, double depth) { this(s0, s1, depth, new double[0]); }
 
+        public Span {
+            if (reach == null) reach = new double[]{BridgeMesh.WALL_REACH, BridgeMesh.WALL_REACH, BridgeMesh.WALL_REACH, BridgeMesh.WALL_REACH};
+        }
+
         public boolean contains(double s) { return s >= s0 && s <= s1; }
+
+        /** The wing walls' reach at span end sOut (s0 or s1) on the side of lateral u. */
+        public double reach(double sOut, double u) { return reach[(sOut == s0 ? 0 : 2) + (u < 0 ? 0 : 1)]; }
     }
 
     public final String id;
@@ -42,10 +53,16 @@ public final class RoadDesign {
     public final RoadProfile profile;
     public final double length;
     public final List<Span> spans;
+    /** The box culverts under the road (group D; their stations are the network JSON's, not trimmed). */
+    public final List<Culvert> culverts;
     private final double[] laneLeft, laneRight;
     private final boolean[] noPass;
 
     public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans) {
+        this(id, section, curve, profile, spans, List.of());
+    }
+
+    public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts) {
         if (profile.length > curve.length + RoadProfile.DS + 1e-6) throw new IllegalArgumentException("PROFILE_LONGER_THAN_CURVE " + id);
         this.id = id;
         this.section = section;
@@ -53,6 +70,7 @@ public final class RoadDesign {
         this.profile = profile;
         this.length = Math.min(curve.length, profile.length);
         this.spans = List.copyOf(spans);
+        this.culverts = List.copyOf(culverts);
         // lane slopes on the profile's 2 m lattice: the curvature targets with the superelevation runoff
         int m = profile.size();
         double[] tl = new double[m], tr = new double[m];

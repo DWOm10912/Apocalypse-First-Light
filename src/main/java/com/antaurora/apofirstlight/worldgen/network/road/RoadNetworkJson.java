@@ -20,11 +20,28 @@ public final class RoadNetworkJson {
 
     /**
      * One route as stored: class id, corridor and end towns, control points, 2 m profile, structures; trim: the built
-     * station window {from, to} of the full curve (null: the whole route).
+     * station window {from, to} of the full curve (null: the whole route); culverts: the box culverts its CULVERT
+     * structures became (group D, RoadStructures; a CULVERT without one is a slab culvert span); wings: the wing walls'
+     * reach per span, {s0, s1, s0 left, s0 right, s1 left, s1 right} in the JSON's stations (RoadStructures).
      */
     public record RouteData(String id, String roadClass, String corridor, String from, String to, double[] xs, double[] zs,
-                            double[] profile, List<Structure> structures, double[] trim) {
-        public RouteData withTrim(double[] t) { return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, t); }
+                            double[] profile, List<Structure> structures, double[] trim, List<Culvert> culverts, List<double[]> wings) {
+        public RouteData(String id, String roadClass, String corridor, String from, String to, double[] xs, double[] zs,
+                         double[] profile, List<Structure> structures, double[] trim) {
+            this(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, List.of(), List.of());
+        }
+
+        public RouteData withTrim(double[] t) { return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, t, culverts, wings); }
+
+        public RouteData withStructures(List<Culvert> c, List<double[]> w) {
+            return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, List.copyOf(c), List.copyOf(w));
+        }
+
+        /** The box culvert built for the CULVERT structure s0 .. s1 (JSON stations), or null. */
+        public Culvert culvert(double s0, double s1) {
+            for (Culvert c : culverts) if (c.s >= s0 - 1 && c.s <= s1 + 1) return c;
+            return null;
+        }
     }
 
     public record Structure(String kind, double s0, double s1, double height) {}
@@ -76,7 +93,18 @@ public final class RoadNetworkJson {
             String corridor = (String) r.get("corridor"), from = (String) r.get("from"), to = (String) r.get("to");
             double[] trim = null;
             if (r.get("trim") instanceof List<?> t) trim = new double[]{(Double) t.get(0), (Double) t.get(1)};
-            out.add(new RouteData((String) r.get("id"), (String) r.get("class"), corridor, from, to, xs, zs, e, List.copyOf(ss), trim));
+            List<Culvert> cs = new ArrayList<>();
+            if (r.get("culverts") instanceof List<?> l) for (Object c : l) cs.add(Culvert.of(asMap(c)));
+            List<double[]> ws = new ArrayList<>();
+            if (r.get("wings") instanceof List<?> l)
+                for (Object w : l) {
+                    List<Object> q = (List<Object>) w;
+                    double[] v = new double[q.size()];
+                    for (int i = 0; i < v.length; i++) v[i] = (Double) q.get(i);
+                    ws.add(v);
+                }
+            out.add(new RouteData((String) r.get("id"), (String) r.get("class"), corridor, from, to, xs, zs, e, List.copyOf(ss), trim,
+                    List.copyOf(cs), List.copyOf(ws)));
         }
         return out;
     }
@@ -110,10 +138,17 @@ public final class RoadNetworkJson {
 
     /**
      * The design of a route: its class's cross-section; bridges and viaducts as deck spans of the class's depth, with
-     * piers where a span is longer than BridgeMesh.MAX_SPAN; culverts as slab culvert spans; deep cuts are earthworks;
-     * tunnels are refused (not built yet). A trim window renumbers the stations from its start and drops what lies outside.
+     * piers where a span is longer than BridgeMesh.MAX_SPAN, wing walls to the JSON's reach; culverts as box culverts
+     * where the JSON has one for them (group D), else as slab culvert spans; deep cuts are earthworks; tunnels are
+     * refused (not built yet). A trim window renumbers the stations from its start and drops what lies outside.
      */
-    public static RoadDesign design(RouteData r) {
+    public static RoadDesign design(RouteData r) { return design(r, true); }
+
+    /**
+     * The design of a route; without culvertSpans no CULVERT becomes a span (the box culvert designer, RoadStructures,
+     * reads the embankment over every stream through it).
+     */
+    public static RoadDesign design(RouteData r, boolean culvertSpans) {
         double a = 0, b = Double.POSITIVE_INFINITY;
         if (r.trim() != null) { a = r.trim()[0]; b = r.trim()[1]; }
         RoadCurve curve = new RoadCurve(r.xs(), r.zs(), a, b);
@@ -131,7 +166,7 @@ public final class RoadNetworkJson {
                     raw.add(new double[]{s0, s1, deck});
                 }
                 case "CULVERT" -> {
-                    if (s1 < 0 || s0 > profile.length) continue;
+                    if (s1 < 0 || s0 > profile.length || !culvertSpans || r.culvert(s.s0(), s.s1()) != null) continue;
                     double pad = Math.max(CULVERT_PAD, (CULVERT_MIN - (s1 - s0)) / 2);
                     raw.add(new double[]{s0 - pad, s1 + pad, CULVERT_DEPTH});
                 }
@@ -146,9 +181,12 @@ public final class RoadNetworkJson {
             int n = q[2] == CULVERT_DEPTH ? 1 : (int) Math.ceil(len / BridgeMesh.MAX_SPAN - 1e-9);
             double[] piers = new double[Math.max(0, n - 1)];
             for (int k = 1; k < n; k++) piers[k - 1] = s0 + len * k / n;
-            spans.add(new RoadDesign.Span(s0, s1, q[2], piers));
+            double[] reach = null;
+            for (double[] w : r.wings())
+                if (Math.abs(w[0] - a - s0) < 0.02 && Math.abs(w[1] - a - s1) < 0.02) reach = new double[]{w[2], w[3], w[4], w[5]};
+            spans.add(new RoadDesign.Span(s0, s1, q[2], piers, reach));
         }
-        return new RoadDesign(r.id(), CrossSection.of(r.roadClass()), curve, profile, spans);
+        return new RoadDesign(r.id(), CrossSection.of(r.roadClass()), curve, profile, spans, r.culverts());
     }
 
     /** Spans closer than this (or overlapping: a culvert's pad over a bridge's end) become one span, m. */
@@ -195,6 +233,21 @@ public final class RoadNetworkJson {
             }
             b.append(']');
             if (r.trim() != null) b.append(",\"trim\":[").append(fmt(r.trim()[0])).append(',').append(fmt(r.trim()[1])).append(']');
+            if (!r.culverts().isEmpty()) {
+                b.append(",\"culverts\":[");
+                for (int q = 0; q < r.culverts().size(); q++) b.append(q > 0 ? "," : "").append(r.culverts().get(q).toJson());
+                b.append(']');
+            }
+            if (!r.wings().isEmpty()) {
+                b.append(",\"wings\":[");
+                for (int q = 0; q < r.wings().size(); q++) {
+                    double[] w = r.wings().get(q);
+                    b.append(q > 0 ? "," : "").append('[');
+                    for (int k = 0; k < w.length; k++) b.append(k > 0 ? "," : "").append(fmt(w[k]));
+                    b.append(']');
+                }
+                b.append(']');
+            }
             b.append('}');
         }
         return b.append("]}").toString();

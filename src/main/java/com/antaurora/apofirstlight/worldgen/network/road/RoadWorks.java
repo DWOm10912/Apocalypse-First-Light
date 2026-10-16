@@ -1,5 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
+import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,9 +43,41 @@ public final class RoadWorks {
     public static final double REACH = MAX_HALF_WIDTH + 2;
     /** Half width the forest and the spawn keep clear of (the engineered zone of a normal cut or fill), m. */
     public static final double CLEAR = 40;
+    /** Turf edge to the natural surface (#toNatural): blend height band, and the band kept off the pavement, m. */
+    public static final double TO_NATURAL = 1.0, EDGE_KEEP = 1.5, EDGE_RAMP = 3.0;
+    /**
+     * How far beyond the pavement's bevels a turf column's square must stay to carry plants (a plant's cross fills its
+     * square and is offset up to 0.25 m), m (#bare).
+     */
+    public static final double PLANT_CLEAR = 0.3;
+    /** TURF column data flag: no plants (#bare). */
+    public static final int BARE = 1 << 17;
+    /**
+     * PAVED / TURF column data flag: the road's finish over a box culvert's body (group D); the column's bottom is the
+     * culvert's bed block less one, the chunk pass lays the culvert under the finish.
+     */
+    public static final int CULVERT_BODY = 1 << 20;
+    /** CULVERT column data: the square reaches the channel, a wall, the roofed channel; keeps the natural ground (Culvert.Cell). */
+    public static final int C_CHANNEL = 1, C_WALL = 2, C_ROOF = 4, C_KEEP = 8;
 
     /** The natural ground: the planned surface Y at a point (the density's ground before the works). */
-    public interface Ground { double at(double x, double z); }
+    public interface Ground {
+        double at(double x, double z);
+
+        /**
+         * Whether the density's hard stable floor (PlanStabilityDensity, "hard": the plains) keeps block column (x, z)
+         * solid up to its exact planned height (#naturalTop).
+         */
+        default boolean hardFloor(int x, int z) { return false; }
+
+        /** The Terrain V2 plan as the works' ground: its planned surface and its hard stable floor. */
+        static Ground of(TerrainPlanSurface plan) {
+            return new Ground() {
+                @Override public double at(double x, double z) { return plan.heightAt(x, z); }
+                @Override public boolean hardFloor(int x, int z) { return TerrainPlanSurface.hardDepth(plan.stableDepth(x, z)) > 0; }
+            };
+        }
+    }
 
     /** Planned water (river, lake, sea) at a point; marsh is not water here (the road crosses it on an embankment). */
     public interface Water {
@@ -64,11 +98,23 @@ public final class RoadWorks {
     private final List<RoadDesign> roads;
     private final Water water;
     private final Map<Long, RoadDesign[]> byChunk = new HashMap<>();
+    private final Map<Long, Culvert[]> culvertsByChunk = new HashMap<>();
+    private final List<Culvert> culverts = new ArrayList<>();
 
     public RoadWorks(List<RoadDesign> roads, Water water) {
         this.roads = List.copyOf(roads);
         this.water = water;
         Map<Long, List<RoadDesign>> index = new HashMap<>();
+        Map<Long, List<Culvert>> cIndex = new HashMap<>();
+        for (RoadDesign d : this.roads)
+            for (Culvert c : d.culverts) {
+                culverts.add(c);
+                double[] b = c.bounds(Culvert.FILL_REACH + 2);
+                for (int cx = Math.floorDiv((int) Math.floor(b[0]), 16); cx <= Math.floorDiv((int) Math.floor(b[2]), 16); cx++)
+                    for (int cz = Math.floorDiv((int) Math.floor(b[1]), 16); cz <= Math.floorDiv((int) Math.floor(b[3]), 16); cz++)
+                        cIndex.computeIfAbsent(key(cx, cz), k -> new ArrayList<>(1)).add(c);
+            }
+        cIndex.forEach((k, l) -> culvertsByChunk.put(k, l.toArray(new Culvert[0])));
         int reach = (int) Math.ceil(REACH + CLEAR + 16);
         for (RoadDesign d : this.roads) {
             for (double s = -RoadDesign.END; s <= d.length + RoadDesign.END; s += 8) {
@@ -100,6 +146,56 @@ public final class RoadWorks {
 
     private RoadDesign[] near(double x, double z) {
         return byChunk.get(key(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16)));
+    }
+
+    // ------------------------------------------------------------------ box culverts (group D)
+
+    /** Every box culvert of the network. */
+    public List<Culvert> culverts() { return culverts; }
+
+    /** The box culverts whose works (their trough and the filled stream around it) can reach the chunk of (x, z), or null. */
+    public Culvert[] culvertsNear(double x, double z) {
+        return culvertsByChunk.get(key(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16)));
+    }
+
+    /** Whether a wet point is filled by an embankment over a box culvert (Culvert#fills): the stream goes through the culvert. */
+    public boolean filled(double x, double z) {
+        Culvert[] cs = culvertsNear(x, z);
+        if (cs != null) for (Culvert c : cs) if (c.fills(x, z)) return true;
+        return false;
+    }
+
+    /** The box culvert cell of block column (x, z), or null. */
+    public Culvert.Cell culvertCell(int x, int z) {
+        Culvert[] cs = culvertsNear(x, z);
+        if (cs == null) return null;
+        for (Culvert c : cs) {
+            Culvert.Cell cell = c.cell(x, z);
+            if (cell != null) return cell;
+        }
+        return null;
+    }
+
+    /**
+     * The top of a wall's coping at a point: a box culvert's concrete, or a bridge's wing wall (BridgeMesh#wing); NaN
+     * elsewhere. h is the point's hit when known; the wing is looked up only where wings is set.
+     */
+    private double coping(double x, double z, Hit h, boolean wings) {
+        double[] c = culvertSolid(x, z);
+        if (c != null) return c[1];
+        if (!wings) return Double.NaN;
+        return BridgeMesh.wing(h != null ? h : hit(x, z, REACH));
+    }
+
+    /** A box culvert's concrete at a point: {bottom, top} (Culvert#solid), or null. */
+    public double[] culvertSolid(double x, double z) {
+        Culvert[] cs = culvertsNear(x, z);
+        if (cs == null) return null;
+        for (Culvert c : cs) {
+            double[] r = c.solid(x, z);
+            if (r != null) return r;
+        }
+        return null;
     }
 
     /** On the road's formation (on the route, within its paved edge plus the shoulder rounding). */
@@ -178,7 +274,7 @@ public final class RoadWorks {
         }
         boolean formation = onFormation(h);
         if (!formation && Math.abs(design - g) < NATURAL_TOLERANCE) return Double.NaN;
-        if (!formation && water.wet(x, z)) return Double.NaN;
+        if (!formation && water.wet(x, z) && !filled(x, z)) return Double.NaN;
         return design;
     }
 
@@ -191,6 +287,97 @@ public final class RoadWorks {
     /** The surface or the natural ground: the continuous field the turf corners are cut from. */
     public double finished(double x, double z, Ground ground) {
         double g = ground.at(x, z), f = surface(x, z, g);
+        return Double.isNaN(f) ? g : f;
+    }
+
+    /**
+     * The block top (top block + 1) the noise makes at block column (x, z), measured 98.8 % exact from the interpolation
+     * alone on a C3.3a test save, exact with the floor: the density is 0.125 (G - y), G the planned height with the works
+     * applied (RoadWorksRef#height) read at the 4 x 4 cell corners and interpolated bilinearly to the block's corner, so the
+     * top block is the highest y below G; where the hard stable floor holds (Ground#hardFloor) the column is solid up to
+     * its exact planned height as well.
+     */
+    public int naturalTop(int x, int z, Ground ground) {
+        return (int) Math.ceil(densityHeight(x, z, ground) - 1e-9);
+    }
+
+    /** The height the density's surface reaches at block column (x, z) (#naturalTop). */
+    double densityHeight(int x, int z, Ground ground) {
+        int x0 = Math.floorDiv(x, 4) * 4, z0 = Math.floorDiv(z, 4) * 4;
+        double fx = (x - x0) / 4.0, fz = (z - z0) / 4.0;
+        double a = cellHeight(x0, z0, ground), b = cellHeight(x0 + 4, z0, ground), c = cellHeight(x0, z0 + 4, ground), e = cellHeight(x0 + 4, z0 + 4, ground);
+        double gb = (a + (b - a) * fx) * (1 - fz) + (c + (e - c) * fx) * fz;
+        return ground.hardFloor(x, z) ? Math.max(gb, cellHeight(x, z, ground)) : gb;
+    }
+
+    /**
+     * The natural surface the terrain smoothing draws at corner point (x + a, z + b) of the column whose naturalTops these
+     * are (SmoothRules mode B: the mean of the column tops around the point), over the natural columns there only (those
+     * the works leave alone: their natural blocks are the ones that meet the turf at this point); all four when none is.
+     */
+    static double naturalSurface(int[] tops, int a, int b) {
+        int sum = 0, n = 0, all = 0;
+        for (int j = b; j <= b + 1; j++) for (int i = a; i <= a + 1; i++) {
+            int t = tops[i + 3 * j];
+            all += t;
+            if (tops[9 + i + 3 * j] == 0) { sum += t; n++; }
+        }
+        return n == 0 ? all * 0.25 : (double) sum / n;
+    }
+
+    /**
+     * naturalTop of the 3 x 3 columns x - 1 .. x + 1, z - 1 .. z + 1 ([i + 3 * j]), the cell corners read once, then
+     * whether the works reach each of them ([9 + i + 3 * j]: 1 when a corner of it is off the natural ground).
+     */
+    int[] naturalTops(int x, int z, Ground ground) {
+        int x0 = Math.floorDiv(x - 1, 4) * 4, z0 = Math.floorDiv(z - 1, 4) * 4;
+        double[] cells = new double[9];
+        for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) cells[i + 3 * j] = Double.NaN;
+        int[] out = new int[18];
+        for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) {
+            int cx = x - 1 + i, cz = z - 1 + j, ci = (Math.floorDiv(cx, 4) * 4 - x0) / 4, cj = (Math.floorDiv(cz, 4) * 4 - z0) / 4;
+            double fx = (cx - x0 - ci * 4) / 4.0, fz = (cz - z0 - cj * 4) / 4.0;
+            double a = cell(cells, ci, cj, x0, z0, ground), b = cell(cells, ci + 1, cj, x0, z0, ground),
+                    c = cell(cells, ci, cj + 1, x0, z0, ground), e = cell(cells, ci + 1, cj + 1, x0, z0, ground);
+            double gb = (a + (b - a) * fx) * (1 - fz) + (c + (e - c) * fx) * fz;
+            if (ground.hardFloor(cx, cz)) gb = Math.max(gb, cellHeight(cx, cz, ground));
+            out[i + 3 * j] = (int) Math.ceil(gb - 1e-9);
+        }
+        // which columns the works reach: any of their corners (the 4 x 4 corner points x - 1 .. x + 2) off the natural ground
+        boolean[] off = new boolean[16];
+        for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) {
+            double px = x - 1 + i, pz = z - 1 + j;
+            off[i + 4 * j] = !Double.isNaN(surface(px, pz, ground.at(px, pz)));
+        }
+        for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++)
+            if (off[i + 4 * j] || off[i + 1 + 4 * j] || off[i + 4 * (j + 1)] || off[i + 1 + 4 * (j + 1)]) out[9 + i + 3 * j] = 1;
+        return out;
+    }
+
+    private double cell(double[] cells, int i, int j, int x0, int z0, Ground ground) {
+        double v = cells[i + 3 * j];
+        if (Double.isNaN(v)) v = cells[i + 3 * j] = cellHeight(x0 + 4 * i, z0 + 4 * j, ground);
+        return v;
+    }
+
+    /**
+     * How far (0..1) a turf corner with the works' surface rise over the planned ground moves from the works toward the
+     * natural surface (group B, 2026-10-15): the noise's blocks stand above the planned ground (their tops are the next
+     * whole block over it, on average half a block higher), so a turf edge at the planned ground lay up to a block under
+     * the grass beside it and the first row of natural blocks tilted down to it, a dark stepped band. Within TO_NATURAL of
+     * the planned ground the turf blends over to the drawn natural surface (fully where the works meet the ground), and
+     * not next to the pavement: from EDGE_KEEP beyond the paved edge (or the route's end) over EDGE_RAMP.
+     */
+    static double toNatural(Hit h, double rise) {
+        if (h == null) return 0;
+        CrossSection sec = h.road().section;
+        double dp = Math.hypot(Math.max(0, h.v() - sec.edge), h.beyond());
+        return CrossSection.smooth((dp - EDGE_KEEP) / EDGE_RAMP) * CrossSection.smooth(1 - Math.abs(rise) / TO_NATURAL);
+    }
+
+    /** RoadWorksRef#height at a cell corner. */
+    private double cellHeight(int x, int z, Ground ground) {
+        double g = ground.at(x, z), f = surface(x + 0.5, z + 0.5, g);
         return Double.isNaN(f) ? g : f;
     }
 
@@ -216,7 +403,12 @@ public final class RoadWorks {
         /** bridge parapet or wing wall: road_structure from bottom up to y, y cut to layers (at the span's ends from the ground) */
         BARRIER,
         /** under a bridge, off the deck: natural ground; only clear what the density's interpolation left above it */
-        OPEN
+        OPEN,
+        /**
+         * a box culvert's own cell (group D): y, layers its top concrete block (layers 0: water only), data C_* flags,
+         * bottom the bed block less one (gravel under the channel); the water, the concrete and the open channel above
+         */
+        CULVERT
     }
 
     /**
@@ -238,6 +430,20 @@ public final class RoadWorks {
      * turf never rises through the asphalt.
      */
     public Column column(int x, int z, Ground ground) {
+        // a box culvert's own cell (its mouths may reach beyond the works' reach); a cell of its body keeps the finish
+        Culvert.Cell cell = culvertCell(x, z);
+        if (cell != null && cell.own()) {
+            int data = (cell.channel() ? C_CHANNEL : 0) | (cell.wall() ? C_WALL : 0) | (cell.roof() ? C_ROOF : 0) | (cell.keepGround() ? C_KEEP : 0);
+            return new Column(Kind.CULVERT, cell.top(), cell.layers(), 0, data, cell.culvert().bed - 1, 0, 0);
+        }
+        Column c = finish(x, z, ground);
+        if (cell != null && (c.kind() == Kind.PAVED || c.kind() == Kind.TURF))
+            return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | CULVERT_BODY, cell.culvert().bed - 1, c.paveLo(), c.paveHi());
+        return c;
+    }
+
+    /** The column's finish without a box culvert's cells (#column). */
+    private Column finish(int x, int z, Ground ground) {
         Hit centre = hit(x + 0.5, z + 0.5, REACH);
         if (centre == null) return Column.NONE;
         RoadDesign d = centre.road();
@@ -247,24 +453,54 @@ public final class RoadWorks {
         if (span == null) {
             // a column touching a span from outside belongs to the earthworks; one inside a span is handled below
             if (pave != null) return paved(Kind.PAVED, pave, 0);
-            // a column on planned water stays water even where a dry corner reaches the works (a stream beside the road, C3.3a)
-            if (!onFormation(centre) && water.wet(x + 0.5, z + 0.5)) return Column.NONE;
+            // a column on planned water stays water even where a dry corner reaches the works (a stream beside the road,
+            // C3.3a), unless the embankment fills it over a box culvert (group D)
+            if (!onFormation(centre) && water.wet(x + 0.5, z + 0.5) && !filled(x + 0.5, z + 0.5)) return Column.NONE;
             double[] q = new double[4];
             boolean any = false;
             int k = 0;
+            // a wing wall's coping can only lie over a corner near a span end of this road (its corners are within 1 m)
+            boolean wings = onRoute && BridgeMesh.nearEnd(d, centre.s(), 2);
+            int[] tops = null;
+            Hit[] hits = new Hit[4];
             for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
                 double g = ground.at(x + a, z + b), f = surface(x + a, z + b, g);
-                if (!Double.isNaN(f)) {
+                boolean natural = Double.isNaN(f);
+                Hit h = natural ? null : hit(x + a, z + b, REACH);
+                // toward the daylight line the turf meets the natural surface as drawn, not the planned ground (group B)
+                double w = natural ? 1 : toNatural(h, f - g);
+                if (w > 0) {
+                    if (tops == null) tops = naturalTops(x, z, ground);
+                    double n = naturalSurface(tops, a, b);
+                    f = natural ? n : f + (n - g) * w;
+                }
+                if (!natural) {
                     any = true;
-                    Hit h = hit(x + a, z + b, REACH);
                     if (h != null && underPavement(h)) f = Math.floor(f * 8 + 1e-9) / 8;
                 }
-                q[k++] = Double.isNaN(f) ? g : f;
+                // a corner under a wall's coping (a bridge's wing walls, a box culvert's headwall and mouth walls) lies
+                // COPING under it, never over it: the earth is retained by the wall, not drawn through it (group D)
+                // under the pavement the pavement wins (the turf never rises through the asphalt)
+                double cop = h != null && underPavement(h) ? Double.NaN : coping(x + a, z + b, h, wings);
+                if (!Double.isNaN(cop) && cop - BridgeMesh.COPING > f) {
+                    f = cop - BridgeMesh.COPING;
+                    any = true;
+                }
+                hits[k] = h;
+                q[k++] = f;
             }
             if (!any) return Column.NONE;
+            // no corner over the pavement itself: a corner on a span's deck or past a trimmed end's taper has no finished
+            // field of its own (natural there) and would stand on the embankment's or the natural surface (group D check)
+            for (int i = 0; i < 4; i++) {
+                Hit h = hits[i] != null ? hits[i] : hit(x + (i & 1), z + (i >> 1), REACH);
+                if (h == null || h.beyond() > 0 || !h.road().section.paved(h.v()) || !underPavement(h)) continue;
+                double top = h.road().pavementY(h.sc(), h.u());
+                if (q[i] > top) q[i] = Math.floor(top * 8 + 1e-9) / 8;
+            }
             // corner order nw, ne, sw, se = (x, z), (x + 1, z), (x, z + 1), (x + 1, z + 1)
             int[] fit = fit(q);
-            int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16;
+            int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | (bare(x, z) ? BARE : 0);
             return new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0);
         }
         // on a bridge span: the collision of the bridge mesh (BridgeMesh; docs 10.11), every column chosen by its centre
@@ -314,7 +550,7 @@ public final class RoadWorks {
                 if (l == null) continue;
                 double t = sgn * (l[0] - sOut);
                 if (t < -BridgeMesh.TAIL || t > 1) continue;
-                double w = BridgeMesh.wingStrip(d, sOut, l[1]);
+                double w = BridgeMesh.wingStrip(d, span, sOut, l[1]);
                 if (!Double.isNaN(w) && !(w <= f)) f = w;
             }
             if (!Double.isNaN(f)) {
@@ -368,12 +604,29 @@ public final class RoadWorks {
         return new Column(kind, yc, layers, upper, 0, bottom, pave[0], pave[1]);
     }
 
+    /**
+     * Whether turf column (x, z) carries no plants: its square, grown by PLANT_CLEAR, reaches under the pavement or its
+     * bevels. A turf column is any column not wholly paved, so the edge columns lie half under the asphalt mesh, and a
+     * plant there stood out of the road (user, 2026-10-15). The band's edges are straight over a square, so its corners
+     * decide; 5 cm more covers the mesh's chords (2 m stations) against the exact curve.
+     */
+    public boolean bare(int x, int z) {
+        double w = 1 + 2 * PLANT_CLEAR;
+        for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+            Hit h = hit(x - PLANT_CLEAR + a * w, z - PLANT_CLEAR + b * w, REACH);
+            if (h != null && underPavement(h, 0.05)) return true;
+        }
+        return false;
+    }
+
     /** Under the pavement or its bevels (the turf there rounds down). */
-    static boolean underPavement(Hit h) {
-        double v = h.v(), s = h.s();
+    static boolean underPavement(Hit h) { return underPavement(h, 0); }
+
+    /** Under the pavement or its bevels, grown by extra. */
+    static boolean underPavement(Hit h, double extra) {
+        double v = h.v(), s = h.s(), r = CrossSection.BEVEL_RUN + extra;
         CrossSection sec = h.road().section;
-        return v >= sec.halfMedian - CrossSection.BEVEL_RUN && v <= sec.edge + CrossSection.BEVEL_RUN
-                && s >= -CrossSection.BEVEL_RUN && s <= h.road().length + CrossSection.BEVEL_RUN;
+        return v >= sec.halfMedian - r && v <= sec.edge + r && s >= -r && s <= h.road().length + r;
     }
 
     /**

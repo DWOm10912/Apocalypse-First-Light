@@ -39,6 +39,9 @@ import java.util.zip.InflaterInputStream;
  *   <li>bridges (10.11): the client's expected structure cells against the server's columns, the parapet collision
  *   against the parapet mesh, the deck collision inside the deck mesh, the concrete mesh itself (finite, unit normals,
  *   uv in the tile), and a damage run (cells broken, cut, repaired);</li>
+ *   <li>group D: the box culverts and the wing reaches (RoadStructures), the culverts' cells against the client's
+ *   expectations, their slab under the road's finish, the wet columns their embankment fills, their collision inside
+ *   their mesh (with the bridges'), the determinism of the structured JSON;</li>
  *   <li>timing per chunk (columns, mesh) and the field calls the density makes.</li>
  * </ul>
  */
@@ -69,14 +72,20 @@ public final class RoadWorksCheck {
         say(log, "built network (%s): %d roads in %.2f s, json %d bytes (the client packet), remaining conflict stations %d",
                 RoadNetworkBuild.STAGE, built.routes().size(), (t3 - t2) / 1e9, built.json().length(), built.conflicts());
         for (String line : built.report()) say(log, "  %s", line);
-        Files.writeString(new File(out, "built.json").toPath(), built.json(), StandardCharsets.UTF_8);
+        long t4 = System.nanoTime();
+        RoadStructures.Result st = RoadStructures.attach(built.json(), terrain);
+        say(log, "structures (group D) in %.2f s, json %d bytes:", (System.nanoTime() - t4) / 1e9, st.json().length());
+        for (String line : st.report()) say(log, "  %s", line);
+        Files.writeString(new File(out, "built.json").toPath(), st.json(), StandardCharsets.UTF_8);
         RoadWorks.Ground ground = plan::heightAt;
         RoadWorks.Water water = (x, z) -> {
             int w = terrain.water(x, z);
             return w == RouteTerrain.RIVER || w == RouteTerrain.LAKE || w == RouteTerrain.SEA;
         };
-        RoadWorks w1 = new RoadWorks(RoadNetworkJson.designs(built.json()), water);
-        RoadWorks w2 = new RoadWorks(RoadNetworkJson.designs(RoadNetworkBuild.build(json).json()), water);
+        RoadWorks w1 = new RoadWorks(RoadNetworkJson.designs(st.json()), water);
+        String st2 = RoadStructures.attach(RoadNetworkBuild.build(json).json(), terrain).json();
+        say(log, "structured JSON, independent build: %s", st2.equals(st.json()) ? "IDENTICAL" : "DIFFERENT");
+        RoadWorks w2 = new RoadWorks(RoadNetworkJson.designs(st2), water);
         List<RoadDesign> roads = w1.roads();
         double total = 0;
         for (RoadDesign d : roads) {
@@ -90,9 +99,22 @@ public final class RoadWorksCheck {
                 if (s.depth() == RoadNetworkJson.CULVERT_DEPTH) sp.append("(culvert)");
                 if (s.piers().length > 0) sp.append("(").append(s.piers().length).append(" piers)");
             }
+            for (Culvert c : d.culverts) sp.append(String.format(Locale.ROOT, " box %.0f", c.s));
             say(log, "road %-48s %s %7.0f m  no-passing %4.0f %%  spans%s", d.id, d.section, d.length, d.section.divided ? 0 : 100 * noPass / d.length,
                     sp.length() == 0 ? " -" : sp);
         }
+        // wing reach (group D): per span end and side, against the old fixed reach
+        int ends = 0, full = 0;
+        double sumReach = 0, maxReach = 0;
+        for (RoadDesign d : roads)
+            for (RoadDesign.Span s : d.spans)
+                for (double r0 : s.reach()) {
+                    ends++;
+                    sumReach += r0;
+                    maxReach = Math.max(maxReach, r0);
+                    if (r0 >= BridgeMesh.WALL_REACH - 1e-9) full++;
+                }
+        say(log, "wing reach: %d span end sides, mean %.1f m, max %.1f m, at the old full %.0f m: %d", ends, sumReach / Math.max(1, ends), maxReach, BridgeMesh.WALL_REACH, full);
         say(log, "built length %.1f km", total / 1000);
         String probe = System.getenv("AFL_PROBE");
         if (probe != null && !probe.isEmpty()) {
@@ -127,22 +149,32 @@ public final class RoadWorksCheck {
         MessageDigest h1 = MessageDigest.getInstance("SHA-256"), h2 = MessageDigest.getInstance("SHA-256");
         int[] kinds = new int[RoadWorks.Kind.values().length];
         double maxCollision = 0, sumCollision = 0, maxCut = 0, maxFill = 0;
-        int nCollision = 0, turfAbove = 0, clamped = 0, wetWorks = 0;
+        int nCollision = 0, turfAbove = 0, clamped = 0, wetWorks = 0, wetFilled = 0, bodyCells = 0, slabHigh = 0;
+        List<String> slabAt = new ArrayList<>();
         double worstTurf = 0;
         int[] cutAt = new int[2], fillAt = new int[2];
         int fill10 = 0;
         List<String> wetAt = new ArrayList<>();
-        long colNanos = 0, meshNanos = 0;
+        long colNanos = 0, meshNanos = 0, worksNanos = 0;
+        List<String> turfAt = new ArrayList<>();
         int meshTris = 0, meshChunks = 0, yellow = 0;
         List<Long> paved = new ArrayList<>();
+        // plants on turf (group B): bare columns, and the plant-bearing squares (grown by PLANT_CLEAR) of every 8th chunk
+        // against the road mesh of every chunk they reach
+        int bare = 0, plantChecked = 0, plantOnMesh = 0;
+        List<String> plantAt = new ArrayList<>();
+        java.util.Map<Long, List<RoadMesh.Triangle>> plantMesh = new java.util.HashMap<>();
         int ci = 0;
         for (long key : chunks) {
             int cx = (int) (key >> 32), cz = (int) key;
             boolean det = ci++ % 8 == 0;
+            List<int[]> plants = new ArrayList<>();
             long b = System.nanoTime();
             for (int dz = 0; dz < 16; dz++) for (int dx = 0; dx < 16; dx++) {
                 int x = cx * 16 + dx, z = cz * 16 + dz;
+                long cb = System.nanoTime();
                 RoadWorks.Column c = w1.column(x, z, ground);
+                worksNanos += System.nanoTime() - cb;
                 kinds[c.kind().ordinal()]++;
                 double g = plan.heightAt(x + 0.5, z + 0.5);
                 switch (c.kind()) {
@@ -168,15 +200,32 @@ public final class RoadWorksCheck {
                             if (hit == null || hit.beyond() > 0 || !hit.road().section.paved(hit.v())) continue;
                             double over = base + q[k] / 8.0 - hit.road().pavementY(hit.sc(), hit.u());
                             worstTurf = Math.max(worstTurf, over);
-                            if (over > 1e-6) turfAbove++;
+                            if (over > 1e-6) {
+                                turfAbove++;
+                                if (turfAt.size() < 6) turfAt.add(String.format(Locale.ROOT, "%d %d corner %d %+.4f%s", x, z, k, over,
+                                        (c.data() & RoadWorks.CULVERT_BODY) != 0 ? " culvert body" : ""));
+                            }
                         }
                         double f = base + Math.max(Math.max(q[0], q[1]), Math.max(q[2], q[3])) / 8.0;
                         if (g - f > maxCut) { maxCut = g - f; cutAt = new int[]{x, z}; }
                         if (f - g > maxFill) { maxFill = f - g; fillAt = new int[]{x, z}; }
+                        if ((c.data() & RoadWorks.BARE) != 0) bare++;
+                        else if (det) plants.add(new int[]{x, z});
                     }
                     default -> { }
                 }
-                if (c.kind() == RoadWorks.Kind.TURF && water.wet(x + 0.5, z + 0.5)) {
+                if ((c.data() & RoadWorks.CULVERT_BODY) != 0 && (c.kind() == RoadWorks.Kind.PAVED || c.kind() == RoadWorks.Kind.TURF)) {
+                    // the culvert's slab under the road's finish: two blocks of base under a pavement, under a turf block
+                    Culvert.Cell cell = w1.culvertCell(x, z);
+                    bodyCells++;
+                    int cap = c.kind() == RoadWorks.Kind.PAVED ? c.y() - 2 : c.y() - 1;
+                    if (cell != null && cell.layers() > 0 && cell.top() > cap) {
+                        slabHigh++;
+                        if (slabAt.size() < 6) slabAt.add(String.format(Locale.ROOT, "%d %d %s y %d culvert top %d", x, z, c.kind(), c.y(), cell.top()));
+                    }
+                }
+                if (c.kind() == RoadWorks.Kind.TURF && water.wet(x + 0.5, z + 0.5) && w1.filled(x + 0.5, z + 0.5)) wetFilled++;
+                else if (c.kind() == RoadWorks.Kind.TURF && water.wet(x + 0.5, z + 0.5)) {
                     RoadWorks.Hit hit = w1.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
                     if (hit != null && (hit.v() > hit.road().section.edge + 0.5 || hit.beyond() > 0)) {
                         wetWorks++;
@@ -195,15 +244,36 @@ public final class RoadWorksCheck {
                 paved.add(key);
                 for (RoadMesh.Triangle t : m) if (t.material() == RoadMesh.Material.YELLOW) yellow++;
             }
+            for (int[] q : plants) {
+                plantChecked++;
+                double x0 = q[0] - RoadWorks.PLANT_CLEAR, z0 = q[1] - RoadWorks.PLANT_CLEAR, x1 = q[0] + 1 + RoadWorks.PLANT_CLEAR, z1 = q[1] + 1 + RoadWorks.PLANT_CLEAR;
+                boolean hit = false;
+                for (int ncx = Math.floorDiv((int) Math.floor(x0), 16); ncx <= Math.floorDiv((int) Math.floor(x1), 16) && !hit; ncx++)
+                    for (int ncz = Math.floorDiv((int) Math.floor(z0), 16); ncz <= Math.floorDiv((int) Math.floor(z1), 16) && !hit; ncz++) {
+                        int fx = ncx, fz = ncz;
+                        if (plantMesh.size() > 64) plantMesh.clear();
+                        List<RoadMesh.Triangle> nm = fx == cx && fz == cz ? m : plantMesh.computeIfAbsent(RoadWorks.key(fx, fz), k -> mesh(roads, fx, fz));
+                        for (RoadMesh.Triangle t : nm)
+                            if (overlaps(t, x0 - fx * 16, z0 - fz * 16, x1 - fx * 16, z1 - fz * 16)) { hit = true; break; }
+                    }
+                if (hit) {
+                    plantOnMesh++;
+                    if (plantAt.size() < 6) plantAt.add(q[0] + " " + q[1]);
+                }
+            }
         }
         String d1 = hex(h1.digest()), d2 = hex(h2.digest());
         say(log, "column digest (every 8th chunk) %s, independent build %s  %s", d1, d2, d1.equals(d2) ? "IDENTICAL" : "DIFFERENT");
         for (RoadWorks.Kind k : RoadWorks.Kind.values()) say(log, "  %-9s %8d columns", k, kinds[k.ordinal()]);
         say(log, "collision: %d columns, max error %.4f m, mean %.4f m (1/32 block = %.4f)", nCollision, maxCollision, sumCollision / Math.max(1, nCollision), 1 / 32.0);
-        say(log, "turf corners above the pavement: %d (worst %+.4f m)", turfAbove, worstTurf);
-        say(log, "works on planned water outside the formation: %d columns %s", wetWorks, wetAt);
+        say(log, "turf corners above the pavement: %d (worst %+.4f m) %s", turfAbove, worstTurf, turfAt);
+        say(log, "works on planned water outside the formation: %d columns %s; wet columns the embankment fills over a box culvert: %d", wetWorks, wetAt, wetFilled);
+        say(log, "box culvert body under the road's finish: %d columns, slab over the finish's base %d %s", bodyCells, slabHigh, slabAt);
+        say(log, "turf without plants (beside the pavement): %d columns; plant-bearing squares (+%.2f m) on the road mesh: %d of %d checked %s",
+                bare, RoadWorks.PLANT_CLEAR, plantOnMesh, plantChecked, plantAt);
         say(log, "max cut %.2f m at %d %d %s, max fill %.2f m at %d %d %s (finished top against the planned ground, paved and turf columns); pavement filled over 10 m: %d columns",
                 maxCut, cutAt[0], cutAt[1], near(w1, cutAt), maxFill, fillAt[0], fillAt[1], near(w1, fillAt), fill10);
+        say(log, "works columns alone (RoadWorks.column): %.2f ms per chunk", worksNanos / 1e6 / chunks.size());
         say(log, "columns: %.2f ms per chunk (%d chunks); mesh: %.2f ms per chunk, %d chunks with pavement, %d triangles (%.0f per chunk)",
                 colNanos / 1e6 / chunks.size(), chunks.size(), meshNanos / 1e6 / chunks.size(), meshChunks, meshTris, meshTris / (double) Math.max(1, meshChunks));
         say(log, "yellow line triangles %d", yellow);
@@ -353,6 +423,13 @@ public final class RoadWorksCheck {
                         double[] p = d.point(s, u);
                         chunks.add(RoadWorks.key(Math.floorDiv((int) Math.floor(p[0]), 16), Math.floorDiv((int) Math.floor(p[1]), 16)));
                     }
+        for (Culvert c : w.culverts()) {
+            double[] b = c.bounds(2);
+            for (int cx = Math.floorDiv((int) Math.floor(b[0]), 16); cx <= Math.floorDiv((int) Math.floor(b[2]), 16); cx++)
+                for (int cz = Math.floorDiv((int) Math.floor(b[1]), 16); cz <= Math.floorDiv((int) Math.floor(b[3]), 16); cz++)
+                    chunks.add(RoadWorks.key(cx, cz));
+        }
+        int culvertCells = 0, culvertMismatch = 0, probes = 0;
         int pierCells = 0;
         double worstProtrude = 0;
         int chunksNear = 0, expected = 0, serverOnly = 0, mismatch = 0, missing = 0, wings = 0, notPresent = 0, deckOut = 0, parapets = 0;
@@ -377,6 +454,23 @@ public final class RoadWorksCheck {
                 RoadWorks.Column c = w.column(x, z, ground);
                 BridgeMesh.Expect e = exp.get(i);
                 boolean structure = c.kind() == RoadWorks.Kind.DECK || c.kind() == RoadWorks.Kind.ABUTMENT || c.kind() == RoadWorks.Kind.BARRIER;
+                if (e != null && e.probe()) {
+                    // a ground probe finds the ground as the noise leaves it (about the planned ground's block)
+                    int g = (int) Math.floor(ground.at(x + 0.5, z + 0.5));
+                    found.put(i, new BridgeMesh.Found(g, false, 0, g + 1));
+                    probes++;
+                    continue;
+                }
+                Culvert.Cell cell = w.culvertCell(x, z);
+                if (cell != null && cell.layers() > 0 || e != null && e.kind() == RoadWorks.Kind.CULVERT) {
+                    // a box culvert's cell: the chunk pass writes its concrete from the bed (walls) or the soffit (roof)
+                    culvertCells++;
+                    if (e == null || cell == null || e.kind() != RoadWorks.Kind.CULVERT || e.top() != cell.top() || e.layers() != cell.layers()
+                            || cell.own() != (c.kind() == RoadWorks.Kind.CULVERT)) { culvertMismatch++; continue; }
+                    found.put(i, new BridgeMesh.Found(cell.top(), false, cell.layers(), cell.wall() ? cell.culvert().bed : cell.roofLo()));
+                    if (RoadCells.inner(i)) expected++;
+                    continue;
+                }
                 if (e != null) expected++;
                 if (c.kind() == RoadWorks.Kind.ABUTMENT) {
                     RoadWorks.Hit ph = w.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
@@ -435,8 +529,11 @@ public final class RoadWorksCheck {
             List<RoadMesh.Triangle> all = new ArrayList<>(mesh);
             all.addAll(mesh(roads, cx, cz));
             for (BridgeMesh.Expect e : exp.values()) {
-                if (!RoadCells.inner(e.index()) || BridgeMesh.state(e, found.get(e.index())) != BridgeMesh.State.PRESENT) continue;
+                if (!RoadCells.inner(e.index()) || !BridgeMesh.intact(e, found.get(e.index()))) continue;
                 int lx = RoadCells.lx(e.index()), lz = RoadCells.lz(e.index());
+                // a culvert's body under the road's finish is buried: its slab's top is not drawn
+                Culvert.Cell own = w.culvertCell(cx * 16 + lx, cz * 16 + lz);
+                if (e.kind() == RoadWorks.Kind.CULVERT && own != null && !own.own()) continue;
                 for (int a = 0; a < 8; a++) for (int c = 0; c < 8; c++) {
                     double px = lx + (a + 0.5) / 8, pz = lz + (c + 0.5) / 8;
                     double[] sol = BridgeMesh.solid(w, cx * 16 + px, cz * 16 + pz);
@@ -488,9 +585,8 @@ public final class RoadWorksCheck {
             int k = 0, nd = 0;
             for (BridgeMesh.Expect e : exp.values()) {
                 BridgeMesh.Found f = found.get(e.index());
-                if (!RoadCells.inner(e.index()) || f == null || k++ % 5 != 0) continue;
+                if (!RoadCells.inner(e.index()) || f == null || e.probe() || k++ % 5 != 0) continue;
                 if (f.top() > f.foot()) hit.put(e.index(), new BridgeMesh.Found(f.top() - 1, false, 32, f.foot()));
-                else if (e.wing()) continue;   // a wing dug out completely is absent, not broken
                 else hit.remove(e.index());
                 want[RoadCells.lx(e.index()) | RoadCells.lz(e.index()) << 4] = true;
                 nd++;
@@ -510,6 +606,7 @@ public final class RoadWorksCheck {
         }
         say(log, "bridges: %d chunks near a span; %d expected structure cells (client), built by the server but not expected %d, expected deck / parapet cells the server does not build %d, different top / layers / kind %d; pier cells %d",
                 chunksNear, expected, serverOnly, missing, mismatch, pierCells);
+        say(log, "  box culverts: %d cells with concrete, expectation / column / cell disagree %d; ground probes %d", culvertCells, culvertMismatch, probes);
         say(log, "  wing cells built %d; undamaged cells not intact %d; parapet collision against the parapet mesh: %d cells, worst %.4f m; deck structure blocks below the mesh underside %d (the collision block itself under the 0.3 m slab: worst %.2f m)",
                 wings, notPresent, parapets, worstParapet, deckOut, worstProtrude);
         say(log, "  concrete mesh: %d triangles (%d vertical), bad (normal, uv, NaN, outside the chunk) %d %s; expectations + mesh %.2f ms per near chunk",
@@ -544,6 +641,24 @@ public final class RoadWorksCheck {
         double l = ((b.z() - c.z()) * (x - c.x()) + (c.x() - b.x()) * (z - c.z())) / d;
         double m = ((c.z() - a.z()) * (x - c.x()) + (a.x() - c.x()) * (z - c.z())) / d;
         return l >= -1e-9 && m >= -1e-9 && l + m <= 1 + 1e-9 ? new double[]{l, m, 1 - l - m} : null;
+    }
+
+    /** Whether triangle t overlaps the open square (x0, x1) x (z0, z1) in plan (separating axes; touching is not). */
+    static boolean overlaps(RoadMesh.Triangle t, double x0, double z0, double x1, double z1) {
+        double[] xs = {t.a().x(), t.b().x(), t.c().x()}, zs = {t.a().z(), t.b().z(), t.c().z()};
+        double e = 1e-6;
+        if (Math.max(xs[0], Math.max(xs[1], xs[2])) <= x0 + e || Math.min(xs[0], Math.min(xs[1], xs[2])) >= x1 - e
+                || Math.max(zs[0], Math.max(zs[1], zs[2])) <= z0 + e || Math.min(zs[0], Math.min(zs[1], zs[2])) >= z1 - e) return false;
+        for (int i = 0; i < 3; i++) {
+            int j = (i + 1) % 3, k = (i + 2) % 3;
+            double nx = zs[j] - zs[i], nz = xs[i] - xs[j];
+            double edge = nx * xs[i] + nz * zs[i], apex = nx * xs[k] + nz * zs[k];
+            double lo = Math.min(nx * x0, nx * x1) + Math.min(nz * z0, nz * z1), hi = Math.max(nx * x0, nx * x1) + Math.max(nz * z0, nz * z1);
+            double len = Math.hypot(nx, nz);
+            if (len < 1e-12) continue;
+            if (apex > edge && hi <= edge + e * len || apex < edge && lo >= edge - e * len) return false;
+        }
+        return true;
     }
 
     static void feed(MessageDigest h, RoadWorks.Column c) {

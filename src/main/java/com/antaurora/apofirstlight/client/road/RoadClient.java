@@ -281,10 +281,13 @@ public final class RoadClient {
         return material == RoadMesh.Material.ASPHALT || material == RoadMesh.Material.CONCRETE;
     }
 
-    /** A block that holds the light it stands in (no light of its own to give a face in front of it). */
+    /**
+     * A block that holds the light it stands in (no light of its own to give a face in front of it). road_structure is not
+     * one: it takes one level of light, so its own cell carries the light of its surroundings, and stepping over it took
+     * a culvert's walls and a pier's foot under water or a deck the sky light of the open air above (group D).
+     */
     private static boolean occludes(ClientLevel level, BlockPos p) {
-        BlockState s = level.getBlockState(p);
-        return s.is(AflBlocks.ROAD_STRUCTURE.get()) || s.isSolidRender(level, p);
+        return level.getBlockState(p).isSolidRender(level, p);
     }
 
     /** Vanilla's directional block shade (up 1, down 0.5, north / south 0.8, east / west 0.6), blended by the normal. */

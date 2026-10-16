@@ -97,8 +97,20 @@ public final class RoadNetworkRuntime {
             RoadNetworkBuild.Result b = RoadNetworkBuild.build(json);
             for (String line : b.report()) ApocalypseFirstLight.LOGGER.info("[AFL roads] {}", line);
             if (b.conflicts() > 0) ApocalypseFirstLight.LOGGER.warn("[AFL roads] {} stations where two built roads' works still meet", b.conflicts());
+            // group D: the box culverts and the wing walls' reach, decided here from the terrain and carried to the clients
+            // (an error there leaves the slab culverts and the full wing walls of C3.3a, logged, never a world without roads)
+            String structured;
+            try {
+                com.antaurora.apofirstlight.worldgen.network.road.RoadStructures.Result st =
+                        com.antaurora.apofirstlight.worldgen.network.road.RoadStructures.attach(b.json(), terrain);
+                for (String line : st.report()) ApocalypseFirstLight.LOGGER.info("[AFL roads] {}", line);
+                structured = st.json();
+            } catch (RuntimeException e) {
+                ApocalypseFirstLight.LOGGER.error("[AFL roads] cannot design the box culverts and wing walls for seed {}; slab culverts", seed, e);
+                structured = b.json();
+            }
             ApocalypseFirstLight.LOGGER.info("[AFL roads] built network: {} roads in {} ms", b.routes().size(), (System.nanoTime() - t1) / 1_000_000);
-            builtJson = b.json();
+            builtJson = structured;
             designs = RoadNetworkJson.designs(builtJson);
         } catch (RuntimeException e) {
             ApocalypseFirstLight.LOGGER.error("[AFL roads] cannot build the road network for seed {}; this world gets no roads", seed, e);
