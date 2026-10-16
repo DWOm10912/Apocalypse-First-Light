@@ -5,7 +5,8 @@
 // AFL Halstead Tamarack T15, game mesh preview (design use only): draws the built Pure Meshes (tools/build-pickup-t15.mjs)
 // the way the entity renderer does: pickup_t15 + pickup_t15_front always, the wheel mesh at the four hubs (the left ones
 // turned half a turn about Y), cab / engine / chassis when built; bones at their geo pivots; normals: opts.normals 'flat',
-// 'crease' (Vextris format 3 crease_angle, corner-angle weighting, crease.js) or 'area' (the same with face-area weighting); base atlas
+// 'crease' (Vextris format 3 crease_angle with the file's crease_weighting, default corner angle; crease.js) or 'area'
+// (forced face-area weighting); base atlas
 // with the painted parts multiplied by the paint colours; wear = the overlay for round(wear x 10) drawn over the painted
 // parts with the vanilla cutout rule (texture alpha only); glass translucent. Plain two-light setup like vanilla entities.
 // Serve with serve.cjs (it maps /assets/ to the mod assets), then in the console: await shot(view, opts) / await sheet().
@@ -31,7 +32,7 @@ function partMeshes(mesh, tex, parent, bonesOut) {
   const glass = new THREE.MeshLambertMaterial({map: tex, side: THREE.DoubleSide, transparent: true, depthWrite: false});
   for (const p of mesh.parts) {
     const pos = [], uv = [], crease = p.crease_angle ?? mesh.crease_angle ?? 0, normals = {};
-    const sets = {crease: crease > 0 ? creaseNormals(p.vertices, p.faces, crease, 'angle') : null, area: crease > 0 ? creaseNormals(p.vertices, p.faces, crease, 'area') : null};
+    const sets = {crease: crease > 0 ? creaseNormals(p.vertices, p.faces, crease, p.crease_weighting ?? mesh.crease_weighting ?? 'angle') : null, area: crease > 0 ? creaseNormals(p.vertices, p.faces, crease, 'area') : null};
     for (const k of ['crease', 'area']) if (sets[k]) normals[k] = [];
     p.faces.forEach((f, fi) => { const tri = f.length === 4 ? [[0, 1, 2], [0, 2, 3]] : [[0, 1, 2]];
       for (const t of tri) for (const k of t) { const v = p.vertices[f[k]]; pos.push(v[0], v[1], v[2]); uv.push(v[3], v[4]);

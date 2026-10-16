@@ -12,7 +12,7 @@ const jars=d=>fs.existsSync(d)?fs.readdirSync(d,{withFileTypes:true}).flatMap(e=
 const gson=jars(path.join(process.env.GRADLE_USER_HOME||path.join(os.homedir(),'.gradle'),'caches/modules-2/files-2.1/com.google.code.gson/gson')).sort().at(-1);
 assert(gson,'Existing Gson cache required; no download attempted');
 // Mesh loader/model classes come from the Vextris jar (pure Java + Gson in com.antaurora.vextris.mesh).
-const vextris=process.env.VEXTRIS_JAR||path.join(root,'../Vextris/build/internal-repo/io/github/dwom10912/vextris/0.1.1-alpha.2/vextris-0.1.1-alpha.2.jar');
+const vextris=process.env.VEXTRIS_JAR||path.join(root,'../Vextris/build/internal-repo/io/github/dwom10912/vextris/0.1.1-alpha.4/vextris-0.1.1-alpha.4.jar');
 assert(fs.existsSync(vextris),'Vextris jar required (build Vextris first, or set VEXTRIS_JAR): '+vextris);
 const java=process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin',process.platform==='win32'?'java.exe':'java'):'java';
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'afl-m1a-check-')),created=[];

@@ -1,5 +1,5 @@
 {
-  "format_version": 2,
+  "format_version": 3,
   "coordinate_space": "bone_pivot_local_blocks",
   "uv_origin": "top_left",
   "winding": "ccw",
@@ -36932,5 +36932,7 @@
         [109,110,111]
       ]
     }
-  ]
+  ],
+  "crease_angle": 50,
+  "crease_weighting": "area"
 }

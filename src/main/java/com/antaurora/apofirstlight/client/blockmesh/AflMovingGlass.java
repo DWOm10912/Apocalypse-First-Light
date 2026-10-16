@@ -24,7 +24,8 @@ import java.util.List;
  * The glass the animated mesh renderer draws itself (a door or lid in motion, or not yet back in the chunk) while a shader
  * pack is on (2026-10-08). Drawn by the block entity renderer, glass goes through Oculus' block entity program; Sundial has
  * no gbuffers_block_translucent, so it fell back to the opaque gbuffers_block and showed a dusk-coloured glow instead of the
- * glass the chunk draws (user video, A1 storefront door at night). Oculus maps the terrain translucent shaders to
+ * glass the chunk draws (user video, A1 storefront door at night). Entity glass has the same problem (2026-10-16, the T15:
+ * Sundial Lite has no translucent entity program either), so entity renderers queue here as well. Oculus maps the terrain translucent shaders to
  * gbuffers_water in every phase but entities and block entities, so this glass is queued during the block entity pass, at
  * the renderer's view-space pose, and drawn after the translucent terrain as {@link RenderType#translucent()} with the block
  * atlas sprite: the same program, PBR maps and blending as the chunk glass and the Storefront Glazing.
@@ -37,8 +38,11 @@ public final class AflMovingGlass {
 
     private AflMovingGlass() {}
 
-    /** Queues one part's glass at pose (view space, the renderer's current pose); false when it cannot be baked. */
-    static boolean queue(List<MeshPart> parts, Matrix4f pose, TextureAtlasSprite sprite, int light) {
+    /**
+     * Queues one part's glass at pose (view space, the renderer's current pose); false when it cannot be baked. Also used by
+     * entity renderers (PickupTruckRenderer: the T15's glass), whose pose is view space too.
+     */
+    public static boolean queue(List<MeshPart> parts, Matrix4f pose, TextureAtlasSprite sprite, int light) {
         int start = QUADS.size();
         if (AflStaticMeshModel.emit(parts, pose, sprite, 0, false, QUADS) != null) {
             QUADS.subList(start, QUADS.size()).clear();

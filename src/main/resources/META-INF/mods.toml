@@ -90,7 +90,7 @@ mixinConfigs=["apocalypse_firstlight.mixins.json"]
 [[dependencies.${mod_id}]]
     modId="vextris"
     mandatory=true
-    versionRange="[0.1.1-alpha.2,0.2.0-alpha)"
+    versionRange="[0.1.1-alpha.4,0.2.0-alpha)"
     ordering="AFTER"
     side="BOTH"
 

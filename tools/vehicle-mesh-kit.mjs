@@ -644,5 +644,5 @@ export function bake({parts, uv, atlas: A, pad, mats, toModel = q => q, toModelD
     for (const [k, j] of add1) { base.copy(base, k * 4, j * 4, j * 4 + 4); spec.copy(spec, k * 4, j * 4, j * 4 + 4); nm.copy(nm, k * 4, j * 4, j * 4 + 4); mask[k] = 3; }
   }
   let cov = 0; for (let k = 0; k < N; k++) if (mask[k] === 1 || mask[k] === 2) cov++;
-  return {PNG: [png(base, A, A), png(spec, A, A), png(nm, A, A)], coverage: cov / N, ao, mask, isl, P};
+  return {PNG: [png(base, A, A), png(spec, A, A), png(nm, A, A)], raw: [base, spec, nm], coverage: cov / N, ao, mask, isl, P};
 }

@@ -110,13 +110,13 @@ function frontEnd() {
   const bs = fillet([[-0.095, 0.0], [-0.06, -0.012], [0.06, -0.012], [0.095, 0.0], [0.095, 0.075], [0.08, 0.075], [0.08, 0.012], [-0.08, 0.012], [-0.08, 0.075], [-0.095, 0.075]],
     [0.02, 0.03, 0.03, 0.02, 0.006, 0.004, 0.006, 0.006, 0.004, 0.006], 3);
   bumperSweep(E(B, 'chrome'), plan, bs);
-  // black rubber strip on the face, and the valance / air dam under it
-  bumperSweep(E(B, 'rubber'), roundPath([[2.355, 0.505, -0.64], [2.388, 0.505, -0.5], [2.388, 0.505, 0.5], [2.355, 0.505, 0.64]], 0.06, 4).map(q => [q[0] - 0.008, q[1], q[2]]),
+  // black rubber strip on the face (6 mm proud of the chrome; its ends run into the wrap), the valance / air dam under it
+  bumperSweep(E(B, 'rubber'), roundPath([[2.355, 0.505, -0.64], [2.388, 0.505, -0.5], [2.388, 0.505, 0.5], [2.355, 0.505, 0.64]], 0.06, 4),
     fillet([[-0.017, 0], [0.017, 0], [0.017, 0.012], [-0.017, 0.012]], 0.005, 2));
   const val = fillet([[-(HW - 0.03), 0.33], [HW - 0.03, 0.33], [HW - 0.02, 0.41], [-(HW - 0.02), 0.41]], [0.03, 0.03, 0.01, 0.01], 3);
   slab(E(B, 'trim'), FRX, val, [], 2.19, 2.27, {r0: 0.004, r1: 0.012});
-  // licence plate bracket (black, centre of the bumper) and the hood latch lip above the grille
-  rbox(E(B, 'trim'), FRX, -0.165, 0.165, 0.43, 0.58, 2.37, 2.382, 0.003, {rc: 0.01});
+  // licence plate bracket (black, centre of the bumper, 10 mm proud of the chrome face: flush, it z-fought it)
+  rbox(E(B, 'trim'), FRX, -0.165, 0.165, 0.43, 0.58, 2.37, 2.392, 0.003, {rc: 0.01});
 }
 /** Sweeps a bumper section (u up, v rearward) along a plan path at constant height (the section's u axis stays +y). */
 function bumperSweep(p, plan, sec) {
@@ -315,7 +315,7 @@ function doors() {
     tube(E(D, 'trim'), [[mb[0] - 0.02, BELT + 0.05, s * (HW - 0.01)], [mb[0] - 0.03, BELT + 0.085, s * (HW + 0.05)], [hc[0], hc[1] - 0.02, s * (HW + 0.08)]], 0.011, 6);
     obox(E(D, 'trim'), hc, [0, 0, 1], [0, 1, 0], 0.085, 0.07, 0.03, 0.012);
     const mg = fillet([[-0.075, -0.06], [0.075, -0.06], [0.075, 0.06], [-0.075, 0.06]], 0.012, 2);
-    plate3(E(D, 'mirror'), mg, (u, v) => [hc[0] - 0.0305, hc[1] + v, hc[2] + u]);
+    plate3(E(D, 'mirror'), mg, (u, v) => [hc[0] - 0.033, hc[1] + v, hc[2] + u]);   // 3 mm off the housing face (0.5 mm z-fought)
     // flush pull handle in a recess near the rear, key cylinder beside it
     const hx0 = xr + 0.06, hx1 = xr + 0.205, hy0 = BELT - 0.11, hy1 = BELT - 0.07;
     const [r0, r1] = zr(s, HW - 0.003, HW + 0.002);
@@ -361,12 +361,12 @@ function bed() {
     const rail = thicken(fillet([[HW, top - 0.004], [HW, BED_TOP], [HW - 0.088, BED_TOP], [HW - 0.088, BED_TOP - 0.05]], [0, 0.02, 0.012, 0], 4, false), 0.01).map(([z, y]) => [s * z, y]);
     loftSolid(E(B, 'paint'), xRings([{x: xr + 0.002, sec: rail}, {x: xf - 0.002, sec: rail}]), {});
     // stake pockets on the rail (dark rectangular openings)
-    for (const x of [-0.52, -1.32, -2.08]) { const [a, b] = zr(s, HW - 0.072, HW - 0.022); rbox(E(B, 'liner'), FY, x - 0.035, x + 0.035, a, b, BED_TOP - 0.002, BED_TOP + 0.0012, 0, {rc: 0.006}); }
+    for (const x of [-0.52, -1.32, -2.08]) { const [a, b] = zr(s, HW - 0.072, HW - 0.022); rbox(E(B, 'liner'), FY, x - 0.035, x + 0.035, a, b, BED_TOP - 0.002, BED_TOP + 0.004, 0, {rc: 0.006}); }   // 4 mm over the rail top (1.2 mm z-fought)
     // inner wall with a row of rope-hook slots near the top
     const iz = HW - 0.088, [w0, w1] = zr(s, iz - 0.008, iz);
     const wall = [[xr + 0.09, BED_FL - 0.005], [xf - 0.04, BED_FL - 0.005], [xf - 0.04, BED_TOP - 0.05], [xr + 0.09, BED_TOP - 0.05]];
     slab(E(B, 'paint'), FZ, wall, [], w0, w1, {r0: 0, r1: 0});
-    for (let x = xr + 0.20; x < xf - 0.12; x += 0.215) { const [a, b] = zr(s, iz - 0.0095, iz - 0.0075); rbox(E(B, 'liner'), FZ, x - 0.026, x + 0.026, BED_TOP - 0.10, BED_TOP - 0.085, s > 0 ? a : a, s > 0 ? b : b, 0, {rc: 0.006}); }
+    for (let x = xr + 0.20; x < xf - 0.12; x += 0.215) { const [a, b] = zr(s, iz - 0.012, iz - 0.0075); rbox(E(B, 'liner'), FZ, x - 0.026, x + 0.026, BED_TOP - 0.10, BED_TOP - 0.085, a, b, 0, {rc: 0.006}); }   // 4 mm proud of the wall (1.5 mm z-fought)
     // wheel housing inside the bed
     const hr = AR + 0.035, ha = Math.asin((BED_FL - 0.01 - AY) / hr), [h0, h1] = zr(s, 0.56, iz - 0.008);
     lathe(E(B, 'paint'), [RX, AY, 0], [0, 0, 1], [[h0, 0], [h1, 0], [h1, hr], [h0, hr]], 16, {a0: ha, a1: Math.PI - ha, e1: [1, 0, 0]});
@@ -390,7 +390,7 @@ function bed() {
   rbox(E(B, 'paint'), FRX, -(HW - 0.004), HW - 0.004, BED_TOP - 0.032, BED_TOP, BED_F - 0.05, BED_F, 0.008, {rc: 0.012});   // front rail cap
   sym(s => { const [a, b] = zr(s, fz - 0.002, HW - 0.004); abox(E(B, 'paint'), BED_F - 0.04, BED_F, YB + 0.04, BED_TOP - 0.03, a, b, 0.004); });
   for (const y of [0.88, 1.0]) rbox(E(B, 'paint'), FRX, -(fz - 0.04), fz - 0.04, y - 0.018, y + 0.018, BED_F - 0.054, BED_F - 0.038, 0.006, {rc: 0.018});
-  abox(E(B, 'paint'), BED_R + 0.002, BED_R + 0.04, 0.58, 0.615, -0.672, 0.672, 0.006);   // rear sill under the tailgate
+  abox(E(B, 'paint'), BED_R + 0.002, BED_R + 0.04, 0.584, 0.615, -0.672, 0.672, 0.006);   // rear sill under the tailgate (underside clear of the rear crossmember's)
   // rear bumper: chrome step bumper with a black step pad and the plate recess
   const plan = roundPath([[-2.17, 0.47, -0.88], [-2.33, 0.47, -0.80], [-2.355, 0.47, -0.60], [-2.355, 0.47, 0.60], [-2.33, 0.47, 0.80], [-2.17, 0.47, 0.88]], 0.13, 5);
   const bs = fillet([[-0.09, 0.0], [0.09, 0.0], [0.09, 0.11], [0.075, 0.11], [0.075, 0.012], [-0.075, 0.012], [-0.075, 0.09], [-0.09, 0.09]], [0.02, 0.02, 0.006, 0.004, 0.004, 0.004, 0.004, 0.006], 3);
@@ -414,7 +414,7 @@ function tailgate() {
   rbox(E(T, 'trim'), FRX, -0.085, 0.085, y1 - 0.065, y1 - 0.045, x0 - 0.008, x0, 0.003, {rc: 0.008});
   // bottom hinges and the two support cables to the posts (bed side)
   sym(s => {
-    abox(E(T, 'steel'), x0 + 0.01, x0 + 0.05, y0 - 0.02, y0 + 0.03, s * (z1 - 0.07) - 0.025, s * (z1 - 0.07) + 0.025, 0.004);
+    abox(E(T, 'steel'), x0 + 0.01, x0 + 0.055, y0 - 0.02, y0 + 0.03, s * (z1 - 0.07) - 0.025, s * (z1 - 0.07) + 0.025, 0.004);   // 5 mm past the skin's inner face
     tube(E(T, 'steel'), [[x0 + 0.04, y1 - 0.05, s * (z1 - 0.012)], [x0 + 0.20, y1 - 0.22, s * (z1 + 0.004)], [x0 + 0.075, y1 - 0.06, s * (z1 + 0.012)]].map((q, i) => q), 0.003, 5);
   });
 }

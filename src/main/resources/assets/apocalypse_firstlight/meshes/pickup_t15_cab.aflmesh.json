@@ -1,5 +1,5 @@
 {
-  "format_version": 2,
+  "format_version": 3,
   "coordinate_space": "bone_pivot_local_blocks",
   "uv_origin": "top_left",
   "winding": "ccw",
@@ -7294,7 +7294,8 @@
         [1059,1060,1061],
         [1062,1063,1064],
         [1065,1066,1067]
-      ]
+      ],
+      "crease_angle": 0
     },
     {
       "name": "body_glass",
@@ -7443,7 +7444,8 @@
         [99,100,101],
         [102,103,104],
         [105,106,107]
-      ]
+      ],
+      "crease_angle": 0
     },
     {
       "name": "body_headliner",
@@ -9261,7 +9263,8 @@
         [291,292,293],
         [294,295,296],
         [297,298,299]
-      ]
+      ],
+      "crease_angle": 30
     },
     {
       "name": "body_liner",
@@ -10813,7 +10816,8 @@
         [99,100,101],
         [102,103,104],
         [105,106,107]
-      ]
+      ],
+      "crease_angle": 0
     },
     {
       "name": "body_needle",
@@ -37305,5 +37309,7 @@
         [2185,2186,2187]
       ]
     }
-  ]
+  ],
+  "crease_angle": 50,
+  "crease_weighting": "area"
 }

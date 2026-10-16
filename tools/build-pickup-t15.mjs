@@ -10,12 +10,13 @@
 // Three 2048 atlases (outside + wheel, cab, engine + chassis), each Base Color + LabPBR _s / _n with ray-traced ambient
 // occlusion, and ten wear overlays (pickup_t15_wear_1..10: texel alpha 255 where the paint is worn through at that wear
 // tenth; the renderer binds the one for round(wear x 10), because the vanilla cutout tests texture alpha only).
-// Shading normals: Vextris format 3 crease smoothing, off for now (CREASE = false: format 2, flat normals). With it on, each
-// sidecar carries crease_angle (SMOOTHING.crease_deg) and a per-part override for the materials in SMOOTHING.materials, and
-// Vextris averages the faces across soft edges at load. Its 0.1.1-alpha.2 average is weighted by corner angle, which bends
-// the big flat panels next to bevels (tailgate ribs smeared, bed sides shaded like a bulge; design/vehicles/
-// first_pickup_v0/sheets/v3n_close_*.png); face-area weighting is requested from Vextris (user 2026-10-15,
-// docs/dev/vextris_0_1_1_integration.md section 4). No normals are written here: shared mesh capabilities belong to Vextris.
+// Shading normals: Vextris format 3 crease smoothing (CREASE; false writes format 2 with flat normals). Each sidecar carries
+// crease_angle (SMOOTHING.crease_deg), a per-part override for the materials in SMOOTHING.materials, and crease_weighting
+// "area" (Vextris 0.1.1-alpha.3): Vextris averages the faces across soft edges at load, weighted by face area, so the big
+// flat panels keep their normal and the narrow bevel strips carry the turn. Corner-angle weighting (the default) bent the
+// panels next to bevels (tailgate ribs smeared, bed sides shaded like a bulge; design/vehicles/first_pickup_v0/sheets/
+// v3n_close_*.png; docs/dev/vextris_0_1_1_integration.md section 4). No normals are written here: shared mesh
+// capabilities belong to Vextris (user 2026-10-15).
 //   node tools/build-pickup-t15.mjs           writes every output
 //   node tools/build-pickup-t15.mjs --check   verifies every output is up to date (writes nothing)
 //   node tools/build-pickup-t15.mjs --fast    no occlusion bake (quick geometry iterations; not for delivery)
@@ -29,7 +30,7 @@ import {MATS, MESHES, ATLASES, PIVOTS, PAINTED, SPARE, HINGES, ANCHORS, SMOOTHIN
 import {buildExterior} from './pickup-t15/exterior.mjs';
 import {buildWheel} from './pickup-t15/wheel.mjs';
 import {SHADE} from './pickup-t15/shade.mjs';
-const CREASE = false;   // Vextris format 3 crease_angle (see the header)
+const CREASE = true;   // Vextris format 3 crease_angle + crease_weighting area (see the header)
 let buildCab = () => {}, buildEngine = () => {}, buildChassis = () => {};
 try { ({buildCab} = await import('./pickup-t15/cab.mjs')); } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e; }
 try { ({buildEngine} = await import('./pickup-t15/engine.mjs')); } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e; }
@@ -91,6 +92,7 @@ if (BVH) log(`occlusion bvh: ${BVH.n} triangles`);
 const OUT = [];   // [file, data]
 const DUMMY_BG = {c: [40, 40, 40, 255], s: [60, 10, 0, 255], n: [128, 128, 255, 255]};
 const ATLAS_PNG = {};
+const GLASS = {};   // translucent material -> its baked texel [[base], [_s], [_n]] as JSON
 for (const [a, spec] of Object.entries(ATLASES)) {
   if (!UV[a]) continue;
   const parts = ALL.filter(p => MESHES[p.mesh].atlas === a);
@@ -102,9 +104,27 @@ for (const [a, spec] of Object.entries(ATLASES)) {
   const res = bake({parts, uv: UV[a], atlas: spec.size, pad: PAD, mats, toModel: toConcept, toModelDir: toConceptDir, bvh: BVH, aoDirs: hemisphere(28), aoMax: 0.45 * K, aoStride: 2, bump: 0.6, background: DUMMY_BG});
   wheelParts.forEach((p, i) => { p.v = saved[i]; });
   ATLAS_PNG[a] = res.PNG;
+  // glass texel (base, _s, _n) of this atlas: every glass face must bake to the same one (see the block glass below)
+  for (const p of parts.filter(q => MATS[q.mat].alpha !== undefined)) for (const [, cu] of UV[a].faceUV.get(p)) {
+    const cx = Math.floor(cu.reduce((s, q) => s + q[0], 0) / cu.length), cy = Math.floor(cu.reduce((s, q) => s + q[1], 0) / cu.length), k = (cy * spec.size + cx) * 4;
+    const texel = res.raw.map(b => [...b.slice(k, k + 4)]), key = JSON.stringify(texel);
+    GLASS[p.mat] = GLASS[p.mat] || key;
+    assert(GLASS[p.mat] === key, `glass ${p.name} in ${a} bakes to ${key}, not ${GLASS[p.mat]}: the block glass texture needs one texel per material`);
+  }
   ['', '_s', '_n'].forEach((k, i) => { OUT.push([path.join(TEX, spec.file + k + '.png'), res.PNG[i]]); OUT.push([path.join(BB, 'textures', spec.file + k + '.png'), res.PNG[i]]); });
   log(`bake ${a}: coverage ${(res.coverage * 100).toFixed(1)} %`);
 }
+
+// ---------------------------------------------------------------- block glass (shader packs)
+// With a shader pack on, PickupTruckRenderer hands the glass to AflMovingGlass, which draws it after the translucent
+// terrain as terrain glass (Sundial Lite has no translucent entity program, so entity glass overwrote what is behind it).
+// That needs a block-atlas sprite: one 16 px texture per glass material, the baked texel repeated (glass is flat colour).
+for (const [mat, key] of Object.entries(GLASS)) {
+  const texel = JSON.parse(key), files = texel.map(t => { const b = Buffer.alloc(16 * 16 * 4); for (let k = 0; k < 256; k++) b.set(t, k * 4); return png(b, 16, 16); });
+  ['', '_s', '_n'].forEach((k, i) => OUT.push([path.join(ASSETS, `textures/block/pickup_t15_${mat}${k}.png`), files[i]]));
+}
+assert(GLASS.glass, 'no glass texel baked');
+log('block glass: ' + JSON.stringify(GLASS));
 
 // ---------------------------------------------------------------- wear overlays (outside painted parts, ext + front)
 const fract = v => v - Math.floor(v), h3 = (a, b, c) => fract(Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453);
@@ -212,7 +232,7 @@ for (const [key, m] of Object.entries(MESHES)) {
     bones: m.bones.map(b => { const o = pivotPx(b); return {name: b, pivot: [-o[0] || 0, o[1], o[2]].map(r12)}; })}]};
   const flat = convert(source, geo, {}, ID + '.bbmodel', 2, null, LAYERS);
   const matOf = new Map(parts.map(p => [p.name, p.mat]));
-  const sidecar = !CREASE ? flat : {...flat, format_version: 3, crease_angle: SMOOTHING.crease_deg,
+  const sidecar = !CREASE ? flat : {...flat, format_version: 3, crease_angle: SMOOTHING.crease_deg, crease_weighting: 'area',
     parts: flat.parts.map(q => SMOOTHING.materials[matOf.get(q.name)] === undefined ? q : {...q, crease_angle: SMOOTHING.materials[matOf.get(q.name)]})};
   const triEq = sidecar.parts.reduce((s, q) => s + q.faces.reduce((t, f) => t + f.length - 2, 0), 0), verts = sidecar.parts.reduce((s, q) => s + q.vertices.length, 0);
   assert(sidecar.parts.length <= 128 && triEq <= 16384 && verts <= 65536, `${ID} over the Vextris limits: ${sidecar.parts.length} parts, ${triEq} triangles, ${verts} vertices`);
