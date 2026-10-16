@@ -37,7 +37,7 @@ public final class GridClient {
     private static final IKeyConflictContext INVENTORY_PAGE = new IKeyConflictContext() {
         @Override public boolean isActive() {
             var screen = Minecraft.getInstance().screen;
-            return screen instanceof AflInventoryScreen || ContainerGridPanel.active(screen);
+            return screen instanceof AflInventoryScreen || screen instanceof ExternalGridScreen || ContainerGridPanel.active(screen);
         }
         @Override public boolean conflicts(IKeyConflictContext other) { return other == this; }
     };

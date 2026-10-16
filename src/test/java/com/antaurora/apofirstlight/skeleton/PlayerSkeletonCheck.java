@@ -58,6 +58,9 @@ public final class PlayerSkeletonCheck {
         if (System.getenv("AFL_SNAP_ACTIONS") != null) {   // the player actions alone, with their pictures
             System.exit(ActionCheck.run(rig, poser, System.getenv("AFL_SNAP_ACTIONS")) > 0 ? 1 : 0);
         }
+        if (System.getenv("AFL_SNAP_SEAT") != null) {   // the seated riders alone, with their pictures
+            System.exit(SeatCheck.run(rig, poser, System.getenv("AFL_SNAP_SEAT")) > 0 ? 1 : 0);
+        }
         if (System.getenv("AFL_SNAP") != null) {
             SkeletonSnapshot.run(rig, poser, System.getenv("AFL_SNAP"));
             return;
@@ -70,6 +73,7 @@ public final class PlayerSkeletonCheck {
         grips(rig, poser);
         clearance(rig, poser);
         failures += ActionCheck.run(rig, poser, null);
+        failures += SeatCheck.run(rig, poser, null);
         if (failures > 0) {
             System.out.println("\nskeleton checks: " + failures + " FAILED");
             System.exit(1);

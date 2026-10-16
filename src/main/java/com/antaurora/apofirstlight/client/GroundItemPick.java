@@ -15,6 +15,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -93,22 +95,35 @@ public final class GroundItemPick {
         return inventory.items.get(index).isEmpty() && !PlayerStorageCapacity.rejects(inventory, index, stack);
     }
 
-    /** The nearest pickable item whose lying box the view ray enters before anything else it hits. */
+    /**
+     * The nearest pickable item whose lying box the view ray enters before anything else it hits. An entity looked at
+     * hides only the items outside its box: an item lying in the pickup's bed is inside the bed's box, which the ray
+     * enters first.
+     */
     @Nullable
     private static ItemEntity lookedAt(Minecraft mc, Player player) {
         float partialTick = mc.getFrameTime();
         Vec3 eye = player.getEyePosition(partialTick), look = player.getViewVector(partialTick);
-        double limit = REACH;
-        if (mc.hitResult != null && mc.hitResult.getType() != HitResult.Type.MISS) limit = Math.min(limit, mc.hitResult.getLocation().distanceTo(eye));
+        double blockLimit = REACH, entityLimit = REACH;
+        AABB entityBox = null;
+        if (mc.hitResult instanceof EntityHitResult hit) {
+            entityLimit = hit.getLocation().distanceTo(eye);
+            entityBox = hit.getEntity().getBoundingBox().inflate(0.05);
+        } else if (mc.hitResult != null && mc.hitResult.getType() != HitResult.Type.MISS) {
+            blockLimit = Math.min(blockLimit, mc.hitResult.getLocation().distanceTo(eye));
+        }
         ItemEntity best = null;
+        double bestT = Double.MAX_VALUE;
         for (var item : mc.level.getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(REACH + 1))) {
             if (!GroundItems.pickable(player, item)) continue;
             float yaw = GroundItemRenderer.restYaw(item);
             float[] box = GroundItemRenderer.footprint(item);
-            Vec3 from = eye.subtract(item.getPosition(partialTick)).yRot(-yaw), dir = look.yRot(-yaw);
+            Vec3 at = item.getPosition(partialTick);
+            Vec3 from = eye.subtract(at).yRot(-yaw), dir = look.yRot(-yaw);
             double t = enter(from, dir, box[0], box[1], box[2]);
-            if (t >= 0 && t < limit) {
-                limit = t;
+            double limit = entityBox == null || entityBox.contains(at) ? blockLimit : Math.min(blockLimit, entityLimit);
+            if (t >= 0 && t < limit && t < bestT) {
+                bestT = t;
                 best = item;
             }
         }

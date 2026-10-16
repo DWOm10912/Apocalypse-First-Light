@@ -39,9 +39,12 @@ public final class SkinMesh {
         // posed corners per ring: c0 (minX, minZ), c1 (maxX, minZ), c2 (maxX, maxZ), c3 (minX, maxZ)
         Vector3f[][] ring = new Vector3f[rings][4];
         Matrix4f m = new Matrix4f();
+        // the first bone's squash (the compressed torso, SkeletonPose#squash) pulls the top end toward its pivot
+        float squash = pose.squash[bones[0]], pivotY = rig.pivot[bones[0]].y;
         for (int r = 0; r < rings; r++) {
             ringMatrix(pose, bones, r, m);
             float y = top + level[r] * stretch;
+            if (r == 0 && squash != 1F) y = pivotY + (y - pivotY) * squash;
             ring[r][0] = m.transformPosition(new Vector3f(x0, y, z0));
             ring[r][1] = m.transformPosition(new Vector3f(x1, y, z0));
             ring[r][2] = m.transformPosition(new Vector3f(x1, y, z1));

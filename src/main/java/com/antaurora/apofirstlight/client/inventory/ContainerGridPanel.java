@@ -85,6 +85,29 @@ public final class ContainerGridPanel {
 
     private ContainerGridPanel() {}
 
+    /** A screen with grids of its own (ExternalGridScreen): a drag from the panel can end on them. */
+    public interface GridDropTarget {
+        /** The carried stack let go at the mouse: whether the screen took the drop. */
+        boolean dropAt(double mouseX, double mouseY);
+    }
+
+    /** Whether the carried stack is turned (shared with screens that have grids of their own). */
+    public static boolean rotated() {
+        return rotated;
+    }
+
+    public static void rotated(boolean turned) {
+        rotated = turned;
+    }
+
+    /** A drag from the screen's own grids ends here: on the panel it places the carried stack; whether it was on it. */
+    public static boolean dropOnPanel(Screen screen, double mouseX, double mouseY) {
+        var layout = layout(screen);
+        if (layout == null || !layout.contains(mouseX, mouseY)) return false;
+        dropAt(screen, layout, mouseX, mouseY);
+        return true;
+    }
+
     // ---------------------------------------------------------------- where
 
     /** The screen gets the panel: a container screen showing the player's inventory, Survival / Adventure. */
@@ -362,6 +385,7 @@ public final class ContainerGridPanel {
             if (cell != null) place(cell, carried, mx, my, 0);
             return;
         }
+        if (screen instanceof GridDropTarget target && target.dropAt(mouseX, mouseY)) return;
         var slot = container.getSlotUnderMouse();
         var mc = Minecraft.getInstance();
         if (slot != null && mc.gameMode != null && mc.player != null)

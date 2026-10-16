@@ -14,6 +14,12 @@ public final class SkeletonPose {
     public final Quaternionf[] local;
     public final Vector3f[] offset;
     public final Matrix4f[] world;
+    /**
+     * Seated riders V1: per bone, how much its top end (the skin ring at the bone's own pivot end, SkinMesh) is squashed
+     * toward its pivot, 1 = none (the compressed torso); and the shoulders' drop in the chest frame (model px) with it.
+     */
+    public final float[] squash;
+    public float shoulderDrop;
 
     public SkeletonPose(SkeletonRig rig) {
         this.rig = rig;
@@ -21,6 +27,8 @@ public final class SkeletonPose {
         local = new Quaternionf[n];
         offset = new Vector3f[n];
         world = new Matrix4f[n];
+        squash = new float[n];
+        java.util.Arrays.fill(squash, 1F);
         for (int i = 0; i < n; i++) {
             local[i] = new Quaternionf();
             offset[i] = new Vector3f();
@@ -33,7 +41,9 @@ public final class SkeletonPose {
             local[i].identity();
             offset[i].zero();
             world[i].identity();
+            squash[i] = 1F;
         }
+        shoulderDrop = 0F;
         return this;
     }
 
@@ -42,7 +52,9 @@ public final class SkeletonPose {
             local[i].set(other.local[i]);
             offset[i].set(other.offset[i]);
             world[i].set(other.world[i]);
+            squash[i] = other.squash[i];
         }
+        shoulderDrop = other.shoulderDrop;
     }
 
     /** Recomputes every skinning matrix from the local rotations and offsets (parents come first in the rig). */

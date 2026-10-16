@@ -488,6 +488,8 @@
   "screen.apocalypse_firstlight.inventory.pistol": "手枪",
   "screen.apocalypse_firstlight.inventory.holster": "枪套",
   "screen.apocalypse_firstlight.inventory.offhand": "副手",
+  "screen.apocalypse_firstlight.external_grid.carried": "武器 · 手上",
+  "container.apocalypse_firstlight.dev_external_grid": "测试货箱",
   "screen.apocalypse_firstlight.inventory.binds": "绑定",
   "screen.apocalypse_firstlight.inventory.bind": "绑定",
   "screen.apocalypse_firstlight.inventory.bind_empty": "未绑定",
