@@ -50,6 +50,9 @@ public final class GridPackets {
     /** Server -> the players tracking a carrier: the weapons drawn on its body (CarriedWeaponsSync). */
     public record CarriedSync(int entity, CarriedWeaponsSync.Shown shown) {}
 
+    /** Server -> a player with an ExternalGridMenu open as containerId: the grid as it is now. */
+    public record ExternalSync(int containerId, ListTag items) {}
+
     private static SimpleChannel channel;
 
     private GridPackets() {}
@@ -155,6 +158,18 @@ public final class GridPackets {
                     b.writeItem(p.shown().thigh());
                 }, b -> new CarriedSync(b.readVarInt(), new CarriedWeaponsSync.Shown(b.readItem(), b.readBoolean(), b.readItem())),
                 (p, s) -> client(s, () -> CarriedWeaponsSync.receive(p.entity(), p.shown())), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, ExternalSync.class, (p, b) -> {
+                    b.writeVarInt(p.containerId());
+                    CompoundTag tag = new CompoundTag();
+                    tag.put("Items", p.items());
+                    b.writeNbt(tag);
+                }, b -> {
+                    int containerId = b.readVarInt();
+                    CompoundTag tag = b.readNbt();
+                    return new ExternalSync(containerId, tag == null ? new ListTag() : tag.getList("Items", Tag.TAG_COMPOUND));
+                }, (p, s) -> client(s, () -> net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                        () -> () -> com.antaurora.apofirstlight.client.inventory.ExternalGridScreen.receive(p.containerId(), p.items()))),
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
 
@@ -177,6 +192,11 @@ public final class GridPackets {
         var packet = new CarriedSync(carrier.getId(), shown);
         if (viewer != null) channel.send(PacketDistributor.PLAYER.with(() -> viewer), packet);
         else channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> carrier), packet);
+    }
+
+    /** The external grid open as containerId, to the player looking at it. */
+    static void sendExternal(ServerPlayer player, int containerId, ListTag items) {
+        AflNetwork.grid(player, new ExternalSync(containerId, items));
     }
 
     /** Client: a quick binding key for the server. */

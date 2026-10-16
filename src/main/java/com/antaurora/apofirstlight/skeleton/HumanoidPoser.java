@@ -75,6 +75,31 @@ public final class HumanoidPoser {
         /** Riding: the legs take vanilla's angles. */
         public boolean legsVanilla;
         public final Quaternionf vanillaRightLeg = new Quaternionf(), vanillaLeftLeg = new Quaternionf();
+        /**
+         * Seated riders V1 (docs/dev/seated_rider_v1_plan.md 3): the root's whole rotation in model space (null: the
+         * {@link #rootYaw} turn), for a seat that faces its own way or tilts with its vehicle.
+         */
+        public Quaternionf rootTurn;
+        /** Where the pelvis pivot goes (model px; null: where the clips put it): the root moves there. */
+        public Vector3f hipTarget;
+        /**
+         * Model px y the eye should come down to (NaN: none): the torso is compressed (chest and head lowered, the chest's
+         * top end squashed, the shoulders with it) down to {@link #torsoMin} of its height, so a cab's eye height fits.
+         */
+        public float eyeLevel = Float.NaN, torsoMin = 0.62F;
+        /** Without an {@link #eyeLevel}: the torso's height share as given (1: whole), for the moves onto and off a seat. */
+        public float torsoDirect = 1F;
+        /** Legs by two-bone IK to the ankle targets (model px), by this weight over the clips' legs; knees toward the poles. */
+        public float legIkWeight;
+        public final Vector3f ankleRight = new Vector3f(), ankleLeft = new Vector3f();
+        public final Vector3f kneePoleRight = new Vector3f(0, -0.6F, -1F), kneePoleLeft = new Vector3f(0, -0.6F, -1F);
+        /** The feet's model rotation for IK legs (soles flat on the floor); null: the root's. */
+        public Quaternionf footRest;
+        /**
+         * Thigh and shin lengthened by these factors (1: rest): a seated rider drawn smaller keeps legs long enough for the
+         * knees to reach the cushion's edge and the soles the floor.
+         */
+        public float thighStretch = 1F, shinStretch = 1F;
     }
 
     /** What a frame needed, for the checks. */
@@ -85,6 +110,8 @@ public final class HumanoidPoser {
         public float rightSlide, leftSlide;
         public float rightElbowDeg, leftElbowDeg;
         public final Vector3f rootShift = new Vector3f();
+        /** The torso's height share after {@link Input#eyeLevel} (1: whole); hip -> ankle target over the leg's length. */
+        public float torso = 1F, rightLegReach, leftLegReach;
         /** The clip's arms (local rotations upper, fore, hand right then left) before any arm solve, for re-solving. */
         final Quaternionf[] clipArms = {new Quaternionf(), new Quaternionf(), new Quaternionf(), new Quaternionf(),
                 new Quaternionf(), new Quaternionf()};
@@ -99,7 +126,7 @@ public final class HumanoidPoser {
 
     private final SkeletonRig rig;
     private final SkeletonClips clips;
-    private final float upperLength, foreLength;
+    private final float upperLength, foreLength, thighLength, shinLength, neckHalf;
     /** Each bone's mirror (_r <-> _l; itself for the middle bones). */
     private final int[] mirror;
 
@@ -108,6 +135,9 @@ public final class HumanoidPoser {
         this.clips = clips;
         upperLength = rig.pivot[rig.forearmR].distance(rig.pivot[rig.upperArmR]);
         foreLength = rig.pivot[rig.handR].distance(rig.pivot[rig.forearmR]);
+        thighLength = rig.pivot[rig.shinR].distance(rig.pivot[rig.thighR]);
+        shinLength = rig.pivot[rig.footR].distance(rig.pivot[rig.shinR]);
+        neckHalf = rig.pivot[rig.head].distance(rig.pivot[rig.chest]);
         mirror = new int[rig.size()];
         for (int b = 0; b < rig.size(); b++) {
             String n = rig.names[b];
@@ -141,7 +171,8 @@ public final class HumanoidPoser {
         pose.reset();
         locomotion(in, pose);
         action(in, pose);
-        pose.local[rig.root].rotationY(rad(in.rootYaw));
+        if (in.rootTurn != null) pose.local[rig.root].set(in.rootTurn);
+        else pose.local[rig.root].rotationY(rad(in.rootYaw));
         pose.offset[rig.root].add(in.rootOffset);
         Quaternionf chestClip = new Quaternionf(pose.local[rig.chest]);
         float twist = clamp(in.chestYaw, rig.limits[rig.chest], 1), bend = clamp(in.chestPitch, rig.limits[rig.chest], 0);
@@ -171,22 +202,108 @@ public final class HumanoidPoser {
             report.rootShift.set(dx, 0, dz);
             pose.update();
         }
+        if (in.hipTarget != null) {
+            Vector3f at = pose.point(rig.pelvis, rig.pivot[rig.pelvis], new Vector3f());
+            pose.offset[rig.root].add(new Vector3f(in.hipTarget).sub(at));
+            pose.update();
+        }
+        if (!Float.isNaN(in.eyeLevel)) report.torso = torso(in, pose);
+        else if (in.torsoDirect < 1F) report.torso = compress(pose, 1F, Math.max(in.torsoMin, in.torsoDirect));
         if (in.legsVanilla) {
             Quaternionf pelvisWorld = pose.rotation(rig.pelvis, new Quaternionf()).conjugate();
             legVanilla(pose, rig.thighR, rig.shinR, rig.footR, new Quaternionf(pelvisWorld).mul(in.vanillaRightLeg));
             legVanilla(pose, rig.thighL, rig.shinL, rig.footL, new Quaternionf(pelvisWorld).mul(in.vanillaLeftLeg));
+        }
+        if (in.thighStretch != 1F || in.shinStretch != 1F) {
+            for (boolean right : new boolean[]{true, false}) {
+                pose.offset[right ? rig.shinR : rig.shinL].y += thighLength * (in.thighStretch - 1F);
+                pose.offset[right ? rig.footR : rig.footL].y += shinLength * (in.shinStretch - 1F);
+            }
+            pose.update();
+        }
+        if (in.legIkWeight > 0) {
+            report.rightLegReach = leg(in, pose, true);
+            report.leftLegReach = leg(in, pose, false);
         }
         int[] arms = {rig.upperArmR, rig.forearmR, rig.handR, rig.upperArmL, rig.forearmL, rig.handL};
         for (int i = 0; i < 6; i++) report.clipArms[i].set(pose.local[arms[i]]);
         return report;
     }
 
+    /**
+     * The torso compressed until the eye is at {@link Input#eyeLevel}: chest and head each come down {@code h(1-t)} (h:
+     * the chest pivot to the neck), the chest's top end squashed by t about its pivot (SkinMesh), the shoulders down with
+     * the torso's top. Returns t.
+     */
+    private float torso(Input in, SkeletonPose pose) {
+        // measured at the neck, so the head's own nod does not change the torso: a level head's eye is this far over it
+        float neckLevel = in.eyeLevel + (rig.pivot[rig.head].y - rig.sockets.get("eye").pos().y);
+        float t = 1F;
+        for (int pass = 0; pass < 2; pass++) {
+            float at = pose.point(rig.head, rig.pivot[rig.head], new Vector3f()).y;
+            t = compress(pose, t, Math.max(in.torsoMin, Math.min(1F, t - (neckLevel - at) / (2 * neckHalf))));
+        }
+        return t;
+    }
+
+    /** From torso share {@code from} to {@code to}: chest and head down by the difference, the squash and the shoulders. */
+    private float compress(SkeletonPose pose, float from, float to) {
+        float drop = neckHalf * (from - to);
+        pose.offset[rig.chest].y += drop;
+        pose.offset[rig.head].y += drop;
+        pose.squash[rig.chest] = to;
+        pose.shoulderDrop = neckHalf * (1 - to);
+        pose.update();
+        return to;
+    }
+
+    /**
+     * Two-bone leg IK (seated riders): the thigh from its pivot toward the ankle target, the knee toward the pole (model
+     * px direction), the shin folding back, the foot turned to {@link Input#footRest} within its limit. Returns hip ->
+     * target over the leg's length.
+     */
+    private float leg(Input in, SkeletonPose pose, boolean right) {
+        int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL, foot = right ? rig.footR : rig.footL;
+        float w = clamp01(in.legIkWeight);
+        Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f());
+        Vector3f toTarget = new Vector3f(right ? in.ankleRight : in.ankleLeft).sub(hip);
+        float thighLength = this.thighLength * in.thighStretch, shinLength = this.shinLength * in.shinStretch;
+        float reach = thighLength + shinLength, distance = toTarget.length();
+        float d = Math.max(0.15F * reach, Math.min(distance, 0.999F * reach));
+        Vector3f dir = distance > 1e-4F ? new Vector3f(toTarget).div(distance) : new Vector3f(0, 1, 0);
+        float cosKnee = (thighLength * thighLength + shinLength * shinLength - d * d) / (2 * thighLength * shinLength);
+        float flex = Math.min(rad(150), (float) Math.PI - (float) Math.acos(Math.max(-1, Math.min(1, cosKnee))));
+        float reachD = (float) Math.sqrt(thighLength * thighLength + shinLength * shinLength + 2 * thighLength * shinLength * Math.cos(flex));
+        float cosHip = (thighLength * thighLength + reachD * reachD - shinLength * shinLength) / (2 * thighLength * reachD);
+        float hipAngle = (float) Math.acos(Math.max(-1, Math.min(1, cosHip)));
+        Vector3f pole = new Vector3f(right ? in.kneePoleRight : in.kneePoleLeft);
+        Vector3f side = new Vector3f(pole).sub(new Vector3f(dir).mul(pole.dot(dir)));
+        if (side.lengthSquared() < 1e-8F) side.set(0, 0, -1).sub(new Vector3f(dir).mul(-dir.z));
+        side.normalize();
+        // thigh: +y toward the knee, the knee's front (-z) toward the pole, the shin folding back (+z)
+        Vector3f y = new Vector3f(dir).mul((float) Math.cos(hipAngle)).add(new Vector3f(side).mul((float) Math.sin(hipAngle))).normalize();
+        Vector3f z = new Vector3f(side).sub(new Vector3f(y).mul(side.dot(y))).normalize().negate();
+        Vector3f x = new Vector3f(y).cross(z).normalize();
+        Quaternionf thighWorld = new Quaternionf().setFromNormalized(new Matrix4f().set3x3(new org.joml.Matrix3f(x, y, z)));
+        Quaternionf pelvisWorld = pose.rotation(rig.parent[thigh], new Quaternionf());
+        Quaternionf thighLocal = new Quaternionf(pelvisWorld).conjugate().mul(thighWorld).normalize();
+        Quaternionf shinLocal = new Quaternionf().rotationX(flex);
+        Quaternionf rest = in.footRest != null ? new Quaternionf(in.footRest) : pose.rotation(rig.root, new Quaternionf());
+        Quaternionf footLocal = new Quaternionf(thighWorld).mul(shinLocal).conjugate().mul(rest).normalize();
+        clampEuler(footLocal, rig.limits[foot]);
+        pose.local[thigh].slerp(thighLocal, w).normalize();
+        pose.local[shin].slerp(shinLocal, w).normalize();
+        pose.local[foot].slerp(footLocal, w).normalize();
+        pose.updateFrom(thigh);
+        return distance / reach;
+    }
+
     /** The arms on a body from {@link #solveBody} (again, from the clip's arms, when the targets changed). */
     public void solveArms(Input in, SkeletonPose pose, Report report) {
         int[] arms = {rig.upperArmR, rig.forearmR, rig.handR, rig.upperArmL, rig.forearmL, rig.handL};
         for (int i = 0; i < 6; i++) pose.local[arms[i]].set(report.clipArms[i]);
-        pose.offset[rig.upperArmR].zero();
-        pose.offset[rig.upperArmL].zero();
+        pose.offset[rig.upperArmR].set(0, pose.shoulderDrop, 0);
+        pose.offset[rig.upperArmL].set(0, pose.shoulderDrop, 0);
         pose.updateFrom(rig.upperArmR);
         pose.updateFrom(rig.upperArmL);
         Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
@@ -209,7 +326,7 @@ public final class HumanoidPoser {
             Vector3f restPivot = rig.pivot[upper];
             Vector3f wrist = (right ? in.targetRight : in.targetLeft).transformPosition(new Vector3f(rig.pivot[hand]).sub(restPivot));
             Vector3f shoulder = pose.world[rig.chest].transformPosition(new Vector3f(restPivot))
-                    .add(chestWorld.transform(new Vector3f(right ? in.shoulderRight : in.shoulderLeft)));
+                    .add(chestWorld.transform(shoulderSet(in, pose, right)));
             Vector3f d = wrist.sub(shoulder);
             if (d.length() <= want) continue;
             // smallest t >= 0 with |d + t back| = want; past the closest approach, the closest approach
@@ -303,7 +420,7 @@ public final class HumanoidPoser {
                     pose.local[upper].set(u.slerp(pose.local[upper], w));
                     pose.local[fore].set(f.slerp(pose.local[fore], w));
                     pose.local[hand].set(h.slerp(pose.local[hand], w));
-                    pose.offset[upper].mul(w);
+                    pose.offset[upper].set(new Vector3f(0, pose.shoulderDrop, 0).lerp(pose.offset[upper], w));
                 }
             }
         } else {
@@ -328,7 +445,7 @@ public final class HumanoidPoser {
         int upper = right ? rig.upperArmR : rig.upperArmL;
         Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
         Vector3f shoulder = pose.world[rig.chest].transformPosition(new Vector3f(rig.pivot[upper]))
-                .add(chestWorld.transform(new Vector3f(right ? in.shoulderRight : in.shoulderLeft)));
+                .add(chestWorld.transform(shoulderSet(in, pose, right)));
         float reach = upperLength + foreLength;
         Vector3f toTarget = new Vector3f(wrist).sub(shoulder);
         float distance = toTarget.length();
@@ -360,7 +477,7 @@ public final class HumanoidPoser {
         Vector3f wrist = target.transformPosition(new Vector3f(rig.pivot[hand]).sub(restPivot));
         Quaternionf handWorld = target.getUnnormalizedRotation(new Quaternionf());
         Matrix4f chest = pose.world[rig.chest];
-        Vector3f set = new Vector3f(right ? in.shoulderRight : in.shoulderLeft);
+        Vector3f set = shoulderSet(in, pose, right);
         Vector3f shoulder = chest.transformPosition(new Vector3f(restPivot)).add(chestWorld.transform(new Vector3f(set)));
         float reach = upperLength + foreLength;
         Vector3f toTarget = new Vector3f(wrist).sub(shoulder);
@@ -421,6 +538,11 @@ public final class HumanoidPoser {
         float ratio = new Vector3f(wrist).sub(shoulder).length() / reach;
         if (right) { report.rightReach = ratio; report.rightElbowDeg = (float) Math.toDegrees(flex); }
         else { report.leftReach = ratio; report.leftElbowDeg = (float) Math.toDegrees(flex); }
+    }
+
+    /** An arm's shoulder set in the chest frame, with the compressed torso's shoulder drop. */
+    private static Vector3f shoulderSet(Input in, SkeletonPose pose, boolean right) {
+        return new Vector3f(right ? in.shoulderRight : in.shoulderLeft).add(0, pose.shoulderDrop, 0);
     }
 
     private void legVanilla(SkeletonPose pose, int thigh, int shin, int foot, Quaternionf local) {

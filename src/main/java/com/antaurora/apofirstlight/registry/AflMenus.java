@@ -24,6 +24,10 @@ public final class AflMenus {
     public static final RegistryObject<MenuType<com.antaurora.apofirstlight.menu.GunMaintenanceMenu>> GUN_MAINTENANCE =
             MENUS.register("gun_maintenance_bench",()->IForgeMenuType.create(com.antaurora.apofirstlight.menu.GunMaintenanceMenu::new));
 
+    /** An ExternalGridHost's grid (the pickup's cargo bed): the open data is the host entity, the layout and the items. */
+    public static final RegistryObject<MenuType<com.antaurora.apofirstlight.inventory.grid.ExternalGridMenu>> EXTERNAL_GRID =
+            MENUS.register("external_grid", () -> IForgeMenuType.create(com.antaurora.apofirstlight.inventory.grid.ExternalGridMenu::client));
+
     public static final RegistryObject<MenuType<ThermalGeneratorMenu>> THERMAL_GENERATOR =
             MENUS.register("thermal_generator", () -> IForgeMenuType.create(ThermalGeneratorMenu::new));
     public static final RegistryObject<MenuType<com.antaurora.apofirstlight.menu.DistributionPanelMenu>> DISTRIBUTION_PANEL =

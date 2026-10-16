@@ -100,7 +100,7 @@ final class SkeletonSnapshot {
     /** Model px -> view blocks for a camera at {@code eye} (render-origin blocks, world axes; the player faces +z) looking at {@code at}. */
     private static Matrix4f camera(Vector3f eye, Vector3f at) {
         Vector3f up = Math.abs(at.x - eye.x) + Math.abs(at.z - eye.z) < 0.05F ? new Vector3f(0, 0, 1) : new Vector3f(0, 1, 0);
-        return new Matrix4f().lookAt(eye, at, up).mul(PlayerSkeletonCheck.toModel().invert());
+        return new Matrix4f().lookAt(eye, at, up).mul(toWorld);
     }
 
     static GunMesh gunMesh(String asset) throws Exception {
@@ -130,6 +130,10 @@ final class SkeletonSnapshot {
     static final List<Vector3f> marks = new ArrayList<>();
     /** Model px points marked yellow (a player action's anchors). */
     static final List<Vector3f> anchors = new ArrayList<>();
+    /** Model blocks -> render-origin blocks for the third-person cameras (a seated rider is drawn scaled). */
+    static Matrix4f toWorld = PlayerSkeletonCheck.toModel().invert();
+    /** Grey polygons around the body (render-origin blocks): a cab's seat, wheel, floor and roof. */
+    static final List<Vector3f[]> scenery = new ArrayList<>();
 
     /** The posed skeleton alone (player actions V1), from the given first-person view and the four third-person cameras. */
     static void bodyViews(SkeletonRig rig, SkeletonPose pose, Matrix4f firstPerson, Vector3f at, File dir, String base) throws Exception {
@@ -185,6 +189,12 @@ final class SkeletonSnapshot {
             Vector3f[] v = new Vector3f[face.length];
             for (int k = 0; k < face.length; k++) v[k] = f.transformPosition(new Vector3f(face[k][0], face[k][1], face[k][2]));
             add(polys, v, new Color(60, 62, 66), light, tanX, tanY);
+        }
+        Matrix4f worldToView = new Matrix4f(fromModel).mul(new Matrix4f(toWorld).invert());
+        for (Vector3f[] s : scenery) {
+            Vector3f[] v = new Vector3f[s.length];
+            for (int k = 0; k < s.length; k++) v[k] = worldToView.transformPosition(new Vector3f(s[k]));
+            add(polys, v, new Color(150, 150, 150), light, tanX, tanY);
         }
         polys.sort((a, b) -> Float.compare(a.depth(), b.depth()));
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);

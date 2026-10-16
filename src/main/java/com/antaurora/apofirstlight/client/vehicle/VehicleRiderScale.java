@@ -28,6 +28,8 @@ final class VehicleRiderScale {
     public static void pre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
         if (!(player.getVehicle() instanceof PickupTruckEntity)) return;
+        // D's seated pose (client/skeleton/SeatedRiders) draws the rider at its own size
+        if (com.antaurora.apofirstlight.client.skeleton.SeatedRiders.handles(player)) return;
         float s = PickupTruckLayout.riderScale;
         if (s == 1f) return;
         float eye = player.getEyeHeight();

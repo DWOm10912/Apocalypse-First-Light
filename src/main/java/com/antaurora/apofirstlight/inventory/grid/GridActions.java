@@ -60,6 +60,8 @@ public final class GridActions {
 
     /** Action target meaning "a hotbar index" ({@code extra}) rather than a grid storage. */
     public static final int SLOT_TARGET = 15;
+    /** Action target meaning "the open {@link ExternalGridMenu}'s grid" (docs/ui/afl_inventory_grid_v0_plan.md 15). */
+    public static final int EXTERNAL_TARGET = 14;
 
     private GridActions() {}
 
@@ -83,11 +85,25 @@ public final class GridActions {
 
     /** Server: one grid action (checked here; GameTests call it directly). */
     public static void handle(ServerPlayer player, GridPackets.Action action) {
-        if (!player.isAlive() || PlayerStorageCapacity.unrestricted(player)) return;
+        if (!player.isAlive()) return;
+        boolean external = action.target() == EXTERNAL_TARGET;
+        // Creative players have no grids of their own, but an external grid works for them too
+        boolean unrestricted = PlayerStorageCapacity.unrestricted(player);
+        if (unrestricted && !external) return;
         var menu = player.containerMenu;
         if (!gridMenu(player, menu)) return;
         Kind kind = Kind.of(action.kind());
         if (kind == null) return;
+        var ext = menu instanceof ExternalGridMenu e && e.host() != null ? e : null;
+        if (external && ext == null) return;
+        if (external) {
+            if (externalAction(player, ext, kind, action, unrestricted)) {
+                ext.changed();
+                player.getInventory().setChanged();
+                menu.broadcastChanges();
+            }
+            return;
+        }
         // ground items only from the inventory page; into a container only with one open
         boolean ground = kind == Kind.GROUND_PICK || kind == Kind.GROUND_QUICK || kind == Kind.GROUND_DROP;
         if (ground && menu != player.inventoryMenu) return;
@@ -106,6 +122,9 @@ public final class GridActions {
                 case GROUND_QUICK -> GroundItems.quick(player, action.extra(), action.x());
                 default -> GroundItems.drop(player, action.x() == 1);
             };
+        } else if (kind == Kind.TO_CONTAINER && ext != null) {
+            changed = toExternal(player, ext, action);
+            if (changed) ext.changed();
         } else if (kind == Kind.TO_CONTAINER) {
             changed = toContainer(player, menu, action);
         } else if (kind == Kind.QUICK_FROM_SLOT) {
@@ -142,6 +161,64 @@ public final class GridActions {
             player.getInventory().setChanged();
             menu.broadcastChanges();
         }
+    }
+
+    /**
+     * An action on the external grid: the same clicks as on the player's own grids, except binding (a key binds to the
+     * player's pockets and rig only) and shift-click, which moves the stack out to the player.
+     */
+    private static boolean externalAction(ServerPlayer player, ExternalGridMenu ext, Kind kind, GridPackets.Action action,
+                                          boolean unrestricted) {
+        var storage = ext.grid();
+        return switch (kind) {
+            case PICK -> pick(player, storage, action);
+            case PLACE -> place(player, storage, action);
+            case MERGE -> merge(player, storage, action);
+            case QUICK -> fromExternal(player, storage, action, unrestricted);
+            case DROP -> drop(player, storage, action);
+            case HOTBAR_KEY -> hotbarKey(player, storage, action);
+            case OVERFLOW_TAKE -> overflowTake(player, storage, action);
+            case SLING -> {
+                var entry = storage.at(action.section(), action.x(), action.y());
+                yield entry != null && sling(player, entry.stack());
+            }
+            default -> false;
+        };
+    }
+
+    /**
+     * Shift-click on an external entry: a weapon to the empty weapon position that takes it, the rest into the player's
+     * grids (Creative: the vanilla inventory); what does not fit stays.
+     */
+    private static boolean fromExternal(ServerPlayer player, GridStorage storage, GridPackets.Action a, boolean unrestricted) {
+        var entry = storage.at(a.section(), a.x(), a.y());
+        if (entry == null) return false;
+        var stack = entry.stack();
+        int before = stack.getCount();
+        if (unrestricted) {
+            player.getInventory().add(stack);
+        } else {
+            toHotbar(player.getInventory(), stack);
+            if (!stack.isEmpty()) {
+                var view = PlayerGrids.view(player);
+                if (view.insert(stack)) view.commit();
+            }
+        }
+        if (stack.getCount() == before) return false;
+        storage.prune();
+        return true;
+    }
+
+    /** Shift-click on one of the player's grid entries with an external grid open: as much as fits goes over. */
+    private static boolean toExternal(ServerPlayer player, ExternalGridMenu ext, GridPackets.Action a) {
+        var target = PlayerGrids.Target.of(a.target());
+        var view = PlayerGrids.view(player);
+        var storage = target == null ? null : view.get(target);
+        var entry = storage == null ? null : storage.at(a.section(), a.x(), a.y());
+        if (entry == null) return false;
+        if (!ext.grid().insert(entry.stack())) return false;
+        view.commit();
+        return true;
     }
 
     private static boolean pick(ServerPlayer player, GridStorage storage, GridPackets.Action a) {

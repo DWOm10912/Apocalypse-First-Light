@@ -11,6 +11,8 @@ import com.antaurora.apofirstlight.skeleton.SkinMesh;
 import com.antaurora.apofirstlight.skeleton.action.ActionPose;
 import com.antaurora.apofirstlight.skeleton.action.PlayerAction;
 import com.antaurora.apofirstlight.skeleton.action.PlayerProps;
+import com.antaurora.apofirstlight.skeleton.seat.RiderSeat;
+import com.antaurora.apofirstlight.skeleton.seat.SeatPose;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -214,6 +216,8 @@ public final class PlayerSkeleton {
         Solved solved;
         final float[] saved = new float[12 * 6];
         PlayerModel<?> model;
+        /** The pose stack the draw scaled (a seated rider, SeatedRiders#scale), popped at the end. */
+        PoseStack scaled;
     }
 
     private static final Deque<Draw> DRAWS = new ArrayDeque<>();
@@ -237,6 +241,14 @@ public final class PlayerSkeleton {
         d.buffers = buffers;
         d.light = light;
         DRAWS.push(d);
+        // a seated rider is drawn smaller about the render origin; d.head stays unscaled, so the solve's model frame
+        // (toModel) carries the scale and the seat's points land where they are in the world
+        float scale = supportedPose(player) ? SeatedRiders.scale(player, partial) : 1F;
+        if (scale != 1F) {
+            pose.pushPose();
+            pose.scale(scale, scale, scale);
+            d.scaled = pose;
+        }
     }
 
     /** LivingEntityRenderer#render RETURN: vanilla's own part values back for whoever draws the shared model next. */
@@ -245,6 +257,7 @@ public final class PlayerSkeleton {
         if (d == null || d.player != entity) return;
         DRAWS.pop();
         if (d.solved != null && d.model != null) restore(d.model, d.saved);
+        if (d.scaled != null) d.scaled.popPose();
     }
 
     /** LivingEntityRenderer#render, after setupAnim: solve (or reuse) the pose and write the vanilla parts. */
@@ -423,13 +436,29 @@ public final class PlayerSkeleton {
             in.vanillaRightLeg.rotationZYX(model.rightLeg.zRot, model.rightLeg.yRot, model.rightLeg.xRot);
             in.vanillaLeftLeg.rotationZYX(model.leftLeg.zRot, model.leftLeg.yRot, model.leftLeg.xRot);
         }
+        // seated riders (docs/dev/seated_rider_v1_plan.md): on a seat or getting on or off one, the seat poses the body
+        SeatedRiders.Seated seated = SeatedRiders.frame(p, partial);
+        SeatPose.Seat seat = null;
+        SeatPose.Moment moment = null;
+        if (seated != null) {
+            seat = seat(seated.seat(), origin, toModel);
+            moment = seated.moment();
+            SeatPose.Stand stand = new SeatPose.Stand();
+            stand.feet.set(toModel.transformPosition(new Vector3f()).mul(16F));
+            if (seated.move() == SeatPose.Move.GET_IN) {
+                stand.feet.set(model(seated.standFeet(), origin, toModel));
+                stand.turn.set(facing(seated.standYaw(), toModel));
+            }
+            SeatPose.body(in, seat, stand, moment, seated.torso(), eyeModel.y);
+        }
         // a player action (not with a gun up: the gun has both hands): its clips, step and facing before the body
-        ActionPose.Moment action = gun ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
+        ActionPose.Moment action = gun || seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
         // the own first-person body leaves an action that keeps its view model alone (the view model is the hands)
         if (action != null && firstPerson && action.action.firstPerson == PlayerAction.FirstPerson.VIEW_MODEL) action = null;
         if (action != null && !ActionPose.body(in, poser().rig(), action)) action = null;
         if (action != null && d.world) SkeletonActions.stepped(p, in.rootOffset, toModel);
         HumanoidPoser.Report report = poser().solveBody(in, out.pose);
+        if (seated != null && d.world && seated.move() == SeatPose.Move.NONE) SeatedRiders.solvedTorso(p, report.torso);
         out.hold = null;
         out.prop = null;
         if (gun) {
@@ -452,6 +481,7 @@ public final class PlayerSkeleton {
                 if (swingRight) in.vanillaRightWeight = w;
                 else in.vanillaLeftWeight = w;
             }
+            if (seat != null) SeatPose.hands(in, out.pose, poser(), seat, moment);
             if (action != null) {
                 ActionPose.hands(in, out.pose, poser(), action);
                 if (action.prop != null) {
@@ -473,6 +503,42 @@ public final class PlayerSkeleton {
             }
             SkeletonActions.propPoints(p, points);
         }
+    }
+
+    /** A world point (blocks) to model px. */
+    private static Vector3f model(Vec3 world, Vec3 origin, Matrix4f toModel) {
+        return toModel.transformPosition(new Vector3f((float) (world.x - origin.x), (float) (world.y - origin.y), (float) (world.z - origin.z))).mul(16F);
+    }
+
+    /**
+     * The model's turn for a body whose right, up and back point these world ways: rest body right is model -x, up -y,
+     * back +z.
+     */
+    private static Quaternionf turn(Vector3f right, Vector3f up, Vector3f back, Matrix4f toModel) {
+        Vector3f r = toModel.transformDirection(new Vector3f(right)).normalize().negate();
+        Vector3f u = toModel.transformDirection(new Vector3f(up)).normalize().negate();
+        Vector3f b = toModel.transformDirection(new Vector3f(back)).normalize();
+        return new Quaternionf().setFromUnnormalized(new Matrix3f(r, u, b)).normalize();
+    }
+
+    /** The model's turn for a body standing upright facing a world yaw. */
+    private static Quaternionf facing(float yaw, Matrix4f toModel) {
+        float a = (float) Math.toRadians(yaw);
+        Vector3f front = new Vector3f(-Mth.sin(a), 0, Mth.cos(a)), up = new Vector3f(0, 1, 0);
+        return turn(new Vector3f(front).cross(up), up, front.negate(), toModel);
+    }
+
+    /** A host's seat (world) in model px. */
+    private static SeatPose.Seat seat(RiderSeat rs, Vec3 origin, Matrix4f toModel) {
+        SeatPose.Seat s = new SeatPose.Seat();
+        s.kind = rs.kind();
+        s.cushion.set(model(rs.cushion(), origin, toModel));
+        s.turn.set(turn(rs.frame().transform(new Vector3f(1, 0, 0)), rs.frame().transform(new Vector3f(0, 1, 0)),
+                rs.frame().transform(new Vector3f(0, 0, 1)), toModel));
+        s.doorSide = rs.doorSide();
+        s.door = rs.door();
+        for (var e : rs.anchors().entrySet()) s.anchors.put(e.getKey(), model(e.getValue(), origin, toModel));
+        return s;
     }
 
     /** The body yaw LivingEntityRenderer#render turns the model by (riders included). */

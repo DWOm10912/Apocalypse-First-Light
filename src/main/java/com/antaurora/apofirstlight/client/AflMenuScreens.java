@@ -17,6 +17,7 @@ public final class AflMenuScreens {
     public static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             MenuScreens.register(AflMenus.THERMAL_GENERATOR.get(), ThermalGeneratorScreen::new);
+            MenuScreens.register(AflMenus.EXTERNAL_GRID.get(), com.antaurora.apofirstlight.client.inventory.ExternalGridScreen::new);
             MenuScreens.register(AflMenus.GUN_MAINTENANCE.get(), GunMaintenanceScreen::new);
             MenuScreens.register(AflMenus.ENERGY_CELL.get(), EnergyCellScreen::new);
             MenuScreens.register(AflMenus.DISTRIBUTION_PANEL.get(), DistributionPanelScreen::new);

@@ -489,6 +489,8 @@
   "screen.apocalypse_firstlight.inventory.pistol": "Pistol",
   "screen.apocalypse_firstlight.inventory.holster": "Holster",
   "screen.apocalypse_firstlight.inventory.offhand": "Off hand",
+  "screen.apocalypse_firstlight.external_grid.carried": "Weapons · hand",
+  "container.apocalypse_firstlight.dev_external_grid": "Test crate",
   "screen.apocalypse_firstlight.inventory.binds": "Binds",
   "screen.apocalypse_firstlight.inventory.bind": "Bind",
   "screen.apocalypse_firstlight.inventory.bind_empty": "Not bound",

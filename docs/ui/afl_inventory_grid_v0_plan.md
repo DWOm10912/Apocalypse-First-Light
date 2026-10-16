@@ -1,6 +1,6 @@
 # AFL 网格背包 V0：实施计划
 
-状态：**阶段 1 用户实机 PASS（2026-10-14）**，编译和 GameTest 通过。武器位和快捷栏重做（第 10 节）、装备网格和身上的装备（第 11 节）代码 2026-10-14 完成，**用户实机 PASS**（第 11 节 2026-10-15 第一次检查，第 10 节和耳罩、捡起即穿的修正在 2026-10-15 合并前检查）；地上的物品（第 12 节）用户实机 PASS（2026-10-15）；容器界面里的网格和配件（第 13 节）**代码已完成、编译和 GameTest 通过**，用户实机试用时发现 Shift 放进熔炉会刷物品，已修，修复用户实机 PASS，其余部分（拖进拖出、Shift 移动、容器不收时留在原位、维护台配件从网格取）在合并前检查里用户实机 PASS（2026-10-15）；维护台选枪栏（第 13 节末）和身上的枪的枪套、多人同步（第 14 节）用户实机 PASS（2026-10-15）；第 1、3、5 节里被它替换的说法已经改成现在的行为。 用户同日让这个分支开工（“开始做这个分支的内容”）。下面的方案是我按概念图定的默认做法，偏离概念图的地方在第 6 节单独列出，实现时的取舍在第 9 节，等用户在第一次实机检查时一起确认。2026-10-15 用户让合并：分支提交为 `49622f52`，再把 master `d083892e` 合进分支，协议号定为 46，见文末“合并进 master”。
+状态：**阶段 1 用户实机 PASS（2026-10-14）**，编译和 GameTest 通过。武器位和快捷栏重做（第 10 节）、装备网格和身上的装备（第 11 节）代码 2026-10-14 完成，**用户实机 PASS**（第 11 节 2026-10-15 第一次检查，第 10 节和耳罩、捡起即穿的修正在 2026-10-15 合并前检查）；地上的物品（第 12 节）用户实机 PASS（2026-10-15）；容器界面里的网格和配件（第 13 节）**代码已完成、编译和 GameTest 通过**，用户实机试用时发现 Shift 放进熔炉会刷物品，已修，修复用户实机 PASS，其余部分（拖进拖出、Shift 移动、容器不收时留在原位、维护台配件从网格取）在合并前检查里用户实机 PASS（2026-10-15）；维护台选枪栏（第 13 节末）和身上的枪的枪套、多人同步（第 14 节）用户实机 PASS（2026-10-15）；第 1、3、5 节里被它替换的说法已经改成现在的行为。 用户同日让这个分支开工（“开始做这个分支的内容”）。下面的方案是我按概念图定的默认做法，偏离概念图的地方在第 6 节单独列出，实现时的取舍在第 9 节，等用户在第一次实机检查时一起确认。2026-10-15 用户让合并：分支提交为 `49622f52`，再把 master `d083892e` 合进分支，协议号定为 46，见文末“合并进 master”。外部网格（第 15 节，皮卡货斗等车外的网格）2026-10-16 在 `feature/external-grid-v0` 上完成，**用户实机 PASS**（同日）。
 
 - 分支：`feature/inventory-grid-v0`，从 master `47140c87` 开出，工作区 `D:/Minecraft Modding/AFL-survivor-v0`。
 - 布局和用户决定：[afl_inventory_grid_v0_concept.md](afl_inventory_grid_v0_concept.md)；调研：[afl_unified_ui_v0_research.md](afl_unified_ui_v0_research.md)。
@@ -602,3 +602,79 @@
   - 默认 GameTest 85 项失败 16 项，名单和合并前一样（都是 master 原有的）；
   - 工作台命名空间 28 项，只有 `p9_reload` “Before mag-in” 失败（master 原有）。
 - 合并后这个分支相对 master 可以快进。master 检出在 Main 的工作区，D 不改 Main 的工作区，所以 master 的快进交给 Main 做。
+
+## 15. 外部网格（2026-10-16，用户实机 PASS）
+
+用途：玩家身外的网格存储，第一个用户是 T15 皮卡的货斗（9 × 7）。Main 和 D 2026-10-16 约定接口：D 做网格这一边，Main 在 `PickupTruckEntity` 上实现宿主。分支 `feature/external-grid-v0`，从 master `63b85a1b` 开。
+
+### 接口（`inventory/grid`）
+
+- `ExternalGridHost`（宿主实现）：
+  - `GridStorage grid()`：服务器上的实时网格，布局取 `grid().layout()`；
+  - `Component title()`：界面标题；
+  - `boolean stillValid(Player)`：每次操作前和每 tick 都查，返回 false 时界面关闭（皮卡：没被移除、玩家在 8 格内）；
+  - `void onGridChanged()`：网格改了之后调用，宿主保存并更新显示（皮卡：存 `Cargo`、同步货斗里画的东西）。打开着的界面已经由 `ExternalGrids` 同步，宿主不用管。
+- `ExternalGrids`：
+  - `open(ServerPlayer, host, hostEntityId)`：打开界面（宿主先查能不能用，比如人在货斗旁边）；`hostEntityId` 是网格所属的实体，没有就填 -1；
+  - `contentsChanged(host)`：把网格重新发给所有开着这个宿主界面的玩家。
+- `ExternalGridMenu`：菜单类型 `apocalypse_firstlight:external_grid`。打开时把实体 ID、布局和物品发给客户端。菜单里只有玩家的三个武器位和手上那一格（快捷栏 0–3），所以容器旁的网格面板（第 13 节）会出现，菜单的光标就是网格的光标；货斗网格本身没有 Slot，全部走 `GridActions`。
+
+### 操作
+
+和背包页一样，目标是 `GridActions.EXTERNAL_TARGET = 14`（和 `SLOT_TARGET = 15` 同一种做法）：
+- 左键拿起 / 放下 / 叠上，右键拿一半 / 放一个，拖动放到外部网格、旁边的网格面板或武器位，R 转向；
+- Shift 点外部网格里的东西：武器进空着的对应武器位，其余进玩家的口袋 → 胸挂 → 背包，放不下的留在原处；
+- Shift 点玩家网格里的东西：进外部网格（走 `TO_CONTAINER`，开着外部网格时改成直接放进去）；
+- Shift 点武器位或手上那格：进外部网格；
+- Q 丢一个，Ctrl+Q 丢整组；1–3 键和对应武器位交换；
+- 4–9 绑定键只对玩家自己的口袋和胸挂有效，外部网格里不能绑定；
+- 每个操作都先查 `stillValid`；
+- 创造模式玩家没有自己的网格，但外部网格照样能用；Shift 拿出来进原版物品栏。
+
+### 同步
+
+服务器改了外部网格后：`ExternalGridMenu.changed()` → 宿主 `onGridChanged()` → `ExternalGrids.contentsChanged`，给每个开着它的玩家发 `GridPackets.ExternalSync`（容器 ID + 物品）。多人同时开着同一个宿主时，大家看到的都是同一份。网络协议 47 → **48**。
+
+### 测试命令
+
+- `/afl dev grid external [w h]`：每个玩家一个测试货箱（默认 9 × 7），服务器关掉前一直在；在打开的位置 8 格内能用。改尺寸时旧箱子里的东西掉在脚下。
+- `/afl dev grid truck`：16 格内最近的 T15 的货斗网格，用的是 D 这边临时包的宿主（读写 `truck.cargo()`、调用 `cargoChanged()`），离车 8 格内能用。Main 在车上实现宿主、货斗加上“打开”交互之后，这条命令只用来测试。
+
+### 文件
+
+| 文件 | 内容 |
+|---|---|
+| `inventory/grid/ExternalGridHost.java` | 宿主接口 |
+| `inventory/grid/ExternalGrids.java` | 打开、同步 |
+| `inventory/grid/ExternalGridMenu.java` | 菜单、布局尺寸（界面用同一套数字）、Shift 放进 |
+| `inventory/grid/GridActions.java` | `EXTERNAL_TARGET`、外部网格的操作、两种 Shift 移动、创造模式例外 |
+| `inventory/grid/GridPackets.java` | `ExternalSync` 包 |
+| `inventory/grid/ExternalGridCommands.java` | 两条测试命令 |
+| `client/GroundItemPick.java` | 车斗里的掉落物可以右键拿（实机检查后的修正） |
+| `client/inventory/ExternalGridScreen.java` | 界面：网格、武器位和手、悬停预览、提示、拖放、按键 |
+| `client/inventory/ContainerGridPanel.java` | 转向状态共用，`GridDropTarget`（从面板拖到外部网格），`dropOnPanel`（从外部网格拖到面板） |
+| `client/inventory/GridClient.java` | R 键在外部网格界面里也有效 |
+| `registry/AflMenus.java`、`client/AflMenuScreens.java` | 菜单类型和界面注册 |
+| `network/AflNetwork.java` | 协议 48 |
+| 语言文件 | `screen.apocalypse_firstlight.external_grid.carried`、`container.apocalypse_firstlight.dev_external_grid` |
+| `src/dev/.../ExternalGridGameTests.java` | `externalActions`、`externalCreative` |
+
+### 验证
+
+- `compileJava` 通过。
+- `runGameTestServer -PaflWithoutShaders`：88 项，失败 16 项，都是原来就有的（流体 mB、化学配方、TNT、枪械换弹和手枪展示、噪声矩阵等）；新加的 `externalActions`（拿、放、叠、两种 Shift、武器位、1–3 键、绑定被拒、Q、宿主失效、菜单不对时不操作）和 `externalCreative` 通过。
+- 用户 2026-10-16 实机检查：测试货箱和皮卡货斗（`/afl dev grid truck`）界面、放进拿出“看起来没问题”，**PASS**。多人同时打开同一个宿主没有实机试过。
+
+### 用户实机检查：货斗里的掉落物右键拿不到（2026-10-16，已修，用户 PASS）
+
+现象：从货斗网格 Q 出来、或者扔进货斗的东西掉在车斗里，准星对着它右键拿不到，只能从背包页“附近”里拿。
+
+原因：右键拾取（`client/GroundItemPick`，第 12 节）只接受比准星命中的东西更近的物品。准星对着皮卡时命中的是车的实体碰撞盒（货斗部分 `PickupTruckEntity.Part`），视线先进这个盒子，车斗里的物品都在盒子里面，被当成挡在车后面。
+
+修法：准星命中实体时，只有在这个实体盒子外面的物品才被它挡住；在盒子里面的物品（车斗里、以后别的车里）照常比远近。命中方块时不变。编译通过，用户 2026-10-16 实机复查 PASS。
+
+### 没做 / 已知限制
+
+- 外部网格的溢出区（布局变小后放不下的东西）不显示；皮卡布局固定，现在遇不到。
+- 打开界面要宿主那边加交互（皮卡货斗的“打开”提示，Main 做）；之前用测试命令。
+- 测试货箱只在内存里，服务器关掉就没了。
