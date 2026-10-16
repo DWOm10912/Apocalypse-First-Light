@@ -79,4 +79,17 @@ public class GradedTurfBlock extends Block {
     public boolean useShapeForLightOcclusion(BlockState state) {
         return true;
     }
+
+    /**
+     * What the turf hides of its neighbours: only the floor. The block below never shows its top face under the turf; it
+     * lay in the same plane wherever a top triangle reached the floor (all three corners 0), and the two fought (z-fighting
+     * on steep fills, user 2026-10-15). The sides hide nothing (the turf may be lower than its neighbours' faces), and a
+     * 1/16 floor is no full face for them.
+     */
+    @Override
+    public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
+        return FLOOR;
+    }
+
+    private static final VoxelShape FLOOR = Block.box(0, 0, 0, 16, 1, 16);
 }

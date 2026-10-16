@@ -4,7 +4,6 @@ import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.worldgen.network.RoadChunkPass;
 import com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime;
-import com.antaurora.apofirstlight.worldgen.network.road.R4CrossSection;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
 import net.minecraft.core.BlockPos;
@@ -25,9 +24,10 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
- * C3.2 road checks for the C2 harness (dev only; {@code roads=1}; docs/worldgen/federal_highways_c3.md, 10.6): the probe
- * sites are windows along the built sample route, and every column of a window is compared with what the road's
- * chunk pass must have built there (RoadChunkPass.columns, the same pure function):
+ * C3 road checks for the C2 harness (dev only; {@code roads=1}; docs/worldgen/federal_highways_c3.md, 10.6 and 11): the
+ * probe sites are windows at a few stations of every built road (ends, middle, bridges, first culvert), and every column
+ * of a window is compared with what the road's chunk pass must have built there (RoadChunkPass.columns, the same pure
+ * function):
  * <ul>
  *   <li>collision columns (road_surface and its layers), asphalt, turf states, the bridge's road_structure (deck under its
  *   collision, parapet and wing tops with their layers);</li>
@@ -58,19 +58,38 @@ final class C3RoadProbe {
     /** chunks forced so the stands tick (released after the read) */
     private static final List<int[]> FORCED = new ArrayList<>();
 
-    /** Windows (radius 2 chunks) along each built route: ends, every ~900 m, and each bridge. */
+    /** A span this shallow is a culvert (RoadNetworkJson's culvert deck). */
+    private static final double CULVERT_DEPTH = 1.0;
+
+    /**
+     * The probe stations of a road: both ends (where it stops short of another road), its middle, each bridge and the
+     * first culvert. A few windows per road, not the whole country (the harness generates every window's chunks).
+     */
+    private static List<Double> stations(RoadDesign d, boolean ends) {
+        List<Double> out = new ArrayList<>();
+        if (ends) out.add(0.0);
+        out.add(d.length / 2);
+        if (ends) out.add(d.length);
+        boolean culvert = false;
+        for (RoadDesign.Span sp : d.spans) {
+            if (sp.depth() < CULVERT_DEPTH) {
+                if (culvert) continue;
+                culvert = true;
+            }
+            out.add((sp.s0() + sp.s1()) / 2);
+        }
+        return out;
+    }
+
+    /** Windows (radius 2 chunks) at the probe stations of every built road. */
     static List<C2Probe.Site> sites(ServerLevel level) {
         List<C2Probe.Site> out = new ArrayList<>();
         RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level);
         if (n == null) return out;
         for (RoadDesign d : n.works().roads()) {
-            List<Double> stations = new ArrayList<>();
-            for (double s = 0; s < d.length; s += 900) stations.add(s);
-            stations.add(d.length);
-            for (RoadDesign.Span sp : d.spans) stations.add((sp.s0() + sp.s1()) / 2);
-            for (double s : stations) {
+            for (double s : stations(d, true)) {
                 double[] p = d.point(s, 0);
-                out.add(new C2Probe.Site(String.format(Locale.ROOT, "road %.0f", s), (int) Math.floor(p[0]), (int) Math.floor(p[1]), 2));
+                out.add(new C2Probe.Site(String.format(Locale.ROOT, "road %s %.0f", d.id, s), (int) Math.floor(p[0]), (int) Math.floor(p[1]), 2));
             }
         }
         return out;
@@ -113,7 +132,7 @@ final class C3RoadProbe {
                             double top = col.y() + c.getBlockState(p.set(x, col.top(), z)).getCollisionShape(level, p).max(net.minecraft.core.Direction.Axis.Y)
                                     + (col.upper() > 0 ? 1 : 0);
                             RoadWorks.Hit hit = n.works().hit(x + 0.5, z + 0.5, RoadWorks.REACH);
-                            if (hit != null && hit.v() >= R4CrossSection.HALF_MEDIAN && hit.v() <= R4CrossSection.EDGE && hit.beyond() == 0)
+                            if (hit != null && hit.road().section.paved(hit.v()) && hit.beyond() == 0)
                                 maxCollision = Math.max(maxCollision, Math.abs(top - hit.road().pavementY(hit.sc(), hit.u())));
                         }
                     }
@@ -127,7 +146,15 @@ final class C3RoadProbe {
                         boolean skipped = col.data() == com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh.WING && !top.is(AflBlocks.ROAD_STRUCTURE.get())
                                 && !top.isAir() && top.getFluidState().isEmpty();
                         if (skipped) { wingsSkipped++; natural = true; }
-                        else if (top != structure.setValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS, col.layers())) why = "barrier " + top;
+                        else if (!top.is(AflBlocks.ROAD_STRUCTURE.get()) || top.getValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS) != col.layers())
+                            why = "barrier " + top;
+                    }
+                    case CULVERT -> {
+                        // a box culvert's own cell (group D): its top concrete block, or the stream's water
+                        BlockState top = c.getBlockState(p.set(x, col.y(), z));
+                        if (col.layers() > 0 && (!top.is(AflBlocks.ROAD_STRUCTURE.get())
+                                || top.getValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS) != col.layers())) why = "culvert " + top;
+                        else if (col.layers() == 0 && !top.getFluidState().is(Fluids.WATER)) why = "culvert water " + top;
                     }
                     case OPEN -> {
                         int g = (int) Math.floor(n.plan().heightAt(x + 0.5, z + 0.5));
@@ -170,15 +197,13 @@ final class C3RoadProbe {
         if (!examples.isEmpty()) line.accept("  roads: first mismatches " + examples);
     }
 
-    /** Drop armor stands onto the right lane centre at a few stations (server-side physics). */
+    /** Drop armor stands onto the outer lane centres at the probe stations, ends left out (server-side physics). */
     static void dropStands(ServerLevel level, Consumer<String> line) {
         RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level);
         if (n == null) return;
-        double lane = R4CrossSection.CROWN + R4CrossSection.LANE / 2;
         for (RoadDesign d : n.works().roads()) {
-            List<Double> at = new ArrayList<>(List.of(450.0, 2050.0, 3150.0, 5450.0));
-            for (RoadDesign.Span sp : d.spans) at.add((sp.s0() + sp.s1()) / 2);
-            for (double s : at) for (double u : new double[]{lane, -lane}) {
+            double lane = d.section.laneCentre(d.section.lanes - 1);
+            for (double s : stations(d, false)) for (double u : new double[]{lane, -lane}) {
                 double[] xz = d.point(s, u);
                 double y = d.pavementY(s, u);
                 int scx = (int) Math.floor(xz[0]) >> 4, scz = (int) Math.floor(xz[1]) >> 4;

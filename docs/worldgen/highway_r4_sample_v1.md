@@ -222,11 +222,12 @@
 | Registry ID | `apocalypse_firstlight:graded_turf`，没有物品，进正式 JAR |
 | 代码 / 资源 | `block/GradedTurfBlock.java`、`client/GradedTurfModel.java`（模型加载器 `apocalypse_firstlight:graded_turf`）、`blockstates/graded_turf.json`、`models/block/graded_turf.json`、`loot_tables/blocks/graded_turf.json`；中英文名“坡面草皮 / Graded Turf” |
 | 状态 | `nw`、`ne`、`sw`、`se`：角点高度 0..8（1/8 格）；`shift`：false 时角点在方块内 0..1，true 时在 0.5..1.5（顶面跨过整数高度的格子），共 13122 个状态 |
-| 外观 | 顶面原版草顶（按生物群系染色），侧面泥土；跟着区块渲染；平面光照（无 AO） |
+| 外观 | 顶面原版草顶（按生物群系染色），贴图朝向取同位置原版草方块的变体；没有光影时按倾斜压暗（和平滑地形的坡一样）；侧面用原版草方块的侧面两层（草边按群系着色，走 `cutout_mipped`），草边顺着顶边（C3.3a B 组，2026-10-15，原来是纯泥土侧面）；跟着区块渲染；平面光照（无 AO） |
 | 地图颜色 | Xaero 取方块颜色时调用模型的 `getQuads(state, UP, …, renderType = null)`，UP 面为空就退回粒子贴图（泥土，不着色）：2026-10-10 用户实机，小地图上施工带一片暗褐。现在没有渲染层的调用（地图、破坏裂纹）把斜顶面当作 UP 面返回（带着色编号 0，按群系草色）；区块渲染（渲染层 `solid`）不变，斜顶仍不剔除。已经画过的地图格要等 Xaero 重新扫描那些区块才会变色。修复后待用户复验 |
 | 碰撞 | 四个 8×8 象限盒，每个高度取该象限角点和中心的平均 |
+| 遮挡 | 只遮挡下面那块的顶面（`getOcclusionShape` = 底部 1/16 厚的板，2026-10-15）：顶面三个角都在格底时，原来草皮顶面和下面泥土的顶面在同一平面上闪（用户在 C3.3a 高填方看到）。侧面不遮挡邻格（草皮可能比邻格的面低）；`isSolidRender` 仍为 false，亮度、天空光不变。以前是 `noOcclusion`（什么都不遮挡） |
 | 挖掘 | 铲（`minecraft:mineable/shovel`），无等级要求、不要求正确工具，掉落泥土；属自然地形，按原版规则，没有 `needs_*_tool` 标签 |
-| 行为 | 不随机刻、不蔓延 |
+| 行为 | 不随机刻、不蔓延；草、蕨、花、高草能长在上面（`BushBlockGradedTurfMixin`），树苗不行；不在 `#minecraft:dirt` 里（C3.3a B 组，见 [C3](federal_highways_c3.md) 11.12） |
 
 角点规则（`R4Earthworks`）：
 

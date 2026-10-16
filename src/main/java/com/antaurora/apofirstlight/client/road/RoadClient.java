@@ -51,10 +51,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * The generated roads on the client (C3.2; docs/worldgen/federal_highways_c3.md, 10.5): the built routes arrive as JSON
  * at login (RoadNetworkS2CPacket), become the same RoadDesigns the server's chunk pass uses, and each loaded chunk the
- * road reaches gets its pavement mesh (RoadMesh: the R4 sample's asphalt, edge and lane lines, safety edges, clipped to
- * the chunk) built on a worker thread, a bounded number per tick, and dropped when the chunk unloads. Drawn after the
- * solid terrain with the terrain solid program and the block atlas (RoadRenderTypes), lit per vertex from the world's
- * light, in the main pass only (never in a shader pack's shadow pass).
+ * road reaches gets its pavement mesh (RoadMesh: asphalt, edge, lane and centre lines per cross-section, safety edges,
+ * clipped to the chunk) built on a worker thread, a bounded number per tick, and dropped when the chunk unloads. Drawn
+ * after the solid terrain with the terrain solid program and the block atlas (RoadRenderTypes), lit per vertex from the
+ * world's light, in the main pass only (never in a shader pack's shadow pass).
  * <p>
  * Where the collision blocks of a paved cell are gone (dug out, blown up), the mesh leaves that cell open and lines the
  * hole with asphalt walls (RoadCells): each finished mesh is compared with the world once, the chunks around the player
@@ -110,9 +110,7 @@ public final class RoadClient {
         clear();
         if (json == null || json.isEmpty()) { roads = List.of(); index = null; return; }
         try {
-            Set<String> ids = new HashSet<>();
-            for (var r : RoadNetworkJson.routes(json)) ids.add(r.id());
-            roads = RoadNetworkJson.designs(json, ids);
+            roads = RoadNetworkJson.designs(json);
             index = new RoadWorks(roads, RoadWorks.Water.NONE);
             // road_structure's collision follows the bridge mesh (a dedicated server's client has only this copy)
             com.antaurora.apofirstlight.block.RoadStructureBlock.works(index);
@@ -283,10 +281,13 @@ public final class RoadClient {
         return material == RoadMesh.Material.ASPHALT || material == RoadMesh.Material.CONCRETE;
     }
 
-    /** A block that holds the light it stands in (no light of its own to give a face in front of it). */
+    /**
+     * A block that holds the light it stands in (no light of its own to give a face in front of it). road_structure is not
+     * one: it takes one level of light, so its own cell carries the light of its surroundings, and stepping over it took
+     * a culvert's walls and a pier's foot under water or a deck the sky light of the open air above (group D).
+     */
     private static boolean occludes(ClientLevel level, BlockPos p) {
-        BlockState s = level.getBlockState(p);
-        return s.is(AflBlocks.ROAD_STRUCTURE.get()) || s.isSolidRender(level, p);
+        return level.getBlockState(p).isSolidRender(level, p);
     }
 
     /** Vanilla's directional block shade (up 1, down 0.5, north / south 0.8, east / west 0.6), blended by the normal. */

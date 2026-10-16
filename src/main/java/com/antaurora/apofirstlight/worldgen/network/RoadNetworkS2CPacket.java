@@ -13,8 +13,8 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
 /**
- * Server to client (C3.2; docs/worldgen/federal_highways_c3.md, 10.5): the built routes of the overworld as the road
- * network JSON (RoadNetworkJson.subset: control points, 2 m profile, structures; about 44 KB, deflated on the wire), so
+ * Server to client (C3.2; docs/worldgen/federal_highways_c3.md, 10.5 and 11): the built roads of the overworld as the
+ * built network JSON (RoadNetworkBuild: control points, 2 m profile, structures; about 316 KB, deflated on the wire), so
  * the client builds the same designs and the pavement mesh the server's collision follows. Empty: no roads (clear).
  * Sent at login; the client draws only while it is in the overworld.
  */

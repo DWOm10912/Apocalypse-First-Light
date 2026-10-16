@@ -5,13 +5,19 @@ import java.util.List;
 import java.util.TreeSet;
 
 /**
- * The pavement mesh of a built road for one chunk (C3.2; docs/worldgen/federal_highways_c3.md, 10): the accepted R4
- * sample's mesh (dev R4Mesh) on a RoadDesign, cut to the chunk's 16 x 16 square. Pure Java; the client draws it.
+ * The pavement mesh of a built road for one chunk (C3.2, C3.3a; docs/worldgen/federal_highways_c3.md, 10 and 11): the
+ * accepted R4 sample's mesh (dev R4Mesh) on a RoadDesign of any CrossSection, cut to the chunk's 16 x 16 square. Pure
+ * Java; the client draws it.
  * <ul>
- *   <li>"asphalt": both carriageways and their shoulders, the 30-degree safety edges along the sides and the ends;
- *   texture period 4 m both ways, the lateral period measured outward from the median edge;</li>
- *   <li>"yellow": inner edge line, "white": outer edge line and the 3 m / 12 m lane line, all 0.15 m wide and coplanar
- *   with the asphalt (the renderer offsets them in depth), split on the crown and shoulder breaks.</li>
+ *   <li>"asphalt": both carriageways (R2: both halves) and their shoulders, the 30-degree safety edges along the sides
+ *   and the ends; texture period 4 m both ways, the lateral period measured outward from the median edge (R2: the
+ *   centreline);</li>
+ *   <li>R4 markings: "yellow" inner edge line, "white" outer edge line and the 3 m / 12 m lane line;</li>
+ *   <li>R2 markings (C3.3a): "white" edge lines, and the "yellow" centre line: a 3 m / 12 m broken line where passing is
+ *   allowed, two solid lines 0.10 m apart in the no-passing zones (RoadDesign.noPassing: curves, crests, bridges, the
+ *   ends);</li>
+ *   <li>every line 0.15 m wide and coplanar with the asphalt (the renderer offsets them in depth), split on the crown
+ *   and shoulder breaks.</li>
  * </ul>
  * Stations come from one global lattice (2 m, plus the dash ends), the same in every chunk; each triangle is generated
  * once in world space and clipped to the chunk, so neighbouring chunks meet without gaps or overlaps whatever the load
@@ -19,12 +25,25 @@ import java.util.TreeSet;
  */
 public final class RoadMesh {
     public static final double STEP = 2, TEXTURE = 4, LINE = 0.15, DASH = 3, DASH_PERIOD = 12;
-    private static final double W_INNER = R4CrossSection.INNER, W_LANE = R4CrossSection.INNER + R4CrossSection.LANE,
-            W_OUTER = R4CrossSection.INNER + 2 * R4CrossSection.LANE, W_EDGE = W_OUTER + R4CrossSection.OUTER;
-    private static final double[] ACROSS = {0, W_INNER, TEXTURE, 2 * TEXTURE, W_OUTER, 3 * TEXTURE, W_EDGE};
-    private static final double BEVEL_UV = R4CrossSection.BEVEL_RUN / TEXTURE;
-    /** Lateral reach of the mesh from the centreline (the edge plus its safety bevel), m. */
-    public static final double HALF_WIDTH = R4CrossSection.EDGE + R4CrossSection.BEVEL_RUN;
+    /** R2: the double centre line's lines start this far from the centreline (0.10 m between them). */
+    public static final double DOUBLE_GAP = 0.05;
+    private static final double BEVEL_UV = CrossSection.BEVEL_RUN / TEXTURE;
+    private static final double[] ACROSS_R4 = makeAcross(CrossSection.R4), ACROSS_R2 = makeAcross(CrossSection.R2);
+
+    /** The lateral breaks of one side's pavement (w outward from the median edge): the shoulders, lanes and texture tiles. */
+    private static double[] makeAcross(CrossSection sec) {
+        TreeSet<Double> set = new TreeSet<>(List.of(0.0, wInner(sec), wOuter(sec), wEdge(sec)));
+        for (double w = TEXTURE; w < wEdge(sec) - 1e-9; w += TEXTURE) set.add(w);
+        return set.stream().mapToDouble(Double::doubleValue).toArray();
+    }
+
+    private static double[] across(CrossSection sec) { return sec == CrossSection.R4 ? ACROSS_R4 : sec == CrossSection.R2 ? ACROSS_R2 : makeAcross(sec); }
+
+    private static double wInner(CrossSection sec) { return sec.inner; }
+
+    private static double wOuter(CrossSection sec) { return sec.inner + sec.lanes * sec.lane; }
+
+    private static double wEdge(CrossSection sec) { return sec.edge - sec.halfMedian; }
 
     public enum Material { ASPHALT, WHITE, YELLOW, CONCRETE }
 
@@ -40,10 +59,13 @@ public final class RoadMesh {
     /** The triangles of a road inside chunk (cx, cz), relative to (cx * 16, 0, cz * 16). Empty when the road misses it. */
     public static List<Triangle> chunk(RoadDesign d, int cx, int cz) {
         double x0 = cx * 16, z0 = cz * 16;
+        CrossSection sec = d.section;
+        double[] across = across(sec);
+        double wIn = wInner(sec), wOut = wOuter(sec), wEdge = wEdge(sec);
         // the station range whose pavement can reach the chunk: every point of the chunk is within 2.9 m of this grid
         double lo = Double.POSITIVE_INFINITY, hi = Double.NEGATIVE_INFINITY;
         for (int i = 0; i <= 4; i++) for (int j = 0; j <= 4; j++) {
-            double[] l = d.local(x0 + i * 4, z0 + j * 4, HALF_WIDTH + 4);
+            double[] l = d.local(x0 + i * 4, z0 + j * 4, sec.edge + CrossSection.BEVEL_RUN + 4);
             if (l == null) continue;
             lo = Math.min(lo, l[0]);
             hi = Math.max(hi, l[0]);
@@ -60,22 +82,31 @@ public final class RoadMesh {
             double s0 = st[k], s1 = st[k + 1];
             double vCell = Math.floor((s0 + 1e-9) / TEXTURE) * TEXTURE;
             boolean dash = (s0 + 1e-9) % DASH_PERIOD < DASH;
+            boolean noPass = !sec.divided && d.noPassing(s0);
             for (int side : new int[]{-1, 1}) {
-                for (int i = 0; i + 1 < ACROSS.length; i++) {
-                    double w0 = ACROSS[i], w1 = ACROSS[i + 1];
+                for (int i = 0; i + 1 < across.length; i++) {
+                    double w0 = across[i], w1 = across[i + 1];
                     double uCell = Math.floor((w0 + 1e-9) / TEXTURE) * TEXTURE;
                     patch(world, d, Material.ASPHALT, side, s0, s1, w0, w1, (w0 - uCell) / TEXTURE, (w1 - uCell) / TEXTURE, vCell);
                 }
-                line(world, d, Material.YELLOW, side, s0, s1, W_INNER, vCell);
-                line(world, d, Material.WHITE, side, s0, s1, W_OUTER, vCell);
-                if (dash) line(world, d, Material.WHITE, side, s0, s1, (W_INNER + W_OUTER) / 2, vCell);
-                bevel(world, d, side, s0, s1, W_EDGE, W_EDGE + R4CrossSection.BEVEL_RUN, vCell);
-                bevel(world, d, side, s0, s1, 0, -R4CrossSection.BEVEL_RUN, vCell);
+                if (sec.divided) {
+                    line(world, d, Material.YELLOW, side, s0, s1, wIn, vCell);
+                } else if (noPass) {
+                    // one of the two solid centre lines, on this side of the centreline
+                    patch(world, d, Material.YELLOW, side, s0, s1, DOUBLE_GAP, DOUBLE_GAP + LINE, 0, 1, vCell);
+                } else if (dash) {
+                    // this side's half of the broken centre line
+                    patch(world, d, Material.YELLOW, side, s0, s1, 0, LINE / 2, 0.5, 1, vCell);
+                }
+                line(world, d, Material.WHITE, side, s0, s1, wOut, vCell);
+                if (dash) for (int q = 1; q < sec.lanes; q++) line(world, d, Material.WHITE, side, s0, s1, wIn + q * sec.lane, vCell);
+                bevel(world, d, side, s0, s1, wEdge, wEdge + CrossSection.BEVEL_RUN, vCell);
+                if (sec.divided) bevel(world, d, side, s0, s1, 0, -CrossSection.BEVEL_RUN, vCell);
             }
         }
         for (int side : new int[]{-1, 1}) {
-            if (start) endBevel(world, d, side, 0, -R4CrossSection.BEVEL_RUN);
-            if (end) endBevel(world, d, side, d.length, d.length + R4CrossSection.BEVEL_RUN);
+            if (start) endBevel(world, d, side, 0, -CrossSection.BEVEL_RUN);
+            if (end) endBevel(world, d, side, d.length, d.length + CrossSection.BEVEL_RUN);
         }
         for (Triangle t : world) clipInto(out, t, x0, z0);
         return out;
@@ -93,11 +124,11 @@ public final class RoadMesh {
         return set.toArray(new Double[0]);
     }
 
-    private static double lateral(int side, double w) { return side * (R4CrossSection.HALF_MEDIAN + w); }
+    private static double lateral(RoadDesign d, int side, double w) { return side * (d.section.halfMedian + w); }
 
     private static Vertex vertex(RoadDesign d, int side, double s, double w, double tu, double tv, double drop) {
-        double[] p = d.point(s, lateral(side, w));
-        double y = d.pavementY(s, lateral(side, Math.max(0, Math.min(W_EDGE, w)))) - drop;
+        double[] p = d.point(s, lateral(d, side, w));
+        double y = d.pavementY(s, lateral(d, side, Math.max(0, Math.min(wEdge(d.section), w)))) - drop;
         return new Vertex(p[0], y, p[1], tu, tv);
     }
 
@@ -116,29 +147,33 @@ public final class RoadMesh {
     }
 
     private static void bevel(List<Triangle> out, RoadDesign d, int side, double s0, double s1, double wTop, double wBottom, double vCell) {
-        Vertex a = vertex(d, side, s0, wTop, 0, tv(s0, vCell), 0), b = vertex(d, side, s0, wBottom, BEVEL_UV, tv(s0, vCell), R4CrossSection.BEVEL_DROP),
-                c = vertex(d, side, s1, wBottom, BEVEL_UV, tv(s1, vCell), R4CrossSection.BEVEL_DROP), e = vertex(d, side, s1, wTop, 0, tv(s1, vCell), 0);
+        Vertex a = vertex(d, side, s0, wTop, 0, tv(s0, vCell), 0), b = vertex(d, side, s0, wBottom, BEVEL_UV, tv(s0, vCell), CrossSection.BEVEL_DROP),
+                c = vertex(d, side, s1, wBottom, BEVEL_UV, tv(s1, vCell), CrossSection.BEVEL_DROP), e = vertex(d, side, s1, wTop, 0, tv(s1, vCell), 0);
         quad(out, Material.ASPHALT, a, b, c, e);
     }
 
     private static void endBevel(List<Triangle> out, RoadDesign d, int side, double sTop, double sBottom) {
-        for (int i = 0; i + 1 < ACROSS.length; i++) {
-            double w0 = ACROSS[i], w1 = ACROSS[i + 1], uCell = Math.floor((w0 + 1e-9) / TEXTURE) * TEXTURE;
+        double[] across = across(d.section);
+        double wEdge = wEdge(d.section);
+        for (int i = 0; i + 1 < across.length; i++) {
+            double w0 = across[i], w1 = across[i + 1], uCell = Math.floor((w0 + 1e-9) / TEXTURE) * TEXTURE;
             double u0 = (w0 - uCell) / TEXTURE, u1 = (w1 - uCell) / TEXTURE;
             quad(out, Material.ASPHALT, endVertex(d, side, sTop, sBottom, w0, u0, false), endVertex(d, side, sTop, sBottom, w1, u1, false),
                     endVertex(d, side, sTop, sBottom, w1, u1, true), endVertex(d, side, sTop, sBottom, w0, u0, true));
         }
-        for (double[] corner : new double[][]{{0, -R4CrossSection.BEVEL_RUN}, {W_EDGE, W_EDGE + R4CrossSection.BEVEL_RUN}}) {
+        double[][] corners = d.section.divided ? new double[][]{{0, -CrossSection.BEVEL_RUN}, {wEdge, wEdge + CrossSection.BEVEL_RUN}}
+                : new double[][]{{wEdge, wEdge + CrossSection.BEVEL_RUN}};
+        for (double[] corner : corners) {
             Vertex a = endVertex(d, side, sTop, sBottom, corner[0], 0, false), e = endVertex(d, side, sTop, sBottom, corner[0], 0, true);
-            Vertex b = vertex(d, side, sTop, corner[1], BEVEL_UV, 0, R4CrossSection.BEVEL_DROP);
+            Vertex b = vertex(d, side, sTop, corner[1], BEVEL_UV, 0, CrossSection.BEVEL_DROP);
             tri(out, Material.ASPHALT, a, b, e);
         }
     }
 
     private static Vertex endVertex(RoadDesign d, int side, double sTop, double sBottom, double w, double tu, boolean bottom) {
-        double u = lateral(side, w);
+        double u = lateral(d, side, w);
         double[] p = d.point(bottom ? sBottom : sTop, u);
-        double y = d.pavementY(sTop, lateral(side, Math.max(0, Math.min(W_EDGE, w)))) - (bottom ? R4CrossSection.BEVEL_DROP : 0);
+        double y = d.pavementY(sTop, lateral(d, side, Math.max(0, Math.min(wEdge(d.section), w)))) - (bottom ? CrossSection.BEVEL_DROP : 0);
         return new Vertex(p[0], y, p[1], tu, bottom ? BEVEL_UV : 0);
     }
 

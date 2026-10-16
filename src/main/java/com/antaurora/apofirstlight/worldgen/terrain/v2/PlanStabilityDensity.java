@@ -42,7 +42,7 @@ public record PlanStabilityDensity(DensityFunction height, boolean hard, Terrain
     }
 
     /** Blocks below the planned surface that the hard floor keeps solid. */
-    public static int hardDepth(int stable) { return Math.max(0, Math.min(stable, 2 * (stable - 6))); }
+    public static int hardDepth(int stable) { return TerrainPlanSurface.hardDepth(stable); }
 
     @Override public double compute(FunctionContext context) {
         if (surface == null) throw new IllegalStateException("AFL plan stability used before seed binding");

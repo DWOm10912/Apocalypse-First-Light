@@ -17,9 +17,14 @@ import java.util.TreeSet;
  * client draws, while the world holds only the invisible collision (road_structure, road_surface; RoadWorks.column).
  * Pure Java on a RoadDesign, like RoadMesh.
  * <ul>
- *   <li>deck: each carriageway its own deck, swept along the span: a 0.3 m slab with 0.6 m overhangs on a box girder down
- *   to the span's soffit, and on both edges an F-shape-like concrete parapet 1.07 m above the pavement edge, 0.6 m wide,
- *   its road face battered 0.2 m; the open median between the two decks; parapet end caps at the span's ends;</li>
+ *   <li>deck: each carriageway its own deck (a divided road, R4; an undivided one, R2, one deck across the centreline),
+ *   swept along the span: a 0.3 m slab with 0.6 m overhangs on a box girder down to the span's soffit, and on both edges
+ *   an F-shape-like concrete parapet 1.07 m above the pavement edge, 0.6 m wide, its road face battered 0.2 m; the open
+ *   median between the two decks; parapet end caps at the span's ends;</li>
+ *   <li>piers (C3.3a; group E, 2026-10-15): a span longer than MAX_SPAN rests on intermediate multi-column bents: under
+ *   each girder a cap beam CAP_DEPTH deep and CAP_WIDTH along the road, as wide as the girder, on a row of round columns
+ *   (#columns) from the ground (the scanned foot of their cells, which stand on the ground like the abutment band, and the
+ *   probes beside them) to the cap; the footings and shafts are buried;</li>
  *   <li>abutments: in the first and last metre of a span, a wall across the whole formation, from the ground (the
  *   scanned foot of the collision) up to the slab's or the girder's underside, and beyond the decks the wing walls up to
  *   the embankment's design (the median, the fill template), with their tops and their lateral ends;</li>
@@ -51,7 +56,14 @@ public final class BridgeMesh {
      * slit under a face that stopped at the foot; inside the ground the face is hidden (2026-10-15).
      */
     public static final double FOOT_SINK = 1.0;
-    private static final double HM = R4CrossSection.HALF_MEDIAN, EDGE = R4CrossSection.EDGE;
+    /** C3.3a: the longest span without a pier, m. */
+    public static final double MAX_SPAN = 40;
+    /**
+     * Group E (2026-10-15): a bent's cap beam, CAP_DEPTH under the girder's soffit and CAP_WIDTH along the road; its round
+     * columns have COLUMN_SIDES facets.
+     */
+    public static final double CAP_DEPTH = 1.2, CAP_WIDTH = 1.4;
+    static final int COLUMN_SIDES = 24;
     /** The ground the client assumes for its expectations: below everything, so every possible wing cell is expected. */
     private static final RoadWorks.Ground LOW = (x, z) -> -1e9;
 
@@ -62,26 +74,87 @@ public final class BridgeMesh {
      * fill template from the shoulder hinge; NaN on a deck or beyond the walls' reach.
      */
     public static double wingTop(RoadDesign d, double sOut, double u) {
+        CrossSection sec = d.section;
         double v = Math.abs(u);
-        if (v < HM) return d.formationY(sOut, u) + COPING;
-        if (v <= EDGE || v > WALL_REACH) return Double.NaN;
-        return d.formationY(sOut, Math.copySign(EDGE, u)) + R4CrossSection.roadside(v - EDGE, -1e9) + COPING;
+        if (sec.divided && v < sec.halfMedian) return d.formationY(sOut, u) + COPING;
+        if (v <= sec.edge || v > WALL_REACH) return Double.NaN;
+        return d.formationY(sOut, Math.copySign(sec.edge, u)) + sec.roadside(v - sec.edge, -1e9) + COPING;
+    }
+
+    /** Within the decks' footprint: between the parapets' outer faces (a divided road's open median excluded). */
+    public static boolean footprint(CrossSection sec, double v) {
+        return (!sec.divided || v > sec.halfMedian - PARAPET_WIDTH) && v < sec.edge + PARAPET_WIDTH;
+    }
+
+    /** Under a deck's box girder (between the slab's overhangs; an undivided road's girder runs across the centre). */
+    public static boolean girder(CrossSection sec, double v) {
+        return (!sec.divided || v >= sec.halfMedian + GIRDER_INSET) && v <= sec.edge - GIRDER_INSET;
+    }
+
+    /** The pier whose cap band (CAP_WIDTH along the road) holds station s, or NaN. */
+    static double pierAt(RoadDesign.Span sp, double s) {
+        for (double p : sp.piers()) if (Math.abs(s - p) <= CAP_WIDTH / 2) return p;
+        return Double.NaN;
+    }
+
+    /** A bent column's radius: 0.6 m under an interstate's (divided) deck, 0.5 m under a state road's. */
+    public static double columnRadius(CrossSection sec) { return sec.divided ? 0.6 : 0.5; }
+
+    /** A girder's lateral range on one side (u, low to high); an undivided road's one girder runs across the centre. */
+    static double[] girderRange(CrossSection sec, int side) {
+        double gi = sec.edge - GIRDER_INSET;
+        if (!sec.divided) return new double[]{-gi, gi};
+        double ga = sec.halfMedian + GIRDER_INSET;
+        return side < 0 ? new double[]{-gi, -ga} : new double[]{ga, gi};
+    }
+
+    /**
+     * The lateral offsets of a bent's columns (group E): under each girder three (two when it is narrower than 9 m), the
+     * outer ones 1.5 m in from the girder's sides, as a US multi-column bent spaces them.
+     */
+    public static double[] columns(CrossSection sec) {
+        List<Double> out = new ArrayList<>();
+        for (int side : sec.divided ? new int[]{-1, 1} : new int[]{1}) {
+            double[] g = girderRange(sec, side);
+            double a = g[0] + 1.5, b = g[1] - 1.5;
+            out.add(a);
+            if (g[1] - g[0] >= 9) out.add((a + b) * 0.5);
+            out.add(b);
+        }
+        return out.stream().mapToDouble(Double::doubleValue).toArray();
+    }
+
+    /** Whether world point (x, z) lies in one of the bent columns of pier p. */
+    static boolean inColumn(RoadDesign d, double p, double x, double z) {
+        double r = columnRadius(d.section);
+        for (double u : columns(d.section)) {
+            double[] c = d.point(p, u);
+            if (Math.hypot(x - c[0], z - c[1]) <= r) return true;
+        }
+        return false;
+    }
+
+    /** The flat underside of pier p's cap beam under the girder on one side: CAP_DEPTH under the lower soffit over its width. */
+    public static double capBottom(RoadDesign d, RoadDesign.Span sp, double p, int side) {
+        return Math.min(soffit(d, sp, p - CAP_WIDTH / 2, side), soffit(d, sp, p + CAP_WIDTH / 2, side)) - CAP_DEPTH;
     }
 
     /**
      * A wing wall's top as the mesh draws it and the collision follows it: wingTop at the walls' lateral breaks, linear
-     * between them; NaN on the decks' footprint (|u| between the parapets' outer faces) and beyond the walls' reach.
+     * between them; NaN on the decks' footprint (|u| between the parapets' outer faces) and beyond the walls' reach at
+     * that span end and side (RoadDesign.Span#reach: where the embankment meets the ground, group D).
      */
-    public static double wingStrip(RoadDesign d, double sOut, double u) {
+    public static double wingStrip(RoadDesign d, RoadDesign.Span sp, double sOut, double u) {
         double v = Math.abs(u);
-        if (v > HM - PARAPET_WIDTH && v < EDGE + PARAPET_WIDTH || v > WALL_REACH) return Double.NaN;
-        int k = Arrays.binarySearch(BREAKS, u);
+        if (footprint(d.section, v) || v > Math.min(WALL_REACH, sp.reach(sOut, u)) + 1e-9) return Double.NaN;
+        double[] breaks = breaks(d.section);
+        int k = Arrays.binarySearch(breaks, u);
         if (k >= 0) return wingTop(d, sOut, u);
         int i = -k - 2;
-        if (i < 0 || i + 1 >= BREAKS.length) return Double.NaN;
-        double a = wingTop(d, sOut, BREAKS[i]), b = wingTop(d, sOut, BREAKS[i + 1]);
+        if (i < 0 || i + 1 >= breaks.length) return Double.NaN;
+        double a = wingTop(d, sOut, breaks[i]), b = wingTop(d, sOut, breaks[i + 1]);
         if (Double.isNaN(a) || Double.isNaN(b)) return wingTop(d, sOut, u);
-        return a + (b - a) * (u - BREAKS[i]) / (BREAKS[i + 1] - BREAKS[i]);
+        return a + (b - a) * (u - breaks[i]) / (breaks[i + 1] - breaks[i]);
     }
 
     /**
@@ -93,35 +166,73 @@ public final class BridgeMesh {
      * collision stands outside the mesh, whatever cell a skewed crossing puts in the band.
      */
     public static double[] solid(RoadWorks works, double x, double z) {
+        // a box culvert's concrete (group D; never within NEAR of a bridge: RoadStructures)
+        double[] c = works.culvertSolid(x, z);
+        if (c != null) return c;
         RoadWorks.Hit h = works.hit(x, z, RoadWorks.REACH);
         if (h == null || h.beyond() > 0) return null;
         RoadDesign d = h.road();
         double s = h.s(), u = h.u(), v = h.v();
-        RoadDesign.Span sp = null;
-        double t = 0, sOut = 0;
-        for (RoadDesign.Span q : d.spans) {
-            if (q.s1() - q.s0() < 2 || s < q.s0() - TAIL || s > q.s1() + TAIL) continue;
-            sp = q;
-            boolean first = s - q.s0() <= q.s1() - s;
-            sOut = first ? q.s0() : q.s1();
-            t = first ? s - q.s0() : q.s1() - s;
-            break;
-        }
-        if (sp == null) return null;
-        if (v > HM - PARAPET_WIDTH && v < EDGE + PARAPET_WIDTH) {
+        End en = end(d, s);
+        if (en == null) return null;
+        RoadDesign.Span sp = en.span();
+        double t = en.t(), sOut = en.sOut();
+        CrossSection sec = d.section;
+        double hm = sec.halfMedian, edge = sec.edge;
+        if (footprint(sec, v)) {
             int side = u < 0 ? -1 : 1;
             double top;
-            if (v >= HM && v <= EDGE) top = d.pavementY(s, u);
-            else if (v > EDGE) top = d.pavementY(s, side * EDGE) + PARAPET_HEIGHT * Math.min(1, (v - EDGE) / PARAPET_BATTER);
-            else top = d.pavementY(s, side * HM) + PARAPET_HEIGHT * Math.min(1, (HM - v) / PARAPET_BATTER);
+            if (sec.paved(v)) top = d.pavementY(s, u);
+            else if (v > edge) top = d.pavementY(s, side * edge) + PARAPET_HEIGHT * Math.min(1, (v - edge) / PARAPET_BATTER);
+            else top = d.pavementY(s, side * hm) + PARAPET_HEIGHT * Math.min(1, (hm - v) / PARAPET_BATTER);
             if (t <= 1) return new double[]{Double.NEGATIVE_INFINITY, top};
-            double bottom = v >= HM + GIRDER_INSET && v <= EDGE - GIRDER_INSET ? soffit(d, sp, s, side)
-                    : d.pavementY(s, side * (v > (HM + EDGE) * 0.5 ? EDGE : HM)) - SLAB;
+            boolean girder = girder(sec, v);
+            // a bent (group E): its columns from the ground, its cap beam under the girder
+            double p = girder ? pierAt(sp, s) : Double.NaN;
+            if (!Double.isNaN(p))
+                return new double[]{inColumn(d, p, x, z) ? Double.NEGATIVE_INFINITY : capBottom(d, sp, p, side), top};
+            double bottom = girder ? soffit(d, sp, s, side) : d.pavementY(s, side * (v > (hm + edge) * 0.5 ? edge : hm)) - SLAB;
             return new double[]{bottom, top};
         }
         if (t > 1) return null;
-        double f = wingStrip(d, sOut, u);
+        double f = wingStrip(d, sp, sOut, u);
         return Double.isNaN(f) ? null : new double[]{Double.NEGATIVE_INFINITY, f};
+    }
+
+    /** The span whose end walls reach station s (TAIL behind its end to its middle), its nearer end, and s's depth into it. */
+    record End(RoadDesign.Span span, double sOut, double t) {}
+
+    /** Whether a station lies within margin of a span end's wing zone (end() could be non-null within margin of it). */
+    static boolean nearEnd(RoadDesign d, double s, double margin) {
+        for (RoadDesign.Span q : d.spans)
+            if (q.s1() - q.s0() >= 2 && s >= q.s0() - TAIL - margin && s <= q.s1() + TAIL + margin) return true;
+        return false;
+    }
+
+    static End end(RoadDesign d, double s) {
+        for (RoadDesign.Span q : d.spans) {
+            if (q.s1() - q.s0() < 2 || s < q.s0() - TAIL || s > q.s1() + TAIL) continue;
+            boolean first = s - q.s0() <= q.s1() - s;
+            return new End(q, first ? q.s0() : q.s1(), first ? s - q.s0() : q.s1() - s);
+        }
+        return null;
+    }
+
+    /**
+     * A wing wall's coping at a point beside the decks, from TAIL behind a span end to the wall face 1 m into it
+     * (wingStrip); NaN elsewhere. The turf under it lies COPING lower (RoadWorks.column, group D).
+     */
+    public static double wing(RoadWorks works, double x, double z) {
+        return wing(works.hit(x, z, RoadWorks.REACH));
+    }
+
+    /** wing() at the point of a hit (RoadWorks#hit with REACH). */
+    static double wing(RoadWorks.Hit h) {
+        if (h == null || h.beyond() > 0) return Double.NaN;
+        RoadDesign d = h.road();
+        End en = end(d, h.s());
+        if (en == null || en.t() > 1 || footprint(d.section, h.v())) return Double.NaN;
+        return wingStrip(d, en.span(), en.sOut(), h.u());
     }
 
     /**
@@ -155,8 +266,11 @@ public final class BridgeMesh {
 
     /** The soffit (girder underside) of the deck on one side at station s: the span's depth, kept under the slab. */
     static double soffit(RoadDesign d, RoadDesign.Span sp, double s, int side) {
-        double slab = Math.min(d.pavementY(s, side * EDGE), d.pavementY(s, side * HM)) - SLAB - 0.2;
-        return Math.min(d.datum(s) - sp.depth(), slab);
+        CrossSection sec = d.section;
+        // an undivided deck's one girder: the same soffit on both halves (the lower pavement edge)
+        double low = sec.divided ? Math.min(d.pavementY(s, side * sec.edge), d.pavementY(s, side * sec.halfMedian))
+                : Math.min(d.pavementY(s, sec.edge), d.pavementY(s, -sec.edge));
+        return Math.min(d.datum(s) - sp.depth(), low - SLAB - 0.2);
     }
 
     // ------------------------------------------------------------------ expected and found cells
@@ -165,24 +279,51 @@ public final class BridgeMesh {
      * A structure cell as the chunk pass made it: kind; y, the collision block (DECK, ABUTMENT) or the parapet / wall top
      * block; top, surface, layers: the topmost block (road_surface or road_structure) and its layers; wing; capTop: the
      * height an intact cell's face reaches (pavement, parapet or wall top); meshBottom: the mesh's underside under a
-     * hanging cell (NaN: the cell stands on the ground, use the scanned foot).
+     * hanging cell (NaN: the cell stands on the ground, use the scanned foot). Kind OPEN: a ground probe in front of a wall
+     * or a pier (group D): the scan finds the ground there (Found.foot, its top face) and the wall reaches down to it.
      */
-    public record Expect(int index, RoadWorks.Kind kind, int y, int top, boolean surface, int layers, boolean wing, double capTop, double meshBottom) {}
+    public record Expect(int index, RoadWorks.Kind kind, int y, int top, boolean surface, int layers, boolean wing, double capTop, double meshBottom) {
+        public boolean probe() { return kind == RoadWorks.Kind.OPEN; }
+    }
 
-    /** A structure cell as found in the world: its topmost structure block, that block's kind and layers, the lowest one. */
+    /**
+     * A structure cell as found in the world: its topmost structure block, that block's kind and layers, the lowest one;
+     * for a probe the ground's top block (top) and its top face (foot).
+     */
     public record Found(int top, boolean surface, int layers, int foot) {}
 
     public enum State { PRESENT, BROKEN, ABSENT }
 
+    /**
+     * An intact cell is PRESENT, one whose top is not the generated one BROKEN (group D: a wing cell always has its top
+     * block, so a missing one is broken too); a probe is PRESENT when it found the ground.
+     */
     public static State state(Expect e, Found f) {
         if (e == null) return State.ABSENT;
+        if (e.probe()) return f != null ? State.PRESENT : State.ABSENT;
         if (f != null && f.top() == e.top() && f.surface() == e.surface() && f.layers() == e.layers()) return State.PRESENT;
-        return f == null && e.wing() ? State.ABSENT : State.BROKEN;
+        return State.BROKEN;
     }
 
-    /** The structure cells of chunk (cx, cz) and its ring (RoadCells indices); empty when no span is near. */
+    /** Whether a cell holds structure as generated (a probe is not structure). */
+    static boolean intact(Expect e, Found f) { return e != null && !e.probe() && state(e, f) == State.PRESENT; }
+
+    /** A ground probe this far in front of a wall face (1 m into a span) or a pier face, m. */
+    public static final double PROBE = 0.4;
+
+    /**
+     * The structure cells of chunk (cx, cz) and its ring (RoadCells indices): bridge cells, box culvert cells (with
+     * concrete), and the ground probes in front of the span ends' walls and the piers; empty when no structure is near.
+     */
     public static Map<Integer, Expect> expected(RoadWorks works, int cx, int cz) {
         Map<Integer, Expect> out = new HashMap<>();
+        for (int lz = -1; lz <= 16; lz++) for (int lx = -1; lx <= 16; lx++) {
+            Culvert.Cell cl = works.culvertCell(cx * 16 + lx, cz * 16 + lz);
+            if (cl == null || cl.layers() == 0) continue;
+            int i = RoadCells.index(lx, lz);
+            out.put(i, new Expect(i, RoadWorks.Kind.CULVERT, cl.top(), cl.top(), false, cl.layers(), false, cl.top() + cl.layers() / 32.0,
+                    cl.wall() ? Double.NaN : cl.culvert().soffit));
+        }
         boolean near = false;
         for (RoadDesign d : works.roads()) {
             double[] r = stations(d, cx, cz);
@@ -202,9 +343,12 @@ public final class BridgeMesh {
             double v = h.v();
             switch (c.kind()) {
                 case DECK, ABUTMENT -> {
-                    boolean girder = v >= HM + GIRDER_INSET && v <= EDGE - GIRDER_INSET;
+                    boolean girder = girder(d.section, v);
                     double bottom = c.kind() == RoadWorks.Kind.ABUTMENT ? Double.NaN
                             : girder ? soffit(d, sp, h.sc(), side) : c.paveLo() - SLAB;
+                    // a cell under a bent's cap beam hangs down to the cap's underside (group E)
+                    double cap = c.kind() == RoadWorks.Kind.DECK ? RoadWorks.cap(d, sp, x, z) : Double.NaN;
+                    if (!Double.isNaN(cap)) bottom = Math.min(bottom, cap);
                     out.put(i, new Expect(i, c.kind(), c.y(), c.top(), true, c.upper() > 0 ? c.upper() : c.layers(), false, c.paveLo(), bottom));
                 }
                 case BARRIER -> {
@@ -215,6 +359,37 @@ public final class BridgeMesh {
                 default -> { }
             }
         }
+        // the ground probes: PROBE in front of each span end's wall face, on every wall strip, and PROBE beside each bent
+        // column, both ways along the road (group E)
+        for (RoadDesign d : works.roads()) {
+            double[] r = stations(d, cx, cz);
+            if (r == null) continue;
+            double[] breaks = breaks(d.section);
+            double cr = columnRadius(d.section);
+            for (RoadDesign.Span sp : d.spans) {
+                if (sp.s1() - sp.s0() < 2 || sp.s0() > r[1] || sp.s1() < r[0]) continue;
+                for (double p : sp.piers())
+                    for (double u : columns(d.section))
+                        for (double ds : new double[]{-cr - PROBE, cr + PROBE}) {
+                            double[] q = d.point(p + ds, u);
+                            int lx = (int) Math.floor(q[0]) - cx * 16, lz = (int) Math.floor(q[1]) - cz * 16;
+                            if (lx < -1 || lx > 16 || lz < -1 || lz > 16) continue;
+                            int i = RoadCells.index(lx, lz), top = (int) Math.ceil(d.datum(p)) + 2;
+                            out.putIfAbsent(i, new Expect(i, RoadWorks.Kind.OPEN, top, top, false, 0, false, Double.NaN, Double.NaN));
+                        }
+                List<Double> at = new ArrayList<>(List.of(sp.s0() + 1 + PROBE, sp.s1() - 1 - PROBE));
+                for (double s : at) {
+                    int top = (int) Math.ceil(d.datum(s)) + 2;
+                    for (int k = 0; k + 1 < breaks.length; k++) {
+                        double[] p = d.point(s, (breaks[k] + breaks[k + 1]) * 0.5);
+                        int lx = (int) Math.floor(p[0]) - cx * 16, lz = (int) Math.floor(p[1]) - cz * 16;
+                        if (lx < -1 || lx > 16 || lz < -1 || lz > 16) continue;
+                        int i = RoadCells.index(lx, lz);
+                        out.putIfAbsent(i, new Expect(i, RoadWorks.Kind.OPEN, top, top, false, 0, false, Double.NaN, Double.NaN));
+                    }
+                }
+            }
+        }
         return out;
     }
 
@@ -223,7 +398,7 @@ public final class BridgeMesh {
         boolean[] out = new boolean[256];
         if (found == null) return out;
         for (Expect e : expect.values())
-            if (RoadCells.inner(e.index()) && state(e, found.get(e.index())) == State.BROKEN)
+            if (RoadCells.inner(e.index()) && !e.probe() && state(e, found.get(e.index())) == State.BROKEN)
                 out[RoadCells.lx(e.index()) | RoadCells.lz(e.index()) << 4] = true;
         return out;
     }
@@ -250,8 +425,9 @@ public final class BridgeMesh {
     }
 
     /**
-     * The bridge triangles of all roads in chunk (cx, cz), chunk-relative: decks and parapets always; the abutment and
-     * wing walls only once the cells were scanned (found != null), since they stand on the scanned foot.
+     * The structure triangles of all roads in chunk (cx, cz), chunk-relative: decks and parapets always; the box culverts
+     * always (their faces reach into the bed, group D); the abutment, wing and pier walls only once the cells were
+     * scanned (found != null), since they stand on the scanned feet.
      */
     public static List<Triangle> chunk(RoadWorks works, int cx, int cz, Map<Integer, Expect> expect, Map<Integer, Found> found) {
         List<Triangle> out = new ArrayList<>();
@@ -266,109 +442,14 @@ public final class BridgeMesh {
                 if (found != null) walls(world, d, sp, r[0], r[1], cx, cz, expect, found);
             }
         }
+        Culvert[] cs = works.culvertsNear(cx * 16 + 8, cz * 16 + 8);
+        if (cs != null)
+            for (Culvert c : cs) {
+                double[] b = c.bounds(0.5);
+                if (b[2] < cx * 16 || b[0] > cx * 16 + 16 || b[3] < cz * 16 || b[1] > cz * 16 + 16) continue;
+                c.mesh(world);
+            }
         for (Triangle t : world) RoadMesh.clipInto(out, t, cx * 16, cz * 16);
-        if (found != null) wings(out, works, cx, cz, expect, found);
-        return out;
-    }
-
-    /**
-     * The median and wing walls, cell by cell, chunk-relative (2026-10-15). Each intact ground-standing cell of the
-     * abutment band (RoadWorks.band: its square reaches into the first metre of the span) draws its own part of the walls,
-     * which is exactly its collision (solid()): the coping (wingStrip) from TAIL behind the span end to the wall face 1 m
-     * into the span, the face down to its foot (FOOT_SINK into the ground), the coping's back edge over the turf, the walls' lateral ends at their
-     * reach, and its sides towards cells that are not part of the walls. A straight wall line on a skewed crossing thus
-     * never leaves a block of invisible collision beside the mesh (the cell's ground is not replaced either:
-     * RoadChunkPass), and a wing the pass left out (ground at its height) leaves its own cell to that ground.
-     */
-    static void wings(List<Triangle> out, RoadWorks works, int cx, int cz, Map<Integer, Expect> expect, Map<Integer, Found> found) {
-        int[][] square = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
-        for (Expect e : expect.values()) {
-            int i = e.index();
-            if (!RoadCells.inner(i) || !Double.isNaN(e.meshBottom())) continue;
-            Found f = found.get(i);
-            if (state(e, f) != State.PRESENT) continue;
-            int lx = RoadCells.lx(i), lz = RoadCells.lz(i);
-            double x = cx * 16 + lx, z = cz * 16 + lz;
-            RoadWorks.Hit h = works.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
-            if (h == null) continue;
-            RoadDesign d = h.road();
-            RoadDesign.Span sp = d.span(h.sc());
-            if (sp == null || sp.s1() - sp.s0() < 2) continue;
-            boolean first = h.sc() - sp.s0() <= sp.s1() - h.sc();
-            double sOut = first ? sp.s0() : sp.s1(), sgn = first ? 1 : -1;
-            List<double[]> sq = new ArrayList<>(4);
-            for (int[] c : square) {
-                double[] l = d.local(x + c[0], z + c[1], RoadWorks.REACH + 2);
-                if (l == null) { sq = null; break; }
-                sq.add(new double[]{lx + c[0], lz + c[1], sgn * (l[0] - sOut), l[1]});
-            }
-            if (sq == null) continue;
-            sq = clip(clip(sq, 2, -TAIL, false), 2, 1, true);
-            if (sq.size() < 3) continue;
-            double[] tan = tangent(d, sOut + sgn * 0.5), lat = lateral(d, sOut + sgn * 0.5);
-            for (int k = 0; k + 1 < BREAKS.length; k++) {
-                double ua = BREAKS[k], ub = BREAKS[k + 1];
-                if (Double.isNaN(wingStrip(d, sOut, (ua + ub) * 0.5))) continue;
-                List<double[]> p = clip(clip(sq, 3, ua, false), 3, ub, true);
-                if (p.size() < 3) continue;
-                int n = p.size();
-                double[] top = new double[n];
-                for (int q = 0; q < n; q++) top[q] = wingStrip(d, sOut, Math.max(ua, Math.min(ub, p.get(q)[3])));
-                List<Vertex> v = new ArrayList<>(n);
-                for (int q = 0; q < n; q++) v.add(new Vertex(p.get(q)[0], top[q], p.get(q)[1], clamp(p.get(q)[0] - lx), clamp(p.get(q)[1] - lz)));
-                polygon(out, v, 0, 1, 0, true);
-                for (int q = 0; q < n; q++) {
-                    double[] a = p.get(q), b = p.get((q + 1) % n);
-                    double ha = top[q], hb = top[(q + 1) % n], tua = clamp(Math.abs(a[3] - Math.floor(Math.min(a[3], b[3]) + 1e-9))), tub = clamp(Math.abs(b[3] - Math.floor(Math.min(a[3], b[3]) + 1e-9)));
-                    if (Math.abs(a[2] - 1) < 1e-9 && Math.abs(b[2] - 1) < 1e-9) {
-                        // the wall face, into the span
-                        wall(out, a[0], a[1], b[0], b[1], f.foot() - FOOT_SINK, f.foot() - FOOT_SINK, ha, hb, tua, tub, sgn * tan[0], 0, sgn * tan[1]);
-                    } else if (Math.abs(a[2] + TAIL) < 1e-9 && Math.abs(b[2] + TAIL) < 1e-9) {
-                        // the coping's back edge over the turf
-                        double drop = COPING + 0.35;
-                        wall(out, a[0], a[1], b[0], b[1], ha - drop, hb - drop, ha, hb, tua, tub, -sgn * tan[0], 0, -sgn * tan[1]);
-                    } else if (Math.abs(Math.abs(a[3]) - WALL_REACH) < 1e-9 && Math.abs(Math.abs(b[3]) - WALL_REACH) < 1e-9) {
-                        // the walls' lateral end
-                        double sg = a[3] < 0 ? -1 : 1;
-                        wall(out, a[0], a[1], b[0], b[1], f.foot() - FOOT_SINK, f.foot() - FOOT_SINK, ha, hb, clamp(a[2] + TAIL), clamp(b[2] + TAIL), sg * lat[0], 0, sg * lat[1]);
-                    } else {
-                        int dx = 0, dz = 0;
-                        if (Math.abs(a[0] - b[0]) < 1e-9 && (Math.abs(a[0] - lx) < 1e-9 || Math.abs(a[0] - lx - 1) < 1e-9)) dx = a[0] > lx + 0.5 ? 1 : -1;
-                        else if (Math.abs(a[1] - b[1]) < 1e-9 && (Math.abs(a[1] - lz) < 1e-9 || Math.abs(a[1] - lz - 1) < 1e-9)) dz = a[1] > lz + 0.5 ? 1 : -1;
-                        else continue;
-                        int nb = RoadCells.index(lx + dx, lz + dz);
-                        Expect en = expect.get(nb);
-                        if (en != null && Double.isNaN(en.meshBottom()) && state(en, found.get(nb)) == State.PRESENT) continue;
-                        double sa = dx != 0 ? a[1] - lz : a[0] - lx, sb = dx != 0 ? b[1] - lz : b[0] - lx;
-                        wall(out, a[0], a[1], b[0], b[1], f.foot() - FOOT_SINK, f.foot() - FOOT_SINK, ha, hb, clamp(sa), clamp(sb), dx, 0, dz);
-                    }
-                }
-            }
-        }
-    }
-
-    /** Clip a polygon of (x, z, t, u) to component k <= edge (lower) or >= edge. */
-    private static List<double[]> clip(List<double[]> in, int k, double edge, boolean lower) {
-        List<double[]> out = new ArrayList<>(6);
-        if (in.size() < 3) return out;
-        double[] a = in.get(in.size() - 1);
-        double da = a[k] - edge;
-        boolean ia = lower ? da <= 1e-9 : da >= -1e-9;
-        for (double[] b : in) {
-            double db = b[k] - edge;
-            boolean ib = lower ? db <= 1e-9 : db >= -1e-9;
-            if (ia != ib) {
-                double t = da / (da - db);
-                double[] c = new double[4];
-                for (int j = 0; j < 4; j++) c[j] = a[j] + (b[j] - a[j]) * t;
-                c[k] = edge;
-                out.add(c);
-            }
-            if (ib) out.add(b);
-            a = b;
-            da = db;
-            ia = ib;
-        }
         return out;
     }
 
@@ -384,17 +465,27 @@ public final class BridgeMesh {
         return lo > hi ? null : new double[]{lo - 4, hi + 4};
     }
 
-    /** The cross-section of one deck (w outward from the centreline, y), clockwise from the pavement's outer edge. */
+    /**
+     * The cross-section of one deck (w outward from the centreline, y), clockwise from the pavement's outer edge. An
+     * undivided road's half section ends on the centreline (its girder's bottom, then the centre plane, never drawn).
+     */
     private static double[][] section(RoadDesign d, RoadDesign.Span sp, double s, int side) {
-        double hE = d.pavementY(s, side * EDGE), hM = d.pavementY(s, side * HM), so = soffit(d, sp, s, side);
+        double hm = d.section.halfMedian, edge = d.section.edge;
+        double hE = d.pavementY(s, side * edge), hM = d.pavementY(s, side * hm), so = soffit(d, sp, s, side);
         double top = PARAPET_HEIGHT;
+        if (!d.section.divided)
+            return new double[][]{
+                    {edge, hE}, {edge + PARAPET_BATTER, hE + top}, {edge + PARAPET_WIDTH, hE + top}, {edge + PARAPET_WIDTH, hE - SLAB},
+                    {edge - GIRDER_INSET, hE - SLAB}, {edge - GIRDER_INSET, so}, {0, so}, {0, hM}};
         return new double[][]{
-                {EDGE, hE}, {EDGE + PARAPET_BATTER, hE + top}, {EDGE + PARAPET_WIDTH, hE + top}, {EDGE + PARAPET_WIDTH, hE - SLAB},
-                {EDGE - GIRDER_INSET, hE - SLAB}, {EDGE - GIRDER_INSET, so}, {HM + GIRDER_INSET, so}, {HM + GIRDER_INSET, hM - SLAB},
-                {HM - PARAPET_WIDTH, hM - SLAB}, {HM - PARAPET_WIDTH, hM + top}, {HM - PARAPET_BATTER, hM + top}, {HM, hM}};
+                {edge, hE}, {edge + PARAPET_BATTER, hE + top}, {edge + PARAPET_WIDTH, hE + top}, {edge + PARAPET_WIDTH, hE - SLAB},
+                {edge - GIRDER_INSET, hE - SLAB}, {edge - GIRDER_INSET, so}, {hm + GIRDER_INSET, so}, {hm + GIRDER_INSET, hM - SLAB},
+                {hm - PARAPET_WIDTH, hM - SLAB}, {hm - PARAPET_WIDTH, hM + top}, {hm - PARAPET_BATTER, hM + top}, {hm, hM}};
     }
 
     private static void deck(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double lo, double hi) {
+        double hm = d.section.halfMedian, edge = d.section.edge;
+        boolean divided = d.section.divided;
         double a = Math.max(sp.s0(), lo), b = Math.min(sp.s1(), hi);
         if (b - a < 1e-6) return;
         List<Double> st = new ArrayList<>();
@@ -406,8 +497,9 @@ public final class BridgeMesh {
                 double sa = st.get(k), sb = st.get(k + 1), base = Math.floor(sa + 1e-9);
                 double[][] pa = section(d, sp, sa, side), pb = section(d, sp, sb, side);
                 double[] lat = lateral(d, (sa + sb) * 0.5);
-                // the pavement (P11 -> P0) is RoadMesh's
+                // the pavement (last point -> P0) is RoadMesh's; an undivided deck's centre plane is inside the girder
                 for (int i = 0; i + 1 < pa.length; i++) {
+                    if (Math.abs(pa[i][0]) < 1e-9 && Math.abs(pa[i + 1][0]) < 1e-9) continue;
                     double dw = (pa[i + 1][0] + pb[i + 1][0] - pa[i][0] - pb[i][0]) * 0.5, dy = (pa[i + 1][1] + pb[i + 1][1] - pa[i][1] - pb[i][1]) * 0.5;
                     double len = Math.hypot(dw, dy);
                     if (len < 1e-6) continue;
@@ -438,9 +530,11 @@ public final class BridgeMesh {
                     double[][] pa = section(d, sp, ta, side), pb = section(d, sp, tb, side);
                     double base = Math.floor(ta + 1e-9);
                     // outer: road face, top, outer face, underside; inner: underside, median face, top, road face
-                    double[][][] outer = {{pa[0], pa[1], pa[2], pa[3], {EDGE, pa[0][1] - SLAB}}, {pb[0], pb[1], pb[2], pb[3], {EDGE, pb[0][1] - SLAB}}};
-                    double[][][] inner = {{{HM, pa[11][1] - SLAB}, pa[8], pa[9], pa[10], pa[11]}, {{HM, pb[11][1] - SLAB}, pb[8], pb[9], pb[10], pb[11]}};
-                    for (double[][][] q : new double[][][][]{outer, inner})
+                    double[][][] outer = {{pa[0], pa[1], pa[2], pa[3], {edge, pa[0][1] - SLAB}}, {pb[0], pb[1], pb[2], pb[3], {edge, pb[0][1] - SLAB}}};
+                    double[][][][] parts = divided
+                            ? new double[][][][]{outer, {{{hm, pa[11][1] - SLAB}, pa[8], pa[9], pa[10], pa[11]}, {{hm, pb[11][1] - SLAB}, pb[8], pb[9], pb[10], pb[11]}}}
+                            : new double[][][][]{outer};
+                    for (double[][][] q : parts)
                         for (int i = 0; i + 1 < q[0].length; i++) {
                             double dw = (q[0][i + 1][0] + q[1][i + 1][0] - q[0][i][0] - q[1][i][0]) * 0.5, dy = (q[0][i + 1][1] + q[1][i + 1][1] - q[0][i][1] - q[1][i][1]) * 0.5;
                             double len = Math.hypot(dw, dy);
@@ -460,8 +554,9 @@ public final class BridgeMesh {
                 double[] t = tangent(d, sEnd);
                 double sg = e == 0 ? -1 : 1;
                 double[][] p = section(d, sp, sEnd, side);
-                cap(out, d, sEnd, side, new double[][]{p[0], p[1], p[2], p[3], {EDGE, p[0][1] - SLAB}}, EDGE, p[1][1], sg * t[0], sg * t[1]);
-                cap(out, d, sEnd, side, new double[][]{p[8], p[9], p[10], p[11], {HM, p[11][1] - SLAB}}, HM - PARAPET_WIDTH, p[9][1], sg * t[0], sg * t[1]);
+                cap(out, d, sEnd, side, new double[][]{p[0], p[1], p[2], p[3], {edge, p[0][1] - SLAB}}, edge, p[1][1], sg * t[0], sg * t[1]);
+                if (divided)
+                    cap(out, d, sEnd, side, new double[][]{p[8], p[9], p[10], p[11], {hm, p[11][1] - SLAB}}, hm - PARAPET_WIDTH, p[9][1], sg * t[0], sg * t[1]);
             }
         }
     }
@@ -483,75 +578,248 @@ public final class BridgeMesh {
 
     private enum Zone { MEDIAN, INNER, GIRDER, OUTER, WING }
 
-    private static Zone zone(double v) {
-        if (v < HM - PARAPET_WIDTH) return Zone.MEDIAN;
-        if (v < HM + GIRDER_INSET) return Zone.INNER;
-        if (v < EDGE - GIRDER_INSET) return Zone.GIRDER;
-        if (v < EDGE + PARAPET_WIDTH) return Zone.OUTER;
+    private static Zone zone(CrossSection sec, double v) {
+        if (sec.divided && v < sec.halfMedian - PARAPET_WIDTH) return Zone.MEDIAN;
+        if (sec.divided && v < sec.halfMedian + GIRDER_INSET) return Zone.INNER;
+        if (v < sec.edge - GIRDER_INSET) return Zone.GIRDER;
+        if (v < sec.edge + PARAPET_WIDTH) return Zone.OUTER;
         return Zone.WING;
     }
 
-    /** Lateral strip edges of the end walls: every 0.5 m, plus the parapets' and girders' faces. */
-    private static final double[] BREAKS;
+    /** Lateral strip edges of the end walls and piers: every 0.5 m, plus the parapets' and girders' faces; per section. */
+    private static final double[] BREAKS_R4 = makeBreaks(CrossSection.R4), BREAKS_R2 = makeBreaks(CrossSection.R2);
 
-    static {
+    static double[] breaks(CrossSection sec) { return sec == CrossSection.R4 ? BREAKS_R4 : sec == CrossSection.R2 ? BREAKS_R2 : makeBreaks(sec); }
+
+    private static double[] makeBreaks(CrossSection sec) {
         TreeSet<Double> set = new TreeSet<>();
         for (int k = (int) Math.round(-WALL_REACH * 2); k <= (int) Math.round(WALL_REACH * 2); k++) set.add(k * 0.5);
-        for (double b : new double[]{HM - PARAPET_WIDTH, HM + GIRDER_INSET, EDGE - GIRDER_INSET, EDGE + PARAPET_WIDTH}) { set.add(b); set.add(-b); }
-        BREAKS = set.stream().mapToDouble(Double::doubleValue).toArray();
+        List<Double> faces = new ArrayList<>(List.of(sec.edge - GIRDER_INSET, sec.edge + PARAPET_WIDTH));
+        if (sec.divided) { faces.add(sec.halfMedian - PARAPET_WIDTH); faces.add(sec.halfMedian + GIRDER_INSET); }
+        for (double b : faces) { set.add(b); set.add(-b); }
+        return set.stream().mapToDouble(Double::doubleValue).toArray();
     }
 
     private static double wallTop(RoadDesign d, RoadDesign.Span sp, Zone z, double sOut, double sf, double u, int side) {
         return switch (z) {
             case MEDIAN, WING -> wingTop(d, sOut, u);
-            case INNER -> d.pavementY(sf, side * HM) - SLAB;
+            case INNER -> d.pavementY(sf, side * d.section.halfMedian) - SLAB;
             case GIRDER -> soffit(d, sp, sf, side);
-            case OUTER -> d.pavementY(sf, side * EDGE) - SLAB;
+            case OUTER -> d.pavementY(sf, side * d.section.edge) - SLAB;
         };
     }
 
-    /** The abutment and wing walls of both span ends: front face at 1 m inside the span, tops, lateral ends. */
+    /**
+     * The walls of both span ends. Abutment strips (under the decks): the front face 1 m inside the span from the foot to
+     * the slab's or the girder's underside, with the lateral ends of a run. Median and wing strips (group D, 2026-10-15):
+     * one continuous prism per 0.5 m strip, as far out as the span end's reach, from TAIL behind the end to the face 1 m
+     * inside: the coping (wingStrip) split at the end, the front face, the back face down to the foot (under the turf),
+     * and the outer lateral end at the reach. Every strip's foot is the lowest ground known under it and in front of it
+     * (#foot), FOOT_SINK deeper.
+     */
     private static void walls(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double lo, double hi, int cx, int cz,
                               Map<Integer, Expect> expect, Map<Integer, Found> found) {
         if (sp.s1() - sp.s0() < 2) return;
+        double[] breaks = breaks(d.section);
+        piers(out, d, sp, lo, hi, cx, cz, expect, found, breaks);
         for (int e = 0; e < 2; e++) {
             double sOut = e == 0 ? sp.s0() : sp.s1(), sgn = e == 0 ? 1 : -1, sf = sOut + sgn;
             if (sOut < lo || sOut > hi) continue;
             double[] t = tangent(d, sf), lat = lateral(d, sf);
-            int n = BREAKS.length - 1;
+            int n = breaks.length - 1;
             State[] state = new State[n];
             double[] foot = new double[n];
             double[] ta = new double[n], tb = new double[n];
             Zone[] zones = new Zone[n];
             for (int i = 0; i < n; i++) {
-                double ua = BREAKS[i], ub = BREAKS[i + 1], um = (ua + ub) * 0.5;
+                double ua = breaks[i], ub = breaks[i + 1], um = (ua + ub) * 0.5;
                 int side = um < 0 ? -1 : 1;
-                zones[i] = zone(Math.abs(um));
+                zones[i] = zone(d.section, Math.abs(um));
+                if (zones[i] == Zone.MEDIAN || zones[i] == Zone.WING) continue;
                 ta[i] = wallTop(d, sp, zones[i], sOut, sf, ua, side);
                 tb[i] = wallTop(d, sp, zones[i], sOut, sf, ub, side);
                 int idx = stripCell(d, sOut, sgn, um, cx, cz);
                 if (idx < 0) { state[i] = null; continue; }   // outside the window: not drawn here
-                Found f = found.get(idx);
-                state[i] = Double.isNaN(ta[i]) || Double.isNaN(tb[i]) ? State.ABSENT : state(expect.get(idx), f);
-                if (state[i] == State.PRESENT) foot[i] = f.foot() - FOOT_SINK;
+                state[i] = Double.isNaN(ta[i]) || Double.isNaN(tb[i]) ? State.ABSENT : state(expect.get(idx), found.get(idx));
+                if (state[i] == State.PRESENT) {
+                    foot[i] = foot(d, sOut, sgn, 0, 1, ua, ub, cx, cz, expect, found);
+                    if (Double.isNaN(foot[i])) foot[i] = found.get(idx).foot() - FOOT_SINK;
+                }
             }
             for (int i = 0; i < n; i++) {
-                // the median and wing walls are drawn cell by cell (wings())
-                if (state[i] != State.PRESENT || zones[i] == Zone.MEDIAN || zones[i] == Zone.WING) continue;
-                double ua = BREAKS[i], ub = BREAKS[i + 1], tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
+                double ua = breaks[i], ub = breaks[i + 1], tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
+                if (zones[i] == Zone.MEDIAN || zones[i] == Zone.WING) {
+                    wingPrism(out, d, sp, sOut, sgn, ua, ub, cx, cz, expect, found);
+                    continue;
+                }
+                if (state[i] != State.PRESENT) continue;
                 double[] fa = d.point(sf, ua), fb = d.point(sf, ub);
                 wall(out, fa[0], fa[1], fb[0], fb[1], foot[i], foot[i], ta[i], tb[i], tu0, tu1, sgn * t[0], 0, sgn * t[1]);
-                // a lateral end of a run: the next strip has no wall (no expected cell, or a wing the pass left out)
-                if (i == 0 || state[i - 1] == State.ABSENT) {
+                // a lateral end of a run: the next strip has no abutment wall (no expected cell) and is no wing strip
+                if (i == 0 || state[i - 1] == State.ABSENT || isWing(zones[i - 1]) && Double.isNaN(wingStrip(d, sp, sOut, ua - 0.01))) {
                     double[] o = d.point(sOut, ua);
                     wall(out, o[0], o[1], fa[0], fa[1], foot[i], foot[i], ta[i], ta[i], 0, 1, -lat[0], 0, -lat[1]);
                 }
-                if (i == n - 1 || state[i + 1] == State.ABSENT) {
+                if (i == n - 1 || state[i + 1] == State.ABSENT || isWing(zones[i + 1]) && Double.isNaN(wingStrip(d, sp, sOut, ub + 0.01))) {
                     double[] o = d.point(sOut, ub);
                     wall(out, o[0], o[1], fb[0], fb[1], foot[i], foot[i], tb[i], tb[i], 0, 1, lat[0], 0, lat[1]);
                 }
             }
         }
+    }
+
+    private static boolean isWing(Zone z) { return z == Zone.MEDIAN || z == Zone.WING; }
+
+    /**
+     * One median or wing wall strip ua .. ub of span end sOut, world space: the coping over t = -TAIL .. 0 and 0 .. 1, the
+     * front face at t = 1 and the back face at t = -TAIL from the foot, and the lateral end where the next strip outward
+     * has no wall (the reach). Nothing where the strip has no wall.
+     */
+    private static void wingPrism(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double sOut, double sgn, double ua, double ub,
+                                  int cx, int cz, Map<Integer, Expect> expect, Map<Integer, Found> found) {
+        double ha = wingStrip(d, sp, sOut, ua), hb = wingStrip(d, sp, sOut, ub);
+        if (Double.isNaN(ha) || Double.isNaN(hb)) return;
+        double foot = foot(d, sOut, sgn, -TAIL, 1, ua, ub, cx, cz, expect, found);
+        if (Double.isNaN(foot)) foot = Math.min(ha, hb) - 2 - FOOT_SINK;
+        double tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
+        double[] ts = {-TAIL, 0, 1};
+        for (int k = 0; k < 2; k++) {
+            double t0 = ts[k], t1 = ts[k + 1];
+            double[] a0 = d.point(sOut + sgn * t0, ua), b0 = d.point(sOut + sgn * t0, ub), b1 = d.point(sOut + sgn * t1, ub), a1 = d.point(sOut + sgn * t1, ua);
+            double v0 = t0 + TAIL, v1 = Math.min(1, t1 + TAIL);
+            polygon(out, List.of(new Vertex(a0[0], ha, a0[1], tu0, clamp(v0)), new Vertex(b0[0], hb, b0[1], tu1, clamp(v0)),
+                    new Vertex(b1[0], hb, b1[1], tu1, clamp(v1)), new Vertex(a1[0], ha, a1[1], tu0, clamp(v1))), 0, 1, 0, true);
+        }
+        double[] tf = tangent(d, sOut + sgn), tb = tangent(d, sOut - sgn * TAIL);
+        double[] fa = d.point(sOut + sgn, ua), fb = d.point(sOut + sgn, ub), ba = d.point(sOut - sgn * TAIL, ua), bb = d.point(sOut - sgn * TAIL, ub);
+        wall(out, fa[0], fa[1], fb[0], fb[1], foot, foot, ha, hb, tu0, tu1, sgn * tf[0], 0, sgn * tf[1]);
+        wall(out, ba[0], ba[1], bb[0], bb[1], foot, foot, ha, hb, tu0, tu1, -sgn * tb[0], 0, -sgn * tb[1]);
+        // the outer lateral end (the strip's larger |u|), where the wall stops
+        double uo = Math.abs(ub) > Math.abs(ua) ? ub : ua, ho = uo == ub ? hb : ha, sg = uo < 0 ? -1 : 1;
+        if (Double.isNaN(wingStrip(d, sp, sOut, uo + sg * 0.01)) && !footprint(d.section, Math.abs(uo) + 0.01)) {
+            double[] lat = lateral(d, sOut);
+            double[] p = d.point(sOut - sgn * TAIL, uo), q = d.point(sOut + sgn, uo);
+            wall(out, p[0], p[1], q[0], q[1], foot, foot, ho, ho, 0, 1 + TAIL, sg * lat[0], 0, sg * lat[1]);
+        }
+    }
+
+    /**
+     * The lowest ground a wall strip ua .. ub stands on over t = t0 .. t1 (stations sOut + sgn t), FOOT_SINK deeper: the
+     * scanned feet of the intact structure cells under it and the ground the probes found PROBE in front of its face
+     * (C4: a wall stood on the foot of its middle cell, and the valley in front fell away under it); NaN when none is known.
+     */
+    private static double foot(RoadDesign d, double sOut, double sgn, double t0, double t1, double ua, double ub, int cx, int cz,
+                               Map<Integer, Expect> expect, Map<Integer, Found> found) {
+        double f = Double.POSITIVE_INFINITY;
+        double[] us = {ua + 0.01, (ua + ub) * 0.5, ub - 0.01};
+        int m = Math.max(1, (int) Math.ceil((t1 - t0) / 0.5));
+        for (int j = 0; j <= m + 1; j++) {
+            boolean probe = j == m + 1;
+            double t = probe ? t1 + PROBE : t0 + (t1 - t0) * j / m;
+            for (double u : us) {
+                double[] p = d.point(sOut + sgn * t, u);
+                int lx = (int) Math.floor(p[0]) - cx * 16, lz = (int) Math.floor(p[1]) - cz * 16;
+                if (lx < -1 || lx > 16 || lz < -1 || lz > 16) continue;
+                int idx = RoadCells.index(lx, lz);
+                Expect e = expect.get(idx);
+                Found fd = found.get(idx);
+                if (e == null || fd == null || e.probe() != probe) continue;
+                if (!probe && (state(e, fd) != State.PRESENT || !Double.isNaN(e.meshBottom()))) continue;
+                f = Math.min(f, fd.foot());
+            }
+        }
+        return f == Double.POSITIVE_INFINITY ? Double.NaN : f - FOOT_SINK;
+    }
+
+    /**
+     * The multi-column bents of a span (group E, 2026-10-15). Under each girder a cap beam: its faces across the road at
+     * p -+ CAP_WIDTH / 2 from its flat underside (capBottom) up to the soffit, strip by strip on the lateral breaks, its
+     * underside, and its lateral ends at the girder's sides; it hangs from the deck, so it is drawn whatever the cells
+     * under it hold. Under the cap the round columns (#columns, COLUMN_SIDES facets), each from its foot (#columnFoot) to
+     * the cap's underside, drawn where the cell at its centre is intact.
+     */
+    private static void piers(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double lo, double hi, int cx, int cz,
+                              Map<Integer, Expect> expect, Map<Integer, Found> found, double[] breaks) {
+        CrossSection sec = d.section;
+        double r = columnRadius(sec);
+        for (double p : sp.piers()) {
+            if (p < lo || p > hi) continue;
+            double sa = p - CAP_WIDTH / 2, sb = p + CAP_WIDTH / 2;
+            double[] t = tangent(d, p), lat = lateral(d, p);
+            for (int side : sec.divided ? new int[]{-1, 1} : new int[]{1}) {
+                double[] g = girderRange(sec, side);
+                double bottom = capBottom(d, sp, p, side);
+                List<Double> us = new ArrayList<>();
+                us.add(g[0]);
+                for (double b : breaks) if (b > g[0] + 1e-6 && b < g[1] - 1e-6) us.add(b);
+                us.add(g[1]);
+                for (int i = 0; i + 1 < us.size(); i++) {
+                    double ua = us.get(i), ub = us.get(i + 1), tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
+                    int sd = ua + ub < 0 ? -1 : 1;
+                    for (int k = 0; k < 2; k++) {
+                        double s = k == 0 ? sa : sb, sg = k == 0 ? -1 : 1, top = soffit(d, sp, s, sd);
+                        double[] a = d.point(s, ua), b = d.point(s, ub);
+                        wall(out, a[0], a[1], b[0], b[1], bottom, bottom, top, top, tu0, tu1, sg * t[0], 0, sg * t[1]);
+                    }
+                    // the underside, in two halves along the road (a tile is 1 m; the cap is CAP_WIDTH)
+                    for (int k = 0; k < 2; k++) {
+                        double s0 = k == 0 ? sa : p, s1 = k == 0 ? p : sb;
+                        double[] a0 = d.point(s0, ua), b0 = d.point(s0, ub), b1 = d.point(s1, ub), a1 = d.point(s1, ua);
+                        polygon(out, List.of(new Vertex(a0[0], bottom, a0[1], tu0, 0), new Vertex(b0[0], bottom, b0[1], tu1, 0),
+                                new Vertex(b1[0], bottom, b1[1], tu1, s1 - s0), new Vertex(a1[0], bottom, a1[1], tu0, s1 - s0)), 0, -1, 0);
+                    }
+                }
+                // the cap's lateral ends, flush with the girder's sides
+                for (int k = 0; k < 2; k++) {
+                    double u = g[k], sg = k == 0 ? -1 : 1;
+                    int sd = u < 0 ? -1 : 1;
+                    double[] a = d.point(sa, u), b = d.point(sb, u);
+                    wall(out, a[0], a[1], b[0], b[1], bottom, bottom, soffit(d, sp, sa, sd), soffit(d, sp, sb, sd), 0, CAP_WIDTH,
+                            sg * lat[0], 0, sg * lat[1]);
+                }
+            }
+            for (double u : columns(sec)) {
+                double[] c = d.point(p, u);
+                int lx = (int) Math.floor(c[0]) - cx * 16, lz = (int) Math.floor(c[1]) - cz * 16;
+                if (lx < -1 || lx > 16 || lz < -1 || lz > 16) continue;
+                int idx = RoadCells.index(lx, lz);
+                if (state(expect.get(idx), found.get(idx)) != State.PRESENT) continue;
+                double foot = columnFoot(c, r, cx, cz, expect, found), top = capBottom(d, sp, p, u < 0 ? -1 : 1);
+                if (Double.isNaN(foot)) foot = found.get(idx).foot() - FOOT_SINK;
+                for (int k = 0; k < COLUMN_SIDES; k++) {
+                    double a0 = 2 * Math.PI * k / COLUMN_SIDES, a1 = 2 * Math.PI * (k + 1) / COLUMN_SIDES, am = (a0 + a1) * 0.5;
+                    // clockwise seen from above, so the face looks outward like a wall from a to b with its normal on the right
+                    wall(out, c[0] + r * Math.cos(a1), c[1] + r * Math.sin(a1), c[0] + r * Math.cos(a0), c[1] + r * Math.sin(a0),
+                            foot, foot, top, top, r * (2 * Math.PI - a1), r * (2 * Math.PI - a0), Math.cos(am), 0, Math.sin(am));
+                }
+            }
+        }
+    }
+
+    /**
+     * The lowest ground a bent column of radius r centred at c stands on, FOOT_SINK deeper: the scanned feet of the intact
+     * ground-standing cells its circle covers and the ground its probes found PROBE beside it; NaN when none is known.
+     */
+    private static double columnFoot(double[] c, double r, int cx, int cz, Map<Integer, Expect> expect, Map<Integer, Found> found) {
+        double f = Double.POSITIVE_INFINITY;
+        for (int k = 0; k <= 16; k++) {
+            boolean probe = k == 16;
+            double rr = probe ? r + PROBE : k == 0 ? 0 : r * 0.95;
+            int n = probe ? 8 : k == 0 ? 1 : 1;
+            for (int j = 0; j < n; j++) {
+                double a = probe ? 2 * Math.PI * j / n : 2 * Math.PI * (k - 1) / 15;
+                double x = c[0] + rr * Math.cos(a), z = c[1] + rr * Math.sin(a);
+                int lx = (int) Math.floor(x) - cx * 16, lz = (int) Math.floor(z) - cz * 16;
+                if (lx < -1 || lx > 16 || lz < -1 || lz > 16) continue;
+                int idx = RoadCells.index(lx, lz);
+                Expect e = expect.get(idx);
+                Found fd = found.get(idx);
+                if (e == null || fd == null || e.probe() != probe) continue;
+                if (!probe && (state(e, fd) != State.PRESENT || !Double.isNaN(e.meshBottom()))) continue;
+                f = Math.min(f, fd.foot());
+            }
+        }
+        return f == Double.POSITIVE_INFINITY ? Double.NaN : f - FOOT_SINK;
     }
 
     /** The cell (RoadCells index) a wall strip at lateral um of the span end sOut belongs to; -1 outside the window. */
@@ -590,7 +858,7 @@ public final class BridgeMesh {
                 double ax, az, bx, bz;
                 if (dir[0] != 0) { ax = bx = dir[0] > 0 ? lx + 1 : lx; az = lz; bz = lz + 1; }
                 else { az = bz = dir[1] > 0 ? lz + 1 : lz; ax = lx; bx = lx + 1; }
-                if (state(en, fn) == State.PRESENT) {
+                if (intact(en, fn)) {
                     boolean paved = en.surface() && cells.containsKey(i) && cells.containsKey(n);
                     double top = paved ? en.y() : en.capTop();
                     double bottom = Math.max(rTop, Double.isNaN(en.meshBottom()) ? fn.foot() : Math.min(fn.foot(), en.meshBottom()));
@@ -607,10 +875,21 @@ public final class BridgeMesh {
 
     /**
      * A vertical face over the ground line a -> b (x, z), bottom and top heights at both ends, split into 1 m bands of
-     * height for the texture (tu along the line, tv down from each band's top).
+     * height for the texture (tu along the line, tv down from each band's top); a line longer than the texture's metre
+     * (a pier's 1.2 m end) is cut where tu crosses a whole metre, so tu stays within 0 .. 1 (C3.3a).
      */
     static void wall(List<Triangle> out, double ax, double az, double bx, double bz, double botA, double botB, double topA, double topB,
                      double tuA, double tuB, double nx, double ny, double nz) {
+        double fl = Math.floor(Math.min(tuA, tuB) + 1e-9);
+        if (Math.max(tuA, tuB) > fl + 1 + 1e-9) {
+            double cut = fl + 1, q = (cut - tuA) / (tuB - tuA);
+            double mx = ax + (bx - ax) * q, mz = az + (bz - az) * q, mb = botA + (botB - botA) * q, mt = topA + (topB - topA) * q;
+            wall(out, ax, az, mx, mz, botA, mb, topA, mt, tuA, cut, nx, ny, nz);
+            wall(out, mx, mz, bx, bz, mb, botB, mt, topB, cut, tuB, nx, ny, nz);
+            return;
+        }
+        tuA -= fl;
+        tuB -= fl;
         double lo = Math.min(botA, botB), hi = Math.max(topA, topB);
         if (!(hi > lo)) return;
         for (int k = (int) Math.floor(lo); k < hi; k++) {

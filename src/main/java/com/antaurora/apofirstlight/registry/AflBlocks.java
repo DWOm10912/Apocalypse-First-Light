@@ -609,10 +609,11 @@ public final class AflBlocks {
     public static final RegistryObject<Block> CURB_GRASS = BLOCKS.register("curb_grass",
             () -> new CurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape(), CurbBlock.Back.GRASS));
     // Graded turf (2026-10-10, docs/worldgen/highway_r4_sample_v1.md E): engineered grass ground with a sloped top (road
-    // medians and side slopes). Natural ground: shovel, no tier, drops dirt, no random ticks, no item.
+    // medians and side slopes). Natural ground: shovel, no tier, drops dirt, no random ticks, no item. It occludes only its
+    // floor (GradedTurfBlock#getOcclusionShape: no z-fighting with the block below, 2026-10-15).
     public static final RegistryObject<Block> GRADED_TURF = BLOCKS.register("graded_turf",
             () -> new com.antaurora.apofirstlight.block.GradedTurfBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
-                    .mapColor(net.minecraft.world.level.material.MapColor.GRASS).strength(0.6F).sound(SoundType.GRASS).noOcclusion()));
+                    .mapColor(net.minecraft.world.level.material.MapColor.GRASS).strength(0.6F).sound(SoundType.GRASS)));
     // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
     // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
     public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",

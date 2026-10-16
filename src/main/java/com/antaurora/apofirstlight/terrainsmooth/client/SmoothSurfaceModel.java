@@ -27,7 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * unless the block is a sloped natural surface top. Then:
  * <ul>
  *   <li>the top: one quad per vanilla top layer (grass top, snowy top...) through the four corner heights, texture
- *   projected from above like the vanilla top, in the UP list (lit from the cell above, culled by a block placed on it);</li>
+ *   projected from above in the orientation of the vanilla variant at that position (TopTexture, 2026-10-15), in the UP
+ *   list (lit from the cell above, culled by a block placed on it);</li>
  *   <li>each side: only the band between the neighbour's surface and this top, with the vanilla side layers (grass side
  *   and its tinted overlay) mapped down from the band's top edge, so the grass fringe follows the slope; below the band
  *   the neighbour cell is counted on, and where that cell hides nothing (a mesh trunk, a log, glass, a slab...;
@@ -51,7 +52,8 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     /** floor points a (left) and b (right) of each side seen from outside, and which corners stand above them (also SnowSkinModel) */
     static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
     static final int[][] SIDE_CORNERS = {{1, 0}, {2, 3}, {0, 2}, {3, 1}};
-    private final Map<Long, List<BakedQuad>[]> cache = new ConcurrentHashMap<>();
+    /** by top orientation (TopTexture), then geometry key */
+    private final Map<Integer, Map<Long, List<BakedQuad>[]>> cache = new ConcurrentHashMap<>();
 
     SmoothSurfaceModel(BakedModel original) {
         super(original);
@@ -83,13 +85,16 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         int under = u == null ? 0 : u;
         // g: bits 0-47; layer 48-50 (five chunk layers); shader pack 51; under (sides and light, 12 bits) 52-63
         long key = g | (long) (layer & 7) << 48 | (TerrainSmoothClient.shaderPack ? 1L << 51 : 0) | (long) under << 52;
-        if (cache.size() > 32768) cache.clear();   // distinct slopes are far fewer; bound it anyway
-        List<BakedQuad>[] quads = cache.computeIfAbsent(key, k -> build(state, g, under, renderType));
+        // the top's texture orientation of the vanilla variant at this position (the renderer seeded random for it)
+        int orientation = TopTexture.orientation(originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType));
+        Map<Long, List<BakedQuad>[]> byKey = cache.computeIfAbsent(orientation, o -> new ConcurrentHashMap<>());
+        if (byKey.size() > 32768) byKey.clear();   // distinct slopes are far fewer; bound it anyway
+        List<BakedQuad>[] quads = byKey.computeIfAbsent(key, k -> build(state, g, under, renderType, orientation));
         return quads[side == null ? 6 : side.ordinal()];
     }
 
     @SuppressWarnings("unchecked")
-    private List<BakedQuad>[] build(BlockState state, long g, int under, @Nullable RenderType renderType) {
+    private List<BakedQuad>[] build(BlockState state, long g, int under, @Nullable RenderType renderType, int orientation) {
         long begin = System.nanoTime();
         List<BakedQuad>[] out = new List[7];
         for (int i = 0; i < 7; i++) out[i] = List.of();
@@ -97,8 +102,8 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         float[] c = SmoothRules.corners(g);   // nw, ne, sw, se above the floor
         // top
         float[][] top = {{0, c[0], 0}, {0, c[2], 1}, {1, c[3], 1}, {1, c[1], 0}};
-        float[][] topUv = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
-        int color = TerrainSmoothClient.shaderPack ? -1 : gray(tiltShade(top));
+        float[][] topUv = TopTexture.uv(orientation);
+        int color = TopTexture.topColor(top);
         List<BakedQuad> tops = new ArrayList<>();
         for (BakedQuad o : originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType))
             tops.add(quad(top, topUv, o.getSprite(), o.getTintIndex(), Direction.UP, color, 0));
