@@ -67,8 +67,7 @@ public final class FuelCanPourJets {
     }
 
     /** Leaving {@code from}, the velocity (blocks a second) that falls into the cover's opening: a short arc. */
-    private static Vec3 into(net.minecraft.world.level.BlockGetter level, Vec3 from, BlockPos cover) {
-        Vec3 to = FuelCanItem.pourOpening(level, cover);
+    private static Vec3 into(Vec3 from, Vec3 to) {
         double t = Mth.clamp(Math.sqrt(2 * Math.max(0.04, from.y - to.y) / LiquidJet.EARTH_GRAVITY), 0.12, 0.6);
         return to.subtract(from).scale(1 / t).add(0, 0.5 * LiquidJet.EARTH_GRAVITY * t, 0);
     }
@@ -101,11 +100,12 @@ public final class FuelCanPourJets {
         for (Player player : level.players()) {
             Fluid fluid = player.position().distanceToSqr(viewer) < RANGE * RANGE ? pouring(player) : null;
             Pour pour = POURS.get(player.getUUID());
-            if (fluid != null) {
+            var cover = fluid == null ? null : FuelCanItem.pourTarget(player.getMainHandItem());
+            Vec3 opening = cover == null ? null : FuelCanItem.pourOpening(level, cover);   // a block's or a vehicle filler's
+            if (opening != null) {
                 if (pour == null) POURS.put(player.getUUID(), pour = new Pour());
                 pour.fluid = fluid;
-                BlockPos cover = FuelCanItem.pourTarget(player.getMainHandItem());
-                Vec3 from = spout(player, 1.0F), velocity = into(level, from, cover);
+                Vec3 from = spout(player, 1.0F), velocity = into(from, opening);
                 for (int k = 0; k < 2; k++) pour.jet.emit(from, velocity, k == 0 ? LiquidJet.STEP : 0.0);
                 pour.emitting = true;
             } else if (pour != null && pour.emitting) {

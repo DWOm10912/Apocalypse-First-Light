@@ -65,6 +65,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.GUN_SLING.get(), "gun_sling", "gun_sling_mesh", 0.385235);
             bind(AflItems.PISTOL_HOLSTER.get(), "pistol_holster", "pistol_holster_mesh", 0.26875);
             bind(AflItems.SIMPLE_HEARING_PROTECTION.get(), "simple_hearing_protection", "simple_hearing_protection_mesh", 0.280324);
+            // Geiger counter V2 (equipment meshes, 2026-10-15): the mesh with a live LCD and count LED (0.5 - 3.12 / 32)
+            bind(AflItems.GEIGER_COUNTER.get(), GeigerCounterItemRenderer::new, "geiger_counter");
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(
@@ -111,18 +113,18 @@ public final class AflStaticMeshItemClient {
         bind(item, () -> new AflStaticMeshItemRenderer(model, atlas, verticalOffset, groundVerticalOffset), model);
     }
 
-    private static void bind(Item item, java.util.function.Supplier<AflStaticMeshItemRenderer> factory, String model) {
+    private static void bind(Item item, java.util.function.Supplier<? extends net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer> factory, String model) {
         bind(item, factory, model, new IClientItemExtensions() {});
     }
 
     /** hands: the item's own arm pose and first-person hand transform (null / false: vanilla). */
-    private static void bind(Item item, java.util.function.Supplier<AflStaticMeshItemRenderer> factory, String model, IClientItemExtensions hands) {
+    private static void bind(Item item, java.util.function.Supplier<? extends net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer> factory, String model, IClientItemExtensions hands) {
         try {
             // Forge 1.20.1 has no separate ordinary-Item extension registration event.
             Field field = Item.class.getDeclaredField("renderProperties");
             field.setAccessible(true);
             field.set(item, new IClientItemExtensions() {
-                private AflStaticMeshItemRenderer renderer;
+                private net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer renderer;
 
                 @Override
                 public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {

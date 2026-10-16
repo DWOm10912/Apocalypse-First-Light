@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.worldgen.network;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.worldgen.network.road.R4CrossSection;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkStage;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
@@ -38,12 +37,13 @@ public final class RoadNetworkCommand {
             return 0;
         }
         StringBuilder b = new StringBuilder(String.format(Locale.ROOT, "AFL roads: stage %s, network digest %s\n", RoadNetworkStage.STAGE, n.digest()));
-        double lane = R4CrossSection.CROWN + R4CrossSection.LANE;
         for (RoadDesign d : n.works().roads()) {
-            b.append(String.format(Locale.ROOT, "%s  %.0f m\n", d.id, d.length));
+            double lane = d.section.laneCentre(d.section.lanes - 1);
+            b.append(String.format(Locale.ROOT, "%s  %s  %.0f m\n", d.id, d.section, d.length));
             b.append("  start ").append(at(d, 0, lane)).append("   end ").append(at(d, d.length, lane)).append('\n');
             for (RoadDesign.Span s : d.spans)
-                b.append(String.format(Locale.ROOT, "  bridge %.0f..%.0f m at ", s.s0(), s.s1())).append(at(d, (s.s0() + s.s1()) / 2, lane)).append('\n');
+                b.append(String.format(Locale.ROOT, "  bridge %.0f..%.0f m%s at ", s.s0(), s.s1(), s.piers().length > 0 ? ", " + s.piers().length + " piers" : ""))
+                        .append(at(d, (s.s0() + s.s1()) / 2, lane)).append('\n');
         }
         Vec3 p = source.getPosition();
         RoadWorks.Hit h = n.works().hit(p.x, p.z, RoadWorks.REACH);

@@ -294,8 +294,9 @@ public final class SkeletonActions {
             if (ticks >= 0) pour[0] = Math.min(POUR_MAX, (ticks + partial) / 20.0);
             else pour[0] = Math.max(0, pour[0] - 2 * Math.max(0, now - pour[1]));
             pour[1] = now;
-            net.minecraft.core.BlockPos cover = FuelCanItem.pourTarget(main);
-            if (cover != null) OPENINGS.put(p.getId(), FuelCanItem.pourOpening(p.level(), cover));
+            var cover = FuelCanItem.pourTarget(main);   // a block's opening or a vehicle filler's
+            Vec3 at = cover == null ? null : FuelCanItem.pourOpening(p.level(), cover);
+            if (at != null) OPENINGS.put(p.getId(), at);
             else if (pour[0] <= 0) OPENINGS.remove(p.getId());
             Vec3 opening = OPENINGS.get(p.getId());
             float param = 0F;

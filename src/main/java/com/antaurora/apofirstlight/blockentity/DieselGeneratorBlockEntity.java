@@ -55,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
  * about 85 C in a minute running, cools when stopped) and the oil pressure (about 4 bar running) as show only, the run
  * hours (game hours; four whole digits and tenths), three lamps (run, low fuel under 1/8, fault) and the key switch.
  * The rain flap on the stack is open and the radiator fan turns while it runs. Synced when a shown value moves (at most twice a second for the
- * needles) or the state changes.
+ * needles, in 0.2 % steps) or the state changes.
  */
 public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
     public static final ResourceLocation PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/diesel_generator.json");
@@ -278,10 +278,12 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         long k = mode.ordinal();
         k = k * 2 + (fault ? 1 : 0);
         k = k * 2 + (lowLamp() ? 1 : 0);
-        k = k * 101 + Math.round(loadNeedle() * 100);
-        k = k * 201 + Math.round(fuelNeedle() * 200);
-        k = k * 101 + Math.round(tempNeedle() * 100);
-        k = k * 101 + Math.round(oilNeedle() * 100);
+        // needles in 0.2 % steps: while a reading moves it is sent every NEEDLE_SYNC_TICKS, and the client plays the stream
+        // back at its own rate (AflBlockMeshAnimationState follower); whole-percent steps made the needles step
+        k = k * 501 + Math.round(loadNeedle() * 500);
+        k = k * 601 + Math.round(fuelNeedle() * 600);
+        k = k * 501 + Math.round(tempNeedle() * 500);
+        k = k * 501 + Math.round(oilNeedle() * 500);
         k = k * 100000 + (long) Math.floor(hours * 10) % 100000;
         return k;
     }

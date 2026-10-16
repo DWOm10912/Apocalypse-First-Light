@@ -81,6 +81,9 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(AflBlockEntities.GUN_MAINTENANCE_BENCH.get(), AflBlockEntityRendering.wrap("gun_maintenance_bench", GunMaintenanceBenchRenderer::new));
         // Office chair someone sat on (an entity from then on): its own mesh renderer (base, five casters, swivel)
         event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.MODERN_OFFICE_CHAIR.get(), OfficeChairRenderer::new);
+        // T15 pickup body V0: paint tint, wear overlay, hood and tailgate
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.PICKUP_T15.get(),
+                com.antaurora.apofirstlight.client.vehicle.PickupTruckRenderer::new);
         // Industrial Locker V2: generic AFL Animated Block Mesh Runtime, no locker-specific renderer
         event.registerBlockEntityRenderer(AflBlockEntities.INDUSTRIAL_LOCKER.get(),
                 AflBlockEntityRendering.wrap("industrial_locker", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));

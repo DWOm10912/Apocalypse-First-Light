@@ -483,6 +483,100 @@ function simpleHearingProtection() {
   }, icon: {view: [15, 35, 0], coverage: 0.15, mat: {steel: [170, 172, 176]}}, worn: true};
 }
 
+/** Rounded rectangle with its own radius per corner (order as roundRect: u1v0, u1v1, u0v1, u0v0); r 0 = a sharp corner. */
+function roundRectCorners(u0, v0, u1, v1, radii, seg = 3) {
+  const out = [];
+  [[u1, v0, -1, 1, -90], [u1, v1, -1, -1, 0], [u0, v1, 1, -1, 90], [u0, v0, 1, 1, 180]].forEach(([cu, cv, su, sv, a0], k) => {
+    const r = radii[k];
+    if (r < 1e-6) { out.push([cu, cv]); return; }
+    for (let i = 0; i <= seg; i++) { const a = (a0 + 90 * i / seg) * Math.PI / 180; out.push([cu + su * r + r * Math.cos(a), cv + sv * r + r * Math.sin(a)]); }
+  });
+  return orient(out, true);
+}
+
+/** Seven-segment layout of one LCD digit (a..g) and its decimal point, shared with the HUD (client/GeigerReadout). */
+export const GEIGER_LCD = {cells: 4, x0: -2.62, pitch: 1.31, glyph: 0.98, zTop: -3.82, zBottom: -1.38, bar: 0.24, gap: 0.035, dp: 0.24};
+/**
+ * Geiger counter V2 (direction B, 2026-10-15; docs/models/geiger_counter_v2_design.md): a digital pocket monitor after the
+ * Inspector class of thin-window counters, 150 x 80 x 30 mm at 1 px = 10 mm. A charcoal ABS shell between two yellow
+ * rubber end boots; on the front a gloss black bezel round a 4-digit LCD (only the reading: seven-segment digits and
+ * decimal points, each its own part, lit by the item renderer from the live reading; no printed text), the red count LED
+ * above it, three rubber keys below; the power slider on the right side, a steel lanyard ring at the bottom boot; on the
+ * back the stainless grille over the mica window of the pancake tube and two case screws. Lies flat, face up (+Y), top
+ * end toward -Z; digits read left to right along +X with their tops toward -Z.
+ */
+function geigerCounter() {
+  const B = 'geiger_counter', parts = [], add = p => { parts.push(p); return p; };
+  const plan = (u0, v0, u1, v1, r) => rr(u0, v0, u1, v1, r);   // axis y: (u, v) = (z, x)
+  extrude(add(new Part('shell', B, 'shell')), 'y', {outer: plan(-6.4, -3.85, 6.4, 3.85, 0.9), holes: []}, 0.12, 2.88, 0.35);
+  // end boots: rounded outer corners, square where they meet the shell
+  extrude(add(new Part('boot_top', B, 'rubber')), 'y', {outer: roundRectCorners(-7.5, -4.0, -5.6, 4.0, [0.12, 0.12, 1.4, 1.4], 4), holes: []}, 0, 3.0, 0.4);
+  extrude(add(new Part('boot_bottom', B, 'rubber')), 'y', {outer: roundRectCorners(5.6, -4.0, 7.5, 4.0, [1.4, 1.4, 0.12, 0.12], 4), holes: []}, 0, 3.0, 0.4);
+  // front: bezel with the LCD window, the LCD face 0.08 below the bezel, glass in the window
+  extrude(add(new Part('bezel', B, 'bezel')), 'y', {outer: plan(-4.75, -3.3, -0.35, 3.3, 0.45), holes: [orient(roundRect(-4.35, -2.9, -0.75, 2.9, 0.25), false)]}, 2.78, 2.98, 0);
+  extrude(add(new Part('lcd', B, 'lcd')), 'y', {outer: plan(-4.42, -2.97, -0.68, 2.97, 0.28), holes: []}, 2.8, 2.9, 0);
+  extrude(add(new Part('lcd_glass', B, 'glass')), 'y', {outer: plan(-4.45, -3.0, -0.65, 3.0, 0.3), holes: []}, 2.935, 2.965, 0);
+  // seven-segment digits: one flat face each, 0.02 px over the LCD face (the glass is 0.015 above them)
+  const L = GEIGER_LCD, ySeg = 2.92, mid = (L.zTop + L.zBottom) / 2, h = L.bar / 2, g = L.gap;
+  const quad = (name, pts) => { const p = add(new Part(name, B, 'segment')); const ids = pts.map(([x, z]) => p.vtx([x, ySeg, z])); p.face(ids, [0, 1, 0], 'cap'); };
+  // a horizontal bar from x0 to x1 at z (pointed ends) and a vertical bar from z0 to z1 at x
+  const hBar = (x0, x1, z) => [[x0 + g, z], [x0 + h + g, z - h], [x1 - h - g, z - h], [x1 - g, z], [x1 - h - g, z + h], [x0 + h + g, z + h]];
+  const vBar = (x, z0, z1) => [[x, z0 + g], [x + h, z0 + h + g], [x + h, z1 - h - g], [x, z1 - g], [x - h, z1 - h - g], [x - h, z0 + h + g]];
+  for (let d = 0; d < L.cells; d++) {
+    const x0 = L.x0 + d * L.pitch + h, x1 = x0 + L.glyph - L.bar, zt = L.zTop + h, zb = L.zBottom - h;
+    const seg = {a: hBar(x0, x1, zt), b: vBar(x1, zt, mid), c: vBar(x1, mid, zb), d: hBar(x0, x1, zb), e: vBar(x0, mid, zb), f: vBar(x0, zt, mid), g: hBar(x0, x1, mid)};
+    for (const [k, pts] of Object.entries(seg)) {
+      // hexagon as a quad and two end triangles (Blockbench meshes take faces of 3 or 4 corners)
+      const p = add(new Part(`seg_${d}_${k}`, B, 'segment')), ids = pts.map(([x, z]) => p.vtx([x, ySeg, z]));
+      for (const f of [[ids[0], ids[1], ids[5]], [ids[1], ids[2], ids[4], ids[5]], [ids[2], ids[3], ids[4]]]) p.face(f, [0, 1, 0], 'cap');
+    }
+    if (d < L.cells - 1) { const cx = L.x0 + d * L.pitch + (L.glyph + L.pitch) / 2, cz = L.zBottom - L.dp / 2;   // in the gap after the digit
+      quad(`dp_${d}`, [[cx - L.dp / 2, cz - L.dp / 2], [cx + L.dp / 2, cz - L.dp / 2], [cx + L.dp / 2, cz + L.dp / 2], [cx - L.dp / 2, cz + L.dp / 2]]); }
+  }
+  // count LED (dark when idle; the renderer swaps in led_on, the same shape, full bright, for each count)
+  for (const [name, mat] of [['led', 'led'], ['led_on', 'led_on']])
+    extrude(add(new Part(name, B, mat)), 'y', {outer: orient(circle(-5.15, 2.6, 0.22, 10), true), holes: []}, 2.8, 3.02, 0);
+  // three keys under the LCD
+  for (const [i, x] of [-2.15, 0, 2.15].entries())
+    extrude(add(new Part('key_' + i, B, 'key')), 'y', {outer: plan(1.05, x - 0.78, 2.0, x + 0.78, 0.3), holes: []}, 2.75, 3.12, 0.1);
+  // power slider on the right side
+  extrude(add(new Part('power_switch', B, 'key')), 'x', {outer: rr(-3.0, 1.1, -2.0, 1.9, 0.18), holes: []}, 3.72, 4.05, 0.06);
+  // lanyard ring through the bottom boot
+  extrude(add(new Part('lanyard_ring', B, 'steel')), 'y', {outer: plan(7.3, -3.35, 8.2, -2.15, 0.3), holes: [orient(roundRect(7.55, -3.08, 7.95, -2.42, 0.12), false)]}, 1.33, 1.67, 0);
+  // back: the grille over the window (holes show the mica below), two case screws
+  const holes = [];
+  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+    const x = i * 0.62 + (j & 1 ? 0.31 : 0), z = -2.6 + j * 0.54;
+    if (Math.hypot(x, z + 2.6) < 1.55) holes.push(orient(circle(z, x, 0.17, 8), false));
+  }
+  extrude(add(new Part('grille', B, 'grille')), 'y', {outer: orient(circle(-2.6, 0, 2.05, 24), true), holes}, 0.03, 0.14, 0);
+  extrude(add(new Part('mica', B, 'mica')), 'y', {outer: orient(circle(-2.6, 0, 1.9, 24), true), holes: []}, 0.07, 0.11, 0);
+  for (const z of [-4.9, 4.9]) extrude(add(new Part('screw_' + (z < 0 ? 'top' : 'bottom'), B, 'steel')), 'y', {outer: orient(circle(z, 0, 0.2, 8), true), holes: []}, 0.06, 0.13, 0);
+  return {PARTS: parts, MATS: {
+    shell: {c: [54, 56, 59], hl: 8, sm: 112, se: 132, f0: 22},       // charcoal ABS, satin
+    rubber: {c: [198, 152, 42], hl: 6, sm: 70, se: 82, f0: 20},      // yellow rubber boots
+    bezel: {c: [24, 25, 27], hl: 6, sm: 176, se: 186, f0: 22},       // gloss black bezel
+    lcd: {c: [152, 162, 140], hl: 2, sm: 124, se: 124, f0: 20},      // unlit LCD face
+    segment: {c: [22, 25, 20], hl: 0, sm: 124, se: 124, f0: 20},     // lit segments
+    glass: {...GLASS, c: [168, 178, 184], alpha: 45},                // clear acrylic window: faint, so the digits keep their contrast
+    key: {c: [64, 66, 68], hl: 6, sm: 62, se: 72, f0: 20},           // dark silicone keys
+    led: {c: [92, 24, 20], hl: 4, sm: 200, se: 210, f0: 22},         // red LED lens, dark
+    led_on: {c: [255, 76, 54], hl: 0, sm: 200, se: 210, f0: 22},     // red LED lens, lit (drawn full bright)
+    steel: {c: [118, 120, 124], hl: 12, sm: 130, se: 150, f0: 230},  // stainless ring and screws
+    grille: {c: [128, 130, 134], hl: 10, sm: 112, se: 132, f0: 230}, // perforated stainless grille
+    mica: {c: [86, 66, 40], hl: 2, sm: 214, se: 214, f0: 24},        // mica end window
+  },
+  // third person: in the fist, top end forward and a little up, face up; first person: face turned to the eye, top end
+  // leaning out; ground: flat on its back; item frame: face out, top end up
+  display: {
+    thirdperson_righthand: {rotation: [110, 0, 0], translation: [0, 2, 1], scale: [0.4, 0.4, 0.4]},
+    firstperson_righthand: {rotation: [55, -13, 21], translation: [-1, 3, 0.5], scale: [0.45, 0.45, 0.45]},
+    fixed: {rotation: [-90, 180, 0], translation: [0, 0, 0], scale: [0.56, 0.56, 0.56]},
+  },
+  atlas: 512, icon: {view: [60, 0, 0], coverage: 0.4, xray: ['lcd_glass'], hide: parts.filter(p => /^(seg_|dp_|led_on)/.test(p.name)).map(p => p.name),
+    mat: {rubber: [226, 176, 52], shell: [70, 72, 76], lcd: [168, 178, 156]}}};
+}
+
 /**
  * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
  * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
@@ -552,6 +646,7 @@ export const ITEMS = {
   gun_sling_worn: gunSlingWorn,
   pistol_holster: pistolHolster,
   simple_hearing_protection: simpleHearingProtection,
+  geiger_counter: geigerCounter,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

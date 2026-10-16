@@ -11,7 +11,7 @@ const gradle=process.env.GRADLE_USER_HOME||path.join(os.homedir(),'.gradle');
 const jars=dir=>fs.existsSync(dir)?fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?jars(path.join(dir,e.name)):e.name.endsWith('.jar')&&!e.name.includes('sources')?[path.join(dir,e.name)]:[]):[];
 const gson=jars(path.join(gradle,'caches/modules-2/files-2.1/com.google.code.gson/gson')).sort().at(-1);
 assert(gson,'Set GRADLE_USER_HOME to an existing cache containing Gson; no download is attempted');
-const vextris=process.env.VEXTRIS_JAR||path.join(root,'../Vextris/build/libs/vextris-forge-1.20.1-0.1.0-alpha.1.jar');
+const vextris=process.env.VEXTRIS_JAR||path.join(root,'../Vextris/build/internal-repo/io/github/dwom10912/vextris/0.1.1-alpha.4/vextris-0.1.1-alpha.4.jar');
 assert(fs.existsSync(vextris),'Vextris jar required (build Vextris first, or set VEXTRIS_JAR): '+vextris);
 const java=process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin',process.platform==='win32'?'java.exe':'java'):'java';
 const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'afl-highway-v2-0-loader-')),created=[];

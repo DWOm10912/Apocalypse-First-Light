@@ -4,14 +4,19 @@ import com.antaurora.apofirstlight.block.GradedTurfBlock;
 import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
-import com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh;
+import com.antaurora.apofirstlight.worldgen.network.road.Culvert;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks.Column;
 import net.minecraft.core.BlockPos;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BushBlock;
+import net.minecraft.world.level.block.DoublePlantBlock;
+import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -31,14 +36,22 @@ import java.util.Set;
  *   <li>DECK / ABUTMENT: collision on road_structure (the deck down to its slab's or girder's underside), the abutment
  *   wall down to the ground; structure never replaces natural ground (it only fills above it);</li>
  *   <li>BARRIER: road_structure for the parapets (the top block cut to the parapet's height), and at the span's ends the
- *   parapets and wing walls on the actual ground (a wing wall is left out where that ground already reaches its top);</li>
+ *   parapets and wing walls on the actual ground (a wing wall's top block always, also where that ground reaches it);</li>
  *   <li>the bridge's look is the client's mesh (BridgeMesh): road_structure is invisible collision that holds light;</li>
  *   <li>OPEN: beside and between the decks, the natural ground as the noise made it (only what rises above the deck level
- *   is cleared; water untouched).</li>
+ *   is cleared; water untouched);</li>
+ *   <li>CULVERT (group D): a box culvert's own cell: the gravel bed, the stream's water, the walls' and the roof's
+ *   road_structure (waterlogged in the water), the open channel cleared above; a PAVED or TURF column over the culvert's
+ *   body gets the culvert under its finish (the barrel kept open). Over a culvert the fills reach down to its bed (the
+ *   stream's trench through the embankment, which the river fill cut, is filled again).</li>
  * </ul>
- * Everything above a finished column is cleared up to the chunk's surface. Later writes into a road column at or above
- * its guard height (trees, snow, structure pieces from this or a neighbouring chunk) are refused by
- * WorldGenRegionRoadGuardMixin, so the result never depends on the order chunks generate in.
+ * Structure written where the noise put water keeps the water (waterlogged, group D); structure filled over the ground
+ * leaves its grass (the ground under a deck stays green).
+ * Everything above a finished column is cleared up to the chunk's surface (over turf, a plant already standing on it
+ * stays, except on the bare columns beside the pavement, RoadWorks#bare). Later writes into a road column at or above its guard height (trees, snow, structure pieces from this or a
+ * neighbouring chunk) are refused by WorldGenRegionRoadGuardMixin, so the road never depends on the order chunks generate
+ * in; only the plants on turf are let through (group B), and of those written before this pass only the ones that stand
+ * on the turf survive it.
  */
 public final class RoadChunkPass {
     private RoadChunkPass() {}
@@ -60,7 +73,7 @@ public final class RoadChunkPass {
             Column[] c = m.get(key);
             if (c != null) return c == EMPTY ? null : c;
         }
-        RoadWorks.Ground ground = n.plan()::heightAt;
+        RoadWorks.Ground ground = RoadWorks.Ground.of(n.plan());
         Column[] out = new Column[256];
         boolean any = false;
         for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
@@ -79,9 +92,9 @@ public final class RoadChunkPass {
     public static int guard(Column c) {
         return switch (c.kind()) {
             case NONE -> Integer.MAX_VALUE;
-            case PAVED -> c.y() - 3;
-            case TURF -> c.y();
-            case DECK, ABUTMENT, BARRIER -> c.bottom();
+            case PAVED -> (c.data() & RoadWorks.CULVERT_BODY) != 0 ? Math.min(c.y() - 3, c.bottom()) : c.y() - 3;
+            case TURF -> (c.data() & RoadWorks.CULVERT_BODY) != 0 ? Math.min(c.y(), c.bottom()) : c.y();
+            case DECK, ABUTMENT, BARRIER, CULVERT -> c.bottom();
             case OPEN -> c.y() - 3;
         };
     }
@@ -103,43 +116,65 @@ public final class RoadChunkPass {
             int surf = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, lx, lz);
             double g = n.plan().heightAt(x + 0.5, z + 0.5);
             int ground = (int) Math.floor(g);
+            // over a box culvert the fill reaches its bed: the river fill cut the stream's trench through the embankment
+            int lowest = ground - 2;
+            Culvert[] near = n.works().culvertsNear(x + 0.5, z + 0.5);
+            if (near != null)
+                for (Culvert cv : near) {
+                    double[] b = cv.bounds(Culvert.FILL_REACH);
+                    if (x + 0.5 >= b[0] && x + 0.5 <= b[2] && z + 0.5 >= b[1] && z + 0.5 <= b[3]) lowest = Math.min(lowest, cv.bed - 2);
+                }
+            boolean body = (c.data() & RoadWorks.CULVERT_BODY) != 0 && (c.kind() == RoadWorks.Kind.PAVED || c.kind() == RoadWorks.Kind.TURF);
             switch (c.kind()) {
                 case PAVED -> {
                     collision(chunk, p, x, z, c);
                     set(chunk, p, x, c.y() - 1, z, asphalt);
                     set(chunk, p, x, c.y() - 2, z, gravel);
                     set(chunk, p, x, c.y() - 3, z, base);
-                    fill(chunk, p, x, c.y() - 4, z, dirt, ground - 2);
+                    fill(chunk, p, x, c.y() - 4, z, dirt, lowest);
                     clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
+                    if (body) culvert(chunk, p, x, z, n.works().culvertCell(x, z), c.y() - 2, Integer.MIN_VALUE, false);
                 }
                 case TURF -> {
                     int d = c.data();
                     set(chunk, p, x, c.y(), z, ((GradedTurfBlock) AflBlocks.GRADED_TURF.get()).with(d & 15, d >> 4 & 15, d >> 8 & 15, d >> 12 & 15, (d >> 16 & 1) != 0));
-                    fill(chunk, p, x, c.y() - 1, z, dirt, ground - 2);
-                    clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
+                    fill(chunk, p, x, c.y() - 1, z, dirt, lowest);
+                    if (body) culvert(chunk, p, x, z, n.works().culvertCell(x, z), c.y() - 1, Integer.MIN_VALUE, false);
+                    // a plant a neighbour's features already put on this turf (the guard lets them, any chunk order) stays,
+                    // except beside the pavement (RoadWorks#bare)
+                    BlockState on = chunk.getBlockState(p.set(x, c.y() + 1, z));
+                    boolean tall = on.getBlock() instanceof DoublePlantBlock;
+                    int keep = (d & RoadWorks.BARE) == 0 && plantOnTurf(on) && (!tall || on.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.LOWER)
+                            ? c.y() + 1 + (tall ? 1 : 0) : c.y();
+                    clear(chunk, p, x, keep + 1, surf + 1, z, true);
                 }
                 case DECK, ABUTMENT -> {
                     int solid = solidTop(chunk, lx, lz);
                     collision(chunk, p, x, z, c);
                     // the structure never replaces the natural ground (a cell's square reaches beyond the mesh: through the
                     // invisible block the ground must still be there); the abutment stands on it
-                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) set(chunk, p, x, y, z, structure);
+                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) structure(chunk, p, x, y, z, structure);
                     if (c.kind() == RoadWorks.Kind.ABUTMENT) fill(chunk, p, x, c.bottom() - 1, z, structure, Math.min(ground, solid) - 2);
                     clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
                 }
                 case BARRIER -> {
                     int solid = solidTop(chunk, lx, lz);
-                    // a wing wall where the actual ground already reaches its top is left out (the client finds no structure
-                    // there and closes the wall beside it)
-                    if (c.data() == BridgeMesh.WING && solid >= c.y()) break;
-                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) set(chunk, p, x, y, z, structure);
-                    set(chunk, p, x, c.y(), z, structure.setValue(RoadStructureBlock.LAYERS, c.layers()));
+                    // the top block is always placed, also where the actual ground already reaches it (a wing wall, group
+                    // D: the client draws the walls continuously to their reach and finds every cell intact)
+                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) structure(chunk, p, x, y, z, structure);
+                    structure(chunk, p, x, c.y(), z, structure.setValue(RoadStructureBlock.LAYERS, c.layers()));
                     if (c.bottom() <= Math.max(ground, solid) + 1) fill(chunk, p, x, c.bottom() - 1, z, structure, Math.min(ground, solid) - 2);
                     clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
                 }
                 // beside and between the decks: the natural ground stays (cut to the planned ground it left bare stone and
                 // dirt pits in front of the walls, 2026-10-15); only what rises above the deck level goes
                 case OPEN -> clear(chunk, p, x, c.y() + 1, surf + 1, z, false);
+                case CULVERT -> {
+                    Culvert.Cell cell = n.works().culvertCell(x, z);
+                    if (cell == null) break;
+                    culvert(chunk, p, x, z, cell, Integer.MAX_VALUE, solidTop(chunk, lx, lz), true);
+                    clear(chunk, p, x, Math.max(c.y(), cell.channel() ? cell.culvert().level : c.y()) + 1, surf + 1, z, true);
+                }
                 default -> { }
             }
         }
@@ -155,6 +190,53 @@ public final class RoadChunkPass {
         return chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, lx, lz);
     }
 
+    /**
+     * A box culvert's blocks in one column (group D): the gravel bed under the channel (filled under it, and under a wall,
+     * down to the ground), from the bed up the walls' and the roof's road_structure (waterlogged in the water), the
+     * stream's water, and the open barrel or channel as air; up to cap (a body cell under the road's finish). own: the
+     * culvert's own cell (else the finish over it stays above its top); solid: the natural ground's top block of a cell
+     * that keeps its ground (across a tip, Culvert.Cell#keepGround: only the top block replaces it). Water near a tip is
+     * marked for the fluid's first tick (it meets the natural river there).
+     */
+    private static void culvert(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int z, Culvert.Cell cell, int cap, int solid, boolean own) {
+        if (cell == null) return;
+        Culvert cv = cell.culvert();
+        BlockState structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState(), water = Blocks.WATER.defaultBlockState(),
+                air = Blocks.AIR.defaultBlockState(), dirt = Blocks.DIRT.defaultBlockState(), gravel = Blocks.GRAVEL.defaultBlockState();
+        boolean keep = cell.keepGround();
+        if (!keep) {
+            if (cell.channel()) {
+                set(chunk, p, x, cv.bed - 1, z, gravel);
+                fill(chunk, p, x, cv.bed - 2, z, gravel, cv.bed - 8);
+            } else fill(chunk, p, x, cv.bed - 1, z, dirt, cv.bed - 8);
+        }
+        int top = Math.min(cell.top(), cap), hi = Math.max(top, cell.channel() ? Math.min(cv.level, cap) : top);
+        double a = cv.a(x + 0.5, z + 0.5);
+        boolean tip = own && (a < cv.tip0 + 1.5 || a > cv.tip1 - 1.5);
+        for (int y = cv.bed; y <= hi; y++) {
+            boolean conc = y <= top && cell.concrete(y), wet = cell.water(y);
+            if (keep && y <= solid && !(conc && y == cell.top())) continue;
+            if (conc) {
+                set(chunk, p, x, y, z, structure.setValue(RoadStructureBlock.LAYERS, y == cell.top() ? cell.layers() : 32).setValue(RoadStructureBlock.WATERLOGGED, wet));
+            } else if (wet) {
+                set(chunk, p, x, y, z, water);
+                if (tip) chunk.markPosForPostprocessing(p.set(x, y, z));
+            } else set(chunk, p, x, y, z, air);
+        }
+    }
+
+    /** road_structure at (x, y, z), waterlogged where it replaces water. */
+    private static void structure(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int y, int z, BlockState s) {
+        if (y < chunk.getMinBuildHeight() || y >= chunk.getMaxBuildHeight()) return;
+        chunk.setBlockState(p.set(x, y, z), waterlogged(s, chunk.getBlockState(p)), false);
+    }
+
+    /** s waterlogged when it is road_structure replacing a water source. */
+    private static BlockState waterlogged(BlockState s, BlockState old) {
+        return s.hasProperty(RoadStructureBlock.WATERLOGGED)
+                ? s.setValue(RoadStructureBlock.WATERLOGGED, old.getFluidState().is(FluidTags.WATER) && old.getFluidState().isSource()) : s;
+    }
+
     private static void collision(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int z, Column c) {
         Block b = AflBlocks.ROAD_SURFACE.get();
         set(chunk, p, x, c.y(), z, b.defaultBlockState().setValue(RoadSurfaceBlock.LAYERS, c.layers()));
@@ -166,22 +248,24 @@ public final class RoadChunkPass {
         chunk.setBlockState(p.set(x, y, z), s, false);
     }
 
-    /** Ground blocks that stop a fill (and grass-covered ones become dirt when buried). */
+    /** Ground blocks that stop a fill (and grass-covered ones become dirt when buried under earth, not under structure). */
     private static final Set<Block> GRASSY = Set.of(Blocks.GRASS_BLOCK, Blocks.PODZOL, Blocks.MYCELIUM, Blocks.MOSS_BLOCK);
 
     /**
      * From y down: replace what is not solid ground (air, plants, fluids of the fill area) until the natural ground, but
-     * never below lowest (2 blocks under the planned ground): a cave the carvers opened under the road stays a cave.
+     * never below lowest (2 blocks under the planned ground, or a culvert's bed): a cave the carvers opened under the road
+     * stays a cave. road_structure keeps the water it replaces (waterlogged) and leaves the grass under it (M2, group D).
      */
     private static void fill(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int y, int z, BlockState with, int lowest) {
         lowest = Math.max(lowest, chunk.getMinBuildHeight());
+        boolean structure = with.hasProperty(RoadStructureBlock.WATERLOGGED);
         for (int n = 0; n < MAX_FILL && y >= lowest; n++, y--) {
             BlockState s = chunk.getBlockState(p.set(x, y, z));
             if (s.getFluidState().isEmpty() && s.isSolid() && !s.is(net.minecraft.tags.BlockTags.LEAVES) && !s.is(net.minecraft.tags.BlockTags.LOGS)) {
-                if (GRASSY.contains(s.getBlock())) chunk.setBlockState(p, Blocks.DIRT.defaultBlockState(), false);
+                if (!structure && GRASSY.contains(s.getBlock())) chunk.setBlockState(p, Blocks.DIRT.defaultBlockState(), false);
                 return;
             }
-            chunk.setBlockState(p, with, false);
+            chunk.setBlockState(p, structure ? waterlogged(with, s) : with, false);
         }
     }
 
@@ -197,12 +281,25 @@ public final class RoadChunkPass {
         }
     }
 
-    /** True when a feature / structure write at pos must be refused: inside a road column at or above its guard. */
-    public static boolean guarded(WorldGenLevel level, BlockPos pos) {
+    /**
+     * True when a feature / structure write of state at pos must be refused: inside a road column at or above its guard,
+     * except the plants that grow on graded turf (#plantOnTurf) in the two cells over a TURF column that is not bare
+     * (RoadWorks#bare: its square reaches the pavement) (C3.3a group B: the biome's own vegetation features dress the
+     * earthworks like the ground beside them).
+     */
+    public static boolean guarded(WorldGenLevel level, BlockPos pos, BlockState state) {
         RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level.getLevel());
         if (n == null) return false;
         Column[] cols = columns(n, pos.getX() >> 4, pos.getZ() >> 4);
         if (cols == null) return false;
-        return pos.getY() >= guard(cols[(pos.getX() & 15) | (pos.getZ() & 15) << 4]);
+        Column c = cols[(pos.getX() & 15) | (pos.getZ() & 15) << 4];
+        if (pos.getY() < guard(c)) return false;
+        return !(c.kind() == RoadWorks.Kind.TURF && (c.data() & RoadWorks.BARE) == 0 && pos.getY() > c.y() && pos.getY() <= c.y() + 2
+                && plantOnTurf(state));
+    }
+
+    /** The plants that grow on graded turf (BushBlockGradedTurfMixin: BushBlock's own ground rule, no sapling). */
+    public static boolean plantOnTurf(BlockState state) {
+        return state.getBlock() instanceof BushBlock && !(state.getBlock() instanceof SaplingBlock);
     }
 }

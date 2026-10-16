@@ -679,6 +679,8 @@
 - **皮卡座位**：Main 在 master 上做了临时整体缩放（`client/vehicle/VehicleRiderScale`，`RenderPlayerEvent` 里绕眼睛高度缩到 0.75）。骨架画在同一个 `PoseStack` 里，缩放会一起作用到它身上，但还没和骨架一起在游戏里看过，尤其是第一人称身体。正式坐姿等 `SeatedRiderHost`（Main 和 D 已经约定了接口草案）。
 - 相机导演（`client/camera`，D1–D3）不受骨架开关影响，一直在用；这几轮实机里一直开着，没有单独验收过。
 
+合并 master（3325c5fa）时的改动：master 把倒油目标改成 `fluid/FuelOpening`（方块的加油口或车的加油口，T15 皮卡的加油口）。`JerryCanPourView` 的视角锁定和 `SkeletonActions` 的倒油来源都改用它，所以骨架开着时对皮卡加油口倒油，身体也会走到车的加油口前。这一点还没有在游戏里看过。检查：编译通过；skeletonCheck 只有原来 6 个枪械失败；GameTest 86 项，失败 16 项，都是原来就有的。
+
 合并后的下一步（另开分支，从合并后的 master 开）：
 1. 外部网格 V0：`ExternalGridHost` / `ExternalGrids`，皮卡货斗 9 × 7，协议 47 → 48。
 2. 车上坐姿：`SeatedRiderHost#seat`，驾驶座 / 副驾驶 / 货斗长凳三种坐姿，缩放、方向盘和踏板 IK、第一人称眼睛。

@@ -329,6 +329,14 @@
 - 从手里插进去的第一帧：第一人称手里的油枪是按 70° 手部视野画的，换成世界里画时大小、位置会小跳一下，然后才平滑移到口子里。
 - 还没在游戏里看过；没有 GameTest 覆盖插枪加油。
 
+**插进车的加油口（2026-10-16，T15 皮卡，[设计](../vehicles/first_pickup_v0_design.md) 第 8.2 节）**：
+- 油枪插着的地方从 `BlockPos` 改成 `fluid/FuelOpening`（方块或实体）。`NozzleFill#opening` / `handler` / `refusal` 有了 `FuelOpening` 版本，`FuelDispenserBlockEntity#insert` 也有。
+- 更新包里方块照旧写 `In0..`（long）；实体写 `In0..Entity`（网络 id）和 `In0..Uuid`。插着的状态不存档。
+- 对着车开着的加油口右键，由车自己的右键把油枪插进去；拔出照旧（点哪里都行，点车也行）。
+- 汽油枪插不进去，提示"这里只能加柴油"。
+- 画法照旧是"从上往下斜 35°"，侧面的加油口看起来不完全对（第 8.2 节的已知问题）。
+- 没有实机验收。
+
 ## 软管渲染
 
 `client/FuelDispenserRenderer` 是方块实体渲染器，只画拿出去的枪的软管；加油机和挂着的枪都是烘焙模型。

@@ -324,4 +324,4 @@
   - 没测：开门动画、关门的 `tick` 复查、起身位置、头部转角，这些要客户端看。
 - **还没实机测**：坐、开关柜门、生存挖掘掉落，等用户实机测。
 - 2026-10-15（两步开合 + 搜索，游戏关着）：`--check` CHECK OK（83 个输出，多了 `mesh_shapes/wooden_counter.json`）；编译通过；`ForestHomeM2GameTests` 重跑 **PASS**：假玩家按视线对门开门（不出界面）、对柜里出 18 / 9 格、对开着的门关上。提示和开合在客户端里的样子没测。
-- 2026-10-15（Furniture Mesh V1，柜子改成动画网格，游戏关着）：`--check` CHECK OK（99 个输出）；`compileJava compileDevJava` 通过；`ForestHomeM2GameTests` **PASS**（柜子开合、界面同上）。门的动画、铰链位置、物品图标、区块和渲染器之间的交接没在客户端看过。
+- 2026-10-15（Furniture Mesh V1，柜子改成动画网格，游戏关着）：`--check` CHECK OK（99 个输出）；`compileJava compileDevJava` 通过；`ForestHomeM2GameTests` **PASS**（柜子开合、界面同上）。门的动画、铰链位置、物品图标、区块和渲染器之间的交接没在客户端看过。同日用户 2026-10-15 实机 **PASS**（"先这样吧，PASS"），没有逐项报告。

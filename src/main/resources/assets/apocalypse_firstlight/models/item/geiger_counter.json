@@ -1,6 +1,91 @@
 {
-  "parent": "minecraft:item/generated",
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
   "textures": {
-    "layer0": "apocalypse_firstlight:item/geiger_counter"
+    "particle": "apocalypse_firstlight:item/geiger_counter"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/geiger_counter"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          110,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          2,
+          1
+        ],
+        "scale": [
+          0.4,
+          0.4,
+          0.4
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          55,
+          -13,
+          21
+        ],
+        "translation": [
+          -1,
+          3,
+          0.5
+        ],
+        "scale": [
+          0.45,
+          0.45,
+          0.45
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          0.306,
+          0.306,
+          0.306
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          -90,
+          180,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.56,
+          0.56,
+          0.56
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/geiger_counter"
+      }
+    }
   }
 }

@@ -67,6 +67,38 @@ public final class NozzleFill {
         return "message.apocalypse_firstlight.fuel_can.wont_take";
     }
 
+    // ---- any opening: a block's or an entity's (FuelOpening, 2026-10-16: the T15's filler) ----
+
+    /** The opening the nozzle goes into (world), or null: a block's as above, or an entity's that is open now. */
+    @Nullable
+    public static Vec3 opening(net.minecraft.world.level.Level level, FuelOpening at) {
+        if (at.pos() != null) return opening(level, at.pos());
+        FuelFillEntity fill = at.fillEntity(level);
+        return fill != null && fill.fuelOpen() ? fill.fuelOpening() : null;
+    }
+
+    /** Where the fuel goes (server), or null. */
+    @Nullable
+    public static IFluidHandler handler(ServerLevel level, FuelOpening at) {
+        if (at.pos() != null) return handler(level, at.pos());
+        FuelFillEntity fill = at.fillEntity(level);
+        return fill == null ? null : fill.fuelHandler();
+    }
+
+    /** Why this fuel cannot go in (a full message key), or null when it can; an entity's own refusal for the wrong fuel. */
+    @Nullable
+    public static String refusal(ServerLevel level, FuelOpening at, Fluid fuel) {
+        if (at.pos() != null) return refusal(level, at.pos(), fuel);
+        FuelFillEntity fill = at.fillEntity(level);
+        IFluidHandler handler = fill == null ? null : fill.fuelHandler();
+        if (handler == null) return "message.apocalypse_firstlight.fuel_can.wont_take";
+        if (handler.fill(new FluidStack(fuel, 1), IFluidHandler.FluidAction.SIMULATE) > 0) return null;
+        FluidStack held = handler.getTanks() > 0 ? handler.getFluidInTank(0) : FluidStack.EMPTY;
+        if (handler.getTanks() > 0 && !handler.isFluidValid(0, new FluidStack(fuel, 1))) return "message.apocalypse_firstlight.fuel_can." + fill.fuelRefusal();
+        if (!held.isEmpty() && held.getAmount() >= handler.getTankCapacity(0)) return "message.apocalypse_firstlight.fuel_nozzle.full";
+        return "message.apocalypse_firstlight.fuel_can.wont_take";
+    }
+
     /** How full the opening's tank is, 0..1 (the fill sound rises with it). */
     public static float share(IFluidHandler handler) {
         if (handler.getTanks() == 0 || handler.getTankCapacity(0) <= 0) return 0;

@@ -2,7 +2,7 @@
 
 > 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
 
-状态：**已实现（2026-10-03），生成脚本 `--check` 通过，编译通过，没有实机验证**。2026-10-14 加了撬棍、网格背包的五件装备和隔音耳罩（见下文“2026-10-14 新增”），同样没有实机验证。
+状态：**已实现（2026-10-03），生成脚本 `--check` 通过，编译通过，没有实机验证**。2026-10-14 加了撬棍、网格背包的五件装备和隔音耳罩（见下文“2026-10-14 新增”），同样没有实机验证。2026-10-15 加了盖革计数器 V2（见文末“2026-10-15 新增”），没有实机验证。
 
 装备类物品（随身带的、戴在身上的）用和 Material Meshes（`material_meshes_v1.md`）同一套 bake：
 - 物品栏里是一张 16×16 的 2D 像素图标，由网格按图标视角画出来；
@@ -150,3 +150,31 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - 身上：胸挂、两个背包、枪套、耳罩、斜挎的枪背带的位置，蹲下和走路时跟不跟，第三人称和 E 界面人物预览；
 - 撬棍第一人称的握持（网格应该落在原来方块的位置）、砸玻璃动画；HUD 武器列表里的撬棍剪影；
 - 在 Sundial 下 PBR 的效果（钢件会不会太亮）。
+
+## 2026-10-15 新增：盖革计数器 `geiger_counter`（V2，方向 B）
+
+设计、读数规则、HUD 见 [盖革计数器 V2](geiger_counter_v2_design.md)。这里只记生成和渲染。
+
+- **生成脚本新增**：
+  - `roundRectCorners`：每个角单独设圆角，0 是直角；护套和壳相接的那头用直角。
+  - `GEIGER_LCD`：液晶数字的排布，HUD 的数字按同样的比例画。
+- **模型**：数字式袖珍监测仪，1 px = 10 mm，平躺、正面朝上（+Y），顶端朝 -Z。
+  - 深灰壳、黄色橡胶护套、亮黑边框、液晶、淡色亚克力窗、计数灯、三个按键；
+  - 侧面电源推钮，挂绳环；背面网罩、云母窗、两颗螺钉。
+- **液晶段码**：
+  - 4 位七段数字的每一段 `seg_<位>_<a..g>`、3 个小数点 `dp_<位>`，都是单独的部件，各一个面；
+  - 计数灯是同形的 `led` / `led_on`。`led` 和 `led_on` 重叠是故意的（两者不会同时画）；共面检查只报这一对（统计里的 26 个面）。
+  - 图标里不画段码和 `led_on`。
+- 512 贴图集（不是默认的 256：段码很小，要够密度），2262 个三角面，`verticalOffset` 0.4025。
+  - 显示变换自己设：第三人称握持、第一人称斜对眼睛、展示框正面朝外；地上用默认（平躺）。
+- **渲染**：`client/GeigerCounterItemRenderer`，不用通用的 `AflStaticMeshItemRenderer`。
+  - 按部件名分出固定部件、段码、小数点、灯；
+  - 本地玩家自己手里的那台按 `GeigerReadout` 点亮段码，灯亮时满亮度画 `led_on`；
+  - 别的情况液晶是空的。
+  - 为了能绑定它，`AflStaticMeshItemClient.bind` 的工厂类型放宽成任意 `BlockEntityWithoutLevelRenderer`。
+- **检查**：
+  - `node tools/build-equipment-meshes-v1.mjs geiger_counter --check` 通过；
+  - 别的装备报"过期"的只是检出时的 CRLF 换行，内容没变；
+  - `compileJava --offline` 通过；
+  - 离线预览见设计文档第 5 节，没有实机验证。
+

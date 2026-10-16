@@ -59,7 +59,7 @@
 - **动画进行中**（客户端这个 channel 的采样值还没到目标）不用网格，这几 tick 照旧方盒子。服务端没有动画过程，直接按目标姿势。
 - **不算的部件**：`goods_` 开头的部件（物资）和它们的子部件不算，它们在壳里面，开着时随战利品出现消失；方块实体当前隐藏的部件（`meshPartVisible` 为 false：售货机砸碎后的玻璃、灯的另一套镜片）不算。
 - 缓存：profile 按 id 读一次；每个（profile，朝向，各 channel 开 / 关）组合摆一次，每个部件一个 `MeshHitModel`；可见部件组合对应的 `Shape` 也缓存。
-- 覆盖：饮料冷柜、收银机、充电站、收银台闸门（左、右）、卧式冰柜、商用垃圾箱（4 色）、工业电箱、工业储物柜、铅箱、金属垃圾桶、自动售货机、饮水机；2026-10-15 起还有木质橱柜、木质水槽柜、木衣柜、木床头柜、木储物箱、老式冷柜（[Wood Furniture V2](../models/wood_furniture_v2.md)，多格的经 `MeshHitMultiCell` 取主格；编译、GameTest 通过，没在客户端看过）。
+- 覆盖：饮料冷柜、收银机、充电站、收银台闸门（左、右）、卧式冰柜、商用垃圾箱（4 色）、工业电箱、工业储物柜、铅箱、金属垃圾桶、自动售货机、饮水机；2026-10-15 起还有木质橱柜、木质水槽柜、木衣柜、木床头柜、木储物箱、老式冷柜（[Wood Furniture V2](../models/wood_furniture_v2.md)，多格的经 `MeshHitMultiCell` 取主格；编译、GameTest 通过，家具用户 2026-10-15 实机 **PASS**（"先这样吧，PASS"），没有逐项报告，选框没有单独说）。
 
 数值检查（`node`，按同样的变换算全部 16 个 profile 关 / 开两种姿势的网格包围盒）：都落在 profile 的 `bounds` 里，和它相差约 1/64 格（bounds 本来就比网格外扩 1/64），说明变换链和渲染器一致。**这是数值检查，不是实机验证。**
 
@@ -74,7 +74,7 @@
 - 缓存：零件按名字读一次；每个（方块状态，邻居标志）组合合成一次。
 - 接在 `MeshHitModels#own` 里动画方块之后、`MeshHitAssembled` 之前。
 - 碰撞没变，仍是 `CabinShapeData` 的方盒（[Cabin Exterior V1](../models/cabin_exterior_v1.md) "选框和碰撞"）。
-- 拼块 + 一件动画网格（2026-10-15，箱式柴炉的炉门、应急收音机的摇柄）：方块实体是 `AflAnimatedMeshHost`、方块又是小屋拼块时，`MeshHitModels#own` 把两份网格合成一个 `Shape`；动画网格那份还在动（没有形状）时只用拼块。收音机的摇臂按朝下算（`meshChannelAffectsHits` false）。`ForestHomeM2GameTests` 里收音机的侧面射线检查通过，没在客户端看过。
+- 拼块 + 一件动画网格（2026-10-15，箱式柴炉的炉门、应急收音机的摇柄）：方块实体是 `AflAnimatedMeshHost`、方块又是小屋拼块时，`MeshHitModels#own` 把两份网格合成一个 `Shape`；动画网格那份还在动（没有形状）时只用拼块。收音机的摇臂按朝下算（`meshChannelAffectsHits` false）。`ForestHomeM2GameTests` 里收音机的侧面射线检查通过；用户 2026-10-15 实机 **PASS**（"先这样吧，PASS"），没有逐项报告，选框没有单独说。
 
 为什么同时补 T 形接缝：小屋零件里有很多共面、但切法不同的面（一排原木、屋面板的长条），合成后边的中间接着别的面的顶点，不切开就会在平面上画出一堆开口边。离线检查（`tools/cabin/audit-hit-outlines.mjs`，和 `MeshHitModel#featureEdges` 规则相同，`--no-tfix` 对比）：20 种典型拼法里，窗、桌、椅、原木一排的开口边都是 0（窗 317 条线、桌 118、椅 202、原木一排 132、绿色屋面下格 97）；`--png=` 出的线稿图看过，轮廓干净。**这是离线检查，不是实机验证。**
 

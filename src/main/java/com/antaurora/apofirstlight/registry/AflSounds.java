@@ -22,9 +22,12 @@ public final class AflSounds {
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_medium")));
     public static final RegistryObject<SoundEvent> GEIGER_EXTREME = SOUND_EVENTS.register("geiger_extreme",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_extreme")));
+    /** Geiger counter V2 sound (2026-10-15): one tick per count (four cut variants) and the dense loop for high rates. */
     public static final RegistryObject<SoundEvent> GEIGER_CLICK = SOUND_EVENTS.register("geiger_click",
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_click")));
+    public static final RegistryObject<SoundEvent> GEIGER_DENSE = SOUND_EVENTS.register("geiger_dense",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_dense")));
     public static final RegistryObject<SoundEvent> ATTACHMENT_OPERATION = SOUND_EVENTS.register("attachment_operation",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID,"attachment_operation")));
     public static final RegistryObject<SoundEvent> CRUSHER_RUNNING = SOUND_EVENTS.register("crusher_running",

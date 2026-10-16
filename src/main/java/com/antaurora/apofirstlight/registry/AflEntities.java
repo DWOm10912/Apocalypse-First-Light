@@ -27,6 +27,15 @@ public final class AflEntities {
                     .sized(1.2F, 0.4F).noSave().noSummon().fireImmune().clientTrackingRange(8).updateInterval(100)
                     .build("survivor_corpse"));
 
+    /**
+     * The Halstead Tamarack T15 pickup (docs/vehicles/first_pickup_v0_design.md, body V0): the cab's picking box; the front
+     * and the bed are its two part entities (vehicle/PickupTruckEntity).
+     */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.vehicle.PickupTruckEntity>> PICKUP_T15 =
+            ENTITY_TYPES.register("pickup_t15", () -> EntityType.Builder.<com.antaurora.apofirstlight.vehicle.PickupTruckEntity>of(
+                            com.antaurora.apofirstlight.vehicle.PickupTruckEntity::new, MobCategory.MISC)
+                    .sized(1.9F, 1.8F).clientTrackingRange(10).build("pickup_t15"));
+
     private AflEntities() {
     }
 }

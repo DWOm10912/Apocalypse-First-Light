@@ -21,6 +21,8 @@
 
 ## 依赖与构建
 
+> 2026-10-15 起依赖换成内部基线 0.1.1-alpha.2（新坐标 `io.github.dwom10912:vextris`、仓库 `../Vextris/build/internal-repo`），见 [Vextris 0.1.1-alpha.2 接入](vextris_0_1_1_integration.md)。下表是 0.1.0-alpha.1 时的记录。
+
 | 项 | 内容 |
 |---|---|
 | Gradle | `gradle.properties`：`vextris_version=0.1.0-alpha.1`（迁移时是 `0.1.0-dev`），`vextris_repo=../Vextris/build/repo` |

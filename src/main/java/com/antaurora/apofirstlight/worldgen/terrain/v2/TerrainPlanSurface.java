@@ -399,6 +399,9 @@ public final class TerrainPlanSurface {
 
     public int stableDepth(double x, double z) { return stable[cellAt(x, z)]; }
 
+    /** Blocks below the planned surface that the density's hard stable floor keeps solid (PlanStabilityDensity, "hard"). */
+    public static int hardDepth(int stable) { return Math.max(0, Math.min(stable, 2 * (stable - 6))); }
+
     /**
      * Open water in the tidal marsh (Phase 2b): pools and leads at sea level (top water block Y62) on the marsh flat
      * (top block Y63), about 40 % of the marsh interior and fewer toward its edge: the noise threshold rises smoothly

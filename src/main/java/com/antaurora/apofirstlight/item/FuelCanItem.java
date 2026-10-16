@@ -2,6 +2,8 @@ package com.antaurora.apofirstlight.item;
 
 import com.antaurora.apofirstlight.block.FuelCanBlock;
 import com.antaurora.apofirstlight.block.FuelSumpCoverBlock;
+import com.antaurora.apofirstlight.fluid.FuelFillEntity;
+import com.antaurora.apofirstlight.fluid.FuelOpening;
 import com.antaurora.apofirstlight.fluid.FuelPourTarget;
 import com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity;
 import com.antaurora.apofirstlight.fluid.FuelCanTransfers;
@@ -62,7 +64,10 @@ public final class FuelCanItem extends BlockItem {
     public static final int POUR_DELAY = 68;
     /** How far the eyes may be from the cover's middle while pouring (blocks). */
     public static final double POUR_RANGE = 3.0;
-    /** The pour in progress: {Target: the fill cover (BlockPos.asLong), Start: the game time it started}. */
+    /**
+     * The pour in progress: {Target: the fill cover (BlockPos.asLong), or TargetEntity / TargetUuid: an entity's filler
+     * (fluid/FuelOpening, 2026-10-16: the T15 pickup); Start: the game time it started}.
+     */
     public static final String POUR_KEY = "AflPour";
     /**
      * The spout while pouring, in view space (blocks: right, up, back; the eye at the origin) as the first-person pour pose
@@ -114,10 +119,10 @@ public final class FuelCanItem extends BlockItem {
         return stack.getItem() instanceof FuelCanItem can && can.pours && stack.getTag() != null && stack.getTag().contains(POUR_KEY, Tag.TAG_COMPOUND);
     }
 
-    /** The fill cover a pouring can pours into (null if not pouring). */
+    /** The opening a pouring can pours into (null if not pouring). */
     @Nullable
-    public static BlockPos pourTarget(ItemStack stack) {
-        return isPouring(stack) ? BlockPos.of(stack.getTag().getCompound(POUR_KEY).getLong("Target")) : null;
+    public static FuelOpening pourTarget(ItemStack stack) {
+        return isPouring(stack) ? FuelOpening.load(stack.getTag().getCompound(POUR_KEY), "Target") : null;
     }
 
     /** Game ticks since this can's pour started (negative if not pouring). */
@@ -125,9 +130,9 @@ public final class FuelCanItem extends BlockItem {
         return isPouring(stack) ? level.getGameTime() - stack.getTag().getCompound(POUR_KEY).getLong("Start") : -1;
     }
 
-    private static void startPour(ItemStack stack, BlockPos target, long now) {
+    private static void startPour(ItemStack stack, FuelOpening target, long now) {
         CompoundTag pour = new CompoundTag();
-        pour.putLong("Target", target.asLong());
+        target.save(pour, "Target");
         pour.putLong("Start", now);
         stack.getOrCreateTag().put(POUR_KEY, pour);
     }
@@ -144,6 +149,48 @@ public final class FuelCanItem extends BlockItem {
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof FuelPourTarget target) return target.takesPour(level, pos, state);
         return state.getBlock() instanceof FuelSumpCoverBlock cover && cover.kind() == FuelSumpCoverBlock.Kind.FILL && state.getValue(FuelSumpCoverBlock.OPEN);
+    }
+
+    /** Whether this opening takes a pour now: a block's as above, an entity's filler while it is open. */
+    public static boolean takesPour(Level level, FuelOpening at) {
+        if (at.pos() != null) return level.isLoaded(at.pos()) && takesPour(level, at.pos());
+        FuelFillEntity fill = at.fillEntity(level);
+        return fill != null && fill.fuelOpen();
+    }
+
+    /** Where the stream falls into this opening (world); an entity that is gone: its last known nothing, so null. */
+    @Nullable
+    public static Vec3 pourOpening(Level level, FuelOpening at) {
+        if (at.pos() != null) return pourOpening(level, at.pos());
+        FuelFillEntity fill = at.fillEntity(level);
+        return fill == null ? null : fill.fuelOpening();
+    }
+
+    /**
+     * Server: a can in the main hand starts pouring into an entity's open filler (the entity's own click, 2026-10-16: the
+     * T15). False (told why) when it does not pour; a can already pouring stops instead.
+     */
+    public static boolean startPourInto(Player player, ItemStack stack, Entity target) {
+        if (!(stack.getItem() instanceof FuelCanItem can) || !can.pours || player.getMainHandItem() != stack || !(target instanceof FuelFillEntity fill)) return false;
+        if (isPouring(stack)) {
+            stopPour(stack);
+            return true;
+        }
+        if (!fill.fuelOpen()) return false;
+        if (fluid(stack).isEmpty()) {
+            player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can.empty"), true);
+            return true;
+        }
+        IFluidHandler into = fill.fuelHandler();
+        FluidStack one = fluid(stack).copy();
+        one.setAmount(1);
+        if (into != null && into.getTanks() > 0 && !into.isFluidValid(0, one)) {
+            player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can." + fill.fuelRefusal()), true);
+            return true;
+        }
+        startPour(stack, FuelOpening.entity(target), player.level().getGameTime());
+        player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can.pouring"), true);
+        return true;
     }
 
     /** Where the stream falls into what {@code pos} is (world): a fuel fill cover's opening, or a FuelPourTarget's. */
@@ -193,7 +240,7 @@ public final class FuelCanItem extends BlockItem {
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can.empty"), true);
             return InteractionResultHolder.pass(stack);
         }
-        startPour(stack, hit.getBlockPos(), level.getGameTime());
+        startPour(stack, FuelOpening.block(hit.getBlockPos()), level.getGameTime());
         player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can.pouring"), true);
         return InteractionResultHolder.pass(stack);
     }
@@ -202,13 +249,19 @@ public final class FuelCanItem extends BlockItem {
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         if (level.isClientSide || !isPouring(stack) || !(level instanceof ServerLevel server)) return;
-        BlockPos target = pourTarget(stack);
+        FuelOpening target = pourTarget(stack);
         if (!selected || !(entity instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator() || player.getMainHandItem() != stack
-                || target == null || !level.isLoaded(target) || !takesPour(level, target)) {
+                || target == null || !takesPour(level, target)) {
             stopPour(stack);
             return;
         }
-        Vec3 reach = level.getBlockState(target).getBlock() instanceof FuelPourTarget ? pourOpening(level, target) : Vec3.atCenterOf(target);
+        Entity into0 = target.entityIn(level);
+        if (into0 != null && into0.getId() != target.entityId()) {   // the entity came back under a new id: clients look it up by id
+            long started = level.getGameTime() - pourTicks(stack, level);
+            startPour(stack, target.withId(into0.getId()), started);
+        }
+        BlockPos block = target.pos();
+        Vec3 reach = block == null || level.getBlockState(block).getBlock() instanceof FuelPourTarget ? pourOpening(level, target) : Vec3.atCenterOf(block);
         if (player.getEyePosition().distanceToSqr(reach) > POUR_RANGE * POUR_RANGE) {
             stopPour(stack);
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can.too_far"), true);
@@ -224,10 +277,11 @@ public final class FuelCanItem extends BlockItem {
         }
         FluidStack one = held.copy();
         one.setAmount(1);
-        IFluidHandler into = FuelCanTransfers.handler(server, target, Direction.UP);
+        FuelFillEntity fill = target.fillEntity(level);
+        IFluidHandler into = block != null ? FuelCanTransfers.handler(server, block, Direction.UP) : fill != null ? fill.fuelHandler() : null;
         if (into == null || into.fill(one, IFluidHandler.FluidAction.EXECUTE) <= 0) {
             FluidStack there = into == null ? FluidStack.EMPTY : FuelCanTransfers.contents(into);
-            String refusal = level.getBlockState(target).getBlock() instanceof FuelPourTarget t ? t.refusal() : "wont_take";
+            String refusal = block == null ? (fill != null ? fill.fuelRefusal() : "wont_take") : level.getBlockState(block).getBlock() instanceof FuelPourTarget t ? t.refusal() : "wont_take";
             String why = into == null || into.getTanks() == 0 ? "wont_take" : !into.isFluidValid(0, one) ? refusal : !there.isEmpty() && !there.isFluidEqual(one) ? "other_fuel" : "full";
             stopPour(stack);
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can." + why), true);

@@ -282,7 +282,7 @@
       "estimated": true
     },
     "apocalypse_firstlight:geiger_counter": {
-      "unit_mass_kg": 0.5,
+      "unit_mass_kg": 0.33,
       "estimated": true
     },
     "apocalypse_firstlight:dirty_water_bottle": {

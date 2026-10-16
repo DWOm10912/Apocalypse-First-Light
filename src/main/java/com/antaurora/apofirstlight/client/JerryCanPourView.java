@@ -4,7 +4,6 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.item.FuelCanItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -45,8 +44,8 @@ public final class JerryCanPourView {
     private JerryCanPourView() {
     }
 
-    /** The fill cover the local player is pouring into, or null. */
-    private static BlockPos pouring(LocalPlayer player) {
+    /** The opening the local player is pouring into, or null. */
+    private static com.antaurora.apofirstlight.fluid.FuelOpening pouring(LocalPlayer player) {
         return player.isAlive() && !player.isSpectator() ? FuelCanItem.pourTarget(player.getMainHandItem()) : null;
     }
 
@@ -57,11 +56,12 @@ public final class JerryCanPourView {
     @SubscribeEvent
     public static void input(MovementInputUpdateEvent event) {
         if (!(event.getEntity() instanceof LocalPlayer player)) return;
-        BlockPos cover = pouring(player);
-        if (cover == null) return;
+        var cover = pouring(player);
+        Vec3 opening = cover == null ? null : FuelCanItem.pourOpening(player.level(), cover);
+        if (opening == null) return;
         var input = event.getInput();
         input.shiftKeyDown = !com.antaurora.apofirstlight.client.skeleton.PlayerSkeleton.enabled()
-                || com.antaurora.apofirstlight.client.skeleton.SkeletonActions.pourCrouched(FuelCanItem.pourOpening(player.level(), cover).y - player.getY());
+                || com.antaurora.apofirstlight.client.skeleton.SkeletonActions.pourCrouched(opening.y - player.getY());
         input.forwardImpulse = 0;
         input.leftImpulse = 0;
         input.up = input.down = input.left = input.right = input.jumping = false;
@@ -77,20 +77,21 @@ public final class JerryCanPourView {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null || mc.isPaused()) return;
-        BlockPos cover = pouring(player);
-        if (cover == null) return;
+        var cover = pouring(player);
+        Vec3 opening = cover == null ? null : FuelCanItem.pourOpening(mc.level, cover);
+        if (opening == null) return;
         float yaw, pitch;
         if (com.antaurora.apofirstlight.client.skeleton.PlayerSkeleton.enabled()) {
             // the player skeleton holds the can's spout over the opening (player action item/jerry_can): the view locks on
             // the opening from the camera on the stepped body (the head looks with it), not past the pour pose's spout
             Vec3 eye = com.antaurora.apofirstlight.client.skeleton.SkeletonActions.cameraEye();
             if (eye == null) eye = player.getEyePosition(event.renderTickTime);
-            Vec3 d = FuelCanItem.pourOpening(mc.level, cover).add(0, LOOK_OVER, 0).subtract(eye);
+            Vec3 d = opening.add(0, LOOK_OVER, 0).subtract(eye);
             yaw = (float) Math.toDegrees(Math.atan2(-d.x, d.z));
             pitch = (float) Math.min(PITCH_MAX, -Math.toDegrees(Math.atan2(d.y, Math.hypot(d.x, d.z))));
         } else {
             // the opening's top middle, from the eyes
-            Vec3 d = FuelCanItem.pourOpening(mc.level, cover).add(0, 0.55, 0).subtract(player.getEyePosition(event.renderTickTime));
+            Vec3 d = opening.add(0, 0.55, 0).subtract(player.getEyePosition(event.renderTickTime));
             double yawTo = Math.toDegrees(Math.atan2(-d.x, d.z)), pitchTo = -Math.toDegrees(Math.atan2(d.y, Math.hypot(d.x, d.z)));
             // where it should show on screen: just below and left of the pour pose's spout, moved from the hand's projection to the world's
             Vec3 spout = FuelCanItem.SPOUT_VIEW;
