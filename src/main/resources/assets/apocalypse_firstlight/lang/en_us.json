@@ -252,6 +252,7 @@
   "entity.apocalypse_firstlight.furniture_seat": "Seat",
   "entity.apocalypse_firstlight.survivor_corpse": "Body",
   "entity.apocalypse_firstlight.survivor_corpse.named": "Body of %s",
+  "entity.apocalypse_firstlight.pickup_t15": "Halstead Tamarack T15",
   "container.apocalypse_firstlight.survivor_corpse": "Belongings of %s",
   "block.apocalypse_firstlight.white_oak_planks": "White Oak Planks",
   "block.apocalypse_firstlight.white_oak_rounded_timber": "White Oak Rounded Timber",
@@ -880,12 +881,7 @@
   "curios.identifier.rig": "Chest Rig",
   "curios.identifier.holster": "Holster",
 
-  "hud.apocalypse_firstlight.geiger.rate": "Radiation",
-  "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",
-  "hud.apocalypse_firstlight.geiger.residual": "Residual Radiation",
-  "hud.apocalypse_firstlight.geiger.over_range": "OVER RANGE",
-  "hud.apocalypse_firstlight.geiger.dose": "Dose",
-  "hud.apocalypse_firstlight.geiger.zone": "Zone",
+  "hud.apocalypse_firstlight.geiger.unit": "RU/h",
 
   "radiation_zone.apocalypse_firstlight.safe": "Safe",
   "radiation_zone.apocalypse_firstlight.irradiated": "Irradiated",

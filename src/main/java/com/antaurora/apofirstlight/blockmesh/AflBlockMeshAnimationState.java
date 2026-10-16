@@ -148,28 +148,40 @@ public final class AflBlockMeshAnimationState {
     }
 
     /**
-     * A follower channel: a critically damped approach to the target with time constant followTicks (w = 1 / followTicks),
-     * x(t) = target + (a + b t) e^(-w t), a = x0 - target, b = v0 + w a, from the position x0 and speed v0 it had when
-     * this target arrived; a new target carries both over, so the motion never restarts from rest. Clamped to 0..1.
+     * A follower channel (a gauge needle), 2026-10-15: one cubic Hermite segment per target, from the shown position x0 and
+     * speed v0 to the new target over duration ticks, so position and speed never jump.
+     * <ul><li>duration: 1.25 x the time since the previous target, clamped to followTicks .. 4 x followTicks. While the
+     * host keeps sending (its sync interval, which jitters by a tick or two) the next value therefore arrives shortly
+     * before the needle reaches the current one: it plays the stream back about one interval late, at the reading's own
+     * rate, without stopping between steps (a segment that ran out first would stop the needle for a moment);</li>
+     * <li>end speed: in a stream (the gap at most 1.5 x the duration) the segment's mean speed, so a steady reading moves
+     * the needle at a constant speed, no pulsing; after a pause (an isolated change: the key turned, a refill) 0, an
+     * eased swing that settles on the value.</li></ul>
+     * Past the end the needle rests on the target. The earlier critically damped chase (time constant followTicks)
+     * reached each 1 % step within about a second and then waited for the next: it stepped (user 2026-10-15). Clamped
+     * to 0..1.
      */
     private static final class Follower {
-        final double w;
-        double target, x0, v0, start, lastSample;
+        final double minTicks, maxTicks;
+        double target, x0, v0, v1, start, duration, lastTarget, lastSample;
 
         Follower(AflBlockMeshProfile.Animation animation, double target, double tick) {
-            this.w = 1 / animation.followTicks();
+            this.minTicks = animation.followTicks();
+            this.maxTicks = 4 * animation.followTicks();
             this.target = this.x0 = target;
-            this.start = this.lastSample = tick;
+            this.start = this.lastSample = this.lastTarget = tick;
         }
 
-        private double position(double tau) {
-            double a = x0 - target, b = v0 + w * a;
-            return target + (a + b * tau) * Math.exp(-w * tau);
+        private double position(double s) {
+            if (s >= duration) return target;
+            double d = duration, u = s / d, u2 = u * u, u3 = u2 * u;
+            return (2 * u3 - 3 * u2 + 1) * x0 + (u3 - 2 * u2 + u) * d * v0 + (-2 * u3 + 3 * u2) * target + (u3 - u2) * d * v1;
         }
 
-        private double velocity(double tau) {
-            double a = x0 - target, b = v0 + w * a;
-            return (v0 - w * b * tau) * Math.exp(-w * tau);
+        private double velocity(double s) {
+            if (s >= duration) return 0;
+            double d = duration, u = s / d, u2 = u * u;
+            return ((6 * u2 - 6 * u) * x0 + (-6 * u2 + 6 * u) * target) / d + (3 * u2 - 4 * u + 1) * v0 + (3 * u2 - 2 * u) * v1;
         }
 
         double sample(double tick) {
@@ -178,19 +190,20 @@ public final class AflBlockMeshAnimationState {
             return Math.max(0, Math.min(1, position(Math.max(0, tick - start))));
         }
 
-        /** Within 1e-4 of the target and slower than 1e-4 a time constant: rest there (the needle can join the chunk). */
+        /** At rest on the target once the segment has run out. */
         boolean settled(double tick) {
-            double tau = Math.max(0, Math.max(tick, lastSample) - start);
-            return Math.abs(position(tau) - target) < 1e-4 && Math.abs(velocity(tau)) / w < 1e-4;
+            return Math.max(tick, lastSample) - start >= duration;
         }
 
         void retarget(double next, double tick) {
             tick = Math.max(tick, lastSample);
-            double tau = Math.max(0, tick - start), x = position(tau), v = velocity(tau);
+            double s = Math.max(0, tick - start), x = position(s), v = velocity(s), gap = tick - lastTarget;
             x0 = Math.max(0, Math.min(1, x));
             v0 = x0 == x ? v : 0;   // pinned at an end: it starts from rest there
+            duration = Math.max(minTicks, Math.min(maxTicks, 1.25 * gap));   // a quarter longer: the next value arrives before the segment ends
+            v1 = gap <= 1.5 * duration ? (next - x0) / duration : 0;
             target = next;
-            start = tick;
+            start = lastTarget = tick;
         }
     }
 

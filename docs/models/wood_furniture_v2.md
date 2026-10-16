@@ -295,3 +295,4 @@
   - `FurnitureV2GameTests` **PASS**：开合、界面、搜索、拆和掉落、生存挖掘同上；床、工具架的拼块都在，四件动画网格的 profile、geo、sidecar、图集都在 jar 里，主格方块实体都是 `AflAnimatedMeshHost`（共 20 个文件）；
   - `ForestHomeM2GameTests` **PASS**；`ForestHomeM4GameTests` **PASS**（2/2）；
   - 没测（要客户端看）：动画是不是平滑、门 / 抽屉 / 盖子转的方向和铰链位置、静止时区块画和动的时候渲染器画之间的交接、物品图标的视角、指示灯发光、和原来拼块比的光照差别（面法线）、准星按动画网格选中。
+- 2026-10-15（同日，Furniture Mesh V1 连同柴炉门、收音机摇柄）：用户 2026-10-15 实机 **PASS**（"先这样吧，PASS"），没有逐项报告，上面没测的各项没有单独确认。

@@ -1,0 +1,534 @@
+{
+ "format": "afl-vehicle-rig-v1",
+ "vehicle": "pickup_t15",
+ "frame": "runtime blocks: front -Z, right +X, up +Y; entity origin on the ground at the body centre",
+ "meshes": {
+  "pickup_t15": {
+   "atlas": "pickup_t15",
+   "bones": [
+    "body",
+    "door_l",
+    "door_r",
+    "tailgate"
+   ],
+   "parts": [
+    "body_glass",
+    "body_trim",
+    "body_paint",
+    "body_paint2",
+    "body_under",
+    "door_r_paint2",
+    "door_r_paint",
+    "door_r_rubber",
+    "door_r_glass",
+    "door_r_trim",
+    "door_r_mirror",
+    "door_r_chrome",
+    "door_l_paint2",
+    "door_l_paint",
+    "door_l_rubber",
+    "door_l_glass",
+    "door_l_trim",
+    "door_l_mirror",
+    "door_l_chrome",
+    "body_liner",
+    "body_red",
+    "body_amber",
+    "body_lens",
+    "body_chrome",
+    "body_rubber",
+    "tailgate_paint2",
+    "tailgate_paint",
+    "tailgate_trim",
+    "tailgate_steel"
+   ]
+  },
+  "pickup_t15_front": {
+   "atlas": "pickup_t15",
+   "bones": [
+    "body",
+    "hood"
+   ],
+   "parts": [
+    "body_paint2",
+    "body_paint",
+    "body_liner",
+    "body_trim",
+    "body_amber",
+    "body_chrome",
+    "body_lens",
+    "body_rubber",
+    "hood_paint",
+    "hood_felt",
+    "hood_steel"
+   ]
+  },
+  "pickup_t15_wheel": {
+   "atlas": "pickup_t15",
+   "bones": [
+    "wheel"
+   ],
+   "parts": [
+    "wheel_tire",
+    "wheel_wheel",
+    "wheel_under",
+    "wheel_steel",
+    "wheel_chrome"
+   ]
+  },
+  "pickup_t15_cab": {
+   "atlas": "pickup_t15_cab",
+   "bones": [
+    "body",
+    "door_l",
+    "door_r",
+    "steering"
+   ],
+   "parts": [
+    "body_dash",
+    "body_pad",
+    "body_trim",
+    "body_liner",
+    "body_vinyl",
+    "body_steel",
+    "body_dial",
+    "body_needle",
+    "body_glass",
+    "body_under",
+    "body_chrome",
+    "steering_vinyl",
+    "steering_trim",
+    "body_mat",
+    "body_panel",
+    "body_rubber",
+    "door_r_panel",
+    "door_r_dash",
+    "door_r_trim",
+    "door_r_chrome",
+    "door_l_panel",
+    "door_l_dash",
+    "door_l_trim",
+    "door_l_chrome",
+    "body_paint",
+    "body_headliner",
+    "body_lens",
+    "body_mirror"
+   ]
+  },
+  "pickup_t15_seat": {
+   "atlas": "pickup_t15_cab",
+   "bones": [
+    "body"
+   ],
+   "parts": [
+    "body_cloth",
+    "body_vinyl",
+    "body_dash",
+    "body_steel",
+    "body_under",
+    "body_belt",
+    "body_trim"
+   ]
+  },
+  "pickup_t15_engine": {
+   "atlas": "pickup_t15_under",
+   "bones": [
+    "body"
+   ],
+   "parts": [
+    "body_engine",
+    "body_steel",
+    "body_alu",
+    "body_cover",
+    "body_trim",
+    "body_rubber",
+    "body_belting",
+    "body_radiator",
+    "body_under",
+    "body_yellow",
+    "body_iron",
+    "body_lead",
+    "body_redcap",
+    "body_cream",
+    "body_washer"
+   ]
+  },
+  "pickup_t15_chassis": {
+   "atlas": "pickup_t15_under",
+   "bones": [
+    "body"
+   ],
+   "parts": [
+    "body_under",
+    "body_rubber",
+    "body_steel",
+    "body_chrome",
+    "body_alu",
+    "body_iron"
+   ]
+  }
+ },
+ "bones": {
+  "body": {
+   "parent": null,
+   "pivot": [
+    0,
+    0,
+    0
+   ]
+  },
+  "hood": {
+   "parent": "body",
+   "pivot": [
+    0,
+    1.041077,
+    -1.105
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 58,
+   "note": "rear edge hinges; front lifts"
+  },
+  "door_l": {
+   "parent": "body",
+   "pivot": [
+    -0.825,
+    0.8,
+    -0.916
+   ],
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "open_deg": 68,
+   "note": "front hinge pillar"
+  },
+  "door_r": {
+   "parent": "body",
+   "pivot": [
+    0.825,
+    0.8,
+    -0.916
+   ],
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "open_deg": 68,
+   "note": "front hinge pillar"
+  },
+  "tailgate": {
+   "parent": "body",
+   "pivot": [
+    0,
+    0.615,
+    2.245
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 90,
+   "note": "bottom hinges; drops flat"
+  },
+  "steering": {
+   "parent": "body",
+   "pivot": [
+    -0.37,
+    1.125,
+    -0.4
+   ],
+   "axis": [
+    0,
+    -0.45399,
+    -0.891007
+   ],
+   "open_deg": 540,
+   "note": "column axis; +-1.5 turns lock to lock"
+  },
+  "wheel": {
+   "parent": null,
+   "pivot": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "wheels": {
+  "mesh": "pickup_t15_wheel",
+  "outboard": "+X in the wheel mesh; left wheels turned 180 deg about Y",
+  "hubs": {
+   "fl": {
+    "hub": [
+     -0.712,
+     0.36,
+     -1.6
+    ],
+    "turned": true,
+    "steers": true
+   },
+   "fr": {
+    "hub": [
+     0.712,
+     0.36,
+     -1.6
+    ],
+    "turned": false,
+    "steers": true
+   },
+   "rl": {
+    "hub": [
+     -0.712,
+     0.36,
+     1.25
+    ],
+    "turned": true,
+    "steers": false
+   },
+   "rr": {
+    "hub": [
+     0.712,
+     0.36,
+     1.25
+    ],
+    "turned": false,
+    "steers": false
+   }
+  },
+  "spare": {
+   "centre": [
+    0,
+    0.5,
+    1.86
+   ],
+   "turn": "Z -90 deg (outboard face down)"
+  }
+ },
+ "anchors": {
+  "seat_driver_hip": {
+   "bone": "body",
+   "pos": [
+    -0.37,
+    0.845,
+    0.06
+   ]
+  },
+  "seat_passenger_hip": {
+   "bone": "body",
+   "pos": [
+    0.37,
+    0.845,
+    0.06
+   ]
+  },
+  "eye_driver": {
+   "bone": "body",
+   "pos": [
+    -0.37,
+    1.47,
+    0.12
+   ]
+  },
+  "eye_passenger": {
+   "bone": "body",
+   "pos": [
+    0.37,
+    1.47,
+    0.12
+   ]
+  },
+  "steering_centre": {
+   "bone": "steering",
+   "pos": [
+    -0.37,
+    1.125,
+    -0.4
+   ]
+  },
+  "steering_grip_l": {
+   "bone": "steering",
+   "pos": [
+    -0.56,
+    1.125,
+    -0.4
+   ]
+  },
+  "steering_grip_r": {
+   "bone": "steering",
+   "pos": [
+    -0.18,
+    1.125,
+    -0.4
+   ]
+  },
+  "pedal_clutch": {
+   "bone": "body",
+   "pos": [
+    -0.53,
+    0.665,
+    -0.735
+   ]
+  },
+  "pedal_brake": {
+   "bone": "body",
+   "pos": [
+    -0.41,
+    0.665,
+    -0.735
+   ]
+  },
+  "pedal_accelerator": {
+   "bone": "body",
+   "pos": [
+    -0.25,
+    0.62,
+    -0.735
+   ]
+  },
+  "shift_knob": {
+   "bone": "body",
+   "pos": [
+    -0.055,
+    1.02,
+    -0.33
+   ]
+  },
+  "transfer_knob": {
+   "bone": "body",
+   "pos": [
+    0.07,
+    0.895,
+    -0.33
+   ]
+  },
+  "parking_brake": {
+   "bone": "body",
+   "pos": [
+    -0.13,
+    0.79,
+    -0.548
+   ]
+  },
+  "door_l_outer_handle": {
+   "bone": "door_l",
+   "pos": [
+    -0.85,
+    0.98,
+    0.057
+   ]
+  },
+  "door_r_outer_handle": {
+   "bone": "door_r",
+   "pos": [
+    0.85,
+    0.98,
+    0.057
+   ]
+  },
+  "door_l_inner_handle": {
+   "bone": "door_l",
+   "pos": [
+    -0.755,
+    0.925,
+    -0.73
+   ]
+  },
+  "door_r_inner_handle": {
+   "bone": "door_r",
+   "pos": [
+    0.755,
+    0.925,
+    -0.73
+   ]
+  },
+  "door_l_entry": {
+   "bone": "body",
+   "pos": [
+    -1.45,
+    0,
+    -0.3
+   ]
+  },
+  "door_r_entry": {
+   "bone": "body",
+   "pos": [
+    1.45,
+    0,
+    -0.3
+   ]
+  },
+  "hood_latch": {
+   "bone": "hood",
+   "pos": [
+    0,
+    1,
+    -2.24
+   ]
+  },
+  "tailgate_handle": {
+   "bone": "tailgate",
+   "pos": [
+    0,
+    1.05,
+    2.262
+   ]
+  },
+  "fuel_filler": {
+   "bone": "body",
+   "pos": [
+    -0.85,
+    0.94,
+    0.62
+   ]
+  },
+  "headlamp_l": {
+   "bone": "body",
+   "pos": [
+    -0.66,
+    0.81,
+    -2.282
+   ]
+  },
+  "headlamp_r": {
+   "bone": "body",
+   "pos": [
+    0.66,
+    0.81,
+    -2.282
+   ]
+  },
+  "tail_lamp_l": {
+   "bone": "body",
+   "pos": [
+    -0.77,
+    0.83,
+    2.285
+   ]
+  },
+  "tail_lamp_r": {
+   "bone": "body",
+   "pos": [
+    0.77,
+    0.83,
+    2.285
+   ]
+  }
+ },
+ "smoothing": {
+  "crease_deg": 50,
+  "materials": {
+   "glass": 0,
+   "mirror": 0,
+   "dial": 0,
+   "lens": 30,
+   "tire": 60
+  }
+ }
+}

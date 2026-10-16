@@ -28,10 +28,12 @@ public final class AflBlockMeshProfile {
      * One channel. loopTicks > 0 (2026-10-09, the diesel generator's fan): a loop channel, turning its transforms over
      * continuously, one full transform every loopTicks at full speed while its target is 1; the target is a speed, reached
      * linearly over durationTicks (easing unused). 0: an ordinary channel between its ends.
-     * followTicks > 0 (2026-10-09, the diesel generator's gauge needles): a follower, for a value channel whose target is
-     * resent often in small steps (a needle): it chases the target as a critically damped gauge movement with this time
-     * constant, its speed carrying over each new target (durationTicks and easing unused). An eased transition per target
-     * restarted from rest every update and lasted durationTicks x a tiny change: the needle stepped twice a second.
+     * followTicks > 0 (2026-10-09, the diesel generator's gauge needles; reworked 2026-10-15): a follower, for a value
+     * channel whose target is resent often in small steps (a needle): each new target starts one smooth segment from the
+     * shown position and speed, 1.25 x the time since the previous target long (clamped to followTicks .. 4 x
+     * followTicks), so a stream of readings plays back at its own rate without stops (AflBlockMeshAnimationState
+     * Follower; durationTicks and easing unused). An eased transition per target restarted from rest every update; a
+     * critically damped chase with this time constant then still caught each step early and waited: both stepped.
      * wraps (same day, the hour meter's drums): 0 and 1 are the same pose (a full turn); a new target is reached the short
      * way round, so 0.9 -> 0 rolls on a tenth instead of spinning back through every digit.
      */

@@ -88,9 +88,10 @@
     "sounds": [{"name": "apocalypse_firstlight:gieger_extreme", "stream": true}]
   },
   "geiger_click": {
-    "sounds": [
-      "apocalypse_firstlight:geiger_click"
-    ]
+    "sounds": ["apocalypse_firstlight:geiger_tick_1", "apocalypse_firstlight:geiger_tick_2", "apocalypse_firstlight:geiger_tick_3", "apocalypse_firstlight:geiger_tick_4"]
+  },
+  "geiger_dense": {
+    "sounds": ["apocalypse_firstlight:geiger_dense"]
   },
   "crusher_running": {
     "sounds": [
