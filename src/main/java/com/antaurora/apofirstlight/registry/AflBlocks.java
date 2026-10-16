@@ -614,6 +614,11 @@ public final class AflBlocks {
     public static final RegistryObject<Block> GRADED_TURF = BLOCKS.register("graded_turf",
             () -> new com.antaurora.apofirstlight.block.GradedTurfBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
                     .mapColor(net.minecraft.world.level.material.MapColor.GRASS).strength(0.6F).sound(SoundType.GRASS)));
+    // Flattened plant (2026-10-16, docs/vehicles/first_pickup_v0_design.md 8.4): grass, ferns and flowers pressed down by a
+    // vehicle, standing up again later. A plant: breaks at once by hand, no tool tag, no loot, no item.
+    public static final RegistryObject<Block> FLATTENED_PLANT = BLOCKS.register("flattened_plant",
+            () -> new com.antaurora.apofirstlight.block.FlattenedPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                    .offsetType(BlockBehaviour.OffsetType.NONE)));
     // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
     // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
     public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",

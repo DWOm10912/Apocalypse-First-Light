@@ -1,4 +1,4 @@
-// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering). Structure per the reference drawings (design
+// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering and the four gauge needles). Structure per the reference drawings (design
 // doc 2.4, Hilux LN106 instrument panel / seat / door trim groups): instrument panel with a padded top and a meter hood over
 // the driver's cluster; round side vents, centre vents, defroster grilles; heater control panel above the radio, ashtray
 // below; glovebox; tilt column with a two-piece square shroud, two stalks and the key cylinder; two-spoke wheel with a
@@ -18,8 +18,8 @@ const B = 'body';
 const zr = (s, a, b) => s > 0 ? [a, b] : [-b, -a];
 const FLOOR = 0.535, DZ = 0.742;                     // floor pan top; dash half width (inboard of the door trims)
 const D2R = Math.PI / 180;
-/** Gauge dials (centre, radius, sweep start / end in degrees about the dial, measured from +z toward +y in the face plane):
- *  read by the dial shading for the tick marks. */
+/** Gauge dials (centre, radius, sweep start / end in degrees about the dial, measured from +z toward +y in the face plane;
+ *  major / minor tick counts over the sweep): read by the dial shading for the tick marks. */
 export const DIALS = [];
 
 // ================================================================ instrument panel
@@ -89,21 +89,23 @@ function dash() {
 // ================================================================ gauge cluster
 function cluster() {
   const x = 0.627;   // face plane in the meter hood recess (faces the driver, -x)
-  const dial = (zc, yc, r, a0, a1, big) => {
-    DIALS.push({c: [x - 0.003, yc, zc], r, a0, a1, big});
+  // each needle on its own bone at the dial centre, drawn at the start of its sweep; the renderer turns it about the
+  // dial's axis (design doc 8.5: GAUGES)
+  const dial = (zc, yc, r, a0, a1, big, bone, major, minor) => {
+    DIALS.push({c: [x - 0.003, yc, zc], r, a0, a1, big, major, minor});
     lathe(C(B, 'dial'), [x - 0.003, yc, zc], [-1, 0, 0], [[0, 0], [0, r], [0.002, r], [0.002, 0]], big ? 32 : 20);
     lathe(C(B, 'trim'), [x - 0.003, yc, zc], [-1, 0, 0], [[0, r], [0.010, r + 0.001], [0.012, r + 0.005], [0, r + 0.006]], big ? 32 : 20);
-    // needle at rest (static: the mesh has no gauge bones yet) and its hub
-    const a = (a0 + (a1 - a0) * (big ? 0.0 : 0.5)) * D2R, len = r * 0.82, dir = [0, Math.sin(a), Math.cos(a)];
-    obox(C(B, 'needle'), [x - 0.0065, yc + dir[1] * len * 0.45, zc + dir[2] * len * 0.45], [0, dir[1], dir[2]], [0, -dir[2], dir[1]], len * 0.55, 0.0016, 0.0008, 0);
+    // needle at the sweep's start, on its bone, and its hub
+    const a = a0 * D2R, len = r * 0.82, dir = [0, Math.sin(a), Math.cos(a)];
+    obox(C(bone, 'needle'), [x - 0.0065, yc + dir[1] * len * 0.45, zc + dir[2] * len * 0.45], [0, dir[1], dir[2]], [0, -dir[2], dir[1]], len * 0.55, 0.0016, 0.0008, 0);
     lathe(C(B, 'trim'), [x - 0.005, yc, zc], [-1, 0, 0], [[0, 0], [0, 0.007], [0.004, 0.006], [0.005, 0]], 10);
   };
   // cluster housing face and its frame
   rbox(C(B, 'dial'), FRX, -0.60, -0.16, 1.016, 1.116, x - 0.001, x + 0.003, 0, {rc: 0});
-  dial(-0.445, 1.066, 0.041, 225, -45, true);   // tachometer
-  dial(-0.335, 1.066, 0.041, 225, -45, true);   // speedometer
-  dial(-0.54, 1.08, 0.022, 150, 30, false);     // fuel
-  dial(-0.24, 1.08, 0.022, 150, 30, false);     // temperature
+  dial(-0.445, 1.066, 0.041, 225, -45, true, 'tach', 10, 50);       // tachometer 0-5000 rpm (500 / 100)
+  dial(-0.335, 1.066, 0.041, 225, -45, true, 'speedo', 9, 36);      // speedometer 0-180 km/h (20 / 5)
+  dial(-0.54, 1.08, 0.022, 150, 30, false, 'fuel_gauge', 2, 4);    // fuel E - F
+  dial(-0.24, 1.08, 0.022, 150, 30, false, 'temp_gauge', 2, 4);    // coolant C - H
   // warning lamp strips under the small gauges
   for (const z0 of [-0.575, -0.275]) rbox(C(B, 'trim'), FRX, z0, z0 + 0.07, 1.03, 1.042, x - 0.004, x - 0.001, 0, {rc: 0.002});
   // lens over the whole cluster (translucent)

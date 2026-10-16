@@ -85,7 +85,11 @@
     "body",
     "door_l",
     "door_r",
-    "steering"
+    "steering",
+    "tach",
+    "speedo",
+    "fuel_gauge",
+    "temp_gauge"
    ],
    "parts": [
     "body_dash",
@@ -95,7 +99,10 @@
     "body_vinyl",
     "body_steel",
     "body_dial",
-    "body_needle",
+    "tach_needle",
+    "speedo_needle",
+    "fuel_gauge_needle",
+    "temp_gauge_needle",
     "body_glass",
     "body_under",
     "body_chrome",
@@ -269,6 +276,66 @@
    ],
    "open_deg": 540,
    "note": "column axis; +-1.5 turns lock to lock"
+  },
+  "tach": {
+   "parent": "body",
+   "pivot": [
+    -0.445,
+    1.066,
+    -0.6205
+   ],
+   "axis": [
+    0,
+    0,
+    -1
+   ],
+   "open_deg": 270,
+   "note": "needle about the dial axis; 0-5000 rpm over 270 deg clockwise"
+  },
+  "speedo": {
+   "parent": "body",
+   "pivot": [
+    -0.335,
+    1.066,
+    -0.6205
+   ],
+   "axis": [
+    0,
+    0,
+    -1
+   ],
+   "open_deg": 270,
+   "note": "needle about the dial axis; 0-180 km/h over 270 deg clockwise"
+  },
+  "fuel_gauge": {
+   "parent": "body",
+   "pivot": [
+    -0.54,
+    1.08,
+    -0.6205
+   ],
+   "axis": [
+    0,
+    0,
+    -1
+   ],
+   "open_deg": 120,
+   "note": "needle about the dial axis; empty - full over 120 deg clockwise"
+  },
+  "temp_gauge": {
+   "parent": "body",
+   "pivot": [
+    -0.24,
+    1.08,
+    -0.6205
+   ],
+   "axis": [
+    0,
+    0,
+    -1
+   ],
+   "open_deg": 120,
+   "note": "needle about the dial axis; 40 - 120 C over 120 deg clockwise"
   },
   "wheel": {
    "parent": null,

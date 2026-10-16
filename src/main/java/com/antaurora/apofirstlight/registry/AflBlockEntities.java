@@ -23,6 +23,10 @@ import net.minecraftforge.registries.RegistryObject;
 public final class AflBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, ApocalypseFirstLight.MOD_ID);
+    /** A pressed flower's original plant (block/FlattenedPlantBlock). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FlattenedPlantBlockEntity>> FLATTENED_PLANT =
+            BLOCK_ENTITIES.register("flattened_plant", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.FlattenedPlantBlockEntity::new, AflBlocks.FLATTENED_PLANT.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.RestroomStallDoorBlockEntity>> RESTROOM_STALL_DOOR =
             BLOCK_ENTITIES.register("restroom_stall_door", () -> BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.RestroomStallDoorBlockEntity::new, AflBlocks.RESTROOM_STALL_DOOR.get()).build(null));

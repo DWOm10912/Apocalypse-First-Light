@@ -1,0 +1,154 @@
+{
+  "variants": {
+    "facing=north,kind=grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_0"
+    },
+    "facing=north,kind=grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_1"
+    },
+    "facing=north,kind=fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_0"
+    },
+    "facing=north,kind=fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_1"
+    },
+    "facing=north,kind=tall_grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_0"
+    },
+    "facing=north,kind=tall_grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_1"
+    },
+    "facing=north,kind=large_fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_0"
+    },
+    "facing=north,kind=large_fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_1"
+    },
+    "facing=north,kind=other,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_0"
+    },
+    "facing=north,kind=other,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_1"
+    },
+    "facing=east,kind=grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_0",
+      "y": 90
+    },
+    "facing=east,kind=grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_1",
+      "y": 90
+    },
+    "facing=east,kind=fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_0",
+      "y": 90
+    },
+    "facing=east,kind=fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_1",
+      "y": 90
+    },
+    "facing=east,kind=tall_grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_0",
+      "y": 90
+    },
+    "facing=east,kind=tall_grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_1",
+      "y": 90
+    },
+    "facing=east,kind=large_fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_0",
+      "y": 90
+    },
+    "facing=east,kind=large_fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_1",
+      "y": 90
+    },
+    "facing=east,kind=other,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_0",
+      "y": 90
+    },
+    "facing=east,kind=other,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_1",
+      "y": 90
+    },
+    "facing=south,kind=grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_0",
+      "y": 180
+    },
+    "facing=south,kind=grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_1",
+      "y": 180
+    },
+    "facing=south,kind=fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_0",
+      "y": 180
+    },
+    "facing=south,kind=fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_1",
+      "y": 180
+    },
+    "facing=south,kind=tall_grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_0",
+      "y": 180
+    },
+    "facing=south,kind=tall_grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_1",
+      "y": 180
+    },
+    "facing=south,kind=large_fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_0",
+      "y": 180
+    },
+    "facing=south,kind=large_fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_1",
+      "y": 180
+    },
+    "facing=south,kind=other,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_0",
+      "y": 180
+    },
+    "facing=south,kind=other,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_1",
+      "y": 180
+    },
+    "facing=west,kind=grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_0",
+      "y": 270
+    },
+    "facing=west,kind=grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_grass_1",
+      "y": 270
+    },
+    "facing=west,kind=fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_0",
+      "y": 270
+    },
+    "facing=west,kind=fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_fern_1",
+      "y": 270
+    },
+    "facing=west,kind=tall_grass,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_0",
+      "y": 270
+    },
+    "facing=west,kind=tall_grass,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_tall_grass_1",
+      "y": 270
+    },
+    "facing=west,kind=large_fern,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_0",
+      "y": 270
+    },
+    "facing=west,kind=large_fern,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_large_fern_1",
+      "y": 270
+    },
+    "facing=west,kind=other,stage=0": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_0",
+      "y": 270
+    },
+    "facing=west,kind=other,stage=1": {
+      "model": "apocalypse_firstlight:block/flattened_plant_other_1",
+      "y": 270
+    }
+  }
+}

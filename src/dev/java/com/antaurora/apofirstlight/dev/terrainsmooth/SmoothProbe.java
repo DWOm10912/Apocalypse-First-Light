@@ -36,7 +36,8 @@ import java.util.Locale;
  * (moving keys held, under 1 block in 20 ticks) or the server moved the player (a correction between two ticks), at most
  * once per 5 seconds, and on /afl dev terrain_smooth probe. Each record also lists the blocks under and around the feet with
  * the slope the client and the server compute for them (cached and fresh) and whether the player's box cuts into them.
- * It found the stale server cache of P1 (2026-10-11).
+ * It found the stale server cache of P1 (2026-10-11). Log only (the chat line went 2026-10-16: it flooded the chat while
+ * driving); not while riding.
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT)
 public final class SmoothProbe {
@@ -57,7 +58,8 @@ public final class SmoothProbe {
         if (FMLEnvironment.production || !event.side.isClient()) return;
         var mc = Minecraft.getInstance();
         if (event.player != mc.player || mc.level == null) return;
-        if (!TerrainSmooth.CLIENT.collides() || !TerrainSmooth.applies(mc.level)) {
+        // riding (a truck seat moves the player between ticks): no probe
+        if (!TerrainSmooth.CLIENT.collides() || !TerrainSmooth.applies(mc.level) || mc.player.isPassenger()) {
             reset();
             return;
         }
@@ -123,7 +125,6 @@ public final class SmoothProbe {
         out.append("  client blocks:\n");
         blocks(level, p, box, out);
         LOG.info(out.toString());
-        SmoothDevClient.message("probe event " + id + " written to the log (" + reason + ")");
         var server = Minecraft.getInstance().getSingleplayerServer();
         if (server == null) return;
         var uuid = p.getUUID();

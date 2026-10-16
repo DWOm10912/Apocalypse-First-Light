@@ -41,6 +41,8 @@ export const PIVOTS = {
   tailgate: [BED_R + 0.01, 0.615, 0],
   fuel_door: [-0.545, 0.94, -HW],
   steering: [0.40, 1.125, -0.37],
+  // gauge needles: the dial centres in the cluster face (cab.mjs cluster())
+  tach: [0.6205, 1.066, -0.445], speedo: [0.6205, 1.066, -0.335], fuel_gauge: [0.6205, 1.08, -0.54], temp_gauge: [0.6205, 1.08, -0.24],
   wheel: [0, 0, 0],
 };
 export const STEER_TILT = 27;
@@ -52,6 +54,10 @@ export const HINGES = {
   tailgate: {axis: [0, 0, 1], open: 90, note: 'bottom hinges; drops flat'},
   fuel_door: {axis: [0, 1, 0], open: 80, note: 'front edge; swings out like the doors'},
   steering: {axis: [Math.cos(27 * Math.PI / 180), -Math.sin(27 * Math.PI / 180), 0], open: 540, note: 'column axis; +-1.5 turns lock to lock'},
+  tach: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-5000 rpm over 270 deg clockwise'},
+  speedo: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-180 km/h over 270 deg clockwise'},
+  fuel_gauge: {axis: [1, 0, 0], open: 120, note: 'needle about the dial axis; empty - full over 120 deg clockwise'},
+  temp_gauge: {axis: [1, 0, 0], open: 120, note: 'needle about the dial axis; 40 - 120 C over 120 deg clockwise'},
 };
 // interaction / attachment anchors (concept frame, on a bone): seats and eye points for the player skeleton, hands on the
 // wheel, pedals and levers for IK, handles for interaction, lamps for light sources, filler and exhaust for effects
@@ -132,7 +138,7 @@ export const MESHES = {
   ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate', 'fuel_door'], atlas: 'ext'},
   front: {id: 'pickup_t15_front', bones: ['body', 'hood'], atlas: 'ext'},
   wheel: {id: 'pickup_t15_wheel', bones: ['wheel'], atlas: 'ext'},
-  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering'], atlas: 'cab'},
+  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge'], atlas: 'cab'},
   seat: {id: 'pickup_t15_seat', bones: ['body'], atlas: 'cab'},
   engine: {id: 'pickup_t15_engine', bones: ['body'], atlas: 'under'},
   chassis: {id: 'pickup_t15_chassis', bones: ['body'], atlas: 'under'},

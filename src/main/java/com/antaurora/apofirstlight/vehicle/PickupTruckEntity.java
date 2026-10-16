@@ -15,6 +15,14 @@ import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Box;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Pick;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Seat;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Zone;
+import com.antaurora.apofirstlight.network.AflNetwork;
+import com.antaurora.apofirstlight.vehicle.physics.LevelVehicleWorld;
+import com.antaurora.apofirstlight.vehicle.physics.Drivetrain;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleInput;
+import com.antaurora.apofirstlight.vehicle.physics.VehiclePhysics;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleSpec;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleState;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleWorld;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -45,14 +53,19 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaterniond;
+import org.joml.Quaternionf;
+import org.joml.Vector3d;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * The Halstead Tamarack T15 pickup (docs/vehicles/first_pickup_v0_design.md): a parked truck with the Pure Mesh body
  * (paint, wear, hood, doors, tailgate, filler door), collision, six seats, a 60 L diesel tank and the bed's cargo grid
- * (V0-a second step, section 8.2). No driving or physics yet.
+ * (V0-a second step, section 8.2), driven by the vehicle physics (V0-b package 1, section 3; vehicle/physics): see
+ * "Driving" below.
  * <p>Picking: an entity's own box is square, so the 4.8 m truck is three boxes along its heading: this entity (the cab) and
  * two {@link Part}s (front, bed), as the ender dragon does (Forge PartEntity, ids following this entity's). Which part a
  * click works is not the box it hit but the part the look ray meets in the truck's own frame
@@ -62,6 +75,13 @@ import java.util.List;
  * <p>Seats: the passengers' seats are synced (one entity id per seat). Driver and passenger get in through an open door
  * (it shuts behind them) and out the same side (the door opens; it shuts again), else the other side, the bed, the roof.
  * <p>Frame: the model's front is -Z (rendered turned by 180 - yaw), so the truck's front points along its look direction.
+ * <p>Driving (V0-b package 1): the driver's seat controls it ({@link #getControllingPassenger}); the driver's client runs
+ * {@link VehiclePhysics} with its keys and sends the state each tick, the server checks and passes it on (VehiclePackets),
+ * the other clients ease to it. Without a driver the server runs it parked (handbrake) until it rests, then lets it sleep
+ * until the ground under a wheel changes or it is moved. The entity position is the model origin, its yaw the heading;
+ * the full orientation (pitch and roll too) is kept beside it for drawing, seats and anchors. Collision boxes stay
+ * yaw-only. Who stands on it is carried along (the server moves mobs and items, each client its own player); who is in
+ * the way of a moving truck is pushed aside.
  */
 public final class PickupTruckEntity extends Entity implements VehicleColliders.Collider, FuelFillEntity {
     private static final EntityDataAccessor<Integer> PAINT = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.INT);
@@ -120,12 +140,53 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private float boxYaw;
     private boolean boxTailgate;
     private boolean registered;
+    // ---- driving (V0-b package 1) ----
+    /** Client: the local driver's keys (client/vehicle/VehicleDriving); a server never asks. */
+    public static volatile Supplier<VehicleInput> clientInput = () -> VehicleInput.PARKED;
+    /** Client: the local player (carried and pushed by its own client). */
+    public static volatile Supplier<Player> localPlayer = () -> null;
+    /** Watchers ease to a new state over this many ticks; a sleeping truck checks its ground this often (server). */
+    private static final int EASE_TICKS = 3, SLEEP_CHECK = 10;
+    /** A driver's state that moves the truck further than this in a tick (blocks) or faster (m/s) is refused. */
+    private static final double MAX_STEP = 8.0, MAX_SPEED = 45.0;
+    private VehiclePhysics physics;
+    private LevelVehicleWorld world;
+    /** Orientation (model frame to world) this tick and the last; until oriented, it follows the yaw. */
+    private final Quaterniond orient = new Quaterniond(), orientO = new Quaterniond();
+    private boolean oriented;
+    /** Wheels as drawn: travel (blocks, + up), turn (rad), turn rate (rad/s); the centre steer angle (rad). */
+    private final float[] travel = new float[4], travelO = new float[4], spin = new float[4], spinO = new float[4], spinRate = new float[4];
+    private float steer, steerO;
+    /** Where the physics last put it (anything else moving it starts the physics again from there). */
+    private double placedX = Double.NaN, placedY, placedZ;
+    private float placedYaw;
+    /** Watchers: the state eased to, ticks left. */
+    private VehicleState target;
+    private int easeLeft;
+    private boolean synced, wasLocal;
+    /** Where it was at the end of the last tick and its boxes then (carrying); the yaw turned this tick (riders turn along). */
+    private double carryX = Double.NaN, carryY, carryZ;
+    private float carryYaw, turned;
+    private List<AABB> carryBoxes = List.of();
+    /** Where plants under it were last pressed down (server). */
+    private double flatX = Double.NaN, flatZ;
+    private float flatYaw;
+    // ---- drivetrain (V0-b package 2) ----
+    /** The drivetrain as saved, for the physics once it exists: gear, 2H / 4H, coolant (the engine is off after loading). */
+    private int savedGear;
+    private boolean savedFour;
+    private float savedCoolant = 20;
+    /** Server: fuel burnt and not yet taken from the tank (litres; the tank counts whole litres). */
+    private double fuelBurnt;
+    /** Gauges as drawn: engine speed (rpm), road speed from the rear wheels (km/h), fuel (0..1), coolant (C); last tick and now. */
+    private float rpm, rpmO, speedo, speedoO, fuelShown = -1, fuelShownO, coolantShown = 40, coolantShownO = 40;
 
     public PickupTruckEntity(EntityType<? extends PickupTruckEntity> type, Level level) {
         super(type, level);
         // Forge (MC-158205, as the ender dragon): the parts' ids follow this entity's, so client and server agree on them
         setId(ENTITY_COUNTER.getAndAdd(parts.length + 1) + 1);
         blocksBuilding = true;
+        noPhysics = true;   // the vehicle physics moves it, not Entity#move
     }
 
     public static PickupTruckEntity create(Level level, Vec3 pos, float yaw) {
@@ -195,7 +256,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         doorL = approach(doorL, doorOpen(false) ? DOOR_OPEN : 0.0F, DOOR_OPEN);
         doorR = approach(doorR, doorOpen(true) ? DOOR_OPEN : 0.0F, DOOR_OPEN);
         filler = approach(filler, fillerOpen() ? FILLER_OPEN : 0.0F, FILLER_OPEN);
+        drive();
         placeParts();
+        carry();
+        if (level() instanceof net.minecraft.server.level.ServerLevel server) flattenPlants(server);
         if (!level().isClientSide) {
             long now = level().getGameTime();
             for (int side = 0; side < 2; side++) {
@@ -223,9 +287,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         return new Vec3(-Math.sin(a) * forward, 0.0, Math.cos(a) * forward);
     }
 
-    /** A point of the truck's frame (forward, right, up) in the world. */
+    /** A point of the truck's frame (forward, right, up) in the world, with the body's pitch and roll. */
     public Vec3 point(double f, double r, double y) {
-        return PickupTruckLayout.world(position(), getYRot(), f, r, y);
+        Vector3d p = orient().transform(new Vector3d(r, y, -f));
+        return new Vec3(getX() + p.x, getY() + p.y, getZ() + p.z);
     }
 
     private void placeParts() {
@@ -292,6 +357,355 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
 
     private void strip(Box b, List<AABB> out) {
         VehicleColliders.strips(boxX, boxZ, boxYaw, b.f0(), b.f1(), b.r0(), b.r1(), boxY + b.y0(), boxY + b.y1(), out);
+    }
+
+    /** Another vehicle's hull point inside this one's boxes (its frame, yaw only): out the nearest side or the top. */
+    @Override
+    public boolean pushOut(double x, double y, double z, VehicleWorld.Push out) {
+        double[] l = PickupTruckLayout.local(position(), getYRot(), new Vec3(x, y, z));
+        for (Box b : PickupTruckLayout.BODY) if (outOf(b, l, out)) return true;
+        return outOf(tailgateOpen() ? PickupTruckLayout.TAILGATE_DOWN : PickupTruckLayout.TAILGATE_SHUT, l, out);
+    }
+
+    private boolean outOf(Box b, double[] l, VehicleWorld.Push out) {
+        double f = l[0], r = l[1], u = l[2];
+        if (f < b.f0() || f > b.f1() || r < b.r0() || r > b.r1() || u < b.y0() || u > b.y1()) return false;
+        double a = Math.toRadians(getYRot()), s = Math.sin(a), c = Math.cos(a);
+        double best = b.y1() - u;
+        out.set(0, 1, 0, best);
+        if (f - b.f0() < best) out.set(s, 0, -c, best = f - b.f0());       // backwards
+        if (b.f1() - f < best) out.set(-s, 0, c, best = b.f1() - f);       // forwards
+        if (r - b.r0() < best) out.set(c, 0, s, best = r - b.r0());        // to the left
+        if (b.r1() - r < best) out.set(-c, 0, -s, b.r1() - r);             // to the right
+        return true;
+    }
+
+    // ---- driving (V0-b package 1: vehicle/physics) ----
+
+    /** The driver's seat's player steers it (vanilla then lets that player's client run it: Entity#isControlledByLocalInstance). */
+    @Nullable
+    @Override
+    public LivingEntity getControllingPassenger() {
+        int id = entityData.get(SEAT[PickupTruckLayout.DRIVER]);
+        if (id < 0) return null;
+        for (Entity p : getPassengers()) if (p.getId() == id && p instanceof Player player) return player;
+        return null;
+    }
+
+    /** The orientation now (model frame to world); before the physics placed it, from the yaw. */
+    private Quaterniond orient() {
+        if (!oriented) orient.rotationY(Math.toRadians(180.0 - getYRot()));
+        return orient;
+    }
+
+    /** Client: the orientation this frame (model frame to world). */
+    public Quaternionf orientation(float partialTick, Quaternionf out) {
+        Quaterniond q = new Quaterniond(orientO).slerp(orient(), partialTick);
+        return out.set((float) q.x, (float) q.y, (float) q.z, (float) q.w);
+    }
+
+    /** Client: a wheel's suspension travel this frame (blocks, + up). */
+    public float wheelTravel(int wheel, float partialTick) { return Mth.lerp(partialTick, travelO[wheel], travel[wheel]); }
+
+    /** Client: a wheel's turn this frame (rad, + rolling forward). */
+    public float wheelSpin(int wheel, float partialTick) { return spinO[wheel] + spinRate[wheel] * 0.05F * partialTick; }
+
+    /** Client: the centre steer angle this frame (rad, + to the right). */
+    public float steerAngle(float partialTick) { return Mth.lerp(partialTick, steerO, steer); }
+
+    /** One tick of driving: who runs the physics, then the entity follows it. */
+    private void drive() {
+        orientO.set(orient());
+        System.arraycopy(travel, 0, travelO, 0, 4);
+        System.arraycopy(spin, 0, spinO, 0, 4);
+        steerO = steer;
+        if (physics == null) {
+            physics = new VehiclePhysics(VehicleSpec.T15);
+            world = new LevelVehicleWorld(level(), this);
+            physics.reset(getX(), getY(), getZ(), orient());
+            physics.drivetrain.gear = savedGear;
+            physics.drivetrain.fourWheel = savedFour;
+            physics.drivetrain.coolant = savedCoolant;
+            placed();
+        } else if (!level().isClientSide && (getX() != placedX || getY() != placedY || getZ() != placedZ || getYRot() != placedYaw)) {
+            // moved by something else (a command): the physics starts again from there, level
+            physics.reset(getX(), getY(), getZ(), getYRot());
+            place();
+            VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), physics.capture(), false));
+        }
+        boolean local = isControlledByLocalInstance();
+        if (level().isClientSide) {
+            if (local) {
+                if (!wasLocal && !synced) physics.reset(getX(), getY(), getZ(), orient());
+                physics.tick(clientInput.get(), world);
+                place();
+                AflNetwork.vehicleToServer(new VehiclePackets.Drive(getId(), physics.capture()));
+            } else {
+                ease();
+            }
+        } else if (local) {
+            // no driver: the server runs it, parked, until it rests; asleep, it looks at its ground now and then
+            if (physics.asleep && tickCount % SLEEP_CHECK == 0 && physics.groundChanged(world)) physics.wake();
+            if (!physics.asleep) {
+                physics.tick(VehicleInput.PARKED, world);
+                place();
+                VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), physics.capture(), false));
+            }
+        }
+        wasLocal = local;
+        gauges();
+    }
+
+    /**
+     * Gauges, each tick (drawn between ticks): the tachometer from the engine, the speedometer from the rear wheels (the
+     * cable drive on the gearbox), fuel and coolant creeping (the tank counts whole litres; a real gauge is damped). Fuel
+     * and coolant read only with the key on (running or starting), else they sink back to their rests (E, 40 C).
+     */
+    private void gauges() {
+        rpmO = rpm;
+        speedoO = speedo;
+        fuelShownO = fuelShown;
+        coolantShownO = coolantShown;
+        Drivetrain d = physics.drivetrain;
+        rpm += (float) ((d.rpm() - rpm) * 0.6);
+        speedo = (float) (Math.abs(spinRate[VehicleSpec.RL] + spinRate[VehicleSpec.RR]) / 2 * VehicleSpec.T15.radius * 3.6);
+        boolean on = d.running || d.ignition != Drivetrain.KEY_OFF;
+        float fuel = on ? fuel() / (float) TANK : 0;
+        if (fuelShown < 0) fuelShown = fuelShownO = 0;
+        fuelShown += Math.copySign(Math.min(Math.abs(fuel - fuelShown), 0.004F), fuel - fuelShown);
+        coolantShown += (float) (((on ? d.coolant : 40) - coolantShown) * 0.1);
+    }
+
+    /** The entity to where the physics has it. */
+    private void place() {
+        Vector3d o = physics.origin(new Vector3d());
+        setPos(o.x, o.y, o.z);
+        setYRot(physics.yaw());
+        orient.set(physics.q);
+        oriented = true;
+        steer = (float) physics.steer;
+        for (int i = 0; i < 4; i++) {
+            travel[i] = (float) physics.travel[i];
+            spin[i] = (float) physics.spin[i];
+            spinRate[i] = (float) physics.spinRate[i];
+        }
+        placed();
+    }
+
+    private void placed() {
+        placedX = getX();
+        placedY = getY();
+        placedZ = getZ();
+        placedYaw = getYRot();
+    }
+
+    /** Client, watching: a step towards the last synced state; the wheels keep turning at its rate. */
+    private void ease() {
+        if (target != null && easeLeft > 0) {
+            double k = 1.0 / easeLeft--;
+            setPos(Mth.lerp(k, getX(), target.x()), Mth.lerp(k, getY(), target.y()), Mth.lerp(k, getZ(), target.z()));
+            orient().slerp(new Quaterniond(target.qx(), target.qy(), target.qz(), target.qw()).normalize(), k).normalize();
+            oriented = true;
+            Vector3d front = orient.transform(new Vector3d(0, 0, -1));
+            setYRot((float) Math.toDegrees(Math.atan2(-front.x, front.z)));
+            steer += (float) ((target.steer() - steer) * k);
+            for (int i = 0; i < 4; i++) travel[i] += (float) ((target.travel()[i] - travel[i]) * k);
+        }
+        for (int i = 0; i < 4; i++) {
+            if (target != null) spinRate[i] = target.asleep() ? 0 : target.spinRate()[i];
+            spin[i] = (float) ((spin[i] + spinRate[i] * 0.05) % (Math.PI * 2));
+        }
+        placed();
+    }
+
+    /** Server: the driver's state for this tick (VehiclePackets.Drive), checked, taken and passed on. */
+    void acceptDrive(VehicleState state, ServerPlayer driver) {
+        if (physics == null) return;
+        Vector3d o = physics.origin(new Vector3d());
+        double dx = state.x() - o.x, dy = state.y() - o.y, dz = state.z() - o.z;
+        if (!state.finite() || dx * dx + dy * dy + dz * dz > MAX_STEP * MAX_STEP || state.speed() > MAX_SPEED) {
+            AflNetwork.vehicleTo(driver, new VehiclePackets.Sync(getId(), physics.capture(), true));
+            return;
+        }
+        physics.apply(state);
+        place();
+        burn(state.drive());
+        driver.serverLevel().getChunkSource().move(driver);
+        VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), state, false));
+    }
+
+    /** Server: the fuel the driver's engine used this tick out of the tank (at least the idle's while running). */
+    private void burn(Drivetrain.State drive) {
+        if (!drive.running()) return;
+        double idle = VehicleSpec.T15.fuelIdle / 3600 * 0.5;
+        fuelBurnt += Math.max(drive.fuelFlow(), idle) * 0.05;
+        if (fuelBurnt >= 1.0 && fuel() > 0) {
+            int litres = (int) fuelBurnt;
+            fuelBurnt -= litres;
+            tank.drain(litres, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+        }
+    }
+
+    // ---- drivetrain readings (gauges, hints, the HUD, the seated driver) ----
+
+    private Drivetrain drivetrain() { return physics != null ? physics.drivetrain : null; }
+
+    public boolean engineRunning() { Drivetrain d = drivetrain(); return d != null && d.running; }
+
+    /** -1 R, 0 N, 1..5. */
+    public int gear() { Drivetrain d = drivetrain(); return d != null ? d.gear : savedGear; }
+
+    public boolean fourWheel() { Drivetrain d = drivetrain(); return d != null ? d.fourWheel : savedFour; }
+
+    /** Drivetrain.KEY_OFF / PREHEAT / CRANK. */
+    public int ignitionPhase() { Drivetrain d = drivetrain(); return d != null ? d.ignition : Drivetrain.KEY_OFF; }
+
+    /** A gear change under way: its progress (0..1, 1 when none) and the gear it goes to (D's seated driver: the hand on the lever). */
+    public float shiftProgress() { Drivetrain d = drivetrain(); return d != null ? (float) d.shiftProgress() : 1.0F; }
+
+    public int shiftTarget() { Drivetrain d = drivetrain(); return d != null && d.shifting() ? d.shiftTarget : gear(); }
+
+    /** The clutch pedal as the driver holds it (0 up .. 1 down). */
+    public float clutchPedal() { Drivetrain d = drivetrain(); return d != null ? (float) d.clutchPedal() : 0.0F; }
+
+    /** The throttle pedal (0..1). */
+    public float throttlePedal() { Drivetrain d = drivetrain(); return d != null ? (float) d.pedal : 0.0F; }
+
+    /** Client, this frame: tachometer (rpm), speedometer (km/h), fuel gauge (0..1), coolant (C). */
+    public float tachometer(float pt) { return Mth.lerp(pt, rpmO, rpm); }
+
+    public float speedometer(float pt) { return Mth.lerp(pt, speedoO, speedo); }
+
+    public float fuelGauge(float pt) { return Math.max(0, Mth.lerp(pt, fuelShownO, fuelShown)); }
+
+    public float coolantGauge(float pt) { return Mth.lerp(pt, coolantShownO, coolantShown); }
+
+    /** Server: the state to a client that starts tracking it. */
+    void sendStateTo(ServerPlayer player) {
+        if (physics != null) AflNetwork.vehicleTo(player, new VehiclePackets.Sync(getId(), physics.capture(), false));
+    }
+
+    /** Client: a synced state (VehiclePackets.Sync): watchers ease to it; the driver takes only a correction. */
+    public void acceptSync(VehicleState state, boolean correct) {
+        if (physics == null) {
+            physics = new VehiclePhysics(VehicleSpec.T15);
+            world = new LevelVehicleWorld(level(), this);
+        }
+        if (isControlledByLocalInstance()) {
+            if (correct) {
+                physics.apply(state);
+                place();
+            }
+            return;
+        }
+        physics.apply(state);   // so taking the wheel starts from the latest
+        target = state;
+        easeLeft = synced ? EASE_TICKS : 1;
+        synced = true;
+    }
+
+    /** Watchers follow the synced state (VehiclePackets), not the vanilla position packets (whole-degree yaw). */
+    @Override
+    public void lerpTo(double x, double y, double z, float yaw, float pitch, int steps, boolean teleport) {
+        if (!synced) super.lerpTo(x, y, z, yaw, pitch, steps, teleport);
+    }
+
+    /**
+     * After the move: who stood on it (on its boxes as they were) goes along, turned with it; who is now inside a box is
+     * pushed out sideways, not against the move. The server moves mobs and items; each client its own player.
+     */
+    private void carry() {
+        List<AABB> after = collisionBoxes();
+        double dx = getX() - carryX, dy = getY() - carryY, dz = getZ() - carryZ;
+        float dyaw = Double.isNaN(carryX) ? 0.0F : Mth.wrapDegrees(getYRot() - carryYaw);
+        turned = dyaw;
+        if (!Double.isNaN(carryX) && (dx != 0 || dy != 0 || dz != 0 || dyaw != 0)) {
+            AABB area = collisionBounds();
+            for (AABB b : carryBoxes) area = area.minmax(b);
+            area = area.inflate(1.0);
+            List<Entity> near = new ArrayList<>();
+            if (level().isClientSide) {
+                Player p = localPlayer.get();
+                if (p != null && p.level() == level() && !p.isPassenger() && !p.isSpectator() && !p.getAbilities().flying && area.intersects(p.getBoundingBox()))
+                    near.add(p);
+            } else {
+                near.addAll(level().getEntities(this, area, e -> !(e instanceof Player) && !(e instanceof PartEntity) && !(e instanceof PickupTruckEntity)
+                        && !e.isPassenger() && !e.noPhysics && !passesThrough(e)));
+            }
+            Vec3 before = new Vec3(carryX, carryY, carryZ);
+            for (Entity e : near) {
+                if (standsOn(e, carryBoxes)) {
+                    double[] l = PickupTruckLayout.local(before, carryYaw, e.position());
+                    Vec3 p = PickupTruckLayout.world(position(), getYRot(), l[0], l[1], l[2]);
+                    e.setPos(p.x, p.y, p.z);
+                    e.setYRot(e.getYRot() + dyaw);
+                    e.setYHeadRot(e.getYHeadRot() + dyaw);
+                    if (e instanceof LivingEntity living) living.setYBodyRot(living.yBodyRot + dyaw);
+                } else {
+                    pushAside(e, after, dx, dz);
+                }
+            }
+        }
+        carryX = getX();
+        carryY = getY();
+        carryZ = getZ();
+        carryYaw = getYRot();
+        carryBoxes = after;
+    }
+
+    /**
+     * Server: grass, ferns and flowers under the truck's outline (bumper to bumper, a little wider than the body) are
+     * pressed down, lying the way it moves (block/FlattenedPlantBlock), each time it has moved 0.1 m or turned 2 degrees.
+     * Before (2026-10-16) the plants stood up through the body and the bed.
+     */
+    private void flattenPlants(net.minecraft.server.level.ServerLevel server) {
+        if (!Double.isNaN(flatX) && Math.abs(getX() - flatX) + Math.abs(getZ() - flatZ) < 0.1 && Math.abs(Mth.wrapDegrees(getYRot() - flatYaw)) < 2) return;
+        flatX = getX();
+        flatZ = getZ();
+        flatYaw = getYRot();
+        net.minecraft.core.Direction facing;
+        if (physics != null && Math.hypot(physics.v.x, physics.v.z) > 0.3) facing = net.minecraft.core.Direction.getNearest(physics.v.x, 0, physics.v.z);
+        else facing = net.minecraft.core.Direction.fromYRot(getYRot());
+        AABB area = collisionBounds();
+        int y0 = Mth.floor(getY()) - 1, y1 = Mth.floor(getY()) + 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        BlockPos pressed = null;
+        for (int x = Mth.floor(area.minX); x <= Mth.floor(area.maxX); x++)
+            for (int z = Mth.floor(area.minZ); z <= Mth.floor(area.maxZ); z++) {
+                double[] l = PickupTruckLayout.local(position(), getYRot(), new Vec3(x + 0.5, getY(), z + 0.5));
+                if (l[0] < -2.55 || l[0] > 2.55 || Math.abs(l[1]) > 1.05) continue;
+                for (int y = y0; y <= y1; y++)
+                    if (com.antaurora.apofirstlight.block.FlattenedPlantBlock.flatten(server, pos.set(x, y, z), facing) && pressed == null) pressed = pos.immutable();
+            }
+        if (pressed != null) server.playSound(null, pressed, net.minecraft.sounds.SoundEvents.GRASS_STEP, net.minecraft.sounds.SoundSource.BLOCKS, 0.4F, 0.8F);
+    }
+
+    /** Whether the entity's feet rest on one of these boxes' tops. */
+    private static boolean standsOn(Entity e, List<AABB> boxes) {
+        AABB b = e.getBoundingBox();
+        for (AABB box : boxes)
+            if (box.maxX > b.minX && box.minX < b.maxX && box.maxZ > b.minZ && box.minZ < b.maxZ && box.maxY <= b.minY + 0.05 && box.maxY >= b.minY - 0.3)
+                return true;
+        return false;
+    }
+
+    /** Out of the boxes it is inside: the shortest way sideways that is not against the truck's move (dx, dz). */
+    private static void pushAside(Entity e, List<AABB> boxes, double dx, double dz) {
+        for (int k = 0; k < 4; k++) {
+            AABB eb = e.getBoundingBox(), in = eb.deflate(1.0E-3);
+            AABB hit = null;
+            for (AABB b : boxes) if (b.intersects(in)) { hit = b; break; }
+            if (hit == null) return;
+            double[][] ways = {{hit.maxX - eb.minX, 0}, {hit.minX - eb.maxX, 0}, {0, hit.maxZ - eb.minZ}, {0, hit.minZ - eb.maxZ}};
+            double[] best = null, any = null;
+            for (double[] w : ways) {
+                double len = Math.abs(w[0]) + Math.abs(w[1]);
+                if (any == null || len < Math.abs(any[0]) + Math.abs(any[1])) any = w;
+                if (w[0] * dx + w[1] * dz >= 0 && (best == null || len < Math.abs(best[0]) + Math.abs(best[1]))) best = w;
+            }
+            double[] w = best != null ? best : any;
+            e.setPos(e.getX() + w[0] + Math.signum(w[0]) * 0.01, e.getY(), e.getZ() + w[1] + Math.signum(w[1]) * 0.01);
+        }
     }
 
     // ---- what a look at the truck works ----
@@ -458,6 +872,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         Seat s = PickupTruckLayout.SEATS[seat];
         Vec3 p = point(s.f(), s.r(), PickupTruckLayout.riderY(s, passenger.getEyeHeight()));
         move.accept(passenger, p.x, p.y, p.z);
+        // riders turn with the truck (as in a boat)
+        passenger.setYRot(passenger.getYRot() + turned);
+        passenger.setYHeadRot(passenger.getYHeadRot() + turned);
         clampRotation(passenger, s);
     }
 
@@ -640,6 +1057,17 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         doorL = doorLO = doorOpen(false) ? DOOR_OPEN : 0.0F;
         doorR = doorRO = doorOpen(true) ? DOOR_OPEN : 0.0F;
         filler = fillerO = fillerOpen() ? FILLER_OPEN : 0.0F;
+        savedGear = Mth.clamp(tag.getInt("Gear"), -1, 5);
+        savedFour = tag.getBoolean("FourWheel");
+        savedCoolant = tag.contains("Coolant") ? tag.getFloat("Coolant") : 20;
+        fuelBurnt = tag.getDouble("FuelBurnt");
+        ListTag q = tag.getList("Orientation", Tag.TAG_FLOAT);
+        if (q.size() == 4) {
+            orient.set(q.getFloat(0), q.getFloat(1), q.getFloat(2), q.getFloat(3));
+            oriented = orient.lengthSquared() > 0.5;
+            if (oriented) orient.normalize();
+            orientO.set(orient);
+        }
     }
 
     @Override
@@ -655,6 +1083,12 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putInt("Fuel", tank.getFluidAmount());
         ListTag grid = cargo.save();
         if (!grid.isEmpty()) tag.put("Cargo", grid);
+        Quaterniond q = orient();
+        tag.put("Orientation", newFloatList((float) q.x, (float) q.y, (float) q.z, (float) q.w));
+        tag.putInt("Gear", gear());
+        tag.putBoolean("FourWheel", fourWheel());
+        tag.putFloat("Coolant", physics != null ? (float) physics.drivetrain.coolant : savedCoolant);
+        tag.putDouble("FuelBurnt", fuelBurnt);
     }
 
     @Override

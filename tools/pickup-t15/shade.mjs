@@ -73,7 +73,7 @@ function dial(m) {
       if (rr > 1) continue;
       const a = Math.atan2(dy, dz) * 180 / Math.PI, span = d.a0 - d.a1, t = (((d.a0 - a) % 360) + 360) % 360 / span;
       if (t > 1.0001) return {};
-      const major = d.big ? 8 : 2, minor = d.big ? 40 : 4, arc = span * Math.PI / 180 * d.r * rr;   // metres along the sweep
+      const major = d.major, minor = d.minor, arc = span * Math.PI / 180 * d.r * rr;   // metres along the sweep
       const off = N => Math.abs(t * N - Math.round(t * N)) / N * arc;
       if (rr > 0.72 && rr < 0.94 && off(major) < 0.0013) return {c: white, sm: 120};
       if (rr > 0.84 && rr < 0.94 && off(minor) < 0.0006) return {c: white, sm: 120};

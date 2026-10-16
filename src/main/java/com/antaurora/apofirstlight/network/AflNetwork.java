@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "47";
+    private static final String PROTOCOL = "50";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -142,6 +142,24 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.inventory.grid.GridPackets.register(channel, nextId);
         // Player skeleton V1 P1: who aims down the sights, for the others' view of the stance (protocol 47)
         nextId = com.antaurora.apofirstlight.skeleton.SkeletonPackets.register(channel, nextId);
+        // Vehicle physics V0-b package 1: the driver's truck state and its sync to the watchers (protocol 49; 48 is D's
+        // external grid, which takes 50 when it merges)
+        nextId = com.antaurora.apofirstlight.vehicle.VehiclePackets.register(channel, nextId);
+    }
+
+    /** Vehicle physics (client): the driven truck's state. */
+    public static void vehicleToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
+    }
+
+    /** Vehicle physics: a truck's state, to the clients that track it. */
+    public static void vehicleToTracking(net.minecraft.world.entity.Entity entity, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity), packet);
+    }
+
+    /** Vehicle physics: a truck's state, to one client (a new watcher, a refused driver). */
+    public static void vehicleTo(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Player skeleton V1 (client): the own aim changed. */

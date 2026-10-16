@@ -71,7 +71,7 @@
   - 溪水在不停变化（流动水时有时无，坡面跟着跳）：存档里溪边的水基本都是静止的水源（挨着沙和砾石的 725 格水源，只有 4 格流动水），不成立。
 - **当时的怀疑（后来证实）**：服务端的移动校验。客户端走到的新位置如果在服务端算出的形状里“撞到了旧位置没撞到的东西”，服务端会把玩家悄悄拉回上一个位置，**不写日志**（`ServerGamePacketListenerImpl#isPlayerCollidingWithAnythingNew`）。如果两边对某块的坡面算得不一样（缓存过期、读到的方块不同），就会一直被拉回。另外还有冲刺、跳跃、水流推力也没模拟。
 - **加的诊断**（开发专用，`SmoothProbe`）：B 模式下在区域内时，客户端记录最近 40 tick 的位置、速度、落地、是否在水里、姿态、抬升，以及两个 tick 之间位置有没有被外部改动（服务端拉回）。
-  - 以下情况会自动把这 40 tick 写进 `run/logs/latest.log`（搜 `[AFL terrain smooth probe]`），聊天栏提示一行，最多每 5 秒一次：按着方向键 20 tick 走不到 1 格、或者被服务端改了位置。
+  - 以下情况会自动把这 40 tick 写进 `run/logs/latest.log`（搜 `[AFL terrain smooth probe]`），最多每 5 秒一次：按着方向键 20 tick 走不到 1 格、或者被服务端改了位置。坐在车上时不记（车在两 tick 之间带着人走，以前会被当成服务端纠正）。2026-10-16 起只写日志，聊天栏不再提示（开车时刷屏，用户要求关掉）。
   - `/afl dev terrain_smooth probe` 立即记录一次。
   - 每次记录还会列出脚下和周围方块：方块状态、客户端算的坡面、服务端算的坡面（单人游戏里在服务端线程上算）、缓存值是否和现算的不一致、碰撞盒是否切进玩家。
 
@@ -173,7 +173,7 @@ P0 只换了区块模型，碰撞和选中仍是原版整格：
    ```
    第一行状态里应写 `collision hooks loaded`。
 3. 在山坡（627 −11）上走：分别从坡下往上、从上往下、横穿、斜着走，**不按跳**；再走山包顶（584 −32）、单格小坑、两段不同坡度的交接、测试区域边界。A2 修复后应能直接走上 B 坡。
-4. 去溪边的沙、砾石上走，**在脚边挖几块、放几块再接着走**（A3 修复后不应再被拉回）。诊断仍在：如果还卡住，聊天栏会提示 `probe event N written to the log`，原因写的是 `server corrected the position` 就说明还有两边不一致；也可以执行 `/afl dev terrain_smooth probe` 手动记录。日志在 `run/logs/latest.log`。
+4. 去溪边的沙、砾石上走，**在脚边挖几块、放几块再接着走**（A3 修复后不应再被拉回）。诊断仍在：如果还卡住，日志里会有 `[AFL terrain smooth probe] event N`，原因写的是 `server corrected the position` 就说明还有两边不一致（2026-10-16 起聊天栏不再提示）；也可以执行 `/afl dev terrain_smooth probe` 手动记录。日志在 `run/logs/latest.log`。
 5. 准星对着斜面：轮廓应贴着斜面。挖一块：应一次一块，掉落正常；周围斜面立刻重新成形。在斜面上放一块泥土再挖掉。**站在坡上，在脚边挖一块、放一块**：人不应陷进地面（`status` 里 “lifted” 次数会增加）。
 6. `/afl dev terrain_smooth collision off`：画面不变，碰撞和选中回到原版，用来对比。`collision on` 恢复。
 7. `/afl dev terrain_smooth off`：画面、碰撞、选中全部回到原版。

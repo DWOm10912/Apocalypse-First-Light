@@ -423,6 +423,13 @@ tasks.register('skeletonCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.skeleton.PlayerSkeletonCheck'
 }
 
+// Vehicle physics V0-b package 1 (docs/vehicles/first_pickup_v0_design.md 3.8): settle, drive, brake, slopes, kerb, wall, turns.
+tasks.register('vehicleCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.vehicle.physics.VehiclePhysicsCheck'
+}
+
 // Camera director V1 (docs/dev/camera_director_v1_plan.md): blend / stack / lock math and the moved shake sources.
 tasks.register('cameraCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

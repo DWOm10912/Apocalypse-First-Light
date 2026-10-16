@@ -1,0 +1,6 @@
+{
+  "parent": "apocalypse_firstlight:block/flattened_plant_rising",
+  "textures": {
+    "plant": "minecraft:block/fern"
+  }
+}

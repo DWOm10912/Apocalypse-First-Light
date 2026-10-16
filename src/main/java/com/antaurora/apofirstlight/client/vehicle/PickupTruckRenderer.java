@@ -5,6 +5,8 @@ import com.antaurora.apofirstlight.client.GroundItemRenderer;
 import com.antaurora.apofirstlight.client.blockmesh.AflMovingGlass;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
+import com.antaurora.apofirstlight.vehicle.physics.VehiclePhysics;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleSpec;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.vextris.client.GpuGeometry;
 import com.antaurora.vextris.client.MeshGpuCache;
@@ -28,6 +30,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
 
 import java.util.List;
 
@@ -43,7 +46,11 @@ import java.util.List;
  * everything else sits inside or under that shell and adds nothing to its shadow (2026-10-16: one truck was about
  * 0.5 million vertices a frame with shaders, every one submitted by the CPU through Oculus' extended format).
  * Atlases: pickup_t15 (outside + wheel), pickup_t15_cab (interior), pickup_t15_under (engine + chassis). Bones turn by the
- * entity's angles: hood and tailgate about +X, doors about Y (outward), the steering wheel stays at rest.
+ * entity's angles: hood and tailgate about +X, doors about Y (outward), the steering wheel about its column (the steer
+ * angle times {@link #STEERING_RATIO}).
+ * <p>Driving (V0-b package 1): the body takes the entity's whole orientation (pitch and roll, PickupTruckEntity#orientation);
+ * each road wheel moves up and down with its suspension travel, the front ones turn by their own steer angle (Ackermann)
+ * and all turn by their roll. The chassis and axles stay with the body for now.
  * <p>Passes, in this order (a plain buffer source flushes one render type before the next, so the order holds):
  * <ol><li>cutout, each mesh's atlas: painted parts (*_paint / *_paint2) multiplied by the truck's main / second colour,
  * faded by wear; everything else untinted;</li>
@@ -92,6 +99,10 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     private static final MeshGpuCache.PartSelector MAIN_PAINT = p -> isPainted(p) && !isSecond(p), SECOND_PAINT = PickupTruckRenderer::isSecond,
             PLAIN = p -> !isPainted(p), PAINT = PickupTruckRenderer::isPainted;
     private static final float[] WHITE = {1, 1, 1};
+    /** Steering wheel turns per wheel turn: 540 degrees each way (the rig's lock) for the 32 degree road wheel lock. */
+    private static final float STEERING_RATIO = (float) (540.0 / Math.toDegrees(VehicleSpec.T15.maxSteer));
+    /** The steering column (model frame, unit; the rig's concept axis (cos 27, -sin 27, 0) turned to the model). */
+    private static final float COLUMN_Y = -0.45399F, COLUMN_Z = -0.89101F;
 
     private record Piece(ResourceLocation geometry, ResourceLocation texture, boolean worn) {
         Piece(String id, ResourceLocation texture, boolean worn) {
@@ -99,8 +110,19 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         }
     }
 
-    /** The pose of one frame: bone turns and paint. */
-    private record State(float hood, float tailgate, float doorL, float doorR, float filler, float[] main, float[] second, int light) {}
+    /** The pose of one frame: bone turns (the steering wheel in rad) and paint. */
+    private record State(float hood, float tailgate, float doorL, float doorR, float filler, float steering, float[] main, float[] second, int light,
+                         float tach, float speedo, float fuel, float temp) {}
+    /**
+     * Gauge needles (design doc 8.5): each turns clockwise (as the driver sees it, about the dial axis, model -Z) from the
+     * start of its sweep: tachometer 0-5000 rpm and speedometer 0-180 km/h over 270 degrees, fuel empty - full and coolant
+     * 40-120 C over 120 degrees (tools/pickup-t15/cab.mjs cluster()).
+     */
+    private static final float BIG_SWEEP = (float) Math.toRadians(270), SMALL_SWEEP = (float) Math.toRadians(120);
+
+    private static float needle(float value, float full, float sweep) {
+        return Mth.clamp(value / full, 0.0F, 1.02F) * sweep;
+    }
 
     /** One cargo item as drawn: the item entity standing in for it (never in the level), its place (model frame) and turn. */
     private record CargoItem(ItemEntity entity, float x, float z, boolean along) {}
@@ -124,20 +146,23 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     public void render(PickupTruckEntity truck, float entityYaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
         float wear = truck.wear();
         State s = new State(truck.hoodAngle(partialTick), truck.tailgateAngle(partialTick), truck.doorAngle(false, partialTick),
-                truck.doorAngle(true, partialTick), truck.fillerAngle(partialTick), tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light);
+                truck.doorAngle(true, partialTick), truck.fillerAngle(partialTick), truck.steerAngle(partialTick) * STEERING_RATIO,
+                tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light,
+                needle(truck.tachometer(partialTick), 5000, BIG_SWEEP), needle(truck.speedometer(partialTick), 180, BIG_SWEEP),
+                needle(truck.fuelGauge(partialTick), 1, SMALL_SWEEP), needle(truck.coolantGauge(partialTick) - 40, 80, SMALL_SWEEP));
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
         boolean shadow = AflShaderCompat.activeShadowPass();
         boolean interior = !shadow && distance < INTERIOR_RANGE * INTERIOR_RANGE, under = !shadow && distance < UNDER_RANGE * UNDER_RANGE;
         pose.pushPose();
-        pose.mulPose(Axis.YP.rotationDegrees(180.0F - entityYaw));
+        pose.mulPose(truck.orientation(partialTick, new Quaternionf()));
         // passes 1 and 2 from the GPU cache, sent when the batch closes (a CPU fallback goes to buffers as before)
         try (GpuGeometry.Batch batch = GpuGeometry.Batch.begin()) {
             // pass 1: cutout per atlas
             draw(EXT, pose, buffers, s, MeshLayer.CUTOUT, null);
             draw(FRONT, pose, buffers, s, MeshLayer.CUTOUT, null);
-            drawWheels(pose, buffers, s, under);
+            drawWheels(truck, partialTick, pose, buffers, s, under);
             if (interior) {
                 draw(CAB, pose, buffers, s, MeshLayer.CUTOUT, null);
                 draw(SEAT, pose, buffers, s, MeshLayer.CUTOUT, null);
@@ -275,6 +300,11 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "door_l" -> pose.mulPose(Axis.YP.rotationDegrees(-s.doorL()));
             case "door_r" -> pose.mulPose(Axis.YP.rotationDegrees(s.doorR()));
             case "fuel_door" -> pose.mulPose(Axis.YP.rotationDegrees(-s.filler()));   // left side, hinged at its front edge like door_l
+            case "steering" -> pose.mulPose(new Quaternionf().rotationAxis(s.steering(), 0.0F, COLUMN_Y, COLUMN_Z));   // + clockwise: to the right
+            case "tach" -> pose.mulPose(new Quaternionf().rotationAxis(s.tach(), 0.0F, 0.0F, -1.0F));
+            case "speedo" -> pose.mulPose(new Quaternionf().rotationAxis(s.speedo(), 0.0F, 0.0F, -1.0F));
+            case "fuel_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.fuel(), 0.0F, 0.0F, -1.0F));
+            case "temp_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.temp(), 0.0F, 0.0F, -1.0F));
             default -> { }
         }
     }
@@ -310,11 +340,19 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         }
     }
 
-    /** The wheel mesh at the four hubs (the left ones turned about Y) and, with spare, as the spare (outer face down). */
-    private static void drawWheels(PoseStack pose, MultiBufferSource buffers, State s, boolean spare) {
-        for (float[] hub : HUBS) {
+    /**
+     * The wheel mesh at the four hubs, each raised by its suspension travel, the front ones turned by their steer angle,
+     * all rolled by their turn (the left ones turned half a turn about Y last); with spare, the spare (outer face down).
+     */
+    private static void drawWheels(PickupTruckEntity truck, float partialTick, PoseStack pose, MultiBufferSource buffers, State s, boolean spare) {
+        float steer = truck.steerAngle(partialTick);
+        for (int i = 0; i < HUBS.length; i++) {
+            float[] hub = HUBS[i];
             pose.pushPose();
-            pose.translate(hub[0], hub[1], hub[2]);
+            pose.translate(hub[0], hub[1] + truck.wheelTravel(i, partialTick), hub[2]);
+            float turn = (float) VehiclePhysics.wheelSteer(VehicleSpec.T15, steer, i);
+            if (turn != 0) pose.mulPose(Axis.YP.rotation(-turn));
+            pose.mulPose(Axis.XP.rotation(-truck.wheelSpin(i, partialTick)));
             if (hub[3] != 0) pose.mulPose(Axis.YP.rotationDegrees(180.0F));
             draw(WHEEL, pose, buffers, s, MeshLayer.CUTOUT, null);
             pose.popPose();

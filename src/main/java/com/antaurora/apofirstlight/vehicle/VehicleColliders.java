@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.vehicle;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleWorld;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -36,6 +37,9 @@ public final class VehicleColliders {
 
         /** Whether this entity goes through it (the vehicle itself, its parts, who rides it). */
         boolean passesThrough(Entity entity);
+
+        /** Whether a point of another vehicle's hull is inside this one; `out` says how to get it out (vehicle physics). */
+        default boolean pushOut(double x, double y, double z, VehicleWorld.Push out) { return false; }
     }
 
     /** Strip width (blocks) a box turned off the axes is cut into: its sides become steps this wide. */
@@ -96,6 +100,27 @@ public final class VehicleColliders {
         for (Collider c : colliders) {
             if (!c.collisionBounds().intersects(box) || c.passesThrough(ignore)) continue;
             for (AABB b : c.collisionBoxes()) if (b.intersects(box)) return true;
+        }
+        return false;
+    }
+
+    /** Whether any vehicle's bounds reach into this box (a pressed plant waits until nothing is over it). */
+    public static boolean over(Level level, AABB box) {
+        List<Collider> colliders = LEVELS.get(level);
+        if (colliders == null) return false;
+        for (Collider c : colliders) if (c.collisionBounds().intersects(box)) return true;
+        return false;
+    }
+
+    /** Whether a hull point of `self` is inside another vehicle (vehicle/physics/LevelVehicleWorld#solid). */
+    public static boolean pushOut(Level level, double x, double y, double z, Collider self, VehicleWorld.Push out) {
+        List<Collider> colliders = LEVELS.get(level);
+        if (colliders == null) return false;
+        for (Collider c : colliders) {
+            if (c == self) continue;
+            AABB b = c.collisionBounds();
+            if (x < b.minX || x > b.maxX || y < b.minY || y > b.maxY || z < b.minZ || z > b.maxZ) continue;
+            if (c.pushOut(x, y, z, out)) return true;
         }
         return false;
     }
