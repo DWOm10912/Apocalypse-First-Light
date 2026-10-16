@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class EntityRenderDispatcherFireMixin {
     @Inject(method = "renderFlame", at = @At("HEAD"), cancellable = true)
     private void afl$fuelFlames(PoseStack pose, MultiBufferSource buffers, Entity entity, CallbackInfo ci) {
-        EntityFlames.render(pose, buffers, entity);
+        if (!com.antaurora.apofirstlight.client.FirstPersonBody.hidesFlames(entity)) EntityFlames.render(pose, buffers, entity);
         ci.cancel();
     }
 }

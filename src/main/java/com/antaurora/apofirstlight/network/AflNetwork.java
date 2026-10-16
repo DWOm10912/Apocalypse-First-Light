@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "46";
+    private static final String PROTOCOL = "47";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -140,6 +140,23 @@ public final class AflNetwork {
                 com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.inventory.grid.GridPackets.register(channel, nextId);
+        // Player skeleton V1 P1: who aims down the sights, for the others' view of the stance (protocol 47)
+        nextId = com.antaurora.apofirstlight.skeleton.SkeletonPackets.register(channel, nextId);
+    }
+
+    /** Player skeleton V1 (client): the own aim changed. */
+    public static void skeletonToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
+    }
+
+    /** Player skeleton V1: a player's state, to the clients that track the player (not the player). */
+    public static void skeletonToTracking(net.minecraft.world.entity.Entity entity, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity), packet);
+    }
+
+    /** Player skeleton V1: a player's state, to one client. */
+    public static void skeletonTo(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Grid Inventory V0: item sizes and the pockets, to their owner. */

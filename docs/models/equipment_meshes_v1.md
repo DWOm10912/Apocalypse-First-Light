@@ -127,7 +127,7 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 ### 渲染
 
 - `AflStaticMeshItemRenderer.drawMesh`：在当前姿态直接画烘焙好的网格，不加物品的偏移。穿戴装备和第一人称部件都用它。
-- `ClientEquipmentSlots.WornMeshRenderer`（Curios 渲染器）：按部件进对应坐标（`apply`），平移 `-origin`，画网格。胸挂、两个背包在躯干，枪套在右腿，耳罩在头上；替换了原来耳罩用的 HeadItemRenderer（照搬原版头部物品层的那个）。跟着部件动：蹲下、走路、转头。
+- `ClientEquipmentSlots.WornMeshRenderer`（Curios 渲染器）：按部件进对应坐标（`apply`），平移 `-origin`，画网格。胸挂、两个背包在躯干，枪套在右腿，耳罩在头上；替换了原来耳罩用的 HeadItemRenderer（照搬原版头部物品层的那个）。跟着部件动：蹲下、走路、转头。所在部件被模型设为不可见时不画（2026-10-15，第一人称身体藏头时耳罩跟着藏，见 `docs/rendering/first_person_body_v1.md`）。
 - 枪背带（身上）和枪套里的手枪由 `CarriedWeaponsLayer` 画，见 [网格背包 V0 计划](../ui/afl_inventory_grid_v0_plan.md) 第 11 节；别的玩家身上的枪由服务器同步，见第 14 节。
 - 撬棍第一人称：`CrowbarFirstPerson` 把 `crowbar_model` 骨骼的 V1 方块藏起来，在这个骨骼上画网格（缩放 0.65，平移 `-(origin + [0, 3.8, 0])`）。
 - 穿原版胸甲时，盔甲层比身体大 1 像素：胸挂和背带的带子会被盖住，包和口袋露在外面。没有处理。

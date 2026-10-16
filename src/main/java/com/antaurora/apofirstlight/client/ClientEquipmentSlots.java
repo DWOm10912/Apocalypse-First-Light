@@ -138,7 +138,7 @@ public final class ClientEquipmentSlots {
         public <T extends LivingEntity, M extends EntityModel<T>> void render(ItemStack stack, SlotContext slotContext, PoseStack poseStack,
                 RenderLayerParent<T, M> parent, MultiBufferSource buffer, int light, float limbSwing, float limbSwingAmount,
                 float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-            if (!(parent.getModel() instanceof HumanoidModel<?> humanoid)) return;
+            if (!(parent.getModel() instanceof HumanoidModel<?> humanoid) || !visible(humanoid, part)) return;
             poseStack.pushPose();
             apply(humanoid, part, poseStack);
             draw(poseStack, buffer, light);
@@ -151,6 +151,15 @@ public final class ClientEquipmentSlots {
             poseStack.translate(-ox / 16F, -oy / 16F, -oz / 16F);
             AflStaticMeshItemRenderer.drawMesh(geometry, texture, poseStack, buffer, light, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
+        }
+
+        /** A part the model hides (the head in the first-person body, client/FirstPersonBody) takes its mesh with it. */
+        private static boolean visible(HumanoidModel<?> humanoid, Part part) {
+            return switch (part) {
+                case BODY -> humanoid.body.visible;
+                case HEAD -> humanoid.head.visible;
+                case RIGHT_LEG -> humanoid.rightLeg.visible;
+            };
         }
 
         /** Moves the pose from model space into a part's authoring frame. */

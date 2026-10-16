@@ -415,6 +415,14 @@ tasks.named('check') {
     dependsOn tasks.named('projectionMathTest')
 }
 
+// Player skeleton V1 numeric checks (docs/dev/player_skeleton_v1_design.md 8.3): rest pose vs vanilla cubes, joints at
+// their limits, BR51 reach, camera clearance. Pure JOML / Gson on the game's own skeleton classes, no game bootstrap.
+tasks.register('skeletonCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.PlayerSkeletonCheck'
+}
+
 // WG-01 pure contract regression; no world bootstrap or new test dependencies.
 tasks.register('terrainContractTest', JavaExec) {
     dependsOn tasks.named('testClasses')

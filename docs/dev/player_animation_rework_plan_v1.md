@@ -2,6 +2,8 @@
 
 状态（2026-10-09）：**规划，没有实现**，等用户定方案。
 
+**已被取代（2026-10-15）**：用户定为 AFL 自己实现骨骼人物（不用 PlayerAnimator、GeckoLib 替换、Epic Fight、YSM），第一、第三人称一个身体。正式设计见 [player_skeleton_v1_design.md](player_skeleton_v1_design.md)。下面的 A–D 比较保留作背景。
+
 ## 用户的想法（2026-10-09）
 
 - 以后用 GeckoLib 重做玩家的所有动画，优化持枪逻辑，把现有动画都改一遍，更真实。

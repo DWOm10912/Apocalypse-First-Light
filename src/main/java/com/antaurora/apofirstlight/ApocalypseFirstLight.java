@@ -57,6 +57,10 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.worldgen.lock.WorldgenLockConfig.SPEC, "apocalypse_firstlight-worldgen.toml");
+        // First-person body V1: the player's own choice (client config), whether to draw the body in first person
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.CLIENT,
+                com.antaurora.apofirstlight.client.FirstPersonBodyConfig.SPEC, "apocalypse_firstlight-client.toml");
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflFluids.FLUID_TYPES.register(modEventBus);
