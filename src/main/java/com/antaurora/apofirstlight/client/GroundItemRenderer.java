@@ -130,6 +130,16 @@ public final class GroundItemRenderer extends ItemEntityRenderer {
         if (shouldShowName(entity)) renderNameTag(entity, entity.getDisplayName(), pose, buffers, light);
     }
 
+    /**
+     * An item lying still at the pose's origin, without the rest turn (the caller turns it): the T15 bed's cargo
+     * (client/vehicle/PickupTruckRenderer, 2026-10-16), drawn through an item entity that is never added to the level.
+     */
+    public void renderResting(ItemEntity entity, PoseStack pose, MultiBufferSource buffers, int light) {
+        var stack = entity.getItem();
+        if (stack.isEmpty()) return;
+        if (!(stack.getItem() instanceof NativeGunItem) || !gun(entity, stack, pose, buffers, light)) still(entity, stack, pose, buffers, light);
+    }
+
     /** Everything but guns: vanilla's ground display, lying still (flat sprites flat on the ground). */
     private void still(ItemEntity entity, ItemStack stack, PoseStack pose, MultiBufferSource buffers, int light) {
         var model = items.getModel(stack, entity.level(), null, entity.getId());

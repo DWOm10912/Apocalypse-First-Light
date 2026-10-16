@@ -16,6 +16,7 @@
     "TerrainSmoothMoveControlMixin", "TerrainSmoothPathNavigationMixin",
     "WiringLevelChunkMixin", "WiringServerLevelMixin", "SurvivorRespawnGateMixin", "AflDifficultyLockMixin",
     "ChunkGeneratorForestHomeMixin", "WorldGenRegionForestHomeGuardMixin",
-    "ChunkGeneratorRoadWorksMixin", "WorldGenRegionRoadGuardMixin", "BushBlockGradedTurfMixin"],
+    "ChunkGeneratorRoadWorksMixin", "WorldGenRegionRoadGuardMixin", "BushBlockGradedTurfMixin",
+    "EntityVehicleCollisionMixin", "ServerGamePacketListenerVehicleMixin"],
   "injectors": {"defaultRequire": 1}
 }

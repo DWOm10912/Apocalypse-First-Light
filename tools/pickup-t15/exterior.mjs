@@ -20,11 +20,15 @@ function sidePanel(p, s, outline, zIn, zOut, rOut, rIn = 0.002, holes = []) {
   slab(p, FZ, outline, holes, a0, a1, s > 0 ? {r0: rIn, r1: rOut} : {r0: rOut, r1: rIn});
 }
 /** The same, split at SPLIT into paint2 (below) and paint (above). */
-function twoTone(bone, s, outline, zIn, zOut, rOut, rIn = 0.002) {
+function twoTone(bone, s, outline, zIn, zOut, rOut, rIn = 0.002, holes = []) {
   const {lo, hi} = splitAtY(outline, SPLIT);
-  for (const L of lo) sidePanel(E(bone, 'paint2'), s, L, zIn, zOut, rOut, rIn);
-  for (const L of hi) sidePanel(E(bone, 'paint'), s, L, zIn, zOut, rOut, rIn);
+  const within = (h, L) => h.every(([x, y]) => x > Math.min(...L.map(q => q[0])) && x < Math.max(...L.map(q => q[0])) && y > Math.min(...L.map(q => q[1])) && y < Math.max(...L.map(q => q[1])));
+  for (const L of lo) sidePanel(E(bone, 'paint2'), s, L, zIn, zOut, rOut, rIn, holes.filter(h => within(h, L)));
+  for (const L of hi) sidePanel(E(bone, 'paint'), s, L, zIn, zOut, rOut, rIn, holes.filter(h => within(h, L)));
 }
+/** The fuel filler (left bed side, in front of the rear arch): the hole in the skin, the door over it (bone fuel_door, hinged at its front edge). */
+const FILL = {x0: -0.695, x1: -0.55, y0: 0.87, y1: 1.01, cx: -0.6225, cy: 0.94};
+const FILL_HOLE = fillet([[FILL.x0, FILL.y0], [FILL.x1, FILL.y0], [FILL.x1, FILL.y1], [FILL.x0, FILL.y1]], 0.01, 2);
 /** Stations along x of a (z, y) section: rings in 3D, lofted as one closed solid. */
 const xRings = stations => stations.map(({x, sec}) => sec.map(([z, y]) => [x, y, z]));
 /** Arch points (x, y) over the wheel at cx from height yRear (rear foot) to yFront, n segments. */
@@ -338,7 +342,7 @@ function bed() {
     const aRear = YB + 0.03, aFront = YB + 0.03;
     const ap = archPts(RX, AR, aRear, aFront, 22);
     const out2 = [[xr + post, YB + 0.03], ...ap, [xf, YB + 0.03], [xf, top], [xr + post, top]];
-    twoTone(B, s, fillet(out2, [0.0, ...new Array(23).fill(0), 0.025, 0.01, 0], 3).filter(Boolean), HW - 0.012, HW, 0.006);
+    twoTone(B, s, fillet(out2, [0.0, ...new Array(23).fill(0), 0.025, 0.01, 0], 3).filter(Boolean), HW - 0.012, HW, 0.006, 0.002, s < 0 ? [FILL_HOLE] : []);
     archLip(E(B, 'paint'), s, RX, aRear, aFront, 22, HW);
     archLiner(s, RX, 0.49, 0.565, HW - 0.004);
     // rear corner post: a quarter round from the side to the rear face, the rear face carrying the lamps
@@ -375,7 +379,19 @@ function bed() {
     for (const [a, b] of [[xr + post + 0.004, RX - h2], [RX + h2, xf - 0.008]]) rbox(E(B, 'trim'), FZ, a, b, SPLIT - 0.016, SPLIT + 0.016, m0, m1, 0.003, {rc: 0.006});
     const [k0, k1] = zr(s, HW - 0.002, HW + 0.005);
     rbox(E(B, 'red'), FZ, xr + post + 0.03, xr + post + 0.11, 0.935, 0.965, k0, k1, 0.002, {rc: 0.008});
-    if (s < 0) { const [f0, f1] = zr(s, HW - 0.002, HW + 0.002); rbox(E(B, 'paint'), FZ, -0.70, -0.545, 0.865, 1.015, f0, f1, 0.0015, {rc: 0.012}); }
+    if (s < 0) {
+      // the door (its own bone, swings out 80 deg about its front edge), a black pocket 12 mm behind the skin, the steel neck ring and a ribbed black cap
+      const [f0, f1] = zr(s, HW - 0.002, HW + 0.002);
+      rbox(E('fuel_door', 'paint'), FZ, FILL.x0 - 0.005, FILL.x1 + 0.005, FILL.y0 - 0.005, FILL.y1 + 0.005, f0, f1, 0.0015, {rc: 0.012});
+      const [k0, k1] = zr(s, HW - 0.040, HW - 0.012);
+      rbox(E(B, 'trim'), FZ, FILL.x0 - 0.006, FILL.x1 + 0.006, FILL.y0 - 0.006, FILL.y1 + 0.006, k0, k1, 0, {rc: 0.012});
+      const back = -(HW - 0.012);
+      // lathe profiles are [along the axis, radius]; the cap tops out 3.5 mm under the skin (the shut door's back is 2 mm under it)
+      lathe(E(B, 'steel'), [FILL.cx, FILL.cy, back], [0, 0, -1], [[0, 0.026], [0.003, 0.026], [0.003, 0.036], [0, 0.036]], 16);
+      lathe(E(B, 'rubber'), [FILL.cx, FILL.cy, back], [0, 0, -1], [[0.003, 0], [0.003, 0.030], [0.0065, 0.030], [0.008, 0.026], [0.008, 0]], 16);
+      for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3, c = Math.cos(a), sn = Math.sin(a);   // the cap's grip ribs
+        obox(E(B, 'rubber'), [FILL.cx + 0.017 * c, FILL.cy + 0.017 * sn, back - 0.0085], [c, sn, 0], [-sn, c, 0], 0.009, 0.0025, 0.001, 0.0005); }   // 8..26 mm out: they do not meet in the middle
+    }
     // tail lamp: three sections (turn / stop-tail / reverse) on the post's rear face
     const lz0 = 0.69, lz1 = HW - 0.012;
     const lamp = (y0, y1, mat, d) => rbox(E(B, mat), FRX, s > 0 ? lz0 : -lz1, s > 0 ? lz1 : -lz0, y0, y1, xr - d, xr + 0.004, 0.004, {rc: 0.008});

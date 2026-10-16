@@ -75,9 +75,17 @@ public final class NozzleFillView {
         return dispenser != null && nozzle != null && player.getUUID().equals(dispenser.holder(nozzle)) ? new Held(dispenser, nozzle) : null;
     }
 
-    /** The opening of a block as drawn (also while the server is about to take the nozzle out of a closing fill). */
+    /**
+     * The opening as drawn (also while the server is about to take the nozzle out of a closing fill): a block's, or an
+     * entity's filler (the T15's, 2026-10-16) wherever the entity is now.
+     */
     @Nullable
-    private static Vec3 drawnOpening(Level level, BlockPos pos) {
+    private static Vec3 drawnOpening(Level level, com.antaurora.apofirstlight.fluid.FuelOpening at) {
+        if (at.pos() == null) {
+            var fill = at.fillEntity(level);
+            return fill == null ? null : fill.fuelOpening();
+        }
+        BlockPos pos = at.pos();
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof FuelCanBlock) return FuelCanBlock.opening(pos, state);
         if (state.getBlock() instanceof FuelPourTarget target) return target.pourOpening(level, pos, state);
@@ -94,12 +102,12 @@ public final class NozzleFillView {
         if (level == null) return null;
         int i = nozzle.ordinal();
         double age = level.getGameTime() + partialTick - dispenser.clientChanged[i];
-        BlockPos in = dispenser.inserted(nozzle);
+        var in = dispenser.inserted(nozzle);
         if (in != null) {
             Vec3 opening = drawnOpening(level, in);
             return opening == null ? null : new Way(opening, dispenser.insertHeading(nozzle), smooth(age / IN_TICKS));
         }
-        BlockPos was = dispenser.clientWas[i];
+        var was = dispenser.clientWas[i];
         if (was == null || age >= OUT_TICKS) return null;
         Vec3 opening = drawnOpening(level, was);
         return opening == null ? null : new Way(opening, dispenser.clientWasHeading[i], 1 - smooth(age / OUT_TICKS));
@@ -135,7 +143,7 @@ public final class NozzleFillView {
     public static Vec3 localOpening() {
         Held held = localIn();
         if (held == null) return null;
-        BlockPos in = held.dispenser().inserted(held.nozzle());
+        var in = held.dispenser().inserted(held.nozzle());
         return in == null ? null : drawnOpening(held.dispenser().getLevel(), in);
     }
 

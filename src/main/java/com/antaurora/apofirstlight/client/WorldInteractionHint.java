@@ -67,6 +67,7 @@ public final class WorldInteractionHint {
         // ground items (GroundItemPick): an item lying nearer than the block looked at comes before the block's own action
         var ground=nozzleIn==null?GroundItemPick.offer(mc):null;
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
+        else if(seatedPrompt(mc)) target=new Target(Component.translatable("hint.apocalypse_firstlight.pickup_t15.get_out"),null);
         else if(ground!=null) target=new Target(ground.label(),ground.anchor());
         // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
         else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
@@ -102,6 +103,11 @@ public final class WorldInteractionHint {
             if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
+        // the T15 pickup (docs/vehicles/first_pickup_v0_design.md 8.2): the part looked at, resolved as a click is
+        else if(!mc.player.isSpectator() && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit && truckOf(hit.getEntity())!=null) {
+            var offer=truckOf(hit.getEntity()).actionFor(mc.player);
+            if(offer!=null) target=new Target(Component.translatable(offer.action().key()),offer.anchor());
+        }
         // Survivor Death and Succession V0: a body to search, or to look through once searched
         else if(!mc.player.isSpectator() && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
                 && hit.getEntity() instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse)
@@ -114,6 +120,22 @@ public final class WorldInteractionHint {
         AttachmentHintStyle.draw(event.getGuiGraphics(),keys,label,at==null?w/2:Math.round(at[0]),at==null?h/2:Math.round(at[1]),w,fade);
     }
 
+    private static com.antaurora.apofirstlight.vehicle.PickupTruckEntity truckOf(net.minecraft.world.entity.Entity entity) {
+        if(entity instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity truck) return truck;
+        return entity instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Part part?part.getParent():null;
+    }
+
+    /** When the player got onto a truck seat (System.nanoTime), or 0: "get out" shows for the first seconds there. */
+    private static long seatedAt;
+    private static final long SEATED_PROMPT_NANOS=4_000_000_000L;
+
+    private static boolean seatedPrompt(Minecraft mc) {
+        if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity)) {seatedAt=0;return false;}
+        long now=System.nanoTime();
+        if(seatedAt==0) seatedAt=now;
+        return now-seatedAt<SEATED_PROMPT_NANOS;
+    }
+
     /**
      * The key caps in front of a prompt (docs/ui/afl_overlay_ui_style_v1.md 6), following the player's bindings: the use key
      * for every action, sneak + use to pick a container up, none for prompts that only tell (cannot charge, needs a crowbar,
@@ -123,6 +145,8 @@ public final class WorldInteractionHint {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
         if(key.contains(".ground_item.")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
+        if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
+        if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);

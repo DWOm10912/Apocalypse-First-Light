@@ -29,8 +29,8 @@ import java.util.Map;
  * Test commands for the T15 pickup body (permission 2, docs/vehicles/first_pickup_v0_design.md):
  * <ul><li>{@code /afl dev vehicle spawn [colour]}: a truck 5 blocks ahead on the ground, broadside to the player;</li>
  * <li>{@code /afl dev vehicle paint <colour> [second] [wear]}, {@code wear <0..1>}, {@code hood}, {@code tailgate},
- * {@code door <left|right>}: the
- * nearest truck within 16 blocks.</li></ul>
+ * {@code door <left|right>}, {@code filler}, {@code fuel <litres>}, {@code cargo add} (the held stack goes into the
+ * bed's grid: a test until the cargo grid opens), {@code cargo clear}: the nearest truck within 16 blocks.</li></ul>
  * A colour is a preset name (white, silver, deep_red, forest_green, navy, tan, light_blue, dark_grey) or RRGGBB hex.
  * forest_green alone brings its beige lower band (the two-tone factory option).
  */
@@ -86,9 +86,57 @@ public final class PickupTruckCommands {
                     truck.setTailgateOpen(!truck.tailgateOpen());
                     return report(c.getSource(), truck);
                 }))
+                .then(Commands.literal("filler").executes(c -> {
+                    PickupTruckEntity truck = nearest(c.getSource());
+                    truck.setFillerOpen(!truck.fillerOpen());
+                    return report(c.getSource(), truck);
+                }))
+                .then(Commands.literal("fuel").then(Commands.argument("litres", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, PickupTruckEntity.TANK))
+                        .executes(c -> {
+                            PickupTruckEntity truck = nearest(c.getSource());
+                            truck.setFuel(com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "litres"));
+                            return report(c.getSource(), truck);
+                        })))
+                .then(Commands.literal("cargo")
+                        .then(Commands.literal("add").executes(c -> {
+                            PickupTruckEntity truck = nearest(c.getSource());
+                            ServerPlayer player = c.getSource().getPlayerOrException();
+                            var held = player.getMainHandItem();
+                            if (!held.isEmpty() && truck.cargo().insert(held)) truck.cargoChanged();
+                            return report(c.getSource(), truck);
+                        }))
+                        .then(Commands.literal("clear").executes(c -> {
+                            PickupTruckEntity truck = nearest(c.getSource());
+                            for (var e : java.util.List.copyOf(truck.cargo().entries())) truck.cargo().remove(e);
+                            truck.cargoChanged();
+                            return report(c.getSource(), truck);
+                        })))
+                .then(Commands.literal("seat")
+                        .executes(c -> seat(c.getSource()))
+                        .then(Commands.argument("scale", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(0.4f, 1.2f))
+                                .executes(c -> {
+                                    PickupTruckLayout.riderScale = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(c, "scale");
+                                    return seat(c.getSource());
+                                })
+                                .then(Commands.argument("cab_hip", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.4, 1.1))
+                                        .executes(c -> {
+                                            PickupTruckLayout.riderScale = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(c, "scale");
+                                            PickupTruckLayout.cabHip = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(c, "cab_hip");
+                                            return seat(c.getSource());
+                                        }))))
                 .then(Commands.literal("door")
                         .then(Commands.literal("left").executes(c -> door(c.getSource(), false)))
                         .then(Commands.literal("right").executes(c -> door(c.getSource(), true)))))));
+    }
+
+    /** The interim rider scale and the cab hip / eye heights (dev, not saved). */
+    private static int seat(CommandSourceStack source) {
+        PickupTruckLayout.Seat driver = PickupTruckLayout.SEATS[PickupTruckLayout.DRIVER];
+        double hip = Double.isNaN(PickupTruckLayout.cabHip) ? driver.hip() : PickupTruckLayout.cabHip;
+        String text = String.format(Locale.ROOT, "T15 seat scale=%.2f cab hip=%.3f eye=%.3f (not saved)", PickupTruckLayout.riderScale,
+                hip, hip + PickupTruckLayout.EYE_OVER_HIP * PickupTruckLayout.riderScale);
+        source.sendSuccess(() -> Component.literal(text), false);
+        return 1;
     }
 
     private static int door(CommandSourceStack source, boolean right) throws CommandSyntaxException {
@@ -141,9 +189,10 @@ public final class PickupTruckCommands {
     }
 
     private static int report(CommandSourceStack source, PickupTruckEntity truck) {
-        String text = String.format(Locale.ROOT, "T15 #%d paint=%06X/%06X wear=%.2f hood=%s doors=%s/%s tailgate=%s", truck.getId(),
+        String text = String.format(Locale.ROOT, "T15 #%d paint=%06X/%06X wear=%.2f hood=%s doors=%s/%s tailgate=%s filler=%s fuel=%d/%d L cargo=%d", truck.getId(),
                 truck.paint(), truck.secondPaint(), truck.wear(), truck.hoodOpen() ? "open" : "shut",
-                truck.doorOpen(false) ? "open" : "shut", truck.doorOpen(true) ? "open" : "shut", truck.tailgateOpen() ? "open" : "shut");
+                truck.doorOpen(false) ? "open" : "shut", truck.doorOpen(true) ? "open" : "shut", truck.tailgateOpen() ? "open" : "shut",
+                truck.fillerOpen() ? "open" : "shut", truck.fuel(), PickupTruckEntity.TANK, truck.cargo().entries().size());
         source.sendSuccess(() -> Component.literal(text), false);
         return 1;
     }

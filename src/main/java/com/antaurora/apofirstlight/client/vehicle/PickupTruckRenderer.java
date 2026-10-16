@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client.vehicle;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.GroundItemRenderer;
 import com.antaurora.apofirstlight.client.blockmesh.AflMovingGlass;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
@@ -25,6 +26,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
@@ -47,10 +50,12 @@ import java.util.List;
  * <li>cutout, the wear overlay for round(wear x 10) (pickup_t15_wear_1..10, laid out like the outside atlas) over the
  * outside's painted parts: a texel is opaque exactly where that wear tenth has worn the paint through (the vanilla
  * cutout tests texture alpha only). Same vertices and pose as pass 1, so the depths are equal and the later draw wins;</li>
- * <li>translucent: the glass (skipped in a shader pack's shadow pass). With a shader pack it is queued in AflMovingGlass
- * and drawn after the translucent terrain as terrain glass with the block texture pickup_t15_glass (the baked glass texel;
+ * <li>translucent: the glass (skipped in a shader pack's shadow pass). It is queued in AflMovingGlass and drawn after the
+ * translucent terrain as terrain glass with the block texture pickup_t15_glass (the baked glass texel). With a shader pack:
  * Sundial Lite has no translucent entity program, so entity glass overwrote the material and light of what is behind it
- * and the view out looked dull); without one it stays entity translucent.</li></ol>
+ * and the view out looked dull. Without one (2026-10-16): entity glass was flushed, depth and all, as soon as the next
+ * entity (the rider) asked for another render type, so a rider behind a shut window was not drawn. Entity translucent is
+ * only the fallback when the sprite cannot be baked.</li></ol>
  * Shading normals (Vextris 0.1.1 format 3, crease_angle in the sidecars): without a shader pack every part goes into the
  * one QUADS buffer of its pass (smooth parts keep their corner normals there); with one, Oculus would overwrite QUADS
  * normals per face, so each pass draws its flat parts as QUADS and then its smooth parts into Vextris' TRIANGLES twin of the
@@ -95,7 +100,16 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     }
 
     /** The pose of one frame: bone turns and paint. */
-    private record State(float hood, float tailgate, float doorL, float doorR, float[] main, float[] second, int light) {}
+    private record State(float hood, float tailgate, float doorL, float doorR, float filler, float[] main, float[] second, int light) {}
+
+    /** One cargo item as drawn: the item entity standing in for it (never in the level), its place (model frame) and turn. */
+    private record CargoItem(ItemEntity entity, float x, float z, boolean along) {}
+
+    private record Cargo(int version, List<CargoItem> items) {}
+
+    private static final java.util.Map<PickupTruckEntity, Cargo> CARGO = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    /** The bed floor's top (the ribs) and the cargo cell size (blocks): 9 cells along the bed from its front wall, 7 across. */
+    private static final float CARGO_FLOOR = 0.772F, CELL_ALONG = 0.20F, CELL_ACROSS = 0.216F, BED_FRONT = 0.40F, BED_HALF = 0.757F;
 
     public PickupTruckRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -110,7 +124,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     public void render(PickupTruckEntity truck, float entityYaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
         float wear = truck.wear();
         State s = new State(truck.hoodAngle(partialTick), truck.tailgateAngle(partialTick), truck.doorAngle(false, partialTick),
-                truck.doorAngle(true, partialTick), tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light);
+                truck.doorAngle(true, partialTick), truck.fillerAngle(partialTick), tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light);
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
@@ -139,10 +153,12 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
                 draw(FRONT, pose, buffers, s, MeshLayer.CUTOUT, WEAR[level]);
             }
         }
+        if (distance < INTERIOR_RANGE * INTERIOR_RANGE) drawCargo(truck, pose, buffers, light);
         if (!shadow) {
-            // pass 3: glass, only after the batch closed: entity glass flushed before the cached cutout would write its
-            // depth first and hide the cab behind it; with a shader pack queued as terrain glass (after the translucent terrain)
-            TextureAtlasSprite glass = AflShaderCompat.shaderPackInUse() ? AflStaticMeshModel.atlasSprite(BLOCK_GLASS) : null;
+            // pass 3: glass, queued as terrain glass (after the translucent terrain, so after every entity) with or without a
+            // shader pack: entity glass is flushed as soon as the next entity asks for another render type, writing its depth
+            // before the passengers are drawn, and a rider behind a shut window vanished (user 2026-10-16, no shader pack)
+            TextureAtlasSprite glass = AflStaticMeshModel.atlasSprite(BLOCK_GLASS);
             glass(EXT, pose, buffers, s, glass);
             glass(FRONT, pose, buffers, s, glass);
             if (interior) glass(CAB, pose, buffers, s, glass);
@@ -230,7 +246,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         }
     }
 
-    /** One mesh's glass: queued in AflMovingGlass at sprite (shader pack on), else drawn as entity translucent. */
+    /** One mesh's glass: queued in AflMovingGlass at sprite, else (no sprite, or it cannot be baked) drawn as entity translucent. */
     private static void glass(Piece piece, PoseStack pose, MultiBufferSource buffers, State s, TextureAtlasSprite sprite) {
         MeshModel mesh = VextrisMeshes.byGeometry(piece.geometry());
         if (mesh == null || !mesh.hasTranslucent()) return;
@@ -258,7 +274,39 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "tailgate" -> pose.mulPose(Axis.XP.rotationDegrees(s.tailgate()));
             case "door_l" -> pose.mulPose(Axis.YP.rotationDegrees(-s.doorL()));
             case "door_r" -> pose.mulPose(Axis.YP.rotationDegrees(s.doorR()));
+            case "fuel_door" -> pose.mulPose(Axis.YP.rotationDegrees(-s.filler()));   // left side, hinged at its front edge like door_l
             default -> { }
+        }
+    }
+
+    /**
+     * The bed's cargo (the synced grid, PickupTruckEntity#cargo): each item lies flat on the bed floor over its cells, as a
+     * ground item does (GroundItemRenderer: meshes on their measured bottom, guns at their real length), its long side
+     * along the longer side of its cells. Grid x runs from the bed's front wall to the tailgate, y from the right side to
+     * the left.
+     */
+    private void drawCargo(PickupTruckEntity truck, PoseStack pose, MultiBufferSource buffers, int light) {
+        var grid = truck.cargo();
+        if (grid.entries().isEmpty()) return;
+        Cargo cargo = CARGO.get(truck);
+        if (cargo == null || cargo.version() != truck.cargoVersion()) {
+            List<CargoItem> items = new java.util.ArrayList<>();
+            for (var e : grid.entries()) {
+                var size = grid.footprint(e);
+                float along = BED_FRONT + (e.x() + size.w() / 2.0F) * CELL_ALONG, across = BED_HALF - (e.y() + size.h() / 2.0F) * CELL_ACROSS;
+                Vec3 at = truck.point(-along, across, CARGO_FLOOR);
+                ItemEntity stand = new ItemEntity(truck.level(), at.x, at.y, at.z, e.stack().copy());
+                items.add(new CargoItem(stand, across, along, size.w() >= size.h()));
+            }
+            CARGO.put(truck, cargo = new Cargo(truck.cargoVersion(), items));
+        }
+        for (CargoItem item : cargo.items()) {
+            if (!(entityRenderDispatcher.getRenderer(item.entity()) instanceof GroundItemRenderer ground)) continue;
+            pose.pushPose();
+            pose.translate(item.x(), CARGO_FLOOR, item.z());
+            if (item.along()) pose.mulPose(Axis.YP.rotationDegrees(90.0F));   // the item's long side (local +x) along the bed
+            ground.renderResting(item.entity(), pose, buffers, light);
+            pose.popPose();
         }
     }
 

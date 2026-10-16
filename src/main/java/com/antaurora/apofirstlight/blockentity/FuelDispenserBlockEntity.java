@@ -161,8 +161,8 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     private static final int SHUT_OFF_HOLD = 8;
     /** Ticks after the nozzle went in or out in which a click does not toggle it again (a held button repeats; the client also waits for a release). */
     private static final int TOGGLE_GUARD = 6;
-    /** The opening block each nozzle is in, and the heading it went in along (synced). */
-    private final BlockPos[] inserted = new BlockPos[Nozzle.values().length];
+    /** The opening each nozzle is in (a block's, or an entity's: the T15's filler), and the heading it went in along (synced). */
+    private final com.antaurora.apofirstlight.fluid.FuelOpening[] inserted = new com.antaurora.apofirstlight.fluid.FuelOpening[Nozzle.values().length];
     private final float[] insertHeading = new float[Nozzle.values().length];
     /** Nozzles whose fuel runs into their opening (bit per nozzle) and how full that is (0..32): synced, for the fill sound. */
     private int filling;
@@ -170,7 +170,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     private final long[] shutOff = new long[Nozzle.values().length], lastPour = new long[Nozzle.values().length], toggled = new long[Nozzle.values().length];
     /** Client: when each nozzle last went in or out (game time), and where it was in (its way back out). */
     public final long[] clientChanged = new long[Nozzle.values().length];
-    public final BlockPos[] clientWas = new BlockPos[Nozzle.values().length];
+    public final com.antaurora.apofirstlight.fluid.FuelOpening[] clientWas = new com.antaurora.apofirstlight.fluid.FuelOpening[Nozzle.values().length];
     public final float[] clientWasHeading = new float[Nozzle.values().length];
 
     public FuelDispenserBlockEntity(BlockPos pos, BlockState state) {
@@ -180,9 +180,9 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         java.util.Arrays.fill(clientChanged, Long.MIN_VALUE / 2);
     }
 
-    /** The opening block this nozzle is in, or null. */
+    /** The opening this nozzle is in, or null. */
     @Nullable
-    public BlockPos inserted(Nozzle nozzle) {
+    public com.antaurora.apofirstlight.fluid.FuelOpening inserted(Nozzle nozzle) {
         return inserted[nozzle.ordinal()];
     }
 
@@ -316,8 +316,13 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         if (filling != was) sync();
     }
 
-    /** The holder puts this nozzle into the opening of target (a click on it); false when it does not go in (told why). */
+    /** The holder puts this nozzle into the opening of a block (a click on it); false when it does not go in (told why). */
     public boolean insert(ServerPlayer player, Nozzle nozzle, BlockPos target) {
+        return insert(player, nozzle, com.antaurora.apofirstlight.fluid.FuelOpening.block(target));
+    }
+
+    /** The same for any opening (an entity's filler: its own click, 2026-10-16). */
+    public boolean insert(ServerPlayer player, Nozzle nozzle, com.antaurora.apofirstlight.fluid.FuelOpening target) {
         int i = nozzle.ordinal();
         if (!(level instanceof net.minecraft.server.level.ServerLevel server) || !player.getUUID().equals(holders[i]) || inserted[i] != null
                 || server.getGameTime() - toggled[i] < TOGGLE_GUARD) return false;
@@ -332,7 +337,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(refusal), true);
             return false;
         }
-        inserted[i] = target.immutable();
+        inserted[i] = target;
         toggled[i] = server.getGameTime();
         insertHeading[i] = NozzleFill.heading(player.getEyePosition(), opening);
         shutOff[i] = -1;
@@ -571,7 +576,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         // the nozzles in openings (update tag only; on the client the change starts the nozzle's way in or out)
         filling = tag.getByte("Fill");
         for (int i = 0; i < inserted.length; i++) {
-            BlockPos now = tag.contains("In" + i) ? BlockPos.of(tag.getLong("In" + i)) : null;
+            com.antaurora.apofirstlight.fluid.FuelOpening now = com.antaurora.apofirstlight.fluid.FuelOpening.load(tag, "In" + i);
             if (level != null && level.isClientSide && !java.util.Objects.equals(now, inserted[i])) {
                 clientChanged[i] = level.getGameTime();
                 if (inserted[i] != null) {
@@ -614,7 +619,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         tag.putByte("Fill", (byte) filling);
         for (int i = 0; i < inserted.length; i++) {
             if (inserted[i] == null) continue;
-            tag.putLong("In" + i, inserted[i].asLong());
+            inserted[i].save(tag, "In" + i);
             tag.putFloat("InHeading" + i, insertHeading[i]);
             tag.putByte("Share" + i, share[i]);
         }

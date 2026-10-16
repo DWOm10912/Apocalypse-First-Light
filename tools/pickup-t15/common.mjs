@@ -39,6 +39,7 @@ export const PIVOTS = {
   hood: [HOOD_X0 + 0.01, hy(HOOD_X0) - 0.035, 0],
   door_l: [DOOR_F - 0.03, 0.80, -(HW - 0.02)], door_r: [DOOR_F - 0.03, 0.80, HW - 0.02],
   tailgate: [BED_R + 0.01, 0.615, 0],
+  fuel_door: [-0.545, 0.94, -HW],
   steering: [0.40, 1.125, -0.37],
   wheel: [0, 0, 0],
 };
@@ -49,6 +50,7 @@ export const HINGES = {
   door_l: {axis: [0, 1, 0], open: 68, note: 'front hinge pillar'},
   door_r: {axis: [0, 1, 0], open: 68, note: 'front hinge pillar'},
   tailgate: {axis: [0, 0, 1], open: 90, note: 'bottom hinges; drops flat'},
+  fuel_door: {axis: [0, 1, 0], open: 80, note: 'front edge; swings out like the doors'},
   steering: {axis: [Math.cos(27 * Math.PI / 180), -Math.sin(27 * Math.PI / 180), 0], open: 540, note: 'column axis; +-1.5 turns lock to lock'},
 };
 // interaction / attachment anchors (concept frame, on a bone): seats and eye points for the player skeleton, hands on the
@@ -63,7 +65,7 @@ export const ANCHORS = {
   door_l_inner_handle: ['door_l', [0.73, 0.925, -0.755]], door_r_inner_handle: ['door_r', [0.73, 0.925, 0.755]],
   door_l_entry: ['body', [0.30, 0.0, -1.45]], door_r_entry: ['body', [0.30, 0.0, 1.45]],
   hood_latch: ['hood', [2.24, 1.0, 0]], tailgate_handle: ['tailgate', [-2.262, 1.05, 0]],
-  fuel_filler: ['body', [-0.62, 0.94, -0.85]],
+  fuel_filler: ['body', [-0.6225, 0.94, -(HW - 0.015)]],
   headlamp_l: ['body', [2.282, 0.81, -0.66]], headlamp_r: ['body', [2.282, 0.81, 0.66]],
   tail_lamp_l: ['body', [-2.285, 0.83, -0.77]], tail_lamp_r: ['body', [-2.285, 0.83, 0.77]],
 };
@@ -127,7 +129,7 @@ export const PAINTED = new Set(['paint', 'paint2']);
 // hood); wheel: one wheel (drawn per corner and as the spare); cab + seat: the interior (drawn near); engine: the engine
 // bay (drawn while the hood is open); chassis: frame, axles, running gear, radiator (drawn near).
 export const MESHES = {
-  ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate'], atlas: 'ext'},
+  ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate', 'fuel_door'], atlas: 'ext'},
   front: {id: 'pickup_t15_front', bones: ['body', 'hood'], atlas: 'ext'},
   wheel: {id: 'pickup_t15_wheel', bones: ['wheel'], atlas: 'ext'},
   cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering'], atlas: 'cab'},

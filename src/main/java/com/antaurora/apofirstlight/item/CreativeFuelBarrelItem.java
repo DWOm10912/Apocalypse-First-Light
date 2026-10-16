@@ -59,22 +59,29 @@ public final class CreativeFuelBarrelItem extends Item {
         Player player = context.getPlayer();
         IFluidHandler into = FuelCanTransfers.handler(server, pos, context.getClickedFace());
         if (into == null) return InteractionResult.PASS;
+        pourInto(stack, level, player, into, level.getBlockState(pos).getBlock() instanceof FuelPourTarget t ? t.refusal() : "wont_take", net.minecraft.world.phys.Vec3.atCenterOf(pos));
+        return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * Server: as much as fits goes into this handler at once (also an entity's filler, 2026-10-16: the T15's own click);
+     * `refusal` is the message (fuel_can.*) when the handler refuses this fuel itself.
+     */
+    public void pourInto(ItemStack stack, Level level, @Nullable Player player, IFluidHandler into, String refusal, net.minecraft.world.phys.Vec3 at) {
         FluidStack offer = new FluidStack(fuel.get(), left(stack));
         int accepted = into.fill(offer, IFluidHandler.FluidAction.EXECUTE);
         if (accepted <= 0) {
             FluidStack there = FuelCanTransfers.contents(into);
-            String why = into.getTanks() == 0 ? "wont_take" : !into.isFluidValid(0, offer)
-                    ? (level.getBlockState(pos).getBlock() instanceof FuelPourTarget t ? t.refusal() : "wont_take")
+            String why = into.getTanks() == 0 ? "wont_take" : !into.isFluidValid(0, offer) ? refusal
                     : !there.isEmpty() && !there.isFluidEqual(offer) ? "other_fuel" : "full";
             if (player != null) player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can." + why), true);
-            return InteractionResult.SUCCESS;
+            return;
         }
         int rest = left(stack) - accepted;
         if (rest <= 0) stack.shrink(1);
         else stack.getOrCreateTag().putInt(LEFT_KEY, rest);
-        level.playSound(null, pos, SoundEvents.BUCKET_EMPTY, SoundSource.BLOCKS, 0.8F, 0.9F);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.BUCKET_EMPTY, SoundSource.BLOCKS, 0.8F, 0.9F);
         if (player != null) player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.creative_fuel_barrel.poured", accepted, Math.max(0, rest)), true);
-        return InteractionResult.SUCCESS;
     }
 
     /** Both sides: something here takes fuel (an open fill opening, or a block entity with a fluid handler). */
