@@ -67,8 +67,8 @@ export const ANCHORS = {
   headlamp_l: ['body', [2.282, 0.81, -0.66]], headlamp_r: ['body', [2.282, 0.81, 0.66]],
   tail_lamp_l: ['body', [-2.285, 0.83, -0.77]], tail_lamp_r: ['body', [-2.285, 0.83, 0.77]],
 };
-// soft / hard edges for the per-corner normals Vextris format v3 will carry: within one part, faces sharing a vertex are
-// smoothed together when their dihedral angle is under the crease angle (rounded edges are built from steps of at most
+// soft / hard edges for the per-corner normals (Vextris format 3 crease_angle, written into every sidecar): within one part,
+// faces sharing a corner position are smoothed together when their dihedral angle is under the crease angle (rounded edges are built from steps of at most
 // 45 deg, so they come out smooth; 90 deg panel edges, folds and flanges stay hard; separate primitives never share
 // vertices, so seams between them stay hard). Per-material overrides where a surface must stay faceted or fully soft.
 export const SMOOTHING = {crease_deg: 50, materials: {glass: 0, mirror: 0, dial: 0, lens: 30, tire: 60}};
@@ -77,8 +77,8 @@ export const SPARE = {x: -1.86, y: 0.50};   // degrees the steering wheel plane 
 
 // ---------------------------------------------------------------- materials
 // c: sRGB albedo; sm: LabPBR smoothness; f0: LabPBR F0 (10 = 0.04 dielectric; 230 iron, 232 aluminium, 233 chrome);
-// alpha: translucent (glass); aoK: how much baked occlusion it takes (0 = none); smooth: not used yet (flat normals
-// until Vextris has corner normals). Painted materials are a light neutral grey the renderer multiplies by the paint.
+// alpha: translucent (glass); aoK: how much baked occlusion it takes (0 = none); crease overrides are
+// in SMOOTHING above. Painted materials are a light neutral grey the renderer multiplies by the paint.
 export const MATS = {
   paint: {c: [226, 226, 223], sm: 168, f0: 12},
   paint2: {c: [226, 226, 223], sm: 168, f0: 12},

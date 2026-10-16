@@ -10,8 +10,12 @@
 // Three 2048 atlases (outside + wheel, cab, engine + chassis), each Base Color + LabPBR _s / _n with ray-traced ambient
 // occlusion, and ten wear overlays (pickup_t15_wear_1..10: texel alpha 255 where the paint is worn through at that wear
 // tenth; the renderer binds the one for round(wear x 10), because the vanilla cutout tests texture alpha only).
-// Every face is drawn with its flat normal until Vextris has corner normals (user 2026-10-15: shared mesh capabilities
-// belong to Vextris).
+// Shading normals: Vextris format 3 crease smoothing, off for now (CREASE = false: format 2, flat normals). With it on, each
+// sidecar carries crease_angle (SMOOTHING.crease_deg) and a per-part override for the materials in SMOOTHING.materials, and
+// Vextris averages the faces across soft edges at load. Its 0.1.1-alpha.2 average is weighted by corner angle, which bends
+// the big flat panels next to bevels (tailgate ribs smeared, bed sides shaded like a bulge; design/vehicles/
+// first_pickup_v0/sheets/v3n_close_*.png); face-area weighting is requested from Vextris (user 2026-10-15,
+// docs/dev/vextris_0_1_1_integration.md section 4). No normals are written here: shared mesh capabilities belong to Vextris.
 //   node tools/build-pickup-t15.mjs           writes every output
 //   node tools/build-pickup-t15.mjs --check   verifies every output is up to date (writes nothing)
 //   node tools/build-pickup-t15.mjs --fast    no occlusion bake (quick geometry iterations; not for delivery)
@@ -25,6 +29,7 @@ import {MATS, MESHES, ATLASES, PIVOTS, PAINTED, SPARE, HINGES, ANCHORS, SMOOTHIN
 import {buildExterior} from './pickup-t15/exterior.mjs';
 import {buildWheel} from './pickup-t15/wheel.mjs';
 import {SHADE} from './pickup-t15/shade.mjs';
+const CREASE = false;   // Vextris format 3 crease_angle (see the header)
 let buildCab = () => {}, buildEngine = () => {}, buildChassis = () => {};
 try { ({buildCab} = await import('./pickup-t15/cab.mjs')); } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e; }
 try { ({buildEngine} = await import('./pickup-t15/engine.mjs')); } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e; }
@@ -205,7 +210,10 @@ for (const [key, m] of Object.entries(MESHES)) {
   const geo = {format_version: '1.12.0', 'minecraft:geometry': [{description: {identifier: 'geometry.' + ID, texture_width: spec.size, texture_height: spec.size,
     visible_bounds_width: 6, visible_bounds_height: 3, visible_bounds_offset: [0, 1, 0]},
     bones: m.bones.map(b => { const o = pivotPx(b); return {name: b, pivot: [-o[0] || 0, o[1], o[2]].map(r12)}; })}]};
-  const sidecar = convert(source, geo, {}, ID + '.bbmodel', 2, null, LAYERS);
+  const flat = convert(source, geo, {}, ID + '.bbmodel', 2, null, LAYERS);
+  const matOf = new Map(parts.map(p => [p.name, p.mat]));
+  const sidecar = !CREASE ? flat : {...flat, format_version: 3, crease_angle: SMOOTHING.crease_deg,
+    parts: flat.parts.map(q => SMOOTHING.materials[matOf.get(q.name)] === undefined ? q : {...q, crease_angle: SMOOTHING.materials[matOf.get(q.name)]})};
   const triEq = sidecar.parts.reduce((s, q) => s + q.faces.reduce((t, f) => t + f.length - 2, 0), 0), verts = sidecar.parts.reduce((s, q) => s + q.vertices.length, 0);
   assert(sidecar.parts.length <= 128 && triEq <= 16384 && verts <= 65536, `${ID} over the Vextris limits: ${sidecar.parts.length} parts, ${triEq} triangles, ${verts} vertices`);
   SUMMARY[ID] = {parts: sidecar.parts.length, triangles: triEq, vertices: verts};

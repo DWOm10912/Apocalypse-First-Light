@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.client.MeshRendering;
 import com.antaurora.vextris.client.VextrisMeshes;
 import com.antaurora.vextris.mesh.MeshBone;
 import com.antaurora.vextris.mesh.MeshLayer;
@@ -39,6 +40,11 @@ import java.util.List;
  * outside's painted parts: a texel is opaque exactly where that wear tenth has worn the paint through (the vanilla
  * cutout tests texture alpha only). Same vertices and pose as pass 1, so the depths are equal and the later draw wins;</li>
  * <li>translucent: the glass and the cluster lens (skipped in a shader pack's shadow pass).</li></ol>
+ * Shading normals (Vextris 0.1.1 format 3, crease_angle in the sidecars): without a shader pack every part goes into the
+ * one QUADS buffer of its pass (smooth parts keep their corner normals there); with one, Oculus would overwrite QUADS
+ * normals per face, so each pass draws its flat parts as QUADS and then its smooth parts into Vextris' TRIANGLES twin of the
+ * same render type ({@link MeshRendering#smoothTopology()}). Both use the same split diagonal, so the wear pass still
+ * lands on exactly the paint pass's depths.
  * The model's front is -Z: a world yaw psi is a model turn of 180 - psi about +Y.
  */
 public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity> {
@@ -107,12 +113,26 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         super.render(truck, entityYaw, partialTick, pose, buffers, light);
     }
 
-    /** One mesh, every root bone at its pivot. overlay != null: the wear pass (painted parts only, that texture, no tint). */
+    /**
+     * One mesh, every root bone at its pivot. overlay != null: the wear pass (painted parts only, that texture, no tint).
+     * Flat parts (or every part without a shader pack) first, then, with a shader pack, the smooth parts as TRIANGLES.
+     */
     private static void draw(Piece piece, PoseStack pose, MultiBufferSource buffers, State s, MeshLayer layer, ResourceLocation overlay) {
         MeshModel mesh = VextrisMeshes.byGeometry(piece.geometry());
         if (mesh == null || layer == MeshLayer.TRANSLUCENT && !mesh.hasTranslucent()) return;
-        VertexConsumer out = buffers.getBuffer(layer == MeshLayer.TRANSLUCENT ? RenderType.entityTranslucent(piece.texture())
-                : RenderType.entityCutoutNoCull(overlay != null ? overlay : piece.texture()));
+        ResourceLocation texture = overlay != null ? overlay : piece.texture();
+        MeshRenderer.Topology smooth = MeshRendering.smoothTopology();
+        boolean split = smooth == MeshRenderer.Topology.TRIANGLES && mesh.hasSmoothParts();
+        VertexConsumer out = buffers.getBuffer(layer == MeshLayer.TRANSLUCENT ? RenderType.entityTranslucent(texture) : RenderType.entityCutoutNoCull(texture));
+        drawParts(mesh, pose, out, s, layer, overlay != null, split ? MeshRenderer.PartFilter.FLAT : MeshRenderer.PartFilter.ALL, MeshRenderer.Topology.QUADS);
+        if (!split) return;
+        // a new buffer request ends the QUADS batch of a plain buffer source, so the smooth parts come strictly after it
+        out = buffers.getBuffer(layer == MeshLayer.TRANSLUCENT ? MeshRendering.translucentType(texture, smooth) : MeshRendering.cutoutType(texture, smooth));
+        drawParts(mesh, pose, out, s, layer, overlay != null, MeshRenderer.PartFilter.SMOOTH, smooth);
+    }
+
+    private static void drawParts(MeshModel mesh, PoseStack pose, VertexConsumer out, State s, MeshLayer layer, boolean wear,
+                                  MeshRenderer.PartFilter filter, MeshRenderer.Topology topology) {
         for (MeshBone bone : mesh.roots()) {
             if (bone.neverRender()) continue;
             List<MeshPart> parts = mesh.parts(bone.name(), layer);
@@ -128,9 +148,10 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             }
             for (MeshPart part : parts) {
                 boolean painted = isPainted(part);
-                if (overlay != null && !painted) continue;
-                float[] c = overlay != null || !painted ? null : isSecond(part) ? s.second() : s.main();
-                MeshRenderer.renderParts(List.of(part), pose, out, s.light(), OverlayTexture.NO_OVERLAY,
+                if (wear && !painted) continue;
+                if (filter == MeshRenderer.PartFilter.FLAT && part.smooth() || filter == MeshRenderer.PartFilter.SMOOTH && !part.smooth()) continue;
+                float[] c = wear || !painted ? null : isSecond(part) ? s.second() : s.main();
+                MeshRenderer.renderParts(List.of(part), filter, topology, pose, out, s.light(), OverlayTexture.NO_OVERLAY,
                         c == null ? 1 : c[0], c == null ? 1 : c[1], c == null ? 1 : c[2], 1, null);
             }
             pose.popPose();

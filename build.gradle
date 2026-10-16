@@ -143,12 +143,12 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Vextris (Antaurora's mesh library), from its local Maven repository (gradle.properties vextris_repo).
+    // Vextris (Antaurora's mesh library), from its internal Maven repository (gradle.properties vextris_repo).
     maven {
-        name = 'Vextris (local)'
+        name = 'Vextris internal'
         url = file(vextris_repo)
         content {
-            includeGroup 'com.antaurora.vextris'
+            includeGroup 'io.github.dwom10912'
         }
     }
 
@@ -255,8 +255,8 @@ dependencies {
 
     // Vextris mesh library: compile against its API; at runtime it is its own mod (mods.toml hard dependency).
     // compileOnly + runtimeOnly: nothing of Vextris is copied or bundled into the AFL jar.
-    compileOnly fg.deobf("com.antaurora.vextris:vextris-forge-${minecraft_version}:${vextris_version}")
-    runtimeOnly fg.deobf("com.antaurora.vextris:vextris-forge-${minecraft_version}:${vextris_version}")
+    compileOnly fg.deobf("io.github.dwom10912:vextris:${vextris_version}")
+    runtimeOnly fg.deobf("io.github.dwom10912:vextris:${vextris_version}")
 
     // Curios (required): extra equipment slots. AFL compiles against the API only; the full mod runs in dev.
     compileOnly fg.deobf(
