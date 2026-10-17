@@ -1,7 +1,7 @@
 # 道路接地查询 RoadSurfaceQuery V1
 
-日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，已同步到 master `7507bd11`，同步后离线回归仍 PASS），未提交、未合并。
-状态：**已实现，离线回归通过，隔离客户端探针在新建测试世界 `rsq1` 里通过（13 个隧道探针窗口，2026-10-16）**。Main 那边还没接（见第 7 节），车上还没用到它，**没有实机开车测过**。
+日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，已同步到 master `7507bd11`，同步后离线回归仍 PASS）；提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送）。
+状态：**已实现，离线回归通过，隔离客户端探针在新建测试世界 `rsq1` 里通过（13 个隧道探针窗口，2026-10-16）**。Main 已在 `LevelVehicleWorld#ground` 开头接上（2026-10-16，Main 目录，未提交；见第 7 节），**还没有实机开车测过**。
 
 和 Main 的约定：Main 工作目录里的 `docs/vehicles/first_pickup_v0_design.md` 第 5 / 5.1 节（2026-10-16 双方确认）。
 
@@ -31,6 +31,14 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 ## 3. 规则
 
 先按道路设计算出 (x, z) 处的路面（`pavement`，纯计算，不读世界）：所有可能经过这个区块的道路里，(x, z) 落在铺装带（内路肩边到外路肩边，桩号在路线上）的那些，取设计路面高度离 yHint 最近、且在 1.5 m 以内的那条。
+
+C3.3b 第一组（2026-10-16）起，(x, z) 落在 T 字路口的路口面里时（`RoadWorks#pad`），路口面也是一个候选：高度取 `Junction#height`，法线取它的梯度（`Junction#normal`，中心差分 0.05 m），表面是沥青、不挡车。它比各条路的铺装更接近 yHint（也在 1.5 m 以内）时用它。路口面在主路铺装边和支路端线上跟两条路的设计面一致，所以从路上开进路口面高度是连续的（[C3.3b 第一组](federal_junctions_c3_3b.md) 第 3 节）。后面"扫方块"那一步照旧。
+
+C3.3b 第二组（2026-10-16）起：
+
+- 立交的匝道落在州际铺装带里的点不算匝道的（那里的路面是州际的，`RoadWorks#yields` 同一条规则），只按州际算；
+- 跨线桥上下两条路都是候选，照旧取离 yHint 最近的那条：车在桥面上问得到跨线州道，在桥下问得到州际（桥面和桥下的州际路面至少差 5 m，远大于 1.5 m 的范围）；
+- 道路端点外 1 cm 内的点算在端点上（`RoadCurve#local`），所以入口匝道起点外几毫米、已经在路口面上的点，可能给匝道起点的高程而不是路口面的：两者实测最大差 0.16 mm（[C3.3b 第二组](federal_interchanges_c3_3b.md) 11.1）。
 
 然后从 yHint + 1.5 m 往下扫这一列方块，到 yHint − 1.5 m 下一格为止，第一个碰到的东西决定结果：
 
@@ -75,7 +83,7 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 ./gradlew roadSurfaceCheck --offline
 ```
 
-- 文件：`src/test/java/com/antaurora/apofirstlight/worldgen/network/road/RoadSurfaceCheck.java`；gradle 任务 `roadSurfaceCheck`（不进 `check`，因为要一份道路网络缓存文件；默认读种子 4 的 `build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json`，`-ProadNetwork=<文件>` 换别的）。
+- 文件：`src/test/java/com/antaurora/apofirstlight/worldgen/network/road/RoadSurfaceCheck.java`；gradle 任务 `roadSurfaceCheck`（不进 `check`，因为要道路网络缓存）。不带参数时检查这个目录里所有缓存的道路网络：`run/afl_cache/road_network/` 和 `build/federal-c2-client/afl_cache/road_network/` 下的 `afl_road_network_c3_v1_*.json`（游戏第一次打开一个联邦世界时写，一个种子一份）；一份都没有就提示先打开一次联邦世界，退出码 2。`-ProadNetwork=<文件>` 只查一份。第一版写死了 C 的测试客户端里种子 4 那份，Main 的目录里没有，跑不起来（Main 2026-10-16 反馈），已改。
 - 做法：用网络 JSON 重建全部道路（和客户端一样：建好、写出、读回），每条路沿桩号每 **0.25 m** 一个点，横向在铺装带上每 0.5 m 一条线（两侧、车道、车道线、路肩），yHint 用上一个点的结果（像车一样）。
 - 检查：有没有空洞；拿到的是不是这条路自己的路面（不是别的路）；不分配版本和原版本是否完全一致；相邻点高度的二阶差（折角）；法线每步转角；每 4 m 用 ±1 cm 的世界坐标差分比对解析法线；单次耗时。
 - 阈值：空洞 0、不一致 0、二阶差 ≤ 0.01 m、法线每步转角 ≤ 1°、法线误差 ≤ 0.25°。
@@ -93,6 +101,17 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 | 法线每步转角最大 | 0.55°（同一处，超高渐变） |
 | 解析法线 vs 差分 | 739,804 点，最大 0.098° |
 | 单次耗时 | 1.05 µs |
+
+其他种子（2026-10-16，同一套阈值，全部 PASS）：
+
+| 网络缓存 | 道路 | 空洞 | 二阶差最大 | 法线每步转角最大 | 法线 vs 差分最大 |
+|---|---|---|---|---|---|
+| `..._18151365494840402103_05c318c57fca5c3a`（r1 默认种子 -295378578869149513） | 21 | 0 | 0.0051 m | 0.57° | 0.114° |
+| `..._10164326571583364449_80bd3ad668204936` | 21 | 0 | 0.0049 m | 0.58° | 0.120° |
+| `..._11823271242869393782_9f681f3ccc4ee2c4` | 18 | 0 | 0.0042 m | 0.49° | 0.074° |
+| `..._16060040187792812410_abbf3adfc5d4f7db` | 19 | 0 | 0.0042 m | 0.49° | 0.095° |
+
+后三份是 Main 目录 `run/afl_cache/road_network/` 里的缓存（只读，用 `-ProadNetwork` 指过去跑的）。
 
 ### 隔离客户端探针
 
@@ -124,7 +143,8 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 
 ## 6. 没做 / 限制
 
-- 路口、互通（C3.3b）还没有，所以没有"两条路的路面重叠"的情况；做路口时要复查"取最近的那层"在路口里是否合适。
+- C3.3b 第一组的路口面已经接上（第 3 节）。离线检查（`junctionCheck`，6 个种子）：路口面上查询高度和路口面设计高度最大差 0.0002 m。州道接州际的菱形立交（第二组）已经接上（第 3 节），新世界探针 ic1 上匝道、路口面、跨线桥上下的查询全部和设计一致（路口面上最大差 0.16 mm，[C3.3b 第二组](federal_interchanges_c3_3b.md) 11.1）。州际之间的互通还没有。
+- 路口面那一支会分配几个小数组（`Junction#height` 里的投影），没有做成不分配的版本；路口面只有几百平方米，影响不大，没有测。
 - 隧道部件（扶手、标志等）不算地面，也不挡车轮；它们的方块碰撞照旧。
 - 护栏墙等 `blocking` 处只给方块碰撞顶面，法线朝上；不给墙的侧面法线（车身碰撞由方块负责）。
 - 没有实车测过：Main 接上调用、皮卡在路上开过之后才知道实际效果。

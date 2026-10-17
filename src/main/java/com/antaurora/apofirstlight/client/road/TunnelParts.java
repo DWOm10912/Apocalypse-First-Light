@@ -20,7 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * RoadClient's vertex layout (relative to a chunk's corner, atlas UVs, four vertices per face: a triangle repeats its
  * last corner). All on the one sheet block/road/tunnel/equipment; all unlit (no power). The handrail segment (V1.1, the
  * rail that was part of the lining) is built here: a square tube with two brackets to the wall, on the lining's steel
- * texture. Drawn by TunnelFixtureClient (the fixtures standing in a chunk) and the fixture items' renderer.
+ * texture. The interchange guide signs (C3.3b group 2) are built too (GuideSignParts), their legends a second stream.
+ * Drawn by TunnelFixtureClient (the fixtures standing in a chunk) and the fixture items' renderer.
  */
 final class TunnelParts {
     static final ResourceLocation SHEET = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/equipment");
@@ -31,18 +32,48 @@ final class TunnelParts {
     private TunnelParts() {}
 
     /**
-     * The parts' vertices (RoadClient.STRIDE floats each) relative to chunk (cx, cz)'s corner (y absolute); equipment and
-     * steel: the sheet's and the steel texture's sprites (u0, u1, v0, v1).
+     * Baked parts: the solid stream and the overlay stream (vertices RoadClient.STRIDE floats each, relative to the chunk's
+     * corner, y absolute; the overlay: the guide signs' legends, drawn as markings) and the vertex ranges that take one
+     * light, of a given point instead of their own (a guide sign's face and legend: GuideSignParts).
      */
-    static float[] bake(List<TunnelMesh.Placement> placements, int cx, int cz, float[] equipment, float[] steel) {
-        List<float[]> pieces = new ArrayList<>();
-        int n = 0;
+    record Baked(float[] solid, float[] overlay, List<Anchor> anchors) {}
+
+    /** Vertices [from, to) of a stream (0 solid, 1 overlay) lit as the block at (x, y, z) (chunk-relative, y absolute). */
+    record Anchor(int stream, int from, int to, double x, double y, double z) {}
+
+    /**
+     * The parts' vertices relative to chunk (cx, cz)'s corner (y absolute); equipment and steel: the sheet's and the steel
+     * texture's sprites (u0, u1, v0, v1); guide: the guide signs' sheet's.
+     */
+    static Baked bake(List<TunnelMesh.Placement> placements, int cx, int cz, float[] equipment, float[] steel, float[] guide) {
+        List<float[]> solid = new ArrayList<>(), overlay = new ArrayList<>();
+        List<Anchor> anchors = new ArrayList<>();
+        int ns = 0, no = 0;
+        double ox = cx * 16.0, oz = cz * 16.0;
         for (TunnelMesh.Placement p : placements) {
+            if ("guide_sign".equals(p.mesh())) {
+                GuideSignParts.Local g = GuideSignParts.build(p.bone(), guide);
+                double[] a = g.anchor();
+                double ax = p.x() + p.ex()[0] * a[0] + p.ey()[0] * a[1] + p.ez()[0] * a[2] - ox, ay = p.y() + p.ex()[1] * a[0] + p.ey()[1] * a[1] + p.ez()[1] * a[2],
+                        az = p.z() + p.ex()[2] * a[0] + p.ey()[2] * a[1] + p.ez()[2] * a[2] - oz;
+                int sv = ns / RoadClient.STRIDE, ov = no / RoadClient.STRIDE;
+                anchors.add(new Anchor(0, sv, sv + g.front(), ax, ay, az));
+                anchors.add(new Anchor(1, ov, ov + g.overlay().length / RoadClient.STRIDE, ax, ay, az));
+                solid.add(transform(g.solid(), p, ox, oz));
+                overlay.add(transform(g.overlay(), p, ox, oz));
+                ns += g.solid().length;
+                no += g.overlay().length;
+                continue;
+            }
             float[] local = "handrail".equals(p.mesh()) ? handrail(TunnelFixtures.railLength(p.bone()), steel) : mesh(p, equipment);
             if (local == null) continue;
-            pieces.add(transform(local, p, cx * 16.0, cz * 16.0));
-            n += local.length;
+            solid.add(transform(local, p, ox, oz));
+            ns += local.length;
         }
+        return new Baked(join(solid, ns), join(overlay, no), anchors);
+    }
+
+    private static float[] join(List<float[]> pieces, int n) {
         float[] out = new float[n];
         int o = 0;
         for (float[] f : pieces) {
@@ -101,17 +132,17 @@ final class TunnelParts {
     }
 
     /**
-     * A handrail segment of length len in its frame (x along it, centred; y up from the walkway; z out of the wall): the
-     * tube (TunnelMesh.RAIL_H high, RAIL_X off the wall, 2 RAIL square) with closed ends, and a bracket from the wall
-     * BRACKET_IN in from each end (one in the middle of a short piece).
+     * A handrail segment of length len in its frame (TunnelFixtures#handrail: the tube with closed ends, the brackets from
+     * the wall).
      */
     static float[] handrail(double len, float[] uv) {
         List<Float> out = new ArrayList<>();
-        double h = len / 2, r = TunnelMesh.RAIL, y = TunnelMesh.RAIL_H, z = TunnelMesh.RAIL_X;
-        box(out, uv, -h, y - r, z - r, h, y + r, z + r, 0b111111, len);
-        double[] at = len >= 2 * TunnelMesh.BRACKET_IN + 0.2 ? new double[]{-h + TunnelMesh.BRACKET_IN, h - TunnelMesh.BRACKET_IN} : new double[]{0};
-        // an arm from the wall under the tube's back half; not its wall face
-        for (double bx : at) box(out, uv, bx - 0.03, y - r - 0.06, 0, bx + 0.03, y - r, z, 0b111111 & ~(1 << 4), 0.1);
+        double[][] boxes = TunnelFixtures.handrail(len);
+        for (int i = 0; i < boxes.length; i++) {
+            double[] b = boxes[i];
+            // the tube closed; an arm without its wall face
+            box(out, uv, b[0], b[1], b[2], b[3], b[4], b[5], i == 0 ? 0b111111 : 0b111111 & ~(1 << 4), i == 0 ? len : 0.1);
+        }
         float[] f = new float[out.size()];
         for (int i = 0; i < f.length; i++) f[i] = out.get(i);
         return f;

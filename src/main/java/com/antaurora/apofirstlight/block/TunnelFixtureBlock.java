@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity;
 import com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity.Entry;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.worldgen.network.road.GuideSigns;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelMesh;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -39,6 +40,14 @@ import java.util.List;
  * large ones (jet fan, gantry, portal signal, closure gate, fire door) drop materials. No vanilla tool tier: the crowbar
  * gates it (the mining rules are reworked later). Constant light behaviour (no light of its own, skylight through), so
  * the light engine never asks for the block entity driven shape off the server thread.
+ * <p>
+ * C3.3b (docs/worldgen/federal_junctions_c3_3b.md): the road signs of the state road junctions and town corners are the
+ * same kind of fixture (road_&lt;mesh&gt;, worldgen/network/road/RoadSigns): STOP (R1-1), side road (W2-2) and curve
+ * (W1-2 with a 30 MPH plaque) warnings on their posts, taken down with the crowbar and placeable again; group 2's
+ * interchange guide signs (road_guide_sign, GuideSigns: the legend in the bone) the same, their posts level again.
+ * <p>
+ * The crosshair and the selection outline follow the parts' drawn meshes (meshhit/TunnelFixtureHits: picked where a
+ * face or post is seen, the aimed part's whole outline), not the cell's 1/8 block columns; collision stays on those.
  */
 public final class TunnelFixtureBlock extends Block implements EntityBlock {
     /** How a player places the part's item: on a wall (facing out of it), under a ceiling, on a floor; NONE: no item. */
@@ -51,7 +60,10 @@ public final class TunnelFixtureBlock extends Block implements EntityBlock {
         LUMINAIRE("luminaire", Mount.WALL, 3), CCTV("cctv", Mount.WALL, 2), LANE_SIGNAL("lane_signal", Mount.CEILING, 4),
         HEADLIGHT_SIGN("headlight_sign", Mount.FLOOR, 4), CLEARANCE_PLATE("clearance_plate", Mount.WALL, 2),
         EGRESS_SIGN("egress_sign", Mount.WALL, 2), NAME_PLATE("name_plate", Mount.WALL, 4),
-        EMERGENCY_CABINET("emergency_cabinet", Mount.WALL, 4), HANDRAIL("handrail", Mount.FLOOR, 2);
+        EMERGENCY_CABINET("emergency_cabinet", Mount.WALL, 4), HANDRAIL("handrail", Mount.FLOOR, 2),
+        STOP_SIGN("stop_sign", Mount.FLOOR, 3), SIDE_ROAD_SIGN("side_road_sign", Mount.FLOOR, 3), CURVE_SIGN("curve_sign", Mount.FLOOR, 4),
+        DO_NOT_ENTER_SIGN("do_not_enter_sign", Mount.FLOOR, 3), WRONG_WAY_SIGN("wrong_way_sign", Mount.FLOOR, 3),
+        GUIDE_SIGN("guide_sign", Mount.FLOOR, 8);
 
         public final String mesh;
         public final Mount mount;
@@ -63,8 +75,14 @@ public final class TunnelFixtureBlock extends Block implements EntityBlock {
             this.seconds = seconds;
         }
 
-        /** The registry id: tunnel_&lt;mesh&gt;. */
-        public String id() { return "tunnel_" + mesh; }
+        /** The registry id: tunnel_&lt;mesh&gt;, a road sign's road_&lt;mesh&gt;. */
+        public String id() { return (roadSign() ? "road_" : "tunnel_") + mesh; }
+
+        /** A junction, town corner or ramp terminal sign (C3.3b), not a tunnel's part. */
+        public boolean roadSign() {
+            return this == STOP_SIGN || this == SIDE_ROAD_SIGN || this == CURVE_SIGN || this == DO_NOT_ENTER_SIGN || this == WRONG_WAY_SIGN
+                    || this == GUIDE_SIGN;
+        }
 
         /** Whether it drops itself as an item (else materials). */
         public boolean item() { return mount != Mount.NONE; }
@@ -76,6 +94,8 @@ public final class TunnelFixtureBlock extends Block implements EntityBlock {
                 case NAME_PLATE -> TunnelMesh.NAMES[0];
                 case HANDRAIL -> String.format(java.util.Locale.ROOT, "%.4f", TunnelMesh.SPAN);
                 case PORTAL_SIGNAL, CMS_GANTRY -> "r4";
+                case SIDE_ROAD_SIGN, CURVE_SIGN -> "r";
+                case GUIDE_SIGN -> GuideSigns.DEFAULT;
                 default -> null;
             };
         }
@@ -252,6 +272,8 @@ public final class TunnelFixtureBlock extends Block implements EntityBlock {
         if (item == null) return ItemStack.EMPTY;
         ItemStack s = new ItemStack(item.get());
         String b = bone != null ? bone : k.defaultBone();
+        // a guide sign keeps its legend, its posts level again (it was cut to its slope)
+        if (k == Kind.GUIDE_SIGN) b = GuideSigns.itemBone(b);
         if (b != null && k != Kind.HANDRAIL) s.getOrCreateTag().putString("Bone", b);
         return s;
     }

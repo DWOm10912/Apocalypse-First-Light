@@ -32,7 +32,8 @@ import net.minecraftforge.fml.common.Mod;
  *   brought back into the cell (the server refuses a use more than a block from the block's centre), as
  *   AflMeshShapePicking does.</li>
  *   <li>Outline: such a block's selection outline is its model's feature edges (meshhit/MeshHitModel#edges: folds over 35
- *   degrees and open edges), drawn as vanilla's box is (lines, black at 0.4), instead of its shape's boxes.</li>
+ *   degrees and open edges), drawn as vanilla's box is (lines, black at 0.4), instead of its shape's boxes; a tunnel
+ *   fixture's or road sign's the aimed part's whole mesh (MeshHitModels#outline).</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
@@ -59,7 +60,10 @@ public final class MeshHitPicking {
         BlockPos pos = event.getTarget().getBlockPos();
         BlockState state = level.getBlockState(pos);
         if (state.isAir() || !level.getWorldBorder().isWithinBounds(pos)) return;
-        MeshHitModels.Shape shape = MeshHitModels.shape(level, pos, state);
+        Entity viewer = Minecraft.getInstance().getCameraEntity();
+        float partialTick = event.getPartialTick();
+        MeshHitModels.Shape shape = viewer == null ? MeshHitModels.shape(level, pos, state)
+                : MeshHitModels.outline(level, pos, state, viewer.getEyePosition(partialTick), viewer.getViewVector(partialTick));
         if (shape == null) return;
         event.setCanceled(true);
         Vec3 camera = event.getCamera().getPosition();

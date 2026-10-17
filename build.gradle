@@ -449,10 +449,64 @@ tasks.named('check') {
 }
 
 // Road ground query regression (docs/worldgen/road_surface_query_v1.md): every road of a cached network file,
-// 0.25 m steps; arg = the network JSON (default: the C2 harness's seed 4). Not in check: needs the cache file.
+// 0.25 m steps; -ProadNetwork=<file>, or every cached network under run/ and build/federal-c2-client/ (afl_cache).
+// Not in check: needs a cache, which the game writes on a federal world's first load.
 tasks.register('roadSurfaceCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceCheck'
     if (project.hasProperty('roadNetwork')) args project.property('roadNetwork')
+}
+
+// C3.3b survey: where the built roads stop short of each other (docs/worldgen/federal_junctions_c3_3b.md).
+tasks.register('junctionSurvey', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.JunctionSurvey'
+    if (project.hasProperty('debugRegrade')) systemProperty 'afl.debugRegrade', 'true'
+    args project.findProperty('roadNetwork') ?: 'build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json'
+}
+
+// C3.3b check: junction pads and town corners over built networks (docs/worldgen/federal_junctions_c3_3b.md 6).
+tasks.register('junctionCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.JunctionCheck'
+    if (project.hasProperty('roadNetwork')) args project.property('roadNetwork')
+}
+
+// C3.3b group 2 survey: state road ends on an interstate (docs/worldgen/federal_interchanges_c3_3b.md); -ProadNetwork=<file>.
+tasks.register('interchangeSurvey', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.InterchangeSurvey'
+    args((project.findProperty('roadNetwork') ?: 'build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json').toString().split(';'))
+}
+
+// C3.3b group 2: the diamond interchanges (docs/worldgen/federal_interchanges_c3_3b.md 10); -ProadNetwork=<file;file>, none: every cache.
+tasks.register('interchangeCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.InterchangeCheck'
+    if (project.hasProperty('debugInterchanges')) systemProperty 'afl.debugInterchanges', 'true'
+    if (project.hasProperty('noInterchanges')) systemProperty 'afl.noInterchanges', 'true'
+    if (project.hasProperty('roadNetwork')) args project.property('roadNetwork').toString().split(';')
+}
+
+// C3.3b group 2 package B: the interchange guide signs (docs/worldgen/federal_interchanges_c3_3b.md 10, 11.2); -ProadNetwork=<file;file>, none: every cache.
+tasks.register('guideSignCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.GuideSignCheck'
+    if (project.hasProperty('debugGuides')) systemProperty 'afl.debugGuides', 'true'
+    if (project.hasProperty('roadNetwork')) args(project.property('roadNetwork').toString().split(';'))
+}
+
+// Offline front view of guide signs as the client bakes them (client/road/GuideSignRender): -Pout=<png> -Pbones=<bone;bone>.
+tasks.register('guideSignRender', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.client.road.GuideSignRender'
+    args(['src/main/resources/assets/apocalypse_firstlight/textures/block/road/guide_sign.png', (project.findProperty('out') ?: 'build/guide_signs.png').toString()]
+            + (project.findProperty('bones') ?: 'adv|4|R61|S|Redfield|1|0,0;dir|1|R80||Redfield/Pelican Point|ur|0,0;gore|8||||ur|0,0;ent||F65|N|Kessler|ul|0,0').toString().split(';').toList())
 }

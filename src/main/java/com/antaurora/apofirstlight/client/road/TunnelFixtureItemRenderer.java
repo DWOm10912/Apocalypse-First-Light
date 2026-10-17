@@ -36,9 +36,10 @@ public final class TunnelFixtureItemRenderer extends BlockEntityWithoutLevelRend
         if (!(stack.getItem() instanceof TunnelFixtureItem item)) return;
         TunnelFixtureBlock.Kind kind = item.kind();
         String bone = TunnelFixtureItem.bone(stack, kind);
-        float[] eq = RoadClient.sprite(TunnelParts.SHEET), steel = RoadClient.sprite(RoadClient.STEEL);
+        float[] eq = RoadClient.sprite(TunnelParts.SHEET), steel = RoadClient.sprite(RoadClient.STEEL), guide = RoadClient.sprite(GuideSignParts.SHEET);
         // the sprites in the key: a resource reload moves them
-        float[] v = cache.computeIfAbsent(kind.mesh + "|" + bone + "|" + eq[0] + "|" + eq[2] + "|" + steel[0], k -> build(kind, bone, eq, steel));
+        float[] v = cache.computeIfAbsent(kind.mesh + "|" + bone + "|" + eq[0] + "|" + eq[2] + "|" + steel[0] + "|" + guide[0] + "|" + guide[2],
+                k -> build(kind, bone, eq, steel, guide));
         VertexConsumer out = buffers.getBuffer(RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS));
         Matrix4f m = pose.last().pose();
         Matrix3f n = pose.last().normal();
@@ -47,9 +48,12 @@ public final class TunnelFixtureItemRenderer extends BlockEntityWithoutLevelRend
                     .normal(n, v[i + 5], v[i + 6], v[i + 7]).endVertex();
     }
 
-    private static float[] build(TunnelFixtureBlock.Kind kind, String bone, float[] eq, float[] steel) {
+    private static float[] build(TunnelFixtureBlock.Kind kind, String bone, float[] eq, float[] steel, float[] guide) {
         TunnelMesh.Placement p = new TunnelMesh.Placement(kind.mesh, bone, 0, 0, 0, new double[]{-1, 0, 0}, new double[]{0, 1, 0}, new double[]{0, 0, -1});
-        float[] v = TunnelParts.bake(List.of(p), 0, 0, eq, steel);
+        TunnelParts.Baked baked = TunnelParts.bake(List.of(p), 0, 0, eq, steel, guide);
+        // a guide sign's legend after its panel, 4 mm before the face (no polygon offset here)
+        float[] v = java.util.Arrays.copyOf(baked.solid(), baked.solid().length + baked.overlay().length);
+        System.arraycopy(baked.overlay(), 0, v, baked.solid().length, baked.overlay().length);
         if (v.length == 0) return v;
         float[] lo = {Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}, hi = {Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY};
         for (int i = 0; i < v.length; i += RoadClient.STRIDE)

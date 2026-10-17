@@ -2,8 +2,11 @@ package com.antaurora.apofirstlight.worldgen.network.road;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 
 /**
  * Offline regression of the road ground query's pavement layer (RoadSurfaceQuery#pavement; docs/worldgen/
@@ -11,7 +14,9 @@ import java.util.Locale;
  * the paved band (lanes, lane lines, shoulders, both carriageways), with yHint the wheel's last height like a vehicle:
  * no gaps, the design's own pavement (not another road's), no height steps or normal jumps beyond the design's grade
  * breaks, the analytic normal against the surface's own finite differences, and the time per call. Pure Java: the
- * road network JSON only (argument 1, the cached network of a world; the client's copy: built, written, read back).
+ * road network JSON only (the client's copy: built, written, read back). Argument: one cached network file; none:
+ * every cached network the checkout's game directories hold (CACHES, one per seed and plan; the game writes one on a
+ * federal world's first load), so the check runs in any checkout that has opened a federal world.
  */
 public final class RoadSurfaceCheck {
     private RoadSurfaceCheck() {}
@@ -20,9 +25,41 @@ public final class RoadSurfaceCheck {
     /** Thresholds: height second difference over one step (m), normal turn per step (deg), normal error (deg). */
     static final double KINK = 0.01, TURN = 1.0, NORMAL_ERR = 0.25;
 
+    /** The game directories' road network caches (the dev client, the isolated C2 harness client). */
+    static final String[] CACHES = {"run/afl_cache/road_network", "build/federal-c2-client/afl_cache/road_network"};
+
     public static void main(String[] args) throws Exception {
-        String file = args.length > 0 ? args[0] : "build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json";
-        RoadNetworkBuild.Result built = RoadNetworkBuild.build(Files.readString(Path.of(file)));
+        List<Path> files = new ArrayList<>();
+        if (args.length > 0) files.add(Path.of(args[0]));
+        else {
+            // one per file name (the same seed and plan cached in two game directories is the same network)
+            TreeMap<String, Path> found = new TreeMap<>();
+            for (String dir : CACHES) {
+                Path d = Path.of(dir);
+                if (!Files.isDirectory(d)) continue;
+                try (Stream<Path> list = Files.list(d)) {
+                    list.filter(p -> p.getFileName().toString().matches("afl_road_network_c3_v1_.*\\.json")).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
+                }
+            }
+            files.addAll(found.values());
+        }
+        if (files.isEmpty()) {
+            System.out.println("ROAD SURFACE CHECK: no cached road network in " + String.join(", ", CACHES)
+                    + " (open a federal world once, or pass -ProadNetwork=<file>)");
+            System.exit(2);
+        }
+        boolean all = true;
+        for (Path file : files) {
+            System.out.println("== " + file);
+            all &= check(file);
+        }
+        System.out.println(all ? "ROAD SURFACE CHECK PASS (" + files.size() + " networks)" : "ROAD SURFACE CHECK FAIL");
+        if (!all) System.exit(1);
+    }
+
+    /** The check over one cached network; true: pass. */
+    static boolean check(Path file) throws Exception {
+        RoadNetworkBuild.Result built = RoadNetworkBuild.build(Files.readString(file));
         List<RoadDesign> roads = RoadNetworkJson.designs(built.json());
         RoadWorks works = new RoadWorks(roads, RoadWorks.Water.NONE);
         RoadSurfaceQuery.Out o = new RoadSurfaceQuery.Out(), q = new RoadSurfaceQuery.Out();
@@ -119,8 +156,8 @@ public final class RoadSurfaceCheck {
         System.out.printf(Locale.ROOT, "normal vs differences: %d checked, > %.2f deg: %d (max %.3f at %s)%n", normalChecks, NORMAL_ERR, normalBad, maxNormalErr, normalAt);
         System.out.printf(Locale.ROOT, "one call (with the sample point): %.2f us (%s)%n", perCall / 1000, sink > 0 ? "ok" : "none");
         boolean pass = gaps == 0 && fastDiff == 0 && normalBad == 0 && turns == 0 && kinks == 0;
-        System.out.println(pass ? "ROAD SURFACE CHECK PASS" : "ROAD SURFACE CHECK FAIL");
-        if (!pass) System.exit(1);
+        System.out.println(pass ? "pass" : "FAIL");
+        return pass;
     }
 
     /** Whether the query's hit at (x, z) is road d's own pavement there. */

@@ -22,8 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Hit meshes by block state (docs/rendering/mesh_hit_runtime_v1.md): every block of this mod whose state resolves (its
  * blockstate JSON, or {@link MeshHitProvider}) to Forge OBJ models has one, unless listed in {@link #EXCLUDED}; so does
- * every AFL animated mesh block (its block entity an AflAnimatedMeshHost, AnimatedMeshHits), and road_structure (the
- * road network's drawn bridge mesh inside its cell, RoadStructureHits). Every cell of a
+ * every AFL animated mesh block (its block entity an AflAnimatedMeshHost, AnimatedMeshHits), road_structure (the
+ * road network's drawn bridge mesh inside its cell, RoadStructureHits) and the tunnel fixtures and road signs (their
+ * parts' meshes inside the cell, TunnelFixtureHits). Every cell of a
  * {@link MeshHitMultiCell} block has its master's whole model. Models load on first use and stay (they come from the jar,
  * not a resource pack); both sides build the same.
  */
@@ -134,6 +135,17 @@ public final class MeshHitModels {
     }
 
     /**
+     * The model of the selection outline of the block at {@code pos} for a look from {@code eye} along {@code dir}: a
+     * tunnel fixture cell's aimed part whole, from any of its cells (TunnelFixtureHits#outline), else {@link #shape};
+     * null: the block's boxes.
+     */
+    @Nullable
+    public static Shape outline(BlockGetter level, BlockPos pos, BlockState state, Vec3 eye, Vec3 dir) {
+        if (state.getBlock() instanceof com.antaurora.apofirstlight.block.TunnelFixtureBlock) return TunnelFixtureHits.outline(level, pos, eye, dir);
+        return shape(level, pos, state);
+    }
+
+    /**
      * {@code hit} (from {@code pos}'s shape) given to the cell of the same block it landed in: a multi-cell block's model
      * reaches over its other cells, and a bullet hole or the outline belongs to the cell it is in. Unchanged when that
      * cell is another block (a part reaching out of the structure).
@@ -162,6 +174,8 @@ public final class MeshHitModels {
         if (CabinMeshHits.covers(state)) return CabinMeshHits.shape(level, pos, state);
         // a bridge's invisible collision: the road network's drawn mesh inside the cell (RoadStructureHits)
         if (state.getBlock() instanceof com.antaurora.apofirstlight.block.RoadStructureBlock) return RoadStructureHits.shape(level, pos);
+        // a tunnel fixture or road sign cell (invisible): its parts' drawn meshes inside it (TunnelFixtureHits)
+        if (state.getBlock() instanceof com.antaurora.apofirstlight.block.TunnelFixtureBlock) return TunnelFixtureHits.shape(level, pos);
         if (state.getBlock() instanceof MeshHitAssembled assembled)
             return ASSEMBLED.computeIfAbsent(List.copyOf(assembled.meshHitPieces(level, pos, state)), MeshHitModels::merged).orElse(null);
         if (state.getBlock() instanceof MeshHitProvider provider) {

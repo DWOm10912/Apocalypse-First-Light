@@ -12,7 +12,7 @@ import snownee.jade.api.config.IPluginConfig;
 
 /**
  * Jade for a tunnel fixture (block/TunnelFixtureBlock, Tunnel parts removable V1.1): its variant (the egress sign's way
- * and distance, the name plate's tunnel) and what the crowbar does with it (takes it down as an item, or strips it for
+ * and distance, the name plate's tunnel, a guide sign's legend) and what the crowbar does with it (takes it down as an item, or strips it for
  * materials) with the time; of the part aimed at in the cell (the block names its first part: another one's name is
  * added). Client only: every cell's block entity is synced.
  */
@@ -40,6 +40,11 @@ public enum TunnelFixtureJadeProvider implements IBlockComponentProvider {
             if (kind == TunnelFixtureBlock.Kind.EGRESS_SIGN && b.length() > 1)
                 tooltip.add(Component.translatable("tooltip.apocalypse_firstlight.tunnel_egress_sign." + (b.charAt(0) == 'l' ? "left" : "right"), b.substring(1)));
             else if (kind == TunnelFixtureBlock.Kind.NAME_PLATE) tooltip.add(Component.translatable("tooltip.apocalypse_firstlight.tunnel_name." + b));
+            else if (kind == TunnelFixtureBlock.Kind.SIDE_ROAD_SIGN || kind == TunnelFixtureBlock.Kind.CURVE_SIGN)
+                tooltip.add(Component.translatable("tooltip.apocalypse_firstlight." + kind.id() + "." + ("l".equals(b) ? "left" : "right")));
+            // a guide sign's legend as it reads (English in every language, as the sign)
+            else if (kind == TunnelFixtureBlock.Kind.GUIDE_SIGN)
+                tooltip.add(Component.literal(com.antaurora.apofirstlight.worldgen.network.road.GuideSigns.describe(b)));
         }
         tooltip.add(Component.translatable("jade.apocalypse_firstlight.tunnel_fixture." + (kind.item() ? "item" : "materials"), kind.seconds));
     }

@@ -30,9 +30,13 @@ public final class RoadDesign {
      * A bridge span: stations s0 .. s1 lie on a deck (natural ground below), deck soffit depth in m; piers: the stations of
      * its intermediate piers (C3.3a: spans longer than BridgeMesh.MAX_SPAN), each a wall pier under the girders; reach:
      * how far out (|u|) the wing walls run at each end and side, {s0 left (u < 0), s0 right, s1 left, s1 right}: to where
-     * the embankment meets the ground (group D; RoadStructures), BridgeMesh.WALL_REACH when the network JSON gives none.
+     * the embankment meets the ground (group D; RoadStructures), BridgeMesh.WALL_REACH when the network JSON gives none;
+     * over (C3.3b group 2): an overpass over another road (OVERPASS: two spans on a pier in the other road's median), whose
+     * deck stands over the other road's works (RoadWorks.Column#deck), on spill-through slopes instead of wing walls.
      */
-    public record Span(double s0, double s1, double depth, double[] piers, double[] reach) {
+    public record Span(double s0, double s1, double depth, double[] piers, double[] reach, boolean over) {
+        public Span(double s0, double s1, double depth, double[] piers, double[] reach) { this(s0, s1, depth, piers, reach, false); }
+
         public Span(double s0, double s1, double depth, double[] piers) { this(s0, s1, depth, piers, null); }
 
         public Span(double s0, double s1, double depth) { this(s0, s1, depth, new double[0]); }
@@ -70,8 +74,33 @@ public final class RoadDesign {
     public final List<Culvert> culverts;
     /** The tunnels (Tunnel V1), in station order. */
     public final List<Tunnel> tunnels;
+    /**
+     * C3.3b: the roads this one joins at a T junction at its start and its end (ids of the network; null: none). The
+     * junction (Junction) is built between this road's end line (its station 0 or length) and the host's paved edge.
+     */
+    public final String hostStart, hostEnd;
+    /** C3.3b: the stations of the town corners on this road (merged at the town radius: curve warning signs). */
+    public final double[] corners;
+    /**
+     * C3.3b group 2 (docs/worldgen/federal_interchanges_c3_3b.md 5): an interchange ramp's attachment to its interstate
+     * (Ramp), or null.
+     */
+    public final Attach attach;
+    /**
+     * C3.3b group 2 package B: the network's towns at this road's station 0 and at its end (its route's from and to;
+     * null: none). The interchange guide signs name them (RoadSigns#guides, RoadNames).
+     */
+    public final String from, to;
     private final double[] laneLeft, laneRight;
     private final boolean[] noPass;
+
+    /**
+     * A ramp's attachment (C3.3b group 2; Ramp): the interstate it leaves or joins (host id), the side of the host it
+     * runs on (sign of the host's lateral offset), which of its ends lies on the host (atEnd: an entrance, its end; else an
+     * exit, its start), and its stations (this design's) of the painted nose (its left lane edge on the host's outer lane
+     * line) and of the physical nose (its left paved edge on the host's paved edge).
+     */
+    public record Attach(String host, int side, boolean atEnd, double paint, double nose) {}
 
     public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans) {
         this(id, section, curve, profile, spans, List.of());
@@ -83,6 +112,27 @@ public final class RoadDesign {
 
     public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts,
                       List<Tunnel> tunnels) {
+        this(id, section, curve, profile, spans, culverts, tunnels, null, null, new double[0]);
+    }
+
+    public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts,
+                      List<Tunnel> tunnels, String hostStart, String hostEnd, double[] corners) {
+        this(id, section, curve, profile, spans, culverts, tunnels, hostStart, hostEnd, corners, null, null, null, null);
+    }
+
+    /**
+     * slopes (C3.3b group 2, a ramp's): its lane slope (#cross laneRight; laneLeft its negative) on the profile's 2 m
+     * lattice, as the build designed it (the host's shoulder plane where the ramp is attached, its own superelevation
+     * beyond); null: from the curvature with the runoff. from, to: the towns at its ends (#from).
+     */
+    public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts,
+                      List<Tunnel> tunnels, String hostStart, String hostEnd, double[] corners, double[] slopes, Attach attach, String from, String to) {
+        this.from = from;
+        this.to = to;
+        this.hostStart = hostStart;
+        this.hostEnd = hostEnd;
+        this.corners = corners.clone();
+        this.attach = attach;
         if (profile.length > curve.length + RoadProfile.DS + 1e-6) throw new IllegalArgumentException("PROFILE_LONGER_THAN_CURVE " + id);
         this.id = id;
         this.section = section;
@@ -100,9 +150,17 @@ public final class RoadDesign {
             tl[i] = c.laneLeft();
             tr[i] = c.laneRight();
         }
-        laneLeft = section.runoff(tl, RoadProfile.DS);
-        laneRight = section.runoff(tr, RoadProfile.DS);
-        noPass = section.divided ? new boolean[m] : noPassing(m);
+        if (section.oneWay) {
+            // one plane: the right slope runs off, the left is its mirror
+            if (slopes != null && slopes.length != m) throw new IllegalArgumentException("ROAD_SLOPES_SAMPLES " + id);
+            laneRight = slopes != null ? slopes.clone() : section.runoff(tr, RoadProfile.DS);
+            laneLeft = new double[m];
+            for (int i = 0; i < m; i++) laneLeft[i] = -laneRight[i];
+        } else {
+            laneLeft = section.runoff(tl, RoadProfile.DS);
+            laneRight = section.runoff(tr, RoadProfile.DS);
+        }
+        noPass = section.divided || section.oneWay ? new boolean[m] : noPassing(m);
     }
 
     private boolean[] noPassing(int m) {
@@ -159,9 +217,12 @@ public final class RoadDesign {
         double x = Math.max(0, Math.min(length, s)) / RoadProfile.DS;
         int i = Math.min(laneLeft.length - 2, (int) Math.floor(x));
         double t = x - i;
-        return CrossSection.lanes(laneLeft[i] + (laneLeft[i + 1] - laneLeft[i]) * t, laneRight[i] + (laneRight[i + 1] - laneRight[i]) * t,
+        return section.section(laneLeft[i] + (laneLeft[i + 1] - laneLeft[i]) * t, laneRight[i] + (laneRight[i + 1] - laneRight[i]) * t,
                 section.superelevation(curvature(s)));
     }
+
+    /** The lane slopes on the profile's lattice (laneRight; a one-way section's own slope), for the build (RoadInterchanges). */
+    double[] slopes() { return laneRight.clone(); }
 
     /** Whether the centre line of an undivided road is no-passing (double yellow) at station s; always false when divided. */
     public boolean noPassing(double s) {

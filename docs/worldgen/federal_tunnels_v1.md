@@ -1,6 +1,6 @@
 # 联邦全国道路：隧道 V1
 
-日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，从 master `6bab93f9` 切出；2026-10-16 用户批准后快进到 master `7507bd11`（皮卡物理第 1、2 包、压草、D 的外部网格和坐姿），未提交的改动带过来，冲突（`gradle.properties` 注释、两个 lang 文件的 Jade 条目）两边都保留；同步后编译、`roadSurfaceCheck`、`vehicleCheck`、隧道部件 GameTest 都通过），未提交，未合并，未 Push。
+日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，从 master `6bab93f9` 切出；2026-10-16 用户批准后快进到 master `7507bd11`（皮卡物理第 1、2 包、压草、D 的外部网格和坐姿），未提交的改动带过来，冲突（`gradle.properties` 注释、两个 lang 文件的 Jade 条目）两边都保留；同步后编译、`roadSurfaceCheck`、`vehicleCheck`、隧道部件 GameTest 都通过）；提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送）。
 
 **状态：T-A + T-B + T-C 一次实现（用户 2026-10-15：“就按照你说的做隧道V1，一次性补齐所需的mesh模型+PBR”），用户实机看了四次：前两次不通过，问题已修；第三次"基本上可以了"，问部件碰撞，部件碰撞已加（第 7 节）；第四次（2026-10-16，世界 `tun4c`）用户实机 PASS。洞内卡顿不在这次验收里；2026-10-16 接上 Vextris 显卡缓存，用户开光影再看：PASS（第 9 节）。随后用户要求部件能拆下带走，做了隧道部件可拆 V1.1（第 7 节"可拆部件"）。用户第一次看发现牌子挂不到普通方块上，已改（surface14）；用户 2026-10-16 在 `tun5c` 里再看：PASS。** 已做的检查：离线检查（种子 4）、`compileJava`、部件网格过 Vextris 加载器、生成器 `--check`。GameTest 和隔离客户端新世界探针的结果见第 10 节。用户在游戏里还没看过。
 
@@ -125,11 +125,13 @@
 
 **方块和方块实体**
 
-- 每种部件一个方块 `apocalypse_firstlight:tunnel_<名字>`（14 个：`tunnel_jet_fan`、`tunnel_portal_signal`、`tunnel_cms_gantry`、`tunnel_closure_gate`、`tunnel_fire_door`、`tunnel_luminaire`、`tunnel_cctv`、`tunnel_lane_signal`、`tunnel_headlight_sign`、`tunnel_clearance_plate`、`tunnel_egress_sign`、`tunnel_name_plate`、`tunnel_emergency_cabinet`、`tunnel_handrail`），共用方块实体 `TunnelFixtureBlockEntity`。方块本身不画（`INVISIBLE`），只给碰撞、轮廓和挖掘。
+- 每种部件一个方块 `apocalypse_firstlight:tunnel_<名字>`（14 个：`tunnel_jet_fan`、`tunnel_portal_signal`、`tunnel_cms_gantry`、`tunnel_closure_gate`、`tunnel_fire_door`、`tunnel_luminaire`、`tunnel_cctv`、`tunnel_lane_signal`、`tunnel_headlight_sign`、`tunnel_clearance_plate`、`tunnel_egress_sign`、`tunnel_name_plate`、`tunnel_emergency_cabinet`、`tunnel_handrail`），共用方块实体 `TunnelFixtureBlockEntity`。方块本身不画（`INVISIBLE`），只给碰撞、形状和挖掘；准星、选框和子弹按部件自己的网格（见下面"命中网格"）。
+- C3.3b 第一组（2026-10-16，surface15）用同一套部件加了 3 种路牌：`road_stop_sign`、`road_side_road_sign`、`road_curve_sign`（`TunnelFixtureBlock.Kind` 的 `STOP_SIGN`、`SIDE_ROAD_SIGN`、`CURVE_SIGN`）；第二组（2026-10-16，surface16）又加了立交出口匝道口的 `road_do_not_enter_sign`、`road_wrong_way_sign`（`DO_NOT_ENTER_SIGN`、`WRONG_WAY_SIGN`，[第二组](federal_interchanges_c3_3b.md) 第 10 节）。第二组 B 包（2026-10-17，surface17）加了立交的指路标志 `road_guide_sign`（`GUIDE_SIGN`）：牌面内容存在 bone 里，没有固定网格，由客户端按 bone 烘焙（`client/road/GuideSignParts`）；为它 `TunnelParts.Baked` 多了一个叠层流（牌面字走标线的渲染类型，多边形偏移）和光照锚点（一块牌一个光照），`TunnelFixtureClient` 画两个流。注册名前缀是 `road_`，隧道部件是 `tunnel_`；网格同样在 `road/tunnel/` 下。它们立在路边、路口，不在隧道里：区块施工在 NONE 列（路的工程外）也放部件。位置、尺寸、拆的时间见 [C3.3b 第一组](federal_junctions_c3_3b.md) 第 5 节。
 - 一个部件占它的碰撞盒伸进去超过 1/16 的所有格子（`TunnelFixtures.Part.cells`），每个格子的方块实体都存这个部件的准确位置（种类、变体骨骼、原点、三个轴）。一个格子可以同时存几个部件（两段扶手在一格里接上、疏散指示贴在扶手边上），方块是第一个部件的种类。同种类、原点差 0.1 m 以内、轴对齐（余弦 > 0.999）的算同一个部件：道路网络缓存只存 2 位小数，后来生成的区块里同一个部件的位置会差一点。
 - 部件原来占的 `road_structure` 层数存在方块实体里；部件全部拆走后格子变回原来的 `road_structure`，原来是空气的变回空气。
-- 轮廓（准星、挖、子弹）：格子里每个部件的盒子按 1/8 格的列采样合并，加上原来的 `road_structure` 层，不再被衬砌的命中网格盖住。
-- 碰撞：同样的盒子，但薄的墙面部件（隧道灯、监控、限高牌、疏散指示、名牌，`TunnelFixtures.collides`）只有轮廓没有碰撞，走过去不会被看不见的盒子挡住，跟 V1 一样。
+- 形状：格子里每个部件的盒子按 1/8 格的列采样合并，加上原来的 `road_structure` 层，不再被衬砌的命中网格盖住。部件网格缺了的时候准星和选框退回这个形状。
+- **命中网格（2026-10-16）**：准星、选框和子弹按部件画出来的网格（`meshhit/TunnelFixtureHits`，[命中网格](../rendering/mesh_hit_runtime_v1.md) 0.10 节）。原来的选框是上面的盒子按 1/8 格采样的结果：斜放的路牌是一圈台阶，比牌子厚很多（用户在 C3.3b 测试世界问"为什么选择区域这么奇怪"）。现在瞄到牌面、立柱才选中，瞄到旁边视线穿过去；选框是指着的那个部件的整个外形，从它的哪一格看都一样；子弹打在牌面上，从立柱旁边过去。
+- 碰撞：同样的盒子，但薄的墙面部件（隧道灯、监控、限高牌、疏散指示、名牌，`TunnelFixtures.collides`）没有碰撞，走过去不会被看不见的盒子挡住，跟 V1 一样。
 - 光照：不挡光（`lightBlock` 0、透天光），形状按方块实体变（`dynamicShape`），不能被活塞推（`PushReaction.BLOCK`）。
 
 **碰撞盒**（部件自己的坐标系，第一个是主盒）
@@ -144,17 +146,17 @@
 | `jet_fan` | 机壳连消声器 1.28 × 1.28 × 5.2 m（吊杆没有） |
 | `emergency_cabinet` | 柜体，从墙面往外 0.27 m |
 | `fire_door` | 门楣；两侧门框连开着的门扇（伸进通道墙里） |
-| `luminaire`、`cctv`、`clearance_plate`、`egress_sign`、`name_plate` | 灯具 / 牌面，从墙面往外，最少 0.24 m 厚（只有轮廓，为了能瞄准拆下；没有碰撞） |
+| `luminaire`、`cctv`、`clearance_plate`、`egress_sign`、`name_plate` | 灯具 / 牌面，从墙面往外，最少 0.24 m 厚（只用来占格；没有碰撞） |
 | `handrail` | 扶手连支架，从墙面到管外 |
 
-- 盒子最薄 0.24 m（`MIN`），保证 1/8 格的列采样一定碰得到；细杆的碰撞、薄牌的轮廓比画出来的厚一些。
+- 盒子最薄 0.24 m（`MIN`），保证 1/8 格的列采样一定碰得到；细杆的碰撞比画出来的厚一些（准星和选框按网格，不受影响）。
 - 墙面部件的盒子都从墙面（网格的 z = 0）往外，不伸进墙里，所以挂在任何墙上都只占墙前面的格子。surface13 时它们是往墙里伸的：在隧道里能放（墙是 `road_structure`，可以接管），在普通方块上放不了（用户 2026-10-16 实机："牌子好像不能在普通的cube方块上面放"）。surface14 改成往外。
 
 **拆**
 
 - 只有撬棍能拆（`TunnelFixtureBlock.tool`）。拿别的东西（空手、镐）挖进度是 0。接线扳手不拆部件（它是接线工具，`canAttackBlock` 是 false，这次不改接线模块）。
 - 时间按部件（`Kind.seconds`）：射流风机、情报板 15 s，洞口信号 12 s，关闭栏杆、防火门 8 s，开灯牌、车道控制灯、名牌、紧急柜 4 s，隧道灯 3 s，监控、限高牌、疏散指示、扶手 2 s。
-- 拆的是准星指着的那个部件（格子里几个部件时按射线先打到的盒子）；它从所有已加载的格子里一起拿走，别的部件留下。
+- 拆的是准星指着的那个部件（格子里几个部件时按射线先打到的部件网格，打不到再按盒子；选框画的也是它）；它从所有已加载的格子里一起拿走，别的部件留下。
 - 小部件掉自己的物品（带变体：疏散指示的方向和距离、名牌的隧道名），可以重新放：
 
 | 物品 | 挂法 | 重量 | 堆叠 |
@@ -224,6 +226,7 @@
   - 熄灭的 LED 点阵面：车道灯、情报板（情报板每米 120 像素）；
   - 风机格栅。
   - 文字用 `tools/afl-sign-font.mjs` 的字母；数字、小数点、小写 m、箭头在生成器里按同样的笔画画。
+  - 2026-10-16 修了数字 5：竖笔停在下半圈的肩上面，两段之间有个缺口（用户在 C3.3b 弯道牌的"50"上看到"少了一部分"）。改成竖笔一直接到下半圈的内顶，下半圈左边从内顶往下开口。疏散指示（25、75、125、150 m）和限高牌（5.1 m）上的 5 一起变了。
 - **网格**（`meshes/road/tunnel/*.vxmesh.json`）：Vextris 独立格式 2，13 个，每个 12–472 个三角形。有变体的用骨骼区分：名牌按名字，疏散指示按 `l25`…`r150`，信号和情报板按 `r4` / `r2`；没有变体的骨骼是 `root`。13 个文件都能用 Vextris 0.1.0-alpha.1 的 `MeshLoader` 加载通过。
 - **Blockbench 源**：`src/main/blockbench/tunnel_equipment_v1.bbmodel`（全部部件 + 设备贴图）。衬砌是程序生成的，没有 Blockbench 源。
 
@@ -233,7 +236,7 @@
 - 人行道 0.80 m 高，玩家要跳上去；横通道门口没有台阶。
 - 横通道按 2.4 × 2.2 m 做，比概念图（4.2 × 4.7 m）小，只供人走。
 - 州道单孔长隧道没有疏散出口（没有横通道和平行通道），只有洞口。
-- 部件的碰撞和轮廓是简化的盒子（第 7 节），薄牌和细杆比画出来的厚。
+- 部件的碰撞是简化的盒子（第 7 节），细杆比画出来的厚。准星、选框和子弹从 2026-10-16 起按网格（第 7 节"命中网格"）：路牌的选框用户在 C3.3b 测试世界实机 PASS，隧道里的部件（灯、监控、柜子、扶手）的选框没有单独看过。
 - 部件只能用撬棍拆；接线扳手不拆（接线模块这次不改）。挖掘不走原版等级（以后挖掘规则重做时再统一）。
 - 拆一个部件只处理已加载的格子。部件最长约 11 m，拆的人就在旁边，那些区块都是加载的，实际碰不到；如果有格子留在没加载的区块里，那个区块加载后部件会从剩下的格子再画出来，要再拆一次。
 - 大部件（射流风机、洞口信号、情报板、关闭栏杆、防火门）不能整件带走，只拆成材料；以后要整件搬运再说。
@@ -281,7 +284,7 @@
     - 530 m 情报板站点（430 m 高架桥起点外 20 m）"桥面下 solid" 144：是那座桥 OPEN 列里高于规划地面的天然方块，桥的指标，没有细查；
     - 这次探针没有让客户端建网格（没有 `look`），客户端那边的形状和画面没有测；
     - GameTest 没有重跑。
-- **用户第四次实机看（2026-10-16，世界 `tun4c`）：PASS。** 隧道 V1（surface12 / `road_works#6`）验收通过，冻结在 `feature/federal-tunnels` 上，未提交，未合并。剩下的是洞内卡顿：显卡缓存已接上并自测（第 9 节），等用户实机验收。
+- **用户第四次实机看（2026-10-16，世界 `tun4c`）：PASS。** 隧道 V1（surface12 / `road_works#6`）验收通过，在 提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送）。剩下的是洞内卡顿：显卡缓存已接上并自测（第 9 节），等用户实机验收。
 - **隧道部件可拆 V1.1（2026-10-16，surface13，后来 surface14）自测**：
   - `compileJava`（含 dev 源）通过；
   - 离线检查（`FixtureCheck`，种子 4）：数量见第 7 节"可拆部件"，每个部件至少占一格，扶手不落空；
@@ -295,7 +298,7 @@
   - 用户第一次实机看（2026-10-16，`tun5b`）："牌子好像不能在普通的cube方块上面放"。墙面部件的盒子伸进墙里，墙格是石头这类方块时整块放不下。改成盒子从墙面往外（薄的只有轮廓、没有碰撞），放的时候点的那层墙格不要求是空的，`SURFACE_VERSION` 14：
     - GameTest 加了"疏散指示挂在石头墙上"：石头留着，牌子占墙前那一格，有轮廓没有碰撞，撬棍拆下掉 1 个疏散指示，石头还在；PASS；
     - 新世界 `tun5c`（种子 4，同样 13 个站点）：部件格全部建成，没有形状的 0；隧道格全部建成；路边部件底座高差 −0.09 到 +0.05 m；客户端 783 个部件；
-  - **用户第二次实机看（2026-10-16，世界 `tun5c`，surface14）：PASS。** 隧道部件可拆 V1.1 验收通过，跟隧道 V1 一起在 `feature/federal-tunnels` 上，未提交，未合并。
+  - **用户第二次实机看（2026-10-16，世界 `tun5c`，surface14）：PASS。** 隧道部件可拆 V1.1 验收通过，跟隧道 V1 一起提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送）。
 
 ## 11. 版本锁
 
@@ -303,6 +306,7 @@
 
 - `road_network` 升到 `#surface10`（隧道 V1），第二次修后 `#surface11`，部件碰撞后 `#surface12`，隧道部件可拆 V1.1 后 `#surface13`（部件写成部件方块，扶手不再画在衬砌里），墙面部件的盒子改成往外后 `#surface14`（`RoadNetworkStage.SURFACE_VERSION` 14）；`tun4c` 是 surface12、`tun5b` 是 surface13 建的，V1.1 要在 `tun5c` 或更新的世界里看；
 - `terrain_works` 升到 `road_works#5`（隧道 V1），第二次修后 `road_works#6`。
+- 之后 C3.3b 第一组（2026-10-16）升到 `#c3.3b#all#surface15`、`road_works#7`（[C3.3b 第一组](federal_junctions_c3_3b.md)），第二组（2026-10-16）升到 `#c3.3b#all#surface16`、`road_works#8`（[C3.3b 第二组](federal_interchanges_c3_3b.md)），第二组 B 包（2026-10-17）升到 `#c3.3b#all#surface17`（`road_works#8` 不变），隧道本身的生成没变。
 
 见 [版本锁](worldgen_version_lock_v1.md)。
 

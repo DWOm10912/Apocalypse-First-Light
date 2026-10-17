@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.TunnelFixtureBlock;
+import com.antaurora.apofirstlight.meshhit.TunnelFixtureHits;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelFixtures;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelMesh;
@@ -144,14 +145,20 @@ public final class TunnelFixtureBlockEntity extends BlockEntity {
     }
 
     /**
-     * The part a look aims at: the first box the ray from eye along dir enters (within reach), else the part nearest to
-     * the ray's closest point to the cell's centre; null: no parts.
+     * The part a look aims at: the first drawn mesh the ray from eye along dir meets (meshhit/TunnelFixtureHits, as the
+     * crosshair picks it and the outline shows it), else the first box it enters, else the part nearest to the cell's
+     * centre; null: no parts.
      */
     @Nullable public Entry aimed(Vec3 eye, Vec3 dir) {
         if (entries.isEmpty()) return null;
         if (entries.size() == 1) return entries.get(0);
         Entry best = null;
         double bt = Double.POSITIVE_INFINITY;
+        for (Entry e : entries) {
+            double t = TunnelFixtureHits.ray(e.part(), eye, dir);
+            if (t < bt) { bt = t; best = e; }
+        }
+        if (best != null) return best;
         for (Entry e : entries) {
             double t = e.part().ray(eye.x, eye.y, eye.z, dir.x, dir.y, dir.z);
             if (t < bt) { bt = t; best = e; }
@@ -171,7 +178,11 @@ public final class TunnelFixtureBlockEntity extends BlockEntity {
         return best;
     }
 
-    /** This cell's outline (aimed at, taken down): its parts' boxes on 1/8 block columns, with the road_structure it took over. */
+    /**
+     * This cell's shape (aimed at, taken down): its parts' boxes on 1/8 block columns, with the road_structure it took over.
+     * The crosshair and the outline use the parts' drawn meshes instead (meshhit/TunnelFixtureHits); these boxes only
+     * while a mesh is not known.
+     */
     public VoxelShape shape() {
         VoxelShape s = shape;
         return s != null ? s : (shape = build(false));

@@ -169,6 +169,10 @@ public final class RoadSurfaceQuery {
             if (!d.curve.local(x, z, sec.edge + 0.5, 0, k)) continue;
             double s = k.s, u = k.u;
             if (s < 0 || s > d.length || !sec.paved(Math.abs(u))) continue;
+            // an attached ramp (C3.3b group 2) on its interstate's paved band: the interstate's pavement
+            RoadDesign host = d.attach == null ? null : works.attachedHost(d);
+            if (host != null && host.curve.local(x, z, host.section.edge + 0.5, 0, k) && k.s >= 0 && k.s <= host.length
+                    && host.section.paved(Math.abs(k.u))) continue;
             double y = d.pavementYAt(s, u), dist = Math.abs(y - yHint);
             if (dist > LAYER || dist >= bd) continue;
             best = d;
@@ -176,6 +180,16 @@ public final class RoadSurfaceQuery {
             bu = u;
             by = y;
             bd = dist;
+        }
+        // a junction pad (C3.3b): its own height and normal
+        Junction pad = works.pad(x, z);
+        if (pad != null) {
+            double y = pad.height(x, z), dist = Math.abs(y - yHint);
+            if (dist <= LAYER && dist < bd) {
+                double[] n = pad.normal(x, z);
+                out.set(y, n[0], n[1], n[2], Surface.ASPHALT, false);
+                return true;
+            }
         }
         if (best == null) return false;
         normal(best, bs, bu, by, out, k);

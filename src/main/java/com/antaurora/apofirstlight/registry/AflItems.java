@@ -566,7 +566,8 @@ public final class AflItems {
         for (var kind : com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.values()) {
             if (!kind.item()) continue;
             int stack = switch (kind) {
-                case HEADLIGHT_SIGN, NAME_PLATE, EMERGENCY_CABINET -> 1;
+                case HEADLIGHT_SIGN, NAME_PLATE, EMERGENCY_CABINET, STOP_SIGN, SIDE_ROAD_SIGN, CURVE_SIGN, DO_NOT_ENTER_SIGN, WRONG_WAY_SIGN,
+                     GUIDE_SIGN -> 1;
                 case LANE_SIGNAL -> 2;
                 case EGRESS_SIGN -> 8;
                 default -> 4;

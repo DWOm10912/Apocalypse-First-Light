@@ -4,7 +4,10 @@ import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.worldgen.network.RoadChunkPass;
 import com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime;
+import com.antaurora.apofirstlight.worldgen.network.road.GuideSigns;
+import com.antaurora.apofirstlight.worldgen.network.road.Junction;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
+import com.antaurora.apofirstlight.worldgen.network.road.RoadSigns;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceQuery;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelSection;
@@ -45,8 +48,16 @@ import java.util.function.Consumer;
  *   <li>tunnels (Tunnel V1): every cell of a tunnel column (and over a bore's pavement) against TunnelWorks#cells:
  *   road_structure where the works put structure, air in the bores and passages; {@code only=tunnels} probes the
  *   tunnels' stations alone (portals, middle, passages, an approach);</li>
- *   <li>per chunk a hash of the road columns (from the guard height to 6 above the finish), for determinism between two
- *   worlds of one seed and for save / reload (verify=FILE compares the "road" lines).</li>
+ *   <li>junctions (C3.3b, {@code only=junctions}: each T junction's pad, each town corner, each warning sign): a pad's
+ *   collision top and ground query against its height (Junction#height), the signs' cells and their feet over the
+ *   ground; armor stands dropped on the pads' approach lanes;</li>
+ *   <li>interchanges (C3.3b group 2, {@code only=interchanges}: each overpass, each ramp's taper end, painted and physical
+ *   nose, each ramp terminal, the ramp terminal signs, each guide sign of package B): an overpass's deck over the road
+ *   under it (RoadWorks.Column#deck: its collision cells, air between the two), the ground query on both levels, a guide
+ *   sign's feet at its two posts; armor stands dropped on the ramps' gores, the overpass's deck and the interstate's lanes
+ *   under it;</li>
+ *   <li>per chunk a hash of the road columns (from the guard height to 6 above the finish, over a deck to 6 above the
+ *   deck), for determinism between two worlds of one seed and for save / reload (verify=FILE compares the "road" lines).</li>
  * </ul>
  * Then armor stands are dropped onto the pavement (server physics) and their resting height is read after 3 s.
  */
@@ -77,6 +88,7 @@ final class C3RoadProbe {
      * first culvert. A few windows per road, not the whole country (the harness generates every window's chunks).
      */
     private static List<Double> stations(RoadDesign d, boolean ends) {
+        if (junctionsOnly() || interchangesOnly()) return List.of();
         List<Double> out = new ArrayList<>(tunnelStations(d, ends));
         if (tunnelsOnly()) return out;
         if (ends) out.add(0.0);
@@ -94,6 +106,10 @@ final class C3RoadProbe {
     }
 
     private static boolean tunnelsOnly() { return "tunnels".equals(C2Harness.arg("only", "")); }
+
+    private static boolean junctionsOnly() { return "junctions".equals(C2Harness.arg("only", "")); }
+
+    private static boolean interchangesOnly() { return "interchanges".equals(C2Harness.arg("only", "")); }
 
     /** A tunnel's probe stations: its portals and middle (ends: also 30 m out on each approach and the passages). */
     private static List<Double> tunnelStations(RoadDesign d, boolean ends) {
@@ -117,7 +133,18 @@ final class C3RoadProbe {
     }
 
     /** The tunnel parts standing on the ground beside the road (their feet are checked). */
-    private static final java.util.Set<String> FOOTED = java.util.Set.of("portal_signal", "headlight_sign", "closure_gate", "cms_gantry");
+    private static final java.util.Set<String> FOOTED = java.util.Set.of("portal_signal", "headlight_sign", "closure_gate", "cms_gantry",
+            "stop_sign", "side_road_sign", "curve_sign", "do_not_enter_sign", "wrong_way_sign", "guide_sign");
+
+    /** A footed part's feet (x, y, z): a guide sign's at its two posts, any other part's at its origin. */
+    private static List<double[]> feet(TunnelMesh.Placement pl) {
+        if (!pl.mesh().equals("guide_sign")) return List.of(new double[]{pl.x(), pl.y(), pl.z()});
+        GuideSigns.Layout l = GuideSigns.layout(pl.bone());
+        List<double[]> out = new ArrayList<>(2);
+        for (int i = 0; i < 2; i++)
+            out.add(new double[]{pl.x() + pl.ex()[0] * l.posts()[i], pl.y() + l.feet()[i], pl.z() + pl.ex()[2] * l.posts()[i]});
+        return out;
+    }
 
     /** Windows (radius 2 chunks) at the probe stations of every built road. */
     static List<C2Probe.Site> sites(ServerLevel level) {
@@ -130,6 +157,49 @@ final class C3RoadProbe {
                 out.add(new C2Probe.Site(String.format(Locale.ROOT, "road %s %.0f", d.id, s), (int) Math.floor(p[0]), (int) Math.floor(p[1]), 2));
             }
         }
+        if (interchangesOnly()) {
+            // C3.3b group 2: the overpasses, each ramp's attached end, painted and physical nose, its terminal, the ramp signs
+            for (RoadDesign d : n.works().roads()) {
+                for (RoadDesign.Span sp : d.spans) {
+                    if (!sp.over()) continue;
+                    double[] q = d.point((sp.s0() + sp.s1()) / 2, 0);
+                    out.add(new C2Probe.Site(String.format(Locale.ROOT, "overpass %s %.0f", d.id, (sp.s0() + sp.s1()) / 2), (int) Math.floor(q[0]), (int) Math.floor(q[1]), 2));
+                }
+                if (d.attach == null) continue;
+                for (double st : new double[]{d.attach.atEnd() ? d.length : 0, d.attach.paint(), d.attach.nose()}) {
+                    double[] q = d.point(st, 0);
+                    out.add(new C2Probe.Site(String.format(Locale.ROOT, "ramp %s %.0f", d.id, st), (int) Math.floor(q[0]), (int) Math.floor(q[1]), 1));
+                }
+            }
+            for (Junction j : n.works().junctions()) {
+                if (!j.minor.section.oneWay) continue;
+                double[] q = j.minor.point(j.sEnd, 0);
+                out.add(new C2Probe.Site(String.format(Locale.ROOT, "terminal %s at %s %.0f", j.minor.id, j.host.id, j.sMouth), (int) Math.floor(q[0]), (int) Math.floor(q[1]), 1));
+            }
+            for (TunnelMesh.Placement pl : RoadSigns.all(n.works(), RoadWorks.Ground.of(n.plan()))) {
+                if (pl.mesh().equals("do_not_enter_sign") || pl.mesh().equals("wrong_way_sign"))
+                    out.add(new C2Probe.Site(String.format(Locale.ROOT, "sign %s %.0f %.0f", pl.mesh(), pl.x(), pl.z()), (int) Math.floor(pl.x()), (int) Math.floor(pl.z()), 1));
+                // package B: the guide signs
+                if (pl.mesh().equals("guide_sign"))
+                    out.add(new C2Probe.Site(String.format(Locale.ROOT, "sign guide_sign [%s] %.0f %.0f", GuideSigns.describe(pl.bone()), pl.x(), pl.z()),
+                            (int) Math.floor(pl.x()), (int) Math.floor(pl.z()), 1));
+            }
+            return out;
+        }
+        if (!junctionsOnly()) return out;
+        // C3.3b: the pads (beside the host's mouth), the town corners, the warning signs
+        for (Junction j : n.works().junctions()) {
+            double[] p = j.host.point(j.sMouth, j.side * (j.host.section.edge + 10));
+            out.add(new C2Probe.Site(String.format(Locale.ROOT, "junction %s at %s %.0f", j.minor.id, j.host.id, j.sMouth), (int) Math.floor(p[0]), (int) Math.floor(p[1]), 2));
+        }
+        for (RoadDesign d : n.works().roads())
+            for (double c : d.corners) {
+                double[] p = d.point(c, 0);
+                out.add(new C2Probe.Site(String.format(Locale.ROOT, "corner %s %.0f", d.id, c), (int) Math.floor(p[0]), (int) Math.floor(p[1]), 2));
+            }
+        for (TunnelMesh.Placement pl : RoadSigns.all(n.works(), RoadWorks.Ground.of(n.plan())))
+            if (!pl.mesh().equals("stop_sign"))
+                out.add(new C2Probe.Site(String.format(Locale.ROOT, "sign %s %s %.0f %.0f", pl.mesh(), pl.bone(), pl.x(), pl.z()), (int) Math.floor(pl.x()), (int) Math.floor(pl.z()), 1));
         return out;
     }
 
@@ -141,14 +211,19 @@ final class C3RoadProbe {
         int wingsSkipped = 0, tunnelCells = 0, tunnelBad = 0, overCols = 0, rockCells = 0, rockCaves = 0;
         List<String> caveExamples = new ArrayList<>();
         // the tunnel fixtures' cells (TunnelFixtures, V1.1) and the feet of the roadside parts over the ground
-        TunnelFixtures.Index parts = n.works().parts();
+        RoadWorks.Ground plan = RoadWorks.Ground.of(n.plan());
+        TunnelFixtures.Index parts = n.works().parts(plan);
         int partCells = 0, partBad = 0, partEmpty = 0, partGround = 0, partTaken = 0, feet = 0;
         java.util.Map<String, Integer> fixtureKinds = new java.util.TreeMap<>();
         double footMin = Double.POSITIVE_INFINITY, footMax = Double.NEGATIVE_INFINITY;
+        int guideFeet = 0;
+        double guideMin = Double.POSITIVE_INFINITY, guideMax = Double.NEGATIVE_INFINITY;
         List<String> partExamples = new ArrayList<>(), footExamples = new ArrayList<>();
         List<String> aboveExamples = new ArrayList<>();
         int above = 0, underSolid = 0, underWater = 0, waterTop = Integer.MIN_VALUE;
-        double maxCollision = 0;
+        double maxCollision = 0, maxPad = 0, maxDeck = 0;
+        int padCols = 0, deckCols = 0, deckBad = 0, deckOnTop = 0, deckStands = 0, deckPlants = 0;
+        List<TunnelMesh.Placement> signs = RoadSigns.all(n.works(), plan);
         List<String> examples = new ArrayList<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         BlockState asphalt = AflBlocks.ASPHALT.get().defaultBlockState(), structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState();
@@ -158,23 +233,48 @@ final class C3RoadProbe {
             RoadWorks.Column[] cols = RoadChunkPass.columns(n, ccx, ccz);
             long h = 0xcbf29ce484222325L;
             if (cols == null) { HASHES.put(ccx + " " + ccz, "none"); continue; }
-            for (TunnelMesh.Placement pl : TunnelMesh.parts(n.works(), ccx, ccz)) {
+            List<TunnelMesh.Placement> footed = new ArrayList<>(TunnelMesh.parts(n.works(), ccx, ccz));
+            for (TunnelMesh.Placement pl : signs)
+                for (double[] f : feet(pl))
+                    if (Math.floorDiv((int) Math.floor(f[0]), 16) == ccx && Math.floorDiv((int) Math.floor(f[2]), 16) == ccz) { footed.add(pl); break; }
+            for (TunnelMesh.Placement pl : footed) {
                 if (!FOOTED.contains(pl.mesh())) continue;
-                int fx = (int) Math.floor(pl.x()), fz = (int) Math.floor(pl.z()), fy = (int) Math.floor(pl.y());
-                double ground = Double.NaN;
-                for (int y = fy + 1; y >= fy - 4 && Double.isNaN(ground); y--) {
-                    BlockState b = c.getBlockState(p.set(fx, y, fz));
-                    // the part's own cells (fixture blocks, V1.1) and structure are not the ground
-                    if (b.isAir() || b.is(AflBlocks.ROAD_STRUCTURE.get()) || b.getBlock() instanceof TunnelFixtureBlock) continue;
-                    net.minecraft.world.phys.shapes.VoxelShape sh = b.getCollisionShape(level, p);
-                    if (!sh.isEmpty()) ground = y + sh.max(net.minecraft.core.Direction.Axis.Y);
+                for (double[] f : feet(pl)) {
+                    int fx = (int) Math.floor(f[0]), fz = (int) Math.floor(f[2]), fy = (int) Math.floor(f[1]);
+                    // a guide sign's other post may stand in the next chunk (read there)
+                    if (Math.floorDiv(fx, 16) != ccx || Math.floorDiv(fz, 16) != ccz) continue;
+                    double ground = Double.NaN;
+                    String on = "";
+                    for (int y = fy + 1; y >= fy - 4 && Double.isNaN(ground); y--) {
+                        BlockState b = c.getBlockState(p.set(fx, y, fz));
+                        // the part's own cells (fixture blocks, V1.1) and structure are not the ground
+                        if (b.isAir() || b.is(AflBlocks.ROAD_STRUCTURE.get()) || b.getBlock() instanceof TunnelFixtureBlock) continue;
+                        if (b.getBlock() instanceof com.antaurora.apofirstlight.block.GradedTurfBlock) {
+                            // graded turf (a roadside slope): its drawn top under the foot (the nw-se diagonal's triangles)
+                            float[] k = com.antaurora.apofirstlight.block.GradedTurfBlock.corners(b);
+                            double u = f[0] - fx, v = f[2] - fz;
+                            ground = y + (u >= v ? k[0] + (k[1] - k[0]) * u + (k[3] - k[1]) * v : k[0] + (k[3] - k[2]) * u + (k[2] - k[0]) * v);
+                            on = String.format(Locale.ROOT, " turf y%d %.2f/%.2f/%.2f/%.2f", y, k[0], k[1], k[2], k[3]);
+                            continue;
+                        }
+                        net.minecraft.world.phys.shapes.VoxelShape sh = b.getCollisionShape(level, p);
+                        if (!sh.isEmpty()) {
+                            ground = y + sh.max(net.minecraft.core.Direction.Axis.Y);
+                            on = " " + BuiltInRegistries.BLOCK.getKey(b.getBlock()).getPath() + " y" + y;
+                        }
+                    }
+                    if (Double.isNaN(ground)) continue;
+                    feet++;
+                    double gap = f[1] - ground;
+                    footMin = Math.min(footMin, gap);
+                    footMax = Math.max(footMax, gap);
+                    if (pl.mesh().equals("guide_sign")) {
+                        guideFeet++;
+                        guideMin = Math.min(guideMin, gap);
+                        guideMax = Math.max(guideMax, gap);
+                    }
+                    if (footExamples.size() < 8) footExamples.add(String.format(Locale.ROOT, "%s %.1f %.2f %.1f: %+.2f%s", pl.mesh(), f[0], f[1], f[2], gap, on));
                 }
-                if (Double.isNaN(ground)) continue;
-                feet++;
-                double gap = pl.y() - ground;
-                footMin = Math.min(footMin, gap);
-                footMax = Math.max(footMax, gap);
-                if (footExamples.size() < 8) footExamples.add(String.format(Locale.ROOT, "%s %.1f %.2f %.1f: %+.2f", pl.mesh(), pl.x(), pl.y(), pl.z(), gap));
             }
             for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
                 RoadWorks.Column col = cols[lx | lz << 4];
@@ -183,7 +283,11 @@ final class C3RoadProbe {
                 byKind[col.kind().ordinal()]++;
                 String why = null;
                 boolean natural = false;
-                switch (col.kind()) {
+                // an overpass's deck cell on the finish's top cell (the deck's end on its spill-through slope): the deck's
+                RoadWorks.Column dk = col.deck();
+                boolean taken = dk != null && dk.y() <= col.top();
+                if (taken) deckOnTop++;
+                else switch (col.kind()) {
                     case PAVED, DECK, ABUTMENT -> {
                         BlockState b = c.getBlockState(p.set(x, col.y(), z));
                         if (!b.is(AflBlocks.ROAD_SURFACE.get()) || b.getValue(RoadSurfaceBlock.LAYERS) != col.layers()) why = "collision " + b;
@@ -196,7 +300,11 @@ final class C3RoadProbe {
                             double top = col.y() + c.getBlockState(p.set(x, col.top(), z)).getCollisionShape(level, p).max(net.minecraft.core.Direction.Axis.Y)
                                     + (col.upper() > 0 ? 1 : 0);
                             RoadWorks.Hit hit = n.works().hit(x + 0.5, z + 0.5, RoadWorks.REACH);
-                            if (hit != null && hit.road().section.paved(hit.v()) && hit.beyond() == 0)
+                            Junction pad = n.works().pad(x + 0.5, z + 0.5);
+                            if (pad != null) {
+                                padCols++;
+                                maxPad = Math.max(maxPad, Math.abs(top - pad.height(x + 0.5, z + 0.5)));
+                            } else if (hit != null && hit.road().section.paved(hit.v()) && hit.beyond() == 0)
                                 maxCollision = Math.max(maxCollision, Math.abs(top - hit.road().pavementY(hit.sc(), hit.u())));
                         }
                     }
@@ -299,10 +407,41 @@ final class C3RoadProbe {
                     bad[col.kind().ordinal()]++;
                     if (examples.size() < 4) examples.add(col.kind() + " " + x + " " + col.y() + " " + z + ": " + why);
                 }
-                // nothing above the finish (OPEN: above the deck level)
+                // an overpass's deck over the finish (C3.3b group 2): its collision cells; between the two levels air under a
+                // deck, under an abutment or a parapet air or the structure it stands on (RoadChunkPass#deck)
+                if (dk != null) {
+                    deckCols++;
+                    String dw = null;
+                    BlockState b = c.getBlockState(p.set(x, dk.y(), z));
+                    if (dk.kind() == RoadWorks.Kind.BARRIER) {
+                        if (!b.is(AflBlocks.ROAD_STRUCTURE.get()) || b.getValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS) != dk.layers()) dw = "deck barrier " + b;
+                    } else if (!b.is(AflBlocks.ROAD_SURFACE.get()) || b.getValue(RoadSurfaceBlock.LAYERS) != dk.layers()) dw = "deck collision " + b;
+                    else {
+                        double top = dk.y() + c.getBlockState(p.set(x, dk.top(), z)).getCollisionShape(level, p).max(net.minecraft.core.Direction.Axis.Y)
+                                + (dk.upper() > 0 ? 1 : 0);
+                        RoadWorks.Hit oh = n.works().overHit(x + 0.5, z + 0.5);
+                        if (oh != null && oh.road().section.paved(oh.v())) maxDeck = Math.max(maxDeck, Math.abs(top - oh.road().pavementY(oh.sc(), oh.u())));
+                    }
+                    int lowest = Math.max(dk.bottom(), col.top() + 1);
+                    boolean stands = dk.kind() != RoadWorks.Kind.DECK;
+                    // the plants turf may carry (RoadChunkPass#guarded) grow under a deck too
+                    boolean turfPlants = col.kind() == RoadWorks.Kind.TURF && (col.data() & (RoadWorks.BARE | RoadWorks.TUNNEL_OVER)) == 0;
+                    for (int y = col.top() + 1; y < lowest && dw == null; y++) {
+                        BlockState a = c.getBlockState(p.set(x, y, z));
+                        if (stands && a.is(AflBlocks.ROAD_STRUCTURE.get())) { deckStands++; continue; }
+                        if (turfPlants && y <= col.y() + 2 && RoadChunkPass.plantOnTurf(a)) { deckPlants++; continue; }
+                        if (!a.isAir() && !(a.getBlock() instanceof TunnelFixtureBlock)) dw = "under the deck " + (y - col.top()) + " up " + a;
+                    }
+                    if (dw != null) {
+                        deckBad++;
+                        if (examples.size() < 4) examples.add("deck " + dk.kind() + " " + x + " " + dk.y() + " " + z + ": " + dw);
+                    }
+                }
+                // nothing above the finish (OPEN: above the deck level; under an overpass's deck up to it, then above the deck)
                 int topY = col.kind() == RoadWorks.Kind.OPEN ? col.y() + 1 : over ? Math.max(col.top(), worksTop) + 1 : col.top() + 1;
+                if (dk != null) topY = dk.kind() == RoadWorks.Kind.BARRIER ? dk.y() + 1 : dk.top() + 1;
                 // the plants turf may carry (RoadChunkPass#guarded) are no blocks above it
-                boolean plants = col.kind() == RoadWorks.Kind.TURF && (col.data() & (RoadWorks.BARE | RoadWorks.TUNNEL_OVER)) == 0;
+                boolean plants = dk == null && col.kind() == RoadWorks.Kind.TURF && (col.data() & (RoadWorks.BARE | RoadWorks.TUNNEL_OVER)) == 0;
                 if (!natural) for (int y = topY; y < topY + 12; y++) if (!c.getBlockState(p.set(x, y, z)).isAir()
                         && !(plants && y <= col.y() + 2 && RoadChunkPass.plantOnTurf(c.getBlockState(p)))
                         && !(c.getBlockState(p).getBlock() instanceof TunnelFixtureBlock)) {
@@ -312,7 +451,7 @@ final class C3RoadProbe {
                 }
                 // from the guard height up: below it the natural ground follows vanilla decoration, whose ores depend on
                 // the order chunks generate in (air exposure); OPEN: from the deck level
-                for (int y = col.kind() == RoadWorks.Kind.OPEN ? col.y() : RoadChunkPass.guard(col); y <= col.top() + 6; y++)
+                for (int y = col.kind() == RoadWorks.Kind.OPEN ? col.y() : RoadChunkPass.guard(col); y <= (dk != null ? Math.max(dk.y(), dk.top()) : col.top()) + 6; y++)
                     h = mix(h, state(c.getBlockState(p.set(x, y, z))));
             }
             HASHES.put(ccx + " " + ccz, Long.toHexString(h));
@@ -333,9 +472,14 @@ final class C3RoadProbe {
         if (partCells > 0) line.accept(String.format(Locale.ROOT, "  roads: fixture cells as built %d/%d (in the ground, left out %d; took over structure %d), without a shape %d; parts by first cell %s%s",
                 partCells - partBad - partGround, partCells, partGround, partTaken, partEmpty, fixtureKinds, partExamples.isEmpty() ? "" : " " + partExamples));
         if (feet > 0) line.accept(String.format(Locale.ROOT, "  roads: roadside equipment feet over the ground %+.2f .. %+.2f m (%d parts) %s", footMin, footMax, feet, footExamples));
+        if (guideFeet > 0) line.accept(String.format(Locale.ROOT, "  roads: guide sign feet over the ground %+.2f .. %+.2f m (%d posts)", guideMin, guideMax, guideFeet));
         if (rockCells > 0) line.accept(String.format(Locale.ROOT, "  roads: tunnel rock cells %d, open (air or fluid) %d%s", rockCells, rockCaves, caveExamples.isEmpty() ? "" : " " + caveExamples));
         line.accept(String.format(Locale.ROOT, "  roads: blocks above a finished column %d; collision top vs design max %.3f m; under the deck: water %d (top %s m vs planned ground), solid %d",
                 above, maxCollision, underWater, waterTop == Integer.MIN_VALUE ? "-" : String.valueOf(waterTop), underSolid));
+        if (padCols > 0) line.accept(String.format(Locale.ROOT, "  roads: junction pad columns %d, collision top vs the pad's height max %.3f m", padCols, maxPad));
+        if (deckCols > 0) line.accept(String.format(Locale.ROOT, "  roads: two-level columns (an overpass's deck over a finish) %d/%d as built (of them the deck's cell on the finish's top %d; "
+                        + "structure cells an abutment or parapet stands on %d; plants on the turf under the deck %d), deck collision top vs design max %.3f m",
+                deckCols - deckBad, deckCols, deckOnTop, deckStands, deckPlants, maxDeck));
         if (!examples.isEmpty()) line.accept("  roads: first mismatches " + examples);
         if (!aboveExamples.isEmpty()) line.accept("  roads: first blocks above " + aboveExamples);
         ground(level, n, chunks, r, line);
@@ -350,7 +494,8 @@ final class C3RoadProbe {
     private static void ground(ServerLevel level, RoadNetworkRuntime.Network n, LevelChunk[][] chunks, int r, Consumer<String> line) {
         RoadWorks.Kind[] kinds = {RoadWorks.Kind.PAVED, RoadWorks.Kind.DECK, RoadWorks.Kind.ABUTMENT, RoadWorks.Kind.TURF, RoadWorks.Kind.BARRIER, RoadWorks.Kind.TUNNEL};
         long[][] got = new long[RoadWorks.Kind.values().length][5];   // null, asphalt, concrete, turf, blocking
-        long paved = 0, pavedBad = 0, covered = 0, calls = 0, nanos = 0;
+        long paved = 0, pavedBad = 0, covered = 0, calls = 0, nanos = 0, padSamples = 0, deckSamples = 0, deckBad = 0;
+        double maxDeck = 0, maxPadSeam = 0;
         double maxDesign = 0, maxBlocks = 0;
         List<String> bad = new ArrayList<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
@@ -386,11 +531,13 @@ final class C3RoadProbe {
                         if (h.blocking()) g[4]++;
                     }
                     RoadWorks.Hit d = n.works().hit(px, pz, RoadWorks.REACH);
-                    boolean design = col.kind() != RoadWorks.Kind.TURF && col.kind() != RoadWorks.Kind.BARRIER && col.kind() != RoadWorks.Kind.TUNNEL
-                            && d != null && d.road().section.paved(d.v()) && d.beyond() == 0;
+                    Junction pad = n.works().pad(px, pz);
+                    boolean built = col.kind() != RoadWorks.Kind.TURF && col.kind() != RoadWorks.Kind.BARRIER && col.kind() != RoadWorks.Kind.TUNNEL;
+                    boolean design = built && (pad != null || d != null && d.road().section.paved(d.v()) && d.beyond() == 0);
                     if (!design) continue;
                     paved++;
-                    double want = d.road().pavementY(d.sc(), d.u());
+                    if (pad != null) padSamples++;
+                    double want = pad != null ? pad.height(px, pz) : d.road().pavementY(d.sc(), d.u());
                     // concrete standing on the road (a portal's barrier on the shoulder): its own top, blocking
                     if (topBlock.is(AflBlocks.ROAD_STRUCTURE.get()) && top > want + 0.1) {
                         covered++;
@@ -400,13 +547,34 @@ final class C3RoadProbe {
                         }
                         continue;
                     }
-                    if (h == null || h.surface() != RoadSurfaceQuery.Surface.ASPHALT || h.blocking() || Math.abs(h.height() - want) > 1e-6) {
+                    double tol = pad != null ? PAD_SEAM : 1e-6;
+                    if (pad != null && h != null) maxPadSeam = Math.max(maxPadSeam, Math.abs(h.height() - want));
+                    if (h == null || h.surface() != RoadSurfaceQuery.Surface.ASPHALT || h.blocking() || Math.abs(h.height() - want) > tol) {
                         pavedBad++;
                         if (bad.size() < 6) bad.add(String.format(Locale.ROOT, "%s %.2f %.2f %.2f: %s", col.kind(), px, top, pz, h));
                         continue;
                     }
                     maxDesign = Math.max(maxDesign, Math.abs(h.height() - want));
                     maxBlocks = Math.max(maxBlocks, Math.abs(h.height() - top));
+                }
+                // an overpass's deck over this finish (C3.3b group 2): the query from the deck's top gives the deck's road
+                RoadWorks.Column dk = col.deck();
+                if (dk == null || dk.kind() == RoadWorks.Kind.BARRIER) continue;
+                BlockState db = c.getBlockState(p.set(x, dk.top(), z));
+                net.minecraft.world.phys.shapes.VoxelShape dsh = db.getCollisionShape(level, p);
+                if (dsh.isEmpty()) continue;
+                double dtop = dk.y() + dsh.max(net.minecraft.core.Direction.Axis.Y) + (dk.upper() > 0 ? 1 : 0);
+                for (double[] f : at) {
+                    double px = x + f[0], pz = z + f[1];
+                    RoadWorks.Hit oh = n.works().overHit(px, pz);
+                    if (oh == null || !oh.road().section.paved(oh.v())) continue;
+                    deckSamples++;
+                    RoadSurfaceQuery.Hit h = RoadSurfaceQuery.sample(level, px, pz, dtop);
+                    double want = oh.road().pavementY(oh.sc(), oh.u());
+                    if (h == null || h.surface() != RoadSurfaceQuery.Surface.ASPHALT || Math.abs(h.height() - want) > 1e-6) {
+                        deckBad++;
+                        if (bad.size() < 6) bad.add(String.format(Locale.ROOT, "deck %.2f %.2f %.2f: %s", px, dtop, pz, h));
+                    } else maxDeck = Math.max(maxDeck, Math.abs(h.height() - dtop));
                 }
             }
         }
@@ -417,9 +585,18 @@ final class C3RoadProbe {
             if (g[0] + g[1] + g[2] + g[3] == 0) continue;
             k.append(String.format(Locale.ROOT, " %s null %d asphalt %d concrete %d turf %d blocking %d;", kind, g[0], g[1], g[2], g[3], g[4]));
         }
-        line.accept(String.format(Locale.ROOT, "  roads: ground query on the design pavement %d/%d as expected (of them under concrete standing on the road, blocking: %d; open: vs design max %.6f m, vs blocks max %.3f m)%s; by column:%s %.2f us/call (%d calls)",
-                paved - pavedBad, paved, covered, maxDesign, maxBlocks, bad.isEmpty() ? "" : " " + bad, k, nanos / 1000.0 / calls, calls));
+        line.accept(String.format(Locale.ROOT, "  roads: ground query on the design pavement %d/%d as expected (of them on junction pads %d, vs the pad max %.5f m; under concrete standing on the road, blocking: %d; open: vs design max %.6f m, vs blocks max %.3f m)%s; by column:%s %.2f us/call (%d calls)",
+                paved - pavedBad, paved, padSamples, maxPadSeam, covered, maxDesign, maxBlocks, bad.isEmpty() ? "" : " " + bad, k, nanos / 1000.0 / calls, calls));
+        if (deckSamples > 0) line.accept(String.format(Locale.ROOT, "  roads: ground query on an overpass's deck over a finish %d/%d as expected, vs blocks max %.3f m",
+                deckSamples - deckBad, deckSamples, maxDeck));
     }
+
+    /**
+     * On a junction pad the query may give a road's end meeting it (RoadCurve#local takes a point up to 1 cm beyond a road's
+     * end as its end): an entrance ramp's start was measured up to 0.16 mm off its terminal's pad (C3.3b group 2, world
+     * ic1, 2026-10-17), m.
+     */
+    private static final double PAD_SEAM = 0.001;
 
     /** Whether cell (x, y, z) is one of a tunnel part's (TunnelFixtures.Part#cells). */
     private static boolean partCell(TunnelFixtures.Index parts, int x, int y, int z) {
@@ -432,6 +609,43 @@ final class C3RoadProbe {
     static void dropStands(ServerLevel level, Consumer<String> line) {
         RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level);
         if (n == null) return;
+        // C3.3b: on each pad, both lanes of the minor's line a quarter, half and three quarters from its end line to the host's edge
+        if (junctionsOnly())
+            for (Junction j : n.works().junctions()) {
+                double lane = j.minor.section.laneCentre(j.minor.section.lanes - 1);
+                for (double f : new double[]{0.25, 0.5, 0.75}) for (double u : new double[]{lane, -lane}) {
+                    double s = j.sEnd + (j.sEdge - j.sEnd) * f;
+                    double[] xz = j.minor.point(s, u);
+                    stand(level, xz[0], xz[1], j.height(xz[0], xz[1]), s, u);
+                }
+            }
+        // C3.3b group 2: on each ramp's gore and its lane at the painted nose, on each overpass's deck and the lanes under it
+        if (interchangesOnly())
+            for (RoadDesign d : n.works().roads()) {
+                RoadDesign host = d.attach == null ? null : n.works().attachedHost(d);
+                if (host != null) {
+                    double paint = d.attach.paint(), nose = d.attach.nose();
+                    for (double[] su : new double[][]{{paint, 0}, {(paint + nose) / 2, 0}, {(paint + nose) / 2, -(d.section.edge - 0.5)}}) {
+                        double[] xz = d.point(su[0], su[1]);
+                        double[] l = host.local(xz[0], xz[1], RoadWorks.REACH);
+                        double y = l != null && host.section.paved(Math.abs(l[1])) ? host.pavementY(l[0], l[1]) : d.pavementY(su[0], su[1]);
+                        stand(level, xz[0], xz[1], y, su[0], su[1]);
+                    }
+                }
+                for (RoadDesign.Span sp : d.spans) {
+                    if (!sp.over()) continue;
+                    double sm = (sp.s0() + sp.s1()) / 2, lane = d.section.laneCentre(0);
+                    for (double s : new double[]{sm - 20, sm + 20})
+                        for (double u : new double[]{lane, -lane}) {
+                            double[] xz = d.point(s, u);
+                            stand(level, xz[0], xz[1], d.pavementY(s, u), s, u);
+                            // the road under the deck there
+                            RoadWorks.Hit h = n.works().hit(xz[0], xz[1], RoadWorks.REACH);
+                            if (h != null && h.road() != d && h.road().section.paved(h.v()) && h.beyond() == 0)
+                                stand(level, xz[0], xz[1], h.road().pavementY(h.sc(), h.u()), h.sc(), h.u());
+                        }
+                }
+            }
         for (RoadDesign d : n.works().roads()) {
             double lane = d.section.laneCentre(d.section.lanes - 1);
             for (double s : stations(d, false)) for (double u : new double[]{lane, -lane}) {
@@ -449,6 +663,19 @@ final class C3RoadProbe {
             }
         }
         line.accept("roads: dropped " + ENTITIES.size() + " armor stands 2 m above the pavement");
+    }
+
+    /** One armor stand dropped 2 m above (x, y, z) of the design, its chunk forced so it ticks. */
+    private static void stand(ServerLevel level, double x, double z, double y, double s, double u) {
+        int scx = (int) Math.floor(x) >> 4, scz = (int) Math.floor(z) >> 4;
+        if (level.setChunkForced(scx, scz, true)) FORCED.add(new int[]{scx, scz});
+        level.getChunk(scx, scz);
+        ArmorStand a = EntityType.ARMOR_STAND.create(level);
+        if (a == null) return;
+        a.moveTo(x, y + 2.0, z, 0, 0);
+        level.addFreshEntity(a);
+        ENTITIES.add(a);
+        STANDS.add(new double[]{x, z, y, s, u});
     }
 
     /** All dropped stands have come to rest (onGround and not moving). */

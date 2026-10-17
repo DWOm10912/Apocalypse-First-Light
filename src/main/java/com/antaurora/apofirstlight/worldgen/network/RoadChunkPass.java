@@ -42,6 +42,8 @@ import java.util.Set;
  *   <li>BARRIER: road_structure for the parapets (the top block cut to the parapet's height), and at the span's ends the
  *   parapets and wing walls on the actual ground (a wing wall's top block always, also where that ground reaches it);</li>
  *   <li>the bridge's look is the client's mesh (BridgeMesh): road_structure is invisible collision that holds light;</li>
+ *   <li>an overpass's deck (C3.3b group 2, Column#deck): the column's own finish first (the road it spans, its turf), then
+ *   the deck's cells as above, never below the finish's top;</li>
  *   <li>OPEN: beside and between the decks, the natural ground as the noise made it (only what rises above the deck level
  *   is cleared; water untouched);</li>
  *   <li>CULVERT (group D): a box culvert's own cell: the gravel bed, the stream's water, the walls' and the roof's
@@ -126,7 +128,11 @@ public final class RoadChunkPass {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
             Column c = cols[lx | lz << 4];
-            if (c.kind() == RoadWorks.Kind.NONE) continue;
+            if (c.kind() == RoadWorks.Kind.NONE) {
+                // a road sign (C3.3b, RoadSigns) may stand on the natural ground beside the works
+                parts(chunk, p, n, cx * 16 + lx, cz * 16 + lz, c);
+                continue;
+            }
             int x = cx * 16 + lx, z = cz * 16 + lz;
             int surf = chunk.getHeight(Heightmap.Types.WORLD_SURFACE_WG, lx, lz);
             double g = n.plan().heightAt(x + 0.5, z + 0.5);
@@ -169,24 +175,7 @@ public final class RoadChunkPass {
                             ? c.y() + 1 + (tall ? 1 : 0) : c.y();
                     clear(chunk, p, x, keep + 1, surf + 1, z, true);
                 }
-                case DECK, ABUTMENT -> {
-                    int solid = solidTop(chunk, lx, lz);
-                    collision(chunk, p, x, z, c);
-                    // the structure never replaces the natural ground (a cell's square reaches beyond the mesh: through the
-                    // invisible block the ground must still be there); the abutment stands on it
-                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) structure(chunk, p, x, y, z, structure);
-                    if (c.kind() == RoadWorks.Kind.ABUTMENT) fill(chunk, p, x, c.bottom() - 1, z, structure, Math.min(ground, solid) - 2);
-                    clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
-                }
-                case BARRIER -> {
-                    int solid = solidTop(chunk, lx, lz);
-                    // the top block is always placed, also where the actual ground already reaches it (a wing wall, group
-                    // D: the client draws the walls continuously to their reach and finds every cell intact)
-                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) structure(chunk, p, x, y, z, structure);
-                    structure(chunk, p, x, c.y(), z, structure.setValue(RoadStructureBlock.LAYERS, c.layers()));
-                    if (c.bottom() <= Math.max(ground, solid) + 1) fill(chunk, p, x, c.bottom() - 1, z, structure, Math.min(ground, solid) - 2);
-                    clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
-                }
+                case DECK, ABUTMENT, BARRIER -> deck(chunk, p, x, z, c, solidTop(chunk, lx, lz), ground, Integer.MIN_VALUE, surf, structure);
                 // beside and between the decks: the natural ground stays (cut to the planned ground it left bare stone and
                 // dirt pits in front of the walls, 2026-10-15); only what rises above the deck level goes
                 case OPEN -> clear(chunk, p, x, c.y() + 1, surf + 1, z, false);
@@ -203,7 +192,37 @@ public final class RoadChunkPass {
                 }
                 default -> { }
             }
-            parts(chunk, p, n.works(), x, z, c);
+            // an overpass's deck over the finish (C3.3b group 2): its cells stand on the finish's top
+            if (c.deck() != null) deck(chunk, p, x, z, c.deck(), c.top(), ground, c.top() + 1, surf, structure);
+            parts(chunk, p, n, x, z, c);
+        }
+    }
+
+    /**
+     * A bridge column's cells (DECK, ABUTMENT, BARRIER) over the actual ground's top block solid, never below floor (an
+     * overpass's deck over a finish, C3.3b group 2; Integer.MIN_VALUE: none).
+     */
+    private static void deck(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int z, Column c, int solid, int ground, int floor, int surf,
+                             BlockState structure) {
+        int from = Math.max(Math.max(c.bottom(), solid + 1), floor), lowest = Math.max(floor, Math.min(ground, solid) - 2);
+        switch (c.kind()) {
+            case DECK, ABUTMENT -> {
+                collision(chunk, p, x, z, c);
+                // the structure never replaces the natural ground (a cell's square reaches beyond the mesh: through the
+                // invisible block the ground must still be there); the abutment stands on it
+                for (int y = from; y < c.y(); y++) structure(chunk, p, x, y, z, structure);
+                if (c.kind() == RoadWorks.Kind.ABUTMENT) fill(chunk, p, x, c.bottom() - 1, z, structure, lowest);
+                clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
+            }
+            case BARRIER -> {
+                // the top block is always placed, also where the actual ground already reaches it (a wing wall, group
+                // D: the client draws the walls continuously to their reach and finds every cell intact)
+                for (int y = from; y < c.y(); y++) structure(chunk, p, x, y, z, structure);
+                structure(chunk, p, x, c.y(), z, structure.setValue(RoadStructureBlock.LAYERS, c.layers()));
+                if (c.bottom() <= Math.max(ground, solid) + 1) fill(chunk, p, x, c.bottom() - 1, z, structure, lowest);
+                clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
+            }
+            default -> { }
         }
     }
 
@@ -213,8 +232,8 @@ public final class RoadChunkPass {
      * it stands on), where the cell is open (air or a plant: no layers to keep) or road_structure (a sign or a rail against
      * a wall: its layers kept); a cell an earlier part took holds both (two rail segments meet in a cell); never the ground.
      */
-    private static void parts(ChunkAccess chunk, BlockPos.MutableBlockPos p, RoadWorks works, int x, int z, Column c) {
-        TunnelFixtures.Part[] parts = works.parts().at(x, z);
+    private static void parts(ChunkAccess chunk, BlockPos.MutableBlockPos p, RoadNetworkRuntime.Network n, int x, int z, Column c) {
+        TunnelFixtures.Part[] parts = n.works().parts(RoadWorks.Ground.of(n.plan())).at(x, z);
         if (parts.length == 0) return;
         int floor = c.kind() == RoadWorks.Kind.PAVED || c.kind() == RoadWorks.Kind.TURF ? c.top() + 1 : Integer.MIN_VALUE;
         for (TunnelFixtures.Part part : parts) {

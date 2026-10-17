@@ -99,6 +99,107 @@ export function textSdf(text, {gap = 110, space = 320} = {}) {
   return {width, sdf: (px, py) => { let d = Infinity; for (const [ox, g] of parts) if (px > ox - 200 && px < ox + g.width + 200) d = Math.min(d, g.sdf(px - ox, py)); return d === Infinity ? 1e3 : d; }};
 }
 
+// ---- mixed case (C3.3b interchange guide signs, 2026-10-17: docs/worldgen/federal_interchanges_c3_3b.md 10) ----
+// Lower case on the capitals' construction: x-height XH, ascenders at the cap height, descenders to DESC; verticals a
+// full stroke, horizontals SH (a full stroke would close the counters of a, e, s at this x-height). Digits as the tunnel
+// signs drew them (tools/build-tunnel-v1.mjs EXTRA), a slash, a hyphen, a full stop and a stacked one half.
+export const XH = 540, DESC = -210;
+const SH = 120;
+/** A rounded-rectangle ring with verticals S and horizontals sh thick (inner radius r - S). */
+const ring2 = (x0, y0, x1, y1, r, sh = SH) => (x, y) =>
+  Math.max(sdRoundBox(x, y, x0, y0, x1, y1, r), -sdRoundBox(x, y, x0 + S, y0 + sh, x1 - S, y1 - sh, Math.max(r - S, 0)));
+/** The top half of a ring2 (an arch) from y up; the bottom half down to y. */
+const archTop = (x0, x1, top, r, from) => and(ring2(x0, top - 2 * r - 40, x1, top, r), box(x0 - 1, from, x1 + 1, top + 1));
+/** The half plane left of the line a -> b (negative there). */
+const side = (ax, ay, bx, by) => { const dx = bx - ax, dy = by - ay, l = Math.hypot(dx, dy); return (x, y) => -((x - ax) * dy - (y - ay) * dx) / l; };
+/** Diagonal strokes cut level at the x-height and the baseline (or y0: a descender). */
+const xh = (f, y0 = 0) => and(f, box(-1e3, y0, 1e3, XH));
+const L = {
+  // the top arch's left end cut level at its stroke's underside; the bowl a ring half the x-height high
+  a: W => U(box(W - S, 0, W, XH * 0.7),
+            minus(and(ring2(20, 0, W, XH, 210), box(-1, XH * 0.62, W + 1, XH + 1)), box(-1, XH * 0.62 - 1, 20 + S + 70, XH - SH)),
+            ring2(0, 0, W, XH * 0.58, 150)),
+  b: W => U(box(0, 0, S, H), ring2(0, 0, W, XH, 230)),
+  c: W => minus(ring2(0, 0, W, XH, 230), box(W * 0.56, XH * 0.3, W + 1, XH * 0.7)),
+  d: W => U(box(W - S, 0, W, H), ring2(0, 0, W, XH, 230)),
+  e: W => U(minus(ring2(0, 0, W, XH, 230), box(W * 0.58, SH, W + 1, XH * 0.5 - SH / 2)), box(0, XH * 0.5 - SH / 2, W, XH * 0.5 + SH / 2)),
+  f: W => U(box(50, 0, 50 + S, H - 190), and(ring2(50, H - 400, W + 160, H, 190), box(49, H - 200, W, H + 1)), box(0, XH - SH, W * 0.86, XH)),
+  g: W => U(box(W - S, DESC + 150, W, XH), ring2(0, 0, W, XH, 230),
+            minus(and(ring2(0, DESC, W, DESC + 400, 180), box(-1, DESC - 1, W + 1, DESC + 200)), box(-1, DESC + SH, W * 0.32, DESC + 201))),
+  h: W => U(box(0, 0, S, H), archTop(0, W, XH, 210, XH * 0.5), box(W - S, 0, W, XH * 0.55)),
+  i: () => U(box(0, 0, S, XH), box(0, XH + 100, S, XH + 100 + S)),
+  j: W => U(box(W - S, DESC + 150, W, XH), box(W - S, XH + 100, W, XH + 100 + S),
+            minus(and(ring2(-120, DESC, W, DESC + 400, 180), box(-1, DESC - 1, W + 1, DESC + 200)), box(-121, DESC + SH, W - S, DESC + 201))),
+  // the leg starts inside the arm, cut along the arm's centre line
+  k: W => U(box(0, 0, S, H), xh(U(seg(S * 0.4, XH * 0.15, W - S * 0.3, XH + 80),
+            and(seg(W * 0.3, XH * 0.62, W - S * 0.3, -80), side(S * 0.4, XH * 0.15, W - S * 0.3, XH + 80))))),
+  l: () => box(0, 0, S, H),
+  // as the tunnel signs' m (tools/build-tunnel-v1.mjs EXTRA)
+  m: W => U(box(0, 0, S, XH), box(W / 2 - S / 2, 0, W / 2 + S / 2, XH * 0.7), box(W - S, 0, W, XH * 0.7),
+            and(ring(0, 0, W / 2 + S / 2, XH, 165), box(-1, XH * 0.5, W, XH + 1)), and(ring(W / 2 - S / 2, 0, W, XH, 165), box(-1, XH * 0.5, W + 1, XH + 1))),
+  n: W => U(box(0, 0, S, XH), archTop(0, W, XH, 210, XH * 0.5), box(W - S, 0, W, XH * 0.55)),
+  o: W => ring2(0, 0, W, XH, 230),
+  p: W => U(box(0, DESC, S, XH), ring2(0, 0, W, XH, 230)),
+  q: W => U(box(W - S, DESC, W, XH), ring2(0, 0, W, XH, 230)),
+  r: W => U(box(0, 0, S, XH), and(ring2(0, 0, W + 150, XH, 210), box(-1, XH * 0.52, W, XH + 1))),
+  // two c's sharing the middle stroke, as the capital S; each cut from inside its counter (no sliver of the inner edge
+  // left standing) level with its terminal stroke's inner side
+  s: W => U(minus(ring2(0, XH / 2 - SH / 2, W, XH, 140), box(W - S - 10, XH / 2 - SH / 2 - 1, W + 1, XH - SH)),
+            minus(ring2(0, 0, W, XH / 2 + SH / 2, 140), box(-1, SH, S + 10, XH / 2 + SH / 2 + 1))),
+  t: W => U(box(50, 160, 50 + S, H * 0.9), box(0, XH - SH, W * 0.92, XH), and(ring2(50, 0, W + 160, 400, 170), box(49, -1, W, 200))),
+  u: W => U(box(0, XH * 0.45, S, XH), and(ring2(0, 0, W, XH, 210), box(-1, -1, W + 1, XH * 0.5)), box(W - S, 0, W, XH)),
+  v: W => xh(U(seg(S * 0.5, XH + 60, W / 2, -50), seg(W - S * 0.5, XH + 60, W / 2, -50))),
+  w: W => xh(U(seg(S * 0.45, XH + 50, W * 0.28, -50, S * 0.9), seg(W * 0.72, -50, W - S * 0.45, XH + 50, S * 0.9),
+            seg(W * 0.28, -50, W / 2, XH * 0.78, S * 0.9), seg(W * 0.72, -50, W / 2, XH * 0.78, S * 0.9),
+            and(and(vee(W * 0.28, -50, W / 2, XH * 0.78, S * 0.9), vee(W * 0.72, -50, W / 2, XH * 0.78, S * 0.9)), box(0, 0, W, XH * 0.78 + S * 0.36)))),
+  x: W => xh(U(seg(S * 0.45, XH + 60, W - S * 0.45, -60), seg(W - S * 0.45, XH + 60, S * 0.45, -60))),
+  // the short stroke runs on into the long one and is cut along the long one's centre line (no square end pokes out)
+  y: W => xh(U(and(seg(S * 0.5, XH + 60, W * 0.6, -160), side(W - S * 0.5, XH + 60, W * 0.16, DESC - 60)), seg(W - S * 0.5, XH + 60, W * 0.16, DESC - 60)), DESC),
+  z: W => U(box(0, XH - SH, W, XH), box(0, 0, W, SH), and(seg(W - S * 0.42 + 50, XH + 20, S * 0.42 - 50, -20, S * 1.02), box(0, SH - 1, W, XH - SH + 1))),
+};
+const LOWER_WIDTH = {a: 500, b: 540, c: 500, d: 540, e: 520, f: 380, g: 540, h: 520, i: 150, j: 270, k: 500, l: 150, m: 760, n: 520,
+  o: 540, p: 540, q: 540, r: 360, s: 460, t: 380, u: 520, v: 520, w: 780, x: 520, y: 520, z: 480};
+// digits: tools/build-tunnel-v1.mjs EXTRA (the tunnel signs' egress distances and clearance), unchanged
+const D = {
+  '0': W => ring(0, 0, W, H, 250),
+  '1': W => U(box(W - S - 40, 0, W - 40, H), seg(40, H - 230, W - S / 2 - 40, H, S)),
+  '2': W => U(and(ring(0, H * 0.4, W, H, 220), U(box(-1, H * 0.66, W + 1, H + 1), box(W / 2, H * 0.4, W + 1, H + 1))), seg(W - S * 0.55, H * 0.58, S * 0.35, S * 0.6), box(0, 0, W, S)),
+  '3': W => U(minus(ring(10, H / 2 - S / 2, W - 10, H, 170), box(-1, H / 2 - S / 2 - 1, W * 0.4, H * 0.78)), minus(ring(0, 0, W, H / 2 + S / 2, 180), box(-1, H * 0.22, W * 0.4, H / 2 + S / 2 + 1))),
+  '4': W => U(box(W * 0.6, 0, W * 0.6 + S, H), box(0, H * 0.26, W, H * 0.26 + S), seg(S * 0.45, H * 0.26 + S / 2, W * 0.6 + S / 2, H + 60, S)),
+  '5': W => U(box(20, H - S, W, H), box(20, H * 0.62 - S, 20 + S, H),
+    minus(ring(0, 0, W, H * 0.62, 210), box(-1, H * 0.12, W * 0.4, H * 0.62 - S), box(-1, H * 0.62 - S, 20, H))),
+  '6': W => U(minus(ring(0, 0, W, H, 250), box(W / 2, H * 0.3, W + 1, H * 0.8)), ring(0, 0, W, H * 0.62, 220)),
+  '7': W => U(box(0, H - S, W, H), seg(W - S * 0.5, H - S / 2, W * 0.3, -80, S)),
+  '8': W => U(ring(25, H / 2 - S / 2, W - 25, H, 170), ring(0, 0, W, H / 2 + S / 2, 185)),
+  '9': W => U(minus(ring(0, 0, W, H, 250), box(-1, H * 0.2, W / 2, H * 0.7)), ring(0, H * 0.38, W, H, 220)),
+  '.': () => box(0, 0, S, S),
+  '-': W => box(0, H * 0.4 - S / 2, W, H * 0.4 + S / 2),
+  '/': W => seg(S * 0.4, -60, W - S * 0.4, H + 60, S * 0.9),
+};
+const DIGIT_WIDTH = {'0': 560, '1': 380, '2': 540, '3': 540, '4': 580, '5': 540, '6': 560, '7': 520, '8': 560, '9': 560, '.': 150, '-': 340, '/': 420};
+/** One half as on US guide signs ("1/2 MILE"): a small 1 and 2 at 0.55 of the cap height either side of a slash. */
+const HALF = 0.55, HALF_W = 760;
+function half() {
+  const k = HALF, one = D['1'](380), two = D['2'](540);
+  const small = (f, ox, oy, w) => (x, y) => Math.max(f((x - ox) / k, (y - oy) / k), sdBox((x - ox) / k, (y - oy) / k, 0, 0, w, H)) * k;
+  return U(small(one, 0, H * (1 - k), 380), small(two, HALF_W - 540 * k, 0, 540), seg(HALF_W * 0.28, H * 0.06, HALF_W * 0.72, H * 0.94, S * 0.75));
+}
+/** Every character a mixed-case legend may use (space excepted). */
+export const MIXED = [...LETTERS, ...Object.keys(LOWER_WIDTH), ...Object.keys(DIGIT_WIDTH), '½'];
+
+/**
+ * A capital, lower-case letter, digit or sign: its advance width (without the gap) and sdf, clipped to its box from
+ * DESC (descenders) or 0 up to the cap height (the dots of i and j a little above it).
+ */
+export function anyGlyph(ch) {
+  if (WIDTH[ch] !== undefined) return glyph(ch);
+  const [W, f, y0, y1] = LOWER_WIDTH[ch] !== undefined ? [LOWER_WIDTH[ch], L[ch](LOWER_WIDTH[ch]), DESC, H + 60]
+    : DIGIT_WIDTH[ch] !== undefined ? [DIGIT_WIDTH[ch], D[ch](DIGIT_WIDTH[ch]), 0, H]
+    : ch === '½' ? [HALF_W, half(), 0, H] : [undefined];
+  if (W === undefined) throw new Error('no glyph ' + ch);
+  return {width: W, sdf: (x, y) => Math.max(f(x, y), sdBox(x, y, 0, y0, W, y1))};
+}
+
 // ---- contours ----
 /** Zero contour of the glyph sdf: marching squares on a `step` mm grid, joined into loops, simplified (tolerance mm). */
 export function outlines(ch, step = 2, tol = 0.6, level = 0) {

@@ -1,10 +1,11 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
 /**
- * What this build actually builds in the world (C3.2, C3.3a; docs/worldgen/federal_highways_c3.md, 10 and 11). C3.2
- * built one sample interstate leg; C3.3a builds every planned route of the plan (RoadNetworkBuild: legs through towns
- * joined, ends trimmed short of junctions and shared towns until C3.3b). The stage, the rules and the versions are part
- * of the world lock: changing them changes generated chunks.
+ * What this build actually builds in the world (C3.2, C3.3a, C3.3b; docs/worldgen/federal_highways_c3.md, 10 and 11;
+ * docs/worldgen/federal_junctions_c3_3b.md). C3.2 built one sample interstate leg; C3.3a builds every planned route of
+ * the plan (RoadNetworkBuild: legs through towns joined, ends trimmed short of junctions); C3.3b joins the state roads at
+ * town corners and T junctions (the interstate meetings stay trimmed until its groups 2 and 3). The stage, the rules
+ * and the versions are part of the world lock: changing them changes generated chunks.
  */
 public final class RoadNetworkStage {
     private RoadNetworkStage() {}
@@ -22,9 +23,12 @@ public final class RoadNetworkStage {
      * turf under the walls' copings, group D; 5: tunnels, Tunnel V1: the mountain kept over a bore, the portals' mounds,
      * the approach cuts, TunnelWorks#surface; 6: Tunnel V1 fix 2026-10-16: the shelf runs on under the walls, a bench at
      * the wall's top behind them, never natural over the density's rock bands, the rock kept round the bores and under the
-     * approaches against caves and carvers, TunnelWorks#rock).
+     * approaches against caves and carvers, TunnelWorks#rock; 7: C3.3b junction pads, their roadside blended into the roads'
+     * works, the host's ditch filled across the mouth, no plants on a pad or in its sight triangles, RoadWorks#padSurface;
+     * 8: C3.3b group 2 interchanges: attached ramps give way on the interstate's band, RoadWorks#yields, the ramps' roadside
+     * turned into the interstate's, the overpass's spill-through slopes, two-level columns under a deck, Column#deck).
      */
-    public static final int WORKS_VERSION = 6;
+    public static final int WORKS_VERSION = 8;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -38,9 +42,14 @@ public final class RoadNetworkStage {
      * portal's front stand on the road's finish, RoadWorks.TUNNEL_OVER, the walls' caps and backfill collision; 12: the
      * tunnel equipment's collision, TunnelPartSolids, 2026-10-16; 13: the equipment and the handrail segments as
      * removable fixture blocks, TunnelFixtures / TunnelFixtureBlock, 2026-10-16; 14: the wall parts' boxes from the wall's face
-     * out (they hang on any wall), no collision for the thin ones, 2026-10-16).
+     * out (they hang on any wall), no collision for the thin ones, 2026-10-16; 15: C3.3b junction pads and their markings,
+     * JunctionMesh, the host's edge line open across a mouth, the pads' collision columns, the junction and town corner
+     * road signs as fixtures, RoadSigns; 16: C3.3b group 2 interchanges: the ramps' pavement clipped to the interstate's
+     * edge, gore chevrons, the interstate's dotted edge lines along a ramp, no lines at an entrance's terminal, DO NOT
+     * ENTER / WRONG WAY at an exit's terminal, an overpass's deck over the road under it, RoadWorks.RampMarks; 17: the
+     * interchanges' guide signs, RoadGuides / GuideSigns, 2026-10-17).
      */
-    public static final int SURFACE_VERSION = 14;
+    public static final int SURFACE_VERSION = 17;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {
