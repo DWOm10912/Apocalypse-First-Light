@@ -430,6 +430,13 @@ tasks.register('vehicleCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.vehicle.physics.VehiclePhysicsCheck'
 }
 
+// T15 headlamp beams (docs/vehicles/first_pickup_v0_design.md 8.10): light along and across, reach, walls, layers.
+tasks.register('headlightCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.vehicle.HeadlightBeamCheck'
+}
+
 // Camera director V1 (docs/dev/camera_director_v1_plan.md): blend / stack / lock math and the moved shake sources.
 tasks.register('cameraCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

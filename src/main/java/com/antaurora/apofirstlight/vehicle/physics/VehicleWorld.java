@@ -50,9 +50,11 @@ public interface VehicleWorld {
     /**
      * The topmost ground at (x, z) between yTop and yBottom (world y): its height, normal and grip. Something whose top
      * is above yTop but whose bottom is not (a wall) counts as ground at its top; something entirely above yTop (a bridge
-     * overhead) is skipped. False when the column is not loaded (the wheel keeps its last contact).
+     * overhead) is skipped. yHint: about where the tyre meets the ground (the hub less the radius; the road layer picks
+     * the road surface nearest to it: a bridge's deck, not the road under it). False when the column is not loaded (the
+     * wheel keeps its last contact).
      */
-    boolean ground(double x, double z, double yTop, double yBottom, Ground out);
+    boolean ground(double x, double z, double yHint, double yTop, double yBottom, Ground out);
 
     /** Whether the point is inside something solid (a block's collision box, another vehicle); `out` says how to get out. */
     boolean solid(double x, double y, double z, Push out);

@@ -1,0 +1,11 @@
+// Headlight light probe client (dev only; src/dev/java/.../dev/HeadlightProbe.java, docs/vehicles/first_pickup_v0_design.md 8.10).
+// gradlew runClient --offline -PaflWithoutShaders -I src/dev/headlight-probe-client.init.gradle -Plightprobe=WORLD
+// Its own run directory build/headlight-probe (copy the save into its saves/ first); never the main run/ folder.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/headlight-probe')
+            property 'afl.lightprobe', (project.findProperty('lightprobe') ?: '')
+        }
+    }
+}

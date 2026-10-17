@@ -517,6 +517,128 @@
     "subtitle": "subtitles.apocalypse_firstlight.portable_generator_stop",
     "sounds": [{"name": "apocalypse_firstlight:portable_generator/stop", "attenuation_distance": 32}]
   },
+  "truck_idle": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_engine",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/idle_loop", "attenuation_distance": 32}]
+  },
+  "truck_mid": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_engine",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/mid_loop", "attenuation_distance": 48}]
+  },
+  "truck_load": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_engine",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/load_loop", "attenuation_distance": 48}]
+  },
+  "truck_coast": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_engine",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/coast_loop", "attenuation_distance": 32}]
+  },
+  "truck_crank": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_crank",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/crank_loop", "attenuation_distance": 16}]
+  },
+  "truck_catch": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_catch",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/catch", "attenuation_distance": 32}]
+  },
+  "truck_stop": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_stop",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/stop", "attenuation_distance": 32}]
+  },
+  "truck_glow_click": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_relay",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/glow_click", "attenuation_distance": 4}]
+  },
+  "truck_key": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_key",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/key", "attenuation_distance": 4}]
+  },
+  "truck_tyres_asphalt": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_tyres",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/tyre_asphalt", "attenuation_distance": 16}]
+  },
+  "truck_tyres_gravel": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_tyres",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/tyre_gravel", "attenuation_distance": 16}]
+  },
+  "truck_tyres_dirt": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_tyres",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/tyre_dirt", "attenuation_distance": 16}]
+  },
+  "truck_tyres_grass": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_tyres",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/tyre_grass", "attenuation_distance": 16}]
+  },
+  "truck_wind": {
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/wind_loop", "attenuation_distance": 4}]
+  },
+  "truck_skid": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_skid",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/skid", "attenuation_distance": 32}]
+  },
+  "truck_bottom_out": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_bottom_out",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/bottom_out", "attenuation_distance": 16}]
+  },
+  "truck_crash_light": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_crash",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/crash_light_1", "attenuation_distance": 24},
+      {"name": "apocalypse_firstlight:pickup_t15/crash_light_2", "attenuation_distance": 24},
+      {"name": "apocalypse_firstlight:pickup_t15/crash_light_3", "attenuation_distance": 24}]
+  },
+  "truck_crash_heavy": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_crash",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/crash_heavy", "attenuation_distance": 48}]
+  },
+  "truck_scrape": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_scrape",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/scrape", "attenuation_distance": 16}]
+  },
+  "truck_door_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_door_open",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/door_open", "attenuation_distance": 8}]
+  },
+  "truck_door_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_door_close",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/door_close", "attenuation_distance": 8}]
+  },
+  "truck_tailgate": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_tailgate",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/tailgate", "attenuation_distance": 10}]
+  },
+  "truck_fuel_cap_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_fuel_cap",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/fuel_cap_open", "attenuation_distance": 3}]
+  },
+  "truck_fuel_cap_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_fuel_cap",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/fuel_cap_close", "attenuation_distance": 3}]
+  },
+  "truck_shift": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_shift",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/shift_1", "attenuation_distance": 4},
+      {"name": "apocalypse_firstlight:pickup_t15/shift_2", "attenuation_distance": 4},
+      {"name": "apocalypse_firstlight:pickup_t15/shift_3", "attenuation_distance": 4},
+      {"name": "apocalypse_firstlight:pickup_t15/shift_4", "attenuation_distance": 4},
+      {"name": "apocalypse_firstlight:pickup_t15/shift_5", "attenuation_distance": 4},
+      {"name": "apocalypse_firstlight:pickup_t15/shift_6", "attenuation_distance": 4}]
+  },
+  "truck_transfer": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_transfer",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/transfer", "attenuation_distance": 4}]
+  },
+  "truck_handbrake_pull": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_handbrake",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/handbrake_pull", "attenuation_distance": 4}]
+  },
+  "truck_handbrake_release": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_handbrake",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/handbrake_release", "attenuation_distance": 4}]
+  },
+  "truck_horn": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_horn",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/horn_loop", "attenuation_distance": 64}]
+  },
   "office_chair_roll": {
     "subtitle": "subtitles.apocalypse_firstlight.office_chair_roll",
     "sounds": [{"name": "apocalypse_firstlight:office_chair/roll_loop", "attenuation_distance": 12}]

@@ -68,6 +68,7 @@ public final class WorldInteractionHint {
         var ground=nozzleIn==null?GroundItemPick.offer(mc):null;
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
         else if(seatedPrompt(mc)) target=new Target(Component.translatable("hint.apocalypse_firstlight.pickup_t15.get_out"),null);
+        else if(riderDoor(mc)!=null) target=riderDoor(mc);
         else if(drivingPrompt(mc)!=null) target=new Target(Component.translatable(drivingPrompt(mc)),null);
         else if(ground!=null) target=new Target(ground.label(),ground.anchor());
         // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
@@ -141,6 +142,14 @@ public final class WorldInteractionHint {
     /** When the player got onto a truck seat (System.nanoTime), or 0: "get out" shows for the first seconds there. */
     private static long seatedAt;
     private static final long SEATED_PROMPT_NANOS=4_000_000_000L;
+
+    /** A cab rider looking out toward its own open door: shut it (PickupTruckEntity#actionFor; before the driving prompts). */
+    private static Target riderDoor(Minecraft mc) {
+        if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity truck)) return null;
+        var offer=truck.actionFor(mc.player);
+        return offer!=null&&offer.action()==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.CLOSE_DOOR
+                ?new Target(Component.translatable(offer.action().key()),offer.anchor()):null;
+    }
 
     private static boolean seatedPrompt(Minecraft mc) {
         if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity)) {seatedAt=0;return false;}

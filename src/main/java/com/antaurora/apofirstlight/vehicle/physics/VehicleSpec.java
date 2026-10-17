@@ -213,12 +213,12 @@ public final class VehicleSpec {
             for (double z : new double[]{-2.2, -1.1, -0.6, -0.1, 0.4, 0.9, 1.8, 2.2}) p.add(new double[]{side * 0.845, 1.00, z});
             for (double z : new double[]{-2.2, -0.9, -0.3, 0.3, 0.6, 2.2}) p.add(new double[]{side * 0.845, 0.55, z});
             for (double z : new double[]{-0.55, -0.1, 0.28}) p.add(new double[]{side * 0.79, 1.45, z});
-            p.add(new double[]{side * 0.75, 1.74, -0.42});   // roof corners
-            p.add(new double[]{side * 0.75, 1.74, 0.30});
+            p.add(new double[]{side * 0.75, 1.84, -0.42});   // roof corners (raised 10 cm 2026-10-16)
+            p.add(new double[]{side * 0.75, 1.84, 0.30});
             p.add(new double[]{side * 0.45, 0.30, -0.6});    // frame rails under the cab and the bed
             p.add(new double[]{side * 0.45, 0.30, 0.3});
         }
-        p.add(new double[]{0, 1.745, -0.05});
+        p.add(new double[]{0, 1.845, -0.05});
         double[] out = new double[p.size() * 3];
         for (int i = 0; i < p.size(); i++) System.arraycopy(p.get(i), 0, out, i * 3, 3);
         return out;

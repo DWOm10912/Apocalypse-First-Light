@@ -75,7 +75,7 @@ function fenders() {
       rbox(E('body', 'trim'), FZ, a, b, SPLIT - 0.016, SPLIT + 0.016, z0, z1, 0.003, {rc: 0.006});
     }
     const [mz0, mz1] = zr(s, HW - 0.002, HW + 0.005);
-    rbox(E('body', 'amber'), FZ, 2.13, 2.21, 0.835, 0.865, mz0, mz1, 0.002, {rc: 0.008});
+    rbox(E('body', 'lamp_park'), FZ, 2.13, 2.21, 0.835, 0.865, mz0, mz1, 0.002, {rc: 0.008});
   });
 }
 
@@ -101,12 +101,12 @@ function frontEnd() {
     const holes = [0.571, 0.746].map(zc => fillet([[zc - 0.072, 0.742], [zc + 0.072, 0.742], [zc + 0.072, 0.878], [zc - 0.072, 0.878]].map(([z, y]) => [s * z, y]), 0.012, 2));
     slab(E(B, 'chrome'), FRX, H, holes, FX0 - 0.006, FX0 + 0.026, {r0: 0.002, r1: 0.01});
     for (const zc of [0.571, 0.746]) {
-      // lens: slightly domed (a flat plate with a rounded edge), set back in the bezel
-      rbox(E(B, 'lens'), FRX, s * zc - 0.074, s * zc + 0.074, 0.74, 0.88, FX0 - 0.01, FX0 + 0.012, 0.008, {rc: 0.014});
+      // lens: slightly domed (a flat plate with a rounded edge), set back in the bezel; outer: low + high beam, inner: high
+      rbox(E(B, zc > 0.6 ? 'lamp_low' : 'lamp_high'), FRX, s * zc - 0.074, s * zc + 0.074, 0.74, 0.88, FX0 - 0.01, FX0 + 0.012, 0.008, {rc: 0.014});
     }
     const T = fillet([[hz0, 0.655], [hz1, 0.655], [hz1, 0.705], [hz0, 0.705]].map(([z, y]) => [s * z, y]), 0.01, 2);
     slab(E(B, 'chrome'), FRX, T, [], FX0 - 0.006, FX0 + 0.012, {r0: 0.002, r1: 0.004});
-    rbox(E(B, 'amber'), FRX, s > 0 ? hz0 + 0.008 : -hz1 + 0.008, s > 0 ? hz1 - 0.008 : -hz0 - 0.008, 0.662, 0.698, FX0 + 0.008, FX0 + 0.018, 0.003, {rc: 0.006});
+    rbox(E(B, 'lamp_park'), FRX, s > 0 ? hz0 + 0.008 : -hz1 + 0.008, s > 0 ? hz1 - 0.008 : -hz0 - 0.008, 0.662, 0.698, FX0 + 0.008, FX0 + 0.018, 0.003, {rc: 0.006});
   });
   // front bumper: chrome C-section swept along a plan line that wraps back at the corners
   const plan = roundPath([[2.20, 0.505, -0.885], [2.33, 0.505, -0.79], [2.37, 0.505, -0.60], [2.37, 0.505, 0.60], [2.33, 0.505, 0.79], [2.20, 0.505, 0.885]], 0.09, 5);
@@ -396,7 +396,7 @@ function bed() {
     const lz0 = 0.69, lz1 = HW - 0.012;
     const lamp = (y0, y1, mat, d) => rbox(E(B, mat), FRX, s > 0 ? lz0 : -lz1, s > 0 ? lz1 : -lz0, y0, y1, xr - d, xr + 0.004, 0.004, {rc: 0.008});
     rbox(E(B, 'trim'), FRX, s > 0 ? lz0 - 0.008 : -lz1 - 0.004, s > 0 ? lz1 + 0.004 : -lz0 + 0.008, 0.645, 1.045, xr - 0.016, xr + 0.002, 0.004, {rc: 0.012});
-    lamp(0.92, 1.035, 'amber', 0.026); lamp(0.745, 0.912, 'red', 0.026); lamp(0.655, 0.737, 'lens', 0.026);
+    lamp(0.92, 1.035, 'amber', 0.026); lamp(0.745, 0.912, 'lamp_tail', 0.026); lamp(0.655, 0.737, 'lamp_reverse', 0.026);
   });
   // floor with longitudinal ribs, front wall with two horizontal ribs
   const fz = HW - 0.096;
@@ -413,7 +413,7 @@ function bed() {
   bumperSweep(E(B, 'chrome'), plan.map(q => q), bs.map(([u, v]) => [u, v]));
   rbox(E(B, 'rubber'), FY, -2.345, -2.25, -0.30, 0.30, 0.558, 0.566, 0.003, {rc: 0.01});
   rbox(E(B, 'trim'), FRX, -0.17, 0.17, 0.40, 0.54, -2.37, -2.356, 0.003, {rc: 0.01});   // plate holder (no plate)
-  lathe(E(B, 'lens'), [-2.352, 0.552, 0], [0, -1, 0], [[0, 0], [0, 0.018], [0.008, 0.014], [0.01, 0]], 10);   // plate lamp
+  lathe(E(B, 'lamp_plate'), [-2.352, 0.552, 0], [0, -1, 0], [[0, 0], [0, 0.018], [0.008, 0.014], [0.01, 0]], 10);   // plate lamp
 }
 
 function tailgate() {

@@ -411,7 +411,9 @@ public final class RoadClient {
         boolean first = false;
         for (ChunkMesh m : visible) {
             Light l = m.light();
-            boolean near = Math.abs(m.cx() - pcx) <= 2 && Math.abs(m.cz() - pcz) <= 2;
+            // a chunk a truck's headlamps light (HeadlightField, design doc 8.10) counts as near: the beam moves with the truck
+            boolean near = Math.abs(m.cx() - pcx) <= 2 && Math.abs(m.cz() - pcz) <= 2
+                    || com.antaurora.apofirstlight.client.vehicle.HeadlightField.litChunk(m.cx(), m.cz(), now);
             if (l.values[0] == null) {
                 // a chunk coming into view: within the frame budget (one at least)
                 if (first && System.nanoTime() > deadline) continue;

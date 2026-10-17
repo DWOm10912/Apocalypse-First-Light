@@ -6,7 +6,6 @@ import com.antaurora.apofirstlight.client.camera.CameraPose;
 import com.antaurora.apofirstlight.skeleton.seat.RiderSeat;
 import com.antaurora.apofirstlight.skeleton.seat.SeatPose;
 import com.antaurora.apofirstlight.skeleton.seat.SeatedRiderHost;
-import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -34,7 +33,7 @@ import java.util.WeakHashMap;
  * the first-person body is drawn meanwhile ({@link #cameraOnBody}).</li>
  * <li>The draw scale ({@link SeatPose#scale}) for PlayerSkeleton#begin.</li>
  * </ul>
- * Hosts: the vehicle entity itself when it implements SeatedRiderHost, else an interim adapter (the T15, {@link T15Seats}).
+ * Hosts: the vehicle entity itself (SeatedRiderHost; the T15: PickupTruckEntity).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class SeatedRiders {
@@ -77,9 +76,7 @@ public final class SeatedRiders {
     /** The host for a vehicle, or null. */
     @Nullable
     public static SeatedRiderHost host(@Nullable Entity vehicle) {
-        if (vehicle instanceof SeatedRiderHost host) return host;
-        if (vehicle instanceof PickupTruckEntity truck) return new T15Seats(truck);   // interim, until the truck is a host
-        return null;
+        return vehicle instanceof SeatedRiderHost host ? host : null;
     }
 
     /** The seat a player sits on now, or -1. */
@@ -211,10 +208,10 @@ public final class SeatedRiders {
     /** The size a player is drawn at this frame (1 unless seated or moving). */
     public static float scale(Player p, float partialTick) {
         Seated s = frame(p, partialTick);
-        return s == null ? 1F : SeatPose.scale(s.moment().seated);
+        return s == null ? 1F : SeatPose.scale(s.moment().size);
     }
 
-    /** The skeleton draws this player seated (VehicleRiderScale leaves it alone). */
+    /** The skeleton draws this player seated (client/vehicle/VehicleRiderScale leaves it alone). */
     public static boolean handles(Player p) {
         return PlayerSkeleton.enabled() && PlayerSkeleton.supportedPose(p) && frame(p, 0F) != null;
     }

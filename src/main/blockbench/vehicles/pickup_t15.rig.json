@@ -35,11 +35,13 @@
     "body_liner",
     "body_red",
     "body_amber",
-    "body_lens",
+    "body_lamp_tail",
+    "body_lamp_reverse",
     "fuel_door_paint",
     "body_steel",
     "body_rubber",
     "body_chrome",
+    "body_lamp_plate",
     "tailgate_paint2",
     "tailgate_paint",
     "tailgate_trim",
@@ -57,9 +59,10 @@
     "body_paint",
     "body_liner",
     "body_trim",
-    "body_amber",
+    "body_lamp_park",
     "body_chrome",
-    "body_lens",
+    "body_lamp_high",
+    "body_lamp_low",
     "body_rubber",
     "hood_paint",
     "hood_felt",
@@ -86,6 +89,7 @@
     "door_l",
     "door_r",
     "steering",
+    "shift",
     "tach",
     "speedo",
     "fuel_gauge",
@@ -111,6 +115,7 @@
     "body_mat",
     "body_panel",
     "body_rubber",
+    "shift_trim",
     "door_r_panel",
     "door_r_dash",
     "door_r_trim",
@@ -121,7 +126,7 @@
     "door_l_chrome",
     "body_paint",
     "body_headliner",
-    "body_lens",
+    "body_lamp_dome",
     "body_mirror"
    ]
   },
@@ -277,6 +282,21 @@
    "open_deg": 540,
    "note": "column axis; +-1.5 turns lock to lock"
   },
+  "shift": {
+   "parent": "body",
+   "pivot": [
+    -0.02,
+    0.725,
+    -0.43
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 11,
+   "note": "gear lever: fore / aft 11 deg about the across axis, across 9 deg about the fore axis (H gate: 1 3 5 forward, 2 4 R back)"
+  },
   "tach": {
    "parent": "body",
    "pivot": [
@@ -401,7 +421,7 @@
    "bone": "body",
    "pos": [
     -0.37,
-    0.845,
+    0.815,
     0.06
    ]
   },
@@ -409,7 +429,7 @@
    "bone": "body",
    "pos": [
     0.37,
-    0.845,
+    0.815,
     0.06
    ]
   },
@@ -417,16 +437,16 @@
    "bone": "body",
    "pos": [
     -0.37,
-    1.47,
-    0.12
+    1.487,
+    -0.04
    ]
   },
   "eye_passenger": {
    "bone": "body",
    "pos": [
     0.37,
-    1.47,
-    0.12
+    1.487,
+    -0.04
    ]
   },
   "steering_centre": {
@@ -478,7 +498,7 @@
    ]
   },
   "shift_knob": {
-   "bone": "body",
+   "bone": "shift",
    "pos": [
     -0.055,
     1.02,
@@ -613,7 +633,12 @@
    "mirror": 0,
    "dial": 0,
    "lens": 30,
-   "tire": 60
+   "tire": 60,
+   "lamp_low": 30,
+   "lamp_high": 30,
+   "lamp_reverse": 30,
+   "lamp_plate": 30,
+   "lamp_dome": 30
   }
  }
 }

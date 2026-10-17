@@ -33,6 +33,9 @@ public final class VehiclePackets {
     /** Server -> clients: a truck's state; correct: the driver must take it too (the server refused its own). */
     public record Sync(int entity, VehicleState state, boolean correct) {}
 
+    /** Driver's client -> server: the light switch or the high beam (PickupTruckEntity#SWITCH_*). */
+    public record Lamps(int entity, int action) {}
+
     /** The client's handling of a {@link Sync} (client/vehicle/VehicleDriving, set at client setup). */
     public static volatile Consumer<Sync> clientSync = s -> {};
 
@@ -53,7 +56,21 @@ public final class VehiclePackets {
             context.enqueueWork(() -> clientSync.accept(p));
             context.setPacketHandled(true);
         }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Lamps.class, (p, b) -> {
+            b.writeVarInt(p.entity());
+            b.writeVarInt(p.action());
+        }, b -> new Lamps(b.readVarInt(), b.readVarInt()), VehiclePackets::onLamps, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         return id;
+    }
+
+    private static void onLamps(Lamps packet, Supplier<NetworkEvent.Context> supplier) {
+        NetworkEvent.Context context = supplier.get();
+        ServerPlayer player = context.getSender();
+        if (player != null) context.enqueueWork(() -> {
+            if (player.level().getEntity(packet.entity()) instanceof PickupTruckEntity truck && truck.getControllingPassenger() == player)
+                truck.lampSwitch(packet.action());
+        });
+        context.setPacketHandled(true);
     }
 
     private static void write(FriendlyByteBuf b, VehicleState s) {

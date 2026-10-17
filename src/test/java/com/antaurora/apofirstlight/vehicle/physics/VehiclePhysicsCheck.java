@@ -35,7 +35,7 @@ public final class VehiclePhysicsCheck {
         double plane(double x, double z) { return y0 + sx * x + sz * z; }
 
         @Override
-        public boolean ground(double x, double z, double yTop, double yBottom, Ground out) {
+        public boolean ground(double x, double z, double yHint, double yTop, double yBottom, Ground out) {
             double best = plane(x, z);
             boolean box = false;
             for (double[] b : boxes) {

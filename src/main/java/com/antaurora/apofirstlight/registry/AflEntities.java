@@ -34,7 +34,7 @@ public final class AflEntities {
     public static final RegistryObject<EntityType<com.antaurora.apofirstlight.vehicle.PickupTruckEntity>> PICKUP_T15 =
             ENTITY_TYPES.register("pickup_t15", () -> EntityType.Builder.<com.antaurora.apofirstlight.vehicle.PickupTruckEntity>of(
                             com.antaurora.apofirstlight.vehicle.PickupTruckEntity::new, MobCategory.MISC)
-                    .sized(1.9F, 1.8F).clientTrackingRange(10).build("pickup_t15"));
+                    .sized(1.9F, 1.9F).clientTrackingRange(10).build("pickup_t15"));
 
     private AflEntities() {
     }

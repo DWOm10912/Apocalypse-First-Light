@@ -82,6 +82,39 @@ public final class LiquidRenderTypes extends RenderType {
                     .setWriteMaskState(COLOR_WRITE)
                     .createCompositeState(false));
 
+    /**
+     * The T15's lamp flares and beam cones (client/vehicle/HeadlightFx): as GLOW, with its own smooth flare
+     * (tools/build-headlight-flare.mjs) drawn linear-filtered, since a flare is seen up close at headlamp size.
+     */
+    public static final RenderType HEADLIGHT_GLOW = RenderType.create("apocalypse_firstlight_headlight_glow", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/headlight_flare.png"), true, false))
+                    .setTransparencyState(LIGHTNING_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
+    /**
+     * A lit lamp's lens over itself (the T15, PickupTruckRenderer; design doc 8.10), as vanilla's glowing eyes: its own
+     * texture added onto the lens (ADDITIVE: ONE, ONE), no depth writes, pulled a hair toward the camera so it never
+     * fights the lens it lies on. Without a shader pack there is no bloom: this is what makes a lit lens read as a light.
+     */
+    private static final java.util.function.Function<net.minecraft.resources.ResourceLocation, RenderType> LAMP_GLOW = net.minecraft.Util.memoize(
+            texture -> RenderType.create("apocalypse_firstlight_lamp_glow", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, false, true,
+                    CompositeState.builder()
+                            .setShaderState(RENDERTYPE_EYES_SHADER)
+                            .setTextureState(new TextureStateShard(texture, false, false))
+                            .setTransparencyState(ADDITIVE_TRANSPARENCY)
+                            .setCullState(NO_CULL)
+                            .setLayeringState(VIEW_OFFSET_Z_LAYERING)
+                            .setWriteMaskState(COLOR_WRITE)
+                            .createCompositeState(false)));
+
+    public static RenderType lampGlow(net.minecraft.resources.ResourceLocation texture) { return LAMP_GLOW.apply(texture); }
+
     /** Burning things (EntityFlames): the burning-body flame sheet, otherwise as FLAME. */
     public static final RenderType BODY_FLAME = RenderType.create("apocalypse_firstlight_body_flame", DefaultVertexFormat.NEW_ENTITY,
             VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()

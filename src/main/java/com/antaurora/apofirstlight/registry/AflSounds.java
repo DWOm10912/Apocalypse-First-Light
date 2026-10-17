@@ -112,6 +112,36 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_START = simple("portable_generator_start");
     public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_RUN = simple("portable_generator_run");
     public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_STOP = simple("portable_generator_stop");
+    // T15 pickup V1 (docs/vehicles/first_pickup_v0_design.md 8.11, tools/build-pickup-t15-sounds.mjs; client/vehicle/TruckSounds)
+    public static final RegistryObject<SoundEvent> TRUCK_IDLE = simple("truck_idle");
+    public static final RegistryObject<SoundEvent> TRUCK_MID = simple("truck_mid");
+    public static final RegistryObject<SoundEvent> TRUCK_LOAD = simple("truck_load");
+    public static final RegistryObject<SoundEvent> TRUCK_COAST = simple("truck_coast");
+    public static final RegistryObject<SoundEvent> TRUCK_CRANK = simple("truck_crank");
+    public static final RegistryObject<SoundEvent> TRUCK_CATCH = simple("truck_catch");
+    public static final RegistryObject<SoundEvent> TRUCK_STOP = simple("truck_stop");
+    public static final RegistryObject<SoundEvent> TRUCK_GLOW_CLICK = simple("truck_glow_click");
+    public static final RegistryObject<SoundEvent> TRUCK_KEY = simple("truck_key");
+    public static final RegistryObject<SoundEvent> TRUCK_TYRES_ASPHALT = simple("truck_tyres_asphalt");
+    public static final RegistryObject<SoundEvent> TRUCK_TYRES_GRAVEL = simple("truck_tyres_gravel");
+    public static final RegistryObject<SoundEvent> TRUCK_TYRES_DIRT = simple("truck_tyres_dirt");
+    public static final RegistryObject<SoundEvent> TRUCK_TYRES_GRASS = simple("truck_tyres_grass");
+    public static final RegistryObject<SoundEvent> TRUCK_WIND = simple("truck_wind");
+    public static final RegistryObject<SoundEvent> TRUCK_SKID = simple("truck_skid");
+    public static final RegistryObject<SoundEvent> TRUCK_BOTTOM_OUT = simple("truck_bottom_out");
+    public static final RegistryObject<SoundEvent> TRUCK_CRASH_LIGHT = simple("truck_crash_light");
+    public static final RegistryObject<SoundEvent> TRUCK_CRASH_HEAVY = simple("truck_crash_heavy");
+    public static final RegistryObject<SoundEvent> TRUCK_SCRAPE = simple("truck_scrape");
+    public static final RegistryObject<SoundEvent> TRUCK_DOOR_OPEN = simple("truck_door_open");
+    public static final RegistryObject<SoundEvent> TRUCK_DOOR_CLOSE = simple("truck_door_close");
+    public static final RegistryObject<SoundEvent> TRUCK_TAILGATE = simple("truck_tailgate");
+    public static final RegistryObject<SoundEvent> TRUCK_FUEL_CAP_OPEN = simple("truck_fuel_cap_open");
+    public static final RegistryObject<SoundEvent> TRUCK_FUEL_CAP_CLOSE = simple("truck_fuel_cap_close");
+    public static final RegistryObject<SoundEvent> TRUCK_SHIFT = simple("truck_shift");
+    public static final RegistryObject<SoundEvent> TRUCK_TRANSFER = simple("truck_transfer");
+    public static final RegistryObject<SoundEvent> TRUCK_HANDBRAKE_PULL = simple("truck_handbrake_pull");
+    public static final RegistryObject<SoundEvent> TRUCK_HANDBRAKE_RELEASE = simple("truck_handbrake_release");
+    public static final RegistryObject<SoundEvent> TRUCK_HORN = simple("truck_horn");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

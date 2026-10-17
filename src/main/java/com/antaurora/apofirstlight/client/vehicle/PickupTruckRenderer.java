@@ -2,10 +2,12 @@ package com.antaurora.apofirstlight.client.vehicle;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.GroundItemRenderer;
+import com.antaurora.apofirstlight.client.LiquidRenderTypes;
 import com.antaurora.apofirstlight.client.blockmesh.AflMovingGlass;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.physics.VehiclePhysics;
+import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
 import com.antaurora.apofirstlight.vehicle.physics.VehicleSpec;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.vextris.client.GpuGeometry;
@@ -20,6 +22,7 @@ import com.antaurora.vextris.mesh.MeshPart;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -97,12 +100,38 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     private static final float[] SPARE = {0.0F, 0.50F, 1.86F};
     /** GPU cache selectors (constants: each is part of a cache key): main paint, second paint, untinted, and the wear pass. */
     private static final MeshGpuCache.PartSelector MAIN_PAINT = p -> isPainted(p) && !isSecond(p), SECOND_PAINT = PickupTruckRenderer::isSecond,
-            PLAIN = p -> !isPainted(p), PAINT = PickupTruckRenderer::isPainted;
+            PLAIN = p -> !isPainted(p) && lamp(p) == null, PAINT = PickupTruckRenderer::isPainted;
+
+    /**
+     * Lamp groups (design doc 8.10), by part name suffix (tools/pickup-t15: the lamp_* materials, body_dial, *_needle): each
+     * its own cache selector, drawn at full light while lit, its vertex colour scaled by the glow (the tail lamp dim with
+     * the lights, bright braking).
+     */
+    private enum Lamp {
+        LOW("_lamp_low"), HIGH("_lamp_high"), PARK("_lamp_park"), TAIL("_lamp_tail"), REVERSE("_lamp_reverse"), PLATE("_lamp_plate"),
+        DOME("_lamp_dome"), DIAL("_dial"), NEEDLE("_needle");
+
+        static final Lamp[] ALL = values();
+        final String suffix;
+        final MeshGpuCache.PartSelector selector;
+
+        Lamp(String suffix) {
+            this.suffix = suffix;
+            this.selector = p -> p.name().endsWith(suffix);
+        }
+    }
+
+    /** Tail lamps with the lights only (the stop lamp is the same section, full when braking); the dash lights. */
+    private static final float TAIL_GLOW = 0.55F, DASH_GLOW = 0.85F;
+    /** A lit lens added onto itself this strongly (times its glow; no shader pack: PickupTruckRenderer#lampGlow). */
+    private static final float LAMP_ADD = 1.0F;
+    /** The dome lamp is on while a door is open more than this (deg). */
+    private static final float DOME_DOOR = 4.0F;
     private static final float[] WHITE = {1, 1, 1};
     /** Steering wheel turns per wheel turn: 540 degrees each way (the rig's lock) for the 32 degree road wheel lock. */
-    private static final float STEERING_RATIO = (float) (540.0 / Math.toDegrees(VehicleSpec.T15.maxSteer));
+    private static final float STEERING_RATIO = (float) PickupTruckLayout.STEERING_RATIO;
     /** The steering column (model frame, unit; the rig's concept axis (cos 27, -sin 27, 0) turned to the model). */
-    private static final float COLUMN_Y = -0.45399F, COLUMN_Z = -0.89101F;
+    private static final float COLUMN_Y = (float) PickupTruckLayout.COLUMN_Y, COLUMN_Z = (float) PickupTruckLayout.COLUMN_Z;
 
     private record Piece(ResourceLocation geometry, ResourceLocation texture, boolean worn) {
         Piece(String id, ResourceLocation texture, boolean worn) {
@@ -112,7 +141,21 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
 
     /** The pose of one frame: bone turns (the steering wheel in rad) and paint. */
     private record State(float hood, float tailgate, float doorL, float doorR, float filler, float steering, float[] main, float[] second, int light,
-                         float tach, float speedo, float fuel, float temp) {}
+                         float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float[] glow) {}
+
+    /** Each lamp group's glow this frame (0: off). */
+    private static float[] glow(PickupTruckEntity truck, float doorL, float doorR) {
+        float[] g = new float[Lamp.ALL.length];
+        boolean on = truck.headlights();
+        g[Lamp.LOW.ordinal()] = on ? 1 : 0;
+        g[Lamp.HIGH.ordinal()] = truck.highBeam() ? 1 : 0;
+        g[Lamp.PARK.ordinal()] = g[Lamp.PLATE.ordinal()] = on ? 1 : 0;
+        g[Lamp.TAIL.ordinal()] = truck.braking() ? 1 : on ? TAIL_GLOW : 0;
+        g[Lamp.REVERSE.ordinal()] = truck.reversing() ? 1 : 0;
+        g[Lamp.DOME.ordinal()] = Math.max(doorL, doorR) > DOME_DOOR ? 1 : 0;
+        g[Lamp.DIAL.ordinal()] = g[Lamp.NEEDLE.ordinal()] = on ? DASH_GLOW : 0;
+        return g;
+    }
     /**
      * Gauge needles (design doc 8.5): each turns clockwise (as the driver sees it, about the dial axis, model -Z) from the
      * start of its sweep: tachometer 0-5000 rpm and speedometer 0-180 km/h over 270 degrees, fuel empty - full and coolant
@@ -145,11 +188,13 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     @Override
     public void render(PickupTruckEntity truck, float entityYaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
         float wear = truck.wear();
-        State s = new State(truck.hoodAngle(partialTick), truck.tailgateAngle(partialTick), truck.doorAngle(false, partialTick),
-                truck.doorAngle(true, partialTick), truck.fillerAngle(partialTick), truck.steerAngle(partialTick) * STEERING_RATIO,
+        float doorL = truck.doorAngle(false, partialTick), doorR = truck.doorAngle(true, partialTick);
+        State s = new State(truck.hoodAngle(partialTick), truck.tailgateAngle(partialTick), doorL,
+                doorR, truck.fillerAngle(partialTick), truck.steerAngle(partialTick) * STEERING_RATIO,
                 tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light,
                 needle(truck.tachometer(partialTick), 5000, BIG_SWEEP), needle(truck.speedometer(partialTick), 180, BIG_SWEEP),
-                needle(truck.fuelGauge(partialTick), 1, SMALL_SWEEP), needle(truck.coolantGauge(partialTick) - 40, 80, SMALL_SWEEP));
+                needle(truck.fuelGauge(partialTick), 1, SMALL_SWEEP), needle(truck.coolantGauge(partialTick) - 40, 80, SMALL_SWEEP),
+                truck.leverFore(partialTick), truck.leverAcross(partialTick), glow(truck, doorL, doorR));
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
@@ -187,6 +232,12 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             glass(EXT, pose, buffers, s, glass);
             glass(FRONT, pose, buffers, s, glass);
             if (interior) glass(CAB, pose, buffers, s, glass);
+            // pass 4, without a shader pack (no bloom there): the lit lenses once more, added onto themselves
+            if (!AflShaderCompat.shaderPackInUse()) {
+                lampGlow(EXT, pose, buffers, s);
+                lampGlow(FRONT, pose, buffers, s);
+                if (interior) lampGlow(CAB, pose, buffers, s);
+            }
         }
         pose.popPose();
         super.render(truck, entityYaw, partialTick, pose, buffers, light);
@@ -226,11 +277,16 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             pose.translate(bone.pivotX(), bone.pivotY(), bone.pivotZ());
             hinge(pose, bone.name(), s);
             if (wear) {
-                cachedOrCpu(mesh, bone, PAINT, texture, pose, buffers, s, WHITE);
+                cachedOrCpu(mesh, bone, PAINT, texture, pose, buffers, s.light(), WHITE);
             } else {
-                cachedOrCpu(mesh, bone, MAIN_PAINT, texture, pose, buffers, s, s.main());
-                cachedOrCpu(mesh, bone, SECOND_PAINT, texture, pose, buffers, s, s.second());
-                cachedOrCpu(mesh, bone, PLAIN, texture, pose, buffers, s, WHITE);
+                cachedOrCpu(mesh, bone, MAIN_PAINT, texture, pose, buffers, s.light(), s.main());
+                cachedOrCpu(mesh, bone, SECOND_PAINT, texture, pose, buffers, s.light(), s.second());
+                cachedOrCpu(mesh, bone, PLAIN, texture, pose, buffers, s.light(), WHITE);
+                for (Lamp lamp : Lamp.ALL) {
+                    float g = s.glow()[lamp.ordinal()];
+                    cachedOrCpu(mesh, bone, lamp.selector, texture, pose, buffers, g > 0 ? LightTexture.FULL_BRIGHT : s.light(),
+                            g > 0 ? new float[]{g, g, g} : WHITE);
+                }
             }
             pose.popPose();
         }
@@ -238,16 +294,16 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
 
     /** One bone's selected cutout parts (pose at the bone's pivot): from the GPU cache, else on the CPU (flat / smooth split). */
     private static void cachedOrCpu(MeshModel mesh, MeshBone bone, MeshGpuCache.PartSelector selector, ResourceLocation texture,
-                                    PoseStack pose, MultiBufferSource buffers, State s, float[] c) {
-        if (MeshGpuCache.drawBone(mesh, bone.name(), MeshLayer.CUTOUT, selector, texture, pose, s.light(), OverlayTexture.NO_OVERLAY, c[0], c[1], c[2], 1)) return;
+                                    PoseStack pose, MultiBufferSource buffers, int light, float[] c) {
+        if (MeshGpuCache.drawBone(mesh, bone.name(), MeshLayer.CUTOUT, selector, texture, pose, light, OverlayTexture.NO_OVERLAY, c[0], c[1], c[2], 1)) return;
         List<MeshPart> parts = mesh.parts(bone.name(), MeshLayer.CUTOUT).stream().filter(selector::accepts).toList();
         if (parts.isEmpty()) return;
         MeshRenderer.Topology smooth = MeshRendering.smoothTopology();
         boolean split = smooth == MeshRenderer.Topology.TRIANGLES;
         MeshRenderer.renderParts(parts, split ? MeshRenderer.PartFilter.FLAT : MeshRenderer.PartFilter.ALL, MeshRenderer.Topology.QUADS, pose,
-                buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), s.light(), OverlayTexture.NO_OVERLAY, c[0], c[1], c[2], 1, null);
+                buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, OverlayTexture.NO_OVERLAY, c[0], c[1], c[2], 1, null);
         if (split) MeshRenderer.renderParts(parts, MeshRenderer.PartFilter.SMOOTH, smooth, pose, buffers.getBuffer(MeshRendering.cutoutType(texture, smooth)),
-                s.light(), OverlayTexture.NO_OVERLAY, c[0], c[1], c[2], 1, null);
+                light, OverlayTexture.NO_OVERLAY, c[0], c[1], c[2], 1, null);
     }
 
     private static void drawParts(MeshModel mesh, PoseStack pose, VertexConsumer out, State s, MeshLayer layer, boolean wear,
@@ -264,10 +320,44 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
                 if (wear && !painted) continue;
                 if (filter == MeshRenderer.PartFilter.FLAT && part.smooth() || filter == MeshRenderer.PartFilter.SMOOTH && !part.smooth()) continue;
                 float[] c = wear || !painted ? null : isSecond(part) ? s.second() : s.main();
-                MeshRenderer.renderParts(List.of(part), filter, topology, pose, out, s.light(), OverlayTexture.NO_OVERLAY,
+                Lamp lamp = wear ? null : lamp(part);
+                float g = lamp == null ? 0 : s.glow()[lamp.ordinal()];
+                if (g > 0) c = new float[]{g, g, g};
+                MeshRenderer.renderParts(List.of(part), filter, topology, pose, out, g > 0 ? LightTexture.FULL_BRIGHT : s.light(), OverlayTexture.NO_OVERLAY,
                         c == null ? 1 : c[0], c == null ? 1 : c[1], c == null ? 1 : c[2], 1, null);
             }
             pose.popPose();
+        }
+    }
+
+    /**
+     * The lit lamps' lenses added onto themselves (LiquidRenderTypes#lampGlow, as vanilla's glowing eyes), by their glow
+     * times {@link #LAMP_ADD}: a white lens goes white, a red one bright red, so the lamp itself reads as lit without a
+     * shader pack's bloom (user 2026-10-16: only the flare looked lit). Not the dash: a backlit dial does not shine.
+     */
+    private static void lampGlow(Piece piece, PoseStack pose, MultiBufferSource buffers, State s) {
+        MeshModel mesh = VextrisMeshes.byGeometry(piece.geometry());
+        if (mesh == null) return;
+        VertexConsumer out = null;
+        for (MeshBone bone : mesh.roots()) {
+            if (bone.neverRender()) continue;
+            boolean pushed = false;
+            for (MeshPart part : mesh.parts(bone.name(), MeshLayer.CUTOUT)) {
+                Lamp lamp = lamp(part);
+                if (lamp == null || lamp == Lamp.DIAL || lamp == Lamp.NEEDLE) continue;
+                float g = s.glow()[lamp.ordinal()] * LAMP_ADD;
+                if (g <= 0) continue;
+                if (!pushed) {
+                    pose.pushPose();
+                    pose.translate(bone.pivotX(), bone.pivotY(), bone.pivotZ());
+                    hinge(pose, bone.name(), s);
+                    pushed = true;
+                }
+                if (out == null) out = buffers.getBuffer(LiquidRenderTypes.lampGlow(piece.texture()));
+                MeshRenderer.renderParts(List.of(part), MeshRenderer.PartFilter.ALL, MeshRenderer.Topology.QUADS, pose, out, LightTexture.FULL_BRIGHT,
+                        OverlayTexture.NO_OVERLAY, g, g, g, 1, null);
+            }
+            if (pushed) pose.popPose();
         }
     }
 
@@ -305,6 +395,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "speedo" -> pose.mulPose(new Quaternionf().rotationAxis(s.speedo(), 0.0F, 0.0F, -1.0F));
             case "fuel_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.fuel(), 0.0F, 0.0F, -1.0F));
             case "temp_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.temp(), 0.0F, 0.0F, -1.0F));
+            case "shift" -> pose.mulPose(PickupTruckLayout.leverTurn(s.leverFore(), s.leverAcross()));   // the H gate (ShiftLever)
             default -> { }
         }
     }
@@ -367,6 +458,13 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
 
     private static boolean isPainted(MeshPart part) {
         return part.name().endsWith("_paint") || part.name().endsWith("_paint2");
+    }
+
+    /** The lamp group of a part, or null. */
+    private static Lamp lamp(MeshPart part) {
+        String name = part.name();
+        for (Lamp lamp : Lamp.ALL) if (name.endsWith(lamp.suffix)) return lamp;
+        return null;
     }
 
     private static boolean isSecond(MeshPart part) {

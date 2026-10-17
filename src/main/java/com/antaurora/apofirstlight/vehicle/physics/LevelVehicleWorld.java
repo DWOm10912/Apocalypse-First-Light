@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.vehicle.physics;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import com.antaurora.apofirstlight.vehicle.VehicleColliders;
+import com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceQuery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,8 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * The game's side of {@link VehicleWorld} (docs/vehicles/first_pickup_v0_design.md section 5), on the thread that owns the
  * level (the server's, or the driving client's). Ground, in order:
- * <ol><li>road: the C3 road layer's own surface (RoadSurfaceQuery, not built yet: section 5.1; until then a road's blocks
- * answer as blocks);</li>
+ * <ol><li>road: the C3 road layer's own surface (worldgen/network/road/RoadSurfaceQuery, section 5.1, hooked up
+ * 2026-10-16): the road design's continuous height and normal for lanes, shoulders, decks and tunnel bores, graded turf
+ * as drawn; grip by surface (asphalt 1.0, concrete 0.95, turf 0.70). A blocking answer (parapet, barrier, walkway) is
+ * no ground: the layers below answer, so its blocks stop the wheel and the body as any wall does;</li>
  * <li>smoothed terrain: a natural surface top (TerrainSmooth) answers with its drawn surface, two triangles per block,
  * not the 1/16 stepped collision boxes, so the tyres roll on the slope;</li>
  * <li>blocks: the top of the collision shape in that column.</li></ol>
@@ -42,6 +45,8 @@ public final class LevelVehicleWorld implements VehicleWorld {
     private final Level level;
     private final VehicleColliders.Collider self;
     private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+    /** The road layer's answer (one per vehicle: asked on the thread that owns the level only). */
+    private final RoadSurfaceQuery.Out road = new RoadSurfaceQuery.Out();
 
     public LevelVehicleWorld(Level level, VehicleColliders.Collider self) {
         this.level = level;
@@ -49,10 +54,14 @@ public final class LevelVehicleWorld implements VehicleWorld {
     }
 
     @Override
-    public boolean ground(double x, double z, double yTop, double yBottom, Ground out) {
+    public boolean ground(double x, double z, double yHint, double yTop, double yBottom, Ground out) {
         int bx = Mth.floor(x), bz = Mth.floor(z);
         LevelChunk chunk = level.getChunkSource().getChunkNow(bx >> 4, bz >> 4);
         if (chunk == null) return false;
+        if (RoadSurfaceQuery.sample(level, x, z, yHint, road) && !road.blocking && road.height <= yTop && road.height >= yBottom) {
+            out.set(road.height, road.nx, road.ny, road.nz, roadGrip(road.surface), Source.ROAD);
+            return true;
+        }
         boolean smooth = smooth();
         double fx = x - bx, fz = z - bz;
         int bottom = Math.max(Mth.floor(yBottom) - 2, level.getMinBuildHeight());   // smoothed tops reach 2 above their floor
@@ -111,21 +120,79 @@ public final class LevelVehicleWorld implements VehicleWorld {
             }
             if (dy == 2) continue;   // only a smoothed top reaches two blocks up; fences and walls one and a half
             VoxelShape shape = state.getCollisionShape(level, pos);
-            if (shape.isEmpty()) continue;
-            for (AABB b : shape.toAabbs()) {
-                double x0 = bx + b.minX, x1 = bx + b.maxX, y0 = yy + b.minY, y1 = yy + b.maxY, z0 = bz + b.minZ, z1 = bz + b.maxZ;
-                if (x < x0 || x > x1 || y < y0 || y > y1 || z < z0 || z > z1) continue;
-                // out the nearest side (never down: a roof point under a block would be driven into the ground)
-                double best = y1 - y;
-                out.set(0, 1, 0, best);
-                if (x - x0 < best) out.set(-1, 0, 0, best = x - x0);
-                if (x1 - x < best) out.set(1, 0, 0, best = x1 - x);
-                if (z - z0 < best) out.set(0, 0, -1, best = z - z0);
-                if (z1 - z < best) out.set(0, 0, 1, z1 - z);
-                return true;
+            if (shape.isEmpty() || box(boxes(shape), bx, yy, bz, x, y, z) == null) continue;
+            // out the nearest way out of the solid (never down: a roof point under a block would be driven into the ground)
+            double best = exit(x, y, z, 0, 1, 0);
+            out.set(0, 1, 0, best);
+            for (int[] d : SIDES) {
+                double e = exit(x, y, z, d[0], 0, d[1]);
+                if (e < best) out.set(d[0], 0, d[1], best = e);
             }
+            return true;
         }
         return VehicleColliders.pushOut(level, x, y, z, self, out);
+    }
+
+    /** The four horizontal ways out (x, z). */
+    private static final int[][] SIDES = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    /** Exits searched this far (m; further counts as no way out that side) in at most this many boxes. */
+    private static final double EXIT_REACH = 2.0;
+    private static final int EXIT_HOPS = 48;
+
+    /**
+     * How far point (x, y, z) must move along an axis direction to leave the blocks' collision (2026-10-16). Not the
+     * nearest face of the one box it is in: a shape cut into thin columns (road_structure follows the bridge mesh on 1/8
+     * block columns, BridgeMesh.solid) has a face of each column a few cm away, inside the next column, and the hull was
+     * pushed from column to column through a wall (user in game, T15 through a bridge's wing wall). From box to box
+     * along the direction, across block borders, until out; EXIT_REACH when it is not out by then.
+     */
+    private double exit(double x, double y, double z, int dx, int dy, int dz) {
+        double t = 0;
+        for (int hop = 0; hop < EXIT_HOPS && t < EXIT_REACH; hop++) {
+            double px = x + dx * (t + 1e-4), py = y + dy * (t + 1e-4), pz = z + dz * (t + 1e-4);
+            AABB b = solidBox(px, py, pz);
+            if (b == null) return t;
+            // the box's far face along the direction (world coordinates)
+            t = dx > 0 ? b.maxX - x : dx < 0 ? x - b.minX : dy > 0 ? b.maxY - y : dz > 0 ? b.maxZ - z : z - b.minZ;
+        }
+        return EXIT_REACH;
+    }
+
+    /** The collision box (world coordinates) holding point (x, y, z): of its block, or of the block under it (fences, walls). */
+    private AABB solidBox(double x, double y, double z) {
+        int bx = Mth.floor(x), by = Mth.floor(y), bz = Mth.floor(z);
+        LevelChunk chunk = level.getChunkSource().getChunkNow(bx >> 4, bz >> 4);
+        if (chunk == null) return null;
+        for (int yy = by; yy >= by - 1 && yy >= level.getMinBuildHeight(); yy--) {
+            BlockState state = chunk.getBlockState(pos.set(bx, yy, bz));
+            if (state.isAir()) continue;
+            VoxelShape shape = state.getCollisionShape(level, pos);
+            if (shape.isEmpty()) continue;
+            AABB b = box(boxes(shape), bx, yy, bz, x, y, z);
+            if (b != null) return b;
+        }
+        return null;
+    }
+
+    private static AABB box(AABB[] boxes, int bx, int by, int bz, double x, double y, double z) {
+        for (AABB b : boxes) {
+            double x0 = bx + b.minX, x1 = bx + b.maxX, y0 = by + b.minY, y1 = by + b.maxY, z0 = bz + b.minZ, z1 = bz + b.maxZ;
+            if (x >= x0 && x <= x1 && y >= y0 && y <= y1 && z >= z0 && z <= z1) return new AABB(x0, y0, z0, x1, y1, z1);
+        }
+        return null;
+    }
+
+    /** A shape's boxes, kept (shapes are shared per state, road_structure's per cell): toAabbs builds a new list each call. */
+    private final Map<VoxelShape, AABB[]> shapeBoxes = new java.util.IdentityHashMap<>();
+
+    private AABB[] boxes(VoxelShape shape) {
+        AABB[] b = shapeBoxes.get(shape);
+        if (b == null) {
+            if (shapeBoxes.size() > 512) shapeBoxes.clear();
+            b = shape.toAabbs().toArray(new AABB[0]);
+            shapeBoxes.put(shape, b);
+        }
+        return b;
     }
 
     private boolean smooth() {
@@ -133,6 +200,15 @@ public final class LevelVehicleWorld implements VehicleWorld {
     }
 
     /** A block's tyre grip (keyword table on its registry name). */
+    /** Tyre grip on a road surface (the road layer gives the kind, Main the number: section 5.1). */
+    static double roadGrip(RoadSurfaceQuery.Surface surface) {
+        return switch (surface) {
+            case ASPHALT -> 1.00;
+            case CONCRETE -> 0.95;
+            case TURF -> 0.70;
+        };
+    }
+
     public static double grip(Block block) {
         return GRIP.computeIfAbsent(block, b -> {
             String name = BuiltInRegistries.BLOCK.getKey(b).getPath();
