@@ -1,6 +1,6 @@
 # 动态光源 V1：逐像素车灯光（不开光影时）
 
-状态：**不开光影：已实现（2026-10-17），`compileJava` 通过，离线 GLSL 检查全部 PASS（NVIDIA RTX 3080 Ti 驱动 596.49，GL 3.2 core），用户启动不崩，亮度、阴影、帧数还没反馈。光影包接口（第 3.1 节）：AFL 这边已实现（2026-10-17，`compileJava` 通过，没在游戏里跑过），Aureveil 那边由 Aureveil A 做（alpha.46，还没出）。** 开 Aureveil 并打开它的选项 `AFL_VEHICLE_LIGHTS` 时由 Aureveil 画车灯；开 Sundial、别的包，或者关掉这个选项时，车灯照旧用方块光（`client/vehicle/HeadlightField`）。
+状态：**用户 2026-10-17 实机 PASS（"PASS，而且比较流畅"）：不开光影的 AFL 版本，和 Aureveil 0.2.0-alpha.46 的光影包版本（第 3.1 节）一起测的。** 离线 GLSL 检查全部 PASS（NVIDIA RTX 3080 Ti 驱动 596.49，GL 3.2 core）。 开 Aureveil 并打开它的选项 `AFL_VEHICLE_LIGHTS` 时由 Aureveil 画车灯；开 Sundial、别的包，或者关掉这个选项时，车灯照旧用方块光（`client/vehicle/HeadlightField`）。
 
 ## 1. 为什么要做
 
@@ -82,6 +82,8 @@
 
 ## 6. 检查（2026-10-17）
 
+- 用户实机（2026-10-17，Aureveil alpha.46 出来之后）：PASS，"比较流畅"。按给用户的测试清单测：开 Aureveil 时车灯平滑、有阴影；关掉 `AFL_VEHICLE_LIGHTS` 或换 Sundial 时退回方块光；不开光影时 AFL 自己画。帧数没量具体数字。
+
 - 用户第一次启动（2026-10-17）：`client.DynamicLightEmbeddiumShaderMixin` 应用失败、游戏崩溃（"'static' modifier of handler method does not match target"：注入点在 `GlShader` 的构造函数里，处理方法却写成了 static）。改成实例方法后重新 `compileJava` 通过；用户再次启动不再崩溃（"修好了"），亮度、阴影、帧数还没有反馈。
 - `compileJava` 通过；mixin 映射表里有 `Program#compileShaderInternal`、`ShaderInstance#apply`、`ClientLevel#sendBlockUpdated`（Embeddium 的两个是 `@Pseudo`、`remap = false`、`require = 0`）。
 - 离线 GLSL 检查（草稿目录 `glsl/GlslCheck.java`，隐藏窗口 + GL 3.2 core，按 Embeddium 的 ShaderParser 和原版预处理器拼源码，再走游戏里同一套补丁代码），全部 PASS：
@@ -94,11 +96,11 @@
 
 ## 7. 没做 / 已知
 
-- **没在游戏里看过**：亮度、颜色、阴影边、地形接缝、斜坡、帧数都要用户实测。尾灯 / 刹车的亮度是估的。
+- 用户实测整体 PASS；尾灯 / 刹车的亮度仍是估的，没单独调过；帧数没量具体数字。
 - 只有 NVIDIA 驱动编译过；AMD / Intel 的驱动更严，日志里如果有 `does not compile`，那个程序会自动退回原样（地形退回时整个功能关掉、回到方块光）。
 - 不受车灯照的东西：原版地形程序（没装 Embeddium 时）、BER 里用 `RenderType.solid()` 等方块渲染类型画的东西、Vextris 地形孪生程序画的东西（道路之外）、粒子、天气、水下雾。
 - 方块格只认整块、贴底铺满的部分方块和平滑地表；栅栏、墙、薄板、玻璃、树叶不挡光（光会穿过去）。范围是镜头周围 ±64 格，更远的东西不挡。
 - 阴影边是方块的直边（灯近似一个点），没有半影。
 - 开 Sundial 或别的光影包时还是方块光（卡、一格一格）。
-- 光影包接口（第 3.1 节）AFL 这边没在游戏里跑过；Aureveil 那边的 alpha.46 还没出，在它出来之前开 Aureveil 时仍然是方块光（没有这个选项）。
+- 光影包接口需要 Aureveil 0.2.0-alpha.46 或更新；更早的 Aureveil 没有这个选项，车灯是方块光。
 - 多人：别的玩家的车灯也在自己客户端上算（灯的开关是同步的），没试过。
