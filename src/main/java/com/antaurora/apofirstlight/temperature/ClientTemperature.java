@@ -27,6 +27,11 @@ public final class ClientTemperature {
     public static double trend() { return state == null ? 0 : state.trend(); }
     /** −1 .. +1: where the core is heading in this place, on the dial's scale (heat − cold of the target temperature). */
     public static double target() { return state == null ? 0 : state.target(); }
+    /** The core's cold / heat stage, 0 (none) .. 3 (damage), for the status badges. */
+    public static int coldStage() { return state == null ? 0 : state.coldStage(); }
+    public static int heatStage() { return state == null ? 0 : state.heatStage(); }
+    /** 0 dry .. 1 soaked. */
+    public static double wet() { return state == null ? 0 : state.wet(); }
     /** Weapon sway amplitude × this while shivering (NativeWeaponSway). */
     public static float swayScale() { return state == null ? 1f : state.swayScale(); }
 

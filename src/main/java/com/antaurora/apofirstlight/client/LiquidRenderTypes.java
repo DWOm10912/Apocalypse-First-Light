@@ -83,8 +83,9 @@ public final class LiquidRenderTypes extends RenderType {
                     .createCompositeState(false));
 
     /**
-     * The T15's lamp flares and beam cones (client/vehicle/HeadlightFx): as GLOW, with its own smooth flare
-     * (tools/build-headlight-flare.mjs) drawn linear-filtered, since a flare is seen up close at headlamp size.
+     * The T15's beam cones and tail lamp ground glow (client/vehicle/HeadlightFx): as GLOW, with its own smooth flare
+     * texture (tools/build-headlight-flare.mjs) drawn linear-filtered; both read only its full white middle now (the
+     * flare sprites over the lamps were removed 2026-10-17).
      */
     public static final RenderType HEADLIGHT_GLOW = RenderType.create("apocalypse_firstlight_headlight_glow", DefaultVertexFormat.NEW_ENTITY,
             VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()

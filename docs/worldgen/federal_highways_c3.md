@@ -238,6 +238,7 @@ C3.2 的验证见 10.8。
 - 每个加载了的、道路经过的区块，在工作线程上生成该区块的路面网格（`RoadMesh`：R4 的沥青、黄色内边线、白色外边线、3 m/12 m 虚线车道线、两侧和两端的安全斜边；先在世界坐标生成，再裁到区块，所以区块之间无缝无重叠），每 tick 最多开 4 个；区块卸载就丢掉。
 - **挖开的路面**（2026-10-14 实机反馈后加）：客户端用和施工同一个纯函数（`RoadWorks.pavedRange` + `RoadWorks.paved`）算出区块和外围一圈每个路面格应有的碰撞块（`RoadCells`），和世界里的方块比较；碰撞块不在了（被挖、被炸）或高度档不对的格，网格在这一格开口，坑边朝坑里补一圈沥青侧壁（从邻格碰撞块底到路面）。坑底是原版方块（沥青方块）。比较时机：网格建好时一次，玩家所在 3×3 区块每 tick，其余网格每 tick 轮查 8 个；有变化就在工作线程上重建这个区块的网格。
 - 在实心地形之后画，用地形实心着色器和方块图集（`RoadRenderTypes`，沥青和标线各自的多边形偏移），逐顶点取世界光照；光影包的阴影 pass 不画。
+  - 不开光影时，画车灯的帧里改用 AFL 自己的同款程序 `apocalypse_firstlight:afl_dynlit_solid`（光照图和顶点色分开，片元阶段加上逐像素车灯光，`client/light/DynamicLitPrograms`；Main 2026-10-17，见 [动态光源 V1](../rendering/dynamic_lights_v1.md)）；其余时候（包括开光影）还是原版 `rendertype_solid`。
 - **显卡缓存（2026-10-16，Vextris `io.github.dwom10912:vextris:0.1.1-alpha.4`，mods.toml `[0.1.1-alpha.4,0.2.0-alpha)`；已编译、已自测，用户还没实机验收）**：
   - 每个区块两个 `GpuGeometry`：实心（沥青、桥、隧道衬砌，后面接隧道部件）用 `RoadRenderTypes.ASPHALT`，标线用 `MARKING`。顶点只上传一次（区块相对坐标，没有光影包时按方向的明暗写进顶点色）。
   - 每帧在 AFTER_SOLID_BLOCKS 里，可见区块每个各画一次（一个矩阵），全部包在一个 `GpuGeometry.Batch` 里。视锥裁剪和以前一样。

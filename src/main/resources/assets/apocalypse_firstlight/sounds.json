@@ -639,6 +639,23 @@
     "subtitle": "subtitles.apocalypse_firstlight.truck_horn",
     "sounds": [{"name": "apocalypse_firstlight:pickup_t15/horn_loop", "attenuation_distance": 64}]
   },
+  "truck_signal_on": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_signal_switch",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/signal_on", "attenuation_distance": 6}]
+  },
+  "truck_signal_off": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_signal_switch",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/signal_off", "attenuation_distance": 6}]
+  },
+  "truck_signal_tick": {
+    "subtitle": "subtitles.apocalypse_firstlight.truck_signal",
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/signal_tick_1", "attenuation_distance": 6},
+      {"name": "apocalypse_firstlight:pickup_t15/signal_tick_2", "attenuation_distance": 6}]
+  },
+  "truck_signal_tock": {
+    "sounds": [{"name": "apocalypse_firstlight:pickup_t15/signal_tock_1", "attenuation_distance": 6},
+      {"name": "apocalypse_firstlight:pickup_t15/signal_tock_2", "attenuation_distance": 6}]
+  },
   "office_chair_roll": {
     "subtitle": "subtitles.apocalypse_firstlight.office_chair_roll",
     "sounds": [{"name": "apocalypse_firstlight:office_chair/roll_loop", "attenuation_distance": 12}]

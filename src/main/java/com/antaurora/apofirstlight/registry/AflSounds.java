@@ -142,6 +142,11 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> TRUCK_HANDBRAKE_PULL = simple("truck_handbrake_pull");
     public static final RegistryObject<SoundEvent> TRUCK_HANDBRAKE_RELEASE = simple("truck_handbrake_release");
     public static final RegistryObject<SoundEvent> TRUCK_HORN = simple("truck_horn");
+    // T15 turn signals (tools/build-pickup-t15-signal-sounds.mjs): the stalk on / off, the flasher relay as the lamps light / go out
+    public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_ON = simple("truck_signal_on");
+    public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_OFF = simple("truck_signal_off");
+    public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_TICK = simple("truck_signal_tick");
+    public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_TOCK = simple("truck_signal_tock");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

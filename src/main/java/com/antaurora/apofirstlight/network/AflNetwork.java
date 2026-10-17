@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "51";
+    private static final String PROTOCOL = "54";
     private static SimpleChannel channel;
     private static int nextId;
 

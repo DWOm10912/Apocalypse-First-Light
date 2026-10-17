@@ -121,6 +121,24 @@ public final class PickupTruckLayout {
         return new Quaternionf().rotationX((float) Math.toRadians(-fore)).rotateZ((float) Math.toRadians(-across));
     }
 
+    /**
+     * The transfer case lever beside it (tools/pickup-t15 PIVOTS.transfer, the knob anchor transfer_knob; model frame): it
+     * tilts fore and aft about the top of its boot; the knob's middle as drawn (TransferLever 0 deg).
+     */
+    public static final double[] TRANSFER_PIVOT = {0.07, 0.725, -0.38}, TRANSFER_KNOB = {0.07, 0.895, -0.33};
+
+    /** The transfer lever's turn about its pivot (deg; TransferLever: + the knob to the front). */
+    public static Quaternionf transferTurn(double fore) {
+        return new Quaternionf().rotationX((float) Math.toRadians(-fore));
+    }
+
+    /** Where the hand holds the transfer lever's knob (model frame) at this tilt (deg). */
+    public static double[] transferKnob(double fore) {
+        Vector3f v = transferTurn(fore).transform(new Vector3f((float) (TRANSFER_KNOB[0] - TRANSFER_PIVOT[0]),
+                (float) (TRANSFER_KNOB[1] - TRANSFER_PIVOT[1]), (float) (TRANSFER_KNOB[2] - TRANSFER_PIVOT[2])));
+        return new double[]{TRANSFER_PIVOT[0] + v.x, TRANSFER_PIVOT[1] + v.y + KNOB_PALM, TRANSFER_PIVOT[2] + v.z};
+    }
+
     /** Where the hand holds the knob (model frame) with the lever at these tilts (deg). */
     public static double[] knob(double fore, double across) {
         Vector3f v = leverTurn(fore, across).transform(new Vector3f((float) (SHIFT_KNOB[0] - SHIFT_PIVOT[0]),
@@ -133,8 +151,12 @@ public final class PickupTruckLayout {
      * smooth line, arcing up {@link #HAND_ARC} on the way so it clears the rim and the dash.
      */
     public static double[] rightHand(double[] rim, double fore, double across, double hand) {
+        return rightHand(rim, knob(fore, across), hand);
+    }
+
+    /** The right hand between its place on the rim and a knob (model frame; 0 on the rim .. 1 on the knob). */
+    public static double[] rightHand(double[] rim, double[] k, double hand) {
         if (hand <= 0) return rim;
-        double[] k = knob(fore, across);
         double t = Math.min(1, hand), e = t * t * (3 - 2 * t), arc = HAND_ARC * Math.sin(Math.PI * t);
         return new double[]{rim[0] + (k[0] - rim[0]) * e, rim[1] + (k[1] - rim[1]) * e + arc, rim[2] + (k[2] - rim[2]) * e};
     }
@@ -155,8 +177,17 @@ public final class PickupTruckLayout {
 
     public enum Zone { HOOD, DOOR_L, DOOR_R, FILLER, TAILGATE, SEAT, BED }
 
-    /** A part under the eyes: which, how far along the look (blocks), and the seat (SEAT only, else -1). */
-    public record Pick(Zone zone, double distance, int seat) {}
+    /**
+     * A part under the eyes: which, how far along the look (blocks), and the seat (SEAT only; for a door, {@link #LEAF}
+     * when the look meets the swung-open door itself rather than its opening; else -1).
+     */
+    public record Pick(Zone zone, double distance, int seat) {
+        /** The look meets an open door's own leaf (DOOR_L / DOOR_R only). */
+        public boolean leaf() { return (zone == Zone.DOOR_L || zone == Zone.DOOR_R) && seat == LEAF; }
+    }
+
+    /** Pick#seat of a door pick on the swung-open leaf. */
+    public static final int LEAF = 1;
 
     private static final Box HOOD = new Box(0.95, 2.42, -0.88, 0.88, 0.45, 1.12), HOOD_UP = new Box(1.05, 1.70, -0.80, 0.80, 1.12, 1.80);
     private static final Box DOOR = new Box(-0.19, 0.95, -0.90, -0.74, 0.46, 1.80), DOOR_SWUNG = new Box(0.42, 0.96, -1.95, -0.80, 0.46, 1.80);
@@ -194,8 +225,8 @@ public final class PickupTruckLayout {
         if (hoodOpen) best = nearer(best, Zone.HOOD, HOOD_UP.hit(o, d, max), -1);
         best = nearer(best, Zone.DOOR_L, DOOR.hit(o, d, max), -1);
         best = nearer(best, Zone.DOOR_R, DOOR.mirror().hit(o, d, max), -1);
-        if (doorL) best = nearer(best, Zone.DOOR_L, DOOR_SWUNG.hit(o, d, max), -1);
-        if (doorR) best = nearer(best, Zone.DOOR_R, DOOR_SWUNG.mirror().hit(o, d, max), -1);
+        if (doorL) best = nearer(best, Zone.DOOR_L, DOOR_SWUNG.hit(o, d, max), LEAF);
+        if (doorR) best = nearer(best, Zone.DOOR_R, DOOR_SWUNG.mirror().hit(o, d, max), LEAF);
         best = nearer(best, Zone.FILLER, FILLER.hit(o, d, max), -1);
         best = nearer(best, Zone.TAILGATE, (tailgateDown ? TAILGATE_FLAT : TAILGATE).hit(o, d, max), -1);
         for (int i = 0; i < SEATS.length; i++) if (!SEATS[i].cab()) best = nearer(best, Zone.SEAT, seatBox(SEATS[i]).hit(o, d, max), i);

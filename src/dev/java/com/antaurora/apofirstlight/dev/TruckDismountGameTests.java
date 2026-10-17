@@ -155,8 +155,10 @@ public final class TruckDismountGameTests {
     }
 
     /**
-     * The lamps (design doc 8.10): the light switch and the high beam (server side of VehiclePackets.Lamps), the high beam
-     * only with the switch on, both kept in the save; the stop lamps while the driver holds the back key (the brake).
+     * The lamps (design doc 8.10): the one light key (server side of VehiclePackets.Lamps): a tap turns the lights on on low
+     * beam / off, a hold flips the high beam and from off turns the lights on with it; kept in the save; the stop lamps while
+     * the driver holds the back key (the brake). The turn signals (8.12): a key toggles its side, the other side's key
+     * switches over; the hazard toggles on its own; both kept in the save.
      */
     private static void lamps(GameTestHelper h, ServerLevel level, StringBuilder log, boolean[] ok) {
         BlockPos origin = h.absolutePos(BlockPos.ZERO);
@@ -165,17 +167,38 @@ public final class TruckDismountGameTests {
         level.addFreshEntity(truck);
         Player driver = h.makeMockPlayer();
         h.runAfterDelay(20, () -> {
-            boolean highAlone = lamp(truck, PickupTruckEntity.SWITCH_HIGH) && truck.highBeam();
-            lamp(truck, PickupTruckEntity.SWITCH_HIGH);
             lamp(truck, PickupTruckEntity.SWITCH_LIGHTS);
             boolean lights = truck.headlights() && !truck.highBeam();
             lamp(truck, PickupTruckEntity.SWITCH_HIGH);
             boolean high = truck.highBeam();
+            lamp(truck, PickupTruckEntity.SWITCH_HIGH);
+            boolean back = truck.headlights() && !truck.highBeam();
+            lamp(truck, PickupTruckEntity.SWITCH_HIGH);
+            lamp(truck, PickupTruckEntity.SWITCH_LIGHTS);
+            boolean off = !truck.headlights() && !truck.highBeam();
+            lamp(truck, PickupTruckEntity.SWITCH_LIGHTS);
+            boolean lowAgain = truck.headlights() && !truck.highBeam();
+            lamp(truck, PickupTruckEntity.SWITCH_LIGHTS);
+            boolean fromOff = lamp(truck, PickupTruckEntity.SWITCH_HIGH) && truck.headlights() && truck.highBeam();
             net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
             truck.saveWithoutId(tag);
             PickupTruckEntity copy = PickupTruckEntity.create(level, at, 0F);
             copy.load(tag);
             boolean saved = copy.headlights() && copy.highBeam();
+            lamp(truck, PickupTruckEntity.SIGNAL_LEFT);
+            boolean left = truck.turnSignal() == -1;
+            lamp(truck, PickupTruckEntity.SIGNAL_RIGHT);
+            boolean over = truck.turnSignal() == 1;
+            lamp(truck, PickupTruckEntity.SWITCH_HAZARD);
+            boolean hazard = truck.hazard() && truck.turnSignal() == 1;
+            net.minecraft.nbt.CompoundTag tag2 = new net.minecraft.nbt.CompoundTag();
+            truck.saveWithoutId(tag2);
+            PickupTruckEntity copy2 = PickupTruckEntity.create(level, at, 0F);
+            copy2.load(tag2);
+            boolean signalSaved = copy2.hazard() && copy2.turnSignal() == 1;
+            lamp(truck, PickupTruckEntity.SIGNAL_RIGHT);
+            lamp(truck, PickupTruckEntity.SWITCH_HAZARD);
+            boolean signalOff = truck.turnSignal() == 0 && !truck.hazard() && truck.highBeam();
             sit(truck, driver, PickupTruckLayout.DRIVER);
             driver.zza = -1.0F;
             h.runAfterDelay(3, () -> {
@@ -183,9 +206,12 @@ public final class TruckDismountGameTests {
                 driver.zza = 0.0F;
                 h.runAfterDelay(3, () -> {
                     boolean released = !truck.braking();
-                    boolean good = !highAlone && lights && high && saved && braking && released;
-                    log.append(String.format("lamps: high beam with the switch off %s; switch on %s, high beam %s; kept in the save %s; braking %s, released %s%n",
-                            highAlone ? "LIT (wrong)" : "dark", lights, high, saved, braking, released));
+                    boolean good = lights && high && back && off && lowAgain && fromOff && saved && braking && released
+                            && left && over && hazard && signalSaved && signalOff;
+                    log.append(String.format("lamps: tap on low %s; hold high %s, hold back %s; tap off %s, on again low %s; hold from off %s; kept in the save %s; braking %s, released %s%n",
+                            lights, high, back, off, lowAgain, fromOff, saved, braking, released));
+                    log.append(String.format("signals: left %s, over to right %s, hazard with it %s, kept in the save %s, both off again %s%n",
+                            left, over, hazard, signalSaved, signalOff));
                     if (!good) ok[0] = false;
                     driver.stopRiding();
                     truck.discard();

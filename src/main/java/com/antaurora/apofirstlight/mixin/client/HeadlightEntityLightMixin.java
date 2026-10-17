@@ -11,13 +11,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * The T15 headlamps' dynamic block light (client/vehicle/HeadlightField, design doc 8.10) on entities and the first person
- * hand: EntityRenderer#getBlockLightLevel, max(stored, field).
+ * hand: EntityRenderer#getBlockLightLevel, max(stored, field). The cell read is the entity's light probe (its eyes), and
+ * the low beam lights the ground with its top edge kept below the eyes of whoever stands in it (HeadlightBeam): the cell
+ * under the eyes counts too, so someone standing in the beam is lit from the legs up.
  */
 @Mixin(EntityRenderer.class)
 public abstract class HeadlightEntityLightMixin {
     @Inject(method = "getBlockLightLevel", at = @At("RETURN"), cancellable = true)
     private void afl$headlights(Entity entity, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
-        int d = HeadlightField.level(pos);
+        int d = Math.max(HeadlightField.level(pos), HeadlightField.level(pos.below()));
         if (d > cir.getReturnValueI()) cir.setReturnValue(d);
     }
 }

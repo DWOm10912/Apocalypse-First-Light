@@ -17,6 +17,14 @@ public final class GastroenteritisEffect extends MobEffect {
         super(MobEffectCategory.HARMFUL, COLOR);
     }
 
+    /** HUD V2: shown as a status badge (client/StatusBadgeHud), not among vanilla's effect icons. */
+    @Override
+    public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientMobEffectExtensions> consumer) {
+        consumer.accept(new net.minecraftforge.client.extensions.common.IClientMobEffectExtensions() {
+            @Override public boolean isVisibleInGui(net.minecraft.world.effect.MobEffectInstance instance) { return false; }
+        });
+    }
+
     @Override
     public List<ItemStack> getCurativeItems() {
         return new ArrayList<>();

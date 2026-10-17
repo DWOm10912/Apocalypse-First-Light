@@ -83,7 +83,7 @@ public final class VehiclePackets {
             b.writeFloat(s.spinRate()[i]);
         }
         Drivetrain.State d = s.drive();
-        b.writeByte((s.asleep() ? 1 : 0) | (d.running() ? 2 : 0) | (d.locked() ? 4 : 0) | (d.fourWheel() ? 8 : 0));
+        b.writeByte((s.asleep() ? 1 : 0) | (d.running() ? 2 : 0) | (d.locked() ? 4 : 0) | (d.fourWheel() ? 8 : 0) | (d.low() ? 16 : 0));
         b.writeByte(d.gear());
         b.writeByte(d.shiftTarget());
         b.writeByte(d.ignition());
@@ -104,7 +104,7 @@ public final class VehiclePackets {
         float[] d = new float[8];
         for (int i = 0; i < d.length; i++) d[i] = b.readFloat();
         Drivetrain.State drive = new Drivetrain.State((flags & 2) != 0, d[0], gear, d[1], (flags & 4) != 0, d[2], target, d[3], d[4],
-                (flags & 8) != 0, ignition, d[5], d[6], d[7]);
+                (flags & 8) != 0, (flags & 16) != 0, ignition, d[5], d[6], d[7]);
         return new VehicleState(x, y, z, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10], travel, spin, (flags & 1) != 0, drive);
     }
 

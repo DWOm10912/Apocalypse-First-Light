@@ -35,6 +35,12 @@
 
 当前盖革 HUD 高48、scale=0.85、底边距8，其顶边为屏幕高-48.8，二者默认有12.2 GUI单位间隔；盖革默认回退scale=1时仍有5单位间隔。编辑器提供红框避让提示，没有自动碰撞系统；用户自定义双方偏移或缩放后仍需自行避免重叠。
 
+## 弹少、空仓提示（2026-10-17，HUD V2，没有实机验证）
+
+- 弹匣里剩的 ≤ 容量的 1/4 且不为 0 时，当前装弹数字变琥珀 `#E0A84A`（`NativeGunHud.LOW_AMMO`）；空仓仍是原来的红。
+- 空仓且备弹不是 "0" 时，弹药行左边、HUD 框外画一个换弹键帽（`client/ui/AflKeyHint`，键取自 `NativeGunInput.reloadKey()`）+ "换弹"（`hud.apocalypse_firstlight.gun.reload`）。
+- HUD V2 概念里的射击模式胶囊、枪名排版、换弹进度条没做，等枪重做。见 `docs/ui/hud_v2_research.md` 第 6 节。
+
 ## 实现与验证边界
 
 - NativeGunHud：绘制和客户端事件注册。

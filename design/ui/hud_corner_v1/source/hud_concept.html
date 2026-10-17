@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>HUD Corner V1</title>
+<style>
+@font-face { font-family: 'AFL Sans'; src: url('/assets/font/afl_sans_sc.ttf'); }
+body { margin: 0; background: #141516; color: #E8E4DC; font-family: 'AFL Sans', 'Microsoft YaHei', sans-serif; }
+canvas { display: block; max-width: 100%; margin: 12px auto; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>
+// HUD corner layout V1 concepts (design use only): move the survival cluster off the bottom of the screen into a corner,
+// with a short load bar. Reuses the drawing code of design/ui/vehicle_dashboard_v1 (loaded below: shapes, text, the
+// survival cluster as it is in game, the dashboard and the telltale strip). GUI scale 3 on a 1920 x 1080 frame.
+const WEIGHT = {kg: 24.6, max: 60, ticks: [30, 40, 50], colour: '#B4B2A8'};
+
+/** The dashboard concept's code, up to its frames and sheets, run in this page's global scope. */
+async function loadShared() {
+  const html = await (await fetch('/design/ui/vehicle_dashboard_v1/source/dashboard_concept.html')).text();
+  const body = html.split('<script>')[1].split('// ---------- frames and sheets')[0];
+  const s = document.createElement('script');
+  s.textContent = body.replace(/^const /gm, 'var ').replace(/^let /gm, 'var ');
+  document.head.appendChild(s);
+}
+
+/** The survival cluster (as in game) centred at (x, y). */
+function cluster(c, x, y) {
+  c.save(); c.translate(x - 320, y - 312); survival(c); c.restore();
+}
+
+/** Kettlebell: the load icon. */
+function kettlebell(c, x, y, s, colour) {
+  c.save(); c.translate(x, y); c.fillStyle = colour; c.strokeStyle = colour; c.lineWidth = s * 0.14;
+  c.beginPath(); c.arc(0, -0.18 * s, 0.22 * s, Math.PI, 0); c.stroke();
+  c.beginPath(); c.moveTo(-0.36 * s, -0.08 * s); c.lineTo(0.36 * s, -0.08 * s); c.lineTo(0.46 * s, 0.42 * s); c.lineTo(-0.46 * s, 0.42 * s); c.closePath(); c.fill();
+  c.restore();
+}
+
+/** The short load row: icon, a bar `w` long with the tier ticks, the load in kg (align: icon left or right). */
+function loadRow(c, x, y, w, alignRight) {
+  const total = 9 + w + 3 + 20, x0 = alignRight ? x - total : x;
+  kettlebell(c, x0 + 3.5, y - 0.4, 6.4, COL.text);
+  const bx = x0 + 9;
+  rr(c, bx, y - 1.5, w, 3, 1.5); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+  rr(c, bx, y - 1.5, w * WEIGHT.kg / WEIGHT.max, 3, 1.5); c.fillStyle = WEIGHT.colour; c.fill();
+  rr(c, bx - 0.15, y - 1.65, w + 0.3, 3.3, 1.65); c.lineWidth = 0.3; c.strokeStyle = rgba(COL.line, 0.28); c.stroke();
+  for (const t of WEIGHT.ticks) { c.fillStyle = rgba(COL.line, 0.45); c.fillRect(bx + w * t / WEIGHT.max - 0.15, y - 2.4, 0.3, 4.8); }
+  text(c, WEIGHT.kg.toFixed(1) + ' kg', bx + w + 3, y + 1.6, 4.4, COL.text, 'left');
+}
+
+/** Vanilla status effect tiles (top right, 24 x 24 GUI, 25 apart), or AFL-styled small ones. */
+function effects(c, right, top, small) {
+  const list = [['#7CAFC6', '速'], ['#CD5CAB', '恢']];
+  list.forEach(([col, ch], i) => {
+    if (small) {
+      const x = right - 13 * (i + 1) + 1;
+      panel(c, x, top, 12, 12, 2.5, 0.62);
+      disc(c, x + 6, top + 6, 3.2, col, 0.9);
+      text(c, ch, x + 6, top + 7.4, 3.6, '#141516', 'center', 1, false);
+    } else {
+      const x = right - 25 * (i + 1);
+      c.fillStyle = 'rgba(40,40,40,0.9)'; c.fillRect(x, top, 24, 24);
+      c.strokeStyle = 'rgba(140,140,140,0.9)'; c.lineWidth = 1; c.strokeRect(x + 0.5, top + 0.5, 23, 23);
+      disc(c, x + 12, top + 12, 6, col, 0.9);
+      text(c, ch, x + 12, top + 15, 7, '#141516', 'center', 1, false);
+    }
+  });
+}
+
+/** The key hint panel (PUBG style, right aligned, fading to the left). */
+function keyHints(c, right, top, rows) {
+  const w = 74, h = 4 + rows.length * 14 + 2;
+  const g = c.createLinearGradient(right - w, 0, right, 0);
+  g.addColorStop(0, rgba(COL.back, 0)); g.addColorStop(0.35, rgba(COL.back, 0.62)); g.addColorStop(1, rgba(COL.back, 0.62));
+  rr(c, right - w, top, w, h, 4); c.fillStyle = g; c.fill();
+  rows.forEach(([key, label], i) => {
+    const y = top + 4 + i * 14, lx = right - 6;
+    text(c, label, lx, y + 8.6, 6.4, COL.text, 'right', 1, false);
+    c.font = `6.4px ${FONT}`; const lw = c.measureText(label).width;
+    const kx = lx - lw - 5 - 11;
+    rr(c, kx, y + 1, 11, 10, 2.5); c.fillStyle = rgba('#E8E4DC', 0.92); c.fill();
+    text(c, key, kx + 5.5, y + 8.4, 6, '#16181A', 'center', 1, false);
+  });
+}
+
+/** The AFL hotbar (as in game, approximate): a wide primary tile, six bound slots, the selected one raised. */
+function hotbar(c) {
+  const x = 229, y = 337;
+  panel(c, x, y, 182, 22, 3, 0.62);
+  rr(c, x + 3, y + 3, 38, 16, 2); c.fillStyle = rgba(COL.line, 0.08); c.fill();
+  c.fillStyle = '#E8E4DC'; c.fillRect(x + 9, y + 8, 22, 3); c.fillRect(x + 26, y + 10, 4, 6); c.fillRect(x + 13, y + 10, 3, 3);
+  for (let i = 0; i < 6; i++) {
+    const sx = x + 46 + i * 22, up = i === 2 ? 3 : 0;
+    rr(c, sx, y + 3 - up, 18, 16, 2); c.fillStyle = rgba(COL.line, i === 2 ? 0.16 : 0.06); c.fill();
+    if (i === 2) { rr(c, sx + 5, y + 18, 8, 1.6, 0.8); c.fillStyle = COL.accent; c.fill(); }
+    if (i < 3) { c.fillStyle = ['#C9A35A', '#C9A35A', '#8A8F96'][i]; c.fillRect(sx + 6, y + 6 - up, 6, 9); }
+  }
+}
+
+/** The weight bar as it is now (the experience bar's place, 182 long), for the "now" frame. */
+function weightNow(c) {
+  rr(c, 229, 331, 182, 5, 2.5); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+  rr(c, 229, 331, 182 * WEIGHT.kg / WEIGHT.max, 5, 2.5); c.fillStyle = WEIGHT.colour; c.fill();
+  for (const t of WEIGHT.ticks) { c.fillStyle = rgba(COL.line, 0.45); c.fillRect(229 + 182 * t / WEIGHT.max - 0.15, 330, 0.3, 7); }
+}
+
+// ---------- the concepts ----------
+const CONCEPTS = {
+  now: {title: '现在', draw(c) {
+    cluster(c, 320, 312); weightNow(c); hotbar(c); effects(c, 640, 1, false);
+  }, lines: ['生存 HUD 一组在屏幕中线、快捷栏上面，负重条横跨整条快捷栏（182 长），原版药水效果在右上角，按键提示面板也在右上角（拿着工具时）。']},
+  A: {title: '方案 A · 左上角（推荐）', draw(c, st) {
+    cluster(c, 52, 26); loadRow(c, 9, 48, 52, false); hotbar(c); effects(c, 640, 1, false);
+    if (st.hints) keyHints(c, 632, 30, st.hints);
+  }, lines: [
+    '生存 HUD 整组原样搬到左上角（耐力 ( 生命 体温 饥饿 ) 口渴，和现在一模一样，只换位置），下面一行短负重条：秤砣图标 + 52 长的条（三个档位刻度）+ 公斤数。',
+    '底下只剩快捷栏，中间干净。左上角原版本来就空着（聊天在左下，Boss 血条在顶上中间，药水效果和按键提示在右上），不和任何东西抢位置。',
+    '开车时：左上生存、顶上中间指示灯、右下仪表盘，三块各占一角（见第 4 张）。'
+  ]},
+  B: {title: '方案 B · 右上角一体', draw(c, st) {
+    cluster(c, 588, 26); loadRow(c, 631, 48, 52, true); effects(c, 632, 56, true); hotbar(c);
+    if (st.hints) keyHints(c, 632, 74, st.hints);
+  }, lines: [
+    '生存 HUD 整组搬到右上角，下面右对齐一行短负重条，再下面是药水效果（改成 AFL 风格的小方块，原版那种 24 格大方块太占地方），按键提示面板接在最下面。',
+    '所有状态集中在一个角，看一眼就全有。代价：要接管原版药水效果的画法；成就 / 配方的弹出提示（原版也在右上角）会盖在上面一会儿。',
+  ]},
+  C: {title: '方案 C · 左上角分开的小圆（GTA RP 那种）', draw(c, st) {
+    const items = [['#CC4A42', 0.9, '18'], ['#D39A4C', 0.8, ''], ['#6FA3C7', 0.62, ''], ['#C8C6BE', 0.8, ''], ['#C8C6BE', 0.4, '14°'], [WEIGHT.colour, WEIGHT.kg / WEIGHT.max, 'kg']];
+    items.forEach(([col, f, label], i) => {
+      const x = 16 + i * 19, y = 17, r = 8.2, b = 2.0;
+      disc(c, x, y, r - b, COL.back, 0.5);
+      sector(c, x, y, r - b, r, 0, 360); c.fillStyle = rgba(COL.back, 0.5); c.fill();
+      sector(c, x, y, r - b, r, 0, 360 * f); c.fillStyle = col; c.fill();
+      circleLine(c, x, y, r + 0.3, 0.28, 0.3);
+      if (label) text(c, label, x, y + 1.5, label.length > 2 ? 3.6 : 4.2, '#F0ECE4', 'center', 1, false);
+      else disc(c, x, y, 1.6, col, 0.9);
+    });
+    hotbar(c); effects(c, 640, 1, false);
+  }, lines: [
+    '六个一样大的小圆一排：生命（带数字）、饥饿、口渴、耐力、体温（读数）、负重（kg）。像 GTA 线上 RP 服常见的那种状态圈，最紧凑。',
+    '代价：放弃现在"括号一样套在一起"的那一组（体温表盘的金属框和趋势箭头都没了），和生存 HUD 之前定的样子差得最远。',
+  ]},
+};
+
+let BG;
+function backdrop(c) {
+  const s = 1080 / BG.height, w = BG.width * s, ox = (1920 - w) / 2;
+  c.drawImage(BG, ox, 0, w, 1080);
+  // cover the chat line of the screenshot with the grass just under it
+  c.drawImage(BG, 0, 1186, 2000, 58, ox, 1127 * s, 2000 * s, 58 * s);
+  const v = c.createLinearGradient(0, 0, 0, 1080); v.addColorStop(0, 'rgba(10,14,26,0.18)'); v.addColorStop(0.5, 'rgba(10,14,26,0)'); v.addColorStop(1, 'rgba(0,0,0,0.18)');
+  c.fillStyle = v; c.fillRect(0, 0, 1920, 1080);
+}
+function frame(c, key, st) {
+  c.save(); backdrop(c); c.scale(G, G);
+  CONCEPTS[key].draw(c, st || {});
+  c.restore();
+}
+function drivingFrame(c) {
+  c.save(); backdrop(c); c.scale(G, G);
+  cluster(c, 52, 26);
+  dashA(c, STATES.cruise);   // the ring dashboard and its telltale strip, as built
+  c.restore();
+}
+function caption(c, y, w, title, lines, note) {
+  c.fillStyle = '#141516'; c.fillRect(0, y, w, 1e4);
+  c.fillStyle = '#E8E4DC'; c.font = `34px ${FONT}`; c.textBaseline = 'top'; c.fillText(title, 40, y + 22);
+  c.font = `21px ${FONT}`; c.fillStyle = '#C8C4BC';
+  lines.forEach((l, i) => c.fillText(l, 40, y + 74 + i * 33));
+  if (note) { c.fillStyle = '#8A8780'; c.font = `18px ${FONT}`; c.fillText(note, 40, y + 74 + lines.length * 33 + 8); }
+}
+const NOTE = '示意：背景是溪谷老宅的游戏截图，界面缩放 3。生存 HUD 是照游戏里的样子画的近似图；数值是示意（生命 18、负重 24.6 kg）。';
+function sheet(key, st) {
+  const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080 + 230;
+  const c = cv.getContext('2d');
+  frame(c, key, st);
+  caption(c, 1080, 1920, CONCEPTS[key].title, CONCEPTS[key].lines, NOTE);
+  return cv;
+}
+function sheetDriving() {
+  const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080 + 230;
+  const c = cv.getContext('2d');
+  drivingFrame(c);
+  caption(c, 1080, 1920, '方案 A 开车时', ['左上生存 HUD（坐车时快捷栏和负重已经藏起来），顶上中间指示灯栏，右下仪表盘（圆环，已经做进游戏的那套）。三块互不挤。'], NOTE);
+  return cv;
+}
+async function save(cv, name) {
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  await fetch('/save?name=' + name, {method: 'POST', body: blob});
+}
+const HINTS = [['R', '换线'], ['F', '切换电路']];
+async function sheets() {
+  await save(sheet('now'), 'hud_0_now.png');
+  await save(sheet('A', {hints: HINTS}), 'hud_A_top_left.png');
+  await save(sheet('B', {hints: HINTS}), 'hud_B_top_right.png');
+  await save(sheet('C'), 'hud_C_small_rings.png');
+  await save(sheetDriving(), 'hud_A_driving.png');
+  return 'saved';
+}
+(async () => {
+  await loadShared();
+  await document.fonts.load(`20px "AFL Sans"`);
+  BG = new Image(); await new Promise(res => { BG.onload = res; BG.src = 'bg_cabin.png'; });
+  const out = document.getElementById('out');
+  out.appendChild(sheet('now'));
+  out.appendChild(sheet('A', {hints: HINTS}));
+  out.appendChild(sheet('B', {hints: HINTS}));
+  out.appendChild(sheet('C'));
+  out.appendChild(sheetDriving());
+  window.ready = true;
+})();
+</script>
+</body>
+</html>

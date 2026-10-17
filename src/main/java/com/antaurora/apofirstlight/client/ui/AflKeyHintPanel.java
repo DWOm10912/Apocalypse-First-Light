@@ -31,6 +31,23 @@ public final class AflKeyHintPanel {
 
     /** Draws the panel for this frame's rows; visible = false fades it out. */
     public void render(GuiGraphics g, int screenWidth, List<Row> next, boolean visible) {
+        render(g, screenWidth, next, visible, 1);
+    }
+
+    /** As above, the whole panel (margins too) scaled by k about the screen's top right corner. */
+    public void render(GuiGraphics g, int screenWidth, List<Row> next, boolean visible, float k) {
+        if (k == 1) {
+            draw(g, screenWidth, next, visible);
+            return;
+        }
+        g.pose().pushPose();
+        g.pose().translate(screenWidth, 0, 0);
+        g.pose().scale(k, k, 1);
+        draw(g, 0, next, visible);
+        g.pose().popPose();
+    }
+
+    private void draw(GuiGraphics g, int screenWidth, List<Row> next, boolean visible) {
         long now = System.nanoTime();
         Font font = Minecraft.getInstance().font;
         if (!same(next, rows)) {

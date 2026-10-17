@@ -52,8 +52,11 @@ public final class VehicleSpec {
     public final double reverseGear, finalDrive, efficiency;
     /** Clutch: the most torque it carries (Nm); the shift (s: out, lever across) and the time to let it in again (s). */
     public final double clutchTorque, shiftTime, engageTime;
-    /** 2H / 4H: the change only below this speed (m/s). */
-    public final double fourWheelSpeed;
+    /**
+     * Transfer case: 2H / 4H change only below this speed (m/s); the low range's ratio (4L, times every gear; 1: none) and
+     * the speed below which it goes in or out (m/s: standing).
+     */
+    public final double fourWheelSpeed, lowRange, lowRangeSpeed;
     /** Brakes: all four at once (N), the front's share; rolling resistance; drag (0.5 rho Cd A). */
     public final double brakeForce, brakeFront, rolling, drag;
     /** Tyres: the slip angle of peak side force (rad), the sliding grip left past it, the speed below which slip is linear. */
@@ -121,6 +124,8 @@ public final class VehicleSpec {
         shiftTime = b.shiftTime;
         engageTime = b.engageTime;
         fourWheelSpeed = b.fourWheelSpeed;
+        lowRange = b.lowRange;
+        lowRangeSpeed = b.lowRangeSpeed;
         brakeForce = b.brakeForce;
         brakeFront = b.brakeFront;
         rolling = b.rolling;
@@ -184,6 +189,8 @@ public final class VehicleSpec {
         b.shiftTime = 0.35;
         b.engageTime = 0.25;
         b.fourWheelSpeed = 20 / 3.6;
+        b.lowRange = 2.28;   // a small pickup's part-time case (2.28 : 1 low range)
+        b.lowRangeSpeed = 0.8;
         b.brakeForce = 14000;
         b.brakeFront = 0.65;
         b.rolling = 0.015;
@@ -248,7 +255,7 @@ public final class VehicleSpec {
         double mass, ix, iy, iz, comY, comZ, frontZ, rearZ, halfTrack, radius, bump, droop, springFront, springRear, dampFront,
                 dampRear, stopRate, stopDepth, maxSteer, steerGrip, antiRollFront, antiRollRear, steerRate, steerReturn, topSpeed,
                 idleRpm, cutRpm, frictionA, frictionB, engineInertia, stallRpm, starterTorque, starterRpm, preheat, crankMin, crankMax, fuelPerKwh, fuelIdle,
-                reverseGear, finalDrive, efficiency, clutchTorque, shiftTime, engageTime, fourWheelSpeed, brakeForce, brakeFront, rolling, drag, slipPeak, slideGrip, slipSpeed;
+                reverseGear, finalDrive, efficiency, clutchTorque, shiftTime, engageTime, fourWheelSpeed, lowRange, lowRangeSpeed, brakeForce, brakeFront, rolling, drag, slipPeak, slideGrip, slipSpeed;
         double[] hull, torqueRpm, torqueNm, gears;
     }
 }

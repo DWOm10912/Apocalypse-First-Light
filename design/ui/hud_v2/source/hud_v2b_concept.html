@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>HUD V2 B</title>
+<style>
+@font-face { font-family: 'AFL Sans'; src: url('/assets/font/afl_sans_sc.ttf'); }
+body { margin: 0; background: #141516; color: #E8E4DC; font-family: 'AFL Sans', 'Microsoft YaHei', sans-serif; }
+canvas { display: block; max-width: 100%; margin: 12px auto; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>
+// HUD V2, direction B mixed (docs/ui/hud_v2_research.md 5): the round body module bottom left, needs that grow when
+// they matter, effect badges (round, icon only, green = good / brown = bad / red = danger; the name slides out for a
+// moment when one is gained), Alt for the full card; the gear corner bottom right. Reuses the dashboard concept's shapes
+// and the first V2 page's icons and modules (both loaded below). GUI scale 3.
+
+async function loadCode(url, cut) {
+  const html = await (await fetch(url)).text();
+  let body = html.slice(html.indexOf('<script>') + 8);
+  body = cut(body);
+  const s = document.createElement('script');
+  s.textContent = body.replace(/^const /gm, 'var ').replace(/^let /gm, 'var ');
+  document.head.appendChild(s);
+}
+async function loadShared() {
+  await loadCode('/design/ui/vehicle_dashboard_v1/source/dashboard_concept.html', b => b.split('// ---------- frames and sheets')[0]);
+  await loadCode('/design/ui/hud_v2/source/hud_v2_concept.html', b => {
+    const shared = b.split("// ---------- the player's state")[1].split('// ---------- A: bars')[0];
+    const dial = b.split('// ---------- B: round module ----------')[1].split('function vitalsB')[0];
+    return '// state' + shared + dial;
+  });
+}
+
+// ---------- more icons ----------
+function moreIcons() {
+  Object.assign(IC, {
+    flame(c, s) { c.beginPath(); c.moveTo(0, -0.46 * s); c.bezierCurveTo(0.42 * s, -0.08 * s, 0.4 * s, 0.42 * s, 0, 0.44 * s); c.bezierCurveTo(-0.4 * s, 0.42 * s, -0.36 * s, 0.02 * s, -0.12 * s, -0.16 * s);
+      c.bezierCurveTo(-0.1 * s, 0.02 * s, 0.02 * s, 0.06 * s, 0.04 * s, -0.04 * s); c.bezierCurveTo(0.08 * s, -0.2 * s, -0.02 * s, -0.34 * s, 0, -0.46 * s); c.fill(); },
+    sun(c, s) { c.beginPath(); c.arc(0, 0, 0.2 * s, 0, 7); c.fill(); c.lineWidth = s * 0.09; c.lineCap = 'round';
+      for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; c.beginPath(); c.moveTo(Math.cos(a) * 0.3 * s, Math.sin(a) * 0.3 * s); c.lineTo(Math.cos(a) * 0.44 * s, Math.sin(a) * 0.44 * s); c.stroke(); } },
+    plate(c, s) { c.lineWidth = s * 0.08; c.lineCap = 'round';
+      for (const dx of [-0.36, -0.24, -0.12]) { c.beginPath(); c.moveTo(dx * s, -0.44 * s); c.lineTo(dx * s, -0.16 * s); c.stroke(); }
+      c.beginPath(); c.moveTo(-0.4 * s, -0.16 * s); c.quadraticCurveTo(-0.24 * s, -0.02 * s, -0.08 * s, -0.16 * s); c.stroke();
+      c.fillRect(-0.29 * s, -0.12 * s, 0.1 * s, 0.56 * s);
+      c.beginPath(); c.moveTo(0.2 * s, 0.44 * s); c.lineTo(0.2 * s, -0.44 * s); c.quadraticCurveTo(0.42 * s, -0.3 * s, 0.38 * s, 0.04 * s); c.lineTo(0.3 * s, 0.04 * s); c.lineTo(0.3 * s, 0.44 * s); c.closePath(); c.fill(); },
+    skull(c, s) { c.beginPath(); c.arc(0, -0.08 * s, 0.34 * s, Math.PI * 0.85, Math.PI * 2.15); c.lineTo(0.2 * s, 0.4 * s); c.lineTo(-0.2 * s, 0.4 * s); c.closePath(); c.fill();
+      c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.arc(-0.13 * s, -0.04 * s, 0.09 * s, 0, 7); c.arc(0.13 * s, -0.04 * s, 0.09 * s, 0, 7); c.fill(); c.globalCompositeOperation = 'source-over'; },
+    speed(c, s) { c.lineWidth = s * 0.13; c.lineCap = 'round'; c.lineJoin = 'round'; for (const dx of [-0.16, 0.14]) { c.beginPath(); c.moveTo((dx - 0.14) * s, -0.3 * s); c.lineTo((dx + 0.14) * s, 0); c.lineTo((dx - 0.14) * s, 0.3 * s); c.stroke(); } },
+    regen(c, s) { IC.heart(c, s); c.globalCompositeOperation = 'destination-out'; c.fillRect(-0.04 * s, -0.16 * s, 0.08 * s, 0.32 * s); c.fillRect(-0.16 * s, -0.04 * s, 0.32 * s, 0.08 * s); c.globalCompositeOperation = 'source-over'; },
+    bed(c, s) { c.fillRect(-0.46 * s, -0.04 * s, 0.92 * s, 0.22 * s); c.fillRect(-0.46 * s, -0.3 * s, 0.08 * s, 0.6 * s); c.fillRect(0.38 * s, 0.1 * s, 0.08 * s, 0.2 * s); c.beginPath(); c.arc(-0.22 * s, -0.16 * s, 0.1 * s, 0, 7); c.fill(); },
+    geiger(c, s) { rr(c, -0.36 * s, -0.24 * s, 0.6 * s, 0.6 * s, 0.08 * s); c.fill(); c.fillRect(0.24 * s, -0.08 * s, 0.2 * s, 0.1 * s); c.lineWidth = s * 0.08; c.beginPath(); c.moveTo(-0.2 * s, -0.24 * s); c.lineTo(-0.2 * s, -0.44 * s); c.stroke(); },
+  });
+}
+
+// ---------- effect badges ----------
+const POL = {good: '#5FA67E', bad: '#A86A3A', danger: '#B8443C', cold: '#4F7FB8'};
+const EFFECTS = {
+  fed: {icon: 'plate', pol: 'good', name: '吃饱喝足', what: '生命缓慢恢复'},
+  warm: {icon: 'flame', pol: 'good', name: '火边暖和', what: '体温回升更快'},
+  rested: {icon: 'bed', pol: 'good', name: '休息过', what: '耐力恢复 +10%'},
+  speed: {icon: 'speed', pol: 'good', name: '速度', what: '移动 +20%', time: 0.6, left: '1:30'},
+  regen: {icon: 'regen', pol: 'good', name: '再生', what: '生命恢复', time: 0.3, left: '0:22'},
+  cold: {icon: 'snow', pol: 'cold', name: '寒冷', what: '耐力消耗 +5%，手抖'},
+  hot: {icon: 'sun', pol: 'bad', name: '炎热', what: '口渴更快'},
+  wet: {icon: 'wet', pol: 'cold', name: '湿透', what: '体温下降更快'},
+  rad: {icon: 'rad', pol: 'bad', name: '辐射病 II', what: '最大生命 −4，恶心'},
+  heavy: {icon: 'kettle', pol: 'bad', name: '超重', what: '走路变慢，耐力消耗 +30%'},
+  poison: {icon: 'skull', pol: 'danger', name: '中毒', what: '每秒 −1 生命', time: 0.4, left: '0:12'},
+  thirst: {icon: 'drop', pol: 'danger', name: '脱水', what: '2:30 后开始掉血', countdown: '2:30'},
+};
+const BADGE_R = 5.4;
+/** One badge: a filled circle in its polarity colour, a white pictogram, a light rim; timed ones show what is left as an arc. */
+function badge(c, x, y, key, opts = {}) {
+  const e = EFFECTS[key], r = BADGE_R;
+  disc(c, x, y + 0.6, r + 0.6, '#000000', 0.25);
+  disc(c, x, y, r, POL[e.pol], 0.95);
+  const g = c.createLinearGradient(0, y - r, 0, y + r); g.addColorStop(0, 'rgba(255,255,255,0.18)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.beginPath(); c.arc(x, y, r, 0, 7); c.fillStyle = g; c.fill();
+  circleLine(c, x, y, r + 0.15, 0.55, 0.35);
+  if (e.time != null) { sector(c, x, y, r + 0.5, r + 1.3, 0, 360 * e.time); c.fillStyle = rgba('#F0ECE4', 0.85); c.fill(); }
+  ic(c, e.icon, x, y, 6.2, '#F6F2EA');
+  if (opts.flash) { circleLine(c, x, y, r + 2.2, 0.5, 0.5); }
+  // the name slides out to the right when gained (opts.label), the countdown of a deadly need always shows
+  const label = opts.label ? e.name + (opts.what ? '　' + e.what : '') : e.countdown ? e.name + ' ' + e.countdown : e.left && opts.time ? e.left : null;
+  if (label) {
+    c.font = `5.2px ${FONT}`; const w = c.measureText(label).width + 8;
+    const g2 = c.createLinearGradient(x + r + 1, 0, x + r + 1 + w + 10, 0);
+    g2.addColorStop(0, rgba(COL.back, 0.62)); g2.addColorStop(0.75, rgba(COL.back, 0.5)); g2.addColorStop(1, rgba(COL.back, 0));
+    c.fillStyle = g2; c.fillRect(x + r + 1, y - 4.5, w + 10, 9);
+    if (opts.label) {
+      text(c, e.name, x + r + 4, y + 1.9, 5.2, e.pol === 'danger' ? '#E8867C' : COL.text, 'left', 1, false);
+      if (opts.what) { c.font = `5.2px ${FONT}`; text(c, e.what, x + r + 4 + c.measureText(e.name).width + 4, y + 1.9, 4.8, COL.dim, 'left', 1, false); }
+    } else text(c, label, x + r + 4, y + 1.9, 5.2, e.pol === 'danger' ? '#E8867C' : COL.text, 'left', 1, false);
+  }
+}
+/** The badge column: up the left edge from just above the module, bad ones nearest the module, good ones above. */
+function badges(c, list) {
+  const order = ['danger', 'bad', 'cold', 'good'];
+  const sorted = [...list].sort((a, b) => order.indexOf(EFFECTS[a.k].pol) - order.indexOf(EFFECTS[b.k].pol));
+  sorted.forEach((b, i) => badge(c, 14, 272 - i * 13.5, b.k, b));
+}
+
+// ---------- the body module ----------
+const M = {cx: 36, cy: 322, r: 21, b: 3.2};
+const NEED_LOW = 0.3, NEED_CRIT = 0.15;
+function needRing(c, x, y, icn, f, base, grown, number, canCrit) {
+  const crit = canCrit && f < NEED_CRIT, col = crit ? C2.red : base;
+  const r = grown ? 7.4 : 5.2, b = grown ? 1.8 : 1.4, a = grown ? 1 : 0.8;
+  c.save(); c.globalAlpha = a;
+  disc(c, x, y, r, COL.back, 0.5);
+  sector(c, x, y, r - b, r, 0, 360); c.fillStyle = rgba(COL.back, 0.5); c.fill();
+  sector(c, x, y, r - b, r, 0, 360 * Math.min(1, f)); c.fillStyle = col; c.fill();
+  circleLine(c, x, y, r + 0.2, 0.28, 0.3);
+  if (grown) { ic(c, icn, x, y - 1.9, 3.4, col); text(c, number, x, y + 3.9, 3.9, COL.text, 'center', 1, false); }
+  else ic(c, icn, x, y, 4.2, col);
+  c.restore();
+}
+function module(c, st) {
+  const {cx, cy, r, b} = M;
+  disc(c, cx, cy, r + 3.6, COL.back, 0.32);
+  // health: the left arc, ten cells from the bottom; armour outside it; low health glows
+  const h0 = 200, h1 = 340, low = st.hp <= 4;
+  if (low) { c.save(); c.shadowColor = 'rgba(204,74,66,0.9)'; c.shadowBlur = 14; sector(c, cx, cy, r - b, r, h0, h1); c.fillStyle = rgba(C2.red, 0.25); c.fill(); c.restore(); }
+  cells(cx, cy, r, b, h0, h1 - h0, 10, 0.8, (i, s0, s1) => {
+    sector(c, cx, cy, r - b, r, s0, s1); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+    const k = Math.max(0, Math.min(1, st.hp / 20 * 10 - i)); if (k > 0) { sector(c, cx, cy, r - b, r, s0, s0 + (s1 - s0) * k); c.fillStyle = low ? '#E2574C' : C2.red; c.fill(); }
+  });
+  if (st.armor) { sector(c, cx, cy, r + 0.8, r + 2, h0, h1); c.fillStyle = rgba(COL.back, 0.5); c.fill();
+    sector(c, cx, cy, r + 0.8, r + 2, h0, h0 + (h1 - h0) * st.armor / 20); c.fillStyle = C2.armor; c.fill(); }
+  // stamina: the right arc from the bottom; air outside it while under water
+  const s0 = 20, s1 = 160;
+  sector(c, cx, cy, r - b, r, s0, s1); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+  sector(c, cx, cy, r - b, r, s1 - (s1 - s0) * st.stamina, s1); c.fillStyle = C2.stam; c.fill();
+  if (st.air != null) cells(cx, cy, r + 2.2, 1.4, s0, s1 - s0, 10, 0.6, (i, a0, a1) => {
+    sector(c, cx, cy, r + 0.8, r + 2.2, a0, a1); c.fillStyle = (9 - i) < st.air * 10 ? '#92D4F2' : rgba(COL.back, 0.5); c.fill();
+  });
+  circleLine(c, cx, cy, r + 0.3, 0.28, 0.3, h0, h1); circleLine(c, cx, cy, r + 0.3, 0.28, 0.3, s0, s1);
+  dial(c, cx, cy, st);
+  if (st.trend) for (let k = 0; k < 2; k++) {   // the trend chevrons in the dial's lower opening
+    const y = cy + 6 + k * 2.2 * (st.trend < 0 ? 1 : -1), col = st.trend < 0 ? '#9FD8F2' : '#E8A060';
+    c.beginPath(); c.moveTo(cx - 1.6, y + st.trend * 0.9); c.lineTo(cx, y - st.trend * 0.9); c.lineTo(cx + 1.6, y + st.trend * 0.9);
+    c.lineWidth = 0.6; c.strokeStyle = col; c.globalAlpha = k ? 0.5 : 1; c.stroke(); c.globalAlpha = 1;
+  }
+  ic(c, 'heart', cx - 3.5, cy + 19.5, 4.6, C2.red); text(c, String(st.hp), cx - 0.5, cy + 21.6, 5.4, low ? '#E8867C' : COL.text, 'left', 1, true);
+  // needs: small and quiet while fine, larger with a number once they matter
+  const needs = [['food', st.food, C2.food, 20, st.food < NEED_LOW, Math.round(st.food * 100) + '', true],
+    ['drop', st.water, C2.water, 50, st.water < NEED_LOW, Math.round(st.water * 100) + '', true]];
+  if (!st.riding) needs.push(['kettle', st.weight / 60, st.tier === 'heavy' ? C2.heavy : C2.weight, 80, st.tier === 'heavy', st.weight.toFixed(0), false]);
+  for (const [icn, f, col, a, grown, num, canCrit] of needs) {
+    const d = 35, x = cx + Math.sin(a * Math.PI / 180) * d, y = cy - Math.cos(a * Math.PI / 180) * d;
+    needRing(c, x, y, icn, f, col, grown, num, canCrit);
+  }
+}
+
+// ---------- the Alt card ----------
+function card(c, st) {
+  const px = 8, py = 100, w = 150;
+  const rows = [['heart', '生命', st.hp + ' / 20', st.hp / 20, C2.red], ['shield', '护甲', st.armor + ' / 20', st.armor / 20, C2.armor],
+    ['bolt', '耐力', Math.round(st.stamina * 100) + '%', st.stamina, C2.stam], ['food', '饥饿', Math.round(st.food * 100) + '%', st.food, C2.food],
+    ['drop', '口渴', Math.round(st.water * 100) + '%', st.water, C2.water], ['thermo', '体温', '36.4 °C 舒适', 0.5, '#C8C6BE'],
+    ['kettle', '负重', st.weight.toFixed(1) + ' kg · 轻松', st.weight / 60, C2.weight]];
+  const fx = st.effects || [];
+  const h = 12 + rows.length * 10.5 + 6 + 8 + fx.length * 12 + 6;
+  panel(c, px, py, w, h, 4, 0.74);
+  text(c, '状态', px + 6, py + 8.5, 5.4, COL.dim, 'left', 1, false);
+  text(c, '气温 14 °C · 湿度 0%', px + w - 6, py + 8.5, 4.6, COL.dis, 'right', 1, false);
+  rows.forEach(([icn, label, value, f, col], i) => {
+    const y = py + 13 + i * 10.5;
+    ic(c, icn, px + 8, y + 3.4, 5.4, col);
+    text(c, label, px + 14, y + 5.4, 5.2, COL.text, 'left', 1, false);
+    bar(c, px + 32, y + 2.5, 52, 1.8, f, col);
+    text(c, value, px + w - 6, y + 5.4, 5, COL.dim, 'right', 1, false);
+  });
+  let y = py + 13 + rows.length * 10.5 + 4;
+  c.fillStyle = rgba(COL.line, 0.16); c.fillRect(px + 6, y, w - 12, 0.3);
+  text(c, '效果', px + 6, y + 7.5, 5, COL.dim, 'left', 1, false);
+  y += 10;
+  for (const k of fx) {
+    const e = EFFECTS[k];
+    disc(c, px + 9, y + 4, 4.2, POL[e.pol], 0.95); ic(c, e.icon, px + 9, y + 4, 4.8, '#F6F2EA');
+    text(c, e.name, px + 16, y + 5.9, 5.2, COL.text, 'left', 1, false);
+    c.font = `5.2px ${FONT}`; text(c, e.what + (e.left ? '　' + e.left : ''), px + 16 + c.measureText(e.name).width + 4, y + 5.9, 4.6, COL.dim, 'left', 1, false);
+    y += 12;
+  }
+}
+
+// ---------- the gear corner (bottom right) ----------
+const R = 632;
+function weaponList(c, current) {
+  const list = [['1', rifle, current === 'rifle'], ['2', pistol, current === 'pistol'], ['3', null, false]];
+  list.forEach(([key, fn, on], i) => {
+    const y = 290 + i * 9;
+    text(c, key, R, y + 5.4, 5, on ? COL.text : COL.dis, 'right', 1, false);
+    if (on) { rr(c, R - 7.5, y + 0.6, 1, 6, 0.5); c.fillStyle = COL.accent; c.fill(); }
+    if (fn) fn(c, R - (fn === rifle ? 34 : 25), y + 0.5, fn === rifle ? 24 : 15, '#FFFFFF', on ? 0.95 : 0.35);
+  });
+}
+function ammo(c, g) {
+  // g: {name, mode, mag, cap, reserve, reloading}
+  text(c, g.name, R, 334, 6, COL.dim, 'right', 1, true);
+  c.font = `6px ${FONT}`; const nw = c.measureText(g.name).width;
+  c.font = `4.6px ${FONT}`; const mw = c.measureText(g.mode).width + 5;
+  rr(c, R - nw - 4 - mw, 329.3, mw, 6.4, 2); c.fillStyle = rgba(COL.back, 0.6); c.fill(); c.lineWidth = 0.3; c.strokeStyle = rgba(COL.line, 0.28); c.stroke();
+  text(c, g.mode, R - nw - 4 - mw / 2, 334.2, 4.6, COL.dim, 'center', 1, false);
+  text(c, '/ ' + g.reserve, R, 352, 7, COL.dim, 'right', 1, true);
+  c.font = `7px ${FONT}`; const rw = c.measureText('/ ' + g.reserve).width;
+  const nx = R - rw - 3;
+  if (g.reloading != null) {
+    text(c, '换弹', nx, 350, 8, COL.text, 'right', 1, true);
+    c.font = `8px ${FONT}`; const ww = c.measureText('换弹').width;
+    rr(c, nx - ww, 352.5, ww, 1.6, 0.8); c.fillStyle = rgba(COL.back, 0.6); c.fill();
+    rr(c, nx - ww, 352.5, ww * g.reloading, 1.6, 0.8); c.fillStyle = COL.accent; c.fill();
+    return;
+  }
+  const lowAmmo = g.mag > 0 && g.mag <= g.cap * 0.25, empty = g.mag === 0;
+  text(c, String(g.mag), nx, 352, 17, empty ? '#E8867C' : lowAmmo ? COL.accent : COL.text, 'right', 1, true);
+  if (empty) {
+    c.font = `17px ${FONT}`; const w = c.measureText('0').width;
+    const kx = nx - w - 26;
+    rr(c, kx, 341, 7, 7, 1.8); c.fillStyle = rgba('#E8E4DC', 0.92); c.fill();
+    text(c, 'R', kx + 3.5, 346.6, 5, '#16181A', 'center', 1, false);
+    text(c, '换弹', kx + 9, 346.8, 5.2, COL.text, 'left', 1, true);
+  }
+}
+function geiger(c, rate, level) {
+  const w = 62, h = 22, x = R - w, y = 258, col = level === 'high' ? '#E8867C' : level === 'mid' ? COL.accent : '#8FC49A';
+  panel(c, x, y, w, h, 3, 0.62);
+  ic(c, 'rad', x + 7, y + 7, 5.2, col);
+  text(c, '辐射', x + 12, y + 8.8, 4.6, COL.dim, 'left', 1, false);
+  text(c, rate, x + w - 13, y + 17.6, 9, COL.text, 'right', 1, true);
+  text(c, 'µSv/h', x + w - 3, y + 17.4, 3.6, COL.dim, 'right', 1, false);
+  // a log-scale meter along the bottom-left
+  for (let i = 0; i < 10; i++) { rr(c, x + 4 + i * 2.6, y + 15, 1.8, 3.6, 0.5); c.fillStyle = i < (level === 'high' ? 9 : level === 'mid' ? 6 : 2) ? col : rgba(COL.line, 0.13); c.fill(); }
+}
+const BIND_ITEMS = [['#E8E4DC', '3'], ['#C9A35A', '28'], ['#C9A35A', '0'], ['#8AA3B8', '2'], ['#B05A4A', '1'], null];
+function bindBar(c, sel = 1, cx = 320, y = 340) {
+  const n = 6, cw = 17, gap = 2, w = n * cw + (n - 1) * gap, x0 = cx - w / 2;
+  BIND_ITEMS.forEach((it, i) => {
+    const on = i === sel, x = x0 + i * (cw + gap), yy = y - (on ? 2 : 0), none = it && it[1] === '0';
+    rr(c, x, yy, cw, cw, 3); c.fillStyle = rgba(COL.back, on ? 0.7 : 0.5); c.fill();
+    c.lineWidth = 0.3; c.strokeStyle = rgba(COL.line, on ? 0.5 : 0.22); c.stroke();
+    text(c, String(i + 4), x + 2, yy + 5, 3.8, COL.dis, 'left', 1, false);
+    if (it) {
+      c.globalAlpha = none ? 0.3 : 0.9; rr(c, x + 5.5, yy + 4.5, 6, 8, 1); c.fillStyle = it[0]; c.fill(); c.globalAlpha = 1;
+      text(c, it[1], x + cw - 1.8, yy + cw - 1.6, 4.4, none ? COL.dis : COL.text, 'right', 1, true);
+    }
+    if (on) { rr(c, x + 5, y + cw + 1.2, 7, 1.4, 0.7); c.fillStyle = COL.accent; c.fill(); }
+  });
+}
+function hint(c, x, y, key, word, kind, progress) {
+  // kind: tap (solid cap), hold (cap with a ring filling), off (dim, cannot)
+  disc(c, 320, 180, 0.9, '#FFFFFF', 0.85);
+  const a = kind === 'off' ? 0.45 : 1;
+  c.save(); c.globalAlpha = a;
+  if (kind === 'hold') {
+    disc(c, x + 4, y + 4, 6.2, COL.back, 0.5);
+    sector(c, x + 4, y + 4, 5.2, 6.2, 0, 360 * progress); c.fillStyle = COL.accent; c.fill();
+    circleLine(c, x + 4, y + 4, 6.3, 0.28, 0.3);
+  }
+  rr(c, x, y, 8, 8, 2); c.fillStyle = rgba('#E8E4DC', kind === 'hold' ? 0.75 : 0.92); c.fill();
+  text(c, key, x + 4, y + 6.2, 5.6, '#16181A', 'center', 1, false);
+  text(c, word, x + (kind === 'hold' ? 13 : 11), y + 6.4, 6, kind === 'off' ? COL.dim : COL.text, 'left', 1, true);
+  c.restore();
+}
+
+// ---------- states ----------
+const BASE = {hp: 18, armor: 8, food: 0.8, water: 0.62, stamina: 0.8, temp: 14, trend: 0, tempLevel: 'ok', weight: 24.6, tier: 'ok', air: null, fx: []};
+const ST = {
+  normal: {...BASE, fx: [{k: 'fed'}], effects: ['fed'], label: '正常：吃饱喝足（绿）'},
+  needs: {...BASE, food: 0.26, water: 0.07, fx: [{k: 'thirst'}], label: '饿、渴：小圆变大带数字；脱水倒计时'},
+  cold: {...BASE, temp: -6, trend: -1, tempLevel: 'cold', stamina: 0.55, fx: [{k: 'cold', label: true, what: true}, {k: 'wet'}], label: '又冷又湿：刚得到"寒冷"时名字和效果滑出'},
+  water: {...BASE, air: 0.4, fx: [{k: 'wet'}], label: '水下：耐力外面一圈氧气'},
+  heavy: {...BASE, weight: 52.3, tier: 'heavy', stamina: 0.5, fx: [{k: 'heavy'}, {k: 'rad'}, {k: 'poison', time: true}, {k: 'speed', time: true}], label: '超重、辐射病、中毒、速度药水：有时限的带一圈剩余时间'},
+  low: {...BASE, hp: 4, armor: 0, fx: [{k: 'poison', time: true}, {k: 'regen', time: true}], label: '低血：生命弧发红光、数字变红'},
+};
+
+// ---------- frames ----------
+let BG;
+function backdrop(c) {
+  const s = 1080 / BG.height, w = BG.width * s, ox = (1920 - w) / 2;
+  c.drawImage(BG, ox, 0, w, 1080);
+  c.drawImage(BG, 0, 1186, 2000, 58, ox, 1127 * s, 2000 * s, 58 * s);
+  const v = c.createLinearGradient(0, 0, 0, 1080); v.addColorStop(0, 'rgba(10,14,26,0.18)'); v.addColorStop(0.5, 'rgba(10,14,26,0)'); v.addColorStop(1, 'rgba(0,0,0,0.2)');
+  c.fillStyle = v; c.fillRect(0, 0, 1920, 1080);
+}
+/** Draws a GUI region (x0, y0, w, h) of the scene at `zoom` screen px per GUI px into a new canvas. */
+function region(x0, y0, w, h, zoom, draw) {
+  const cv = document.createElement('canvas'); cv.width = w * zoom; cv.height = h * zoom;
+  const c = cv.getContext('2d');
+  const k = zoom / G; c.save(); c.scale(k, k); c.translate(-x0 * G, -y0 * G); backdrop(c); c.restore();
+  c.save(); c.scale(zoom, zoom); c.translate(-x0, -y0); draw(c); c.restore();
+  return cv;
+}
+function sheetFrame(title, lines, draw, extraH = 0) {
+  const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080 + 70 + lines.length * 33 + 40 + extraH;
+  const c = cv.getContext('2d');
+  c.save(); backdrop(c); c.scale(G, G); draw(c); c.restore();
+  c.fillStyle = '#141516'; c.fillRect(0, 1080, 1920, 1e4);
+  c.fillStyle = '#E8E4DC'; c.font = `34px ${FONT}`; c.textBaseline = 'top'; c.fillText(title, 40, 1080 + 22);
+  c.font = `21px ${FONT}`; c.fillStyle = '#C8C4BC'; lines.forEach((l, i) => c.fillText(l, 40, 1080 + 74 + i * 33));
+  return cv;
+}
+// ---------- sheets ----------
+function onFoot(c, st, gear = {name: 'P9', mode: '半自动', mag: 17, cap: 17, reserve: 51}) {
+  hint(c, 328, 176, 'E', '开门', 'tap');
+  bindBar(c);
+  weaponList(c, 'pistol'); ammo(c, gear);
+  module(c, st); badges(c, st.fx);
+}
+function sheetMain() {
+  return sheetFrame('HUD V2 · B 混搭：左下身体，右下装备', [
+    '左下圆形组件常驻：左弧生命（10 格，外面细的一圈是护甲），右弧耐力（水下外面多一圈氧气），正中体温表盘（金属框、气温数字、冷热趋势箭头），底下生命数字。',
+    '饥饿、口渴、负重三个小圆平时小而淡；低于 30% 或超重时变大、带数字，低于 15% 变红。',
+    '效果徽章竖排在组件上方：绿 = 正面，棕 = 负面，蓝 = 冷 / 湿，红 = 危险；只画图标，刚得到时名字和效果滑出几秒；有时限的外面一圈剩余时间；致命的（脱水）一直带倒计时。',
+    '右下：武器位 1–3（手上的那把亮、旁边一道琥珀色小条），射击模式胶囊 + 枪名，弹匣大数字 / 备弹。底部中间绑定栏 4–9。按住 Alt 看完整状态卡片。',
+  ], c => onFoot(c, {...ST.normal, fx: [{k: 'fed'}, {k: 'warm', label: true, what: true}]}));
+}
+function sheetBody() {
+  const z = 5, x0 = 0, y0 = 218, w = 170, h = 142;
+  const cells = Object.values(ST).map(st => [region(x0, y0, w, h, z, c => { module(c, st); badges(c, st.fx); }), st.label]);
+  const pad = 30, cw = w * z, ch = h * z, altZ = 4, altH = 270;
+  const cv = document.createElement('canvas'); cv.width = pad + 3 * (cw + pad); cv.height = 90 + 2 * (ch + 62) + 30 + altH * altZ + 40;
+  const c = cv.getContext('2d'); c.fillStyle = '#141516'; c.fillRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#E8E4DC'; c.font = `34px ${FONT}`; c.textBaseline = 'top'; c.fillText('左下身体组件：各种状态（放大到界面缩放 5）', pad, 26);
+  cells.forEach(([img, label], i) => {
+    const x = pad + (i % 3) * (cw + pad), y = 90 + Math.floor(i / 3) * (ch + 62);
+    c.drawImage(img, x, y);
+    c.strokeStyle = 'rgba(232,228,220,0.22)'; c.lineWidth = 1; c.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+    c.fillStyle = '#C8C4BC'; c.font = `21px ${FONT}`; c.fillText(label, x, y + ch + 14);
+  });
+  const y = 90 + 2 * (ch + 62) + 10;
+  const alt = region(0, 360 - altH, 170, altH, altZ, c => { module(c, ST.normal); card(c, {...ST.normal, effects: ['poison', 'rad', 'cold', 'fed', 'warm', 'speed']}); });
+  c.drawImage(alt, pad, y);
+  c.strokeStyle = 'rgba(232,228,220,0.22)'; c.strokeRect(pad + 0.5, y + 0.5, 170 * altZ - 1, altH * altZ - 1);
+  c.fillStyle = '#C8C4BC'; c.font = `22px ${FONT}`;
+  const tx = pad + 170 * altZ + 50;
+  ['按住 Alt：完整状态卡片（界面缩放 4），平时徽章旁边没有字，这里才有字。',
+    '上半是数值：生命、护甲、耐力、饥饿、口渴、体温（核心体温 + 感觉）、负重（kg + 档位）；右上角是气温和湿度。',
+    '下半是现在的所有效果：徽章 + 名字 + 一句效果 + 剩余时间，正面负面都列出来。',
+    '',
+    '徽章颜色：',
+    '　绿 = 正面（吃饱喝足、火边暖和、休息过、速度 / 再生药水）',
+    '　棕 = 负面（炎热、辐射病、超重）',
+    '　蓝 = 冷 / 湿',
+    '　红 = 危险（中毒、脱水），会致命的再加倒计时',
+    '图标：白色剪影，和指示灯、生存图标一套画法；外面一圈细亮边。',
+    '有时限的（药水、中毒）：外面一圈白弧是剩余时间，一圈走完就没了。',
+    '顺序：危险 → 负面 → 冷湿 → 正面，越要紧越靠近组件。',
+    '刚得到一个效果：徽章外闪一圈，名字和效果从右边滑出，约 4 秒后收回。',
+  ].forEach((l, i) => c.fillText(l, tx, y + 14 + i * 40));
+  return cv;
+}
+function sheetGear() {
+  const zoom = 5, w = 120, h = 110, x0 = 640 - w, y0 = 360 - h;
+  const states = [
+    [{name: 'P9', mode: '半自动', mag: 17, cap: 17, reserve: 51}, 'pistol', '正常（手枪，半自动）'],
+    [{name: 'P9', mode: '半自动', mag: 3, cap: 17, reserve: 51}, 'pistol', '弹匣剩 1/4 以下：数字变琥珀'],
+    [{name: 'P9', mode: '半自动', mag: 0, cap: 17, reserve: 51}, 'pistol', '空仓：数字变红，旁边提示 R 换弹'],
+    [{name: 'P9', mode: '半自动', mag: 0, cap: 17, reserve: 51, reloading: 0.55}, 'pistol', '换弹中：琥珀进度条'],
+    [{name: 'M4', mode: '全自动', mag: 24, cap: 30, reserve: 90}, 'rifle', '步枪，全自动'],
+    [null, 'geiger', '手上拿盖革计数器：读数面板在武器列表上方'],
+  ];
+  const cells = states.map(([g, cur, label]) => [region(x0, y0, w, h, zoom, c => {
+    weaponList(c, cur === 'geiger' ? null : cur);
+    if (g) ammo(c, g);
+    if (cur === 'geiger') { geiger(c, '0.42', 'mid'); }
+  }), label]);
+  const pad = 30, cw = w * zoom, ch = h * zoom;
+  const hintW = 200, hintH = 40;
+  const hints = [['E', '开门', 'tap', 0, '按一下：实心键帽'], ['E', '搜索', 'hold', 0.6, '长按：键帽外一圈琥珀进度'], ['E', '锁着', 'off', 0, '做不了：整体变暗']];
+  const cv = document.createElement('canvas'); cv.width = pad + 3 * (cw + pad); cv.height = 90 + 2 * (ch + 60) + 30 + 128 + 50 + 72 + 70;
+  const c = cv.getContext('2d'); c.fillStyle = '#141516'; c.fillRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#E8E4DC'; c.font = `34px ${FONT}`; c.textBaseline = 'top'; c.fillText('右下装备区、绑定栏、交互提示（放大到界面缩放 5 / 4）', pad, 26);
+  cells.forEach(([img, label], i) => {
+    const x = pad + (i % 3) * (cw + pad), y = 90 + Math.floor(i / 3) * (ch + 60);
+    c.drawImage(img, x, y, cw, ch);
+    c.strokeStyle = 'rgba(232,228,220,0.22)'; c.lineWidth = 1; c.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+    c.fillStyle = '#C8C4BC'; c.font = `19px ${FONT}`; c.fillText(label, x, y + ch + 12);
+  });
+  let y = 90 + 2 * (ch + 60) + 30;
+  const bind = region(200, 328, 240, 32, 4, c => bindBar(c, 1));
+  c.drawImage(bind, pad, y);
+  c.strokeStyle = 'rgba(232,228,220,0.22)'; c.strokeRect(pad + 0.5, y + 0.5, 960 - 1, 128 - 1);
+  c.fillStyle = '#C8C4BC'; c.font = `19px ${FONT}`;
+  ['绑定栏（键 4–9）：格子 17，键号小字在左上，数量在右下；', '手上那格上顶 2 + 琥珀小条；用完的（数量 0）变淡，位置留着。'].forEach((l, i) => c.fillText(l, pad + 1000, y + 30 + i * 32));
+  y += 128 + 50;
+  hints.forEach(([key, word, kind, p, label], i) => {
+    const img = region(318, 168, 60, 18, 4, c => hint(c, 328, 176, key, word, kind, p));
+    const x = pad + i * (240 * 2 + pad);
+    c.drawImage(img, x, y); c.strokeRect(x + 0.5, y + 0.5, 240 - 1, 72 - 1);
+    c.fillText(label, x, y + 84);
+  });
+  return cv;
+}
+function sheetDriving() {
+  return sheetFrame('开车时', [
+    '左下身体组件和效果徽章照旧；绑定栏、武器、负重小圆藏起来（坐车时用不上）。右下是已经做进游戏的仪表盘（这里画的是圆环那套），顶上中间是指示灯栏。',
+  ], c => {
+    module(c, {...ST.normal, riding: true});
+    badges(c, [{k: 'fed'}]);
+    dashA(c, STATES.cruise);
+  });
+}
+async function save(cv, name) {
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  await fetch('/save?name=' + name, {method: 'POST', body: blob});
+}
+async function sheets() {
+  await save(sheetMain(), 'hud_v2b_1_main.png');
+  await save(sheetBody(), 'hud_v2b_2_body_states.png');
+  await save(sheetGear(), 'hud_v2b_3_gear.png');
+  await save(sheetDriving(), 'hud_v2b_4_driving.png');
+  return 'saved';
+}
+(async () => {
+  await loadShared();
+  moreIcons();
+  await document.fonts.load(`20px "AFL Sans"`);
+  BG = new Image(); await new Promise(res => { BG.onload = res; BG.src = '/design/ui/hud_corner_v1/source/bg_cabin.png'; });
+  const out = document.getElementById('out');
+  out.appendChild(sheetMain());
+  window.ready = true;
+})();
+</script>
+</body>
+</html>

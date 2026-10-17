@@ -2,8 +2,11 @@ package com.antaurora.apofirstlight.client.vehicle;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.LiquidRenderTypes;
+import com.antaurora.apofirstlight.client.light.DynamicLights;
 import com.antaurora.apofirstlight.vehicle.HeadlightBeam;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
+import com.antaurora.apofirstlight.vehicle.physics.LevelVehicleWorld;
+import com.antaurora.apofirstlight.vehicle.physics.VehicleWorld;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -23,51 +26,65 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 /**
- * The T15's lamps as light in the air (docs/vehicles/first_pickup_v0_design.md 8.10): a soft flare over each lit lamp and,
- * from the headlamps, a faint beam cone, both added (LiquidRenderTypes.HEADLIGHT_GLOW: emissive, no depth writes, tested against the
- * world so a wall cuts them), in the fire effects' world pass stage (AFTER_BLOCK_ENTITIES; shown by Sundial as FireFx is),
- * skipped in a shader pack's shadow pass. The lit lens itself is the body mesh at full light (PickupTruckRenderer lamps).
- * <p>Flares face the camera, strongest looking into the lamp (headlamps forward, tail lamps back), weaker by day (the
- * sky light at the truck times the daylight). The beam cone runs {@link #LOW_LENGTH} / {@link #HIGH_LENGTH} m along each
- * lit headlamp's aim (HeadlightBeam), fading along its length and toward its silhouette, seen only in the dark and more in
- * rain: the light it puts on the world is HeadlightField's block light.
+ * The T15's lamps as light in the air and on the ground behind (docs/vehicles/first_pickup_v0_design.md 8.10), added
+ * (LiquidRenderTypes.HEADLIGHT_GLOW: emissive, no depth writes, tested against the world so a wall or the truck's own body
+ * cuts them), skipped in a shader pack's shadow pass: the beam cones in the fire effects' world pass stage
+ * (AFTER_BLOCK_ENTITIES; shown by Sundial as FireFx is), the tail lamps' ground glow after the translucent blocks (with
+ * Oculus that is after the deferred lighting, so it adds to the lit picture; earlier, a pack took it for the road's own
+ * colour and lit it again by night: Aureveil A 2026-10-17, the pools came out dim). The lit lens itself is the body mesh at full light (PickupTruckRenderer lamps); there are no
+ * flare sprites over the lamps (user 2026-10-17: the round flare looked out of place, the lit lens alone reads right).
+ * <p>From the headlamps a faint beam cone runs {@link #LOW_LENGTH} / {@link #HIGH_LENGTH} m along each lit headlamp's aim
+ * (HeadlightBeam), fading along its length and toward its silhouette, seen only in the dark and more in rain: the light it
+ * puts on the world is HeadlightField's block light (white, so the red tail and brake lamps cannot be block light).
+ * <p>The tail and brake lamps' red light on the ground behind (user 2026-10-17: the tail lamps lit nothing round them):
+ * per lamp, a grid laid on the ground (LevelVehicleWorld#ground: road layer, smoothed terrain, blocks) over its pool's
+ * ellipse, the glow texture stretched over it, its soft round pool in the texture's colour (alpha full): the strength is
+ * the vertex alpha, {@link #TAIL_GROUND} with the tail lamps, {@link #BRAKE_GROUND} braking, times the dark, kept at
+ * least {@link #ALPHA_MIN} (fainter: a darker red). Oculus's program for this render type (gbuffers_spidereyes) drops
+ * fragments with alpha under 0.1: with the falloff in the alpha (vertex or texture) that cut the pools to hard polygons
+ * (user 2026-10-17: dim, square, not smooth; Aureveil A found the cause). Without a shader pack it looks the same either
+ * way (additive: colour x texture x alpha).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class HeadlightFx {
     private static final double RANGE = 160;
-    /** The flare sprite's middle (textures/effect/headlight_flare: white, full alpha there) for the cone. */
+    /** The glow texture's middle (textures/effect/headlight_flare: white there): the cones. */
     private static final float MID_U = 0.5F, MID_V = 0.5F;
-    /** Halogen white, amber, red (0-255). */
-    private static final int[] WHITE = {255, 238, 210}, AMBER = {255, 150, 40}, RED = {255, 30, 20};
+    /** The least alpha drawn (a shader pack's alpha test cuts under 0.1); a fainter glow darkens its colour instead. */
+    private static final float ALPHA_MIN = 0.11F;
+    /** Halogen white, tail red (0-255). */
+    private static final int[] WHITE = {255, 238, 210}, RED = {255, 36, 22};
     /** Beam cones: length and end radius (m); the lens radius; sides and rings; the strength in the dark (alpha 0-1). */
     private static final double LOW_LENGTH = 9, LOW_RADIUS = 2.0, HIGH_LENGTH = 14, HIGH_RADIUS = 1.6, LENS = 0.09;
     private static final int SIDES = 16, RINGS = 6;
     private static final float CONE_ALPHA = 0.07F, RAIN_BOOST = 1.6F;
-    /** A flare's least size per metre away, so a far lamp keeps a core a few pixels wide. */
-    private static final double FAR_SIZE = 0.012;
-    /** The flares' strength without a shader pack (the lens glows by itself there; user 2026-10-16: the flare alone looked cheap). */
-    private static final float VANILLA_FLARE = 0.5F;
+    /** The ground glow's strength in the dark (alpha 0-1) with the tail lamps and braking. */
+    private static final float TAIL_GROUND = 0.30F, BRAKE_GROUND = 0.75F;
+    /**
+     * The ground glow: the tail lamps (forward, right from the truck's origin); each lamp's pool's middle behind it and its
+     * half sizes across and along (m); the vertices per side of each pool's grid; the lift off the ground (m).
+     */
+    private static final double TAIL_F = -2.30, TAIL_R = 0.77, POOL_BACK = 0.9, POOL_ACROSS = 1.25, POOL_ALONG = 2.1, GROUND_LIFT = 0.03;
+    private static final int POOL_GRID = 9;
 
-    /** A lamp: frame point (forward, right, up), facing forward (+1) or back (-1), flare half-size (m; the hot core is a tenth of it), colour. */
-    private record Flare(double f, double r, double y, int facing, float size, int[] colour) {}
+    /** A headlamp's lens (frame point: forward, right, up). */
+    private record Lamp(double f, double r, double y) {}
 
-    private static final Flare[] LOW = {new Flare(2.30, -0.746, 0.81, 1, 0.75F, WHITE), new Flare(2.30, 0.746, 0.81, 1, 0.75F, WHITE)},
-            HIGH = {new Flare(2.30, -0.571, 0.81, 1, 0.7F, WHITE), new Flare(2.30, 0.571, 0.81, 1, 0.7F, WHITE)},
-            PARK = {new Flare(2.24, -0.658, 0.68, 1, 0.22F, AMBER), new Flare(2.24, 0.658, 0.68, 1, 0.22F, AMBER)},
-            TAIL = {new Flare(-2.30, -0.77, 0.83, -1, 0.42F, RED), new Flare(-2.30, 0.77, 0.83, -1, 0.42F, RED)},
-            REVERSE = {new Flare(-2.30, -0.77, 0.696, -1, 0.38F, WHITE), new Flare(-2.30, 0.77, 0.696, -1, 0.38F, WHITE)},
-            PLATE = {new Flare(-2.36, 0, 0.54, -1, 0.14F, WHITE)};
+    private static final Lamp[] LOW = {new Lamp(2.30, -0.746, 0.81), new Lamp(2.30, 0.746, 0.81)},
+            HIGH = {new Lamp(2.30, -0.571, 0.81), new Lamp(2.30, 0.571, 0.81)};
+
+    private static final VehicleWorld.Ground GROUND = new VehicleWorld.Ground();
 
     private HeadlightFx() {
     }
 
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES || AflShaderCompat.activeShadowPass()) return;
+        boolean cones = event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES;
+        boolean tails = event.getStage() == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS;
+        if (!cones && !tails || AflShaderCompat.activeShadowPass()) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         Camera camera = event.getCamera();
@@ -76,30 +93,28 @@ public final class HeadlightFx {
         float pt = event.getPartialTick();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
         VertexConsumer out = null;
+        LevelVehicleWorld world = null;
         PoseStack pose = event.getPoseStack();
+        boolean perPixel = DynamicLights.perPixel();
         for (Entity e : level.entitiesForRendering()) {
             if (!(e instanceof PickupTruckEntity truck) || truck.distanceToSqr(cam) > RANGE * RANGE) continue;
-            boolean on = truck.headlights(), brake = truck.braking(), reverse = truck.reversing();
-            if (!on && !brake && !reverse) continue;
-            if (out == null) out = buffers.getBuffer(LiquidRenderTypes.HEADLIGHT_GLOW);
+            boolean on = truck.headlights(), brake = truck.braking();
+            if (!on && !brake) continue;
             float dark = dark(level, truck, pt);
+            float cone = cones ? CONE_ALPHA * dark * dark * (1 + RAIN_BOOST * level.getRainLevel(pt)) : 0;
+            // lamps drawn per pixel (no shader pack, or one with AFL_VEHICLE_LIGHTS): the tail lamps light the ground, no decal
+            float ground = tails && !perPixel ? (brake ? BRAKE_GROUND : TAIL_GROUND) * dark : 0;
+            if (cone <= 0.004F && ground <= 0.004F) continue;
+            if (out == null) out = buffers.getBuffer(LiquidRenderTypes.HEADLIGHT_GLOW);
             Matrix4f matrix = pose.last().pose();
             Matrix3f normals = pose.last().normal();
-            Vec3 fwd = truck.frameDirection(1, 0, 0, pt);
-            // without a shader pack the lit lens itself carries the light (PickupTruckRenderer#lampGlow): the flare only a soft halo round it
-            float flare = (0.35F + 0.65F * dark) * (AflShaderCompat.shaderPackInUse() ? 1 : VANILLA_FLARE);
-            if (on) {
-                flares(out, matrix, normals, camera, truck, pt, fwd, LOW, flare);
-                flares(out, matrix, normals, camera, truck, pt, fwd, PARK, flare * 0.8F);
-                flares(out, matrix, normals, camera, truck, pt, fwd, PLATE, flare * 0.5F);
-                if (truck.highBeam()) flares(out, matrix, normals, camera, truck, pt, fwd, HIGH, flare);
-            }
-            if (on || brake) flares(out, matrix, normals, camera, truck, pt, fwd, TAIL, flare * (brake ? 1.0F : 0.5F));
-            if (reverse) flares(out, matrix, normals, camera, truck, pt, fwd, REVERSE, flare * 0.8F);
-            float cone = CONE_ALPHA * dark * dark * (1 + RAIN_BOOST * level.getRainLevel(pt));
             if (on && cone > 0.004F) {
-                for (Flare l : LOW) cone(out, matrix, normals, cam, truck, pt, l, HeadlightBeam.LOW, LOW_LENGTH, LOW_RADIUS, cone);
-                if (truck.highBeam()) for (Flare l : HIGH) cone(out, matrix, normals, cam, truck, pt, l, HeadlightBeam.HIGH, HIGH_LENGTH, HIGH_RADIUS, cone);
+                for (Lamp l : LOW) cone(out, matrix, normals, cam, truck, pt, l, HeadlightBeam.LOW, LOW_LENGTH, LOW_RADIUS, cone);
+                if (truck.highBeam()) for (Lamp l : HIGH) cone(out, matrix, normals, cam, truck, pt, l, HeadlightBeam.HIGH, HIGH_LENGTH, HIGH_RADIUS, cone);
+            }
+            if (ground > 0.004F) {
+                if (world == null) world = new LevelVehicleWorld(level, null);
+                tailGlow(out, matrix, normals, cam, truck, pt, world, ground);
             }
         }
         if (out != null) buffers.endBatch(LiquidRenderTypes.HEADLIGHT_GLOW);
@@ -112,37 +127,45 @@ public final class HeadlightFx {
         return 1 - day * sky;
     }
 
-    private static void flares(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Camera camera, PickupTruckEntity truck, float pt, Vec3 fwd,
-                               Flare[] lamps, float strength) {
-        Vec3 cam = camera.getPosition();
-        Quaternionf view = camera.rotation();
-        Vector3f v = new Vector3f();
-        for (Flare l : lamps) {
-            // just in front of the lens, so the bodywork round it does not cut the flare
-            Vec3 at = truck.framePoint(l.f() + 0.10 * l.facing(), l.r(), l.y(), pt);
-            Vec3 to = cam.subtract(at);
-            double d = to.length();
-            if (d < 0.3) continue;
-            double facing = (fwd.x * to.x + fwd.y * to.y + fwd.z * to.z) / d * l.facing();
-            float s = strength * (float) (0.12 + 0.88 * Math.pow(Math.max(0, facing), 2));
-            int alpha = Mth.clamp(Math.round(s * 255), 0, 255);
-            if (alpha < 3) continue;
-            // far off a lamp stays a glowing point a few pixels wide (the flare's hot core is a tenth of its size)
-            float size = Math.max(l.size() * (0.6F + 0.4F * (float) Math.max(0, facing)), (float) (d * FAR_SIZE));
-            double x = at.x - cam.x, y = at.y - cam.y, z = at.z - cam.z;
-            int[] c = l.colour();
-            corner(out, matrix, normals, view, v, -1, -1, size, x, y, z, 0, 1, c, alpha);
-            corner(out, matrix, normals, view, v, -1, 1, size, x, y, z, 0, 0, c, alpha);
-            corner(out, matrix, normals, view, v, 1, 1, size, x, y, z, 1, 0, c, alpha);
-            corner(out, matrix, normals, view, v, 1, -1, size, x, y, z, 1, 1, c, alpha);
+    /**
+     * The red glow on the ground behind the tail lamps: per lamp a grid over its pool's ellipse (from under the bumper
+     * back), each vertex on the ground under it, the glow texture across the ellipse (its soft round pool is the shape);
+     * a vertex with no ground within a metre up or two down is unlit (alpha 0).
+     */
+    private static void tailGlow(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 cam, PickupTruckEntity truck, float pt,
+                                 LevelVehicleWorld world, float strength) {
+        int n = POOL_GRID;
+        double[][] px = new double[n][n], py = new double[n][n], pz = new double[n][n];
+        float[][] u = new float[n][n], v = new float[n][n];
+        int[][] a = new int[n][n];
+        double base = truck.getY();
+        int alpha = Mth.clamp(Math.round(255 * Math.max(strength, ALPHA_MIN)), 0, 255);
+        float shade = Math.min(1, strength / ALPHA_MIN);
+        int[] red = shade >= 1 ? RED : new int[]{Math.round(RED[0] * shade), Math.round(RED[1] * shade), Math.round(RED[2] * shade)};
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 0; i < n; i++) {
+                double b = -1 + 2.0 * i / (n - 1), f = TAIL_F - POOL_BACK - b * POOL_ALONG;
+                for (int j = 0; j < n; j++) {
+                    double sa = -1 + 2.0 * j / (n - 1), r = side * TAIL_R + sa * POOL_ACROSS;
+                    Vec3 at = truck.framePoint(f, r, 0, pt);
+                    boolean ground = world.ground(at.x, at.z, at.y, base + 1.0, base - 2.0, GROUND) && GROUND.found;
+                    px[i][j] = at.x - cam.x;
+                    py[i][j] = (ground ? GROUND.height : at.y) + GROUND_LIFT - cam.y;
+                    pz[i][j] = at.z - cam.z;
+                    u[i][j] = (float) (j / (n - 1.0));
+                    v[i][j] = (float) (i / (n - 1.0));
+                    a[i][j] = ground ? alpha : 0;
+                }
+            }
+            for (int i = 0; i < n - 1; i++)
+                for (int j = 0; j < n - 1; j++) {
+                    if (a[i][j] + a[i][j + 1] + a[i + 1][j] + a[i + 1][j + 1] == 0) continue;
+                    vertex(out, matrix, normals, px[i][j], py[i][j], pz[i][j], red, a[i][j], u[i][j], v[i][j]);
+                    vertex(out, matrix, normals, px[i][j + 1], py[i][j + 1], pz[i][j + 1], red, a[i][j + 1], u[i][j + 1], v[i][j + 1]);
+                    vertex(out, matrix, normals, px[i + 1][j + 1], py[i + 1][j + 1], pz[i + 1][j + 1], red, a[i + 1][j + 1], u[i + 1][j + 1], v[i + 1][j + 1]);
+                    vertex(out, matrix, normals, px[i + 1][j], py[i + 1][j], pz[i + 1][j], red, a[i + 1][j], u[i + 1][j], v[i + 1][j]);
+                }
         }
-    }
-
-    private static void corner(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Quaternionf view, Vector3f v, float cx, float cy, float size,
-                               double x, double y, double z, float u, float uv, int[] c, int alpha) {
-        v.set(cx, cy, 0.0F).rotate(view).mul(size);
-        out.vertex(matrix, (float) (x + v.x()), (float) (y + v.y()), (float) (z + v.z())).color(c[0], c[1], c[2], alpha).uv(u, uv)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(0xF000F0).normal(normals, 0, 1, 0).endVertex();
     }
 
     /**
@@ -150,7 +173,7 @@ public final class HeadlightFx {
      * the lens to the length; a vertex's alpha falls with the square of the share of the length and with how edge-on the
      * cone's side is to the camera (a lit haze is thickest looking through it).
      */
-    private static void cone(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 cam, PickupTruckEntity truck, float pt, Flare lamp,
+    private static void cone(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 cam, PickupTruckEntity truck, float pt, Lamp lamp,
                              HeadlightBeam.Pattern p, double length, double radius, float strength) {
         Vec3 o = truck.framePoint(lamp.f() + 0.04, lamp.r(), lamp.y(), pt);
         double down = Math.toRadians(p.aimDown() + 1.5), splay = Math.signum(lamp.r()) * Math.toRadians(2.0);
@@ -183,15 +206,20 @@ public final class HeadlightFx {
         for (int i = 0; i < RINGS; i++)
             for (int j = 0; j < SIDES; j++) {
                 if (a[i][j] + a[i][j + 1] + a[i + 1][j] + a[i + 1][j + 1] == 0) continue;
-                vertex(out, matrix, normals, px[i][j], py[i][j], pz[i][j], a[i][j]);
-                vertex(out, matrix, normals, px[i + 1][j], py[i + 1][j], pz[i + 1][j], a[i + 1][j]);
-                vertex(out, matrix, normals, px[i + 1][j + 1], py[i + 1][j + 1], pz[i + 1][j + 1], a[i + 1][j + 1]);
-                vertex(out, matrix, normals, px[i][j + 1], py[i][j + 1], pz[i][j + 1], a[i][j + 1]);
+                vertex(out, matrix, normals, px[i][j], py[i][j], pz[i][j], WHITE, a[i][j]);
+                vertex(out, matrix, normals, px[i + 1][j], py[i + 1][j], pz[i + 1][j], WHITE, a[i + 1][j]);
+                vertex(out, matrix, normals, px[i + 1][j + 1], py[i + 1][j + 1], pz[i + 1][j + 1], WHITE, a[i + 1][j + 1]);
+                vertex(out, matrix, normals, px[i][j + 1], py[i][j + 1], pz[i][j + 1], WHITE, a[i][j + 1]);
             }
     }
 
-    private static void vertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, double x, double y, double z, int alpha) {
-        out.vertex(matrix, (float) x, (float) y, (float) z).color(WHITE[0], WHITE[1], WHITE[2], alpha).uv(MID_U, MID_V)
+    private static void vertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, double x, double y, double z, int[] c, int alpha) {
+        vertex(out, matrix, normals, x, y, z, c, alpha, MID_U, MID_V);
+    }
+
+    private static void vertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, double x, double y, double z, int[] c, int alpha,
+                               float u, float v) {
+        out.vertex(matrix, (float) x, (float) y, (float) z).color(c[0], c[1], c[2], alpha).uv(u, v)
                 .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(0xF000F0).normal(normals, 0, 1, 0).endVertex();
     }
 }

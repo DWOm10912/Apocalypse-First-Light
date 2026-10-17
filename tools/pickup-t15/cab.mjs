@@ -1,4 +1,4 @@
-// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering and the four gauge needles). Structure per the reference drawings (design
+// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering, the shift and transfer levers and the four gauge needles). Structure per the reference drawings (design
 // doc 2.4, Hilux LN106 instrument panel / seat / door trim groups): instrument panel with a padded top and a meter hood over
 // the driver's cluster; round side vents, centre vents, defroster grilles; heater control panel above the radio, ashtray
 // below; glovebox; tilt column with a two-piece square shroud, two stalks and the key cylinder; two-spoke wheel with a
@@ -170,7 +170,7 @@ function floor() {
   }
   abox(C(B, 'under'), 0.84, 0.90, 0.90, 0.96, -0.58, -0.20, 0.004);   // pedal bracket
   // floor shift lever: boot, long bent rod leaning back to the driver, oval knob; transfer lever beside it
-  // the gear lever's rod and knob on their own bone (it tilts about the boot's top: PIVOTS.shift); the boot stays
+  // each lever's rod and knob on its own bone (it tilts about the boot's top: PIVOTS.shift, PIVOTS.transfer); the boots stay
   const lever = (base, path, knobR, bootR, bone) => {
     lathe(C(B, 'rubber'), base, [0, 1, 0], [[0, 0], [0, bootR], [0.02, bootR * 0.8], [0.05, bootR * 0.35], [0.06, 0.012], [0.06, 0]], 14);
     tube(C(bone, 'trim'), path, 0.0075, 8);
@@ -178,7 +178,7 @@ function floor() {
     lathe(C(bone, 'trim'), tip, dir, [[-0.012, 0], [-0.012, 0.012], [0.0, knobR], [0.018, knobR * 0.9], [0.03, knobR * 0.5], [0.034, 0]], 14);
   };
   lever([0.43, 0.665, -0.02], roundPath([[0.43, 0.70, -0.02], [0.43, 0.82, -0.03], [0.35, 0.97, -0.05], [0.33, 1.0, -0.055]], 0.06, 4), 0.021, 0.05, 'shift');
-  lever([0.38, 0.665, 0.07], roundPath([[0.38, 0.70, 0.07], [0.38, 0.80, 0.07], [0.33, 0.88, 0.07]], 0.05, 3), 0.017, 0.035, B);
+  lever([0.38, 0.665, 0.07], roundPath([[0.38, 0.70, 0.07], [0.38, 0.80, 0.07], [0.33, 0.88, 0.07]], 0.05, 3), 0.017, 0.035, 'transfer');
 }
 
 // ================================================================ bench seat

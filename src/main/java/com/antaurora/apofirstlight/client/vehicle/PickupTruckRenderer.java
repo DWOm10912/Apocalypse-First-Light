@@ -105,11 +105,12 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     /**
      * Lamp groups (design doc 8.10), by part name suffix (tools/pickup-t15: the lamp_* materials, body_dial, *_needle): each
      * its own cache selector, drawn at full light while lit, its vertex colour scaled by the glow (the tail lamp dim with
-     * the lights, bright braking).
+     * the lights, bright braking). The front amber lamps (parking lamps and side markers, which are also the front turn
+     * signals) and the rear amber turn sections are split by side (_l / _r; design doc 8.12).
      */
     private enum Lamp {
-        LOW("_lamp_low"), HIGH("_lamp_high"), PARK("_lamp_park"), TAIL("_lamp_tail"), REVERSE("_lamp_reverse"), PLATE("_lamp_plate"),
-        DOME("_lamp_dome"), DIAL("_dial"), NEEDLE("_needle");
+        LOW("_lamp_low"), HIGH("_lamp_high"), PARK_L("_lamp_park_l"), PARK_R("_lamp_park_r"), TURN_L("_amber_l"), TURN_R("_amber_r"),
+        TAIL("_lamp_tail"), REVERSE("_lamp_reverse"), PLATE("_lamp_plate"), DOME("_lamp_dome"), DIAL("_dial"), NEEDLE("_needle");
 
         static final Lamp[] ALL = values();
         final String suffix;
@@ -141,15 +142,24 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
 
     /** The pose of one frame: bone turns (the steering wheel in rad) and paint. */
     private record State(float hood, float tailgate, float doorL, float doorR, float filler, float steering, float[] main, float[] second, int light,
-                         float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float[] glow) {}
+                         float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float transfer, float[] glow) {}
 
     /** Each lamp group's glow this frame (0: off). */
-    private static float[] glow(PickupTruckEntity truck, float doorL, float doorR) {
+    private static float[] glow(PickupTruckEntity truck, float doorL, float doorR, float partialTick) {
         float[] g = new float[Lamp.ALL.length];
         boolean on = truck.headlights();
         g[Lamp.LOW.ordinal()] = on ? 1 : 0;
         g[Lamp.HIGH.ordinal()] = truck.highBeam() ? 1 : 0;
-        g[Lamp.PARK.ordinal()] = g[Lamp.PLATE.ordinal()] = on ? 1 : 0;
+        g[Lamp.PLATE.ordinal()] = on ? 1 : 0;
+        // a flashing side's amber lamps follow the flasher (the parking lamp goes dark in its off half), the other side's
+        // parking lamp stays with the lights
+        int signal = truck.turnSignal();
+        boolean hazard = truck.hazard();
+        for (boolean right : new boolean[]{false, true}) {
+            boolean flashing = hazard || signal == (right ? 1 : -1), lit = truck.turnLit(right, partialTick);
+            g[(right ? Lamp.PARK_R : Lamp.PARK_L).ordinal()] = flashing ? (lit ? 1 : 0) : on ? 1 : 0;
+            g[(right ? Lamp.TURN_R : Lamp.TURN_L).ordinal()] = lit ? 1 : 0;
+        }
         g[Lamp.TAIL.ordinal()] = truck.braking() ? 1 : on ? TAIL_GLOW : 0;
         g[Lamp.REVERSE.ordinal()] = truck.reversing() ? 1 : 0;
         g[Lamp.DOME.ordinal()] = Math.max(doorL, doorR) > DOME_DOOR ? 1 : 0;
@@ -194,7 +204,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
                 tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light,
                 needle(truck.tachometer(partialTick), 5000, BIG_SWEEP), needle(truck.speedometer(partialTick), 180, BIG_SWEEP),
                 needle(truck.fuelGauge(partialTick), 1, SMALL_SWEEP), needle(truck.coolantGauge(partialTick) - 40, 80, SMALL_SWEEP),
-                truck.leverFore(partialTick), truck.leverAcross(partialTick), glow(truck, doorL, doorR));
+                truck.leverFore(partialTick), truck.leverAcross(partialTick), truck.transferFore(partialTick), glow(truck, doorL, doorR, partialTick));
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
@@ -396,6 +406,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "fuel_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.fuel(), 0.0F, 0.0F, -1.0F));
             case "temp_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.temp(), 0.0F, 0.0F, -1.0F));
             case "shift" -> pose.mulPose(PickupTruckLayout.leverTurn(s.leverFore(), s.leverAcross()));   // the H gate (ShiftLever)
+            case "transfer" -> pose.mulPose(PickupTruckLayout.transferTurn(s.transfer()));   // 2H - 4H - N - 4L (TransferLever)
             default -> { }
         }
     }

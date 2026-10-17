@@ -12,7 +12,9 @@ import {HW, FX, RX, AY, AR, YB, BELT, ROOF, HF, FX0, CB, BED_F, BED_R, BED_TOP, 
 
 // the outside is two meshes (each inside the Vextris per-mesh limits): 'front' (front clip, hood, cowl) and 'ext' (the rest)
 let MESH = 'ext';
-const E = (bone, mat) => P(MESH, bone, mat);
+const E = (bone, mat, tag) => P(MESH, bone, mat, tag);
+/** A side's tag for the lamps the turn signals flash (sym: s = 1 right, -1 left). */
+const side = s => s > 0 ? 'r' : 'l';
 const zr = (s, a, b) => s > 0 ? [a, b] : [-b, -a];
 /** A side panel (outline in x, y) between |z| zIn and zOut, the outer face rounded by rOut. */
 function sidePanel(p, s, outline, zIn, zOut, rOut, rIn = 0.002, holes = []) {
@@ -75,7 +77,7 @@ function fenders() {
       rbox(E('body', 'trim'), FZ, a, b, SPLIT - 0.016, SPLIT + 0.016, z0, z1, 0.003, {rc: 0.006});
     }
     const [mz0, mz1] = zr(s, HW - 0.002, HW + 0.005);
-    rbox(E('body', 'lamp_park'), FZ, 2.13, 2.21, 0.835, 0.865, mz0, mz1, 0.002, {rc: 0.008});
+    rbox(E('body', 'lamp_park', side(s)), FZ, 2.13, 2.21, 0.835, 0.865, mz0, mz1, 0.002, {rc: 0.008});
   });
 }
 
@@ -106,7 +108,7 @@ function frontEnd() {
     }
     const T = fillet([[hz0, 0.655], [hz1, 0.655], [hz1, 0.705], [hz0, 0.705]].map(([z, y]) => [s * z, y]), 0.01, 2);
     slab(E(B, 'chrome'), FRX, T, [], FX0 - 0.006, FX0 + 0.012, {r0: 0.002, r1: 0.004});
-    rbox(E(B, 'lamp_park'), FRX, s > 0 ? hz0 + 0.008 : -hz1 + 0.008, s > 0 ? hz1 - 0.008 : -hz0 - 0.008, 0.662, 0.698, FX0 + 0.008, FX0 + 0.018, 0.003, {rc: 0.006});
+    rbox(E(B, 'lamp_park', side(s)), FRX, s > 0 ? hz0 + 0.008 : -hz1 + 0.008, s > 0 ? hz1 - 0.008 : -hz0 - 0.008, 0.662, 0.698, FX0 + 0.008, FX0 + 0.018, 0.003, {rc: 0.006});
   });
   // front bumper: chrome C-section swept along a plan line that wraps back at the corners
   const plan = roundPath([[2.20, 0.505, -0.885], [2.33, 0.505, -0.79], [2.37, 0.505, -0.60], [2.37, 0.505, 0.60], [2.33, 0.505, 0.79], [2.20, 0.505, 0.885]], 0.09, 5);
@@ -394,9 +396,9 @@ function bed() {
     }
     // tail lamp: three sections (turn / stop-tail / reverse) on the post's rear face
     const lz0 = 0.69, lz1 = HW - 0.012;
-    const lamp = (y0, y1, mat, d) => rbox(E(B, mat), FRX, s > 0 ? lz0 : -lz1, s > 0 ? lz1 : -lz0, y0, y1, xr - d, xr + 0.004, 0.004, {rc: 0.008});
+    const lamp = (y0, y1, mat, d, tag) => rbox(E(B, mat, tag), FRX, s > 0 ? lz0 : -lz1, s > 0 ? lz1 : -lz0, y0, y1, xr - d, xr + 0.004, 0.004, {rc: 0.008});
     rbox(E(B, 'trim'), FRX, s > 0 ? lz0 - 0.008 : -lz1 - 0.004, s > 0 ? lz1 + 0.004 : -lz0 + 0.008, 0.645, 1.045, xr - 0.016, xr + 0.002, 0.004, {rc: 0.012});
-    lamp(0.92, 1.035, 'amber', 0.026); lamp(0.745, 0.912, 'lamp_tail', 0.026); lamp(0.655, 0.737, 'lamp_reverse', 0.026);
+    lamp(0.92, 1.035, 'amber', 0.026, side(s)); lamp(0.745, 0.912, 'lamp_tail', 0.026); lamp(0.655, 0.737, 'lamp_reverse', 0.026);
   });
   // floor with longitudinal ribs, front wall with two horizontal ribs
   const fz = HW - 0.096;

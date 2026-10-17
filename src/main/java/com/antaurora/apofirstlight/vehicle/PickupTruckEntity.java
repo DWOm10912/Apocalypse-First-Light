@@ -105,13 +105,18 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private static final EntityDataAccessor<Integer> FUEL = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<CompoundTag> CARGO = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.COMPOUND_TAG);
     /**
-     * The lamps (design doc 8.10) and the horn (8.11): LAMP_* bits, set on the server (the switch by the driver, the brake
-     * from the driver's back key, the horn while the driver holds its key).
+     * The lamps (design doc 8.10), the horn (8.11), the turn signals and hazard lamps (8.12): LAMP_* bits, set on the
+     * server (the switches by the driver, the brake from the driver's back key, the horn while the driver holds its key).
      */
     private static final EntityDataAccessor<Byte> LAMPS = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
-    public static final int LAMP_HEAD = 1, LAMP_HIGH = 2, LAMP_BRAKE = 4, HORN = 8;
-    /** VehiclePackets.Lamps actions: the light switch (off / on), the high beam (on / off), the horn pressed / let go. */
-    public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3;
+    public static final int LAMP_HEAD = 1, LAMP_HIGH = 2, LAMP_BRAKE = 4, HORN = 8, TURN_L = 16, TURN_R = 32, HAZARD = 64;
+    /**
+     * VehiclePackets.Lamps actions: the light key (a tap: lights on / off; a hold: the high beam), the horn pressed / let go,
+     * the left / right turn signal (on, or off when it already blinks) and the hazard switch.
+     */
+    public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3, SIGNAL_LEFT = 4, SIGNAL_RIGHT = 5, SWITCH_HAZARD = 6;
+    /** Flasher: one flash cycle (ticks; 90 a minute, inside the US 60-120) and its lit share. */
+    public static final float BLINK_PERIOD = 20 * 60 / 90.0F, BLINK_ON = 0.5F;
     /**
      * Infected hearing (design doc 8.11; the sounds carry as far, client/vehicle/TruckSounds and sounds.json): the engine
      * idling and revving (every NOISE_INTERVAL ticks while it runs), the horn (every HORN_INTERVAL ticks while it sounds),
@@ -178,6 +183,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private int handsDriver = -1;
     /** Client: the gear lever and the right hand on it (drawn for everyone; the hand with the seated driver's skeleton). */
     private final ShiftLever lever = new ShiftLever();
+    /** Client: the transfer case lever and the right hand on it (as the gear lever). */
+    private final TransferLever transferLever = new TransferLever();
     private double handsTime = Double.NaN;
     /** Riders moving over (MOVE_OVER): passenger id -> {the seat it came from, the tick it started}; the seat each was last on. */
     private final Map<Integer, int[]> slides = new HashMap<>();
@@ -225,7 +232,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     // ---- drivetrain (V0-b package 2) ----
     /** The drivetrain as saved, for the physics once it exists: gear, 2H / 4H, coolant (the engine is off after loading). */
     private int savedGear;
-    private boolean savedFour;
+    private boolean savedFour, savedLow;
     private float savedCoolant = 20;
     /** Server: fuel burnt and not yet taken from the tank (litres; the tank counts whole litres). */
     private double fuelBurnt;
@@ -380,13 +387,46 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     /** In reverse, or shifting into it (the reverse lamp switch on the gearbox). */
     public boolean reversing() { return gear() < 0 || shiftTarget() < 0; }
 
-    /** Server: the driver's light switch or high beam (VehiclePackets.Lamps). */
+    /** The turn signal lever: -1 left, 1 right, 0 none (design doc 8.12). */
+    public int turnSignal() { int l = lamps(); return (l & TURN_L) != 0 ? -1 : (l & TURN_R) != 0 ? 1 : 0; }
+
+    /** The hazard switch is on (both sides flash). */
+    public boolean hazard() { return (lamps() & HAZARD) != 0; }
+
+    /** The flasher's bits as last seen and the tick they changed (the first flash comes at once; client). */
+    private int flasherBits = -1;
+    private int flasherStart;
+
+    /**
+     * Client, this frame: one side's turn lamps lit, the flasher's lit half (the turn signal that way or the hazards); the
+     * cycle starts when the switch changes, so the first flash comes at once. The lamps, the flares and the HUD all ask.
+     */
+    public boolean turnLit(boolean right, float partialTick) {
+        int bits = lamps() & (TURN_L | TURN_R | HAZARD);
+        if (bits != flasherBits) {
+            flasherBits = bits;
+            flasherStart = tickCount;
+        }
+        if ((bits & HAZARD) == 0 && (bits & (right ? TURN_R : TURN_L)) == 0) return false;
+        float t = (tickCount + partialTick - flasherStart) % BLINK_PERIOD;
+        return t >= 0 && t < BLINK_PERIOD * BLINK_ON;
+    }
+
+    /**
+     * Server: the driver's light key (VehiclePackets.Lamps; one key, GTA-style, user 2026-10-16). SWITCH_LIGHTS (a tap)
+     * turns the lights on on low beam, or off; SWITCH_HIGH (a hold) flips the high beam, turning the lights on with it.
+     * The turn signal keys (user 2026-10-16: one press on, the same again off; the other side's key moves it over) and the
+     * hazard switch (on / off; flashes both sides over a turn signal, which comes back when the hazards go off).
+     */
     void lampSwitch(int action) {
         int lamps = lamps();
-        if (action == SWITCH_LIGHTS) lamps ^= LAMP_HEAD;
-        else if (action == SWITCH_HIGH) lamps ^= LAMP_HIGH;
+        if (action == SWITCH_LIGHTS) lamps = (lamps & LAMP_HEAD) != 0 ? lamps & ~(LAMP_HEAD | LAMP_HIGH) : (lamps | LAMP_HEAD) & ~LAMP_HIGH;
+        else if (action == SWITCH_HIGH) lamps = (lamps & LAMP_HEAD) == 0 ? lamps | LAMP_HEAD | LAMP_HIGH : lamps ^ LAMP_HIGH;
         else if (action == HORN_ON) lamps |= HORN;
         else if (action == HORN_OFF) lamps &= ~HORN;
+        else if (action == SIGNAL_LEFT) lamps = (lamps & TURN_L) != 0 ? lamps & ~TURN_L : (lamps | TURN_L) & ~TURN_R;
+        else if (action == SIGNAL_RIGHT) lamps = (lamps & TURN_R) != 0 ? lamps & ~TURN_R : (lamps | TURN_R) & ~TURN_L;
+        else if (action == SWITCH_HAZARD) lamps ^= HAZARD;
         else return;
         entityData.set(LAMPS, (byte) lamps);
     }
@@ -553,7 +593,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             world = new LevelVehicleWorld(level(), this);
             physics.reset(getX(), getY(), getZ(), orient());
             physics.drivetrain.gear = savedGear;
-            physics.drivetrain.fourWheel = savedFour;
+            physics.drivetrain.fourWheel = savedFour || savedLow;
+            physics.drivetrain.low = savedLow;
             physics.drivetrain.coolant = savedCoolant;
             placed();
         } else if (!level().isClientSide && (getX() != placedX || getY() != placedY || getZ() != placedZ || getYRot() != placedYaw)) {
@@ -688,7 +729,13 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     /** -1 R, 0 N, 1..5. */
     public int gear() { Drivetrain d = drivetrain(); return d != null ? d.gear : savedGear; }
 
-    public boolean fourWheel() { Drivetrain d = drivetrain(); return d != null ? d.fourWheel : savedFour; }
+    public boolean fourWheel() { Drivetrain d = drivetrain(); return d != null ? d.fourWheel : savedFour || savedLow; }
+
+    /** The transfer case in low range (4L). */
+    public boolean lowRange() { Drivetrain d = drivetrain(); return d != null ? d.low : savedLow; }
+
+    /** The transfer case: 0 2H, 1 4H, 2 4L. */
+    public int transferMode() { return lowRange() ? 2 : fourWheel() ? 1 : 0; }
 
     /** Drivetrain.KEY_OFF / PREHEAT / CRANK. */
     public int ignitionPhase() { Drivetrain d = drivetrain(); return d != null ? d.ignition : Drivetrain.KEY_OFF; }
@@ -706,6 +753,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
 
     public float leverAcross(float partialTick) { driverHands(partialTick); return (float) lever.across; }
 
+    /** Client: the transfer case lever's tilt this frame (deg; TransferLever, PickupTruckLayout#transferTurn). */
+    public float transferFore(float partialTick) { driverHands(partialTick); return (float) transferLever.fore; }
+
     /**
      * Client: the gear lever and the driver's hands to this frame. Once per frame time: the renderer (the lever) and the
      * seated pose (the hands) both ask.
@@ -716,12 +766,13 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         handsTime = now;
         double wheel = Math.toDegrees(steerAngle(partialTick) * PickupTruckLayout.STEERING_RATIO);
         lever.update(now, shiftTarget(), shiftTotal());
+        transferLever.update(now, transferMode());
         int driver = entityData.get(SEAT[PickupTruckLayout.DRIVER]);
         if (driver != handsDriver) {
             handsDriver = driver;
             hands.reset(now, wheel);
         }
-        hands.update(now, wheel, lever.handOff());
+        hands.update(now, wheel, lever.handOff() || transferLever.handOff());
     }
 
     /** The clutch pedal as the driver holds it (0 up .. 1 down). */
@@ -910,7 +961,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             case DOOR_L, DOOR_R -> {
                 boolean right = pick.zone() == Zone.DOOR_R;
                 if (!doorOpen(right)) yield Action.OPEN_DOOR;
-                yield player.isShiftKeyDown() || seated(right ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER) ? Action.CLOSE_DOOR : Action.GET_IN;
+                // the open door itself shuts it; its opening gets in (sneaking shuts it from there too; user 2026-10-17:
+                // with the doors open one could only get in)
+                yield pick.leaf() || player.isShiftKeyDown() || seated(right ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER) ? Action.CLOSE_DOOR : Action.GET_IN;
             }
             case FILLER -> {
                 if (FuelCanItem.isPouring(held)) yield Action.STOP_POUR;
@@ -960,8 +1013,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private Vec3 anchor(Pick pick) {
         return switch (pick.zone()) {
             case HOOD -> point(2.24, 0, hoodOpen() ? 1.45 : 1.05);
-            case DOOR_L -> point(-0.10, -0.90, 0.98);
-            case DOOR_R -> point(-0.10, 0.90, 0.98);
+            case DOOR_L -> pick.leaf() ? point(0.52, -1.72, 0.98) : point(-0.10, -0.90, 0.98);
+            case DOOR_R -> pick.leaf() ? point(0.52, 1.72, 0.98) : point(-0.10, 0.90, 0.98);
             case FILLER -> point(-0.62, -0.90, 0.94);
             case TAILGATE -> tailgateOpen() ? point(-2.70, 0, 0.62) : point(-2.27, 0, 1.05);
             case SEAT -> { Seat s = PickupTruckLayout.SEATS[pick.seat()]; yield point(s.f(), s.r(), 0.95); }
@@ -1113,15 +1166,20 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         if (kind == RiderSeat.Kind.DRIVER) {
             driverHands(partialTick);
             anchors.put("grip_l", model(origin, q, PickupTruckLayout.grip(false, Math.toRadians(hands.angle[0]), hands.lift[0])));
-            // the right hand: on the rim, or on its way to / on / back from the gear lever's knob (from where it let go,
-            // back to its rest)
-            double[] rim = lever.hand > 0 ? PickupTruckLayout.grip(true, lever.handGoing ? Math.toRadians(hands.angle[1]) : 0, 0)
+            // the right hand: on the rim, or on its way to / on / back from the gear lever's knob or the transfer lever's
+            // (from where it let go, back to its rest); the gear lever first when both want it
+            boolean onTransfer = lever.hand <= 0 && !lever.handGoing && transferLever.hand > 0;
+            double reach = onTransfer ? transferLever.hand : lever.hand;
+            boolean going = onTransfer ? transferLever.handGoing : lever.handGoing;
+            double[] rim = reach > 0 ? PickupTruckLayout.grip(true, going ? Math.toRadians(hands.angle[1]) : 0, 0)
                     : PickupTruckLayout.grip(true, Math.toRadians(hands.angle[1]), hands.lift[1]);
-            anchors.put("grip_r", model(origin, q, PickupTruckLayout.rightHand(rim, lever.fore, lever.across, lever.hand)));
+            double[] knob = onTransfer ? PickupTruckLayout.transferKnob(transferLever.fore) : PickupTruckLayout.knob(lever.fore, lever.across);
+            anchors.put("grip_r", model(origin, q, PickupTruckLayout.rightHand(rim, knob, reach)));
             anchors.put("wheel_hub", model(origin, q, PickupTruckLayout.HUB));
             anchors.put("wheel_axis", model(origin, q, PickupTruckLayout.AXIS));
             anchors.put("wheel_rim", model(origin, q, PickupTruckLayout.grip(true, 0, 0)));
             anchors.put("shift_knob", model(origin, q, PickupTruckLayout.knob(lever.fore, lever.across)));
+            anchors.put("transfer_knob", model(origin, q, PickupTruckLayout.transferKnob(transferLever.fore)));
         }
         if (side != 0) {
             anchors.put("door_pull", model(origin, q, PickupTruckLayout.door(side, PickupTruckLayout.PULL, angle)));
@@ -1367,7 +1425,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         setDoorOpen(true, tag.getBoolean("DoorRightOpen"));
         setFillerOpen(tag.getBoolean("FillerOpen"));
         setFuel(tag.getInt("Fuel"));
-        entityData.set(LAMPS, (byte) ((tag.getBoolean("Headlights") ? LAMP_HEAD : 0) | (tag.getBoolean("HighBeam") ? LAMP_HIGH : 0)));
+        entityData.set(LAMPS, (byte) ((tag.getBoolean("Headlights") ? LAMP_HEAD : 0) | (tag.getBoolean("HighBeam") ? LAMP_HIGH : 0)
+                | (tag.getByte("TurnSignal") < 0 ? TURN_L : tag.getByte("TurnSignal") > 0 ? TURN_R : 0) | (tag.getBoolean("Hazard") ? HAZARD : 0)));
         cargo = GridStorage.load(CARGO_LAYOUT, tag.getList("Cargo", Tag.TAG_COMPOUND), false);
         cargoChanged();
         // a reloaded truck shows its parts where they were left, without swinging
@@ -1378,6 +1437,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         filler = fillerO = fillerOpen() ? FILLER_OPEN : 0.0F;
         savedGear = Mth.clamp(tag.getInt("Gear"), -1, 5);
         savedFour = tag.getBoolean("FourWheel");
+        savedLow = tag.getBoolean("LowRange");
         savedCoolant = tag.contains("Coolant") ? tag.getFloat("Coolant") : 20;
         fuelBurnt = tag.getDouble("FuelBurnt");
         ListTag q = tag.getList("Orientation", Tag.TAG_FLOAT);
@@ -1402,12 +1462,15 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putInt("Fuel", tank.getFluidAmount());
         tag.putBoolean("Headlights", headlights());
         tag.putBoolean("HighBeam", (lamps() & LAMP_HIGH) != 0);
+        tag.putByte("TurnSignal", (byte) turnSignal());
+        tag.putBoolean("Hazard", hazard());
         ListTag grid = cargo.save();
         if (!grid.isEmpty()) tag.put("Cargo", grid);
         Quaterniond q = orient();
         tag.put("Orientation", newFloatList((float) q.x, (float) q.y, (float) q.z, (float) q.w));
         tag.putInt("Gear", gear());
         tag.putBoolean("FourWheel", fourWheel());
+        tag.putBoolean("LowRange", lowRange());
         tag.putFloat("Coolant", physics != null ? (float) physics.drivetrain.coolant : savedCoolant);
         tag.putDouble("FuelBurnt", fuelBurnt);
     }

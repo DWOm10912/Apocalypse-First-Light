@@ -121,6 +121,14 @@ public final class AflRenderDev {
                     c.getSource().sendSuccess(() -> Component.literal("mirror = " + mirror), false);
                     return 1;
                 })))
+                // Dynamic Lights V1 (docs/rendering/dynamic_lights_v1.md): off brings back the lamps' block light to compare
+                .then(Commands.literal("dynamic_lights").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.light.DynamicLights.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("dynamic_lights " + com.antaurora.apofirstlight.client.light.DynamicLights.status()), false);
+                    return 1;
+                })))
                 .then(Commands.literal("status").executes(c -> {
                     c.getSource().sendSuccess(() -> Component.literal("shadow_cull = " + shadowCull + ", static_mesh = " + (staticMesh ? "on" : "off") + ", mirror = " + mirror), false);
                     return 1;

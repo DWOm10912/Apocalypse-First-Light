@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>HUD V2</title>
+<style>
+@font-face { font-family: 'AFL Sans'; src: url('/assets/font/afl_sans_sc.ttf'); }
+body { margin: 0; background: #141516; color: #E8E4DC; font-family: 'AFL Sans', 'Microsoft YaHei', sans-serif; }
+canvas { display: block; max-width: 100%; margin: 12px auto; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>
+// HUD V2 concepts (design use only; docs/ui/hud_v2_research.md): the whole HUD redone in the AFL overlay style, three
+// directions. Reuses the shapes and text of design/ui/vehicle_dashboard_v1 (loaded below). GUI scale 3, 1920 x 1080.
+
+async function loadShared() {
+  const html = await (await fetch('/design/ui/vehicle_dashboard_v1/source/dashboard_concept.html')).text();
+  const body = html.split('<script>')[1].split('// ---------- frames and sheets')[0];
+  const s = document.createElement('script');
+  s.textContent = body.replace(/^const /gm, 'var ').replace(/^let /gm, 'var ');
+  document.head.appendChild(s);
+}
+
+// ---------- the player's state: normal, and a bad moment ----------
+const NORMAL = {hp: 18, armor: 8, food: 0.8, water: 0.62, stamina: 0.8, temp: 14, trend: 0, tempLevel: 'ok', weight: 24.6, tier: 'ok', chips: [], countdown: null};
+const BAD = {hp: 9, armor: 8, food: 0.35, water: 0.07, stamina: 0.38, temp: -6, trend: -1, tempLevel: 'cold', weight: 52.3, tier: 'heavy',
+  chips: [['snow', '寒冷', 'cold'], ['wet', '湿透', 'cold'], ['rad', '辐射 II', 'warn'], ['kettle', '超重', 'warn']], countdown: '脱水 2:30'};
+const C2 = {red: '#CC4A42', food: '#D39A4C', water: '#6FA3C7', stam: '#E8E4DC', armor: '#B4BCC4', cold: '#6FA3E0', warn: '#E0A84A', weight: '#B4B2A8', heavy: '#D6983A'};
+const sevColour = s => s === 'cold' ? C2.cold : s === 'warn' ? C2.warn : s === 'danger' ? C2.red : COL.dim;
+
+// ---------- icons (centred, s = size) ----------
+const IC = {
+  heart(c, s) { c.beginPath(); c.moveTo(0, 0.38 * s); c.bezierCurveTo(-0.62 * s, -0.04 * s, -0.36 * s, -0.5 * s, 0, -0.18 * s); c.bezierCurveTo(0.36 * s, -0.5 * s, 0.62 * s, -0.04 * s, 0, 0.38 * s); c.fill(); },
+  bolt(c, s) { c.beginPath(); c.moveTo(0.12 * s, -0.48 * s); c.lineTo(-0.26 * s, 0.06 * s); c.lineTo(0.0, 0.06 * s); c.lineTo(-0.12 * s, 0.48 * s); c.lineTo(0.26 * s, -0.06 * s); c.lineTo(0, -0.06 * s); c.closePath(); c.fill(); },
+  food(c, s) { c.save(); c.rotate(-0.7); c.beginPath(); c.ellipse(0, -0.12 * s, 0.24 * s, 0.32 * s, 0, 0, Math.PI * 2); c.fill(); c.fillRect(-0.06 * s, 0.14 * s, 0.12 * s, 0.3 * s); c.beginPath(); c.arc(-0.08 * s, 0.46 * s, 0.07 * s, 0, 7); c.arc(0.08 * s, 0.46 * s, 0.07 * s, 0, 7); c.fill(); c.restore(); },
+  drop(c, s) { c.beginPath(); c.moveTo(0, -0.46 * s); c.bezierCurveTo(0.34 * s, -0.06 * s, 0.34 * s, 0.4 * s, 0, 0.4 * s); c.bezierCurveTo(-0.34 * s, 0.4 * s, -0.34 * s, -0.06 * s, 0, -0.46 * s); c.fill(); },
+  thermo(c, s) { c.lineWidth = s * 0.14; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, -0.4 * s); c.lineTo(0, 0.12 * s); c.stroke(); c.beginPath(); c.arc(0, 0.26 * s, 0.17 * s, 0, 7); c.fill(); },
+  kettle(c, s) { c.lineWidth = s * 0.11; c.beginPath(); c.arc(0, -0.32 * s, 0.11 * s, 0, 7); c.stroke(); c.beginPath(); c.moveTo(-0.22 * s, -0.16 * s); c.lineTo(0.22 * s, -0.16 * s); c.lineTo(0.46 * s, 0.44 * s); c.lineTo(-0.46 * s, 0.44 * s); c.closePath(); c.fill(); },
+  shield(c, s) { c.beginPath(); c.moveTo(0, -0.44 * s); c.lineTo(0.36 * s, -0.3 * s); c.lineTo(0.3 * s, 0.12 * s); c.lineTo(0, 0.44 * s); c.lineTo(-0.3 * s, 0.12 * s); c.lineTo(-0.36 * s, -0.3 * s); c.closePath(); c.fill(); },
+  rad(c, s) { for (let k = 0; k < 3; k++) { const a = k * 2.094 - Math.PI / 2; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 0.46 * s, a - 0.5, a + 0.5); c.closePath(); c.fill(); }
+    c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.arc(0, 0, 0.16 * s, 0, 7); c.fill(); c.globalCompositeOperation = 'source-over'; c.beginPath(); c.arc(0, 0, 0.09 * s, 0, 7); c.fill(); },
+  snow(c, s) { c.lineWidth = s * 0.11; c.lineCap = 'round'; for (let k = 0; k < 3; k++) { c.save(); c.rotate(k * Math.PI / 3); c.beginPath(); c.moveTo(0, -0.46 * s); c.lineTo(0, 0.46 * s);
+    c.moveTo(-0.14 * s, -0.34 * s); c.lineTo(0, -0.22 * s); c.lineTo(0.14 * s, -0.34 * s); c.moveTo(-0.14 * s, 0.34 * s); c.lineTo(0, 0.22 * s); c.lineTo(0.14 * s, 0.34 * s); c.stroke(); c.restore(); } },
+  wet(c, s) { c.save(); c.translate(-0.12 * s, -0.08 * s); IC.drop(c, s * 0.7); c.restore(); c.lineWidth = s * 0.1; c.lineCap = 'round'; c.beginPath(); c.moveTo(-0.44 * s, 0.36 * s); c.quadraticCurveTo(-0.22 * s, 0.24 * s, 0, 0.36 * s); c.quadraticCurveTo(0.22 * s, 0.48 * s, 0.44 * s, 0.36 * s); c.stroke(); },
+};
+function ic(c, name, x, y, s, colour, alpha = 1) {
+  c.save(); c.translate(x, y); c.globalAlpha = alpha; c.fillStyle = colour; c.strokeStyle = colour; IC[name](c, s); c.restore();
+}
+
+// ---------- shared modules ----------
+function bar(c, x, y, w, h, f, colour, segments = 0, gap = 0.7) {
+  rr(c, x, y, w, h, h / 2); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+  if (segments) {
+    const cw = (w - gap * (segments - 1)) / segments;
+    for (let i = 0; i < segments; i++) {
+      const k = Math.max(0, Math.min(1, f * segments - i)); if (k <= 0) break;
+      rr(c, x + i * (cw + gap), y, cw * k, h, Math.min(h / 2, 0.8)); c.fillStyle = colour; c.fill();
+    }
+  } else if (f > 0) { rr(c, x, y, Math.max(h, w * f), h, h / 2); c.fillStyle = colour; c.fill(); }
+  rr(c, x - 0.15, y - 0.15, w + 0.3, h + 0.3, h / 2 + 0.15); c.lineWidth = 0.3; c.strokeStyle = rgba(COL.line, 0.28); c.stroke();
+}
+/** A status chip: icon + label on a small rounded tile, the icon in its severity colour. Returns its width. */
+function chip(c, x, y, iconName, label, sev, alignRight) {
+  c.font = `5.2px ${FONT}`; const w = 4 + 7 + c.measureText(label).width + 4, x0 = alignRight ? x - w : x;
+  panel(c, x0, y, w, 10, 3, 0.62);
+  rr(c, x0 + 0.8, y + 2.2, 1.2, 5.6, 0.6); c.fillStyle = sevColour(sev); c.fill();
+  ic(c, iconName, x0 + 7, y + 5, 6, sevColour(sev));
+  text(c, label, x0 + 11.5, y + 7, 5.2, COL.text, 'left', 1, false);
+  return w;
+}
+/** Pistol silhouette facing left, w long. */
+function pistol(c, x, y, w, colour, alpha) {
+  const k = w / 22; c.save(); c.translate(x, y); c.scale(k, k); c.globalAlpha = alpha; c.fillStyle = colour;
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(17, 0); c.lineTo(17, 3.4); c.lineTo(14.5, 3.4); c.lineTo(16, 9.6); c.lineTo(12, 9.6); c.lineTo(10.6, 3.4); c.lineTo(0, 3.4); c.closePath(); c.fill();
+  c.restore();
+}
+function rifle(c, x, y, w, colour, alpha) {
+  const k = w / 34; c.save(); c.translate(x, y); c.scale(k, k); c.globalAlpha = alpha; c.fillStyle = colour;
+  c.beginPath(); c.moveTo(0, 1); c.lineTo(22, 1); c.lineTo(22, 0); c.lineTo(28, 0); c.lineTo(34, 2); c.lineTo(34, 6); c.lineTo(28, 4); c.lineTo(20, 4);
+  c.lineTo(19, 8); c.lineTo(16.5, 8); c.lineTo(17, 4); c.lineTo(13, 4); c.lineTo(12, 9); c.lineTo(9.5, 9); c.lineTo(10.5, 4); c.lineTo(0, 4); c.closePath(); c.fill();
+  c.restore();
+}
+/** Bottom right: the weapon positions (1-3) and the gun in hand with its ammo. */
+function weapons(c) {
+  const R = 632;
+  const list = [['1', rifle, 0.4], ['2', pistol, 1], ['3', null, 0]];
+  list.forEach(([key, fn, a], i) => {
+    const y = 292 + i * 9;
+    text(c, key, R, y + 5.4, 5, a === 1 ? COL.text : COL.dis, 'right', 1, false);
+    if (fn) fn(c, R - 32, y + 0.5, fn === rifle ? 24 : 15, '#FFFFFF', a === 1 ? 0.95 : 0.35);
+  });
+  text(c, 'P9', R, 333, 6, COL.dim, 'right', 1, true);
+  text(c, '半自动', R - 14, 333, 5, COL.dis, 'right', 1, false);
+  text(c, '/ 51', R, 351, 7, COL.dim, 'right', 1, true);
+  text(c, '17', R - 17, 351, 17, COL.text, 'right', 1, true);
+}
+/** The quick bindings (keys 4-9), lower and lighter than now. */
+function binds(c) {
+  const n = 6, cw = 17, gap = 2, w = n * cw + (n - 1) * gap, x0 = 320 - w / 2, y = 340;
+  const items = [['#E8E4DC', '3'], ['#C9A35A', '28'], ['#C9A35A', '64'], ['#8AA3B8', '2'], null, null];
+  items.forEach((it, i) => {
+    const sel = i === 1, x = x0 + i * (cw + gap), yy = y - (sel ? 2 : 0);
+    rr(c, x, yy, cw, cw, 3); c.fillStyle = rgba(COL.back, sel ? 0.7 : 0.5); c.fill();
+    c.lineWidth = 0.3; c.strokeStyle = rgba(COL.line, sel ? 0.5 : 0.22); c.stroke();
+    text(c, String(i + 4), x + 2, yy + 5, 3.8, COL.dis, 'left', 1, false);
+    if (it) {
+      c.fillStyle = it[0]; c.globalAlpha = 0.9; rr(c, x + 5.5, yy + 4.5, 6, 8, 1); c.fill(); c.globalAlpha = 1;
+      text(c, it[1], x + cw - 1.8, yy + cw - 1.6, 4.4, COL.text, 'right', 1, true);
+    }
+    if (sel) { rr(c, x + 5, y + cw + 1.2, 7, 1.4, 0.7); c.fillStyle = COL.accent; c.fill(); }
+  });
+}
+/** The interaction hint next to the crosshair: key cap + one word. */
+function interact(c) {
+  disc(c, 320, 180, 0.9, '#FFFFFF', 0.85);
+  const x = 328, y = 176;
+  rr(c, x, y, 8, 8, 2); c.fillStyle = rgba('#E8E4DC', 0.92); c.fill();
+  text(c, 'E', x + 4, y + 6.2, 5.6, '#16181A', 'center', 1, false);
+  text(c, '开门', x + 11, y + 6.4, 6, COL.text, 'left', 1, true);
+}
+/** A soft backing fading out to the right (the key hint panel mirrored). */
+function backing(c, x, y, w, h) {
+  const g = c.createLinearGradient(x, 0, x + w, 0);
+  g.addColorStop(0, rgba(COL.back, 0.5)); g.addColorStop(0.6, rgba(COL.back, 0.32)); g.addColorStop(1, rgba(COL.back, 0));
+  c.fillStyle = g; c.fillRect(x, y, w, h);
+}
+
+// ---------- A: bars ----------
+function vitalsA(c, st) {
+  const x = 10, hpY = 323;
+  backing(c, 0, 296 - (st.chips.length ? 14 : 0), 150, 64 + (st.chips.length ? 14 : 0));
+  let cx = x; for (const [icn, label, sev] of st.chips) cx += chip(c, cx, 286 - 0, icn, label, sev) + 2;
+  // armour line, health, stamina
+  ic(c, 'shield', x + 3, 315.5, 4.6, C2.armor, 0.9); bar(c, x + 9, 314.8, 100, 1.4, st.armor / 20, C2.armor);
+  ic(c, 'heart', x + 3, hpY + 2.5, 6.4, C2.red); bar(c, x + 9, hpY, 100, 5, st.hp / 20, C2.red, 10);
+  text(c, String(st.hp), x + 113, hpY + 5.2, 7, COL.text, 'left', 1, true);
+  ic(c, 'bolt', x + 3, 333.6, 6, C2.stam); bar(c, x + 9, 332.2, 100, 2.8, st.stamina, C2.stam);
+  // small needs row
+  const y = 343, low = v => v < 0.15;
+  ic(c, 'food', x + 3, y, 5.6, C2.food); bar(c, x + 8, y - 1.1, 18, 2.2, st.food, low(st.food) ? C2.red : C2.food);
+  ic(c, 'drop', x + 33, y, 5.6, low(st.water) ? C2.red : C2.water); bar(c, x + 38, y - 1.1, 18, 2.2, st.water, low(st.water) ? C2.red : C2.water);
+  const tc = st.tempLevel === 'cold' ? C2.cold : COL.text;
+  ic(c, 'thermo', x + 63, y, 5.6, tc); text(c, (st.temp > 0 ? '' : '−') + Math.abs(st.temp) + '°' + (st.trend < 0 ? ' ↓' : ''), x + 67, y + 2, 5.4, tc, 'left', 1, false);
+  const wc = st.tier === 'heavy' ? C2.heavy : COL.dim;
+  ic(c, 'kettle', x + 90, y, 5.4, wc); text(c, st.weight.toFixed(1) + ' kg', x + 94, y + 2, 5.4, wc, 'left', 1, false);
+  if (st.countdown) { text(c, st.countdown, x + 9, 353.5, 5.6, C2.red, 'left', 1, true); }
+}
+
+// ---------- B: round module ----------
+function dial(c, cx, cy, st) {
+  const S = 1.15, dialR = 9.5 * S, bez = 1.15 * S;
+  const grad = c.createLinearGradient(0, cy - dialR - bez, 0, cy + dialR + bez);
+  grad.addColorStop(0, '#5A5E64'); grad.addColorStop(1, '#2A2C2F');
+  c.beginPath(); c.arc(cx, cy, dialR + bez, 0, Math.PI * 2); c.fillStyle = grad; c.fill();
+  circleLine(c, cx, cy, dialR + bez + 0.2, 0.28, 0.3);
+  disc(c, cx, cy, dialR, '#1A1B1D', 0.95);
+  sector(c, cx, cy, dialR - 1.6, dialR - 0.6, 220, 500); c.fillStyle = rgba('#8A8780', 0.35); c.fill();
+  const f = st.tempLevel === 'cold' ? 0.12 : 0.4;
+  sector(c, cx, cy, dialR - 1.6, dialR - 0.6, 220, 220 + 280 * f); c.fillStyle = st.tempLevel === 'cold' ? C2.cold : '#C8C6BE'; c.fill();
+  text(c, (st.temp < 0 ? '−' : '') + Math.abs(st.temp) + '°', cx, cy + 1.8, 5, '#F0EEE6', 'center', 1, false);
+}
+function vitalsB(c, st) {
+  const cx = 38, cy = 320, r = 21, b = 3.2;
+  disc(c, cx, cy, r + 3.5, COL.back, 0.3);
+  // health: the left arc, filled from the bottom; armour outside it
+  const h0 = 200, h1 = 340;
+  cells(cx, cy, r, b, h0, h1 - h0, 10, 0.8, (i, s0, s1) => {
+    sector(c, cx, cy, r - b, r, s0, s1); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+    const k = Math.max(0, Math.min(1, st.hp / 20 * 10 - i)); if (k > 0) { sector(c, cx, cy, r - b, r, s0, s0 + (s1 - s0) * k); c.fillStyle = C2.red; c.fill(); }
+  });
+  sector(c, cx, cy, r + 0.8, r + 2, h0, h1); c.fillStyle = rgba(COL.back, 0.5); c.fill();
+  sector(c, cx, cy, r + 0.8, r + 2, h0, h0 + (h1 - h0) * st.armor / 20); c.fillStyle = C2.armor; c.fill();
+  // stamina: the right arc, filled from the bottom
+  const s0 = 20, s1 = 160;
+  sector(c, cx, cy, r - b, r, s0, s1); c.fillStyle = rgba(COL.back, 0.55); c.fill();
+  sector(c, cx, cy, r - b, r, s1 - (s1 - s0) * st.stamina, s1); c.fillStyle = C2.stam; c.fill();
+  circleLine(c, cx, cy, r + 0.3, 0.28, 0.3, h0, h1); circleLine(c, cx, cy, r + 0.3, 0.28, 0.3, s0, s1);
+  dial(c, cx, cy, st);
+  ic(c, 'heart', cx - 3.5, cy + 19.5, 4.6, C2.red); text(c, String(st.hp), cx - 0.5, cy + 21.6, 5.4, COL.text, 'left', 1, true);
+  // small rings: hunger, thirst, load
+  const rings = [['food', st.food, st.food < 0.15 ? C2.red : C2.food, 22], ['drop', st.water, st.water < 0.15 ? C2.red : C2.water, 52], ['kettle', st.weight / 60, st.tier === 'heavy' ? C2.heavy : C2.weight, 82]];
+  for (const [icn, f, col, a] of rings) {
+    const d = 35, x = cx + Math.sin(a * Math.PI / 180) * d, y = cy - Math.cos(a * Math.PI / 180) * d, rr2 = 6.4, bb = 1.6;
+    disc(c, x, y, rr2, COL.back, 0.5);
+    sector(c, x, y, rr2 - bb, rr2, 0, 360); c.fillStyle = rgba(COL.back, 0.5); c.fill();
+    sector(c, x, y, rr2 - bb, rr2, 0, 360 * f); c.fillStyle = col; c.fill();
+    circleLine(c, x, y, rr2 + 0.2, 0.28, 0.3);
+    ic(c, icn, x, y, 5, col);
+  }
+  let y = 300; for (const [icn, label, sev] of st.chips) { chip(c, 92, y, icn, label, sev); y += 12; }
+  if (st.countdown) text(c, st.countdown, 92, y + 7, 5.6, C2.red, 'left', 1, true);
+}
+
+// ---------- C: minimal, on demand ----------
+function vitalsC(c, st, expanded) {
+  const x = 10;
+  ic(c, 'heart', x + 3, 341, 5.4, C2.red); bar(c, x + 8, 340, 70, 2.2, st.hp / 20, C2.red);
+  ic(c, 'bolt', x + 3, 348, 5, C2.stam, 0.85); bar(c, x + 8, 347.2, 70, 1.6, st.stamina, C2.stam);
+  // what is wrong, only while it is: newest at the bottom
+  const cards = [];
+  if (st.countdown) cards.push(['drop', '口渴', st.countdown, 'danger']);
+  if (st.tempLevel === 'cold') cards.push(['snow', '寒冷', '−6° ↓ · 湿透', 'cold']);
+  if (st.chips.some(ch => ch[1].startsWith('辐射'))) cards.push(['rad', '辐射 II', '', 'warn']);
+  if (st.tier === 'heavy') cards.push(['kettle', '超重', st.weight.toFixed(1) + ' kg', 'warn']);
+  let y = 330;
+  for (const [icn, label, value, sev] of cards.reverse()) {
+    c.font = `5.2px ${FONT}`; const w = 16 + c.measureText(label).width + (value ? 4 + c.measureText(value).width : 0) + 5;
+    y -= 13; panel(c, x, y, w, 11, 3, 0.62);
+    rr(c, x + 0.8, y + 2.4, 1.2, 6.2, 0.6); c.fillStyle = sevColour(sev); c.fill();
+    ic(c, icn, x + 8, y + 5.5, 6.4, sevColour(sev));
+    text(c, label, x + 13, y + 7.6, 5.2, COL.text, 'left', 1, false);
+    if (value) { c.font = `5.2px ${FONT}`; text(c, value, x + 13 + c.measureText(label).width + 4, y + 7.6, 5.2, sev === 'danger' ? C2.red : COL.dim, 'left', 1, false); }
+  }
+  if (expanded) {
+    const px = 10, py = 200, w = 118, rows = [['heart', '生命', st.hp + ' / 20', st.hp / 20, C2.red], ['shield', '护甲', st.armor + ' / 20', st.armor / 20, C2.armor],
+      ['bolt', '耐力', Math.round(st.stamina * 100) + '%', st.stamina, C2.stam], ['food', '饥饿', Math.round(st.food * 100) + '%', st.food, C2.food],
+      ['drop', '口渴', Math.round(st.water * 100) + '%', st.water, st.water < 0.15 ? C2.red : C2.water], ['thermo', '体温', st.tempLevel === 'cold' ? '偏冷 −6°' : '舒适 14°', st.tempLevel === 'cold' ? 0.25 : 0.5, st.tempLevel === 'cold' ? C2.cold : '#C8C6BE'],
+      ['kettle', '负重', st.weight.toFixed(1) + ' kg', st.weight / 60, st.tier === 'heavy' ? C2.heavy : C2.weight]];
+    panel(c, px, py, w, 8 + rows.length * 11 + 3, 4, 0.72);
+    text(c, '状态', px + 6, py + 8, 5.4, COL.dim, 'left', 1, false);
+    rows.forEach(([icn, label, value, f, col], i) => {
+      const y = py + 12 + i * 11;
+      ic(c, icn, px + 8, y + 3.5, 5.6, col);
+      text(c, label, px + 14, y + 5.6, 5.2, COL.text, 'left', 1, false);
+      bar(c, px + 32, y + 2.6, 40, 1.8, f, col);
+      text(c, value, px + w - 6, y + 5.6, 5, COL.dim, 'right', 1, false);
+    });
+  } else if (!st.countdown) {
+    text(c, '按住 Alt 看全部状态', x + 8, 357.5, 4.2, COL.dis, 'left', 0.9, false);
+  }
+}
+
+// ---------- frames and sheets ----------
+let BG;
+function backdrop(c) {
+  const s = 1080 / BG.height, w = BG.width * s, ox = (1920 - w) / 2;
+  c.drawImage(BG, ox, 0, w, 1080);
+  c.drawImage(BG, 0, 1186, 2000, 58, ox, 1127 * s, 2000 * s, 58 * s);   // the screenshot's chat line, covered
+  const v = c.createLinearGradient(0, 0, 0, 1080); v.addColorStop(0, 'rgba(10,14,26,0.18)'); v.addColorStop(0.5, 'rgba(10,14,26,0)'); v.addColorStop(1, 'rgba(0,0,0,0.2)');
+  c.fillStyle = v; c.fillRect(0, 0, 1920, 1080);
+}
+const DIRECTIONS = {
+  A: {title: '方案 A · 条形状态栏（参考 Rust、非生物因素）', vitals: vitalsA, lines: [
+    '左下一组细横条，底板从左往右渐隐：最上一条细线是护甲，红色分段条是生命（带数字），白条是耐力；下面一排小格是饥饿、口渴（短条）、气温（数字 + 趋势箭头）、负重（kg）。',
+    '冷、湿、辐射、超重、药水效果都改成同一种小条目，有才出现，排在最上面；左边一道色条表示严重程度（蓝 = 冷，琥珀 = 注意，红 = 危险）。快出事时出倒计时（"脱水 2:30"）。',
+    '信息最全、最好读，一眼能看到数字；屏幕上常驻的东西也最多。']},
+  B: {title: '方案 B · 圆形组件（参考森林之子）', vitals: vitalsB, lines: [
+    '左下一个圆形组件：正中是现在的体温表盘（金属框、气温数字），左弧是生命（10 格，外面一圈细的护甲），右弧是耐力；饥饿、口渴、负重三个小圆排在右上。',
+    '状态条目竖着排在组件右边，有才出现。保留现在"环 + 表盘"的样子，换成角落里的一整块。',
+    '最像现在的风格、最有自己的特点；小圆里没有数字，饥饿口渴要看填充。']},
+  C: {title: '方案 C · 极简按需（参考 DayZ、近年动作游戏的趋势）', vitals: vitalsC, lines: [
+    '平时左下只有生命、耐力两条细线，别的都不显示。饥饿、口渴、体温、负重只在变差时以卡片出现（新的在下），危险时直接写倒计时。',
+    '按住 Alt 展开完整的状态卡片（右边第二张小图）：每一项的量和数字。画面最干净，最有沉浸感。',
+    '代价：平时看不到饥饿口渴还剩多少，要靠卡片提醒或按 Alt 看；新玩家可能不习惯。']},
+};
+function frame(c, key, st, opts = {}) {
+  c.save(); backdrop(c); c.scale(G, G);
+  interact(c); binds(c); weapons(c);
+  DIRECTIONS[key].vitals(c, st, opts.expanded);
+  c.restore();
+}
+function sheet(key) {
+  const insetH = 330, cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080 + 210 + insetH + 90;
+  const c = cv.getContext('2d');
+  frame(c, key, NORMAL);
+  const y = 1080;
+  c.fillStyle = '#141516'; c.fillRect(0, y, 1920, 1e4);
+  c.fillStyle = '#E8E4DC'; c.font = `34px ${FONT}`; c.textBaseline = 'top'; c.fillText(DIRECTIONS[key].title, 40, y + 22);
+  c.font = `21px ${FONT}`; c.fillStyle = '#C8C4BC';
+  DIRECTIONS[key].lines.forEach((l, i) => c.fillText(l, 40, y + 74 + i * 33));
+  // insets: the bad moment (and C's expanded card), the bottom left at 1:1
+  const f = document.createElement('canvas'); f.width = 1920; f.height = 1080; const fc = f.getContext('2d');
+  const iy = y + 74 + 3 * 33 + 30;
+  frame(fc, key, BAD);
+  c.drawImage(f, 0, 250 * G, 220 * G, 110 * G, 40, iy, 220 * G, 110 * G);
+  c.strokeStyle = 'rgba(232,228,220,0.25)'; c.lineWidth = 1; c.strokeRect(40.5, iy + 0.5, 220 * G - 1, 110 * G - 1);
+  c.font = `18px ${FONT}`; c.fillStyle = '#8A8780'; c.textBaseline = 'top';
+  c.fillText('又冷又湿、口渴快见底、辐射 II 期、超重（左下角，原大）', 40, iy + insetH + 12);
+  if (key === 'C') {
+    fc.clearRect(0, 0, 1920, 1080); frame(fc, key, NORMAL, {expanded: true});
+    c.drawImage(f, 0, 190 * G, 220 * G, 110 * G, 760, iy, 220 * G, 110 * G);
+    c.strokeRect(760.5, iy + 0.5, 220 * G - 1, 110 * G - 1);
+    c.fillText('按住 Alt：完整状态卡片', 760, iy + insetH + 12);
+  }
+  c.fillStyle = '#8A8780'; c.font = `18px ${FONT}`;
+  c.fillText('三套共用：绑定栏变矮（键号小字在角上）；右下武器位 1–3 和弹药；准星旁一个键帽 + 一个词；按键提示在右上。背景是游戏截图，界面缩放 3，数值是示意。', 40, cv.height - 34);
+  return cv;
+}
+async function save(cv, name) {
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  await fetch('/save?name=' + name, {method: 'POST', body: blob});
+}
+async function sheets() {
+  await save(sheet('A'), 'hud_v2_A_bars.png');
+  await save(sheet('B'), 'hud_v2_B_module.png');
+  await save(sheet('C'), 'hud_v2_C_minimal.png');
+  return 'saved';
+}
+(async () => {
+  await loadShared();
+  await document.fonts.load(`20px "AFL Sans"`);
+  BG = new Image(); await new Promise(res => { BG.onload = res; BG.src = '/design/ui/hud_corner_v1/source/bg_cabin.png'; });
+  const out = document.getElementById('out');
+  for (const k of ['A', 'B', 'C']) out.appendChild(sheet(k));
+  window.ready = true;
+})();
+</script>
+</body>
+</html>

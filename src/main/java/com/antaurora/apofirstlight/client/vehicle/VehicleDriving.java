@@ -53,17 +53,32 @@ public final class VehicleDriving {
     public static final KeyMapping SHIFT_DOWN = new KeyMapping("key.apocalypse_firstlight.shift_down", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F, CATEGORY);
     public static final KeyMapping TRANSFER = new KeyMapping("key.apocalypse_firstlight.transfer_case", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_X, CATEGORY);
     public static final KeyMapping IGNITION = new KeyMapping("key.apocalypse_firstlight.ignition", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
-    /** The light switch and the high beam (design doc 8.10). */
+    /**
+     * The lights on one key, GTA-style (user 2026-10-16; design doc 8.10): a tap turns them on / off, a hold flips the high
+     * beam (and turns the lights on with it).
+     */
     public static final KeyMapping LIGHTS = new KeyMapping("key.apocalypse_firstlight.headlights", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY);
-    public static final KeyMapping HIGH_BEAM = new KeyMapping("key.apocalypse_firstlight.high_beam", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_J, CATEGORY);
     /** The horn, held (design doc 8.11). */
     public static final KeyMapping HORN = new KeyMapping("key.apocalypse_firstlight.horn", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Y, CATEGORY);
-    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HIGH_BEAM, HORN};
+    /** Turn signals and hazard lamps (design doc 8.12; user 2026-10-16: the arrow keys for now): a press on, again off. */
+    public static final KeyMapping SIGNAL_LEFT = new KeyMapping("key.apocalypse_firstlight.signal_left", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, CATEGORY);
+    public static final KeyMapping SIGNAL_RIGHT = new KeyMapping("key.apocalypse_firstlight.signal_right", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, CATEGORY);
+    public static final KeyMapping HAZARD = new KeyMapping("key.apocalypse_firstlight.hazard", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_DOWN, CATEGORY);
+    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD};
+    /** Ticks the light key is held before it counts as a hold (the high beam) instead of a tap. */
+    private static final int HOLD_TICKS = 8;
+    /** Ticks the light key has been held; -1 once this hold flipped the high beam (the release then does nothing). */
+    private static int lightHeld;
     /** The horn key as last sent to the server. */
     private static boolean hornSent;
     /** Presses since the truck last asked (one gear step and one lever pull per tick at most). */
     private static int shifts;
     private static boolean transfer;
+    /**
+     * Each key's state last tick. Held, a key's clicks are the keyboard's auto-repeat (about every 30 ms after half a
+     * second), not new presses: holding X kept turning the transfer case over with its sound each time (user 2026-10-17).
+     */
+    private static final boolean[] WAS_DOWN = new boolean[KEYS.length];
 
     private VehicleDriving() {
     }
@@ -101,7 +116,7 @@ public final class VehicleDriving {
                 mc.screen == null && IGNITION.isDown(), fuel, true);
     }
 
-    /** The driver's light switch or high beam to the server. */
+    /** The driver's light switch, high beam, horn, turn signals or hazards to the server. */
     private static void lampSwitch(int action) {
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getVehicle() instanceof PickupTruckEntity truck)
             com.antaurora.apofirstlight.network.AflNetwork.vehicleToServer(new VehiclePackets.Lamps(truck.getId(), action));
@@ -119,6 +134,19 @@ public final class VehicleDriving {
         private static boolean sneakHeld;
 
         private Keys() {
+        }
+
+        /**
+         * A new press of a step key this tick (gears, transfer case, signals): its clicks count only if it was up last
+         * tick, so holding it does one step, not one per auto-repeat. Its clicks are drained either way.
+         */
+        private static boolean pressed(KeyMapping key) {
+            int i = java.util.Arrays.asList(KEYS).indexOf(key);
+            boolean clicked = false;
+            while (key.consumeClick()) clicked = true;
+            boolean was = WAS_DOWN[i];
+            WAS_DOWN[i] = key.isDown();
+            return clicked && !was;
         }
 
         /** On a moving truck the sneak key does not get anyone out: it does not reach the game (nor the server). */
@@ -141,13 +169,26 @@ public final class VehicleDriving {
         public static void tick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.START) return;
             boolean driving = DRIVING.isActive();
-            while (SHIFT_UP.consumeClick()) if (driving) shifts++;
-            while (SHIFT_DOWN.consumeClick()) if (driving) shifts--;
-            while (TRANSFER.consumeClick()) if (driving) transfer = true;
+            if (pressed(SHIFT_UP) && driving) shifts++;
+            if (pressed(SHIFT_DOWN) && driving) shifts--;
+            if (pressed(TRANSFER) && driving) transfer = true;
             while (IGNITION.consumeClick()) {
             }
-            while (LIGHTS.consumeClick()) if (driving) lampSwitch(PickupTruckEntity.SWITCH_LIGHTS);
-            while (HIGH_BEAM.consumeClick()) if (driving) lampSwitch(PickupTruckEntity.SWITCH_HIGH);
+            boolean lightTap = false;
+            while (LIGHTS.consumeClick()) lightTap = true;
+            if (driving && LIGHTS.isDown()) {
+                if (lightHeld >= 0 && ++lightHeld >= HOLD_TICKS) {
+                    lampSwitch(PickupTruckEntity.SWITCH_HIGH);
+                    lightHeld = -1;
+                }
+            } else {
+                // released before the hold time (or pressed and let go within one tick): a tap
+                if (driving && (lightHeld > 0 || lightHeld == 0 && lightTap)) lampSwitch(PickupTruckEntity.SWITCH_LIGHTS);
+                lightHeld = 0;
+            }
+            if (pressed(SIGNAL_LEFT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_LEFT);
+            if (pressed(SIGNAL_RIGHT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_RIGHT);
+            if (pressed(HAZARD) && driving) lampSwitch(PickupTruckEntity.SWITCH_HAZARD);
             while (HORN.consumeClick()) {
             }
             boolean horn = driving && HORN.isDown();

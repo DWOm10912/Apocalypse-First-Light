@@ -59,12 +59,12 @@ public final class TemperatureReadout {
         return player.isUsingItem() && player.getUseItem().is(AflItems.CLINICAL_THERMOMETER.get());
     }
 
-    static boolean ambientShown(LocalPlayer player) {
+    public static boolean ambientShown(LocalPlayer player) {
         for (var source : SOURCES) if (source.showsAmbient(player)) return true;
         return false;
     }
     /** The core value to print in the dial: live while a Source shows it, else the last reading for 10 s; NaN otherwise. */
-    static double coreShown(LocalPlayer player, TemperaturePackets.State state) {
+    public static double coreShown(LocalPlayer player, TemperaturePackets.State state) {
         for (var source : SOURCES) if (source.showsCore(player)) return state.core();
         if (!Float.isNaN(reading) && (System.nanoTime() - readingAt) / 1e9 < READING_SECONDS) return reading;
         return Double.NaN;

@@ -90,7 +90,7 @@
 - 扶手原来是衬砌的一部分（`STEEL`，同一格子里画），隧道部件可拆 V1.1（2026-10-16）起改成独立部件 `handrail`（第 7 节）。横通道的开口在内侧墙上，从人行道往上 2.2 m 不画墙板。
 - 挡墙盖板（`TunnelMesh.caps`，2026-10-16）：每个挡墙列（`TunnelWorks.wallColumn`）方格里墙背以外的部分、墙尾以外两墙面之间的部分，按墙顶高度铺一层混凝土朝上的面。下面是回填碰撞，外侧平台的草皮和它同高，墙后不会露出一条缝看到下面的地面。
 - 种子 4 的 316 m 隧道（双孔，145 个区块）共 72,800 个三角形（含盖板 369 个），UV 和法线没有坏值。
-- 客户端（`RoadClient`）每个顶点的光照缓存几个 tick：玩家附近 2 个区块内每 4 tick 重取，更远的每 40–55 tick（错开）。被车灯照到的区块（40 tick 内照过，`HeadlightField#litChunk`）也按近处每 4 tick 重取（Main 2026-10-16，`docs/vehicles/first_pickup_v0_design.md` 第 8.10 节）。
+- 客户端（`RoadClient`）每个顶点的光照缓存几个 tick：玩家附近 2 个区块内每 4 tick 重取，更远的每 40–55 tick（错开）。被车灯照到的区块（40 tick 内照过，`HeadlightField#litChunk`）也按近处每 4 tick 重取（Main 2026-10-16，`docs/vehicles/first_pickup_v0_design.md` 第 8.10 节）；2026-10-17 起这只在开光影包时有用，不开光影时车灯逐像素算，不写方块光（第 8.15 节、[动态光源 V1](../rendering/dynamic_lights_v1.md)）。
 
 ## 7. 设备部件（`TunnelMesh.all` 定位置，`client/road/TunnelFixtureClient` 画）
 

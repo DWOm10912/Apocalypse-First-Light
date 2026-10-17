@@ -51,6 +51,9 @@ import java.util.function.Supplier;
  * suspension bottoming out, doors (open as they start to open, shut as they close), the hood (the door sounds, lower), the
  * tailgate (as it reaches open and shut), the filler cap, a gear change, the 2H / 4H lever, the handbrake (the local
  * driver's), the horn (a loop while it sounds).</li>
+ * <li>Turn signals (tools/build-pickup-t15-signal-sounds.mjs, the user's recording 2026-10-17): the stalk on and off
+ * (the hazard switch the same, a little higher), and the flasher relay's click as the lamps light and its softer click
+ * as they go out, at the dashboard.</li>
  * </ul>
  * A rider in the cab hears the engine and tyres a little muffled.
  */
@@ -107,8 +110,8 @@ public final class TruckSounds {
         final PickupTruckEntity truck;
         final Loop idle, mid, load, coast, crank, wind, horn;
         final Loop[] tyres = new Loop[4];
-        boolean running, open[] = new boolean[2], hood, filler, fourWheel, handbrake, first = true;
-        int ignition, sinceCatch = 1000, glowAt = -1, age, crashWait, scrapeWait, skidWait, bumpWait;
+        boolean running, open[] = new boolean[2], hood, filler, handbrake, hazard, flashLit, first = true;
+        int ignition, signal, transfer, sinceCatch = 1000, glowAt = -1, age, crashWait, scrapeWait, skidWait, bumpWait;
         float[] doorAngle = new float[2], travel = new float[4];
         float hoodAngle, tailgateAngle;
         double speed, shiftTotal;
@@ -253,20 +256,41 @@ public final class TruckSounds {
             if (!first && f != filler) once(f ? AflSounds.TRUCK_FUEL_CAP_OPEN : AflSounds.TRUCK_FUEL_CAP_CLOSE, truck.point(-1.6, -0.8, 0.9), 1, 1);
             filler = f;
 
-            // ---- controls: the gear lever, 2H / 4H, the handbrake (the local driver's), the horn
+            // ---- controls: the gear lever, 2H / 4H / 4L, the handbrake (the local driver's), the horn
             Vec3 lever = truck.point(0.25, -0.05, 0.75);
             double st = truck.shiftTotal();
             if (!first && st > 0 && shiftTotal <= 0) once(AflSounds.TRUCK_SHIFT, lever, 1, 0.95F + 0.1F * level.random.nextFloat());
             shiftTotal = st;
-            boolean four = truck.fourWheel();
-            if (!first && four != fourWheel) once(AflSounds.TRUCK_TRANSFER, lever, 1, 1);
-            fourWheel = four;
+            int mode = truck.transferMode();
+            // into or out of the low range: the lever's longer, heavier throw
+            if (!first && mode != transfer) once(AflSounds.TRUCK_TRANSFER, lever, 1, mode == 2 || transfer == 2 ? 0.88F : 1);
+            transfer = mode;
             boolean hb = seat == PickupTruckLayout.DRIVER && PickupTruckEntity.clientInput.get().handbrake();
             if (!first && hb != handbrake) once(hb ? AflSounds.TRUCK_HANDBRAKE_PULL : AflSounds.TRUCK_HANDBRAKE_RELEASE, lever, 1, 1);
             handbrake = hb;
             horn.set(truck.horn() ? 1 : 0, 1);
             horn.attack = 1;
             horn.release = 0.5F;
+
+            // ---- turn signals: the stalk on / off (the hazard switch clicks the same, a little higher), and the flasher
+            // relay as the lamps light and go out; the stalk's own sound has the first click in it, so a switch this tick
+            // plays no relay click
+            int sig = truck.turnSignal();
+            boolean hz = truck.hazard(), lit = (sig != 0 || hz) && (truck.turnLit(false, 1.0F) || truck.turnLit(true, 1.0F));
+            Vec3 dash = truck.point(0.6, -0.3, 0.9);
+            boolean switched = false;
+            if (!first && sig != signal) {
+                once(sig != 0 ? AflSounds.TRUCK_SIGNAL_ON : AflSounds.TRUCK_SIGNAL_OFF, dash, 1, 1);
+                switched = true;
+            }
+            if (!first && hz != hazard) {
+                once(hz ? AflSounds.TRUCK_SIGNAL_ON : AflSounds.TRUCK_SIGNAL_OFF, dash, 0.8F, 1.12F);
+                switched = true;
+            }
+            if (!first && !switched && lit != flashLit) once(lit ? AflSounds.TRUCK_SIGNAL_TICK : AflSounds.TRUCK_SIGNAL_TOCK, dash, 1, 1);
+            signal = sig;
+            hazard = hz;
+            flashLit = lit;
             first = false;
 
             Loop[] all = {idle, mid, load, coast, crank, wind, horn, tyres[0], tyres[1], tyres[2], tyres[3]};

@@ -3,14 +3,21 @@ package com.antaurora.apofirstlight.client;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
- * First-person body V1 (docs/rendering/first_person_body_v1.md) and the player skeleton V1 prototype: the client's own
- * settings, config/apocalypse_firstlight-client.toml.
+ * The client's own settings, config/apocalypse_firstlight-client.toml: first-person body V1
+ * (docs/rendering/first_person_body_v1.md), the player skeleton V1 prototype, and the vehicle dashboard HUD's style and
+ * speed unit (docs/vehicles/first_pickup_v0_design.md 8.12; changed in game on the AFL settings screen, Mods > Config).
  * Only a ForgeConfigSpec, so loading this class on a dedicated server is harmless.
  */
 public final class FirstPersonBodyConfig {
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.BooleanValue SHOW_BODY;
     public static final ForgeConfigSpec.BooleanValue SKELETON;
+    /** Vehicle dashboard HUD: RING (a round tachometer) or BAND (a speed band). */
+    public enum DashStyle { RING, BAND }
+    /** The speed the dashboard shows. */
+    public enum SpeedUnit { MPH, KMH }
+    public static final ForgeConfigSpec.EnumValue<DashStyle> DASH_STYLE;
+    public static final ForgeConfigSpec.EnumValue<SpeedUnit> SPEED_UNIT;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -24,6 +31,12 @@ public final class FirstPersonBodyConfig {
                         "docs/dev/player_actions_v1_plan.md 13); off: the vanilla body and the old first-person view models.")
                 .define("enabled", true);
         builder.pop();
+        builder.push("vehicle_hud");
+        DASH_STYLE = builder.comment("The driving dashboard at the bottom right: RING (a round segmented tachometer, the speed inside) or BAND",
+                        "(a big speed number under a rising tachometer band).")
+                .defineEnum("style", DashStyle.RING);
+        SPEED_UNIT = builder.comment("The speed on the dashboard: MPH or KMH.").defineEnum("speed_unit", SpeedUnit.MPH);
+        builder.pop();
         SPEC = builder.build();
     }
 
@@ -33,6 +46,14 @@ public final class FirstPersonBodyConfig {
 
     public static boolean skeleton() {
         return SPEC.isLoaded() && SKELETON.get();
+    }
+
+    public static DashStyle dashStyle() {
+        return SPEC.isLoaded() ? DASH_STYLE.get() : DashStyle.RING;
+    }
+
+    public static SpeedUnit speedUnit() {
+        return SPEC.isLoaded() ? SPEED_UNIT.get() : SpeedUnit.MPH;
     }
 
     private FirstPersonBodyConfig() {

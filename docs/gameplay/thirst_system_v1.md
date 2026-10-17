@@ -29,9 +29,9 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `thirst/GastroenteritisEffect.java` | 肠胃感染效果（只做标记，症状由 PlayerThirst 施加；牛奶治不好） |
 | `thirst/ThirstPackets.java` | 本人口渴值（S2C）、空手喝一口（C2S） |
 | `thirst/ClientThirst.java` | 客户端：本人口渴值、空手喝水的输入、往饮品提示里插水滴行 |
-| `thirst/ClientThirstHud.java` | 水滴环 HUD（生存指标组右边）、三种水瓶的液体颜色、水滴图形（环和提示共用）、注册提示组件 |
+| `thirst/ClientThirstHud.java` | 三种水瓶的液体颜色、水滴图形 `WATER_DROP`（HUD 口渴小圆、徽章、提示共用）、注册提示组件（2026-10-17 起不再画 HUD） |
 | `thirst/ThirstCommands.java` | `/aflthirst` 调试命令 |
-| `client/AflRingIcon.java` | 耐力环、水滴环共用的圆环绘制，以及单独画一个图形（提示里的水滴） |
+| `client/AflRingIcon.java` | 图标距离场，以及单独画一个图形（提示里的水滴） |
 | `mixin/FoodDataThirstMixin.java` | 脱水时不自然回血（体温 V1 也复用它：C2 / H2 起不自然回血） |
 | `stamina/PlayerStamina.java` | 把花掉的耐力交给口渴（`consumeSpent`），恢复速度乘口渴倍率 |
 | `registry/AflItems`、`AflMobEffects`、`AflRecipes`、`AflCreativeTabs` | 注册 |
@@ -78,7 +78,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 所有能补水的东西（三种水瓶，以及 `thirst_v1.json` 的 `foods` 里的西瓜片、苹果、汤和炖菜、蜂蜜瓶；牛奶桶 2026-10-04 起去掉），在物品名字下面一行显示：
 
-- 一个水滴图标：和 HUD 水滴环里的是同一个图形（`ClientThirstHud.WATER_DROP`），按真实像素画、带抗锯齿，9 × 9 GUI 像素；
+- 一个水滴图标：和 HUD 口渴小圆里的是同一个图形（`ClientThirstHud.WATER_DROP`），按真实像素画、带抗锯齿，9 × 9 GUI 像素；
 - 后面是补水量，比如 `+20`；
 - 图标和数字都是 HUD 的暗水蓝 `#6FA3C7`。
 
@@ -108,7 +108,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 ## 肠胃感染
 
 - 得病概率：一瓶脏水 20%；空手喝一口 5%。纯净水、牛奶、食物不会。
-- 持续 5 分钟，状态栏有图标。病着再喝生水又中招，时间重新从 5 分钟算；**症状间隔不重置**（频率上限）。
+- 持续 5 分钟。2026-10-17 起不在原版效果图标里显示（`GastroenteritisEffect.initializeClient`），改成 HUD 左下的棕色病菌徽章，外圈白弧是剩余时间、旁边带时间。病着再喝生水又中招，时间重新从 5 分钟算；**症状间隔不重置**（频率上限）。
 - 影响：
   - 口渴消耗 ×2；
   - 额外饥饿消耗，每秒 0.05 消耗度（约每分钟 0.75 点饱食度）；
@@ -132,10 +132,11 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 ## HUD
 
-- 水滴半环：整组最右端的半环 ")"（`client/SurvivalHudLayout.crescent`：圆心在屏幕中线右边 34.16 GUI 像素、屏幕底边上方 48 像素，外半径 7.015、环宽 1.78），开口朝向左边的饥饿环，两端延伸到饥饿环上，水滴图标在开口里；从下端开始往上填充；生存 / 冒险模式一直显示，绘制用 `client/AflGauge`。历史：2026-10-03 体温 V1 从负重条左端旁边挪到体温表盘右边；生存 HUD V1（`docs/ui/survival_hud_v1.md`）先是一排五环里的整圆小环，2026-10-04 改成嵌套排版的半环。
-- 颜色：正常是暗水蓝，< 30 琥珀，< 15 红。变化时平滑过渡。
-- 耐力环在体温表盘左边（`stamina_system_v1.md`），三者组成一组，体温表盘在中间（`temperature_system_v1.md`）。
-- 整排仪表的排版见 `docs/ui/survival_hud_v1.md`。
+HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节，没有实机验证）：
+
+- **口渴小圆**：左下身体组件右上方三个需求小圆的中间一个（`client/SurvivalVitalsHud`，角度 52°），水滴图标。平时小而淡；口渴值低于 `thirstyBelow`（30）时变大并带百分比数字，低于 `dehydratedBelow`（15）时变红。原来屏幕底部中间的水滴半环 ")" 已去掉。
+- **徽章**（`client/StatusBadgeHud`）：口渴（< 30，棕）、脱水（< 15，红，旁边是到 0 的倒计时，按客户端观察到的下降速度估算）、严重脱水（0，红，效果写"每 10 秒掉 1 点血"）。效果文字里的耐力恢复百分比取自配置。
+- 状态卡片（按住左 Alt）里有一行口渴百分比。**2026-10-17 起卡片关掉了**（等生命监测仪，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6.4 节）。
 
 ## 调试
 
@@ -160,7 +161,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 3. 熔炉、烟熏炉、营火煮没有辐射的脏水：得到纯净水瓶（清澈浅蓝）；煮辐射区装的脏水：得到煮沸水瓶（偏绿的浅蓝，有黄绿小点），污染等级不变。
 4. 喝水：原版喝水声，+20，还回玻璃瓶；口渴满时喝不了。
 5. 空手蹲下对着水源右键：每 0.5 秒一口，+5；对着流动的水、工业废液没反应；手里拿着东西也不行。
-6. `/aflthirst sick`：状态栏出现图标；约 60–90 秒后出现第一次症状；再喝脏水不会让症状变密。
+6. `/aflthirst sick`：HUD 左下出现病菌徽章（原版效果栏没有）；约 60–90 秒后出现第一次症状；再喝脏水不会让症状变密。
 7. `/aflthirst set 10`：耐力回得慢，受伤后不会自然回血；`set 0` 后每 10 秒扣 1 点血，任何非和平难度都会一直扣到死亡（死亡信息“渴死了”）。
 8. 跑动、挖掘后口渴下降比站着快。
 9. 切创造：口渴不变，喝水没效果，水滴环不显示。

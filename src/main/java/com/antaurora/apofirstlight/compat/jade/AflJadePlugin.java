@@ -125,7 +125,6 @@ public final class AflJadePlugin implements IWailaPlugin {
         PriceSignJadeProvider.registerRedirect(registration);
         PavementMarkingJadeRedirect.register(registration);
         WoodFurnitureV2JadeRedirect.register(registration);
-        registration.registerEntityComponent(PickupTruckJadeProvider.INSTANCE, com.antaurora.apofirstlight.vehicle.PickupTruckEntity.class);
-        registration.registerEntityComponent(PickupTruckJadeProvider.INSTANCE, com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Part.class);
+        VehicleJadeHide.register(registration);
     }
 }

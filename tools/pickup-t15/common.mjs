@@ -43,6 +43,8 @@ export const PIVOTS = {
   steering: [0.40, 1.125, -0.37],
   // the gear lever's rod and knob tilt about the top of its rubber boot (2026-10-16: the H gate, vehicle/ShiftLever)
   shift: [0.43, 0.725, -0.02],
+  // the transfer case lever beside it: rod and knob tilt fore / aft about its boot's top (2026-10-17: 2H 4H N 4L, vehicle/TransferLever)
+  transfer: [0.38, 0.725, 0.07],
   // gauge needles: the dial centres in the cluster face (cab.mjs cluster())
   tach: [0.6205, 1.066, -0.445], speedo: [0.6205, 1.066, -0.335], fuel_gauge: [0.6205, 1.08, -0.54], temp_gauge: [0.6205, 1.08, -0.24],
   wheel: [0, 0, 0],
@@ -57,6 +59,7 @@ export const HINGES = {
   fuel_door: {axis: [0, 1, 0], open: 80, note: 'front edge; swings out like the doors'},
   steering: {axis: [Math.cos(27 * Math.PI / 180), -Math.sin(27 * Math.PI / 180), 0], open: 540, note: 'column axis; +-1.5 turns lock to lock'},
   shift: {axis: [0, 0, 1], open: 11, note: 'gear lever: fore / aft 11 deg about the across axis, across 9 deg about the fore axis (H gate: 1 3 5 forward, 2 4 R back)'},
+  transfer: {axis: [0, 0, 1], open: 14, note: 'transfer lever: fore / aft about the across axis; 2H +8, 4H -1, N -7, 4L -14 deg (knob forward +)'},
   tach: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-5000 rpm over 270 deg clockwise'},
   speedo: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-180 km/h over 270 deg clockwise'},
   fuel_gauge: {axis: [1, 0, 0], open: 120, note: 'needle about the dial axis; empty - full over 120 deg clockwise'},
@@ -70,7 +73,7 @@ export const ANCHORS = {
   eye_driver: ['body', [0.04, 1.487, -0.37]], eye_passenger: ['body', [0.04, 1.487, 0.37]],
   steering_centre: ['steering', [0.40, 1.125, -0.37]], steering_grip_l: ['steering', [0.40, 1.125, -0.56]], steering_grip_r: ['steering', [0.40, 1.125, -0.18]],
   pedal_clutch: ['body', [0.735, 0.665, -0.53]], pedal_brake: ['body', [0.735, 0.665, -0.41]], pedal_accelerator: ['body', [0.735, 0.62, -0.25]],
-  shift_knob: ['shift', [0.33, 1.02, -0.055]], transfer_knob: ['body', [0.33, 0.895, 0.07]], parking_brake: ['body', [0.548, 0.79, -0.13]],
+  shift_knob: ['shift', [0.33, 1.02, -0.055]], transfer_knob: ['transfer', [0.33, 0.895, 0.07]], parking_brake: ['body', [0.548, 0.79, -0.13]],
   door_l_outer_handle: ['door_l', [-0.057, 0.98, -0.85]], door_r_outer_handle: ['door_r', [-0.057, 0.98, 0.85]],
   door_l_inner_handle: ['door_l', [0.73, 0.925, -0.755]], door_r_inner_handle: ['door_r', [0.73, 0.925, 0.755]],
   door_l_entry: ['body', [0.30, 0.0, -1.45]], door_r_entry: ['body', [0.30, 0.0, 1.45]],
@@ -152,7 +155,7 @@ export const MESHES = {
   ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate', 'fuel_door'], atlas: 'ext'},
   front: {id: 'pickup_t15_front', bones: ['body', 'hood'], atlas: 'ext'},
   wheel: {id: 'pickup_t15_wheel', bones: ['wheel'], atlas: 'ext'},
-  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'shift', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge'], atlas: 'cab'},
+  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'shift', 'transfer', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge'], atlas: 'cab'},
   seat: {id: 'pickup_t15_seat', bones: ['body'], atlas: 'cab'},
   engine: {id: 'pickup_t15_engine', bones: ['body'], atlas: 'under'},
   chassis: {id: 'pickup_t15_chassis', bones: ['body'], atlas: 'under'},
@@ -160,12 +163,14 @@ export const MESHES = {
 export const ATLASES = {ext: {size: 2048, file: 'pickup_t15'}, cab: {size: 2048, file: 'pickup_t15_cab'}, under: {size: 1024, file: 'pickup_t15_under'}};
 const REG = new Map();
 /** The part of a mesh for a bone and material (created on first use). */
-export function P(mesh, bone, mat) {
+// tag: an extra part name suffix (the same material), so the game can switch one side's lamps on their own
+// (bone_mat_tag, e.g. body_lamp_park_l: the turn signals, docs/vehicles/first_pickup_v0_design.md 8.12)
+export function P(mesh, bone, mat, tag) {
   if (!MESHES[mesh]) throw new Error('unknown mesh ' + mesh);
   if (!MESHES[mesh].bones.includes(bone)) throw new Error(`bone ${bone} not in mesh ${mesh}`);
   if (!MATS[mat]) throw new Error('unknown material ' + mat);
-  const k = mesh + '|' + bone + '|' + mat;
-  if (!REG.has(k)) { const p = new Part(bone + '_' + mat, bone, mat); p.mesh = mesh; REG.set(k, p); }
+  const k = mesh + '|' + bone + '|' + mat + (tag ? '|' + tag : '');
+  if (!REG.has(k)) { const p = new Part(bone + '_' + mat + (tag ? '_' + tag : ''), bone, mat); p.mesh = mesh; REG.set(k, p); }
   return REG.get(k);
 }
 export const allParts = () => [...REG.values()].filter(p => p.f.length);

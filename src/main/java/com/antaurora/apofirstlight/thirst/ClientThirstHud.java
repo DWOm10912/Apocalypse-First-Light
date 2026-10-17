@@ -2,39 +2,25 @@ package com.antaurora.apofirstlight.thirst;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.AflRingIcon;
-import com.antaurora.apofirstlight.client.SurvivalHudLayout;
 import com.antaurora.apofirstlight.registry.AflItems;
-import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.IGuiOverlay;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Thirst V1 HUD (口渴.md §10): a crescent ")" at the right end in the survival cluster (client/SurvivalHudLayout),
- * always shown in Survival / Adventure, filling clockwise from the top with the thirst, a water drop in it
- * (client/AflRingIcon). Muted water blue, amber below 30, red below 15; eased like the load
- * bar. Also the water bottles' liquid colours (the vanilla potion layers, tinted): dirty murky olive, boiled pale
- * blue-green with yellow-green radioactive specks (an untinted third layer), purified clear blue.
+ * Thirst V1 client visuals (口渴.md §10). The thirst gauge itself is the water-drop needs ring of the HUD V2 body module
+ * (client/SurvivalVitalsHud, 2026-10-16; it replaced the crescent of the survival cluster). Here: the drop glyph and the
+ * water blue they share with the tooltip line, and the water bottles' liquid colours (the vanilla potion layers, tinted):
+ * dirty murky olive, boiled pale blue-green with yellow-green radioactive specks (an untinted third layer), purified
+ * clear blue.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientThirstHud {
-    private static final double EASE_SECONDS = 0.12;
     /** Liquid tints: dirty murky olive; boiled close to purified, a little greener (its specks layer shows the radiation). */
     public static final int DIRTY_WATER = 0x76703E, BOILED_WATER = 0x98D4DC, PURIFIED_WATER = 0x8FD3F0;
-    private static double shown = Double.NaN;
-    private static long lastNanos;
     private ClientThirstHud() {}
-
-    @SubscribeEvent
-    public static void registerOverlays(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "thirst_ring", OVERLAY);
-    }
 
     @SubscribeEvent
     public static void itemColours(RegisterColorHandlersEvent.Item event) {
@@ -53,21 +39,4 @@ public final class ClientThirstHud {
     public static void tooltipFactories(RegisterClientTooltipComponentFactoriesEvent event) {
         event.register(ThirstTooltip.class, ClientThirstTooltip::new);
     }
-
-    static final IGuiOverlay OVERLAY = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
-        var mc = Minecraft.getInstance();
-        var state = ClientThirst.state();
-        long now = System.nanoTime();
-        double dt = lastNanos == 0 ? 0 : Math.min(0.25, (now - lastNanos) / 1e9);
-        lastNanos = now;
-        if (state == null || state.max() <= 0 || mc.player == null) { shown = Double.NaN; return; }
-        if (mc.options.hideGui || !gui.shouldDrawSurvivalElements() || FieldAttachmentViewState.isActive()) return;
-        double fraction = Math.max(0, Math.min(1, state.value() / state.max()));
-        shown = Double.isNaN(shown) ? fraction : shown + (fraction - shown) * (1 - Math.exp(-dt / EASE_SECONDS));
-        var c = ThirstConfig.get();
-        double value = shown * state.max();
-        int colour = value < c.dehydratedBelow ? 0xBE443A : value < c.thirstyBelow ? 0xD6983A : WATER_BLUE;
-        SurvivalHudLayout.crescent(graphics, "thirst", screenWidth / 2.0 + SurvivalHudLayout.CRESCENT_OFFSET_X,
-                screenHeight - SurvivalHudLayout.CENTRE_Y, 1, shown, colour, WATER_DROP);
-    };
 }

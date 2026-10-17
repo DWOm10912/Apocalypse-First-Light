@@ -25,6 +25,7 @@ import java.util.Map;
  *                  turn with the rim); {@code wheel_rim}: a point on the rim (a grip off it no longer turns);</li>
  *                  <li>{@code shift_knob}: the gear lever's knob, moved with the lever (while shifting the host puts
  *                  {@code grip_r} on it);</li>
+ *                  <li>{@code transfer_knob}: the transfer case lever's knob (the same while it is moved);</li>
  *                  <li>planned: {@code pedal_clutch}, {@code pedal_brake}, {@code pedal_accel} (out of the seated legs'
  *                  reach in the T15: docs/dev/seated_rider_v1_plan.md 13).</li>
  *                  </ul>
