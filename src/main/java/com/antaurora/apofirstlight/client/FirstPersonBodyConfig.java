@@ -18,6 +18,8 @@ public final class FirstPersonBodyConfig {
     public enum SpeedUnit { MPH, KMH }
     public static final ForgeConfigSpec.EnumValue<DashStyle> DASH_STYLE;
     public static final ForgeConfigSpec.EnumValue<SpeedUnit> SPEED_UNIT;
+    /** The driving key hints at the top right (toggled in game with the hints key, VehicleDriving.HINTS). */
+    public static final ForgeConfigSpec.BooleanValue KEY_HINTS;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -36,6 +38,7 @@ public final class FirstPersonBodyConfig {
                         "(a big speed number under a rising tachometer band).")
                 .defineEnum("style", DashStyle.RING);
         SPEED_UNIT = builder.comment("The speed on the dashboard: MPH or KMH.").defineEnum("speed_unit", SpeedUnit.MPH);
+        KEY_HINTS = builder.comment("Show the driving keys at the top right (Caps Lock by default toggles it while driving).").define("key_hints", true);
         builder.pop();
         SPEC = builder.build();
     }
@@ -54,6 +57,17 @@ public final class FirstPersonBodyConfig {
 
     public static SpeedUnit speedUnit() {
         return SPEC.isLoaded() ? SPEED_UNIT.get() : SpeedUnit.MPH;
+    }
+
+    public static boolean keyHints() {
+        return !SPEC.isLoaded() || KEY_HINTS.get();
+    }
+
+    /** Flips the driving key hints and saves the choice. */
+    public static void toggleKeyHints() {
+        if (!SPEC.isLoaded()) return;
+        KEY_HINTS.set(!KEY_HINTS.get());
+        KEY_HINTS.save();
     }
 
     private FirstPersonBodyConfig() {

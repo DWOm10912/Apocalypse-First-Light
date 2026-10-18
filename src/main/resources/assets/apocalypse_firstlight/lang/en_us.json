@@ -87,6 +87,7 @@
   "hud.apocalypse_firstlight.drive.horn": "Horn",
   "hud.apocalypse_firstlight.drive.transfer": "2WD / 4WD / 4WD Low",
   "hud.apocalypse_firstlight.drive.get_out": "Get out",
+  "hud.apocalypse_firstlight.drive.hide_hints": "Hide hints",
   "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
 
   "itemGroup.apocalypse_firstlight.building_blocks": "AFL · Building Blocks",
@@ -726,6 +727,7 @@
   "key.apocalypse_firstlight.signal_right": "Right Turn Signal (Driving)",
   "key.apocalypse_firstlight.hazard": "Hazard Lights (Driving)",
   "key.apocalypse_firstlight.wipers": "Wipers: Off / Intermittent / Low / High (Driving)",
+  "key.apocalypse_firstlight.driving_hints": "Driving key hints: hide / show (Driving)",
   "key.apocalypse_firstlight.status_details": "Status details (hold)",
 
   "subtitles.apocalypse_firstlight.attachment_operation": "Gun attachment adjusted",
@@ -807,6 +809,7 @@
   "subtitles.apocalypse_firstlight.truck_horn": "Truck horn",
   "subtitles.apocalypse_firstlight.truck_signal_switch": "Turn signal stalk clicks",
   "subtitles.apocalypse_firstlight.truck_signal": "Turn signal ticks",
+  "subtitles.apocalypse_firstlight.truck_wiper": "Wipers swish",
   "subtitles.apocalypse_firstlight.box_stove_door_open": "Stove door opens",
   "subtitles.apocalypse_firstlight.box_stove_door_close": "Stove door shuts",
   "subtitles.apocalypse_firstlight.box_stove_add_wood": "Wood fed to the stove",

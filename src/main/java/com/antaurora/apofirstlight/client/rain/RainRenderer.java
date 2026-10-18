@@ -77,9 +77,24 @@ public final class RainRenderer {
     public static String status() {
         int[] live = SPLASHES.counts(), landed = SPLASHES.landed;
         return (active() ? "on" : "off") + "; " + lastMicros + " us last frame; splashes live: " + live[0] + " crowns, " + live[1]
-                + " ripples, " + live[2] + " droplets; landed last tick: road " + landed[0] + ", smoothed terrain " + landed[1]
+                + " ripples, " + live[2] + " droplets, " + live[3] + " tyre drops, " + live[4] + " tyre mist; landed last tick: road " + landed[0] + ", smoothed terrain " + landed[1]
                 + ", blocks " + landed[2] + ", water " + landed[3] + ", vehicles " + landed[4] + "; left out inside a truck last frame "
                 + SPLASHES.culled + "; cpu splashes " + splashMicros + " us, splash tick " + tickMicros + " us; gpu drops " + GPU_DROPS.micros() + " us, splashes " + GPU_SPLASHES.micros() + " us";
+    }
+
+    /** A T15's tyre spray is AFL's to draw (client/vehicle/TruckSpray): AFL's rain on, no shader pack, splashes on. */
+    public static boolean drawsSpray() {
+        return active() && splashes;
+    }
+
+    /** A drop a tyre throws (RainSplashes#sprayDrop). */
+    public static void sprayDrop(double x, double y, double z, double vx, double vy, double vz, float size, float drag, double floor, int life, int light) {
+        SPLASHES.sprayDrop(x, y, z, vx, vy, vz, size, drag, floor, life, light);
+    }
+
+    /** A puff of a tyre's mist (RainSplashes#sprayMist). */
+    public static void sprayMist(double x, double y, double z, double vx, double vy, double vz, float size, float alpha, float roll, double floor, int life, int light) {
+        SPLASHES.sprayMist(x, y, z, vx, vy, vz, size, alpha, roll, floor, life, light);
     }
 
     /** The column map (also uploaded for a shader pack, RainShaderPack). */

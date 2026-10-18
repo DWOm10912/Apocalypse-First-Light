@@ -87,6 +87,7 @@
   "hud.apocalypse_firstlight.drive.horn": "喇叭",
   "hud.apocalypse_firstlight.drive.transfer": "两驱 / 四驱 / 低速四驱",
   "hud.apocalypse_firstlight.drive.get_out": "下车",
+  "hud.apocalypse_firstlight.drive.hide_hints": "收起提示",
   "mod.apocalypse_firstlight.name": "黎明启示录",
 
   "itemGroup.apocalypse_firstlight.building_blocks": "黎明启示录 · 建筑方块",
@@ -726,6 +727,7 @@
   "key.apocalypse_firstlight.signal_right": "右转向灯（驾驶）",
   "key.apocalypse_firstlight.hazard": "应急灯（驾驶）",
   "key.apocalypse_firstlight.wipers": "雨刷：关 / 间歇 / 慢 / 快（驾驶）",
+  "key.apocalypse_firstlight.driving_hints": "驾驶按键提示：收起 / 显示（驾驶）",
   "key.apocalypse_firstlight.status_details": "状态详情（按住）",
 
   "subtitles.apocalypse_firstlight.attachment_operation": "枪械附件调整",
@@ -807,6 +809,7 @@
   "subtitles.apocalypse_firstlight.truck_horn": "皮卡喇叭",
   "subtitles.apocalypse_firstlight.truck_signal_switch": "转向灯拨杆",
   "subtitles.apocalypse_firstlight.truck_signal": "转向灯嗒嗒",
+  "subtitles.apocalypse_firstlight.truck_wiper": "雨刷刮动",
   "subtitles.apocalypse_firstlight.box_stove_door_open": "柴炉：开门",
   "subtitles.apocalypse_firstlight.box_stove_door_close": "柴炉：关门",
   "subtitles.apocalypse_firstlight.box_stove_add_wood": "柴炉：添柴",

@@ -39,8 +39,8 @@ import java.util.List;
  * <ul>
  * <li>{@code apocalypse_firstlight:dynamic/afl_rain_columns}: the rain's column map, 128 x 129 RGBA8
  * ({@link RainColumns#uploadPack}).</li>
- * <li>{@code apocalypse_firstlight:dynamic/afl_rain_trucks}: RGBA32F 76 x 3. Row 0 the header: texel 0 (trucks 0-2, 0, 0,
- * 4243: the pack's check), texel 1 the T15 glass sprite's UV range in the block atlas (u0, v0, u1, v1). Rows 1-2 the
+ * <li>{@code apocalypse_firstlight:dynamic/afl_rain_trucks}: RGBA32F 85 x 3. Row 0 the header: texel 0 (trucks 0-2, layout
+ * 1, 0, 4243: the pack's check), texel 1 the T15 glass sprite's UV range in the block atlas (u0, v0, u1, v1). Rows 1-2 the
  * nearest trucks within 40 m, nearest first: texel 0 the origin (w 1), 1-3 forward, right, up (unit); 4-51 the 16 rain
  * shell boxes, 3 texels each (min.f, min.r, min.u, nf), (max.f, max.r, max.u, nu), (d, 1 when used, 0, 0), in the
  * truck's (forward, right, up), what stays of a box being nf * f + nu * u <= d (no cut: nf = nu = 0, d = 1e9; as
@@ -48,7 +48,10 @@ import java.util.List;
  * ({@link TruckGlass#PANES}: windshield, rear, left, right), 6 texels each: origin (u = s = 0, w 1), U, S, Nout (unit,
  * world; a door window turned with its door), the glass range (u0, s0, u1, s1, m) and its rectangle in
  * dynamic/afl_glass_water (x0, y0, x1, y1, 0..1: (u0, s0) at (x0, y0), (u1, s1) at (x1, y1); zeros where that pane is dry
- * or its truck keeps no water, beyond 24 m).</li>
+ * or its truck keeps no water, beyond 24 m); 76 the truck's velocity (m/s, world) and the road's wetness 0..1; 77-84 the
+ * four tyres' water (FL, FR, RL, RR; 2026-10-18, layout 1), 2 texels each: the contact point and the spray 0..1, the
+ * direction the water goes (world unit) and the tread speed (m/s), all 0 for a tyre throwing none
+ * (client/vehicle/TruckSpray#packWheel).</li>
  * <li>{@code apocalypse_firstlight:dynamic/afl_glass_water}: the glass water of the two trucks' panes, RGBA8
  * {@link GlassAtlas#W} x {@link GlassAtlas#H} with mip levels, baked by {@link WindshieldRenderer#packFrame}.</li>
  * </ul>
@@ -60,7 +63,10 @@ public final class RainShaderPack {
     static final ResourceLocation COLUMNS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_rain_columns"),
             TRUCKS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_rain_trucks"),
             GLASS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_glass_water");
-    static final int TRUCK_W = 76, TRUCK_H = 3, TRUCKS = 2, BOXES = 16, PANE_AT = 52, PANE_TEXELS = 6;
+    static final int TRUCK_W = 85, TRUCK_H = 3, TRUCKS = 2, BOXES = 16, PANE_AT = 52, PANE_TEXELS = 6, WHEEL_AT = 76;
+    /** The header's texel 0 .y: the trucks texture's layout (1: the wheel spray texels 76-84 are there; 2026-10-18). */
+    private static final float LAYOUT = 1;
+    private static final float[] WHEEL = new float[8];
     private static final double RANGE = 40;
     private static final float CHECK = 4243.0F;
     private static final ResourceLocation GLASS = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/pickup_t15_glass.png");
@@ -185,7 +191,7 @@ public final class RainShaderPack {
     private static void uploadTrucks(Vec3 cam, float pt, List<RainTrucks.Frame> near, boolean[][] baked) {
         FloatBuffer d = DATA;
         MemoryUtil.memSet(MemoryUtil.memAddress(d), 0, (long) d.capacity() * Float.BYTES);
-        d.put(0, near.size()).put(3, CHECK);
+        d.put(0, near.size()).put(1, LAYOUT).put(3, CHECK);
         TextureAtlasSprite glass = AflStaticMeshModel.atlasSprite(GLASS);
         if (glass != null) d.put(4, glass.getU0()).put(5, glass.getV0()).put(6, glass.getU1()).put(7, glass.getV1());
         for (int t = 0; t < near.size(); t++) {
@@ -207,6 +213,15 @@ public final class RainShaderPack {
                 n++;
             }
             panes(d, row, f.truck, cam, pt, t, baked[t]);
+            // the tyres' water (client/vehicle/TruckSpray): the truck's motion and the road's wetness, then per wheel
+            PickupTruckEntity tr = f.truck;
+            texel(d, row + WHEEL_AT, (float) ((tr.getX() - tr.xo) * 20), (float) ((tr.getY() - tr.yo) * 20), (float) ((tr.getZ() - tr.zo) * 20),
+                    com.antaurora.apofirstlight.client.vehicle.TruckSpray.wet(tr));
+            for (int w = 0; w < 4; w++) {
+                com.antaurora.apofirstlight.client.vehicle.TruckSpray.packWheel(tr, w, pt, cam, WHEEL);
+                texel(d, row + WHEEL_AT + 1 + w * 2, WHEEL[0], WHEEL[1], WHEEL[2], WHEEL[3]);
+                texel(d, row + WHEEL_AT + 2 + w * 2, WHEEL[4], WHEEL[5], WHEEL[6], WHEEL[7]);
+            }
         }
         int id = TRUCKS_TEX.getId();
         GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
@@ -214,7 +229,7 @@ public final class RainShaderPack {
         GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
         GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 4);
         d.position(0).limit(d.capacity());
-        // row 1 + t truck t (texels 0-3 frame, 4-51 boxes, 52-75 panes): a bad value logged with its texel
+        // row 1 + t truck t (texels 0-3 frame, 4-51 boxes, 52-75 panes, 76-84 tyre water): a bad value logged with its texel
         com.antaurora.apofirstlight.client.GlTex.checkFinite("afl_rain_trucks", d, TRUCK_W);
         if (TRUCKS_TEX.allocated != id) {
             // once: its storage made on a binding (the only glGet here); every frame after that without one (GlTex)

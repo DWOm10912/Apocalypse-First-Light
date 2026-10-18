@@ -52,7 +52,20 @@ public final class RainPerfProbe {
     private static final boolean HERE = Boolean.getBoolean("afl.rainperf.here");
     /** -Dafl.rainperf.hud=true (with here): survival; the HUD gauges steady / all redrawn every frame / the HUD hidden. */
     private static final boolean HUD = Boolean.getBoolean("afl.rainperf.hud");
-    private static final String[] PHASES = HERE && HUD
+    /**
+     * -Dafl.rainperf.drive=true (2026-10-18; user: a rainy night drive should hold 200+ fps without shaders): midnight, rain,
+     * survival, seated in the nearest T15 (lights on, wipers low), the orbit camera behind; parked, then the probe drives
+     * (CRUISE m/s, gears by the tachometer, lane kept by RoadSurfaceQuery) and switches the rain parts, the weather and
+     * the HUD phase by phase. The report adds the slow-frame tail (p99, p99.9, frames over 25 / 50 ms), the speed and the
+     * share of ticks on the road: the chunk-loading stutter shows there, not in the mean.
+     */
+    private static final boolean DRIVE = Boolean.getBoolean("afl.rainperf.drive");
+    private static final double CRUISE = 25;
+    private static final String[] PHASES = DRIVE
+            ? new String[]{"drive: parked, rain all on (orbit)", "drive: accelerating, rain all on (orbit)", "drive: cruising, rain all on (orbit)",
+                    "drive: splashes + tyre water off", "drive: AFL rain off (vanilla rain)", "drive: clear weather", "drive: clear weather, HUD hidden (F1)",
+                    "drive: rain all on, first person (cab)"}
+            : HERE && HUD
             ? new String[]{"hud: survival, gauges steady", "hud: every gauge moving (GPU bands)", "hud: every gauge moving (CPU raster, as before)", "hud: hidden (F1)"}
             : HERE
             ? new String[]{"here: as saved", "here: turned round", "here: third person, behind", "here: third person, in front"}
@@ -128,9 +141,14 @@ public final class RainPerfProbe {
             mc.player.setXRot(5);
             log("on foot at " + mc.player.position() + ", hand " + mc.player.getMainHandItem());
         }
+        if (DRIVE && seatedAt >= 0) driveTick(mc);
         if (seatedAt < 0 && mc.player.getVehicle() instanceof PickupTruckEntity truck) {
             seatedAt = ticks;
-            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            mc.options.setCameraType(DRIVE ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
+            if (DRIVE) {
+                PickupTruckEntity.clientInput = RainPerfProbe::autopilot;
+                log("seated, fuel " + truck.fuel() + ", gear " + truck.gear() + ", yaw " + truck.getYRot());
+            }
             // straight ahead through the windshield (a point 6 m ahead of the driver, a little below the eyes)
             float[] look = look(mc.player.getEyePosition(), truck.framePoint(6, -0.37, 1.1, 1F));
             mc.player.setYRot(look[0]);
@@ -153,9 +171,16 @@ public final class RainPerfProbe {
             finish(mc);
             return;
         }
-        boolean third = !WALK && !HERE && (SHADERS ? phase == 3 || phase == 4 : phase >= 4);
+        boolean third = DRIVE ? phase != 7 : !WALK && !HERE && (SHADERS ? phase == 3 || phase == 4 : phase >= 4);
         mc.options.setCameraType(third ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
-        if (HERE && HUD) {
+        if (DRIVE) {
+            driving = phase >= 1;
+            RainRenderer.splashes = phase != 3;
+            RainRenderer.enabled = phase != 4;
+            weather(mc, phase != 5 && phase != 6);
+            mc.options.hideGui = phase == 6;
+            speedSum = 0; speedTicks = 0; roadTicks = 0;
+        } else if (HERE && HUD) {
             // "moving": every gauge's texture redrawn every frame (with the GPU bands only the glyph textures remain)
             com.antaurora.apofirstlight.client.AflGauge.forceRedraw = phase == 1 || phase == 2;
             com.antaurora.apofirstlight.client.AflGaugeProgram.enabled = phase != 2;
@@ -188,6 +213,72 @@ public final class RainPerfProbe {
         log("phase " + PHASES[phase]);
     }
 
+    // ---- drive mode: lights, wipers, the autopilot
+
+    private static boolean driving;
+    private static double speedSum;
+    private static int speedTicks, roadTicks;
+    private static float steerNow;
+
+    /** Each tick once seated: headlights on, wipers to low (the server's switches, as the keys send them); the drive's speed log. */
+    private static void driveTick(Minecraft mc) {
+        if (!(mc.player.getVehicle() instanceof PickupTruckEntity truck)) return;
+        if (ticks % 10 == 0) {
+            if (!truck.headlights()) com.antaurora.apofirstlight.network.AflNetwork.vehicleToServer(
+                    new com.antaurora.apofirstlight.vehicle.VehiclePackets.Lamps(truck.getId(), PickupTruckEntity.SWITCH_LIGHTS));
+            else if (truck.wiperMode() != com.antaurora.apofirstlight.vehicle.WiperSystem.LOW) com.antaurora.apofirstlight.network.AflNetwork.vehicleToServer(
+                    new com.antaurora.apofirstlight.vehicle.VehiclePackets.Lamps(truck.getId(), PickupTruckEntity.SWITCH_WIPER));
+        }
+        if (phase >= 0) {
+            speedSum += truck.speed();
+            speedTicks++;
+            var hit = com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceQuery.sample(mc.level, truck.getX(), truck.getZ(), truck.getY());
+            if (hit != null) roadTicks++;
+        }
+    }
+
+    /** The driver: the key held until the engine runs, then (driving) first gear up to fifth by the tachometer, CRUISE m/s, the lane kept. */
+    private static com.antaurora.apofirstlight.vehicle.physics.VehicleInput autopilot() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || !(mc.player.getVehicle() instanceof PickupTruckEntity truck))
+            return com.antaurora.apofirstlight.vehicle.physics.VehicleInput.PARKED;
+        boolean running = truck.engineRunning();
+        float throttle = 0, brake = 0, steer = 0;
+        int shift = 0;
+        if (running && driving) {
+            double v = truck.speed();
+            int gear = truck.gear();
+            if (truck.shiftTarget() == gear && (gear <= 0 || gear < 5 && truck.tachometer(1) > 2800)) shift = 1;
+            throttle = v < CRUISE - 1 ? 1 : v < CRUISE ? 0.4F : 0.15F;
+            if (v > CRUISE + 2) { throttle = 0; brake = 0.3F; }
+            steer = steer(mc, truck);
+        }
+        return new com.antaurora.apofirstlight.vehicle.physics.VehicleInput(throttle, brake, steer, !driving, shift, false, !running, true, true);
+    }
+
+    /**
+     * Lane keeping: scans the road (RoadSurfaceQuery) ahead across -40..40 degrees, takes the run of road around straight
+     * ahead (or the nearest one) and steers toward its middle; no road in sight: straight on.
+     */
+    private static float steer(Minecraft mc, PickupTruckEntity truck) {
+        double ahead = Math.max(14, truck.speed() * 0.9);
+        int lo = Integer.MIN_VALUE, hi = Integer.MIN_VALUE, best = Integer.MAX_VALUE;
+        boolean[] on = new boolean[81];
+        for (int a = -40; a <= 40; a++) {
+            double yaw = Math.toRadians(truck.getYRot() + a);
+            double x = truck.getX() - Math.sin(yaw) * ahead, z = truck.getZ() + Math.cos(yaw) * ahead;
+            var hit = com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceQuery.sample(mc.level, x, z, truck.getY());
+            on[a + 40] = hit != null && !hit.blocking() && hit.surface() == com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceQuery.Surface.ASPHALT;
+            if (on[a + 40] && Math.abs(a) < Math.abs(best)) best = a;
+        }
+        if (best == Integer.MAX_VALUE) return steerNow *= 0.8F;
+        lo = best; hi = best;
+        while (lo > -40 && on[lo - 1 + 40]) lo--;
+        while (hi < 40 && on[hi + 1 + 40]) hi++;
+        float target = (float) Math.max(-1, Math.min(1, (lo + hi) / 2.0 / 12.0));
+        return steerNow += (target - steerNow) * 0.5F;
+    }
+
     private static void weather(Minecraft mc, boolean rain) {
         var server = mc.getSingleplayerServer();
         if (server != null) server.execute(() -> server.overworld().setWeatherParameters(rain ? 0 : 24000, rain ? 24000 : 0, rain, false));
@@ -199,7 +290,8 @@ public final class RainPerfProbe {
         Vec3 at = mc.player.position();
         server.execute(() -> {
             ServerLevel level = server.overworld();
-            level.setDayTime(6000);
+            level.setDayTime(DRIVE ? 18000 : 6000);   // drive: midnight
+            if (DRIVE) server.getPlayerList().getPlayers().get(0).setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
             level.setWeatherParameters(0, 24000, true, false);
             var trucks = level.getEntitiesOfClass(PickupTruckEntity.class, new AABB(at, at).inflate(160));   // a walk run leaves the player 80 m away in the save
             trucks.sort(Comparator.comparingDouble(tr -> tr.distanceToSqr(at)));
@@ -271,6 +363,17 @@ public final class RainPerfProbe {
         double worst = f.length == 0 ? 0 : f[f.length - 1] / 1e6;
         OUT.append(String.format("   wall ms %d-%d%n", phaseStart, System.currentTimeMillis()));
         OUT.append(String.format("== %s: %d frames, mean %.2f ms (%.0f fps), p95 %.2f ms, worst %.2f ms%n", name, f.length, mean, mean > 0 ? 1000 / mean : 0, p95, worst));
+        if (f.length > 0) {
+            long over25 = Arrays.stream(f).filter(x -> x > 25_000_000L).count(), over50 = Arrays.stream(f).filter(x -> x > 50_000_000L).count();
+            OUT.append(String.format("   tail: p99 %.2f ms, p99.9 %.2f ms, frames over 25 ms %d, over 50 ms %d%n",
+                    f[Math.min(f.length - 1, (int) (f.length * 0.99))] / 1e6, f[Math.min(f.length - 1, (int) (f.length * 0.999))] / 1e6, over25, over50));
+        }
+        if (DRIVE) {
+            var mc = Minecraft.getInstance();
+            OUT.append(String.format("   drive: mean speed %.1f m/s, on the road %d / %d ticks, at %s%n", speedTicks > 0 ? speedSum / speedTicks : 0, roadTicks, speedTicks,
+                    mc.player != null ? mc.player.blockPosition().toShortString() : "-"));
+            OUT.append("   chunks: ").append(mc.levelRenderer.getChunkStatistics()).append(" | ").append(mc.level != null ? mc.level.getChunkSource().gatherStats() : "-").append(System.lineSeparator());
+        }
         OUT.append("   rain: ").append(RainRenderer.status()).append('\n');
         OUT.append("   glass: ").append(WindshieldRenderer.status()).append('\n');
         if (HUD) OUT.append("   gauges (whole phase): ").append(com.antaurora.apofirstlight.client.AflGauge.status()).append('\n');

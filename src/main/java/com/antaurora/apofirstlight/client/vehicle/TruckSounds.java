@@ -54,6 +54,10 @@ import java.util.function.Supplier;
  * <li>Turn signals (tools/build-pickup-t15-signal-sounds.mjs, the user's recording 2026-10-17): the stalk on and off
  * (the hazard switch the same, a little higher), and the flasher relay's click as the lamps light and its softer click
  * as they go out, at the dashboard.</li>
+ * <li>Rain (tools/build-pickup-t15-rain-sounds.mjs, the user's takes 2026-10-18): a wiper sweep as each half-stroke starts
+ * (WiperSystem's phase passing 0 and 0.5; a little higher and quicker at high speed), at the windshield; on asphalt the dry
+ * tyre loop gives way to the wet one while it rains on the truck (eased over a few seconds); a rider in the cab hears the
+ * rain on the roof and the glass (a loop, not positional) and none of vanilla's rain sounds ({@link #muteRainInCab}).</li>
  * </ul>
  * A rider in the cab hears the engine and tyres a little muffled.
  */
@@ -70,11 +74,16 @@ public final class TruckSounds {
     private static final double TYRE_FULL = 11, WIND_FULL = 24, SKID_SLIP = 3;
     /** In the cab: engine and tyres scaled by this. */
     private static final float CAB_MUFFLE = 0.72F;
-    private static final int ASPHALT = 0, GRAVEL = 1, DIRT = 2, GRASS = 3;
+    static final int ASPHALT = 0, GRAVEL = 1, DIRT = 2, GRASS = 3;
     /** A door, the hood or the tailgate swinging shut sounds as it passes this angle (deg), a tick or two before it is shut. */
     private static final float SHUT_AT = 5.0F;
     /** Wheel contacts (forward, right; model frame): front left, front right, rear left, rear right. */
-    private static final double[][] WHEELS = {{1.60, -0.712}, {1.60, 0.712}, {-1.25, -0.712}, {-1.25, 0.712}};
+    static final double[][] WHEELS = {{1.60, -0.712}, {1.60, 0.712}, {-1.25, -0.712}, {-1.25, 0.712}};
+
+    /** The wet tyre loop takes over at this rate per tick (about 2.5 s), and a high-speed wiper sweep plays this much faster. */
+    private static final float WET_EASE = 0.02F, WIPER_HIGH_PITCH = 1.3F;
+    /** The local player rides in a T15's cab where it rains on the roof (vanilla's rain sounds muted; client thread). */
+    private static boolean cabRain;
 
     private static final Map<PickupTruckEntity, Voice> VOICES = new WeakHashMap<>();
     private static ClientLevel trackedLevel;
@@ -92,6 +101,7 @@ public final class TruckSounds {
             VOICES.clear();
             trackedLevel = level;
         }
+        cabRain = false;
         if (level == null || mc.isPaused()) return;
         Entity camera = mc.getCameraEntity();
         if (camera == null) return;
@@ -108,13 +118,14 @@ public final class TruckSounds {
     /** One truck's sounds and what they follow. */
     private static final class Voice {
         final PickupTruckEntity truck;
-        final Loop idle, mid, load, coast, crank, wind, horn;
+        final Loop idle, mid, load, coast, crank, wind, horn, tyreWet, rain;
         final Loop[] tyres = new Loop[4];
         boolean running, open[] = new boolean[2], hood, filler, handbrake, hazard, flashLit, first = true;
         int ignition, signal, transfer, sinceCatch = 1000, glowAt = -1, age, crashWait, scrapeWait, skidWait, bumpWait;
         float[] doorAngle = new float[2], travel = new float[4];
         float hoodAngle, tailgateAngle;
-        double speed, shiftTotal;
+        double speed, shiftTotal, wiperPhase;
+        float wet;
 
         Voice(PickupTruckEntity truck) {
             this.truck = truck;
@@ -130,6 +141,9 @@ public final class TruckSounds {
             tyres[GRAVEL] = new Loop(AflSounds.TRUCK_TYRES_GRAVEL, middle, false);
             tyres[DIRT] = new Loop(AflSounds.TRUCK_TYRES_DIRT, middle, false);
             tyres[GRASS] = new Loop(AflSounds.TRUCK_TYRES_GRASS, middle, false);
+            tyreWet = new Loop(AflSounds.TRUCK_TYRES_WET, middle, false);
+            rain = new Loop(AflSounds.TRUCK_CAB_RAIN, middle, true);
+            rain.attack = rain.release = 0.05F;
         }
 
         void tick(Minecraft mc) {
@@ -206,11 +220,20 @@ public final class TruckSounds {
             boolean sliding = v > 4 && (lateral > SKID_SLIP || v - wheel > SKID_SLIP);
             float roll = (float) Math.pow(Mth.clamp(v / TYRE_FULL, 0, 1), 0.8);
             float tyrePitch = (float) Mth.clamp(0.75 + 0.25 * v / TYRE_FULL, 0.7, 1.4);
+            // rain on the truck: the asphalt share rolls wet (eased, so a roof or a shower's end does not cut it at once)
+            BlockPos roof = BlockPos.containing(truck.getX(), truck.getY() + 2.5, truck.getZ());
+            float raining = level.isRainingAt(roof) ? level.getRainLevel(1.0F) : 0;
+            wet += Mth.clamp(raining - wet, -WET_EASE, WET_EASE);
             for (int i = 0; i < 4; i++) {
                 float s = touching > 0 ? share[i] / 4 : 0;
                 float slideBoost = sliding && i != ASPHALT ? 1.5F : 1;
-                tyres[i].set(Math.min(1, roll * s * slideBoost * muffle), tyrePitch * (sliding && i != ASPHALT ? 0.9F : 1));
+                float vol = Math.min(1, roll * s * slideBoost * muffle);
+                tyres[i].set(i == ASPHALT ? vol * (1 - wet) : vol, tyrePitch * (sliding && i != ASPHALT ? 0.9F : 1));
+                if (i == ASPHALT) tyreWet.set(vol * wet, tyrePitch);
             }
+            // the rain on the roof and the glass, for a rider in the cab (vanilla's rain is muted for them)
+            rain.set(cab ? raining : 0, 1);
+            if (cab && raining > 0) cabRain = true;
             if (!first && sliding && share[ASPHALT] >= 2 && skidWait <= 0) {
                 once(AflSounds.TRUCK_SKID, truck.point(0, 0, 0.2), (float) Mth.clamp(v / 15, 0.5, 1), 1);
                 skidWait = 30;
@@ -291,9 +314,19 @@ public final class TruckSounds {
             signal = sig;
             hazard = hz;
             flashLit = lit;
+
+            // ---- wipers: a half-stroke as each starts (up from parked or from the last stroke's end: the loud bottom clunk and
+            // the sweep up; down at 0.5: the soft top turn and the sweep back)
+            double ph = truck.wipers(0.0F).phase();
+            boolean up = ph > 0 && (wiperPhase == 0 || ph < wiperPhase), down = wiperPhase < 0.5 && ph >= 0.5;
+            if (!first && (up || down)) {
+                float high = truck.wiperMode() == com.antaurora.apofirstlight.vehicle.WiperSystem.HIGH ? WIPER_HIGH_PITCH : 1;
+                once(up ? AflSounds.TRUCK_WIPER : AflSounds.TRUCK_WIPER_RETURN, truck.point(0.95, 0, 1.25), 1, high * (0.97F + 0.06F * level.random.nextFloat()));
+            }
+            wiperPhase = ph;
             first = false;
 
-            Loop[] all = {idle, mid, load, coast, crank, wind, horn, tyres[0], tyres[1], tyres[2], tyres[3]};
+            Loop[] all = {idle, mid, load, coast, crank, wind, horn, tyres[0], tyres[1], tyres[2], tyres[3], tyreWet, rain};
             for (Loop l : all) l.update(mc);
         }
 
@@ -303,13 +336,22 @@ public final class TruckSounds {
         private static boolean shuts(float before, float now) { return before >= SHUT_AT && now < SHUT_AT; }
 
         void stop() {
-            for (Loop l : new Loop[]{idle, mid, load, coast, crank, wind, horn, tyres[0], tyres[1], tyres[2], tyres[3]}) l.end();
+            for (Loop l : new Loop[]{idle, mid, load, coast, crank, wind, horn, tyres[0], tyres[1], tyres[2], tyres[3], tyreWet, rain}) l.end();
         }
 
         private void once(RegistryObject<SoundEvent> sound, Vec3 at, float volume, float pitch) {
             Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(sound.get(), SoundSource.NEUTRAL, volume, pitch,
                     RandomSource.create(), at.x, at.y, at.z));
         }
+    }
+
+    /** Vanilla's rain sounds are not played to a rider in a T15's cab while it rains on it: they hear the cab rain loop. */
+    @SubscribeEvent
+    public static void muteRainInCab(net.minecraftforge.client.event.sound.PlaySoundEvent event) {
+        if (!cabRain || event.getSound() == null) return;
+        net.minecraft.resources.ResourceLocation id = event.getSound().getLocation();
+        if (id.equals(net.minecraft.sounds.SoundEvents.WEATHER_RAIN.getLocation()) || id.equals(net.minecraft.sounds.SoundEvents.WEATHER_RAIN_ABOVE.getLocation()))
+            event.setSound(null);
     }
 
     /** Asphalt (roads, stone, anything hard), gravel (and sand), dirt (and paths, mud, snow), grass. */

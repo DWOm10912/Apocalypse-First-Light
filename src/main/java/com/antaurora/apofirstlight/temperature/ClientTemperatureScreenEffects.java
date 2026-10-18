@@ -32,13 +32,15 @@ import java.util.Random;
  * clear; the HUD is drawn on top). Driven by the core temperature (the server's coldness / heat / danger), never by
  * the air, so standing next to lava shows nothing until the body has actually heated up; eased (about 1 s in, 2 s out)
  * so frost recedes a little slower than it grows.
- * - Cold: a cold tint at the edges (multiplied toward ice blue), then vanilla-style pixel frost (TemperatureFrost)
+ * - Cold: a cold tint at the edges (blended toward a dark ice blue), then vanilla-style pixel frost (TemperatureFrost)
  *   growing in from the corners and sides as the cold deepens, an icy glare (the heat glare's wash in pale ice blue) and
  *   frost glints (pixel pluses flashing on the shown flakes' bright cores); extremes pulse slowly. Shivering is a camera
  *   effect (ClientShiver).
- * - Heat: a warm tint at the edges, a sun-glare wash (screen-blended pale amber, no darkening, no red) and, when hot,
+ * - Heat: a warm tint at the edges, a sun-glare wash (blended toward pale amber, no red) and, when hot,
  *   heat haze: the screen edges ripple (a copy of the frame drawn through a displaced mesh); extremes pulse slowly.
- * Layers in separate passes, so each can be tuned on its own.
+ * Layers in separate passes, so each can be tuned on its own. Every layer uses plain alpha blending with the strength
+ * in the mask's alpha: the GUI shader resets any custom blend function when a shader pack swaps the last applied blend
+ * mode (Oculus), and the old multiply / screen blends then drew the black-centred masks as opaque black over the world.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientTemperatureScreenEffects {
@@ -56,6 +58,8 @@ public final class ClientTemperatureScreenEffects {
     /** Heat haze: displacement at the edges in real pixels per 2000 px of screen width, and the mesh resolution. */
     private static final double HAZE_PIXELS = 4.0;
     private static final int HAZE_COLUMNS = 48;
+    /** The frame brightness the tint and glare colours are fitted for: on such a frame they match the old multiply / screen blends. */
+    private static final float FRAME = 0.3f;
     private static final ResourceLocation EDGE_MASK = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/temperature_edge_mask"),
             GLARE_MASK = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/temperature_glare_mask");
     private static double cold, heat, danger;
@@ -86,14 +90,14 @@ public final class ClientTemperatureScreenEffects {
         graphics.flush();
         RenderSystem.enableBlend();
         if (cold > 0.003) {
-            multiply(graphics, EDGE_MASK, COLD_TINT, (float)(0.65 * cold) * p, screenWidth, screenHeight);
+            tint(graphics, COLD_TINT, (float)(0.65 * cold) * p, screenWidth, screenHeight);
             double frostLevel = clamp((cold - 0.3) / 0.7);
             int texel = frost(graphics, mc, frostLevel, p);
             glare(graphics, ICE_GLARE, (float)(0.45 * smooth(0.3, 1, cold)) * p, screenWidth, screenHeight);
             if (texel > 0) glints(graphics, mc, frostLevel, texel, Math.min(1, p), seconds);
         }
         if (heat > 0.003) {
-            multiply(graphics, EDGE_MASK, HEAT_TINT, (float)(0.55 * smooth(0, 0.7, heat)), screenWidth, screenHeight);
+            tint(graphics, HEAT_TINT, (float)(0.55 * smooth(0, 0.7, heat)), screenWidth, screenHeight);
             glare(graphics, HEAT_GLARE, (float)(0.55 * smooth(0.3, 1, heat)) * p, screenWidth, screenHeight);
             double amp = HAZE_PIXELS * smooth(0.35, 1, heat);
             if (amp > 0.05 && !hazeFailed) haze(graphics, mc, amp, seconds);
@@ -108,20 +112,30 @@ public final class ClientTemperatureScreenEffects {
         return shown + (target - shown) * (1 - Math.exp(-dt / tau));
     }
 
-    /** dst × (1 − mask × alpha × (1 − tint)): the edges pulled toward the tint, the centre untouched. */
-    private static void multiply(GuiGraphics graphics, ResourceLocation mask, float[] tint, float alpha, int w, int h) {
-        if (alpha <= 0.002f) return;
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR,
-                GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-        graphics.setColor(alpha * (1 - tint[0]), alpha * (1 - tint[1]), alpha * (1 - tint[2]), 1);
-        graphics.blit(mask, 0, 0, w, h, 0, 0, MASK_W, MASK_H, MASK_W, MASK_H);
+    /**
+     * The edges pulled toward the tint, the centre untouched: alpha blend toward a dark tint colour, which on a FRAME-bright
+     * frame equals the old multiply dst × (1 − mask × alpha × (1 − tint)) (the channel furthest from 1 sets the alpha).
+     */
+    private static void tint(GuiGraphics graphics, float[] tint, float alpha, int w, int h) {
+        float low = Math.min(tint[0], Math.min(tint[1], tint[2])), a = alpha * (1 - low);
+        if (a <= 0.002f || low >= 1) return;
+        RenderSystem.defaultBlendFunc();
+        float[] c = new float[3];
+        for (int i = 0; i < 3; i++) c[i] = FRAME * (1 - (1 - tint[i]) / (1 - low));
+        graphics.setColor(c[0], c[1], c[2], a);
+        graphics.blit(EDGE_MASK, 0, 0, w, h, 0, 0, MASK_W, MASK_H, MASK_W, MASK_H);
     }
-    /** Screen blend toward a pale colour (amber for heat, ice blue for cold): brighter and paler at the edges, never darker. */
+    /**
+     * Glare toward a pale colour (amber for heat, ice blue for cold), brighter and paler at the edges: alpha blend toward
+     * rgb + (1 − rgb) × FRAME, which on a FRAME-bright frame equals the old screen blend toward rgb × alpha.
+     */
     private static void glare(GuiGraphics graphics, float[] rgb, float alpha, int w, int h) {
-        if (alpha <= 0.002f) return;
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE,
-                GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-        graphics.setColor(rgb[0] * alpha, rgb[1] * alpha, rgb[2] * alpha, 1);
+        float high = Math.max(rgb[0], Math.max(rgb[1], rgb[2])), a = alpha * high;
+        if (a <= 0.002f) return;
+        RenderSystem.defaultBlendFunc();
+        float[] c = new float[3];
+        for (int i = 0; i < 3; i++) { float k = rgb[i] / high; c[i] = k + (1 - k) * FRAME; }
+        graphics.setColor(c[0], c[1], c[2], a);
         graphics.blit(GLARE_MASK, 0, 0, w, h, 0, 0, MASK_W, MASK_H, MASK_W, MASK_H);
     }
     /** The pixel frost, about 5 real pixels per texel, drawn in real pixels; returns the texel size (0: nothing drawn). */
@@ -233,7 +247,7 @@ public final class ClientTemperatureScreenEffects {
         }
     }
 
-    // ---- edge masks (white = full effect), smooth, built once
+    // ---- edge masks (white, alpha = effect strength: 0 in the centre, where the shader discards), smooth, built once
 
     private static final int MASK_W = 320, MASK_H = 180;
     private static void ensureMasks() {
@@ -247,7 +261,7 @@ public final class ClientTemperatureScreenEffects {
         for (int y = 0; y < MASK_H; y++) for (int x = 0; x < MASK_W; x++) {
             double e = Math.hypot((x + 0.5 - MASK_W / 2.0) / (MASK_W / 2.0), (y + 0.5 - MASK_H / 2.0) / (MASK_H / 2.0));
             int g = (int)Math.round(Math.pow(smooth(inner, outer, e), power) * 255);
-            image.setPixelRGBA(x, y, 0xFF000000 | g << 16 | g << 8 | g);
+            image.setPixelRGBA(x, y, g << 24 | 0xFFFFFF);
         }
         var texture = new DynamicTexture(image);
         Minecraft.getInstance().getTextureManager().register(id, texture);

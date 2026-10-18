@@ -44,6 +44,10 @@ import java.util.List;
  * Drawn after the weather (over water) from their own builder, at once (#render), alpha blended, lit by the light in the
  * open over where they landed; the vanilla entity translucent program they use carries the dynamic lights (headlamps
  * light them). Capped.
+ * <p>
+ * Also the water a T15's tyres throw off a wet road (client/vehicle/TruckSpray, 2026-10-18; first_pickup 8.18): drops
+ * flying under gravity and drag, drawn as streaks along their motion (cell 3 stretched), gone where they fall back to the
+ * road; and puffs of fine mist (cell 4) that spread, slow and fade behind the truck. They go on after the rain (a wet road).
  */
 final class RainSplashes {
     /**
@@ -56,6 +60,8 @@ final class RainSplashes {
     private static final int MAX = 9000;
     /** A crown's base over the drawn surface (m). */
     private static final double LIFT = 0.015;
+    /** One cell's width on the sheet (five 64 px cells: crowns 0-1, ripple 2, droplet 3, mist 4; tools/build-rain-fx-v1.mjs). */
+    private static final float CELL = 0.2F;
 
     private static final class Splash {
         double x, y, z, vx, vy, vz, ox, oy, oz;
@@ -64,10 +70,18 @@ final class RainSplashes {
         PickupTruckEntity on;
         /** Packed light where it landed, in the open over the surface (RainSplashes#land). */
         int light;
-        byte kind;   // 0 crown, 1 ripple, 2 droplet
+        byte kind;   // 0 crown, 1 ripple, 2 droplet, 3 tyre spray drop, 4 tyre spray mist
         byte cell;
         float size;
+        /** Spray: velocity kept a tick (drag), peak alpha, the quad's turn (mist), the road height a drop ends at. */
+        float drag, alpha, roll;
+        double floor;
     }
+
+    /** Gravity on a spray drop (blocks / tick², 9.8 m/s²). */
+    private static final double SPRAY_GRAVITY = 9.8 / 400;
+    /** A spray drop's streak: its motion over this long (s), as the rain's streaks (RainRenderer). */
+    private static final double STREAK_TIME = 0.03, STREAK_MAX = 0.15;
 
     private final List<Splash> live = new ArrayList<>();
     /** The trucks near the camera this tick (land). */
@@ -96,6 +110,26 @@ final class RainSplashes {
                 s.z += s.vz;
                 s.vx *= 0.94;
                 s.vz *= 0.94;
+            } else if (s.kind == 3) {
+                s.vy -= SPRAY_GRAVITY;
+                s.x += s.vx;
+                s.y += s.vy;
+                s.z += s.vz;
+                s.vx *= s.drag;
+                s.vy *= s.drag;
+                s.vz *= s.drag;
+                if (s.y < s.floor) s.age = s.life;   // back on the road
+            } else if (s.kind == 4) {
+                s.x += s.vx;
+                s.y += s.vy;
+                s.z += s.vz;
+                s.vx *= s.drag;
+                s.vy = s.vy * s.drag - 0.0004;
+                s.vz *= s.drag;
+                if (s.y < s.floor) {
+                    s.y = s.floor;
+                    s.vy = 0;
+                }
             }
         }
         live.removeIf(s -> s.age >= s.life || s.on != null && s.on.isRemoved());
@@ -153,9 +187,40 @@ final class RainSplashes {
         crown(r, x, ground, z, near);
     }
 
-    /** Live splashes by kind (status): crowns, ripples, droplets. */
+    /**
+     * A drop a tyre throws (world, blocks / tick); drag: velocity kept a tick; floor: the road height it ends at; light:
+     * packed, where it was thrown.
+     */
+    void sprayDrop(double x, double y, double z, double vx, double vy, double vz, float size, float drag, double floor, int life, int light) {
+        if (live.size() >= MAX) return;
+        Splash s = add(3, x, y, z, life);
+        s.vx = vx;
+        s.vy = vy;
+        s.vz = vz;
+        s.size = size;
+        s.drag = drag;
+        s.floor = floor;
+        s.light = light;
+    }
+
+    /** A puff of a tyre's fine mist: size the starting half-size (m), alpha at its fullest, roll its quad's turn (rad). */
+    void sprayMist(double x, double y, double z, double vx, double vy, double vz, float size, float alpha, float roll, double floor, int life, int light) {
+        if (live.size() >= MAX) return;
+        Splash s = add(4, x, y, z, life);
+        s.vx = vx;
+        s.vy = vy;
+        s.vz = vz;
+        s.size = size;
+        s.alpha = alpha;
+        s.roll = roll;
+        s.drag = 0.9F;
+        s.floor = floor;
+        s.light = light;
+    }
+
+    /** Live splashes by kind (status): crowns, ripples, droplets, spray drops, spray mist. */
     int[] counts() {
-        int[] c = new int[3];
+        int[] c = new int[5];
         for (Splash s : live) c[s.kind]++;
         return c;
     }
@@ -264,7 +329,8 @@ final class RainSplashes {
                 z = w.z - cam.z;
             } else {
                 double wx = Mth.lerp(pt, s.ox, s.x), wy = Mth.lerp(pt, s.oy, s.y), wz = Mth.lerp(pt, s.oz, s.z);
-                if (insideTruck(frames, wx, wy, wz)) {
+                // tyre spray starts at the wheels, under the body's rain shell: the body's own depth hides what is behind it
+                if (s.kind < 3 && insideTruck(frames, wx, wy, wz)) {
                     culled++;
                     continue;
                 }
@@ -283,26 +349,70 @@ final class RainSplashes {
                     float grow = 0.65F + 0.55F * t, alpha = 0.75F * (1.0F - t * t) * far;
                     float hw = s.size * grow, h = s.size * 2.0F * grow;
                     float ax = left.x() * hw, ay = left.y() * hw, az = left.z() * hw;
-                    float u0 = s.cell * 0.25F, u1 = u0 + 0.25F;
+                    float u0 = s.cell * CELL, u1 = u0 + CELL;
                     quad(out, m, (float) x + ax, (float) y + ay, (float) z + az, (float) x - ax, (float) y - ay, (float) z - az,
                             up.x() * h, Math.max(0.0F, up.y()) * h, up.z() * h, u0, u1, 0, 1, alpha, light);
                 }
                 case 1 -> {   // flat on the water, spreading
                     float radius = s.size * (0.15F + 0.85F * (1.0F - (1.0F - t) * (1.0F - t))), alpha = 0.55F * (1.0F - t) * far;
                     float fx = (float) x, fy = (float) y, fz = (float) z;
-                    vertex(out, m, fx - radius, fy, fz - radius, 0.5F, 0.0F, alpha, light);
-                    vertex(out, m, fx - radius, fy, fz + radius, 0.5F, 1.0F, alpha, light);
-                    vertex(out, m, fx + radius, fy, fz + radius, 0.75F, 1.0F, alpha, light);
-                    vertex(out, m, fx + radius, fy, fz - radius, 0.75F, 0.0F, alpha, light);
+                    vertex(out, m, fx - radius, fy, fz - radius, 2 * CELL, 0.0F, alpha, light);
+                    vertex(out, m, fx - radius, fy, fz + radius, 2 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx + radius, fy, fz + radius, 3 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx + radius, fy, fz - radius, 3 * CELL, 0.0F, alpha, light);
+                }
+                case 3 -> {   // a tyre's drop: a streak along its motion, its head where it is
+                    float alpha = 0.7F * (1.0F - t * t * t) * far;
+                    double dx = s.x - s.ox, dy = s.y - s.oy, dz = s.z - s.oz, v = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    // capped: thrown off a fast truck a drop's world motion is the truck's, and a camera going along with
+                    // it sees far less (an uncapped streak was a long line racing beside the truck)
+                    double len = Math.max(s.size * 2.0, Math.min(STREAK_MAX, v * 20 * STREAK_TIME));
+                    if (v < 1e-5) {
+                        dx = 0;
+                        dy = 1;
+                        dz = 0;
+                        v = 1;
+                    }
+                    float ax = (float) (dx / v), ay = (float) (dy / v), az = (float) (dz / v);
+                    // across: perpendicular to the motion and to the line of sight
+                    float sx = ay * (float) z - az * (float) y, sy = az * (float) x - ax * (float) z, sz = ax * (float) y - ay * (float) x;
+                    float sl = (float) Math.sqrt(sx * sx + sy * sy + sz * sz);
+                    if (sl < 1e-6F) {
+                        sx = left.x();
+                        sy = left.y();
+                        sz = left.z();
+                        sl = 1;
+                    }
+                    float w = s.size / sl, fx = (float) x, fy = (float) y, fz = (float) z, l = (float) len;
+                    sx *= w;
+                    sy *= w;
+                    sz *= w;
+                    float tx = fx - ax * l, ty = fy - ay * l, tz = fz - az * l;
+                    vertex(out, m, fx + sx, fy + sy, fz + sz, 3 * CELL, 0.0F, alpha, light);
+                    vertex(out, m, tx + sx, ty + sy, tz + sz, 3 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, tx - sx, ty - sy, tz - sz, 4 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx - sx, fy - sy, fz - sz, 4 * CELL, 0.0F, alpha, light);
+                }
+                case 4 -> {   // a puff of mist, facing the camera, turned, spreading and fading
+                    float spread = 1.0F - (1.0F - t) * (1.0F - t), r = s.size * (1.0F + 3.5F * spread);
+                    float alpha = s.alpha * Math.min(1.0F, t * 8.0F) * (1.0F - t) * (1.0F - t) * far;
+                    float c = Mth.cos(s.roll + t * 0.6F) * r, sn = Mth.sin(s.roll + t * 0.6F) * r;
+                    float ax = left.x() * c + up.x() * sn, ay = left.y() * c + up.y() * sn, az = left.z() * c + up.z() * sn;
+                    float bx = up.x() * c - left.x() * sn, by = up.y() * c - left.y() * sn, bz = up.z() * c - left.z() * sn;
+                    float fx = (float) x, fy = (float) y, fz = (float) z;
+                    vertex(out, m, fx + ax - bx, fy + ay - by, fz + az - bz, 4 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx - ax - bx, fy - ay - by, fz - az - bz, 5 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx - ax + bx, fy - ay + by, fz - az + bz, 5 * CELL, 0.0F, alpha, light);
+                    vertex(out, m, fx + ax + bx, fy + ay + by, fz + az + bz, 4 * CELL, 0.0F, alpha, light);
                 }
                 default -> {   // a droplet, facing the camera
                     float r = s.size, alpha = 0.8F * (1.0F - t * t * t) * far;
                     float lx = left.x() * r, ly = left.y() * r, lz = left.z() * r, ux = up.x() * r, uy = up.y() * r, uz = up.z() * r;
                     float fx = (float) x, fy = (float) y, fz = (float) z;
-                    vertex(out, m, fx + lx - ux, fy + ly - uy, fz + lz - uz, 0.75F, 1.0F, alpha, light);
-                    vertex(out, m, fx - lx - ux, fy - ly - uy, fz - lz - uz, 1.0F, 1.0F, alpha, light);
-                    vertex(out, m, fx - lx + ux, fy - ly + uy, fz - lz + uz, 1.0F, 0.0F, alpha, light);
-                    vertex(out, m, fx + lx + ux, fy + ly + uy, fz + lz + uz, 0.75F, 0.0F, alpha, light);
+                    vertex(out, m, fx + lx - ux, fy + ly - uy, fz + lz - uz, 3 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx - lx - ux, fy - ly - uy, fz - lz - uz, 4 * CELL, 1.0F, alpha, light);
+                    vertex(out, m, fx - lx + ux, fy - ly + uy, fz - lz + uz, 4 * CELL, 0.0F, alpha, light);
+                    vertex(out, m, fx + lx + ux, fy + ly + uy, fz + lz + uz, 3 * CELL, 0.0F, alpha, light);
                 }
             }
             drawn++;

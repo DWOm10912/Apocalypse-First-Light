@@ -1,6 +1,6 @@
 # 第一辆车 V0：老式单排座皮卡（设计）
 
-状态：**V0-a 第一步：车身 Mesh V1 已实现（2026-10-15，按真车结构图重做，第 2.2、2.4 节），未经实机验证。** 用户选了方向 A（第 2.1 节）。现在有能放、能看的车（第 2.2 节）：车身、车内、发动机舱、底盘、车轮、漆色和磨损、开关引擎盖 / 车门 / 尾门、开发命令。平滑法线：分支 `feature/t15-smooth-normals` 上已用 Vextris 0.1.1-alpha.3 的折角平滑（面积加权）打开，未经实机验收（第 2.2 节末）。第二步（碰撞、座位、油箱和加油口、提示、货斗存档和货物渲染）用户 2026-10-16 实机 PASS（第 8.2 节）。**V0-b 物理第 1 包（2026-10-16，已实现，编译和离线检查通过，未实机验证，第 8.3 节）**：四轮悬挂、轮胎、油门 / 刹车 / 转向 / 手刹，驾驶员客户端算、服务端检查和同步，车身俯仰侧倾、车轮转动和上下、方向盘转动，货斗站人跟着走。用户 2026-10-16 看录像说"驾驶手感还行"。**第 2 包（2026-10-16，用户实机 PASS，第 8.5 节）**：发动机（扭矩曲线、怠速、断油、熄火）、5 速手动 + 自动离合、2H / 4H、点火（预热、起动机）、耗油、仪表指针、驾驶 HUD。**车压倒草**（第 8.4 节，和第 2 包同一轮用户实机 PASS）。货斗界面：D 的外部网格 2026-10-16 和这一轮一起合进 master。道路接地：C 的 `RoadSurfaceQuery` 2026-10-16 接上（第 5.2 节，未实机验证）。**坐姿宿主、车顶加高 10 cm、行驶中不能下车**（第 8.6 节，2026-10-16，编译和离线检查通过，未实机验证）。**下车位置同步给客户端、驾驶室挡住车外的近身攻击、司机倒手转方向盘**（第 8.7 节）和**换挡：挡杆按 H 形挡位动，司机右手离开方向盘去握挡杆**（第 8.8 节）：用户 2026-10-16 实机"大体上可以 PASS"，提了一个问题：驾驶位下车走了右门，副驾驶也换不到驾驶位。**横坡上下车走错门、驾驶室里换座**（第 8.9 节，2026-10-16，用户实机 PASS）。**车灯 V1**：近光 / 远光照亮方块（客户端动态方块光）、光晕和光束锥、刹车灯、倒车灯、仪表背光、顶灯（第 8.10 节，2026-10-16 用户实机 PASS，帧数没量）。**声音 V1**：用户的 22 条 Firefly 录音剪成 36 个文件、统一响度，发动机按转速混音，轮胎按路面，车身部件、换挡、手刹、喇叭（新键 Y），感染者按同样的半径听到（第 8.11 节，2026-10-16 用户实机 PASS）。**仪表盘 HUD V1（圆环 / 速度带两套，设置里选）、顶部指示灯栏、转向灯和应急灯、车灯一键（点按开关、长按远光）、坐车时藏快捷栏、Jade 不显示车**（第 8.12 节，2026-10-16，编译和 GameTest 通过，**未实机验证**）。**车灯 V1.1（平滑光场、倒车灯照地、尾灯照地）、转向灯声音、对着门扇关门、驾驶按键提示**（第 8.13 节，2026-10-17）和**低速四驱 4L + 分动杆动画、尾灯红光修正、大灯每 tick 重算**（第 8.14 节，2026-10-17，协议 54）：编译和离线检查通过，**未实机验证**。**车灯逐像素光（动态光源 V1）**：不开光影时车灯每帧在着色器里算，平滑、不卡、没有亮三角形，有阴影；Aureveil 打开 `AFL_VEHICLE_LIGHTS` 时由 Aureveil 用 AFL 每帧给的数据画（AFL 这边已实现，Aureveil 那边还没出）；方块光只留给别的光影包（第 8.15 节，2026-10-17，用户实机 PASS，"比较流畅"）。**雨刷和挡风玻璃雨水**（第 8.16 节，2026-10-17，协议 55）：雨刷加长、四档（关 / 间歇 / 慢 / 快，默认键 C），右侧拨杆随档位拨动；不开光影时玻璃上有水珠、雨刷刮水。玻璃的水 V1 用户实机不通过，V2 同日重做（挡风玻璃网格改成同心环、Blender 模拟的水珠贴图），用户实机 PASS；随后后窗和左右门窗也有了水（没有雨刷，门窗跟着车门转），开 Aureveil（`AFL_RAIN`）时四块玻璃的水烘给光影包画（[雨 V1](../rendering/rain_v1.md) 第 6 节），编译和离线检查通过，**未实机验证**；雨刷还没有声音。用户 2026-10-15 让车辆设计和道路开发并行：完整的车辆物理等 C 的统一接地查询定下来再写（第 5、8 节）。
+状态：**V0-a 第一步：车身 Mesh V1 已实现（2026-10-15，按真车结构图重做，第 2.2、2.4 节），未经实机验证。** 用户选了方向 A（第 2.1 节）。现在有能放、能看的车（第 2.2 节）：车身、车内、发动机舱、底盘、车轮、漆色和磨损、开关引擎盖 / 车门 / 尾门、开发命令。平滑法线：分支 `feature/t15-smooth-normals` 上已用 Vextris 0.1.1-alpha.3 的折角平滑（面积加权）打开，未经实机验收（第 2.2 节末）。第二步（碰撞、座位、油箱和加油口、提示、货斗存档和货物渲染）用户 2026-10-16 实机 PASS（第 8.2 节）。**V0-b 物理第 1 包（2026-10-16，已实现，编译和离线检查通过，未实机验证，第 8.3 节）**：四轮悬挂、轮胎、油门 / 刹车 / 转向 / 手刹，驾驶员客户端算、服务端检查和同步，车身俯仰侧倾、车轮转动和上下、方向盘转动，货斗站人跟着走。用户 2026-10-16 看录像说"驾驶手感还行"。**第 2 包（2026-10-16，用户实机 PASS，第 8.5 节）**：发动机（扭矩曲线、怠速、断油、熄火）、5 速手动 + 自动离合、2H / 4H、点火（预热、起动机）、耗油、仪表指针、驾驶 HUD。**车压倒草**（第 8.4 节，和第 2 包同一轮用户实机 PASS）。货斗界面：D 的外部网格 2026-10-16 和这一轮一起合进 master。道路接地：C 的 `RoadSurfaceQuery` 2026-10-16 接上（第 5.2 节，未实机验证）。**坐姿宿主、车顶加高 10 cm、行驶中不能下车**（第 8.6 节，2026-10-16，编译和离线检查通过，未实机验证）。**下车位置同步给客户端、驾驶室挡住车外的近身攻击、司机倒手转方向盘**（第 8.7 节）和**换挡：挡杆按 H 形挡位动，司机右手离开方向盘去握挡杆**（第 8.8 节）：用户 2026-10-16 实机"大体上可以 PASS"，提了一个问题：驾驶位下车走了右门，副驾驶也换不到驾驶位。**横坡上下车走错门、驾驶室里换座**（第 8.9 节，2026-10-16，用户实机 PASS）。**车灯 V1**：近光 / 远光照亮方块（客户端动态方块光）、光晕和光束锥、刹车灯、倒车灯、仪表背光、顶灯（第 8.10 节，2026-10-16 用户实机 PASS，帧数没量）。**声音 V1**：用户的 22 条 Firefly 录音剪成 36 个文件、统一响度，发动机按转速混音，轮胎按路面，车身部件、换挡、手刹、喇叭（新键 Y），感染者按同样的半径听到（第 8.11 节，2026-10-16 用户实机 PASS）。**仪表盘 HUD V1（圆环 / 速度带两套，设置里选）、顶部指示灯栏、转向灯和应急灯、车灯一键（点按开关、长按远光）、坐车时藏快捷栏、Jade 不显示车**（第 8.12 节，2026-10-16，编译和 GameTest 通过，**未实机验证**）。**车灯 V1.1（平滑光场、倒车灯照地、尾灯照地）、转向灯声音、对着门扇关门、驾驶按键提示**（第 8.13 节，2026-10-17）和**低速四驱 4L + 分动杆动画、尾灯红光修正、大灯每 tick 重算**（第 8.14 节，2026-10-17，协议 54）：编译和离线检查通过，**未实机验证**。**车灯逐像素光（动态光源 V1）**：不开光影时车灯每帧在着色器里算，平滑、不卡、没有亮三角形，有阴影；Aureveil 打开 `AFL_VEHICLE_LIGHTS` 时由 Aureveil 用 AFL 每帧给的数据画（AFL 这边已实现，Aureveil 那边还没出）；方块光只留给别的光影包（第 8.15 节，2026-10-17，用户实机 PASS，"比较流畅"）。**雨刷和挡风玻璃雨水**（第 8.16 节，2026-10-17，协议 55）：雨刷加长、四档（关 / 间歇 / 慢 / 快，默认键 C），右侧拨杆随档位拨动；不开光影时玻璃上有水珠、雨刷刮水。玻璃的水 V1 用户实机不通过，V2 同日重做（挡风玻璃网格改成同心环、Blender 模拟的水珠贴图），用户实机 PASS；随后后窗和左右门窗也有了水（没有雨刷，门窗跟着车门转），开 Aureveil（`AFL_RAIN`）时四块玻璃的水烘给光影包画（[雨 V1](../rendering/rain_v1.md) 第 6 节），编译和离线检查通过，**未实机验证**。**雨天的声音**（第 8.17 节，2026-10-18）：雨刷每刮一下一声、下雨时柏油路上换成湿路面轮胎声、坐在驾驶室里听到雨打车顶（原版雨声关掉）；雨刷声换成真实录音后用户 2026-10-18 PASS（"这个音效可以暂时不管"），湿路面和车内雨声用户听过试听文件说"还行"，没单独实机确认。**轮胎抛土 / 抛水 / 胎烟、Caps Lock 收起驾驶按键提示、环绕镜头**（第 8.18 节，2026-10-18，为开发日志做）：编译通过，**未实机验证**。用户 2026-10-15 让车辆设计和道路开发并行：完整的车辆物理等 C 的统一接地查询定下来再写（第 5、8 节）。
 
 以前的要求（用户 2026-10-12，[溪谷老宅 B V1 计划](../worldgen/forest_start_home_b_v1_plan.md) 第 5 节、[开发顺序](../dev/development_order_v1.md)）：
 
@@ -1314,10 +1314,61 @@ C 已经计划的"每条路做一遍车轮接地回归"（C3 状态）就用这�
 - **开光影包时**：雨刷照常转（是车自己的模型），玻璃上的水不画。
 - **V1 实机不通过（2026-10-17）**：用户说前玻璃特别糊，玻璃上有一条明显的分界线（左上发蓝、其余是普通玻璃色），水珠只在发蓝那块里动，快速移动时像卡通；刷过的地方反而干净。V2 同日重做，水怎么算、怎么画见 [挡风玻璃雨水](t15_windshield_rain_design.md) 第 3 节。车上的改动：挡风玻璃网格（`tools/pickup-t15/exterior.mjs` `plateRings()`）从一整片改成同心环，每圈 4.5 cm、共 10 圈；模型已重建（`node tools/build-pickup-t15.mjs`，退出码 0）。用户实机看了 V2："效果蛮不错的"（PASS）。
 - **后窗和左右门窗的水（2026-10-17）**：用户："给其他的玻璃也加上雨滴效果，但是其他的玻璃不需要雨刮"。四块玻璃各有一份水，门窗的水跟着车门转；做法见 [挡风玻璃雨水](t15_windshield_rain_design.md) 第 3.6 节。车的模型没改。编译和离线检查通过，**未实机验证**。
-- **还没做**：雨刷声音（电机 + 刷片摩擦，等一条 Firefly 录音，提示词见第 8.1 节第 18 条）；仪表上的雨刷档位显示。
+- **还没做**：仪表上的雨刷档位显示。雨刷声音 2026-10-18 已接（第 8.17 节）。
 - **玻璃水内存泄漏（2026-10-17 修）**：用户开着雨跑一阵后游戏"内存溢出"退出。日志：`WindshieldRenderer` 共用的 `BufferBuilder` 从 2 GB 往上扩容失败。原因：某块玻璃这一帧没有水珠时 `drawDrops` 结束了缓冲却没释放（`b.end()` 的结果丢掉），共用缓冲从此不再回到开头，每帧往后追加，越跑越大、越来越卡。改成 `b.end().release()`；全仓库别的 `BufferBuilder` 用法查过，没有同样的写法。编译通过，**未实机验证**。
 - **开车时不能拿武器**：开车时不能拿武器（2026-10-17，用户实机发现开车能掏枪）：坐在 T15 驾驶座上（`PickupTruckEntity.driving`）时，手上是武器（武器位 1–3，或"手上"框里的武器）就由服务端 `Loadout` 按切走的规则放回（有背带 / 枪套留在原位，否则进网格），切到"手上"并提示"开车时腾不出手"（`hint.apocalypse_firstlight.loadout.driving`）；客户端开车时按 1–3、滚轮都不切武器（`GridClient`、`InventoryWeaponScrollMixin`）。放不下时枪留在手上（提示"没有背带 / 放不下"）。副驾驶和后排不限制。只管生存 / 冒险（创造模式的快捷栏是原版的，不管）。编译通过，**未实机验证**。
 - 验证：`compileJava` 通过；GameTest（`truck-dismount-gametest`）PASS，加了雨刷：一开始是关，按四下依次是间歇 / 慢 / 快 / 关，存档读回档位，车灯和转向灯不受影响（V1 时跑的，V2 没重跑）。未实机验证。
+
+## 8.17 雨天的声音（2026-10-18，雨刷声用户 PASS）
+
+为了录雨夜开车的开发视频补的三个声音。湿路面和车内雨声是用户用 Firefly 生成的（2026-10-18，提示词见下），雨刷是用户在 YouTube 上找的真实录音（见下）；都由 `tools/build-pickup-t15-rain-sounds.mjs` 剪切、处理，音量按声音 V1 的统一基准（配电箱开门声 + 各自的偏移）。
+
+- **雨刷**：雨刷每走半程在挡风玻璃中间播一声，快档音调和速度 ×1.3（±3% 随机）。可听距离 8 格。上行和下行分开：
+  - 从停止位（或上一个来回的末尾）往上，即 `WiperSystem` 的相位离开 0：`truck_wiper`（`pickup_t15/wiper_up_1..4.ogg`），底部响的一下"咔"加往上刮；
+  - 到顶往回，即相位过 0.5：`truck_wiper_return`（`wiper_down_1..4.ogg`），顶部轻的换向加刮回来。
+  - 录音来源：用户 2026-10-18 在 YouTube 上找的真实雨刷录音（"CAR WIPER SOUND EFFECT IN HIGH QUALITY"，频道 n Beats，2014，mp3 48 kHz 立体声，合成单声道）。**视频没写授权**：自己测试、录开发视频以外，正式发布前要确认能用，或者换成授权清楚的录音（比如自己录真车）。
+  - 录音测量：一个来回 1.43 s（慢档 1.333 s），每个来回一响一轻两下（约 −16 / −27 dB，上行 0.60 s、下行 0.83 s），两下之间的底噪低 30 dB，没有稳定的嗡声带（左右声道合成单声道不抵消）。
+  - 处理：只做 30 Hz 高通去掉超低频，不变速；从中间四个来回切出上行、下行各四段（每段从"咔"起声前 60 ms 开始）；游戏里两半都是 0.667 s，录音的上行比这短，所以上行段往后多留 0.1 s，开头淡入 40 ms、结尾淡出 0.1 s，交接处互相交叉，电机底噪不断；八段用同一个增益（按最响的对齐，偏移 −7 LU），下行比上行轻约 10 dB，和录音一样。
+  - 弃用的 Firefly 版本：三条生成的录音每刮一下下面都有一条 150–450 Hz 的稳定嗡声带（比刮条声响约 20 dB，用户："每次都有嗡嗡声"）；用 520 Hz 高通去掉、再压缩到 0.62 s 后，用户评价"完全就是电流噪音"。
+- **湿路面轮胎**（`truck_tyres_wet`，`tyre_wet.ogg`，8 s 循环，偏移和干路面一样 −2.5 LU）：车顶上方 2.5 格处在下雨（`isRainingAt`）时，柏油路那部分的轮胎声从干的换成湿的，每 tick 变 0.02（约 2.5 s 换完），雨停时同样慢慢换回去。砂石、土、草不变。音调和音量跟干路面一样随车速变化。
+- **车内雨声**（`truck_cab_rain`，`cab_rain.ogg`，12 s 循环，偏移 −4 LU）：坐在驾驶座或副驾驶（货斗的座位不算）、车顶在下雨时，播雨打车顶和玻璃的声音（不定位，音量跟雨的大小），淡入淡出约 1 s；同时原版的雨声（`weather.rain`、`weather.rain.above`）对这个玩家不播（`TruckSounds.muteRainInCab`，Forge `PlaySoundEvent`）。开着车门也一样（没区分）。
+- 提示词（英文，Firefly）：
+  - 雨刷（已弃用）：A single rubber windshield wiper blade sweeping once across wet glass, a smooth wet swish that ends with a light rubbery squeak, then silence. Repeated four times with a two-second pause between sweeps. Close-up, dry recording. No motor, no hum, no rain, no engine, no music, no voices.
+  - 湿路面：Tires rolling on wet asphalt at a steady highway speed, close to the wheel. A continuous wet hiss, water spraying off the tread into the wheel wells, a soft rumble of the road surface, very even and steady so it can loop. No engine, no rain hitting anything, no wind gusts, no music, no voices.
+  - 车内雨声：Steady rain heard from inside a parked pickup truck cab. Raindrops drumming on the thin steel roof and pattering on the windshield, a dense hollow metallic patter, the outside rain muffled through the closed windows. Even and continuous so it can loop. No thunder, no engine, no wipers, no music, no voices.
+- 试听文件（按游戏里慢档 / 快档的节奏排好，音量放大了 3–4 倍）：`build/sound-preview/t15_rain/`。
+- 构建：`node tools/build-pickup-t15-rain-sounds.mjs [源目录]`（默认 E:/Download，按 sha 校验源文件）；源目录里没有的录音跳过，保留已生成的 ogg（三条 Firefly 原始录音 2026-10-18 已不在 E:/Download）。
+- 验证：`compileJava` 通过；雨刷声（真实录音版）用户 2026-10-18 PASS："这个音效可以暂时不管"。湿路面和车内雨声用户听过试听文件（"还行"），没单独实机确认。
+
+## 8.18 轮胎粒子、收起按键提示、环绕镜头（2026-10-18，编译通过，未实机验证）
+
+用户 2026-10-18 为录开发日志提的三件事："轮胎滚动后抛的粒子……雨天抛水""GTA V 那种上帝视角……360 旋转，开车也是""开车按键提示可以按某个键淡出，比如 CAPS"。
+
+### 8.18.1 轮胎粒子（`client/vehicle/TruckSpray.java`）
+
+- 镜头 48 格内的每辆 T15，每个客户端 tick 按每个轮子算：胎面速度（轮子转速 × 半径 0.36 m）、对地打滑（胎面速度和车速沿车头方向的差，加上横向速度）。往胎面转动的反方向抛（轮子不转在滑时，往滑动的反方向），从轮子后方 0.32 格、离地 0.12 格处出来，带一点车速。
+- 地面按轮胎声的分类（`TruckSounds.surface`）：
+  - **土、砂石、沙、草、雪**：地面方块的碎屑粒子（原版 `block` 粒子，纹理就是那个方块），往后上方抛；干的时候加柔和的尘土（冰柜冷气那套 `ColdMistParticle`，染成地面地图颜色，草地用泥土色，雪是白色），草地上尘土只有 0.4 倍、碎屑 0.35 倍；下雨时不起尘，碎屑多 1.3 倍（泥）。
+  - **柏油等硬路面，湿的**（和湿路面轮胎声同一个缓变的"湿"值）：水珠和水雾，车越快越多，2 m/s 以下没有，20 m/s 时最多。用雨 V1 的水花画法（用户 2026-10-18："原版的粒子有点格格不入"）：水珠从轮胎后半圈沿胎面甩出、拉成细水丝、受重力和阻力、落回路面消失；水雾在车后散开。细节见 [雨 V1](../rendering/rain_v1.md) 第 2.4 节"车轮甩水"。开 Aureveil 时 AFL 不画，把每个轮子的甩水数据放进给光影包的车数据（同文档第 6 节 ③，texel 76–84），由 Aureveil 画（**A 还没做**）；别的光影包没有车轮甩水。
+  - **硬路面，干的**：只有打滑超过 4 m/s（急刹、甩尾、原地烧胎）才冒胎烟，12 m/s 时最多。
+- 数量（每个轮子每 tick，"粒子：全部"时）：碎屑 0.9、尘土 0.7、水珠 9、水雾 1.2、胎烟 1.2，乘上滚动程度（胎面速度 1–14 m/s 线性到满）加打滑程度（0–5 m/s 到满，最多 1.5）。"粒子：减少"乘 0.4，"最少"不出。
+- 只在客户端；别的玩家看到的车也一样（用同步来的车速和轮速）。
+
+### 8.18.2 收起驾驶按键提示
+
+- 新键 `key.apocalypse_firstlight.driving_hints`，默认 **Caps Lock**，只在驾驶座上生效：按一下右上角的提示面板淡出，再按淡入。
+- 选择存进客户端配置（`apocalypse_firstlight-client.toml` 的 `vehicle_hud.key_hints`），下次上车还是一样。
+- 面板显示时最后一行是"Caps Lock 收起提示"，新玩家能看到这个键。
+- Caps Lock 同时会切换系统的大写锁定，之后在聊天框打字可能是大写；可以在按键设置里改键。
+
+### 8.18.3 环绕镜头
+
+见 [环绕镜头 V1](../dev/orbit_camera_v1.md)：F5 改成第一人称 / 环绕两档；坐车时镜头跟在车后、追车头方向，鼠标绕车转，停 1.5 s 后车在走时慢慢回正，滚轮调 4–14 格。
+
+### 8.18.4 验证
+
+- `compileJava` 通过；wiki 检查通过。
+- **没进游戏看过**：粒子的数量和颜色、镜头的距离和回正速度都等用户实机反馈再调。
 
 ## 8.1 声音清单（P1，用户 2026-10-15 问）
 
@@ -1367,7 +1418,7 @@ C 已经计划的"每条路做一遍车轮接地回归"（C3 状态）就用这�
 | 16 | 喇叭 | 3 s | The horn of an old 1990s pickup truck, two short honks, recorded outside. No music. |
 | 17 | 转向灯继电器（2026-10-17 用户自己找了一条录音，已加进游戏，第 8.13 节；2026-10-16 加，第 8.12 节；剪成"嗒"（灯亮）和"哒"（灯灭）两段，跟着闪光器的相位放，录音本身的快慢不要紧） | 10 s | Inside the quiet cab of an old 1990s pickup truck, engine off: the turn signal is switched on and the flasher relay behind the dashboard ticks and tocks steadily, a dry mechanical click on each flash, slightly muffled by the dashboard, about ninety clicks per minute, then the stalk is pushed back and it stops. No music, no voices, no engine, no wind. |
 
-| 18 | 雨刷（2026-10-17 加，第 8.16 节；还没生成；剪成电机起动、一个来回的循环、停回原位、湿玻璃上刷片的摩擦声） | 20 s | Inside the cab of an old 1990s pickup truck parked in light rain, engine idling quietly in the background: the windshield wipers are switched on at low speed, the wiper motor whirs and the rubber blades swish across the wet glass with a soft thump at each end of the stroke, eight strokes back and forth, then they are switched off and park with a final thump. No music, no voices. |
+| 18 | 雨刷（2026-10-17 加，第 8.16 节；2026-10-18 改用只要刮条的提示词，同日最后改用用户找的真实录音，见第 8.17 节；剪成电机起动、一个来回的循环、停回原位、湿玻璃上刷片的摩擦声） | 20 s | Inside the cab of an old 1990s pickup truck parked in light rain, engine idling quietly in the background: the windshield wipers are switched on at low speed, the wiper motor whirs and the rubber blades swish across the wet glass with a soft thump at each end of the stroke, eight strokes back and forth, then they are switched off and park with a final thump. No music, no voices. |
 
 - 第 6、7、10、13、15 条里 " / " 分开的是几条单独的提示词，各生成一次。
 - 拿到录音以后：按 `tools/build-diesel-generator-sounds-v1.mjs` 那样写剪辑脚本（核对文件哈希、统一响度、检查循环接缝）。

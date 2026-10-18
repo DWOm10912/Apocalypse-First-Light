@@ -147,6 +147,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_OFF = simple("truck_signal_off");
     public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_TICK = simple("truck_signal_tick");
     public static final RegistryObject<SoundEvent> TRUCK_SIGNAL_TOCK = simple("truck_signal_tock");
+    public static final RegistryObject<SoundEvent> TRUCK_WIPER = simple("truck_wiper");
+    public static final RegistryObject<SoundEvent> TRUCK_WIPER_RETURN = simple("truck_wiper_return");
+    public static final RegistryObject<SoundEvent> TRUCK_TYRES_WET = simple("truck_tyres_wet");
+    public static final RegistryObject<SoundEvent> TRUCK_CAB_RAIN = simple("truck_cab_rain");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

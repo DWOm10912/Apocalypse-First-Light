@@ -69,7 +69,9 @@ public final class VehicleDriving {
      * transfer case's X and free while driving): a press steps it on, off - intermittent - low - high - off.
      */
     public static final KeyMapping WIPERS = new KeyMapping("key.apocalypse_firstlight.wipers", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, CATEGORY);
-    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD, WIPERS};
+    /** The key hints at the top right on / off (user 2026-10-18: Caps Lock, to film without them; remembered in the client config). */
+    public static final KeyMapping HINTS = new KeyMapping("key.apocalypse_firstlight.driving_hints", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_CAPS_LOCK, CATEGORY);
+    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD, WIPERS, HINTS};
     /** Ticks the light key is held before it counts as a hold (the high beam) instead of a tap. */
     private static final int HOLD_TICKS = 8;
     /** Ticks the light key has been held; -1 once this hold flipped the high beam (the release then does nothing). */
@@ -195,6 +197,7 @@ public final class VehicleDriving {
             if (pressed(SIGNAL_RIGHT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_RIGHT);
             if (pressed(HAZARD) && driving) lampSwitch(PickupTruckEntity.SWITCH_HAZARD);
             if (pressed(WIPERS) && driving) lampSwitch(PickupTruckEntity.SWITCH_WIPER);
+            if (pressed(HINTS) && driving) com.antaurora.apofirstlight.client.FirstPersonBodyConfig.toggleKeyHints();
             while (HORN.consumeClick()) {
             }
             boolean horn = driving && HORN.isDown();

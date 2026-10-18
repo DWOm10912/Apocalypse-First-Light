@@ -21,6 +21,8 @@ allprojects {
             property 'afl.rainperf.here', (project.findProperty('rainperfhere') ?: 'false')
             // -Prainperfhud=true (with here): survival; the HUD gauges steady / redrawn every frame / hidden
             property 'afl.rainperf.hud', (project.findProperty('rainperfhud') ?: 'false')
+            // -Prainperfdrive=true: midnight rain, the probe drives the nearest T15 (orbit camera, survival HUD), with the slow-frame tail
+            property 'afl.rainperf.drive', (project.findProperty('rainperfdrive') ?: 'false')
             // -Prainperfjfr=true: a JFR CPU profile of the whole run (build/rain-perf/afl_rain_perf.jfr; the report has each phase's wall ms)
             if (project.findProperty('rainperfjfr') == 'true')
                 jvmArgs '-XX:FlightRecorderOptions=stackdepth=256', '-XX:StartFlightRecording=filename=afl_rain_perf.jfr,settings=profile'

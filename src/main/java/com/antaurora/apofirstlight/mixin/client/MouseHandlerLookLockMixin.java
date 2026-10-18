@@ -11,7 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Camera director V1 (client/camera/CameraDirector Lock.LOOK, docs/dev/camera_director_v1_plan.md 2.7): while a shot locks
  * the look, the mouse movement gathered since the last frame is dropped before it turns the player, so the player's
- * rotation (and what the server sees) stays where it was, and nothing is stored up to jump in when the lock ends.
+ * rotation (and what the server sees) stays where it was, and nothing is stored up to jump in when the lock ends. The
+ * orbit camera (client/camera/OrbitCamera) takes the same movement to turn itself instead of the player.
  */
 @Mixin(MouseHandler.class)
 public abstract class MouseHandlerLookLockMixin {
@@ -20,7 +21,7 @@ public abstract class MouseHandlerLookLockMixin {
 
     @Inject(method = "turnPlayer", at = @At("HEAD"))
     private void afl$lookLock(CallbackInfo ci) {
-        if (CameraDirector.lookLocked()) {
+        if (CameraDirector.lookLocked() || com.antaurora.apofirstlight.client.camera.OrbitCamera.takeMouse(accumulatedDX, accumulatedDY)) {
             accumulatedDX = 0;
             accumulatedDY = 0;
         }

@@ -1,9 +1,10 @@
-// Rain V1 splash sheet (docs/rendering/rain_v1.md, 2026-10-17): textures/effect/rain_splash.png, 256 x 64, four 64 x 64
+// Rain V1 splash sheet (docs/rendering/rain_v1.md, 2026-10-17): textures/effect/rain_splash.png, 320 x 64, five 64 x 64
 // cells, white with straight alpha (tinted by the light when drawn, client/rain/RainSplashes):
 // - cell 0, 1: the crown of a drop hitting a hard surface, seen from the side (the base at the bottom middle): a low
 //   flat mist and a fan of thin sheets thrown up and out, a bead at each tip; two seeds.
 // - cell 2: a ripple ring on water seen from above (an outer ring and a fainter inner one).
-// - cell 3: a soft round droplet (the beads thrown off a splash).
+// - cell 3: a soft round droplet (the beads thrown off a splash; stretched along its motion: a tyre's thrown water).
+// - cell 4: a soft uneven puff of fine spray (2026-10-18: the mist a tyre throws off a wet road, client/vehicle/TruckSpray).
 //   node tools/build-rain-fx-v1.mjs [--check]
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ import {png} from './cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const A = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
-const C = 64, W = C * 4, H = C;
+const C = 64, W = C * 5, H = C;
 
 function rng(seed) { let s = seed >>> 0; return () => { s = Math.imul(s ^ (s >>> 15), 2246822519) + 0x9e3779b9 >>> 0; s ^= s >>> 13; return (s >>> 0) / 4294967296; }; }
 const alpha = new Float32Array(W * H);
@@ -83,6 +84,24 @@ field(3, (x, y) => {
   const d = Math.hypot(x - 32, y - 32);
   return d > 15 ? 0 : Math.exp(-(d * d) / (2 * 5.5 * 5.5));
 });
+
+// ---- spray mist: a few overlapping soft lobes, thinned by a smooth value noise, no hard edge anywhere
+{
+  const r = rng(0x5a17);
+  const lobes = Array.from({length: 7}, () => ({x: 32 + (r() - 0.5) * 18, y: 32 + (r() - 0.5) * 14, s: 7 + r() * 6, a: 0.35 + r() * 0.25}));
+  const G = 8, grid = Array.from({length: (G + 1) * (G + 1)}, () => r());
+  const noise = (x, y) => {
+    const gx = x / C * G, gy = y / C * G, i = Math.min(G - 1, Math.floor(gx)), j = Math.min(G - 1, Math.floor(gy));
+    const fx = gx - i, fy = gy - j, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), at = (a, b) => grid[b * (G + 1) + a];
+    return (at(i, j) * (1 - sx) + at(i + 1, j) * sx) * (1 - sy) + (at(i, j + 1) * (1 - sx) + at(i + 1, j + 1) * sx) * sy;
+  };
+  field(4, (x, y) => {
+    let a = 0;
+    for (const l of lobes) a = 1 - (1 - a) * (1 - l.a * Math.exp(-((x - l.x) ** 2 + (y - l.y) ** 2) / (2 * l.s * l.s)));
+    const edge = Math.max(0, 1 - Math.hypot(x - 32, y - 32) / 31);
+    return a * (0.55 + 0.45 * noise(x, y)) * Math.min(1, edge * 3);
+  });
+}
 
 const rgba = Buffer.alloc(W * H * 4);
 for (let i = 0; i < W * H; i++) {
