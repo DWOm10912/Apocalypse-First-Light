@@ -45,6 +45,11 @@ final class GuideSignParts {
 
         int vertices() { return n / RoadClient.STRIDE; }
 
+        void put0(float f) {
+            if (n + 1 > v.length) v = java.util.Arrays.copyOf(v, v.length * 2);
+            v[n++] = f;
+        }
+
         float[] array() { return java.util.Arrays.copyOf(v, n); }
     }
 
@@ -71,8 +76,10 @@ final class GuideSignParts {
         double[] pr = {r, r, tab ? 0 : r, full ? 0 : r};
         List<double[]> panel = outline(p[0], p[1], p[2], p[3], pr, tab && !full ? t[0] : Double.NaN);
         List<double[]> tabLine = tab ? outline(t[0], t[1], t[2], t[3], new double[]{0, 0, rt, rt}, Double.NaN) : null;
-        // the sign's extent for the uniform faces' UVs
-        double bx0 = p[0], by0 = Math.min(p[1], Math.min(l.feet()[0], l.feet()[1]) - GuideSigns.POST_SINK), bx1 = p[2], by1 = tab ? t[3] : p[3];
+        // the sign's extent for the uniform faces' UVs (a street name blade has one post)
+        double lowFoot = Double.POSITIVE_INFINITY;
+        for (double ft : l.feet()) lowFoot = Math.min(lowFoot, ft);
+        double bx0 = p[0], by0 = Math.min(p[1], lowFoot - GuideSigns.POST_SINK), bx1 = p[2], by1 = tab ? t[3] : p[3];
         double[] box = {bx0, by0, bx1, by1};
 
         Buf solid = new Buf();
@@ -80,22 +87,28 @@ final class GuideSignParts {
         fan(solid, sh, panel, 0, 1, green, box);
         if (tab) fan(solid, sh, tabLine, 0, 1, green, box);
         int front = solid.vertices();
-        fan(solid, sh, panel, -GuideSigns.PANEL, -1, back, box);
+        if (l.blade()) {
+            // a street name blade: its back the front turned half round (green, the legend readable from behind)
+            Buf face = new Buf();
+            fan(face, sh, panel, 0, 1, green, box);
+            turned(solid, face);
+        } else fan(solid, sh, panel, -GuideSigns.PANEL, -1, back, box);
         if (tab) fan(solid, sh, tabLine, -GuideSigns.PANEL, -1, back, box);
         edges(solid, sh, panel, tab ? t : null, back, box);
         if (tab) edges(solid, sh, tabLine, t, back, box);
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < l.posts().length; i++) {
             double x = l.posts()[i];
-            // the faces but the bottom (under the ground)
-            box(solid, sh, post, x - GuideSigns.POST / 2, l.feet()[i] - GuideSigns.POST_SINK, GuideSigns.POST_BACK,
-                    x + GuideSigns.POST / 2, p[3] - GuideSigns.POST_TOP, GuideSigns.POST_FRONT, 0b111111 & ~(1 << 2));
+            // the faces but the bottom (under the ground); a blade's upper post (a stub on the lower blade) all but its ends
+            box(solid, sh, post, x - GuideSigns.POST / 2, l.feet()[i] - (l.blade() && l.feet()[i] > 0.5 ? 0 : GuideSigns.POST_SINK), l.postBack(),
+                    x + GuideSigns.POST / 2, l.postTop(), l.postFront(), 0b111111 & ~(1 << 2) & ~(l.blade() ? 1 << 3 : 0));
         }
         // the stringers: no face against the panel's back
-        for (double y : GuideSigns.stringers(p))
-            box(solid, sh, post, p[0] + 0.1, y, GuideSigns.POST_FRONT, p[2] - 0.1, y + GuideSigns.STRINGER, -GuideSigns.PANEL, 0b111111 & ~(1 << 5));
+        if (!l.blade())
+            for (double y : GuideSigns.stringers(p))
+                box(solid, sh, post, p[0] + 0.1, y, GuideSigns.POST_FRONT, p[2] - 0.1, y + GuideSigns.STRINGER, -GuideSigns.PANEL, 0b111111 & ~(1 << 5));
 
         Buf over = new Buf();
-        double z = GuideSigns.FACE, in = GuideSigns.BORDER_INSET, bw = GuideSigns.BORDER;
+        double z = GuideSigns.FACE, in = l.blade() ? GuideSigns.BLADE_BORDER_INSET : GuideSigns.BORDER_INSET, bw = l.blade() ? GuideSigns.BLADE_BORDER : GuideSigns.BORDER;
         ring(over, sh, outline(p[0] + in, p[1] + in, p[2] - in, p[3] - in, inset(pr, in), Double.NaN),
                 outline(p[0] + in + bw, p[1] + in + bw, p[2] - in - bw, p[3] - in - bw, inset(pr, in + bw), Double.NaN), true, z, white, box);
         if (tab) {
@@ -118,12 +131,29 @@ final class GuideSignParts {
             }
             float u0 = sh.u(rect[0]), u1 = sh.u(rect[0] + rect[2]), v0 = sh.v(rect[1]), v1 = sh.v(rect[1] + rect[3]);
             // counter-clockwise from the front; the sheet's top (v0) at the piece's top
-            over.put(q.x0(), q.y0(), z, u0, v1, 0, 0, 1);
-            over.put(q.x1(), q.y0(), z, u1, v1, 0, 0, 1);
-            over.put(q.x1(), q.y1(), z, u1, v0, 0, 0, 1);
-            over.put(q.x0(), q.y1(), z, u0, v0, 0, 0, 1);
+            // over the border's plane (a cell's clear margin may lie on it)
+            double zl = z + GuideSigns.LEGEND_LIFT;
+            over.put(q.x0(), q.y0(), zl, u0, v1, 0, 0, 1);
+            over.put(q.x1(), q.y0(), zl, u1, v1, 0, 0, 1);
+            over.put(q.x1(), q.y1(), zl, u1, v0, 0, 0, 1);
+            over.put(q.x0(), q.y1(), zl, u0, v0, 0, 0, 1);
+        }
+        if (l.blade()) {
+            // the legend and its border on the back as well
+            Buf face = over;
+            over = new Buf();
+            for (int i = 0; i < face.n; i++) over.put0(face.v[i]);
+            turned(over, face);
         }
         return new Local(solid.array(), front, over.array(), new double[]{0, (p[1] + p[3]) / 2, 0.5});
+    }
+
+    /** The front's vertices turned half round the vertical axis onto the back (x -> -x, z -> -PANEL - z): winding kept. */
+    private static void turned(Buf out, Buf face) {
+        for (int i = 0; i + RoadClient.STRIDE <= face.n; i += RoadClient.STRIDE) {
+            float[] v = face.v;
+            out.put(-v[i], v[i + 1], -GuideSigns.PANEL - v[i + 2], v[i + 3], v[i + 4], -v[i + 5], v[i + 6], -v[i + 7]);
+        }
     }
 
     private static double[] inset(double[] radii, double d) {

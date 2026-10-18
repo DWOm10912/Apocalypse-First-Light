@@ -26,11 +26,18 @@ public final class RoadNetworkJson {
      * the road each end joins at a T junction ({start, end}, null: none; the end is the junction's end line, Junction);
      * corners (C3.3b): the JSON stations of the town corners merged at the town radius (curve warning signs); slopes and
      * attach (C3.3b group 2, a ramp's): its lane slope on the profile's lattice (RoadDesign), its attachment to the
-     * interstate in JSON stations (RoadDesign.Attach), else null.
+     * interstate in JSON stations (RoadDesign.Attach), else null; open (C3.3b group 3, RoadSystems): {start, end}, the
+     * ends that run on seamlessly as another road (RoadDesign#openStart), null: none.
      */
     public record RouteData(String id, String roadClass, String corridor, String from, String to, double[] xs, double[] zs,
                             double[] profile, List<Structure> structures, double[] trim, List<Culvert> culverts, List<double[]> wings,
-                            String[] hosts, double[] corners, double[] slopes, RoadDesign.Attach attach) {
+                            String[] hosts, double[] corners, double[] slopes, RoadDesign.Attach attach, boolean[] open) {
+        public RouteData(String id, String roadClass, String corridor, String from, String to, double[] xs, double[] zs,
+                         double[] profile, List<Structure> structures, double[] trim, List<Culvert> culverts, List<double[]> wings,
+                         String[] hosts, double[] corners, double[] slopes, RoadDesign.Attach attach) {
+            this(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, culverts, wings, hosts, corners, slopes, attach, null);
+        }
+
         public RouteData(String id, String roadClass, String corridor, String from, String to, double[] xs, double[] zs,
                          double[] profile, List<Structure> structures, double[] trim) {
             this(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, List.of(), List.of(), new String[2], new double[0]);
@@ -42,29 +49,48 @@ public final class RoadNetworkJson {
             this(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, culverts, wings, hosts, corners, null, null);
         }
 
+        /** The same road under another trim window; an open end stays open where the window keeps it (#piece). */
         public RouteData withTrim(double[] t) {
-            return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, t, culverts, wings, hosts, corners, slopes, attach);
+            return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, t, culverts, wings, hosts, corners, slopes, attach,
+                    keeps(t));
         }
 
         public RouteData withStructures(List<Culvert> c, List<double[]> w) {
             return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, List.copyOf(c), List.copyOf(w), hosts, corners,
-                    slopes, attach);
+                    slopes, attach, open);
         }
 
         public RouteData withHosts(String[] h) {
-            return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, culverts, wings, h.clone(), corners, slopes, attach);
+            return new RouteData(id, roadClass, corridor, from, to, xs, zs, profile, structures, trim, culverts, wings, h.clone(), corners, slopes, attach,
+                    open);
         }
 
         /** The same road with another profile (a junction landing, RoadJunctions), its lane slopes kept. */
         public RouteData withProfile(double[] e) {
-            return new RouteData(id, roadClass, corridor, from, to, xs, zs, e, structures, trim, culverts, wings, hosts, corners, slopes, attach);
+            return new RouteData(id, roadClass, corridor, from, to, xs, zs, e, structures, trim, culverts, wings, hosts, corners, slopes, attach, open);
         }
 
-        /** The same road under another id and trim window (a split piece), its junction hosts cleared. */
+        /**
+         * The same road under another id and trim window (a split piece), its junction hosts cleared; an open end stays open
+         * where the piece keeps it.
+         */
         public RouteData piece(String pid, double[] t) {
             return new RouteData(pid, roadClass, corridor, from, to, xs, zs, profile, structures, t, culverts, wings, new String[2], corners, slopes,
-                    attach);
+                    attach, keeps(t));
         }
+
+        /**
+         * The open ends a trim window t keeps: those it does not move (the untrimmed end: the profile's last sample, which
+         * may lie up to one DS beyond the curve's end).
+         */
+        private boolean[] keeps(double[] t) {
+            if (open == null) return null;
+            double a = trim == null ? 0 : trim[0], b = trim == null ? (profile.length - 1) * RoadProfile.DS : trim[1];
+            return new boolean[]{open[0] && t[0] <= a + 1e-6, open[1] && t[1] >= b - RoadProfile.DS - 1e-6};
+        }
+
+        /** Whether the start (end false) or the end runs on as another road (C3.3b group 3). */
+        public boolean openAt(boolean end) { return open != null && open[end ? 1 : 0]; }
 
         /** The box culvert built for the CULVERT structure s0 .. s1 (JSON stations), or null. */
         public Culvert culvert(double s0, double s1) {
@@ -148,8 +174,10 @@ public final class RoadNetworkJson {
             if (r.get("attach") instanceof Map<?, ?> m)
                 attach = new RoadDesign.Attach((String) m.get("host"), (int) Math.round((Double) m.get("side")), (Boolean) m.get("end"),
                         (Double) m.get("paint"), (Double) m.get("nose"));
+            boolean[] open = null;
+            if (r.get("open") instanceof List<?> l) open = new boolean[]{(Boolean) l.get(0), (Boolean) l.get(1)};
             out.add(new RouteData((String) r.get("id"), (String) r.get("class"), corridor, from, to, xs, zs, e, List.copyOf(ss), trim,
-                    List.copyOf(cs), List.copyOf(ws), hosts, corners, slopes, attach));
+                    List.copyOf(cs), List.copyOf(ws), hosts, corners, slopes, attach, open));
         }
         return out;
     }
@@ -204,7 +232,9 @@ public final class RoadNetworkJson {
         if (r.trim() != null) { a = r.trim()[0]; b = r.trim()[1]; }
         RoadCurve curve = new RoadCurve(r.xs(), r.zs(), a, b);
         double[] e = r.profile();
-        int i0 = (int) Math.round(a / RoadProfile.DS), i1 = Math.min(e.length - 1, (int) Math.round(Math.min(b, (e.length - 1) * RoadProfile.DS) / RoadProfile.DS));
+        // the window's end off the lattice (an open end, C3.3b group 3) keeps its whole length: the profile runs on to the
+        // next lattice station (the design's length is the curve's)
+        int i0 = (int) Math.round(a / RoadProfile.DS), i1 = Math.min(e.length - 1, (int) Math.ceil(Math.min(b, (e.length - 1) * RoadProfile.DS) / RoadProfile.DS - 1e-6));
         if (Math.abs(i0 * RoadProfile.DS - a) > 1e-6) throw new IllegalArgumentException("trim off the 2 m lattice on " + r.id());
         RoadProfile profile = RoadProfile.of(java.util.Arrays.copyOfRange(e, i0, i1 + 1));
         double deck = deckDepth(r.roadClass());
@@ -254,10 +284,14 @@ public final class RoadNetworkJson {
         double off = a;
         double[] corners = java.util.Arrays.stream(r.corners()).map(c -> c - off).filter(c -> c >= 0 && c <= profile.length).toArray();
         double[] slopes = r.slopes() == null ? null : java.util.Arrays.copyOfRange(r.slopes(), i0, i1 + 1);
+        // within the design (a direct ramp's merge paints at its very end, C3.3b group 3, and the window's attached end is on the lattice)
+        double len = profile.length;
         RoadDesign.Attach at = r.attach() == null ? null
-                : new RoadDesign.Attach(r.attach().host(), r.attach().side(), r.attach().atEnd(), r.attach().paint() - a, r.attach().nose() - a);
+                : new RoadDesign.Attach(r.attach().host(), r.attach().side(), r.attach().atEnd(), Math.max(0, Math.min(len, r.attach().paint() - a)),
+                Math.max(0, Math.min(len, r.attach().nose() - a)));
+        // open ends (C3.3b group 3): a trim that moves an end closes it (RouteData#withTrim, #piece)
         return new RoadDesign(r.id(), CrossSection.of(r.roadClass()), curve, profile, spans, r.culverts(), tunnels, r.hosts()[0], r.hosts()[1], corners,
-                slopes, at, r.from(), r.to());
+                slopes, at, r.from(), r.to(), r.openAt(false), r.openAt(true));
     }
 
     /** Spans closer than this (or overlapping: a culvert's pad over a bridge's end) become one span, m. */
@@ -341,6 +375,7 @@ public final class RoadNetworkJson {
                 b.append(",\"attach\":{\"host\":\"").append(t.host()).append("\",\"side\":").append(t.side()).append(",\"end\":").append(t.atEnd())
                         .append(",\"paint\":").append(fmt(t.paint())).append(",\"nose\":").append(fmt(t.nose())).append('}');
             }
+            if (r.openAt(false) || r.openAt(true)) b.append(",\"open\":[").append(r.openAt(false)).append(',').append(r.openAt(true)).append(']');
             b.append('}');
         }
         return b.append("]}").toString();
@@ -360,6 +395,9 @@ public final class RoadNetworkJson {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> asMap(Object o) { return (Map<String, Object>) o; }
+
+    /** Any JSON value of this format's reader (Map, List, String, Double, Boolean or null): other sections (TownPlan). */
+    public static Object parse(String json) { return new Reader(json).value(); }
 
     /** Minimal JSON reader: objects (insertion order), arrays, strings, numbers (as Double), true / false / null. */
     static final class Reader {

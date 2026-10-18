@@ -1,0 +1,65 @@
+{
+ "source": "r1 offline plan c3_v2 (routes ending at each town)",
+ "towns": {
+  "desert_town": [
+   "F-40",
+   "RT 81"
+  ],
+  "county_seat": [
+   "F-40",
+   "RT 61"
+  ],
+  "valley_town": [
+   "F-40",
+   "F-65",
+   "RT 31"
+  ],
+  "river_city": [
+   "F-40",
+   "RT 80"
+  ],
+  "industrial_city": [
+   "F-65",
+   "RT 10"
+  ],
+  "port_city": [
+   "F-65",
+   "RT 80"
+  ],
+  "mining_town": [
+   "RT 30"
+  ],
+  "pass_village": [
+   "RT 30",
+   "RT 81"
+  ],
+  "farm_town_north": [
+   "RT 30",
+   "RT 61"
+  ],
+  "canyon_outpost": [
+   "RT 81"
+  ],
+  "mill_town": [
+   "RT 10",
+   "RT 61"
+  ],
+  "port_town": [
+   "RT 10",
+   "RT 31"
+  ],
+  "farm_town_south": [
+   "RT 61",
+   "RT 80"
+  ],
+  "bayou_village": [
+   "RT 80"
+  ],
+  "shore_town": [
+   "RT 80"
+  ],
+  "hill_village": [
+   "RT 31"
+  ]
+ }
+}

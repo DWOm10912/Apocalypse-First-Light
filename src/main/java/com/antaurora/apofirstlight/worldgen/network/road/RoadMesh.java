@@ -107,7 +107,8 @@ public final class RoadMesh {
         }
         List<Triangle> out = new ArrayList<>();
         if (lo > hi) return out;
-        boolean start = lo <= 6, end = hi >= d.length - 6;
+        // an open end (C3.3b group 3) runs on as another road: no end bevel
+        boolean start = lo <= 6 && !d.openStart, end = hi >= d.length - 6 && !d.openEnd;
         for (Junction j : junctions)
             if (j.minor == d) {
                 if (j.atEnd) end = false;

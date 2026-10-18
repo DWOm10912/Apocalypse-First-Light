@@ -285,6 +285,18 @@ public final class TunnelFixtureGameTests {
         String level0 = "adv|4|R61|S|Redfield|1|0.00,0.00";
         h.assertTrue(guideStack.getTag() != null && level0.equals(guideStack.getTag().getString("Bone")), "a guide sign's item stands level, was " + guideStack.getTag());
         h.assertTrue("EXIT 4 | RT 61 SOUTH | Redfield | 1 MILE".equals(GuideSigns.describe(sloped)), "the legend reads " + GuideSigns.describe(sloped));
+        // C3.3b group 3: a split sign carries two routes (one row each), its up-left arrow against the panel's left margin
+        String split = "split||F40+F65|E+S|Bellhaven|ul|0,0";
+        h.assertTrue("F-40 EAST | F-65 SOUTH | Bellhaven".equals(GuideSigns.describe(split)), "the split sign reads " + GuideSigns.describe(split));
+        GuideSigns.Layout sl = GuideSigns.layout(split);
+        GuideSigns.Piece splitArrow = null;
+        int shields = 0;
+        for (GuideSigns.Piece q : sl.pieces()) {
+            if ("arrow_ul".equals(q.tile())) splitArrow = q;
+            if ("F40".equals(q.tile()) || "F65".equals(q.tile())) shields++;
+        }
+        h.assertTrue(shields == 2, "the split sign shows both shields, was " + shields);
+        h.assertTrue(splitArrow != null && Math.abs(splitArrow.x0() - sl.panel()[0] - GuideSigns.MARGIN_X) < 1e-6, "the split sign's arrow on its left margin");
         Vec3 gStand = h.absoluteVec(new Vec3(12.5, 2, 1.0));
         player.moveTo(gStand.x, gStand.y, gStand.z, 0.0F, 0.0F);
         h.assertTrue(place(h, player, guideStack, new Vec3(12.5, 2, 5.5), Direction.UP) == InteractionResult.CONSUME, "guide sign placed");

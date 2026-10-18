@@ -490,6 +490,7 @@ tasks.register('interchangeCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.InterchangeCheck'
     if (project.hasProperty('debugInterchanges')) systemProperty 'afl.debugInterchanges', 'true'
     if (project.hasProperty('noInterchanges')) systemProperty 'afl.noInterchanges', 'true'
+    if (project.hasProperty('debugLine')) systemProperty 'afl.debugLine', project.property('debugLine').toString()
     if (project.hasProperty('roadNetwork')) args project.property('roadNetwork').toString().split(';')
 }
 
@@ -509,4 +510,65 @@ tasks.register('guideSignRender', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.client.road.GuideSignRender'
     args(['src/main/resources/assets/apocalypse_firstlight/textures/block/road/guide_sign.png', (project.findProperty('out') ?: 'build/guide_signs.png').toString()]
             + (project.findProperty('bones') ?: 'adv|4|R61|S|Redfield|1|0,0;dir|1|R80||Redfield/Pelican Point|ur|0,0;gore|8||||ur|0,0;ent||F65|N|Kessler|ul|0,0').toString().split(';').toList())
+}
+
+// C3.3b group 3 survey: interstate corners at cities and interstate joins (docs/worldgen/federal_systems_c3_3b.md); -ProadNetwork=<file;file>
+tasks.register('systemSurvey', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.SystemSurvey'
+    args((project.findProperty('roadNetwork') ?: 'build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json').toString().split(';'))
+}
+
+// C3.3b group 3: the system interchanges built from the offline plans (docs/worldgen/federal_systems_c3_3b.md); -ProadNetwork=<file;file>
+// (default: the newest plan per seed in build/federal-systems/plans), -PdebugSystems=1, -PnoSystems=1
+tasks.register('systemCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.SystemCheck'
+    maxHeapSize = '4g'
+    if (project.findProperty('debugSystems')) systemProperty 'afl.debugSystems', 'true'
+    if (project.findProperty('noSystems')) systemProperty 'afl.noSystems', 'true'
+    if (project.findProperty('systemsPng')) systemProperty 'afl.systemsPng', project.property('systemsPng').toString()
+    if (project.findProperty('systemsAt')) systemProperty 'afl.systemsAt', project.property('systemsAt').toString()
+    if (project.findProperty('systemsEdge')) systemProperty 'afl.systemsEdge', project.property('systemsEdge').toString()
+    if (project.findProperty('roadNetwork')) args project.property('roadNetwork').toString().split(';')
+}
+
+// C3.3b group 3 offline planning: the network planned again from cached C2 terrain plans, written to build/federal-systems/plans
+// (docs/worldgen/federal_systems_c3_3b.md 5); -PterrainPlans=<bin;bin> (default: the six survey seeds, other checkouts read only)
+tasks.register('townCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.TownCheck'
+    maxHeapSize = '6g'
+    if (project.findProperty('townPng')) systemProperty 'afl.townPng', project.property('townPng').toString()
+    if (project.findProperty('debugInterchanges')) systemProperty 'afl.debugInterchanges', 'true'
+    if (project.findProperty('debugTowns')) systemProperty 'afl.debugTowns', 'true'
+    if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
+    if (project.findProperty('townJfr')) jvmArgs('-XX:StartFlightRecording=filename=' + project.property('townJfr').toString() + ',settings=profile')
+}
+
+tasks.register('townProbe', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.TownProbe'
+    maxHeapSize = '6g'
+    if (project.findProperty('probeArgs')) args(project.findProperty('probeArgs').toString().split(';'))
+}
+
+tasks.register('townSurvey', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.TownSurvey'
+    maxHeapSize = '6g'
+    if (project.findProperty('townArgs')) args(project.findProperty('townArgs').toString().split(' '))
+}
+
+tasks.register('systemPlans', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.SystemPlans'
+    maxHeapSize = '6g'
+    if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
 }

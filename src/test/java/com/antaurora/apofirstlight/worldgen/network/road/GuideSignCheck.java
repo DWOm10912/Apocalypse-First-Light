@@ -13,8 +13,10 @@ import java.util.stream.Stream;
  * Offline check of the interchange guide signs (C3.3b group 2 package B; docs/worldgen/federal_interchanges_c3_3b.md
  * 10, 11) over built networks: every guide sign RoadSigns places (RoadGuides; on the designs, no ground), its legend,
  * place and facing; per interchange its exit number and how many of each sign stood (the advance and the direction sign
- * and the gore sign per exit ramp, two entrance guides per entrance ramp), the missing ones reported; each sign's panel
- * over the higher foot by its height (GuideSigns.BOTTOM, BOTTOM_LOW), its posts off every paved band, its cells inside its
+ * and the gore sign per exit ramp off an interstate, two entrance guides per entrance ramp of a diamond, two split signs
+ * per system interchange, C3.3b group 3), the missing ones reported; each sign's panel
+ * over the higher foot by its height (GuideSigns.BOTTOM, BOTTOM_LOW), its posts off every paved band (a median's turf is
+ * clear), its cells inside its
  * panel; its cells off every other road sign's (guide, junction, terminal); and the feet as the game finds them (RoadGuides#foot: the turf as
  * drawn, else the density's surface) over a stand-in natural ground 6 m over the roads (cut) and 6 m under them (fill):
  * each on the ground the world draws at its post (FOOT_TOL), the direction and gore signs still all standing; how far
@@ -39,7 +41,7 @@ public final class GuideSignCheck {
                 Path d = Path.of(dir);
                 if (!Files.isDirectory(d)) continue;
                 try (Stream<Path> list = Files.list(d)) {
-                    list.filter(p -> p.getFileName().toString().matches("afl_road_network_c3_v1_.*\\.json")).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
+                    list.filter(p -> p.getFileName().toString().matches(RoadSurfaceCheck.PATTERN)).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
                 }
             }
             files.addAll(found.values());
@@ -64,14 +66,20 @@ public final class GuideSignCheck {
         List<TunnelMesh.Placement> all = RoadSigns.all(works, null), signs = new ArrayList<>();
         for (TunnelMesh.Placement p : all) if ("guide_sign".equals(p.mesh())) signs.add(p);
         List<String> fails = new ArrayList<>();
-        // the interchanges: their exit and entrance ramps
+        // the interchanges: their exit ramps off an interstate, a diamond's entrance ramps; the system interchanges
         Map<String, int[]> ramps = new TreeMap<>();
         for (RoadDesign d : roads) {
             if (d.attach == null) continue;
-            int[] n = ramps.computeIfAbsent(d.id.substring(0, d.id.lastIndexOf(':')), k -> new int[2]);
-            n[d.attach.atEnd() ? 1 : 0]++;
+            String key = d.id.substring(0, d.id.lastIndexOf(':'));
+            int[] n = ramps.computeIfAbsent(key, k -> new int[2]);
+            RoadDesign host = works.attachedHost(d);
+            if (!d.attach.atEnd() && host != null && host.section.divided) n[0]++;
+            if (d.attach.atEnd() && !key.startsWith("system:")) n[1]++;
         }
+        int systems = 0;
+        for (String k : ramps.keySet()) if (k.startsWith("system:")) systems++;
         Map<String, int[]> types = new TreeMap<>();
+        java.util.Set<String> overlapSeen = new java.util.HashSet<>();
         for (TunnelMesh.Placement p : signs) {
             GuideSigns.Spec s = GuideSigns.Spec.parse(p.bone());
             GuideSigns.Layout l = GuideSigns.layout(s);
@@ -91,6 +99,9 @@ public final class GuideSignCheck {
                 if (q.x0() < r[0] + m - 1e-9 || q.x1() > r[2] - m + 1e-9 || q.y0() < r[1] + m - 1e-9 || q.y1() > r[3] - m + 1e-9)
                     fails.add("piece '" + q.ch() + (q.tile() == null ? "" : q.tile()) + "' over the border of " + p.bone());
             }
+            // the client's mesh: no faces drawn over each other (SignOverlap, 2026-10-17)
+            if (overlapSeen.add(p.bone()))
+                for (String finding : com.antaurora.apofirstlight.client.road.SignOverlap.check(p.bone())) fails.add("faces overlap in " + p.bone() + ": " + finding);
             // the posts off every paved band
             double exx = p.ex()[0], exz = p.ex()[2];
             for (double px : l.posts()) {
@@ -99,7 +110,8 @@ public final class GuideSignCheck {
                 if (near != null)
                     for (RoadDesign q : near) {
                         double[] lq = q.local(x, z, q.section.edge + 3);
-                        if (lq != null && lq[0] >= 0 && lq[0] <= q.length && Math.abs(lq[1]) < q.section.edge + 0.5)
+                        if (lq != null && lq[0] >= 0 && lq[0] <= q.length && Math.abs(lq[1]) < q.section.edge + 0.5
+                                && !(q.section.divided && Math.abs(lq[1]) <= q.section.halfMedian - 0.5))
                             fails.add(String.format(Locale.ROOT, "post on %s at %.1f %.1f", q.id, x, z));
                     }
                 if (works.pad(x, z) != null) fails.add(String.format(Locale.ROOT, "post on a pad at %.1f %.1f", x, z));
@@ -118,12 +130,13 @@ public final class GuideSignCheck {
         int exits = 0, entries = 0;
         for (int[] n : ramps.values()) { exits += n[0]; entries += n[1]; }
         int adv = types.getOrDefault("adv", new int[1])[0], dir = types.getOrDefault("dir", new int[1])[0], gore = types.getOrDefault("gore", new int[1])[0],
-                ent = types.getOrDefault("ent", new int[1])[0];
-        System.out.printf(Locale.ROOT, "  %d interchanges, %d exit ramps, %d entrance ramps: advance %d, direction %d, gore %d, entrance %d (of %d)%n",
-                ramps.size(), exits, entries, adv, dir, gore, ent, 2 * entries);
+                ent = types.getOrDefault("ent", new int[1])[0], split = types.getOrDefault("split", new int[1])[0];
+        System.out.printf(Locale.ROOT, "  %d interchanges (%d system), %d exit ramps, %d entrance ramps: advance %d, direction %d, gore %d, entrance %d (of %d), split %d (of %d)%n",
+                ramps.size(), systems, exits, entries, adv, dir, gore, ent, 2 * entries, split, 2 * systems);
         if (dir < exits) fails.add((exits - dir) + " exit direction signs missing");
         if (gore < exits) fails.add((exits - gore) + " gore signs missing");
-        for (double off : new double[]{GROUND_OFF, -GROUND_OFF}) feet(works, off, exits, fails);
+        if (split < 2 * systems) fails.add((2 * systems - split) + " split signs missing");
+        for (double off : new double[]{GROUND_OFF, -GROUND_OFF}) feet(works, off, exits, systems, fails);
         if (!fails.isEmpty()) System.out.println("  FAIL: " + String.join("; ", fails.subList(0, Math.min(20, fails.size()))) + (fails.size() > 20 ? " ..." : ""));
         return fails.isEmpty();
     }
@@ -132,7 +145,7 @@ public final class GuideSignCheck {
      * The guide signs RoadSigns places over the stand-in ground off m over the roads: their feet against the ground drawn at
      * their posts (the turf, else the density's surface) and that against the works' exact surface, and how many of each stood.
      */
-    private static void feet(RoadWorks works, double off, int exits, List<String> fails) {
+    private static void feet(RoadWorks works, double off, int exits, int systems, List<String> fails) {
         RoadWorks.Ground ground = standIn(works, off);
         String c = off > 0 ? "cut" : "fill";
         double worst = 0, over = 0, under = 0;
@@ -156,10 +169,11 @@ public final class GuideSignCheck {
                 if (!Double.isNaN(exact)) { over = Math.max(over, drawn - exact); under = Math.max(under, exact - drawn); }
             }
         }
-        int dir = types.getOrDefault("dir", new int[1])[0], gore = types.getOrDefault("gore", new int[1])[0];
-        System.out.printf(Locale.ROOT, "  on ground in %s: advance %d, direction %d, gore %d, entrance %d; feet off the drawn ground %.4f "
+        int dir = types.getOrDefault("dir", new int[1])[0], gore = types.getOrDefault("gore", new int[1])[0], split = types.getOrDefault("split", new int[1])[0];
+        System.out.printf(Locale.ROOT, "  on ground in %s: advance %d, direction %d, gore %d, entrance %d, split %d; feet off the drawn ground %.4f "
                         + "(the drawn ground over the exact surface up to %.3f, under it up to %.3f)%n",
-                c, types.getOrDefault("adv", new int[1])[0], dir, gore, types.getOrDefault("ent", new int[1])[0], worst, over, under);
+                c, types.getOrDefault("adv", new int[1])[0], dir, gore, types.getOrDefault("ent", new int[1])[0], split, worst, over, under);
+        if (split < 2 * systems) fails.add("in " + c + " " + (2 * systems - split) + " split signs missing");
         if (worst > FOOT_TOL) fails.add(String.format(Locale.ROOT, "in %s a foot %.3f off the drawn ground, %s", c, worst, worstAt));
         if (dir < exits) fails.add("in " + c + " " + (exits - dir) + " exit direction signs missing");
         if (gore < exits) fails.add("in " + c + " " + (exits - gore) + " gore signs missing");

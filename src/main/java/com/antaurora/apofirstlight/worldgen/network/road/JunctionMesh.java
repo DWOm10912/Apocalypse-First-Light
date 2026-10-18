@@ -35,6 +35,8 @@ public final class JunctionMesh {
         for (RoadDesign d : roads) out.addAll(RoadMesh.chunk(d, cx, cz, works.junctionsOf(d), works.marksOf(d)));
         Junction[] pads = works.padsNear(cx * 16 + 8, cz * 16 + 8);
         if (pads != null) for (Junction j : pads) out.addAll(chunk(j, cx, cz));
+        // the framework towns' streets (Town Framework V1)
+        out.addAll(TownMesh.chunk(works.towns(), cx, cz));
         return out;
     }
 

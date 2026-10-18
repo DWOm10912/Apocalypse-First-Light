@@ -14,9 +14,18 @@ import java.util.Locale;
  *   <li>dir: the exit direction sign at the taper (extra the arrow, ur or ul), with the EXIT tab;</li>
  *   <li>gore: EXIT and its number over the arrow, in the gore past the physical nose;</li>
  *   <li>ent: the entrance guide on the crossroad before an entrance ramp (the interstate's shield, its direction and
- *   control city, the arrow of the turn).</li>
+ *   control city, the arrow of the turn);</li>
+ *   <li>split (C3.3b group 3): at the end of an interstate that splits into a system interchange's two left-turn and
+ *   direct ramps, one per lane: the routes that lane leads onto (the interstate's shield and direction, and the ending
+ *   interstate's where it runs on along it), the control city, the arrow over the lane (ul on the left, ur on the
+ *   right), the arrow at that side.</li>
+ *   <li>street (Town Framework V1): a street name blade (D3-1) at a town intersection, the name in dests, white on green
+ *   on both faces, on one post at its middle; extra top: the upper blade of the pair (the cross street's, turned a
+ *   quarter), on the lower one, its post a stub from the lower blade's top;</li>
+ *   <li>limit (Town Framework V1): the town's limit sign on its exit crossroad, the town's name over CITY LIMIT.</li>
  * </ul>
- * shield: a GuideSignAtlas tile (F40, R61; empty: none), cardinal N, S, E, W or empty, the destinations the towns'
+ * shield: a GuideSignAtlas tile (F40, R61; empty: none), several joined by + (one row each, their cardinals joined by +
+ * in the same order: F40+F65 with E+S), cardinal N, S, E, W or empty, the destinations the towns'
  * English names (RoadNames), the feet the posts' foot heights (the left one's, the right one's, as the traffic sees
  * them) over the part's origin. The panel is as wide as its longest line needs; every line is a row of the sheet's
  * character cells (as wide as their advances, as high as a line) laid edge to edge, so no cell ever covers another or
@@ -27,7 +36,7 @@ public final class GuideSigns {
     private GuideSigns() {}
 
     public enum Type {
-        ADVANCE("adv"), DIRECTION("dir"), GORE("gore"), ENTRANCE("ent");
+        ADVANCE("adv"), DIRECTION("dir"), GORE("gore"), ENTRANCE("ent"), SPLIT("split"), STREET("street"), LIMIT("limit");
 
         public final String key;
 
@@ -53,10 +62,27 @@ public final class GuideSigns {
     public static final double PANEL = 0.03, POST = 0.12, POST_FRONT = -0.07, POST_BACK = -0.19;
     /** The legend printed over the face (the client's overlay; its cells cover the panel's green with their own), m. */
     public static final double FACE = 0.004;
+    /**
+     * The letters and tiles over the border (2026-10-17: a cell's clear margin lying on the border in the same plane
+     * z-fought, hatched legends on the street name blades), m.
+     */
+    public static final double LEGEND_LIFT = 0.001;
     /** The tab's corner radius; how far under the panel's top the posts end and how deep they go under their feet, m. */
     public static final double TAB_RADIUS = 0.1, POST_TOP = 0.05, POST_SINK = 0.3;
     /** The two stringers behind the panel (between it and the posts): height, over the panel's bottom, under its top, m. */
     public static final double STRINGER = 0.08, STRINGER_LOW = 0.2, STRINGER_HIGH = 0.25;
+    /**
+     * Street name blades (Town Framework V1): the name's cap height, the blade's height and its least width, the margin
+     * beside the name; the lower blade's bottom over its foot (7.5 ft), the gap between the two blades, m.
+     */
+    public static final double BLADE_CAP = 0.2, BLADE_H = 0.32, BLADE_MIN = 0.9, BLADE_MARGIN = 0.15, BLADE_BOTTOM = 2.3, BLADE_GAP = 0.04;
+    /**
+     * A blade's border: its inset and width (2026-10-17: the guide signs' 0.035 + 0.05 left 0.15 m inside, the 0.2 m
+     * letters ran over the border), m.
+     */
+    public static final double BLADE_BORDER_INSET = 0.012, BLADE_BORDER = 0.016;
+    /** The limit sign's least width, m. */
+    public static final double LIMIT_MIN = 1.6;
     /** A legend without a bone (an item from the creative tab). */
     public static final String DEFAULT = "ent||F40|E|Bellhaven|ur|0,0";
 
@@ -94,8 +120,21 @@ public final class GuideSigns {
     /** One piece of the legend on the face: a character's cell (tile null) or a tile, its rect, m. */
     public record Piece(char ch, String tile, double x0, double y0, double x1, double y1) {}
 
-    /** A laid out sign: its panel and tab {x0, y0, x1, y1} (tab null: none), the posts' x and feet, the legend. */
-    public record Layout(double[] panel, double[] tab, double[] posts, double[] feet, List<Piece> pieces) {}
+    /**
+     * A laid out sign: its panel and tab {x0, y0, x1, y1} (tab null: none), the posts' x and feet, the legend; blade: a
+     * street name blade (the legend on both faces, one post under the panel's middle, no stringers).
+     */
+    public record Layout(double[] panel, double[] tab, double[] posts, double[] feet, List<Piece> pieces, boolean blade) {
+        public Layout(double[] panel, double[] tab, double[] posts, double[] feet, List<Piece> pieces) { this(panel, tab, posts, feet, pieces, false); }
+
+        /** A post's top: under a blade its panel's bottom, else POST_TOP under the panel's top. */
+        public double postTop() { return blade ? panel[1] : panel[3] - POST_TOP; }
+
+        /** A post's back and front (z): a blade's centred on its panel, else behind the panel. */
+        public double postBack() { return blade ? -PANEL / 2 - POST / 2 : POST_BACK; }
+
+        public double postFront() { return blade ? -PANEL / 2 + POST / 2 : POST_FRONT; }
+    }
 
     /** A row's run: text at a cap height, or a tile of a size. */
     private record Run(String text, double cap, String tile, double w, double h) {
@@ -104,7 +143,10 @@ public final class GuideSigns {
         static Run tile(String name, double w, double h) { return new Run(null, 0, name, w, h); }
     }
 
-    private record Row(List<Run> runs, boolean right) {
+    /** A row of runs: centred, or against the panel's right (right) or left (left) margin. */
+    private record Row(List<Run> runs, boolean right, boolean left) {
+        Row(List<Run> runs, boolean right) { this(runs, right, false); }
+
         double width() {
             double w = 0;
             for (Run r : runs) w += r.w;
@@ -145,33 +187,39 @@ public final class GuideSigns {
 
     private static String arrow(String extra) { return "ul".equals(extra) ? "arrow_ul" : "arrow_ur"; }
 
-    /** The shield's tile and the direction word as one row's runs (none where both are empty). */
-    private static List<Run> routeRuns(Spec s) {
-        List<Run> runs = new ArrayList<>();
-        int t = GuideSignAtlas.tile(s.shield);
-        if (t >= 0) {
-            double[] size = GuideSignAtlas.tileSize(t);
-            runs.add(Run.tile(s.shield, size[0], size[1]));
-        } else if (!s.shield.isEmpty()) {
-            // a route without a drawn shield: its number as text
-            RoadNames.Route r = RoadNames.Route.of(s.shield);
-            if (r != null) runs.add(Run.text(r.label(), CAP));
+    /** Each route's shield tile and direction word as one row's runs (shield and cardinal split on +; none where both are empty). */
+    private static List<List<Run>> routeRows(Spec s) {
+        String[] shields = s.shield.split("\\+", -1), cards = s.cardinal.split("\\+", -1);
+        List<List<Run>> rows = new ArrayList<>();
+        for (int i = 0; i < Math.max(shields.length, cards.length); i++) {
+            String shield = i < shields.length ? shields[i] : "", card = i < cards.length ? cards[i] : "";
+            List<Run> runs = new ArrayList<>();
+            int t = GuideSignAtlas.tile(shield);
+            if (t >= 0) {
+                double[] size = GuideSignAtlas.tileSize(t);
+                runs.add(Run.tile(shield, size[0], size[1]));
+            } else if (!shield.isEmpty()) {
+                // a route without a drawn shield: its number as text
+                RoadNames.Route r = RoadNames.Route.of(shield);
+                if (r != null) runs.add(Run.text(r.label(), CAP));
+            }
+            String word = cardinal(card);
+            if (!word.isEmpty()) runs.add(Run.text(word, CAP));
+            if (!runs.isEmpty()) rows.add(runs);
         }
-        String word = cardinal(s.cardinal);
-        if (!word.isEmpty()) runs.add(Run.text(word, CAP));
-        return runs;
+        return rows;
     }
 
     public static Layout layout(String bone) { return layout(Spec.parse(bone)); }
 
     public static Layout layout(Spec s) {
+        if (s.type == Type.STREET) return blade(s);
         List<Row> rows = new ArrayList<>();
         String tab = null;
         switch (s.type) {
             case ADVANCE, DIRECTION -> {
                 if (!s.exit.isEmpty()) tab = "EXIT " + s.exit;
-                List<Run> route = routeRuns(s);
-                if (!route.isEmpty()) rows.add(new Row(route, false));
+                for (List<Run> route : routeRows(s)) rows.add(new Row(route, false));
                 for (String d : s.dests) rows.add(new Row(List.of(Run.text(d, CAP)), false));
                 rows.add(s.type == Type.ADVANCE ? new Row(List.of(Run.text(distance(s.extra), CAP_SMALL)), true)
                         : new Row(List.of(Run.tile(arrow(s.extra), ARROW, ARROW)), true));
@@ -181,11 +229,21 @@ public final class GuideSigns {
                 rows.add(new Row(List.of(Run.tile(arrow(s.extra), ARROW, ARROW)), false));
             }
             case ENTRANCE -> {
-                List<Run> route = routeRuns(s);
-                if (!route.isEmpty()) rows.add(new Row(route, false));
+                for (List<Run> route : routeRows(s)) rows.add(new Row(route, false));
                 for (String d : s.dests) rows.add(new Row(List.of(Run.text(d, CAP)), false));
                 rows.add(new Row(List.of(Run.tile(arrow(s.extra), ARROW, ARROW)), false));
             }
+            case SPLIT -> {
+                for (List<Run> route : routeRows(s)) rows.add(new Row(route, false));
+                for (String d : s.dests) rows.add(new Row(List.of(Run.text(d, CAP)), false));
+                boolean left = "ul".equals(s.extra);
+                rows.add(new Row(List.of(Run.tile(arrow(s.extra), ARROW, ARROW)), !left, left));
+            }
+            case LIMIT -> {
+                for (String d : s.dests) rows.add(new Row(List.of(Run.text(d, CAP)), false));
+                rows.add(new Row(List.of(Run.text("CITY LIMIT", CAP_SMALL)), false));
+            }
+            default -> { }
         }
         double inner = 0, h = MARGIN_TOP + MARGIN_BOTTOM + ROW_GAP * (rows.size() - 1);
         for (Row r : rows) {
@@ -193,13 +251,13 @@ public final class GuideSigns {
             h += r.height();
         }
         double tabW = tab == null ? 0 : width(tab, CAP_SMALL) + 2 * TAB_PAD;
-        double w = Math.max(Math.max(s.type == Type.GORE ? GORE_MIN : MIN_WIDTH, inner + 2 * MARGIN_X), tabW);
-        double y0 = (s.type == Type.ENTRANCE ? BOTTOM_LOW : BOTTOM) + Math.max(s.feet[0], s.feet[1]), y1 = y0 + h;
+        double w = Math.max(Math.max(s.type == Type.GORE ? GORE_MIN : s.type == Type.LIMIT ? LIMIT_MIN : MIN_WIDTH, inner + 2 * MARGIN_X), tabW);
+        double y0 = (s.type == Type.ENTRANCE || s.type == Type.LIMIT ? BOTTOM_LOW : BOTTOM) + Math.max(s.feet[0], s.feet[1]), y1 = y0 + h;
         List<Piece> pieces = new ArrayList<>();
         double y = y1 - MARGIN_TOP;
         for (Row r : rows) {
             double rh = r.height(), mid = y - rh / 2, rw = r.width();
-            double x = r.right ? w / 2 - MARGIN_X - rw : -rw / 2;
+            double x = r.right ? w / 2 - MARGIN_X - rw : r.left ? -w / 2 + MARGIN_X : -rw / 2;
             for (Run run : r.runs) {
                 if (run.tile != null) pieces.add(new Piece('\0', run.tile, x, mid - run.h / 2, x + run.w, mid + run.h / 2));
                 else set(pieces, run.text, run.cap, x, mid - run.cap / 2);
@@ -216,6 +274,21 @@ public final class GuideSigns {
         }
         double inset = Math.max(0.3, Math.min(0.9, 0.2 * w));
         return new Layout(new double[]{-w / 2, y0, w / 2, y1}, tabRect, new double[]{-w / 2 + inset, w / 2 - inset}, s.feet.clone(), pieces);
+    }
+
+    /**
+     * A street name blade: the name centred on a BLADE_H panel, its bottom BLADE_BOTTOM over the foot (the upper blade,
+     * extra top: over the lower one by BLADE_GAP, its post from the lower one's top); one post at x 0.
+     */
+    private static Layout blade(Spec s) {
+        String name = s.dests.isEmpty() ? "" : s.dests.get(0);
+        double w = Math.max(BLADE_MIN, width(name, BLADE_CAP) + 2 * BLADE_MARGIN);
+        boolean top = "top".equals(s.extra);
+        double y0 = s.feet[0] + BLADE_BOTTOM + (top ? BLADE_H + BLADE_GAP : 0), y1 = y0 + BLADE_H;
+        List<Piece> pieces = new ArrayList<>();
+        set(pieces, name, BLADE_CAP, -width(name, BLADE_CAP) / 2, (y0 + y1) / 2 - BLADE_CAP / 2);
+        double foot = top ? s.feet[0] + BLADE_BOTTOM + BLADE_H : s.feet[0];
+        return new Layout(new double[]{-w / 2, y0, w / 2, y1}, null, new double[]{0}, new double[]{foot}, pieces, true);
     }
 
     /** A text's cells from (x, baseline). */
@@ -241,9 +314,10 @@ public final class GuideSigns {
         double[] p = l.panel();
         out.add(new double[]{p[0], p[1], -0.14, p[2], p[3], 0.10});
         if (l.tab() != null) out.add(new double[]{l.tab()[0], l.tab()[1], -0.14, l.tab()[2], l.tab()[3], 0.10});
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < l.posts().length; i++) {
             double x = l.posts()[i];
-            out.add(new double[]{x - 0.12, Math.min(l.feet()[i], p[1] - 0.1), -0.25, x + 0.12, p[1], -0.01});
+            if (l.blade()) out.add(new double[]{x - 0.12, Math.min(l.feet()[i], p[1] - 0.02), -0.14, x + 0.12, p[1], 0.10});
+            else out.add(new double[]{x - 0.12, Math.min(l.feet()[i], p[1] - 0.1), -0.25, x + 0.12, p[1], -0.01});
         }
         return out.toArray(new double[0][]);
     }
@@ -253,13 +327,13 @@ public final class GuideSigns {
         Layout l = layout(bone);
         List<double[]> out = new ArrayList<>();
         double[] p = l.panel();
-        out.add(new double[]{p[0], p[1], -PANEL, p[2], p[3], FACE});
-        if (l.tab() != null) out.add(new double[]{l.tab()[0], l.tab()[1], -PANEL, l.tab()[2], l.tab()[3], FACE});
-        for (int i = 0; i < 2; i++) {
+        out.add(new double[]{p[0], p[1], -PANEL, p[2], p[3], FACE + LEGEND_LIFT});
+        if (l.tab() != null) out.add(new double[]{l.tab()[0], l.tab()[1], -PANEL, l.tab()[2], l.tab()[3], FACE + LEGEND_LIFT});
+        for (int i = 0; i < l.posts().length; i++) {
             double x = l.posts()[i];
-            out.add(new double[]{x - POST / 2, Math.min(l.feet()[i], p[1]), POST_BACK, x + POST / 2, p[3] - POST_TOP, POST_FRONT});
+            out.add(new double[]{x - POST / 2, Math.min(l.feet()[i], p[1]), l.postBack(), x + POST / 2, l.postTop(), l.postFront()});
         }
-        for (double y : stringers(p)) out.add(new double[]{p[0] + 0.1, y, POST_FRONT, p[2] - 0.1, y + STRINGER, -PANEL});
+        if (!l.blade()) for (double y : stringers(p)) out.add(new double[]{p[0] + 0.1, y, POST_FRONT, p[2] - 0.1, y + STRINGER, -PANEL});
         return out.toArray(new double[0][]);
     }
 
@@ -273,12 +347,16 @@ public final class GuideSigns {
         Spec s = Spec.parse(bone);
         List<String> parts = new ArrayList<>();
         if (!s.exit.isEmpty()) parts.add("EXIT " + s.exit);
-        RoadNames.Route r = RoadNames.Route.of(s.shield);
-        String word = cardinal(s.cardinal);
-        if (r != null) parts.add(word.isEmpty() ? r.label() : r.label() + " " + word);
-        else if (!word.isEmpty()) parts.add(word);
+        String[] shields = s.shield.split("\\+", -1), cards = s.cardinal.split("\\+", -1);
+        for (int i = 0; i < Math.max(shields.length, cards.length); i++) {
+            RoadNames.Route r = RoadNames.Route.of(i < shields.length ? shields[i] : "");
+            String word = cardinal(i < cards.length ? cards[i] : "");
+            if (r != null) parts.add(word.isEmpty() ? r.label() : r.label() + " " + word);
+            else if (!word.isEmpty()) parts.add(word);
+        }
         parts.addAll(s.dests);
         if (s.type == Type.ADVANCE) parts.add("h".equals(s.extra) ? "1/2 MILE" : "1 MILE");
+        if (s.type == Type.LIMIT) parts.add("CITY LIMIT");
         return String.join(" | ", parts);
     }
 

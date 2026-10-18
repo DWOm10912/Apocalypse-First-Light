@@ -91,6 +91,12 @@ public final class RoadDesign {
      * null: none). The interchange guide signs name them (RoadSigns#guides, RoadNames).
      */
     public final String from, to;
+    /**
+     * C3.3b group 3 (RoadSystems; docs/worldgen/federal_systems_c3_3b.md): the start / the end runs on seamlessly as
+     * another road (an interstate's end into the trumpet's ramps, a ramp's two pieces): no end bevel, no end taper, and
+     * beyond it the road gives way (RoadWorks).
+     */
+    public final boolean openStart, openEnd;
     private final double[] laneLeft, laneRight;
     private final boolean[] noPass;
 
@@ -127,6 +133,15 @@ public final class RoadDesign {
      */
     public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts,
                       List<Tunnel> tunnels, String hostStart, String hostEnd, double[] corners, double[] slopes, Attach attach, String from, String to) {
+        this(id, section, curve, profile, spans, culverts, tunnels, hostStart, hostEnd, corners, slopes, attach, from, to, false, false);
+    }
+
+    /** openStart, openEnd (C3.3b group 3): #openStart. */
+    public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts,
+                      List<Tunnel> tunnels, String hostStart, String hostEnd, double[] corners, double[] slopes, Attach attach, String from, String to,
+                      boolean openStart, boolean openEnd) {
+        this.openStart = openStart;
+        this.openEnd = openEnd;
         this.from = from;
         this.to = to;
         this.hostStart = hostStart;

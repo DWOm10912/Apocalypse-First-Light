@@ -26,7 +26,10 @@ public final class RoadSurfaceCheck {
     static final double KINK = 0.01, TURN = 1.0, NORMAL_ERR = 0.25;
 
     /** The game directories' road network caches (the dev client, the isolated C2 harness client). */
-    static final String[] CACHES = {"run/afl_cache/road_network", "build/federal-c2-client/afl_cache/road_network"};
+    /** The checkout's game directories, and the offline plans of C3.3b group 3 (SystemPlans: other seeds' terrain plans planned here). */
+    static final String[] CACHES = {"build/federal-systems/plans", "run/afl_cache/road_network", "build/federal-c2-client/afl_cache/road_network"};
+    /** Cached networks of the current plan rules only (an older plan version is not what a new world builds). */
+    static final String PATTERN = com.antaurora.apofirstlight.worldgen.network.route.RoadNetworkPlan.VERSION + "_.*\\.json";
 
     public static void main(String[] args) throws Exception {
         List<Path> files = new ArrayList<>();
@@ -38,7 +41,7 @@ public final class RoadSurfaceCheck {
                 Path d = Path.of(dir);
                 if (!Files.isDirectory(d)) continue;
                 try (Stream<Path> list = Files.list(d)) {
-                    list.filter(p -> p.getFileName().toString().matches("afl_road_network_c3_v1_.*\\.json")).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
+                    list.filter(p -> p.getFileName().toString().matches(RoadSurfaceCheck.PATTERN)).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
                 }
             }
             files.addAll(found.values());
@@ -83,7 +86,14 @@ public final class RoadSurfaceCheck {
                         samples++;
                         calls++;
                         if (!RoadSurfaceQuery.pavement(works, p[0], p[1], yHint, o)) {
-                            if (gaps++ == 0) gapAt = String.format(Locale.ROOT, "%s s=%.2f u=%.2f (%.1f, %.1f)", d.id, s, u, p[0], p[1]);
+                            if (gaps++ == 0) {
+                                // why: the road in the index there, its local frame, its design height against the hint
+                                RoadDesign[] nr = works.roadsNear(p[0], p[1]);
+                                boolean indexed = nr != null && java.util.Arrays.asList(nr).contains(d);
+                                double[] loc = d.curve.local(p[0], p[1], d.section.edge + 0.5, 0);
+                                gapAt = String.format(Locale.ROOT, "%s s=%.2f u=%.2f (%.1f, %.1f): indexed %s, local %s, design %.3f, hint %.3f, length %.2f", d.id, s, u, p[0], p[1],
+                                        indexed, loc == null ? "none" : String.format(Locale.ROOT, "s %.2f u %.2f", loc[0], loc[1]), d.pavementY(s, u), yHint, d.length);
+                            }
                             prevH = prev2H = Double.NaN;
                             continue;
                         }
@@ -106,7 +116,7 @@ public final class RoadSurfaceCheck {
                         }
                         if (!Double.isNaN(prevH)) {
                             double turn = Math.toDegrees(Math.acos(Math.min(1, o.nx * pnx + o.ny * pny + o.nz * pnz)));
-                            if (turn > maxTurn) { maxTurn = turn; turnAt = String.format(Locale.ROOT, "%s s=%.2f u=%.2f", d.id, s, u); }
+                            if (turn > maxTurn) { maxTurn = turn; turnAt = String.format(Locale.ROOT, "%s s=%.2f u=%.2f (%.1f, %.1f)", d.id, s, u, p[0], p[1]); }
                             if (turn > TURN) turns++;
                         }
                         // every 4 m: the normal against the surface's own differences in world x and z (1 cm)

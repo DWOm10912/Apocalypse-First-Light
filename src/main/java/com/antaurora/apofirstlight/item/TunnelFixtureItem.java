@@ -63,7 +63,8 @@ public final class TunnelFixtureItem extends BlockItem {
             case NAME_PLATE -> List.of(TunnelMesh.NAMES);
             case SIDE_ROAD_SIGN, CURVE_SIGN -> List.of("l", "r");
             // one of each guide sign (an interchange's signs carry their own legends)
-            case GUIDE_SIGN -> List.of("adv|4|R61|S|Redfield|1|0,0", "dir|5|R61|N|Elmwood|ur|0,0", "gore|4||||ur|0,0", GuideSigns.DEFAULT);
+            case GUIDE_SIGN -> List.of("adv|4|R61|S|Redfield|1|0,0", "dir|5|R61|N|Elmwood|ur|0,0", "gore|4||||ur|0,0", GuideSigns.DEFAULT,
+                    "split||F40+F65|E+S|Bellhaven|ul|0,0");
             default -> java.util.Collections.singletonList(null);
         };
         List<ItemStack> out = new java.util.ArrayList<>();

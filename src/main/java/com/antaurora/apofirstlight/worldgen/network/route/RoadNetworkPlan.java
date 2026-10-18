@@ -34,7 +34,9 @@ import java.util.Map;
  *   round with the lowest {@link #score} (length, earthworks, structures, mountain grade) is kept.</li>
  * </ol>
  * Joins: a leg whose end city an earlier corridor already serves (one of its legs ends there) may end on that corridor anywhere within
- * {@link #joinRadius} of the city instead (never on its bridges, viaducts or tunnels): an interstate on an earlier
+ * {@link #joinRadius} of the city (an interstate on an interstate: or of where that leg ends at the city, a fold-back's
+ * bypass passing it, RouteCorners)
+ * instead (never on its bridges, viaducts or tunnels): an interstate on an earlier
  * interstate, a state road on an earlier state road or interstate. The A* takes the cheapest meeting point, which
  * becomes an INTERCHANGE (an interstate is involved) or JUNCTION (two state roads) node with both routes and stations;
  * the corridors then share the road into the city, as real routes run concurrently (a state route signed along the
@@ -48,7 +50,7 @@ import java.util.Map;
  * deterministic for a seed (fixed orders, StrictMath, no hash iteration).
  */
 public final class RoadNetworkPlan {
-    public static final String VERSION = "afl_road_network_c3_v1";
+    public static final String VERSION = "afl_road_network_c3_v3";
     /** Douglas-Peucker tolerance on the cell path, m. */
     static final double SIMPLIFY = 12;
 
@@ -104,6 +106,9 @@ public final class RoadNetworkPlan {
      * state road may run concurrently along an interstate as far as interstates join each other (a state route signed
      * along the freeway between two exits), but along another state road only 1200 m.
      */
+    /** A route meeting its city this far off it or more passes it on a bypass (joins measured from there), m. */
+    static final double BYPASS_OFF = 1000;
+
     static double joinRadius(RoadClassSpec onto) { return onto == RoadClassSpec.INTERSTATE ? 2500 : 1200; }
 
     /** Clearance of a join from the other route's bridges, viaducts and tunnels (an interchange needs ground), m. */
@@ -118,19 +123,38 @@ public final class RoadNetworkPlan {
         for (CorridorSpec spec : FederalTemplate.CORRIDORS) {
             RoadClassSpec k = classOf(spec.roadClass());
             if (k == null) continue;
+            int first = routes.size();
             for (int q = 0; q + 1 < spec.via().size(); q++) {
                 String a = spec.via().get(q), b = spec.via().get(q + 1);
                 FederalMap.City ca = m.city(a), cb = m.city(b);
                 String id = spec.id() + ":" + a + "-" + b;
-                Candidate c = leg(g, t, k, ca, cb, joinable(routes, k, spec.id()));
+                List<Route> onto = joinable(routes, k, spec.id());
+                Candidate c = leg(g, t, k, ca, cb, onto);
                 if (c == null) { failures.add(id); continue; }
                 if (c.curve() == null) { failures.add(id + " (both ends on one earlier route: served by it)"); continue; }
+                if (k == RoadClassSpec.INTERSTATE) {
+                    // C3.3b group 3: an interstate joins another at a proper angle; its legs pass a town in one bend
+                    c = RouteCorners.steepen(g, t, k, c, onto, true);
+                    c = RouteCorners.steepen(g, t, k, c, onto, false);
+                    Route prev = routes.size() > first ? routes.get(routes.size() - 1) : null;
+                    if (prev != null && prev.to().equals(a) && prev.toJoin() == null && c.fromJoin() == null) {
+                        RouteCorners.Corner corner = RouteCorners.corner(g, t, k, prev, c, ca, cb, onto);
+                        routes.set(routes.size() - 1, corner.a());
+                        c = corner.b();
+                    }
+                }
                 double[] hard = hardWidths(k, c.design());
                 g.markTaken(c.curve(), hard, RoadProfile.DS, k);
                 routes.add(new Route(id, spec.id(), k, a, b, c.fromJoin(), c.toJoin(), c.curve(), c.design(), hard, k.reserve,
                         c.round(), c.score(), c.trace()));
                 if (c.fromJoin() == null) use.merge(a, k == RoadClassSpec.INTERSTATE ? 10 : 1, Integer::sum);
                 if (c.toJoin() == null) use.merge(b, k == RoadClassSpec.INTERSTATE ? 10 : 1, Integer::sum);
+            }
+            if (k == RoadClassSpec.INTERSTATE && routes.size() > first) {
+                // the legs bent through their towns are designed as one road; the corridors marked again as they now lie
+                RouteCorners.designChains(t, k, routes, first);
+                g.clearTaken();
+                for (Route r : routes) g.markTaken(r.curve(), r.hard(), RoadProfile.DS, r.roadClass());
             }
         }
         return new RoadNetworkPlan(List.copyOf(routes), List.copyOf(nodes(m, t, routes, use)), List.copyOf(failures));
@@ -159,10 +183,19 @@ public final class RoadNetworkPlan {
         double[] f = new double[5];
         for (Route r : onto) {
             if (!r.from().equals(c.id()) && !r.to().equals(c.id())) continue;
+            // measured from the city, or from where the route meets it when a fold-back's bypass passes it far off
+            // (RouteCorners#bypass; a bend through the town meets nearer than BYPASS_OFF: from the city as before)
+            // (a leg ending on another route there, a join, is no bypass)
+            boolean toCity = r.to().equals(c.id());
+            double[] end = toCity ? r.curve().point(r.curve().length, 0) : r.curve().point(0, 0);
+            double ox = c.x(), oz = c.z();
+            // (interstates on interstates only: a state road still goes to the city, the town's own exit serves the bypass)
+            if (k == RoadClassSpec.INTERSTATE && r.roadClass() == RoadClassSpec.INTERSTATE && (toCity ? r.toJoin() : r.fromJoin()) == null
+                    && Math.hypot(end[0] - ox, end[1] - oz) > BYPASS_OFF) { ox = end[0]; oz = end[1]; }
             for (double s = 0; s <= r.curve().length; s += 8) {
                 if (onStructure(r, s, JOIN_CLEAR)) continue;
                 r.curve().frame(s, f);
-                if (Math.hypot(f[0] - c.x(), f[1] - c.z()) > joinRadius(r.roadClass())) continue;
+                if (Math.hypot(f[0] - ox, f[1] - oz) > joinRadius(r.roadClass())) continue;
                 int cell = g.cellOf(f[0], f[1]);
                 if (!g.closed[cell]) set.add(cell);
             }
@@ -197,9 +230,18 @@ public final class RoadNetworkPlan {
 
     /** One leg: route, design, penalise what fits badly, route again; the best round wins. */
     static Candidate leg(RouteGrid g, RouteTerrain t, RoadClassSpec k, FederalMap.City ca, FederalMap.City cb, List<Route> onto) {
+        return leg(g, t, k, ca, null, cb, onto, null);
+    }
+
+    /**
+     * #leg from a given start point instead of city ca (no joins at that end; C3.3b group 3: an interstate's leg searched
+     * again from before a town), with cells the A* may not enter (or null).
+     */
+    static Candidate leg(RouteGrid g, RouteTerrain t, RoadClassSpec k, FederalMap.City ca, double[] start, FederalMap.City cb, List<Route> onto,
+                         boolean[] avoid) {
         float[] pen = new float[g.cells()];
-        int[] fromJoin = joinCells(g, onto, k, ca), toJoin = joinCells(g, onto, k, cb);
-        int[] from = fromJoin.length > 0 ? fromJoin : new int[]{g.openCell(ca.x(), ca.z())};
+        int[] fromJoin = start != null ? new int[0] : joinCells(g, onto, k, ca), toJoin = joinCells(g, onto, k, cb);
+        int[] from = fromJoin.length > 0 ? fromJoin : new int[]{start != null ? g.openCell(start[0], start[1]) : g.openCell(ca.x(), ca.z())};
         boolean[] goal = new boolean[g.cells()];
         if (toJoin.length > 0) for (int c : toJoin) goal[c] = true;
         else goal[g.openCell(cb.x(), cb.z())] = true;
@@ -208,10 +250,11 @@ public final class RoadNetworkPlan {
         Candidate best = null;
         StringBuilder trace = new StringBuilder();
         for (int round = 0; round < ROUNDS; round++) {
-            int[] cells = g.route(from, goal, cb.x(), cb.z(), gr, k, null, pen);
+            int[] cells = g.route(from, goal, cb.x(), cb.z(), gr, k, avoid, pen);
             if (cells == null) break;
             Join j0 = fromJoin.length > 0 ? joinAt(g, onto, cells[0]) : null, j1 = toJoin.length > 0 ? joinAt(g, onto, cells[cells.length - 1]) : null;
-            double ax = j0 != null ? j0.x() : ca.x(), az = j0 != null ? j0.z() : ca.z(), bx = j1 != null ? j1.x() : cb.x(), bz = j1 != null ? j1.z() : cb.z();
+            double ax = j0 != null ? j0.x() : start != null ? start[0] : ca.x(), az = j0 != null ? j0.z() : start != null ? start[1] : ca.z();
+            double bx = j1 != null ? j1.x() : cb.x(), bz = j1 != null ? j1.z() : cb.z();
             if (cells.length < 3 || Math.hypot(bx - ax, bz - az) < 200) return new Candidate(cells, null, null, 0, round, "", j0, j1);
             double[][] line = RoutePolyline.smooth(g, cells, ax, az, bx, bz, SIMPLIFY, k.radius);
             RoadCurve curve = new RoadCurve(line[0], line[1]);

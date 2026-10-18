@@ -42,7 +42,7 @@ public final class JunctionCheck {
                 Path d = Path.of(dir);
                 if (!Files.isDirectory(d)) continue;
                 try (Stream<Path> list = Files.list(d)) {
-                    list.filter(p -> p.getFileName().toString().matches("afl_road_network_c3_v1_.*\\.json")).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
+                    list.filter(p -> p.getFileName().toString().matches(RoadSurfaceCheck.PATTERN)).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
                 }
             }
             files.addAll(found.values());

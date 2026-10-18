@@ -185,7 +185,8 @@ public final class RoadClient {
         if (json == null || json.isEmpty()) { roads = List.of(); index = null; return; }
         try {
             roads = RoadNetworkJson.designs(json);
-            index = new RoadWorks(roads, RoadWorks.Water.NONE);
+            index = new RoadWorks(roads, RoadWorks.Water.NONE, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(
+                    com.antaurora.apofirstlight.worldgen.network.town.TownPlan.read(json)));
             // road_structure's collision follows the bridge mesh (a dedicated server's client has only this copy)
             com.antaurora.apofirstlight.block.RoadStructureBlock.works(index);
         } catch (RuntimeException e) {

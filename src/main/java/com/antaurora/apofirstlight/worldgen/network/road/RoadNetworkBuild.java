@@ -74,10 +74,22 @@ public final class RoadNetworkBuild {
     public static final double MIN_PIECE = 200;
     public static final int MAX_SPLITS = 32;
 
-    /** The built network: its JSON, the trims (metres cut at each end) and the report lines. */
-    public record Result(String json, List<RouteData> routes, List<String> report, int conflicts) {}
+    /**
+     * The built network: its JSON (routes only), the routes, the report lines, the conflicts left, and the framework towns
+     * laid out on it (Town Framework V1: appended to the JSON after RoadStructures, TownPlan.append).
+     */
+    public record Result(String json, List<RouteData> routes, List<String> report, int conflicts, List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns) {
+        public Result(String json, List<RouteData> routes, List<String> report, int conflicts) { this(json, routes, report, conflicts, List.of()); }
+    }
 
-    public static Result build(String planJson) {
+    public static Result build(String planJson) { return build(planJson, null); }
+
+    /**
+     * The built network; with terrain (the world's planned ground) the framework towns' exits are added after the roads
+     * through towns are joined (Town Framework V1, TownExits: two state stubs the diamond builder pairs into one crossroad).
+     * Without terrain no town is laid out (the offline highway checks).
+     */
+    public static Result build(String planJson, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain) {
         List<RouteData> legs = new ArrayList<>();
         List<Node> nodes = RoadNetworkJson.nodes(planJson);
         String version = planVersion(planJson);
@@ -89,20 +101,165 @@ public final class RoadNetworkBuild {
             else report.add("left out: " + r.id() + " (" + why + ")");
         }
         List<RouteData> roads = through(legs, nodes, report);
+        // C3.3b group 3: the system interchanges (an interstate's end on another as a trumpet), before the diamonds
+        RoadSystems.Result sr = RoadSystems.build(roads, nodes, report);
+        roads = sr.roads();
+        // Town Framework V1: each framework town's exit, the first of its options the diamond builder builds
+        if (terrain != null) roads = townExits(roads, legs, terrain, sr.claims(), report);
         // C3.3b group 2: the diamond interchanges (state roads over the interstates, the ramps, their terminals)
-        RoadInterchanges.Result ir = RoadInterchanges.build(roads, report);
+        RoadInterchanges.Result ir = RoadInterchanges.build(roads, sr.claims(), report);
         roads = ir.roads();
+        List<Zone> extra = new ArrayList<>(sr.zones());
+        extra.addAll(ir.zones());
         // C3.3b: the T junctions (their minors realigned and landed), the conflicts they join ignored
         RoadJunctions.Result jr = RoadJunctions.find(roads, report);
         roads = jr.roads();
         List<RoadJunctions.Spec> specs = new ArrayList<>(jr.junctions());
         specs.addAll(ir.terminals());
-        List<Zone> zones = zones(specs, ir.zones());
+        List<Zone> zones = zones(specs, extra);
         List<RouteData> trimmed = splits(trims(roads, specs, zones, report), zones, report);
         List<RoadJunctions.Spec> kept = new ArrayList<>();
         trimmed = RoadJunctions.resolve(trimmed, specs, kept, report);
-        int conflicts = verify(trimmed, zones(kept, ir.zones()), report);
-        return new Result(RoadNetworkJson.write(version, STAGE, trimmed), trimmed, report, conflicts);
+        int conflicts = verify(trimmed, zones(kept, extra), report);
+        // Town Framework V1: each town with an exit gets its grid; its crossroad stops at the Front St corners
+        List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns = new ArrayList<>();
+        if (terrain != null) trimmed = towns(trimmed, terrain, towns, report);
+        return new Result(RoadNetworkJson.write(version, STAGE, trimmed), trimmed, report, conflicts, towns);
+    }
+
+    /**
+     * Town Framework V1 (TownExits): every framework town's exit options tried in turn with the diamond builder on their
+     * own roads only, each one that builds a crossroad of the town laid out with TownPlanner on the trial roads (2026-10-17:
+     * the exits' own land measure sees small slopes, not a hillside whose every block climbs more than the planner's relief
+     * limit): the first whose town reaches GOOD_TOWN blocks is kept, else the one with the most blocks (the earlier on a
+     * tie); its stubs go first in the road list, so the full build pairs them the same way. A town none of whose options
+     * builds with a town round it keeps no stub (reported).
+     */
+    private static List<RouteData> townExits(List<RouteData> roads, List<RouteData> legs, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain,
+                                             List<RoadSystems.Claim> claims, List<String> report) {
+        List<RouteData> out = roads;
+        for (com.antaurora.apofirstlight.worldgen.network.town.TownExits.Site site : com.antaurora.apofirstlight.worldgen.network.town.TownExits.sites(roads, legs, terrain, report)) {
+            String corridor = com.antaurora.apofirstlight.worldgen.network.town.TownSites.corridor(site.town());
+            List<RouteData> best = null;
+            int bestBlocks = 0, bestK = 0;
+            String bestLine = null;
+            int k = 0;
+            for (com.antaurora.apofirstlight.worldgen.network.town.TownExits.Option o : site.options()) {
+                k++;
+                List<RouteData> trial = new ArrayList<>(o.stubs());
+                trial.addAll(out);
+                List<String> tr = new ArrayList<>();
+                RoadInterchanges.Result ir = RoadInterchanges.build(trial, claims, tr, o.roads()::contains);
+                boolean built = false;
+                for (RouteData r : ir.roads())
+                    if (r.id().contains(corridor + ":")) for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) built = true;
+                if (!built) {
+                    String why = "";
+                    // the skip line: "interchange skipped (trimmed): <site>: <why per shift>"
+                    for (String l : tr) if (l.startsWith("interchange skipped")) why = l.substring(l.indexOf(": ", "interchange skipped (trimmed): ".length()) + 2);
+                    report.add(o.line() + ": not built" + (why.isEmpty() ? "" : " (" + (why.length() > 400 ? why.substring(0, 400) + "..." : why) + ")"));
+                    continue;
+                }
+                String[] noTown = new String[1];
+                int blocks = townBlocks(site.town(), ir.roads(), terrain, noTown);
+                if (blocks <= 0) {
+                    report.add(o.line() + String.format(Locale.ROOT, ": built, but no town round it (%s; option %d of %d)", noTown[0], k, site.options().size()));
+                    continue;
+                }
+                if (blocks > bestBlocks) { best = trial; bestBlocks = blocks; bestK = k; bestLine = o.line(); }
+                if (blocks >= GOOD_TOWN) break;
+                report.add(o.line() + String.format(Locale.ROOT, ": built, a town of %d blocks round it (option %d of %d; looking on for %d)", blocks, k, site.options().size(), GOOD_TOWN));
+            }
+            if (best == null) report.add("town " + site.town() + ": no exit option builds with a town round it; the town has no interchange");
+            else {
+                report.add(bestLine + String.format(Locale.ROOT, ": built (option %d of %d, a town of %d blocks)", bestK, site.options().size(), bestBlocks));
+                out = best;
+            }
+        }
+        return out;
+    }
+
+    /** A town of this many blocks round an exit option ends the search (TownPlanner.MAX_BLOCKS is the most). */
+    static final int GOOD_TOWN = 20;
+
+    /**
+     * The blocks of the town laid out round its built exit in these roads, or 0 (why[0] says why: the planner's last
+     * report line).
+     */
+    private static int townBlocks(String town, List<RouteData> roads, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain, String[] why) {
+        RouteData[] xh = exitAndHost(town, roads);
+        if (xh == null) { why[0] = "the exit's crossroad or interstate is not found"; return 0; }
+        try {
+            com.antaurora.apofirstlight.worldgen.network.town.TownPlanner.Result tr = com.antaurora.apofirstlight.worldgen.network.town.TownPlanner.plan(town, xh[0], xh[1], roads, terrain);
+            if (tr == null) { why[0] = "the exit's crossroad is not a town stub"; return 0; }
+            if (tr.plan() != null) return tr.plan().blocks.size();
+            List<String> r = tr.report();
+            why[0] = r.isEmpty() ? "no plan" : r.get(r.size() - 1).replaceFirst("^town [a-z_]+: ", "");
+            return 0;
+        } catch (RuntimeException e) {
+            why[0] = "layout failed (" + e + ")";
+            return 0;
+        }
+    }
+
+    /** The town's exit crossroad (its corridor's route with an OVERPASS) and the interstate under it, or null. */
+    private static RouteData[] exitAndHost(String town, List<RouteData> routes) {
+        String corridor = com.antaurora.apofirstlight.worldgen.network.town.TownSites.corridor(town);
+        RouteData x = null;
+        for (RouteData r : routes) {
+            if (!r.id().contains(corridor + ":")) continue;
+            for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) x = r;
+        }
+        if (x == null) return null;
+        RoadDesign xd = RoadNetworkJson.design(x);
+        double off = x.trim() == null ? 0 : x.trim()[0], xc = 0;
+        for (Structure st : x.structures()) if (st.kind().equals("OVERPASS")) xc = (st.s0() + st.s1()) / 2;
+        double[] pc = xd.point(xc - off, 0);
+        for (RouteData r : routes)
+            if (r.roadClass().equals("interstate") && RoadNetworkJson.design(r).local(pc[0], pc[1], 30) != null) return new RouteData[]{x, r};
+        return null;
+    }
+
+    /**
+     * Town Framework V1 (TownPlanner): every framework town whose exit was built (a crossroad of its corridor over an
+     * interstate) laid out round it; the crossroad replaced by its trimmed self. Towns without an exit get no grid.
+     */
+    private static List<RouteData> towns(List<RouteData> routes, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain,
+                                         List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns, List<String> report) {
+        List<RouteData> out = new ArrayList<>(routes);
+        for (String town : com.antaurora.apofirstlight.worldgen.network.town.TownSites.FRAMEWORK) {
+            String corridor = com.antaurora.apofirstlight.worldgen.network.town.TownSites.corridor(town);
+            int xi = -1;
+            for (int i = 0; i < out.size(); i++) {
+                RouteData r = out.get(i);
+                if (!r.id().contains(corridor + ":")) continue;
+                for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) xi = i;
+            }
+            if (xi < 0) { report.add("town " + town + ": no exit; no street framework"); continue; }
+            RouteData x = out.get(xi);
+            // the interstate under the overpass
+            RoadDesign xd = RoadNetworkJson.design(x);
+            double off = x.trim() == null ? 0 : x.trim()[0], xc = 0;
+            for (Structure st : x.structures()) if (st.kind().equals("OVERPASS")) xc = (st.s0() + st.s1()) / 2;
+            double[] pc = xd.point(xc - off, 0);
+            RouteData host = null;
+            for (RouteData r : out)
+                if (r.roadClass().equals("interstate") && RoadNetworkJson.design(r).local(pc[0], pc[1], 30) != null) host = r;
+            if (host == null) { report.add("town " + town + ": the exit's interstate is not found; no street framework"); continue; }
+            try {
+                com.antaurora.apofirstlight.worldgen.network.town.TownPlanner.Result tr =
+                        com.antaurora.apofirstlight.worldgen.network.town.TownPlanner.plan(town, x, host, out, terrain);
+                if (tr == null) { report.add("town " + town + ": the exit's crossroad is not a town stub; no street framework"); continue; }
+                report.addAll(tr.report());
+                if (tr.plan() == null) continue;
+                towns.add(tr.plan());
+                if (tr.crossroad() != null) out.set(xi, tr.crossroad());
+            } catch (RuntimeException e) {
+                // a town that cannot be laid out never costs the world its roads
+                report.add("town " + town + ": layout failed (" + e + "); no street framework");
+            }
+        }
+        return out;
     }
 
     private static String planVersion(String json) {
@@ -490,8 +647,15 @@ public final class RoadNetworkBuild {
         double[] w = new double[m];
         double[] nodeS = new double[nodePts.size()];
         for (int q = 0; q < nodePts.size(); q++) {
-            double[] l = merged.local(nodePts.get(q)[0], nodePts.get(q)[1], MAX_CORNER, 0);
-            if (l == null) throw new IllegalStateException("node off the merged road: " + first.corridor());
+            double[] l = nodeStation(merged, nodePts.get(q)[0], nodePts.get(q)[1], MAX_CORNER);
+            if (l == null) {
+                double near = Double.POSITIVE_INFINITY;
+                for (int i = 0; i < xs.length; i++) near = Math.min(near, Math.hypot(xs[i] - nodePts.get(q)[0], zs[i] - nodePts.get(q)[1]));
+                StringBuilder ids = new StringBuilder();
+                for (RouteData r : chain.legs) ids.append(' ').append(r.id());
+                throw new IllegalStateException(String.format(Locale.ROOT, "node off the merged road: %s node %d at %.1f, %.1f (nearest control point %.1f m, sigma %.0f, legs%s)",
+                        first.corridor(), q, nodePts.get(q)[0], nodePts.get(q)[1], near, corner[q], ids));
+            }
             nodeS[q] = l[0];
             double reach = 4 * corner[q] * POINT_SPACING + 2 * k.vSigma(), fade = 2 * k.vSigma();
             for (int i = 0; i < m; i++) {
@@ -695,6 +859,34 @@ public final class RoadNetworkBuild {
         return used;
     }
 
+    /**
+     * A node's station on the merged road (RoadCurve#local); where that projection does not settle (a node far outside a
+     * tight town corner: its fixed-point steps shrink only by the distance over the radius each, 2026-10-17 seed
+     * 10164326571583364449 shore_town 68 m off an 80 m corner) the nearest point sampled every metre, refined; null
+     * beyond maxDist.
+     */
+    static double[] nodeStation(RoadCurve c, double x, double z, double maxDist) {
+        double[] l = c.local(x, z, maxDist, 0);
+        if (l != null) return l;
+        double best = Double.POSITIVE_INFINITY, bs = 0;
+        for (double s = 0; s <= c.length; s += 1) {
+            double[] p = c.point(s, 0);
+            double d = Math.hypot(p[0] - x, p[1] - z);
+            if (d < best) { best = d; bs = s; }
+        }
+        double lo = Math.max(0, bs - 1), hi = Math.min(c.length, bs + 1);
+        for (int it = 0; it < 40; it++) {
+            double m1 = lo + (hi - lo) / 3, m2 = hi - (hi - lo) / 3;
+            double[] p1 = c.point(m1, 0), p2 = c.point(m2, 0);
+            if (Math.hypot(p1[0] - x, p1[1] - z) < Math.hypot(p2[0] - x, p2[1] - z)) hi = m2; else lo = m1;
+        }
+        double s = (lo + hi) / 2;
+        double[] f = new double[5];
+        c.frame(s, f);
+        double u = -(x - f[0]) * f[3] + (z - f[1]) * f[2];
+        return Math.hypot(x - f[0], z - f[1]) > maxDist ? null : new double[]{s, u};
+    }
+
     /** Polyline length from point i0 to point i1. */
     private static double arcTo(List<double[]> p, int i0, int i1) {
         double s = 0;
@@ -776,7 +968,8 @@ public final class RoadNetworkBuild {
 
     /**
      * Each road's trim window against the untrimmed roads of the same or a higher class; a T junction's minor ends at its
-     * end line (C3.3b).
+     * end line (C3.3b). A road built with a window (a ramp, a system interchange's piece) keeps it unless a conflict moves
+     * an end; an open end (C3.3b group 3) stays where it is (never rounded to the lattice, never left out for its length).
      */
     private static List<RouteData> trims(List<RouteData> roads, List<RoadJunctions.Spec> junctions, List<Zone> zones, List<String> report) {
         List<RoadCurve> cs = new ArrayList<>();
@@ -787,8 +980,10 @@ public final class RoadNetworkBuild {
             RouteData r = roads.get(i);
             RoadCurve rc = cs.get(i);
             CrossSection rs = CrossSection.of(r.roadClass());
-            double profileLen = (r.profile().length - 1) * RoadProfile.DS, len = Math.min(rc.length, profileLen);
-            double a = 0, b = len;
+            double profileLen = (r.profile().length - 1) * RoadProfile.DS;
+            // the window as built (JSON stations); conflict stations are rc's, from a0
+            double a0 = r.trim() == null ? 0 : r.trim()[0], len = Math.min(rc.length, profileLen - a0), b0 = a0 + len;
+            double a = a0, b = b0;
             for (RoadJunctions.Spec jn : junctions)
                 if (jn.minor().equals(r.id())) {
                     if (jn.atEnd()) b = Math.min(b, jn.endLine());
@@ -813,26 +1008,33 @@ public final class RoadNetworkBuild {
                     i1--;
                 }
                 int mid = Math.max(0, i1 - i0 + 1);
-                if (lastStart > Double.NEGATIVE_INFINITY) a = Math.max(a, lastStart + RoadDesign.END + TRIM_MARGIN);
-                if (firstEnd < Double.POSITIVE_INFINITY) b = Math.min(b, firstEnd - RoadDesign.END - TRIM_MARGIN);
+                if (lastStart > Double.NEGATIVE_INFINITY) a = Math.max(a, a0 + lastStart + RoadDesign.END + TRIM_MARGIN);
+                if (firstEnd < Double.POSITIVE_INFINITY) b = Math.min(b, a0 + firstEnd - RoadDesign.END - TRIM_MARGIN);
                 if (mid > 0) report.add(String.format(Locale.ROOT, "mid-route: %s meets %s on %d stations (the other end trims)", r.id(), q.id(), mid));
             }
-            a = Math.ceil(a / RoadProfile.DS - 1e-9) * RoadProfile.DS;
-            b = Math.floor(b / RoadProfile.DS + 1e-9) * RoadProfile.DS;
+            boolean openA = r.openAt(false) && a <= a0 + 1e-9, openB = r.openAt(true) && b >= b0 - 1e-9;
+            if (!openA) a = Math.ceil(a / RoadProfile.DS - 1e-9) * RoadProfile.DS;
+            if (!openB) b = Math.floor(b / RoadProfile.DS + 1e-9) * RoadProfile.DS;
             // never inside a structure: move the end past it; a tunnel keeps its approaches clear of any end, the route's own
             // too (a portal never faces a town or a trimmed end)
             for (Structure s : r.structures()) {
                 boolean tunnel = s.kind().equals("TUNNEL");
                 double clear = clearance(s);
-                if ((a > 0 || tunnel) && a >= s.s0() - clear && a <= s.s1() + clear) a = Math.ceil((s.s1() + clear) / RoadProfile.DS) * RoadProfile.DS;
-                if ((b < len || tunnel) && b >= s.s0() - clear && b <= s.s1() + clear) b = Math.floor((s.s0() - clear) / RoadProfile.DS) * RoadProfile.DS;
+                if ((a > a0 || tunnel) && a >= s.s0() - clear && a <= s.s1() + clear) a = Math.ceil((s.s1() + clear) / RoadProfile.DS) * RoadProfile.DS;
+                if ((b < b0 || tunnel) && b >= s.s0() - clear && b <= s.s1() + clear) b = Math.floor((s.s0() - clear) / RoadProfile.DS) * RoadProfile.DS;
             }
-            if (b - a < MIN_PIECE) {
+            // a window only rounded to the lattice is the road as built, whatever its length
+            boolean asBuilt = a <= a0 + 1e-9 && b >= b0 - RoadProfile.DS;
+            if (b - a < MIN_PIECE && !(asBuilt && r.trim() != null)) {
                 report.add(String.format(Locale.ROOT, "left out: %s (trimmed to %.0f .. %.0f)", r.id(), a, b));
                 continue;
             }
-            if (a > 0 || b < len) {
-                report.add(String.format(Locale.ROOT, "trim: %s keeps %.0f .. %.0f of %.0f m (start -%.0f, end -%.0f)", r.id(), a + 0.0, b, len, a + 0.0, len - b));
+            if (a > a0 + 1e-9 || b < b0 - 1e-9) {
+                if (r.trim() == null)
+                    report.add(String.format(Locale.ROOT, "trim: %s keeps %.0f .. %.0f of %.0f m (start -%.0f, end -%.0f)", r.id(), a + 0.0, b, len, a + 0.0, len - b));
+                else if (!asBuilt)
+                    report.add(String.format(Locale.ROOT, "trim: %s keeps %.0f .. %.0f of %.0f .. %.0f m (start -%.0f, end -%.0f)", r.id(), a, b, a0, b0,
+                            a - a0, b0 - b));
                 out.add(r.withTrim(new double[]{a, b}));
             } else out.add(r);
         }

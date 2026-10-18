@@ -79,6 +79,8 @@ public final class RoadSigns {
                 }
         // the interchanges' guide signs (C3.3b group 2 package B)
         out.addAll(RoadGuides.all(works, ground));
+        // the framework towns' limit signs and street name blades (Town Framework V1)
+        out.addAll(TownSigns.all(works, ground));
         return out;
     }
 

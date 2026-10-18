@@ -35,7 +35,7 @@ import java.util.Map;
  *   near the crossing, are ignored by the trims, splits and verify (the interchange joins them).</li>
  * </ul>
  */
-final class RoadInterchanges {
+public final class RoadInterchanges {
     private RoadInterchanges() {}
 
     /** A state road's end within TOUCH of an interstate's centreline; two from opposite sides within PAIR are one site, m. */
@@ -93,7 +93,7 @@ final class RoadInterchanges {
      * The interchange's reach along the interstate each way (the farther ramp end at the largest radius plus 40 m); the
      * crossing keeps END_CLEAR from the interstate's ends, m.
      */
-    static final double FOOT = Math.max(-EXITS[EXITS.length - 1].first(), ENTRIES[ENTRIES.length - 1].last()) + 40, END_CLEAR = FOOT + 40;
+    public static final double FOOT = Math.max(-EXITS[EXITS.length - 1].first(), ENTRIES[ENTRIES.length - 1].last()) + 40, END_CLEAR = FOOT + 40;
 
     record Result(List<RouteData> roads, List<RoadJunctions.Spec> terminals, List<RoadNetworkBuild.Zone> zones) {}
 
@@ -110,7 +110,16 @@ final class RoadInterchanges {
 
     // ------------------------------------------------------------------ sites
 
-    static Result build(List<RouteData> roads, List<String> report) {
+    static Result build(List<RouteData> roads, List<String> report) { return build(roads, List.of(), report); }
+
+    /** The diamonds, kept RoadSystems.SPACING off the system interchanges (systems: their claims, C3.3b group 3). */
+    static Result build(List<RouteData> roads, List<RoadSystems.Claim> systems, List<String> report) { return build(roads, systems, report, null); }
+
+    /**
+     * The diamonds; with only, just the sites of the state roads whose ids it accepts (the town exits' trials, Town
+     * Framework V1: TownExits).
+     */
+    static Result build(List<RouteData> roads, List<RoadSystems.Claim> systems, List<String> report, java.util.function.Predicate<String> only) {
         List<RouteData> out = new ArrayList<>(roads);
         // offline baseline (InterchangeCheck -PnoInterchanges): the network as group 1 builds it
         if (Boolean.getBoolean("afl.noInterchanges")) return new Result(out, List.of(), List.of());
@@ -124,7 +133,7 @@ final class RoadInterchanges {
         List<Candidate> cands = new ArrayList<>();
         for (int i = 0; i < out.size(); i++) {
             RouteData r = out.get(i);
-            if (!r.roadClass().equals("state")) continue;
+            if (!r.roadClass().equals("state") || only != null && !only.test(r.id())) continue;
             RoadCurve rc = new RoadCurve(r.xs(), r.zs());
             double len = Math.min(rc.length, profileLength(r));
             int n = r.xs().length;
@@ -181,7 +190,7 @@ final class RoadInterchanges {
             int attempts = 0;
             for (int k = 0; k <= 2 * (int) Math.round(SHIFT / SHIFT_STEP) && site == null; k++) {
                 double sc = sm + (k % 2 == 1 ? 1 : -1) * ((k + 1) / 2) * SHIFT_STEP;
-                String f = footprint(c, a.interstate, sc, claimed);
+                String f = footprint(c, a.interstate, sc, claimed, systems);
                 if (f != null) {
                     if (first == null) first = f;
                     continue;
@@ -214,12 +223,18 @@ final class RoadInterchanges {
         return new Result(roadsOut, terminals, zones);
     }
 
-    /** Why the interstate cannot take an interchange crossing at sc (its ends, its structures, another interchange), or null. */
-    private static String footprint(Interstate c, int ii, double sc, Map<Integer, List<double[]>> claimed) {
+    /**
+     * Why the interstate cannot take an interchange crossing at sc (its ends, its structures, another interchange, a system
+     * interchange within RoadSystems.SPACING or its ramps' stretch), or null.
+     */
+    private static String footprint(Interstate c, int ii, double sc, Map<Integer, List<double[]>> claimed, List<RoadSystems.Claim> systems) {
         if (sc < END_CLEAR || sc > c.length - END_CLEAR) return "too near the interstate's end";
         for (Structure s : c.route.structures())
             if (s.s1() >= sc - FOOT && s.s0() <= sc + FOOT) return "an interstate " + s.kind().toLowerCase(Locale.ROOT) + " within the footprint";
         for (double[] f : claimed.getOrDefault(ii, List.of())) if (f[0] < sc + FOOT && f[1] > sc - FOOT) return "overlaps another interchange";
+        for (RoadSystems.Claim y : systems)
+            if (y.host().equals(c.route.id()) && (Math.abs(y.sc() - sc) < RoadSystems.SPACING || y.s0() < sc + FOOT && y.s1() > sc - FOOT))
+                return String.format(Locale.ROOT, "within %.0f m of the system interchange at s %.0f", RoadSystems.SPACING, y.sc());
         return null;
     }
 
@@ -616,7 +631,7 @@ final class RoadInterchanges {
     // ------------------------------------------------------------------ ramps
 
     /** A turtle over the (q, w) plane: heading h from +q toward +w. */
-    private static final class Turtle {
+    static final class Turtle {
         final List<double[]> pts = new ArrayList<>();
         double q, w, h;
 
@@ -717,15 +732,18 @@ final class RoadInterchanges {
     }
 
     /** The interstate's outer shoulder plane carried out to the world point p (side: the ramp's side), or NaN off it. */
-    static double hExt(RoadDesign id, RoadCurve ic, int side, double[] p) {
-        double[] l = ic.local(p[0], p[1], 120, 0);
+    static double hExt(RoadDesign id, RoadCurve ic, int side, double[] p) { return hExt(id, ic, side, p, 0); }
+
+    /** #hExt with stations up to ext beyond the host's ends (a direct ramp attached at its left-turn ramp's end, RoadSystems). */
+    static double hExt(RoadDesign id, RoadCurve ic, int side, double[] p, double ext) {
+        double[] l = ic.local(p[0], p[1], 120, ext);
         if (l == null) return Double.NaN;
         double s = Math.max(0, Math.min(id.length, l[0])), e = id.section.edge;
         double y22 = id.pavementY(s, side * e), y20 = id.pavementY(s, side * (e - 2));
         return y22 + (side * l[1] - e) * (y22 - y20) / 2;
     }
 
-    private static double hermite(double r, double ra, double ea, double ga, double rb, double eb, double gb) {
+    static double hermite(double r, double ra, double ea, double ga, double rb, double eb, double gb) {
         double len = rb - ra, t = (r - ra) / len, t2 = t * t, t3 = t2 * t;
         return (2 * t3 - 3 * t2 + 1) * ea + (t3 - 2 * t2 + t) * len * ga + (-2 * t3 + 3 * t2) * eb + (t3 - t2) * len * gb;
     }
@@ -891,7 +909,7 @@ final class RoadInterchanges {
     // ------------------------------------------------------------------ other roads
 
     /** The first other road (not the interstate, not the site's own roads) within OTHERS of any of the points, or null. */
-    private static String others(List<RouteData> out, List<RouteData> added, List<double[]> pts, RouteData... own) {
+    static String others(List<RouteData> out, List<RouteData> added, List<double[]> pts, RouteData... own) {
         double x0 = Double.POSITIVE_INFINITY, z0 = Double.POSITIVE_INFINITY, x1 = Double.NEGATIVE_INFINITY, z1 = Double.NEGATIVE_INFINITY;
         for (double[] p : pts) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
         List<RouteData> all = new ArrayList<>(out);

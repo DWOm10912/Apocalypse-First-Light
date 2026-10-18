@@ -188,6 +188,9 @@ public final class RouteGrid {
         }
     }
 
+    /** Forgets every marked corridor (the planner marks them again after re-aligning routes, C3.3b group 3). */
+    public void clearTaken() { java.util.Arrays.fill(taken, (byte) 0); }
+
     public int cells() { return nx * nz; }
 
     static final int[] DC = {1, -1, 0, 0, 1, 1, -1, -1, 2, 2, -2, -2, 1, -1, 1, -1};

@@ -16,7 +16,8 @@ import java.util.stream.Stream;
  * <ul>
  *   <li>the build's interchange report (sites built and skipped, each ramp's radius, grade and K), the overpass clearance,
  *   the remaining conflicts;</li>
- *   <li>the works (RoadWorks) of every interchange on a stand-in ground (the interstate's datum less GROUND_DROP): under
+ *   <li>the works (RoadWorks) of every interchange on a stand-in ground (the interstate's datum less GROUND_DROP; at a system
+ *   interchange the nearer of H's and the ending interstate's): under
  *   each overpass the columns over the interstate's pavement paved with the deck's cells over them (DECK_GAP free blocks at
  *   least), along each attached ramp the ramp's pavement meeting the interstate's paved edge (SEAM), the columns of the
  *   ramp's and the interstate's pavement paved, the interstate's pavement winning on its band (the hit, the ground
@@ -37,6 +38,8 @@ public final class InterchangeCheck {
     /** Mesh sampling: the grid, the band kept off the paved edges, the height tolerance, the dotted line's painted share tolerance, m. */
     static final double SAMPLE = 0.25, EDGE_SKIP = 0.03, MESH_TOL = 0.01, DOT_TOL = 0.06;
     static final int DECK_GAP = 4;
+    /** Mesh heights this far from a sample's design height belong to another level (a system interchange's deck). */
+    static final double LEVEL = 3;
 
     public static void main(String[] args) throws Exception {
         List<Path> files = new ArrayList<>();
@@ -47,7 +50,7 @@ public final class InterchangeCheck {
                 Path d = Path.of(dir);
                 if (!Files.isDirectory(d)) continue;
                 try (Stream<Path> list = Files.list(d)) {
-                    list.filter(p -> p.getFileName().toString().matches("afl_road_network_c3_v1_.*\\.json")).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
+                    list.filter(p -> p.getFileName().toString().matches(RoadSurfaceCheck.PATTERN)).forEach(p -> found.putIfAbsent(p.getFileName().toString(), p));
                 }
             }
             files.addAll(found.values());
@@ -87,45 +90,90 @@ public final class InterchangeCheck {
      * The stand-in ground: the interstate's datum at the point's station less GROUND_DROP (the interstate in a low fill),
      * level across; off its reach a plane through station sc at its grade.
      */
-    private static RoadWorks.Ground ground(RoadDesign host, double sc) {
+    private static RoadWorks.Ground ground(RoadDesign host, double sc, RoadDesign ending) {
         double[] p = host.point(sc, 0), q = host.point(Math.min(host.length, sc + 1), 0);
         double len = Math.hypot(q[0] - p[0], q[1] - p[1]), tx = (q[0] - p[0]) / len, tz = (q[1] - p[1]) / len;
         double s0 = Math.max(0, sc - 10), s1 = Math.min(host.length, sc + 10), g = (host.datum(s1) - host.datum(s0)) / (s1 - s0), y = host.datum(sc) - GROUND_DROP;
         return (x, z) -> {
             double[] l = host.local(x, z, 400);
+            // a system interchange: nearer the ending interstate (Q) than H, Q's datum (Q's end may lie metres off H's level;
+            // H's level there would put Q in a deep cut no real ground gives it)
+            double[] lq = ending == null ? null : ending.local(x, z, 400);
+            if (lq != null && (l == null || Math.abs(lq[1]) < Math.abs(l[1])))
+                return ending.datum(Math.max(0, Math.min(ending.length, lq[0]))) - GROUND_DROP;
             if (l != null) return host.datum(Math.max(0, Math.min(host.length, l[0]))) - GROUND_DROP;
             return y + g * ((x - p[0]) * tx + (z - p[1]) * tz);
         };
     }
 
+    /** A system interchange's ending interstate (Q): the road other than H and the site's ramps that a ramp's open end lies on. */
+    private static RoadDesign ending(String key, RoadDesign host, List<RoadDesign> roads) {
+        for (RoadDesign r : roads) {
+            if (!r.id.startsWith(key + ":")) continue;
+            for (int e = 0; e < 2; e++) {
+                if (!(e == 0 ? r.openStart : r.openEnd)) continue;
+                double[] p = r.point(e == 0 ? 0 : r.length, 0);
+                for (RoadDesign d : roads) {
+                    if (d == host || d.id.startsWith("system:") || d.attach != null) continue;
+                    double[] l = d.local(p[0], p[1], 30);
+                    if (l != null && (l[0] < 1 || l[0] > d.length - 1)) return d;
+                }
+            }
+        }
+        return null;
+    }
+
     private static boolean site(String key, List<RoadDesign> ramps, List<RoadDesign> roads, RoadWorks works) {
         List<String> fails = new ArrayList<>();
-        RoadDesign host = works.attachedHost(ramps.get(0));
+        // the interstate: the ramps' host that is not one of them (a system interchange's direct ramps split off and merge
+        // into its left-turn ramps, C3.3b group 3)
+        RoadDesign host = null;
+        for (RoadDesign r : ramps) {
+            RoadDesign h = works.attachedHost(r);
+            if (h != null && !h.id.startsWith(key + ":")) host = h;
+        }
         if (host == null) {
             System.out.println("  " + key + ": FAIL: the ramps' interstate is not in the network");
             return false;
         }
-        // ---------------------------------------------------------------- the overpass (the crossroad's OVERPASS span nearest the ramps)
-        double[] c0 = ramps.get(0).point(0, 0);
-        RoadDesign cross = null;
-        RoadDesign.Span over = null;
-        double bestD = Double.POSITIVE_INFINITY;
-        for (RoadDesign d : roads)
-            for (RoadDesign.Span sp : d.spans) {
-                if (!sp.over()) continue;
-                double[] m = d.point((sp.s0() + sp.s1()) / 2, 0);
-                double dist = Math.hypot(m[0] - c0[0], m[1] - c0[1]);
-                if (dist < bestD) { bestD = dist; cross = d; over = sp; }
-            }
+        // ---------------------------------------------------------------- the overpasses: a diamond's crossroad's OVERPASS
+        // span nearest the ramps; a system interchange's own decks (its left-turn ramps')
+        List<RoadDesign> crosses = new ArrayList<>();
+        List<RoadDesign.Span> overs = new ArrayList<>();
+        if (key.startsWith("system:")) {
+            for (RoadDesign r : roads)
+                if (r.id.startsWith(key + ":"))
+                    for (RoadDesign.Span sp : r.spans)
+                    if (sp.over()) { crosses.add(r); overs.add(sp); }
+        } else {
+            double[] c0 = ramps.get(0).point(0, 0);
+            RoadDesign cross = null;
+            RoadDesign.Span over = null;
+            double bestD = Double.POSITIVE_INFINITY;
+            for (RoadDesign d : roads)
+                for (RoadDesign.Span sp : d.spans) {
+                    if (!sp.over()) continue;
+                    double[] m = d.point((sp.s0() + sp.s1()) / 2, 0);
+                    double dist = Math.hypot(m[0] - c0[0], m[1] - c0[1]);
+                    if (dist < bestD) { bestD = dist; cross = d; over = sp; }
+                }
+            if (cross != null && bestD <= 1500) { crosses.add(cross); overs.add(over); }
+        }
         int twoLevel = 0, deckOnly = 0, underPaved = 0, underUnpaved = 0, minGap = Integer.MAX_VALUE;
         String gapAt = "";
         RoadWorks.Ground ground;
-        if (cross == null || bestD > 1500) {
+        RoadDesign ending = key.startsWith("system:") ? ending(key, host, roads) : null;
+        if (key.startsWith("system:") && ending == null) fails.add("no ending interstate");
+        if (crosses.isEmpty()) {
             fails.add("no overpass");
-            ground = ground(host, 0);
+            ground = ground(host, 0, ending);
         } else {
-            double[] m = cross.point((over.s0() + over.s1()) / 2, 0), lm = host.local(m[0], m[1], 50);
-            ground = ground(host, lm == null ? 0 : Math.max(0, Math.min(host.length, lm[0])));
+            double[] m = crosses.get(0).point((overs.get(0).s0() + overs.get(0).s1()) / 2, 0), lm = host.local(m[0], m[1], 50);
+            ground = ground(host, lm == null ? 0 : Math.max(0, Math.min(host.length, lm[0])), ending);
+        }
+        for (int k = 0; k < crosses.size(); k++) {
+            RoadDesign cross = crosses.get(k);
+            RoadDesign.Span over = overs.get(k);
             double reach = cross.section.edge + BridgeMesh.CELL_OUT;
             double[] b = bounds(cross, over.s0(), over.s1(), reach);
             for (int x = (int) Math.floor(b[0]); x <= b[2]; x++)
@@ -155,10 +203,10 @@ public final class InterchangeCheck {
                         else underUnpaved++;
                     }
                 }
-            if (underUnpaved > 0) fails.add(underUnpaved + " interstate columns under the deck not paved two-level");
-            if (twoLevel > 0 && minGap < DECK_GAP) fails.add("deck gap " + minGap + " blocks at " + gapAt);
-            if (twoLevel == 0) fails.add("no two-level column");
         }
+        if (underUnpaved > 0) fails.add(underUnpaved + " interstate columns under the deck not paved two-level");
+        if (twoLevel > 0 && minGap < DECK_GAP) fails.add("deck gap " + minGap + " blocks at " + gapAt);
+        if (!crosses.isEmpty() && twoLevel == 0) fails.add("no two-level column");
         // ---------------------------------------------------------------- the attached ramps
         double seam = 0, queryErr = 0;
         int hitMiss = 0, unpaved = 0, columns = 0, noQuery = 0;
@@ -166,23 +214,25 @@ public final class InterchangeCheck {
         RoadSurfaceQuery.Out o = new RoadSurfaceQuery.Out();
         for (RoadDesign r : ramps) {
             RoadDesign.Attach at = r.attach;
+            RoadDesign rh = works.attachedHost(r);
+            if (rh == null) { fails.add(r.id.substring(r.id.lastIndexOf(':') + 1) + " has no host"); continue; }
             double a0 = at.atEnd() ? Math.max(0, at.nose()) : 0, a1 = at.atEnd() ? r.length : Math.min(r.length, at.nose());
             for (double s = a0; s <= a1; s += 0.5) {
                 // the seam: the ramp's pavement where it crosses the interstate's paved edge
                 for (double u = -r.section.edge; u <= r.section.edge + 1e-9; u += 0.1) {
-                    double[] p = r.point(s, u), l = host.local(p[0], p[1], host.section.edge + 4);
-                    if (l == null || l[0] < 0 || l[0] > host.length) continue;
+                    double[] p = r.point(s, u), l = rh.local(p[0], p[1], rh.section.edge + 4);
+                    if (l == null || l[0] < 0 || l[0] > rh.length) continue;
                     double v = Math.abs(l[1]);
-                    if (Math.abs(v - host.section.edge) > 0.05) continue;
-                    double e = Math.abs(r.pavementY(s, u) - host.pavementY(l[0], Math.copySign(Math.min(v, host.section.edge), l[1])));
+                    if (Math.abs(v - rh.section.edge) > 0.05) continue;
+                    double e = Math.abs(r.pavementY(s, u) - rh.pavementY(l[0], Math.copySign(Math.min(v, rh.section.edge), l[1])));
                     if (e > seam) { seam = e; seamAt = String.format(Locale.ROOT, "%s s %.1f", r.id.substring(r.id.lastIndexOf(':') + 1), s); }
                 }
                 // a point on the interstate's band inside the ramp: the interstate's (hit, ground query)
-                double[] p = r.point(s, 0), l = host.local(p[0], p[1], host.section.edge + 4);
-                if (l != null && host.section.paved(Math.abs(l[1])) && l[0] >= 0 && l[0] <= host.length) {
+                double[] p = r.point(s, 0), l = rh.local(p[0], p[1], rh.section.edge + 4);
+                if (l != null && rh.section.paved(Math.abs(l[1])) && l[0] >= 0 && l[0] <= rh.length) {
                     RoadWorks.Hit h = works.hit(p[0], p[1], RoadWorks.REACH);
-                    if (h == null || h.road() != host) hitMiss++;
-                    double y = host.pavementY(l[0], l[1]);
+                    if (h == null || h.road() != rh) hitMiss++;
+                    double y = rh.pavementY(l[0], l[1]);
                     if (!RoadSurfaceQuery.pavement(works, p[0], p[1], y + 0.3, o)) noQuery++;
                     else queryErr = Math.max(queryErr, Math.abs(o.height - y));
                 }
@@ -195,9 +245,9 @@ public final class InterchangeCheck {
                     for (int i = 0; i <= 2 && inside; i++)
                         for (int j = 0; j <= 2; j++) {
                             double px = x + i * 0.5, pz = z + j * 0.5;
-                            double[] lr = r.local(px, pz, r.section.edge + 1), lh = host.local(px, pz, host.section.edge + 1);
+                            double[] lr = r.local(px, pz, r.section.edge + 1), lh = rh.local(px, pz, rh.section.edge + 1);
                             boolean onR = lr != null && lr[0] >= a0 && lr[0] <= a1 && r.section.paved(Math.abs(lr[1]));
-                            boolean onH = lh != null && lh[0] >= 0 && lh[0] <= host.length && host.section.paved(Math.abs(lh[1]));
+                            boolean onH = lh != null && lh[0] >= 0 && lh[0] <= rh.length && rh.section.paved(Math.abs(lh[1]));
                             if (!onR && !onH || !onR && !nearRamp(r, px, pz, a0, a1)) { inside = false; break; }
                         }
                     if (!inside) continue;
@@ -210,7 +260,18 @@ public final class InterchangeCheck {
         if (noQuery > 0) fails.add("query misses " + noQuery);
         if (queryErr > QUERY_TOL) fails.add(String.format(Locale.ROOT, "query off %.4f", queryErr));
         if (unpaved > 0) fails.add(unpaved + " of " + columns + " ramp columns unpaved");
-        String mesh = meshes(ramps, host, works, fails);
+        String mesh = meshes(ramps, works, fails);
+        // -Dafl.debugLine=x0,z0,x1,z1: the finished surface along a line (debug)
+        String dl = System.getProperty("afl.debugLine");
+        if (dl != null) {
+            String[] v = dl.split(",");
+            double lx0 = Double.parseDouble(v[0]), lz0 = Double.parseDouble(v[1]), lx1 = Double.parseDouble(v[2]), lz1 = Double.parseDouble(v[3]);
+            int k = (int) Math.ceil(Math.hypot(lx1 - lx0, lz1 - lz0) / 0.5);
+            for (int i = 0; i <= k; i++) {
+                double x = lx0 + (lx1 - lx0) * i / k, z = lz0 + (lz1 - lz0) * i / k;
+                System.out.println("LINE " + where(works, ground, x, z));
+            }
+        }
         // ---------------------------------------------------------------- the finished surface around the interchange
         double x0 = Double.POSITIVE_INFINITY, z0 = Double.POSITIVE_INFINITY, x1 = Double.NEGATIVE_INFINITY, z1 = Double.NEGATIVE_INFINITY;
         for (RoadDesign r : ramps) {
@@ -228,9 +289,26 @@ public final class InterchangeCheck {
                 // the pavement and its bevels, the overpass's ends (its abutment walls), a pad
                 RoadWorks.Hit h = works.hit(x, z, RoadWorks.REACH);
                 boolean s = h != null && !RoadWorks.elevated(h) && h.beyond() == 0 && h.v() <= h.road().section.edge + 1 || works.pad(x, z) != null;
-                if (!s && cross != null) {
+                // a system interchange: only where its own roads' works reach (its box takes in Q's and H's own works further
+                // off, over the stand-in ground)
+                if (!s && key.startsWith("system:")) {
+                    boolean own = false;
+                    RoadDesign[] nr = works.roadsNear(x, z);
+                    if (nr != null)
+                        for (RoadDesign d : nr) {
+                            if (!d.id.startsWith(key + ":")) continue;
+                            double[] l = d.local(x, z, RoadWorks.REACH);
+                            if (l != null && l[0] >= (d.openStart ? 0 : -RoadDesign.END) && l[0] <= d.length + (d.openEnd ? 0 : RoadDesign.END)) own = true;
+                        }
+                    if (!own) s = true;
+                }
+                for (int k = 0; k < crosses.size() && !s; k++) {
+                    RoadDesign cross = crosses.get(k);
+                    RoadDesign.Span over = overs.get(k);
                     double[] l = cross.local(x, z, RoadWorks.REACH);
                     if (l != null && Math.min(Math.abs(l[0] - over.s0()), Math.abs(l[0] - over.s1())) < 2 && Math.abs(l[1]) < cross.section.edge + 4) s = true;
+                    // a system interchange's decks: under them the spill-through slopes (counted as two-level columns above)
+                    if (l != null && key.startsWith("system:") && l[0] >= over.s0() && l[0] <= over.s1() && Math.abs(l[1]) < cross.section.edge + RoadWorks.SPILL_FADE) s = true;
                 }
                 skip[i + j * nx] = s;
             }
@@ -252,7 +330,7 @@ public final class InterchangeCheck {
             }
         if (steep > STEEP) fails.add(String.format(Locale.ROOT, "surface step %.2f per %.0f m at %s", steep, GRID, steepAt));
         System.out.printf(Locale.ROOT, "  %s: overpass %s two-level %d (gap >= %d), deck only %d, under-deck paved %d; ramps seam %.4f, query %.4f, columns %d; surface step %.2f at %s; %s%s%n",
-                key, cross == null ? "-" : cross.id, twoLevel, minGap == Integer.MAX_VALUE ? -1 : minGap, deckOnly, underPaved, seam, queryErr, columns, steep, steepAt,
+                key, crosses.isEmpty() ? "-" : crosses.size() > 1 ? crosses.size() + " decks" : crosses.get(0).id, twoLevel, minGap == Integer.MAX_VALUE ? -1 : minGap, deckOnly, underPaved, seam, queryErr, columns, steep, steepAt,
                 mesh, fails.isEmpty() ? "" : "  FAIL: " + String.join(", ", fails));
         return fails.isEmpty();
     }
@@ -308,13 +386,16 @@ public final class InterchangeCheck {
     /**
      * The meshes along each attached ramp of a site (see the class comment); fails added, the summary returned.
      */
-    private static String meshes(List<RoadDesign> ramps, RoadDesign host, RoadWorks works, List<String> fails) {
-        Map<Long, Mesh> hostMeshes = new HashMap<>();
+    private static String meshes(List<RoadDesign> ramps, RoadWorks works, List<String> fails) {
+        Map<RoadDesign, Map<Long, Mesh>> meshesByHost = new HashMap<>();
         int holes = 0, overlaps = 0, inside = 0, yellowIn = 0, chevrons = 0, samples = 0, solidMiss = 0, gapPaint = 0;
         double meshErr = 0, lineErr = 0, dotShare = 1;
-        String holeAt = "", overAt = "", lineAt = "";
-        double vLine = host.section.lanesOut + RoadMesh.LINE / 2;
+        String holeAt = "", overAt = "", lineAt = "", missAt = "";
         for (RoadDesign r : ramps) {
+            RoadDesign host = works.attachedHost(r);
+            if (host == null) continue;
+            Map<Long, Mesh> hostMeshes = meshesByHost.computeIfAbsent(host, k -> new HashMap<>());
+            double vLine = host.section.lanesOut + RoadMesh.LINE / 2;
             RoadWorks.RampMarks mk = null;
             for (RoadWorks.RampMarks m : works.marksOf(r)) if (m.ramp() == r) mk = m;
             if (mk == null) { fails.add(r.id.substring(r.id.lastIndexOf(':') + 1) + " has no marks"); continue; }
@@ -337,13 +418,13 @@ public final class InterchangeCheck {
                     // the asphalt: exactly one top over the union of the paved bands
                     if (onHost || onRamp) {
                         samples++;
-                        List<Double> ys = new ArrayList<>(hm.at(px, pz, RoadMesh.Material.ASPHALT));
-                        ys.addAll(rm.at(px, pz, RoadMesh.Material.ASPHALT));
                         double want = onHost ? host.pavementY(lh[0], lh[1]) : r.pavementY(lr[0], lr[1]);
+                        List<Double> ys = level(hm.at(px, pz, RoadMesh.Material.ASPHALT), want);
+                        ys.addAll(level(rm.at(px, pz, RoadMesh.Material.ASPHALT), want));
                         if (ys.isEmpty()) { holes++; holeAt = String.format(Locale.ROOT, "%.2f %.2f", px, pz); }
                         if (ys.size() > 1) { overlaps++; overAt = String.format(Locale.ROOT, "%.2f %.2f", px, pz); }
                         for (double y : ys) meshErr = Math.max(meshErr, Math.abs(y - want));
-                        if (onHost && !rm.at(px, pz, RoadMesh.Material.ASPHALT).isEmpty()) inside++;
+                        if (onHost && !level(rm.at(px, pz, RoadMesh.Material.ASPHALT), want).isEmpty()) inside++;
                     }
                     // the lines: on their asphalt; the ramp's yellow never on the interstate's lanes; the chevrons
                     for (RoadMesh.Material m : new RoadMesh.Material[]{RoadMesh.Material.WHITE, RoadMesh.Material.YELLOW}) {
@@ -376,13 +457,13 @@ public final class InterchangeCheck {
                 boolean inGap = sh > mk.gap0() + 0.05 && sh < mk.gap1() - 0.05, inDot = sh > mk.dot0() + 0.05 && sh < mk.dot1() - 0.05;
                 boolean outside = (sh < mk.gap0() - 0.05 || sh > mk.gap1() + 0.05) && (sh < mk.dot0() - 0.05 || sh > mk.dot1() + 0.05);
                 if (inGap && painted) gapPaint++;
-                if (outside && !painted) solidMiss++;
+                if (outside && !painted) { solidMiss++; missAt = String.format(Locale.ROOT, "%s s %.1f", host.id.substring(host.id.lastIndexOf(':') + 1), sh); }
                 if (inDot) { dotSamples++; if (painted) dotPainted++; }
             }
             if (dotSamples > 0) {
                 double share = (double) dotPainted / dotSamples;
                 if (Math.abs(share - RoadMesh.DOT / RoadMesh.DOT_PERIOD) > Math.abs(dotShare - RoadMesh.DOT / RoadMesh.DOT_PERIOD) || dotShare == 1) dotShare = share;
-            } else fails.add(r.id.substring(r.id.lastIndexOf(':') + 1) + " has no dotted line");
+            } else if (!host.section.oneWay) fails.add(r.id.substring(r.id.lastIndexOf(':') + 1) + " has no dotted line");
         }
         if (holes > 0) fails.add(holes + " asphalt holes at " + holeAt);
         if (overlaps > 0) fails.add(overlaps + " asphalt overlaps at " + overAt);
@@ -391,11 +472,18 @@ public final class InterchangeCheck {
         if (lineErr > MESH_TOL) fails.add(String.format(Locale.ROOT, "line off its asphalt %.4f at %s", lineErr, lineAt));
         if (yellowIn > 0) fails.add(yellowIn + " ramp yellow samples on the interstate's lanes");
         if (chevrons == 0) fails.add("no gore chevrons");
-        if (solidMiss > 0) fails.add(solidMiss + " edge line samples unpainted");
+        if (solidMiss > 0) fails.add(solidMiss + " edge line samples unpainted (" + missAt + ")");
         if (gapPaint > 0) fails.add(gapPaint + " edge line samples painted in the gap");
         if (Math.abs(dotShare - RoadMesh.DOT / RoadMesh.DOT_PERIOD) > DOT_TOL) fails.add(String.format(Locale.ROOT, "dotted share %.3f", dotShare));
         return String.format(Locale.ROOT, "mesh %d samples, holes %d, overlaps %d, off %.4f, lines off %.4f, chevron samples %d, dotted share %.3f",
                 samples, holes, overlaps, meshErr, lineErr, chevrons, dotShare);
+    }
+
+    /** The heights of ys on the level of want (within LEVEL: a deck over the attached stretch is another level). */
+    private static List<Double> level(List<Double> ys, double want) {
+        List<Double> out = new ArrayList<>(ys.size());
+        for (double y : ys) if (Math.abs(y - want) < LEVEL) out.add(y);
+        return out;
     }
 
     /** A point's finished surface and every road reaching it (debug). */

@@ -49,7 +49,14 @@ public final class RouteDesigner {
     /** Lowest crown over a culvert: opening (1.8 m) and cover over it, above the water surface, m. */
     static final double CULVERT_COVER = 2.6;
 
-    public static Result design(RoadClassSpec k, RoadCurve curve, RouteTerrain t) {
+    public static Result design(RoadClassSpec k, RoadCurve curve, RouteTerrain t) { return design(k, curve, t, null); }
+
+    /**
+     * The design with a given profile (its samples every DS m, as many as this curve's profile has; null: designed here),
+     * the structures and statistics taken from it: one leg of an interstate whose legs were designed as one road through
+     * a town (C3.3b group 3, RoadNetworkPlan#designChains).
+     */
+    public static Result design(RoadClassSpec k, RoadCurve curve, RouteTerrain t, double[] given) {
         double length = Math.floor(curve.length / RoadProfile.DS) * RoadProfile.DS;
         int n = RoadProfile.samples(length);
         double[] ground = new double[n], lower = new double[n], grade = new double[n], gMin = new double[n], gMax = new double[n];
@@ -103,7 +110,8 @@ public final class RouteDesigner {
             double ya = a > 0 ? ground[a - 1] : (i < n ? ground[i] : ground[a]), yb = i < n ? ground[i] : ya;
             for (int q = a; q < i; q++) input[q] = ya + (yb - ya) * (q - a + 1) / (i - a + 1);
         }
-        RoadProfile p = RoadProfile.design(input, k.sigma, k.raise, k.vSigma(), k.kMin(), grade, lower);
+        if (given != null && given.length != n) throw new IllegalArgumentException("ROUTE_PROFILE_SAMPLES " + given.length + " != " + n);
+        RoadProfile p = given != null ? RoadProfile.of(given) : RoadProfile.design(input, k.sigma, k.raise, k.vSigma(), k.kMin(), grade, lower);
         double[] e = p.samples();
         // structures
         List<Structure> out = new ArrayList<>();

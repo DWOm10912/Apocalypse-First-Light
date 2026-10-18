@@ -26,9 +26,11 @@ public final class RoadNetworkStage {
      * approaches against caves and carvers, TunnelWorks#rock; 7: C3.3b junction pads, their roadside blended into the roads'
      * works, the host's ditch filled across the mouth, no plants on a pad or in its sight triangles, RoadWorks#padSurface;
      * 8: C3.3b group 2 interchanges: attached ramps give way on the interstate's band, RoadWorks#yields, the ramps' roadside
-     * turned into the interstate's, the overpass's spill-through slopes, two-level columns under a deck, Column#deck).
+     * turned into the interstate's, the overpass's spill-through slopes, two-level columns under a deck, Column#deck; 9: Town
+     * Framework V1: the framework towns' exits built (RoadNetworkBuild with the terrain), their streets, intersections,
+     * lots and slopes, TownWorks, RoadWorks#townColumn).
      */
-    public static final int WORKS_VERSION = 8;
+    public static final int WORKS_VERSION = 9;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -47,9 +49,11 @@ public final class RoadNetworkStage {
      * road signs as fixtures, RoadSigns; 16: C3.3b group 2 interchanges: the ramps' pavement clipped to the interstate's
      * edge, gore chevrons, the interstate's dotted edge lines along a ramp, no lines at an entrance's terminal, DO NOT
      * ENTER / WRONG WAY at an exit's terminal, an overpass's deck over the road under it, RoadWorks.RampMarks; 17: the
-     * interchanges' guide signs, RoadGuides / GuideSigns, 2026-10-17).
+     * interchanges' guide signs, RoadGuides / GuideSigns, 2026-10-17; 18: C3.3b group 3 system interchanges (trumpets,
+     * RoadSystems): open ends without end bevels, the direct ramps' marks on their left-turn ramps, 2026-10-17; 19: Town
+     * Framework V1: the framework towns' street asphalt, curbs and sidewalks, TownMesh, their paved columns, 2026-10-17).
      */
-    public static final int SURFACE_VERSION = 17;
+    public static final int SURFACE_VERSION = 19;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {
