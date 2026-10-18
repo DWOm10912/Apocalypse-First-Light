@@ -50,7 +50,10 @@ public final class TruckLights {
     @SubscribeEvent
     public static void setup(FMLClientSetupEvent event) {
         DynamicLights.register(TruckLights::collect);
-        event.enqueueWork(DynamicLights::registerTextures);
+        event.enqueueWork(() -> {
+            DynamicLights.registerTextures();
+            com.antaurora.apofirstlight.client.rain.RainShaderPack.register();
+        });
     }
 
     private static void collect(DynamicLights.Lights out, ClientLevel level, Vec3 camera, float pt) {

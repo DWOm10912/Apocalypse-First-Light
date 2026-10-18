@@ -45,6 +45,7 @@
 
 - uniform 在程序绑定时上传：原版程序在 `ShaderInstance#apply` 之后（`client.DynamicLightShaderApplyMixin`），每个程序每个"帧状态"（关卡内 / 关卡外）只传一次灯数据；方块格贴图每次绑定到第 15 号纹理单元（原版用 0–11）。
 - 光照代码只有一份：`assets/apocalypse_firstlight/shaders/include/afl_dynamic_light.glsl`，由 `client/light/DynamicLightShaders` 插进上面三处。每个改过的阶段先单独编译一次，编译不过就用原来的源码（日志里有 `AFL dynamic lights: ... does not compile`）。
+- 2026-10-17 起（[雨 V1](rain_v1.md)）：凡是 AFL 自己的程序（名字以 `apocalypse_firstlight:` 开头）、源码里有 `// @afl:dynamic_light` 标记的阶段，都会插入光照库，插进去后定义宏 `AFL_DYNAMIC_LIGHT`，程序用它包住调用，插不进时照样编译。在顶点阶段用时先 `#define AFL_VERTEX_STAGE`，库就跳过只在片元阶段能用的部分（`afl_fragPos`、`afl_normal`）。新函数 `afl_litVolume(lm, p)` 给空气里的点（雨滴）打光：没有朝向项，阴影射线从点本身开始走。原来的道路程序 `afl_dynlit_solid` 也按这条规则插。
 - **只有 Embeddium 地形改成功了才打开**（`DynamicLights.active()` = 开关开 && 地形阶段改成功且没有失败 && 没开光影包）；没打开时一切照旧（车灯方块光、尾灯地面贴片）。
 
 ### 3.1 光影包接口（Aureveil A 2026-10-17 定的方案）

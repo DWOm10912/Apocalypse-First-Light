@@ -52,6 +52,7 @@
     - `/afl_render static_mesh on|off`；
     - `/afl_render mirror off|auto|lit|albedo`（2026-10-08，[Mirror Reflection V1](../rendering/mirror_reflection_v1.md)，默认 auto）；
     - `/afl_render dynamic_lights on|off|status`（2026-10-17，[动态光源 V1](../rendering/dynamic_lights_v1.md)：off 回到车灯方块光对比；只有命令，不读属性文件）；
+    - `/afl_render rain on|off|status`（2026-10-17，[雨 V1](../rendering/rain_v1.md)：off 回到原版的雨对比，status 显示上一帧雨的绘制时间（微秒）；只有命令，不读属性文件）；
     - `/afl_render status`。
   - 测量脚本写 `run/afl_render_dev.properties`（键名相同），开发版每秒读一次。
   - 两个开关默认都是开（`mirror` 默认 auto）。`static_mesh` 切换时会重建所有区块。

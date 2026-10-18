@@ -1,0 +1,216 @@
+package com.antaurora.apofirstlight.client.rain;
+
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.ShaderPackOption;
+import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
+import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
+import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
+import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
+import com.mojang.logging.LogUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.system.MemoryUtil;
+import org.slf4j.Logger;
+
+import java.nio.FloatBuffer;
+import java.util.List;
+
+/**
+ * The rain for a shader pack that draws it itself (docs/rendering/rain_v1.md section 6; Aureveil from alpha.49): the pack
+ * switches it on with its boolean option {@code AFL_RAIN}; then AFL leaves out vanilla's rain sheets and rain splash
+ * particles (mixin client.RainVanillaMixin; snow, lava smoke and the rain sounds stay) and keeps these textures up every
+ * frame before the terrain (AFTER_SKY), all positions relative to Camera#getPosition() at the frame's partial tick:
+ * <ul>
+ * <li>{@code apocalypse_firstlight:dynamic/afl_rain_columns}: the rain's column map, 128 x 129 RGBA8
+ * ({@link RainColumns#uploadPack}).</li>
+ * <li>{@code apocalypse_firstlight:dynamic/afl_rain_trucks}: RGBA32F 76 x 3. Row 0 the header: texel 0 (trucks 0-2, 0, 0,
+ * 4243: the pack's check), texel 1 the T15 glass sprite's UV range in the block atlas (u0, v0, u1, v1). Rows 1-2 the
+ * nearest trucks within 40 m, nearest first: texel 0 the origin (w 1), 1-3 forward, right, up (unit); 4-51 the 16 rain
+ * shell boxes, 3 texels each (min.f, min.r, min.u, nf), (max.f, max.r, max.u, nu), (d, 1 when used, 0, 0), in the
+ * truck's (forward, right, up), what stays of a box being nf * f + nu * u <= d (no cut: nf = nu = 0, d = 1e9; as
+ * afl_rain.vsh afl_truckClip, which also lowers every box's floor by 0.05 m); 52-75 the four panes of glass
+ * ({@link TruckGlass#PANES}: windshield, rear, left, right), 6 texels each: origin (u = s = 0, w 1), U, S, Nout (unit,
+ * world; a door window turned with its door), the glass range (u0, s0, u1, s1, m) and its rectangle in
+ * dynamic/afl_glass_water (x0, y0, x1, y1, 0..1: (u0, s0) at (x0, y0), (u1, s1) at (x1, y1); zeros where that pane is dry
+ * or its truck keeps no water, beyond 24 m).</li>
+ * <li>{@code apocalypse_firstlight:dynamic/afl_glass_water}: the glass water of the two trucks' panes, RGBA8
+ * {@link GlassAtlas#W} x {@link GlassAtlas#H} with mip levels, baked by {@link WindshieldRenderer#packFrame}.</li>
+ * </ul>
+ * With the option off, another pack or none: nothing is stopped and nothing is updated (the pack does not read them).
+ */
+@Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+public final class RainShaderPack {
+    static final String OPTION = "AFL_RAIN";
+    static final ResourceLocation COLUMNS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_rain_columns"),
+            TRUCKS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_rain_trucks"),
+            GLASS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_glass_water");
+    static final int TRUCK_W = 76, TRUCK_H = 3, TRUCKS = 2, BOXES = 16, PANE_AT = 52, PANE_TEXELS = 6;
+    private static final double RANGE = 40;
+    private static final float CHECK = 4243.0F;
+    private static final ResourceLocation GLASS = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/pickup_t15_glass.png");
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final DataTexture COLUMNS_TEX = new DataTexture(), TRUCKS_TEX = new DataTexture(), GLASS_TEX = new DataTexture();
+    private static final FloatBuffer DATA = MemoryUtil.memAllocFloat(TRUCK_W * TRUCK_H * 4);
+    private static int frame;
+    private static boolean failed;
+
+    private RainShaderPack() {
+    }
+
+    /** A texture whose contents AFL writes itself (nothing to load from resources). */
+    private static final class DataTexture extends AbstractTexture {
+        int allocated = -1;
+
+        @Override
+        public void load(ResourceManager manager) {
+        }
+    }
+
+    /** The shader pack in use draws the rain from AFL's textures (its option AFL_RAIN is on). */
+    public static boolean active() {
+        return !failed && AflShaderCompat.shaderPackInUse() && ShaderPackOption.on(OPTION, "the pack draws the rain; off: vanilla rain");
+    }
+
+    /** Client setup (render thread): the textures registered before the shader pack first binds them. */
+    public static void register() {
+        TextureManager textures = Minecraft.getInstance().getTextureManager();
+        if (textures.getTexture(COLUMNS_ID, null) != COLUMNS_TEX) textures.register(COLUMNS_ID, COLUMNS_TEX);
+        if (textures.getTexture(TRUCKS_ID, null) != TRUCKS_TEX) textures.register(TRUCKS_ID, TRUCKS_TEX);
+        if (textures.getTexture(GLASS_ID, null) != GLASS_TEX) textures.register(GLASS_ID, GLASS_TEX);
+    }
+
+    @SubscribeEvent
+    public static void stage(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        Minecraft mc = Minecraft.getInstance();
+        ClientLevel level = mc.level;
+        if (level == null || AflShaderCompat.activeShadowPass() || !active()) return;
+        try {
+            register();
+            Vec3 cam = event.getCamera().getPosition();
+            frame++;
+            RainRenderer.columns().uploadPack(COLUMNS_TEX.getId(), Mth.floor(cam.x), Mth.floor(cam.z), frame);
+            float pt = event.getPartialTick();
+            List<RainTrucks.Frame> near = RainTrucks.near(level, cam, RANGE, TRUCKS, pt);
+            boolean[][] baked = WindshieldRenderer.packFrame(mc, level, cam, pt, near, GLASS_TEX.getId());
+            uploadTrucks(cam, pt, near, baked);
+        } catch (RuntimeException e) {
+            failed = true;
+            LOGGER.error("AFL rain for the shader pack: switched off after an error (vanilla rain is back)", e);
+        }
+    }
+
+    private static final Quaternionf Q = new Quaternionf(), QP = new Quaternionf();
+    private static final Vector3f V = new Vector3f();
+    private static final float[] P = new float[3];
+
+    private static void uploadTrucks(Vec3 cam, float pt, List<RainTrucks.Frame> near, boolean[][] baked) {
+        FloatBuffer d = DATA;
+        MemoryUtil.memSet(MemoryUtil.memAddress(d), 0, (long) d.capacity() * Float.BYTES);
+        d.put(0, near.size()).put(3, CHECK);
+        TextureAtlasSprite glass = AflStaticMeshModel.atlasSprite(GLASS);
+        if (glass != null) d.put(4, glass.getU0()).put(5, glass.getV0()).put(6, glass.getU1()).put(7, glass.getV1());
+        for (int t = 0; t < near.size(); t++) {
+            RainTrucks.Frame f = near.get(t);
+            int row = (1 + t) * TRUCK_W;
+            texel(d, row, (float) (f.o.x - cam.x), (float) (f.o.y - cam.y), (float) (f.o.z - cam.z), 1);
+            texel(d, row + 1, (float) f.f.x, (float) f.f.y, (float) f.f.z, 0);
+            texel(d, row + 2, (float) f.r.x, (float) f.r.y, (float) f.r.z, 0);
+            texel(d, row + 3, (float) f.u.x, (float) f.u.y, (float) f.u.z, 0);
+            int n = 0;
+            for (PickupTruckLayout.RainPart part : f.parts) {
+                if (n >= BOXES) break;
+                PickupTruckLayout.Box b = part.box();
+                boolean cut = part.nf() != 0 || part.ny() != 0;
+                int at = row + 4 + n * 3;
+                texel(d, at, (float) b.f0(), (float) b.r0(), (float) b.y0(), (float) part.nf());
+                texel(d, at + 1, (float) b.f1(), (float) b.r1(), (float) b.y1(), (float) part.ny());
+                texel(d, at + 2, cut ? (float) part.d() : 1e9F, 1, 0, 0);
+                n++;
+            }
+            panes(d, row, f.truck, cam, pt, t, baked[t]);
+        }
+        int id = TRUCKS_TEX.getId();
+        int prev = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, id);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 4);
+        d.position(0).limit(d.capacity());
+        if (TRUCKS_TEX.allocated != id) {
+            TRUCKS_TEX.allocated = id;
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_BASE_LEVEL, 0);
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, 0);
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_RGBA32F, TRUCK_W, TRUCK_H, 0, GL11.GL_RGBA, GL11.GL_FLOAT, d);
+        } else {
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, TRUCK_W, TRUCK_H, GL11.GL_RGBA, GL11.GL_FLOAT, d);
+        }
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, prev);
+    }
+
+    /** A truck's four panes into its row (texels 52-75): as WindshieldRenderer places them, a door window turned with its door. */
+    private static void panes(FloatBuffer d, int row, PickupTruckEntity truck, Vec3 cam, float pt, int slot, boolean[] baked) {
+        truck.orientation(pt, Q);
+        Vec3 pos = truck.getPosition(pt);
+        float ox = (float) (pos.x - cam.x), oy = (float) (pos.y - cam.y), oz = (float) (pos.z - cam.z);
+        for (int i = 0; i < TruckGlass.PANES.length; i++) {
+            TruckGlass.Pane pane = TruckGlass.PANES[i];
+            float px = 0, py = 0, pz = 0, deg = 0;
+            if (pane.hinge != TruckGlass.Hinge.NONE) {
+                boolean left = pane.hinge == TruckGlass.Hinge.DOOR_L;
+                px = left ? -TruckGlass.HINGE_X : TruckGlass.HINGE_X;
+                py = TruckGlass.HINGE_Y;
+                pz = TruckGlass.HINGE_Z;
+                deg = left ? -truck.doorAngle(false, pt) : truck.doorAngle(true, pt);
+            }
+            QP.set(Q);
+            if (deg != 0) QP.rotateY((float) Math.toRadians(deg));
+            int at = row + PANE_AT + i * PANE_TEXELS;
+            // origin: the truck's turn to the hinge, the door's turn from it
+            pane.model(0, 0, 0, P, 0);
+            Q.transform(V.set(px, py, pz));
+            float bx = ox + V.x, by = oy + V.y, bz = oz + V.z;
+            QP.transform(V.set(P[0] - px, P[1] - py, P[2] - pz));
+            texel(d, at, bx + V.x, by + V.y, bz + V.z, 1);
+            axis(d, at + 1, pane.axisU);
+            axis(d, at + 2, pane.axisS);
+            axis(d, at + 3, pane.axisN);
+            texel(d, at + 4, (float) GlassAtlas.u0(pane), (float) GlassAtlas.s0(pane), (float) GlassAtlas.u1(pane), (float) GlassAtlas.s1(pane));
+            if (baked[i]) {
+                float[] r = GlassAtlas.RECT[slot][i];
+                texel(d, at + 5, r[0], r[1], r[2], r[3]);
+            }
+        }
+    }
+
+    private static void axis(FloatBuffer d, int at, double[] a) {
+        QP.transform(V.set((float) a[0], (float) a[1], (float) a[2]));
+        texel(d, at, V.x, V.y, V.z, 0);
+    }
+
+    private static void texel(FloatBuffer d, int at, float x, float y, float z, float w) {
+        d.put(at * 4, x).put(at * 4 + 1, y).put(at * 4 + 2, z).put(at * 4 + 3, w);
+    }
+}

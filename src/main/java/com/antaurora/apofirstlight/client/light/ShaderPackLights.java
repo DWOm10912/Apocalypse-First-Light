@@ -1,23 +1,19 @@
 package com.antaurora.apofirstlight.client.light;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.mojang.logging.LogUtils;
+import com.antaurora.apofirstlight.client.ShaderPackOption;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraftforge.fml.ModList;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
-import org.slf4j.Logger;
 
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.util.Optional;
 
 /**
  * The lights for a shader pack that draws them itself (docs/rendering/dynamic_lights_v1.md 3.1; Aureveil from alpha.46):
@@ -42,17 +38,10 @@ final class ShaderPackLights {
     static final int LIGHT_W = 6, LIGHT_H = 1 + DynamicLights.MAX_OCCLUDERS + DynamicLights.MAX_LIGHTS, OCC_W = 2048, OCC_H = 1024;
     private static final float CHECK = 4242.0F;
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final DataTexture LIGHT_TEX = new DataTexture(), OCC_TEX = new DataTexture();
     private static final FloatBuffer DATA = MemoryUtil.memAllocFloat(LIGHT_W * LIGHT_H * 4);
     /** The header's light count last uploaded (a zero header goes up once when the lights stop). */
     private static int uploadedCount = -1;
-
-    private static boolean reflected, failed;
-    private static Method inUse, currentPack, packOptions, optionSet, isBoolean, optionValues, booleanValue;
-    /** The pack the option was last read from (a changed option reloads the pack: a new object) and its answer. */
-    private static Object lastPack;
-    private static boolean lastWanted;
 
     private ShaderPackLights() {
     }
@@ -74,38 +63,9 @@ final class ShaderPackLights {
         if (textures.getTexture(OCCUPANCY, null) != OCC_TEX) textures.register(OCCUPANCY, OCC_TEX);
     }
 
-    /** The shader pack in use has the option and it is on (Oculus' own classes, read by reflection; false when unknown). */
+    /** The shader pack in use has the option and it is on (false when unknown). */
     static boolean wanted() {
-        if (failed || !ModList.get().isLoaded("oculus")) return false;
-        try {
-            if (!reflected) {
-                reflected = true;
-                Class<?> iris = Class.forName("net.irisshaders.iris.Iris");
-                inUse = iris.getMethod("isPackInUseQuick");
-                currentPack = iris.getMethod("getCurrentPack");
-                packOptions = Class.forName("net.irisshaders.iris.shaderpack.ShaderPack").getMethod("getShaderPackOptions");
-                Class<?> options = Class.forName("net.irisshaders.iris.shaderpack.option.ShaderPackOptions");
-                optionSet = options.getMethod("getOptionSet");
-                optionValues = options.getMethod("getOptionValues");
-                isBoolean = Class.forName("net.irisshaders.iris.shaderpack.option.OptionSet").getMethod("isBooleanOption", String.class);
-                booleanValue = Class.forName("net.irisshaders.iris.shaderpack.option.values.OptionValues").getMethod("getBooleanValueOrDefault", String.class);
-            }
-            if (!(Boolean) inUse.invoke(null)) return false;
-            Object pack = ((Optional<?>) currentPack.invoke(null)).orElse(null);
-            if (pack == null) return false;
-            if (pack != lastPack) {
-                lastPack = pack;
-                Object o = packOptions.invoke(pack);
-                // isBooleanOption first: Oculus warns on every read of an option the pack does not have
-                lastWanted = (Boolean) isBoolean.invoke(optionSet.invoke(o), OPTION) && (Boolean) booleanValue.invoke(optionValues.invoke(o), OPTION);
-                LOGGER.info("AFL dynamic lights: shader pack option {} {}", OPTION, lastWanted ? "on: the pack draws the lamps" : "off or absent: block light");
-            }
-            return lastWanted;
-        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
-            failed = true;
-            LOGGER.warn("AFL dynamic lights: cannot read the shader pack's options, block light stays: {}", e.toString());
-            return false;
-        }
+        return ShaderPackOption.on(OPTION, "the pack draws the lamps; off: block light");
     }
 
     /** The occupancy texture's GL id, its storage (zeros) made when new (true: the contents were lost, refill the grid). */

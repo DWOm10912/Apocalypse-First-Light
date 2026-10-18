@@ -64,7 +64,12 @@ public final class VehicleDriving {
     public static final KeyMapping SIGNAL_LEFT = new KeyMapping("key.apocalypse_firstlight.signal_left", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, CATEGORY);
     public static final KeyMapping SIGNAL_RIGHT = new KeyMapping("key.apocalypse_firstlight.signal_right", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, CATEGORY);
     public static final KeyMapping HAZARD = new KeyMapping("key.apocalypse_firstlight.hazard", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_DOWN, CATEGORY);
-    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD};
+    /**
+     * The wiper stalk (docs/vehicles/t15_windshield_rain_design.md; 2026-10-17, the user left the key to me: C, beside the
+     * transfer case's X and free while driving): a press steps it on, off - intermittent - low - high - off.
+     */
+    public static final KeyMapping WIPERS = new KeyMapping("key.apocalypse_firstlight.wipers", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, CATEGORY);
+    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD, WIPERS};
     /** Ticks the light key is held before it counts as a hold (the high beam) instead of a tap. */
     private static final int HOLD_TICKS = 8;
     /** Ticks the light key has been held; -1 once this hold flipped the high beam (the release then does nothing). */
@@ -116,7 +121,7 @@ public final class VehicleDriving {
                 mc.screen == null && IGNITION.isDown(), fuel, true);
     }
 
-    /** The driver's light switch, high beam, horn, turn signals or hazards to the server. */
+    /** The driver's light switch, high beam, horn, turn signals, hazards or wipers to the server. */
     private static void lampSwitch(int action) {
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getVehicle() instanceof PickupTruckEntity truck)
             com.antaurora.apofirstlight.network.AflNetwork.vehicleToServer(new VehiclePackets.Lamps(truck.getId(), action));
@@ -189,6 +194,7 @@ public final class VehicleDriving {
             if (pressed(SIGNAL_LEFT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_LEFT);
             if (pressed(SIGNAL_RIGHT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_RIGHT);
             if (pressed(HAZARD) && driving) lampSwitch(PickupTruckEntity.SWITCH_HAZARD);
+            if (pressed(WIPERS) && driving) lampSwitch(PickupTruckEntity.SWITCH_WIPER);
             while (HORN.consumeClick()) {
             }
             boolean horn = driving && HORN.isDown();

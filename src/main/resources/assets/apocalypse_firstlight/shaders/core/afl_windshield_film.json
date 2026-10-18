@@ -1,0 +1,38 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1-srcalpha",
+        "srcalpha": "0",
+        "dstalpha": "1"
+    },
+    "vertex": "apocalypse_firstlight:afl_windshield_film",
+    "fragment": "apocalypse_firstlight:afl_windshield_film",
+    "attributes": [
+        "Position",
+        "UV0"
+    ],
+    "samplers": [
+        { "name": "Scene" },
+        { "name": "SceneDepth" },
+        { "name": "Film" },
+        { "name": "Beads" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ScreenSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+        { "name": "SkyLight", "type": "float", "count": 3, "values": [ 1.0, 1.0, 1.0 ] },
+        { "name": "Interior", "type": "float", "count": 3, "values": [ 0.05, 0.05, 0.05 ] },
+        { "name": "Inside", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "Outside", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Outline", "type": "float", "count": 4, "values": [ -0.773, 0.06036, 0.773, -0.06036 ] },
+        { "name": "Span", "type": "float", "count": 3, "values": [ 0.031, 0.8617, 0.07 ] },
+        { "name": "GlassAcross", "type": "float", "count": 3, "values": [ 1.0, 0.0, 0.0 ] },
+        { "name": "GlassUp", "type": "float", "count": 3, "values": [ 0.0, 0.80658, 0.591125 ] },
+        { "name": "GlassOut", "type": "float", "count": 3, "values": [ 0.0, 0.591125, -0.80658 ] },
+        { "name": "Pivots", "type": "float", "count": 4, "values": [ -0.47, -0.02134, 0.03, -0.02134 ] },
+        { "name": "Blades", "type": "float", "count": 4, "values": [ 0.245, 0.735, 0.24, 0.69 ] },
+        { "name": "Sweeps", "type": "float", "count": 4, "values": [ 1.8326, 1.6057, 0.06473, 0.06473 ] }
+    ]
+}

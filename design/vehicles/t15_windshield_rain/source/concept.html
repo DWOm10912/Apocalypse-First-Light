@@ -1,0 +1,366 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>T15 windshield rain concept</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c" width="1600" height="900"></canvas>
+<script>
+// T15 windshield rain + wipers: concept frames (design/vehicles/t15_windshield_rain). ?s=A|B|C|D
+// Driver's eye, left-hand drive: the steering wheel ahead, the cab's middle and the mirror to the right.
+// Tandem wipers (tools/pickup-t15/exterior.mjs: pivots at -0.47 / +0.03 m, parked toward the passenger side).
+const W = 1600, H = 900;
+const S = (new URLSearchParams(location.search).get('s') || 'A').toUpperCase();
+const NIGHT = S === 'D';
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+
+let seed = {A: 11, B: 11, C: 23, D: 37}[S];
+function rnd() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const mk = () => { const k = document.createElement('canvas'); k.width = W; k.height = H; return k; };
+
+// ---------------------------------------------------------------- the world outside
+const VP = {x: 800, y: 430};
+const bg = mk(), b = bg.getContext('2d');
+const lights = [];   // bright spots in the scene (night): x, y, radius, colour
+function scene() {
+  // sky
+  let g = b.createLinearGradient(0, 0, 0, VP.y + 40);
+  if (NIGHT) { g.addColorStop(0, '#07090d'); g.addColorStop(1, '#1a1f27'); }
+  else { g.addColorStop(0, '#7f8a94'); g.addColorStop(1, '#b7bec3'); }
+  b.fillStyle = g; b.fillRect(0, 0, W, H);
+  // blocky hills, far to near, fogged
+  const hill = (base, amp, step, col, ph) => {
+    b.fillStyle = col; b.beginPath(); b.moveTo(0, H);
+    for (let x = 0; x <= W; x += step) {
+      const y = base - amp * (0.5 + 0.5 * Math.sin(x * 0.004 + ph) * Math.cos(x * 0.0013 + ph * 2));
+      const q = Math.round(y / step) * step;
+      b.lineTo(x, q); b.lineTo(x + step, q);
+    }
+    b.lineTo(W, H); b.fill();
+  };
+  if (NIGHT) { hill(VP.y + 6, 70, 16, '#12161c', 1); hill(VP.y + 14, 45, 12, '#0e1116', 3); }
+  else { hill(VP.y + 6, 80, 16, '#a3abb0', 1); hill(VP.y + 14, 55, 12, '#8f9a98', 3); }
+  // ground
+  b.fillStyle = NIGHT ? '#090b0d' : '#56614b'; b.fillRect(0, VP.y + 10, W, H);
+  // road (right-hand traffic: the centre line is left of the driver)
+  const roadX = (L, y) => VP.x + L * (y - VP.y) / 1.73 * 1.0;
+  b.fillStyle = NIGHT ? '#111316' : '#3a3d40';
+  b.beginPath(); b.moveTo(roadX(-5.2, H), H); b.lineTo(VP.x - 2, VP.y); b.lineTo(VP.x + 2, VP.y); b.lineTo(roadX(2.6, H), H); b.fill();
+  // wet sheen: the sky (or lamps) smeared on the road
+  for (let i = 0; i < 40; i++) {
+    const y = VP.y + 6 + rnd() * 300, L = -5 + rnd() * 7.5, x = roadX(L, y);
+    b.fillStyle = NIGHT ? 'rgba(80,90,110,0.05)' : 'rgba(200,208,214,0.07)';
+    b.fillRect(x, y, 2 + rnd() * 6, 10 + rnd() * 40);
+  }
+  // lines: edge white, centre yellow dashed
+  const line = (L, w, col, dash) => {
+    for (let y = VP.y + 2; y < H; y += 2) {
+      const d = (y - VP.y) / 1.73, s = d * 0.06;   // depth-ish stripe phase
+      if (dash && Math.floor(Math.log(y - VP.y + 1) * 9) % 2) continue;
+      b.fillStyle = col; b.fillRect(roadX(L, y) - w * d * 0.004, y, Math.max(1, w * d * 0.008), 2);
+    }
+  };
+  line(-1.45, 1.2, NIGHT ? '#6b5a20' : '#c9a53a', true);
+  line(-1.65, 1.2, NIGHT ? '#6b5a20' : '#c9a53a', true);
+  line(2.25, 1.6, NIGHT ? '#5b5d60' : '#d9dcdc', false);
+  line(-5.0, 1.6, NIGHT ? '#3b3d40' : '#d9dcdc', false);
+  // blocky conifers along both sides
+  for (let i = 0; i < 26; i++) {
+    const side = i % 2 ? 1 : -1, dist = 20 + rnd() * 80, L = side > 0 ? 6 + rnd() * 10 : -10 - rnd() * 14;
+    const y = VP.y + 1.73 / dist * 643 * 0.7, x = VP.x + L / dist * 643 * 0.7, s = 643 * 0.7 / dist;
+    const h = (6 + rnd() * 5) * s, w = 2.4 * s;
+    const fog = Math.min(1, dist / 80);
+    const col = NIGHT ? `rgba(${8 + 6 * fog},${11 + 6 * fog},${14 + 6 * fog},1)` : `rgb(${46 + 110 * fog},${58 + 100 * fog},${48 + 112 * fog})`;
+    b.fillStyle = col;
+    for (let k = 0; k < 4; k++) { const ww = w * (1 - k * 0.22); b.fillRect(x - ww / 2, y - h * (0.25 + k * 0.2), ww, h * 0.24); }
+    b.fillRect(x - s * 0.2, y - h * 0.25, s * 0.4, h * 0.25);
+  }
+  // a pickup ahead in the lane (tail lamps)
+  const carD = 26, cs = 643 * 0.7 / carD, cx = VP.x + 0.0 * cs, cy = VP.y + 1.73 * cs;
+  b.fillStyle = NIGHT ? '#050607' : '#2f3337'; b.fillRect(cx - 0.85 * cs, cy - 1.7 * cs, 1.7 * cs, 1.45 * cs);
+  b.fillStyle = NIGHT ? '#ff2a1a' : '#8e2420';
+  b.fillRect(cx - 0.8 * cs, cy - 1.15 * cs, 0.14 * cs, 0.26 * cs); b.fillRect(cx + 0.66 * cs, cy - 1.15 * cs, 0.14 * cs, 0.26 * cs);
+  if (NIGHT) {
+    lights.push({x: cx - 0.73 * cs, y: cy - 1.02 * cs, r: 26, c: '255,40,25'}, {x: cx + 0.73 * cs, y: cy - 1.02 * cs, r: 26, c: '255,40,25'});
+    // street lamps (sodium) on the right, a car coming the other way
+    for (const d of [14, 24, 40, 70]) {
+      const s = 643 * 0.7 / d, x = VP.x + 7.5 * s, y = VP.y - 6.5 * s;
+      b.fillStyle = '#1b1e22'; b.fillRect(x - 0.08 * s, y, 0.16 * s, 8.2 * s);
+      lights.push({x, y, r: 40 * s / 30 + 10, c: '255,170,80'});
+    }
+    const od = 34, os = 643 * 0.7 / od;
+    lights.push({x: VP.x - 3.4 * os, y: VP.y + 1.1 * os, r: 30, c: '235,240,255'}, {x: VP.x - 4.9 * os, y: VP.y + 1.1 * os, r: 30, c: '235,240,255'});
+    // our own headlamp pool on the road
+    b.save(); b.translate(VP.x + 60, VP.y + 250); b.scale(1.7, 0.42);
+    const hp = b.createRadialGradient(0, 0, 10, 0, 0, 400);
+    hp.addColorStop(0, 'rgba(210,205,190,0.32)'); hp.addColorStop(1, 'rgba(210,205,190,0)');
+    b.fillStyle = hp; b.fillRect(-400, -400, 800, 800); b.restore();
+    for (const l of lights) {
+      const gl = b.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r);
+      gl.addColorStop(0, `rgba(${l.c},1)`); gl.addColorStop(0.12, `rgba(${l.c},0.9)`); gl.addColorStop(1, `rgba(${l.c},0)`);
+      b.fillStyle = gl; b.fillRect(l.x - l.r, l.y - l.r, l.r * 2, l.r * 2);
+      // their streaks on the wet road
+      const rf = b.createLinearGradient(0, l.y, 0, Math.min(H, l.y + 260));
+      rf.addColorStop(0, `rgba(${l.c},0.25)`); rf.addColorStop(1, `rgba(${l.c},0)`);
+      b.save(); b.filter = 'blur(5px)'; b.fillStyle = rf; b.fillRect(l.x - 4, Math.max(l.y, VP.y + 30), 8, 230); b.restore();
+    }
+  }
+  // falling rain out there (fine streaks)
+  b.strokeStyle = NIGHT ? 'rgba(160,170,190,0.10)' : 'rgba(225,230,235,0.16)'; b.lineWidth = 1;
+  for (let i = 0; i < 700; i++) { const x = rnd() * W, y = rnd() * H; b.beginPath(); b.moveTo(x, y); b.lineTo(x - 3, y + 14 + rnd() * 10); b.stroke(); }
+  // distance fog
+  const fg = b.createLinearGradient(0, VP.y - 120, 0, VP.y + 60);
+  fg.addColorStop(0, NIGHT ? 'rgba(20,24,30,0)' : 'rgba(190,196,200,0)');
+  fg.addColorStop(0.7, NIGHT ? 'rgba(20,24,30,0.45)' : 'rgba(190,196,200,0.55)');
+  fg.addColorStop(1, NIGHT ? 'rgba(20,24,30,0)' : 'rgba(190,196,200,0)');
+  b.fillStyle = fg; b.fillRect(0, VP.y - 120, W, 180);
+}
+scene();
+const bgSoft = mk(); { const s = bgSoft.getContext('2d'); s.filter = 'blur(2.2px)'; s.drawImage(bg, 0, 0); }
+
+// ---------------------------------------------------------------- the glass and the cab
+// windshield opening (screen): left A pillar slants, right edge off to the right, header at the top, cowl at the bottom
+const GLASS = [[338, 650], [470, 104], [1600, 96], [1600, 650]];
+function glassPath(k) { k.beginPath(); k.moveTo(338, 652); k.lineTo(462, 128); k.quadraticCurveTo(470, 104, 500, 103); k.lineTo(1600, 96); k.lineTo(1600, 652); k.closePath(); }
+const SIDE = () => { ctx.beginPath(); ctx.moveTo(0, 170); ctx.lineTo(300, 140); ctx.lineTo(240, 560); ctx.lineTo(0, 600); ctx.closePath(); };
+
+// wipers: pivot (screen), angle 0 = toward the passenger side, CCW up; blade spans radius r0..r1; k = the glass's foreshortening
+const WIPERS = [{x: 736, y: 690, r0: 205, r1: 545, max: 108}, {x: 1080, y: 686, r0: 205, r1: 545, max: 96}];
+const K = 0.74, PARK = 4;
+const wpt = (w, r, deg) => [w.x + r * Math.cos(deg * Math.PI / 180), w.y - r * Math.sin(deg * Math.PI / 180) * K];
+function sectorPath(k, w, a0, a1) {
+  k.beginPath();
+  for (let a = a0; a <= a1 + 1e-6; a += 1) { const p = wpt(w, w.r1, a); a === a0 ? k.moveTo(p[0], p[1]) : k.lineTo(p[0], p[1]); }
+  for (let a = a1; a >= a0 - 1e-6; a -= 1) { const p = wpt(w, w.r0, a); k.lineTo(p[0], p[1]); }
+  k.closePath();
+}
+function inSector(w, x, y, a0, a1) {
+  const dx = x - w.x, dy = (w.y - y) / K, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx) * 180 / Math.PI;
+  return r >= w.r0 && r <= w.r1 && a >= a0 && a <= a1;
+}
+
+// per scene: wiper angle, which way it moves, rain on the glass
+const CFG = {
+  A: {angle: PARK, swept: null, label: 'A  停车 · 雨刷关 · 大雨', speed: 0, density: 1.0},
+  B: {angle: 62, swept: [PARK, 62], dir: 1, label: 'B  雨刷慢档 · 刷到一半（往上）', speed: 0, density: 1.0},
+  C: {angle: 20, swept: [20, 108], dir: -1, label: 'C  行驶 70 km/h · 雨刷慢档（刚刷过，正往回落）', speed: 70, density: 0.8},
+  D: {angle: 72, swept: [PARK, 72], dir: 1, label: 'D  夜里 · 雨刷快档 · 路灯和车灯', speed: 40, density: 0.75},
+}[S];
+
+// ---------------------------------------------------------------- drops
+// flow on the glass at speed: up and away from the cab's middle (x ~ 1150)
+function flow(x, y) {
+  if (!CFG.speed) return [0, 1];
+  const ox = (x - 1150) / 700, dx = ox * 0.9, dy = -1, n = Math.hypot(dx, dy);
+  return [dx / n, dy / n];
+}
+const drops = [];
+function wiped(x, y) {
+  if (!CFG.swept) return false;
+  return WIPERS.some(w => inSector(w, x, y, CFG.swept[0], CFG.swept[1]));
+}
+function insideGlass(x, y) { glassPath(ctx); return ctx.isPointInPath(x, y); }
+function sizeAt(y) { return 1.0 + 0.55 * (650 - y) / 550; }   // the glass's top is nearer the eye
+function addDrops() {
+  const n = Math.round(2600 * CFG.density);
+  for (let i = 0; i < n; i++) {
+    const x = 338 + rnd() * 1262, y = 100 + rnd() * 560;
+    if (!insideGlass(x, y)) continue;
+    let u = rnd(), r = (u < 0.80 ? 1.2 + rnd() * 2.4 : u < 0.965 ? 3.6 + rnd() * 3.6 : 7 + rnd() * 6) * sizeAt(y);
+    let fresh = false;
+    if (wiped(x, y)) {
+      // swept a moment ago: only what has landed since, small; at speed a few already drawn out
+      if (rnd() > 0.11) continue;
+      r = (1.0 + rnd() * 1.6) * sizeAt(y); fresh = true;
+    }
+    const f = flow(x, y);
+    let stretch = 1, run = 0;
+    if (CFG.speed) {
+      // the air keeps them small (big ones are blown off) and drags them up and out as short lines
+      r = Math.min(r, 4.2 * sizeAt(y)) * 0.75;
+      if (!fresh) { stretch = 1.3 + rnd() * 1.4; run = r > 1.9 && rnd() < 0.6 ? 14 + rnd() * 40 : 0; }
+    }
+    else if (r > 8.5) { stretch = 1.2 + rnd() * 0.25; run = 30 + rnd() * 110; }   // heavy ones slide down
+    // no overlaps: a smaller one touching a kept one is dropped
+    if (drops.some(d => Math.hypot(d.x - x, d.y - y) < (d.r + r) * 0.9)) continue;
+    drops.push({x, y, r, f, stretch, run});
+  }
+}
+addDrops();
+
+// one drop: a tiny lens, the world behind it upside down and squeezed, a dark rim, a sky highlight
+function drawDrop(k, d, alpha = 1) {
+  const {x, y, r} = d, ang = Math.atan2(d.f[1], d.f[0]) - Math.PI / 2;
+  k.save(); k.globalAlpha = alpha;
+  k.translate(x, y); k.rotate(ang); k.scale(1, d.stretch);
+  k.beginPath(); k.arc(0, 0, r, 0, Math.PI * 2); k.clip();
+  // the lens: a wide field around it, flipped
+  const L = r * 9;
+  k.save(); k.rotate(-ang); k.scale(-1, -1);
+  k.drawImage(bg, x - L / 2, y - L / 2 - r * 2, L, L, -r * 1.05, -r * 1.05, r * 2.1, r * 2.1);
+  k.restore();
+  // rim: light bent away at the edge (dark), brighter toward the bottom (the sky through it)
+  const rg = k.createRadialGradient(0, -r * 0.2, r * 0.25, 0, 0, r * 1.02);
+  rg.addColorStop(0, 'rgba(0,0,0,0)'); rg.addColorStop(0.72, NIGHT ? 'rgba(0,0,0,0.08)' : 'rgba(20,24,28,0.16)'); rg.addColorStop(1, NIGHT ? 'rgba(0,0,0,0.22)' : 'rgba(25,30,35,0.5)');
+  k.fillStyle = rg; k.fillRect(-r * 1.1, -r * 1.1, r * 2.2, r * 2.2);
+  // highlight (sky reflection; at night only the lamps near it light it up), a faint caustic at the bottom
+  let hl = NIGHT ? 'rgba(200,200,210,0.06)' : 'rgba(250,252,255,0.38)', glow = 0, gc = '255,255,255';
+  if (NIGHT) for (const l of lights) {
+    const dd = Math.hypot(l.x - x, l.y - y), R = l.r * 4 + 70, t = Math.max(0, 1 - dd / R);
+    if (t * t > glow) { glow = t * t; gc = l.c; }
+  }
+  if (NIGHT && glow > 0) hl = `rgba(${gc},${0.1 + 0.85 * glow})`;
+  if (r > 1.4) {
+    k.fillStyle = hl;
+    k.beginPath(); k.ellipse(-r * 0.3, -r * 0.4, r * 0.18, r * 0.11, -0.5, 0, Math.PI * 2); k.fill();
+    k.strokeStyle = NIGHT ? `rgba(${gc},${0.03 + 0.5 * glow})` : 'rgba(255,255,255,0.16)'; k.lineWidth = Math.max(0.6, r * 0.12);
+    k.beginPath(); k.arc(0, 0, r * 0.8, Math.PI * 0.2, Math.PI * 0.8); k.stroke();
+  }
+  k.restore();
+}
+
+// a slid drop's trail: a wet stripe (the world a little blurred) and beads left behind
+function drawTrails(k) {
+  const st = mk(), sk = st.getContext('2d'), beads = [];
+  sk.lineCap = 'round'; sk.strokeStyle = '#fff';
+  for (const d of drops) {
+    if (!d.run) continue;
+    const bx = -d.f[0], by = -d.f[1], wob = rnd() * 6, pts = [];   // the trail lies behind it
+    for (let t = 0; t <= d.run; t += 4) { const off = Math.sin(t * 0.06 + wob) * 2.5; pts.push([d.x + bx * t - by * off, d.y + by * t + bx * off]); }
+    sk.lineWidth = d.r * 0.8;
+    sk.beginPath(); pts.forEach((p, i) => i ? sk.lineTo(p[0], p[1]) : sk.moveTo(p[0], p[1])); sk.stroke();
+    for (let i = 2; i < pts.length; i += 2 + Math.floor(rnd() * 3)) if (rnd() > 0.35) beads.push({x: pts[i][0], y: pts[i][1], r: (0.7 + rnd() * 1.3) * sizeAt(pts[i][1]), f: d.f, stretch: 1});
+  }
+  // the wet stripe: the world through a film, sharper than the misted glass around it, a little darker
+  sk.globalCompositeOperation = 'source-in'; sk.drawImage(bg, 0, 0);
+  sk.fillStyle = NIGHT ? 'rgba(0,0,0,0.12)' : 'rgba(30,36,40,0.08)'; sk.fillRect(0, 0, W, H);
+  k.save(); k.globalAlpha = 0.7; k.drawImage(st, 0, 0); k.restore();
+  for (const bd of beads) drawDrop(k, bd, 0.9);
+}
+
+// ---------------------------------------------------------------- compose
+ctx.drawImage(bg, 0, 0);
+// the side window: fewer drops, a darker tint
+ctx.save(); SIDE(); ctx.clip(); ctx.fillStyle = 'rgba(20,26,30,0.18)'; ctx.fillRect(0, 0, W, H); ctx.restore();
+
+ctx.save(); glassPath(ctx); ctx.clip();
+// unswept wet glass: the fine drops scatter, the world behind is soft and a little paler
+ctx.save();
+ctx.drawImage(bgSoft, 0, 0);
+ctx.fillStyle = NIGHT ? 'rgba(60,64,72,0.10)' : 'rgba(205,211,216,0.16)'; ctx.fillRect(0, 0, W, H);
+ctx.restore();
+// swept: clear (the sharp world back), a thin film with fine arcs along the blade's path
+if (CFG.swept) {
+  for (const w of WIPERS) {
+    ctx.save(); sectorPath(ctx, w, CFG.swept[0], CFG.swept[1]); ctx.clip();
+    ctx.drawImage(bg, 0, 0);
+    ctx.fillStyle = NIGHT ? 'rgba(0,0,0,0.04)' : 'rgba(40,46,52,0.035)'; ctx.fillRect(0, 0, W, H);
+    // smear arcs (the rubber leaves fine lines; at night the lamps stretch along them)
+    for (let i = 0; i < 26; i++) {
+      const r = w.r0 + rnd() * (w.r1 - w.r0);
+      ctx.strokeStyle = NIGHT ? 'rgba(200,190,170,0.022)' : 'rgba(235,240,245,0.045)'; ctx.lineWidth = 0.8 + rnd();
+      ctx.beginPath();
+      for (let a = CFG.swept[0]; a <= CFG.swept[1]; a += 1) { const p = wpt(w, r, a); a === CFG.swept[0] ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); }
+      ctx.stroke();
+    }
+    if (NIGHT) for (const l of lights) {
+      if (!inSector(w, l.x, l.y, CFG.swept[0], CFG.swept[1])) continue;
+      const dx = l.x - w.x, dy = (w.y - l.y) / K, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx) * 180 / Math.PI;
+      for (let j = -2; j <= 2; j++) {
+        ctx.strokeStyle = `rgba(${l.c},${0.22 - Math.abs(j) * 0.05})`; ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let t = -16; t <= 16; t += 0.5) { const p = wpt(w, r + j * 1.5, a + t); t === -16 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+}
+// trails, then drops
+drawTrails(ctx);
+for (const d of drops) drawDrop(ctx, d);
+// the water the blade pushes: a ragged bead on its leading side; at the stop, a line left where it turned
+function bowWave(w, ang, dir, strength) {
+  for (let r = w.r0 + 4; r < w.r1 - 4; r += 3.2) {
+    const a = ang + dir * (1.7 + rnd() * 1.1), p = wpt(w, r, a);
+    const rr = (2.4 + rnd() * 2.6) * strength * sizeAt(p[1]);
+    drawDrop(ctx, {x: p[0], y: p[1], r: rr, f: [0, 1], stretch: 1}, 0.95);
+  }
+}
+function turnLine(w, ang) {
+  for (let r = w.r0 + 4; r < w.r1 - 4; r += 4.5) {
+    if (rnd() < 0.25) continue;
+    const a = ang + 0.8 + rnd() * 1.4, p = wpt(w, r, a);
+    drawDrop(ctx, {x: p[0], y: p[1], r: (1.6 + rnd() * 2.2) * sizeAt(p[1]), f: [0, 1], stretch: 1}, 0.9);
+  }
+}
+if (S === 'B' || S === 'D') for (const w of WIPERS) bowWave(w, CFG.angle, 1, S === 'D' ? 0.9 : 1.1);
+if (S === 'C') for (const w of WIPERS) { turnLine(w, w.max); bowWave(w, CFG.angle, -1, 0.7); }
+// glass sheen: a faint reflection of the dash on the inside of the glass (low, dark)
+const sh = ctx.createLinearGradient(0, 520, 0, 650);
+sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(1, NIGHT ? 'rgba(90,100,120,0.06)' : 'rgba(255,255,255,0.05)');
+ctx.fillStyle = sh; ctx.fillRect(0, 520, W, 140);
+ctx.restore();
+
+// side window drops (sparse, small)
+ctx.save(); SIDE(); ctx.clip();
+for (let i = 0; i < 160; i++) { const x = rnd() * 300, y = 150 + rnd() * 440; drawDrop(ctx, {x, y, r: 1 + rnd() * 2.4, f: CFG.speed ? [-0.8, -0.6] : [0, 1], stretch: CFG.speed ? 1.6 : 1}); }
+ctx.restore();
+
+// wipers (outside the glass, in front of the water): arm from under the cowl, a frame with claws, the rubber
+function wiper(w, ang) {
+  const tip = wpt(w, (w.r0 + w.r1) / 2 + 30, ang), a0 = wpt(w, w.r0, ang), a1 = wpt(w, w.r1, ang);
+  ctx.lineCap = 'round';
+  // arm (from the pivot under the cowl to the blade's middle)
+  ctx.strokeStyle = NIGHT ? '#060708' : '#15171a'; ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.moveTo(w.x, w.y); const mid = wpt(w, (w.r0 + w.r1) / 2, ang); ctx.lineTo(mid[0] + 2, mid[1] - 8); ctx.stroke();
+  // blade frame + rubber
+  ctx.strokeStyle = NIGHT ? '#0a0b0d' : '#1c1f22'; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
+  ctx.strokeStyle = NIGHT ? 'rgba(120,130,150,0.25)' : 'rgba(150,160,170,0.45)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(a0[0], a0[1] - 3); ctx.lineTo(a1[0], a1[1] - 3); ctx.stroke();
+  for (const t of [0.2, 0.5, 0.8]) {   // claws
+    const p = [a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t];
+    ctx.fillStyle = NIGHT ? '#08090b' : '#191b1e'; ctx.beginPath(); ctx.arc(p[0], p[1] - 3, 5, 0, Math.PI * 2); ctx.fill();
+  }
+}
+ctx.save(); glassPath(ctx); ctx.clip();
+for (const w of WIPERS) wiper(w, CFG.angle);
+ctx.restore();
+
+// ---------------------------------------------------------------- the cab (in front of everything)
+const dark = NIGHT ? '#0b0c0e' : '#2b2d30', darker = NIGHT ? '#070809' : '#1f2124', head = NIGHT ? '#15161a' : '#6c6a66';
+// headliner and header
+let hg = ctx.createLinearGradient(0, 0, 0, 110); hg.addColorStop(0, head); hg.addColorStop(1, NIGHT ? '#0f1013' : '#55534f');
+ctx.fillStyle = hg; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.lineTo(W, 98); ctx.lineTo(500, 105); ctx.quadraticCurveTo(470, 106, 462, 128); ctx.lineTo(300, 140); ctx.lineTo(0, 170); ctx.fill();
+// sun visor (driver)
+ctx.fillStyle = NIGHT ? '#121317' : '#5f5d59'; ctx.beginPath(); ctx.roundRect(560, 40, 520, 58, 10); ctx.fill();
+// A pillar + door frame on the left
+ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(300, 140); ctx.lineTo(462, 128); ctx.lineTo(338, 652); ctx.lineTo(240, 560); ctx.fill();
+ctx.fillStyle = darker; ctx.beginPath(); ctx.moveTo(0, 600); ctx.lineTo(240, 560); ctx.lineTo(338, 652); ctx.lineTo(260, 900); ctx.lineTo(0, 900); ctx.fill();
+// mirror (the rear window in it)
+ctx.fillStyle = darker; ctx.fillRect(1268, 96, 10, 34);
+ctx.fillStyle = NIGHT ? '#08090b' : '#222428'; ctx.beginPath(); ctx.roundRect(1150, 124, 250, 74, 12); ctx.fill();
+let mg = ctx.createLinearGradient(0, 132, 0, 190); mg.addColorStop(0, NIGHT ? '#15181d' : '#8e969c'); mg.addColorStop(1, NIGHT ? '#0b0c0f' : '#5d6267');
+ctx.fillStyle = mg; ctx.beginPath(); ctx.roundRect(1160, 132, 230, 58, 9); ctx.fill();
+// dashboard: the pad's top edge under the glass, the defroster slots, the cluster hood ahead of the driver
+let dg = ctx.createLinearGradient(0, 600, 0, 900); dg.addColorStop(0, NIGHT ? '#101114' : '#3a3c3f'); dg.addColorStop(1, darker);
+ctx.fillStyle = dg; ctx.beginPath(); ctx.moveTo(300, 900); ctx.lineTo(338, 652); ctx.quadraticCurveTo(800, 618, 1600, 640); ctx.lineTo(1600, 900); ctx.fill();
+ctx.fillStyle = NIGHT ? '#08090a' : '#26282b';
+for (let i = 0; i < 14; i++) ctx.fillRect(900 + i * 26, 640, 16, 5);
+ctx.fillStyle = NIGHT ? '#0d0e10' : '#323437'; ctx.beginPath(); ctx.moveTo(560, 760); ctx.quadraticCurveTo(570, 600, 800, 596); ctx.quadraticCurveTo(1030, 600, 1040, 760); ctx.fill();
+if (NIGHT) { // the cluster's glow
+  const cg = ctx.createRadialGradient(800, 700, 10, 800, 700, 220); cg.addColorStop(0, 'rgba(90,160,140,0.18)'); cg.addColorStop(1, 'rgba(90,160,140,0)');
+  ctx.fillStyle = cg; ctx.fillRect(560, 600, 480, 200);
+}
+// steering wheel rim (top of it)
+ctx.strokeStyle = NIGHT ? '#050506' : '#191a1c'; ctx.lineWidth = 40;
+ctx.beginPath(); ctx.ellipse(800, 1000, 380, 330, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+ctx.strokeStyle = NIGHT ? 'rgba(70,75,85,0.25)' : 'rgba(110,112,116,0.35)'; ctx.lineWidth = 3;
+ctx.beginPath(); ctx.ellipse(800, 1000, 394, 344, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+
+// label
+ctx.font = '600 26px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(0,0,0,0.55)';
+ctx.fillRect(18, 18, ctx.measureText(CFG.label).width + 28, 44);
+ctx.fillStyle = '#f2f2f2'; ctx.fillText(CFG.label, 32, 49);
+ctx.font = '16px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+ctx.fillText('AFL · T15 挡风玻璃雨滴 + 雨刷 · 概念图（不是游戏截图）', 32, 880);
+document.title = 'done';
+</script></body></html>

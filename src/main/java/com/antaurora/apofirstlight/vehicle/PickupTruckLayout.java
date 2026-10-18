@@ -61,6 +61,39 @@ public final class PickupTruckLayout {
                 new Box(-2.37, -2.255, -0.88, 0.88, 0.0, 0.58));   // rear step bumper
     }
 
+    // ---- rain shell (client/rain) ----
+
+    /**
+     * A part of the shell the rain stops on: a box, kept to where nf * f + ny * y <= d (a slanted face cut across it; no
+     * cut: 0, 0, 1).
+     */
+    public record RainPart(Box box, double nf, double ny, double d) {}
+
+    /**
+     * What the rain stops on (docs/rendering/rain_v1.md): the body's outside as drawn, not the collision steps. The cab
+     * above the belt is cut along the windshield's glass plane (common.mjs wsX: x 0.955 at the belt, 0.42 at the roof
+     * header) and the hood along its top line (hy); the collision's windshield step left the lower glass open and a
+     * strip of dashboard under it, where splashes and streaks showed inside the cab (user in game 2026-10-17). The
+     * tailgate (shut or down) comes after these.
+     */
+    public static final List<RainPart> RAIN_SHELL;
+
+    static {
+        double glass = (0.42 - 0.955) / (1.845 - 0.045 - 1.07);   // windshield x per metre of height (negative)
+        double hood = (1.005 - 1.077) / (2.25 - 1.08);            // hood top y per metre forward (negative)
+        Box wall = new Box(-2.255, -0.36, 0.757, HW, 0.76, 1.11), housing = new Box(-1.74, -0.76, 0.56, 0.757, 0.76, 0.89);
+        RAIN_SHELL = List.of(
+                new RainPart(new Box(2.275, 2.40, -0.86, 0.86, 0.0, 0.62), 0, 0, 1),                    // front bumper
+                new RainPart(new Box(0.955, 2.275, -HW, HW, 0.0, 1.09), -hood, 1, 1.077 - hood * 1.08 + 0.005),   // hood
+                new RainPart(new Box(-0.30, 0.955, -HW, HW, 0.0, 1.07), 0, 0, 1),                      // cab below the belt
+                new RainPart(new Box(-0.30, 0.955, -0.80, 0.80, 1.07, 1.845), 1, -glass, 0.955 - glass * 1.07 + 0.008),   // cab, glass
+                new RainPart(new Box(-2.255, -0.36, -HW, HW, 0.0, 0.76), 0, 0, 1),                     // bed floor
+                new RainPart(new Box(-0.40, -0.30, -HW, HW, 0.76, 1.11), 0, 0, 1),                     // bed front wall
+                new RainPart(wall, 0, 0, 1), new RainPart(wall.mirror(), 0, 0, 1),
+                new RainPart(housing, 0, 0, 1), new RainPart(housing.mirror(), 0, 0, 1),
+                new RainPart(new Box(-2.37, -2.255, -0.88, 0.88, 0.0, 0.58), 0, 0, 1));               // rear step bumper
+    }
+
     // ---- seats ----
 
     /**

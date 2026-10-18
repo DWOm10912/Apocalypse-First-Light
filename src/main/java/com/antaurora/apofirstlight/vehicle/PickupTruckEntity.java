@@ -114,7 +114,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
      * VehiclePackets.Lamps actions: the light key (a tap: lights on / off; a hold: the high beam), the horn pressed / let go,
      * the left / right turn signal (on, or off when it already blinks) and the hazard switch.
      */
-    public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3, SIGNAL_LEFT = 4, SIGNAL_RIGHT = 5, SWITCH_HAZARD = 6;
+    public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3, SIGNAL_LEFT = 4, SIGNAL_RIGHT = 5, SWITCH_HAZARD = 6,
+            SWITCH_WIPER = 7;
+    /** The wiper switch (WiperSystem.OFF .. HIGH; the stalk right of the column), set on the server from the driver's key. */
+    private static final EntityDataAccessor<Byte> WIPER = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
     /** Flasher: one flash cycle (ticks; 90 a minute, inside the US 60-120) and its lit share. */
     public static final float BLINK_PERIOD = 20 * 60 / 90.0F, BLINK_ON = 0.5F;
     /**
@@ -427,8 +430,30 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         else if (action == SIGNAL_LEFT) lamps = (lamps & TURN_L) != 0 ? lamps & ~TURN_L : (lamps | TURN_L) & ~TURN_R;
         else if (action == SIGNAL_RIGHT) lamps = (lamps & TURN_R) != 0 ? lamps & ~TURN_R : (lamps | TURN_R) & ~TURN_L;
         else if (action == SWITCH_HAZARD) lamps ^= HAZARD;
+        else if (action == SWITCH_WIPER) {
+            // the wiper stalk one step on: off, intermittent, low, high, off
+            entityData.set(WIPER, (byte) ((wiperMode() + 1) % WiperSystem.MODES));
+            return;
+        }
         else return;
         entityData.set(LAMPS, (byte) lamps);
+    }
+
+    // ---- wipers (docs/vehicles/t15_windshield_rain_design.md) ----
+
+    /** The wiper switch: WiperSystem.OFF, INTERMITTENT, LOW, HIGH. */
+    public int wiperMode() { return Math.floorMod(entityData.get(WIPER), WiperSystem.MODES); }
+
+    /** The electrics are on (the engine runs or the key is at preheat): the wipers and the gauges have power. */
+    public boolean electricsOn() { Drivetrain d = drivetrain(); return d != null && (d.running || d.ignition == Drivetrain.PREHEAT); }
+
+    /** Client: the wipers' stroke and the stalk (WiperSystem). */
+    private final WiperSystem wipers = new WiperSystem();
+
+    /** Client: the wipers to this frame (once per frame time; the renderer and the windshield water both ask). */
+    public WiperSystem wipers(float partialTick) {
+        wipers.update((tickCount + partialTick) / 20.0, wiperMode(), electricsOn());
+        return wipers;
     }
 
     /** Client: a point of the truck's frame (forward, right, up from the origin) in the world this frame. */
@@ -1411,6 +1436,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.define(FUEL, 0);
         entityData.define(CARGO, new CompoundTag());
         entityData.define(LAMPS, (byte) 0);
+        entityData.define(WIPER, (byte) WiperSystem.OFF);
         for (EntityDataAccessor<Integer> seat : SEAT) entityData.define(seat, -1);
     }
 
@@ -1427,6 +1453,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         setFuel(tag.getInt("Fuel"));
         entityData.set(LAMPS, (byte) ((tag.getBoolean("Headlights") ? LAMP_HEAD : 0) | (tag.getBoolean("HighBeam") ? LAMP_HIGH : 0)
                 | (tag.getByte("TurnSignal") < 0 ? TURN_L : tag.getByte("TurnSignal") > 0 ? TURN_R : 0) | (tag.getBoolean("Hazard") ? HAZARD : 0)));
+        entityData.set(WIPER, (byte) Math.floorMod(tag.getByte("Wipers"), WiperSystem.MODES));
         cargo = GridStorage.load(CARGO_LAYOUT, tag.getList("Cargo", Tag.TAG_COMPOUND), false);
         cargoChanged();
         // a reloaded truck shows its parts where they were left, without swinging
@@ -1464,6 +1491,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putBoolean("HighBeam", (lamps() & LAMP_HIGH) != 0);
         tag.putByte("TurnSignal", (byte) turnSignal());
         tag.putBoolean("Hazard", hazard());
+        tag.putByte("Wipers", (byte) wiperMode());
         ListTag grid = cargo.save();
         if (!grid.isEmpty()) tag.put("Cargo", grid);
         Quaterniond q = orient();

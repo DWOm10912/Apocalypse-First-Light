@@ -9,11 +9,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** A block changed on the client: the dynamic lights' block grid builds its sections again (client/light/OccupancyGrid). */
+/**
+ * A block changed on the client: the dynamic lights' block grid builds its sections again (client/light/OccupancyGrid) and
+ * the rain's column map reads that column again (client/rain/RainColumns).
+ */
 @Mixin(ClientLevel.class)
 public abstract class DynamicLightBlockChangeMixin {
     @Inject(method = "sendBlockUpdated", at = @At("HEAD"))
     private void afl$lights(BlockPos pos, BlockState oldState, BlockState newState, int flags, CallbackInfo ci) {
         DynamicLights.blockChanged((ClientLevel) (Object) this, pos);
+        com.antaurora.apofirstlight.client.rain.RainRenderer.blockChanged((ClientLevel) (Object) this, pos);
     }
 }

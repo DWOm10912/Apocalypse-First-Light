@@ -199,6 +199,21 @@ public final class TruckDismountGameTests {
             lamp(truck, PickupTruckEntity.SIGNAL_RIGHT);
             lamp(truck, PickupTruckEntity.SWITCH_HAZARD);
             boolean signalOff = truck.turnSignal() == 0 && !truck.hazard() && truck.highBeam();
+            // the wiper stalk (design doc 8.16): off, intermittent, low, high, off again; kept in the save; the lamps untouched
+            boolean wiperOff = truck.wiperMode() == com.antaurora.apofirstlight.vehicle.WiperSystem.OFF;
+            StringBuilder steps = new StringBuilder();
+            for (int i = 0; i < 4; i++) {
+                lamp(truck, PickupTruckEntity.SWITCH_WIPER);
+                steps.append(truck.wiperMode());
+            }
+            lamp(truck, PickupTruckEntity.SWITCH_WIPER);
+            lamp(truck, PickupTruckEntity.SWITCH_WIPER);
+            net.minecraft.nbt.CompoundTag tag3 = new net.minecraft.nbt.CompoundTag();
+            truck.saveWithoutId(tag3);
+            PickupTruckEntity copy3 = PickupTruckEntity.create(level, at, 0F);
+            copy3.load(tag3);
+            boolean wipers = wiperOff && steps.toString().equals("1230") && truck.wiperMode() == com.antaurora.apofirstlight.vehicle.WiperSystem.LOW
+                    && copy3.wiperMode() == com.antaurora.apofirstlight.vehicle.WiperSystem.LOW && truck.highBeam() && truck.turnSignal() == 0;
             sit(truck, driver, PickupTruckLayout.DRIVER);
             driver.zza = -1.0F;
             h.runAfterDelay(3, () -> {
@@ -207,11 +222,13 @@ public final class TruckDismountGameTests {
                 h.runAfterDelay(3, () -> {
                     boolean released = !truck.braking();
                     boolean good = lights && high && back && off && lowAgain && fromOff && saved && braking && released
-                            && left && over && hazard && signalSaved && signalOff;
+                            && left && over && hazard && signalSaved && signalOff && wipers;
                     log.append(String.format("lamps: tap on low %s; hold high %s, hold back %s; tap off %s, on again low %s; hold from off %s; kept in the save %s; braking %s, released %s%n",
                             lights, high, back, off, lowAgain, fromOff, saved, braking, released));
                     log.append(String.format("signals: left %s, over to right %s, hazard with it %s, kept in the save %s, both off again %s%n",
                             left, over, hazard, signalSaved, signalOff));
+                    log.append(String.format("wipers: off at first %s, steps %s (want 1230), kept in the save and lamps untouched %s%n",
+                            wiperOff, steps, wipers));
                     if (!good) ok[0] = false;
                     driver.stopRiding();
                     truck.discard();

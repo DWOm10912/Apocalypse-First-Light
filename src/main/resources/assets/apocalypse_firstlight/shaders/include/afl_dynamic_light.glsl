@@ -16,6 +16,7 @@
 // (a soft cut-off), below a little less toward the bottom. Lights that share an occluder (the lamps at one end of a truck)
 // share one shadow ray per pixel: lights come sorted by occluder.
 
+#define AFL_DYNAMIC_LIGHT 1
 #define AFL_MAX_LIGHTS 24
 #define AFL_MAX_OCCLUDERS 8
 #define AFL_MAX_STEPS 160
@@ -33,6 +34,7 @@ uniform mat4 afl_ClipToWorld;
 uniform vec2 afl_ScreenSize;
 uniform float afl_Gamma;
 
+#ifndef AFL_VERTEX_STAGE
 // This fragment's position (camera-relative, world axes) from its window position and depth.
 vec3 afl_fragPos() {
     vec4 ndc = vec4(gl_FragCoord.xy / afl_ScreenSize * 2.0 - 1.0, gl_FragCoord.z * 2.0 - 1.0, 1.0);
@@ -48,6 +50,7 @@ vec3 afl_normal(vec3 p) {
     n = l > 1e-12 ? n / l : vec3(0.0, 1.0, 0.0);
     return dot(n, p) > 0.0 ? -n : n;
 }
+#endif
 
 // One light's pattern at v (from the lamp), block light levels.
 float afl_pattern(int i, vec3 v) {
@@ -148,6 +151,31 @@ vec3 afl_dynamic(vec3 p, vec3 n) {
 vec3 afl_lit(vec3 lm, vec3 p, vec3 n) {
     if (afl_LightCount <= 0) return lm;
     vec3 x = clamp(afl_dynamic(p, n) / 15.0, 0.0, 1.0);
+    vec3 v = clamp(x / (4.0 - 3.0 * x) * 1.5, 0.0, 1.0);
+    vec3 q = 1.0 - v;
+    v = mix(v, 1.0 - q * q * q * q, afl_Gamma) * 0.96;
+    return 1.0 - (1.0 - lm) * (1.0 - v);
+}
+
+// The light map colour lm with the lights added at a point in the air (rain drops, AFL_VERTEX_STAGE programs too): no
+// face, so no facing term; the shadow ray starts at the point itself.
+vec3 afl_litVolume(vec3 lm, vec3 p) {
+    if (afl_LightCount <= 0) return lm;
+    vec3 sum = vec3(0.0);
+    int group = -1;
+    float vis = 1.0;
+    for (int i = 0; i < AFL_MAX_LIGHTS; i++) {
+        if (i >= afl_LightCount) break;
+        float level = afl_pattern(i, p - afl_Lights[i * 6].xyz);
+        if (level <= 0.01) continue;
+        int g = int(afl_Lights[i * 6 + 5].x + 0.5);
+        if (g != group) {
+            group = g;
+            vis = afl_visible(p, vec3(0.0), afl_Occluders[g].xyz);
+        }
+        sum += afl_Lights[i * 6 + 4].rgb * (level * vis);
+    }
+    vec3 x = clamp(sum / 15.0, 0.0, 1.0);
     vec3 v = clamp(x / (4.0 - 3.0 * x) * 1.5, 0.0, 1.0);
     vec3 q = 1.0 - v;
     v = mix(v, 1.0 - q * q * q * q, afl_Gamma) * 0.96;

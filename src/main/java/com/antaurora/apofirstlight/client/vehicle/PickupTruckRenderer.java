@@ -8,6 +8,7 @@ import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.physics.VehiclePhysics;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
+import com.antaurora.apofirstlight.vehicle.WiperSystem;
 import com.antaurora.apofirstlight.vehicle.physics.VehicleSpec;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.vextris.client.GpuGeometry;
@@ -140,9 +141,15 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         }
     }
 
-    /** The pose of one frame: bone turns (the steering wheel in rad) and paint. */
+    /** The pose of one frame: bone turns (the steering wheel in rad, the wipers and their stalk in deg) and paint. */
     private record State(float hood, float tailgate, float doorL, float doorR, float filler, float steering, float[] main, float[] second, int light,
-                         float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float transfer, float[] glow) {}
+                         float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float transfer,
+                         float wiperL, float wiperR, float wiperStalk, float[] glow) {}
+    /**
+     * The wipers' axis (model frame, unit): the glass normal, inward (tools/pickup-t15/common.mjs HINGES.wiper_l; + turns a
+     * parked arm up the glass).
+     */
+    private static final float WIPER_Y = -0.5912F, WIPER_Z = 0.8066F;
 
     /** Each lamp group's glow this frame (0: off). */
     private static float[] glow(PickupTruckEntity truck, float doorL, float doorR, float partialTick) {
@@ -199,12 +206,14 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     public void render(PickupTruckEntity truck, float entityYaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
         float wear = truck.wear();
         float doorL = truck.doorAngle(false, partialTick), doorR = truck.doorAngle(true, partialTick);
+        WiperSystem wipers = truck.wipers(partialTick);
         State s = new State(truck.hoodAngle(partialTick), truck.tailgateAngle(partialTick), doorL,
                 doorR, truck.fillerAngle(partialTick), truck.steerAngle(partialTick) * STEERING_RATIO,
                 tint(truck.paint(), wear), tint(truck.secondPaint(), wear), light,
                 needle(truck.tachometer(partialTick), 5000, BIG_SWEEP), needle(truck.speedometer(partialTick), 180, BIG_SWEEP),
                 needle(truck.fuelGauge(partialTick), 1, SMALL_SWEEP), needle(truck.coolantGauge(partialTick) - 40, 80, SMALL_SWEEP),
-                truck.leverFore(partialTick), truck.leverAcross(partialTick), truck.transferFore(partialTick), glow(truck, doorL, doorR, partialTick));
+                truck.leverFore(partialTick), truck.leverAcross(partialTick), truck.transferFore(partialTick),
+                wipers.left(), wipers.right(), wipers.stalk(), glow(truck, doorL, doorR, partialTick));
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
@@ -407,6 +416,10 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "temp_gauge" -> pose.mulPose(new Quaternionf().rotationAxis(s.temp(), 0.0F, 0.0F, -1.0F));
             case "shift" -> pose.mulPose(PickupTruckLayout.leverTurn(s.leverFore(), s.leverAcross()));   // the H gate (ShiftLever)
             case "transfer" -> pose.mulPose(PickupTruckLayout.transferTurn(s.transfer()));   // 2H - 4H - N - 4L (TransferLever)
+            case "wiper_l" -> pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.wiperL()), 0.0F, WIPER_Y, WIPER_Z));
+            case "wiper_r" -> pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.wiperR()), 0.0F, WIPER_Y, WIPER_Z));
+            // the wiper stalk steps down about the column axis (+ down; WiperSystem)
+            case "wiper_stalk" -> pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.wiperStalk()), 0.0F, COLUMN_Y, COLUMN_Z));
             default -> { }
         }
     }

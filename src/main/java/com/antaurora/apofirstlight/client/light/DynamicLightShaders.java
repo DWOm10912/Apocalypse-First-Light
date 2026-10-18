@@ -21,7 +21,9 @@ import java.util.Set;
  *   smooth_cutout / translucent): the fragment stage only, its light map multiply replaced, the position from the
  *   fragment's depth; no new varyings, so Vextris's twins (their own vertex stage, the vanilla fragment) still link
  *   (mixin client.DynamicLightProgramMixin, after vanilla's preprocessor);</li>
- *   <li>AFL's own road program (apocalypse_firstlight:afl_dynlit_solid), written for it: the code goes in at its marker.</li>
+ *   <li>AFL's own programs written for it (the road's apocalypse_firstlight:afl_dynlit_solid, the rain's afl_rain vertex
+ *   stage): the code goes in before main when the stage has the marker; a vertex stage defines AFL_VERTEX_STAGE first
+ *   (no fragment-only functions) and guards its calls with AFL_DYNAMIC_LIGHT (still compiles if the library is not in).</li>
  * </ul>
  * Each patched stage is compiled once on its own first; a stage that does not compile keeps its source as it was (logged),
  * and terrain that is not patched keeps the lights off ({@link #chunkReady}).
@@ -32,7 +34,7 @@ public final class DynamicLightShaders {
     private static final String MARKER = "@afl:dynamic_light";
     private static final Set<String> ENTITY = Set.of("rendertype_entity_solid", "rendertype_entity_cutout", "rendertype_entity_cutout_no_cull",
             "rendertype_entity_cutout_no_cull_z_offset", "rendertype_entity_smooth_cutout", "rendertype_entity_translucent");
-    private static final String ROAD = "apocalypse_firstlight:afl_dynlit_solid";
+    private static final String OWN = "apocalypse_firstlight:";
 
     /** Embeddium terrain: the vertex stage's light map multiply and output, the fragment stage's input. */
     private static final String CHUNK_V_OUT = "out vec4 v_Color;",
@@ -73,7 +75,7 @@ public final class DynamicLightShaders {
             out = insertBeforeMain(src, lib)
                     .replace(MAIN, MAIN + "\n    vec3 afl_P = afl_fragPos();\n    vec3 afl_N = afl_normal(afl_P);")
                     .replace(ENTITY_LIGHT, "color *= vec4(afl_lit(lightMapColor.rgb, afl_P, afl_N), lightMapColor.a);");
-        } else if (bare.equals(ROAD) && src.contains(MARKER)) {
+        } else if (bare.startsWith(OWN) && src.contains(MARKER)) {
             String lib = library();
             if (lib == null) return src;
             out = insertBeforeMain(src, lib);

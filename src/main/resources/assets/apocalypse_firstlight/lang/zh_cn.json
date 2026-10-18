@@ -83,6 +83,7 @@
   "hud.apocalypse_firstlight.drive.lights": "车灯（长按远光）",
   "hud.apocalypse_firstlight.drive.signals": "转向灯",
   "hud.apocalypse_firstlight.drive.hazard": "应急灯",
+  "hud.apocalypse_firstlight.drive.wipers": "雨刷",
   "hud.apocalypse_firstlight.drive.horn": "喇叭",
   "hud.apocalypse_firstlight.drive.transfer": "两驱 / 四驱 / 低速四驱",
   "hud.apocalypse_firstlight.drive.get_out": "下车",
@@ -723,6 +724,7 @@
   "key.apocalypse_firstlight.signal_left": "左转向灯（驾驶）",
   "key.apocalypse_firstlight.signal_right": "右转向灯（驾驶）",
   "key.apocalypse_firstlight.hazard": "应急灯（驾驶）",
+  "key.apocalypse_firstlight.wipers": "雨刷：关 / 间歇 / 慢 / 快（驾驶）",
   "key.apocalypse_firstlight.status_details": "状态详情（按住）",
 
   "subtitles.apocalypse_firstlight.attachment_operation": "枪械附件调整",

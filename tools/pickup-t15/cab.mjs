@@ -124,10 +124,11 @@ function steering() {
   tube(C(B, 'under'), [at(0.27), at(0.36)], 0.022, 10);
   // key cylinder on the right of the shroud, stalks either side
   lathe(C(B, 'chrome'), add(at(0.13), [0, -0.01, 0.044]), [0, 0, 1], [[0, 0], [0, 0.012], [0.006, 0.012], [0.009, 0.009], [0.009, 0]], 12);
+  // (the right one, the wiper stalk, is bone wiper_stalk: it steps down about the column axis through its root)
   sym(s => {
-    const p0 = add(at(0.10), [0, 0, s * 0.04]);
-    tube(C(B, 'dash'), [p0, add(p0, [-0.03, -0.012, s * 0.07]), add(p0, [-0.05, -0.024, s * 0.13])], 0.0065, 8);
-    tube(C(B, 'trim'), [add(p0, [-0.05, -0.024, s * 0.13]), add(p0, [-0.055, -0.027, s * 0.15])], 0.008, 8);
+    const p0 = add(at(0.10), [0, 0, s * 0.04]), b = s > 0 ? 'wiper_stalk' : B;
+    tube(C(b, 'dash'), [p0, add(p0, [-0.03, -0.012, s * 0.07]), add(p0, [-0.05, -0.024, s * 0.13])], 0.0065, 8);
+    tube(C(b, 'trim'), [add(p0, [-0.05, -0.024, s * 0.13]), add(p0, [-0.055, -0.027, s * 0.15])], 0.008, 8);
   });
   // the wheel itself (bone steering): rim, two spokes dipping toward the hub, horn pad, hub boss
   const S = C('steering', 'vinyl'), Rr = 0.19, nd = mul(d, -1);
