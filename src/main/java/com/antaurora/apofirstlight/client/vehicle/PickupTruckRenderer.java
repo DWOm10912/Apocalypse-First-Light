@@ -144,7 +144,9 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     /** The pose of one frame: bone turns (the steering wheel in rad, the wipers and their stalk in deg) and paint. */
     private record State(float hood, float tailgate, float doorL, float doorR, float filler, float steering, float[] main, float[] second, int light,
                          float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float transfer,
-                         float wiperL, float wiperR, float wiperStalk, float[] glow) {}
+                         float wiperL, float wiperR, float wiperStalk, float[] hvac, float[] glow) {}
+    /** The heater sliders' travel (blocks, to the right: model +X; tools/pickup-t15/cab.mjs). */
+    private static final float HVAC_TRAVEL = 0.06F;
     /**
      * The wipers' axis (model frame, unit): the glass normal, inward (tools/pickup-t15/common.mjs HINGES.wiper_l; + turns a
      * parked arm up the glass).
@@ -213,7 +215,9 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
                 needle(truck.tachometer(partialTick), 5000, BIG_SWEEP), needle(truck.speedometer(partialTick), 180, BIG_SWEEP),
                 needle(truck.fuelGauge(partialTick), 1, SMALL_SWEEP), needle(truck.coolantGauge(partialTick) - 40, 80, SMALL_SWEEP),
                 truck.leverFore(partialTick), truck.leverAcross(partialTick), truck.transferFore(partialTick),
-                wipers.left(), wipers.right(), wipers.stalk(), glow(truck, doorL, doorR, partialTick));
+                wipers.left(), wipers.right(), wipers.stalk(),
+                new float[]{truck.hvacSlider(0, partialTick), truck.hvacSlider(1, partialTick), truck.hvacSlider(2, partialTick)},
+                glow(truck, doorL, doorR, partialTick));
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
@@ -420,6 +424,9 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "wiper_r" -> pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.wiperR()), 0.0F, WIPER_Y, WIPER_Z));
             // the wiper stalk steps down about the column axis (+ down; WiperSystem)
             case "wiper_stalk" -> pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.wiperStalk()), 0.0F, COLUMN_Y, COLUMN_Z));
+            case "hvac_mode" -> pose.translate(s.hvac()[0] * HVAC_TRAVEL, 0, 0);
+            case "hvac_temp" -> pose.translate(s.hvac()[1] * HVAC_TRAVEL, 0, 0);
+            case "hvac_fan" -> pose.translate(s.hvac()[2] * HVAC_TRAVEL, 0, 0);
             default -> { }
         }
     }

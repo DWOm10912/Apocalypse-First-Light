@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.temperature;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.stamina.PlayerStamina;
+import com.antaurora.apofirstlight.vehicle.CabClimate;
+import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -153,10 +155,11 @@ public final class PlayerTemperature {
 
     // ---- the model
 
-    private static void update(ServerPlayer player, State s, TemperatureConfig c, double dt) {
-        ServerLevel level = player.serverLevel();
-        BlockPos feet = player.blockPosition(), head = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
-        double y = player.getY();
+    /** The air of a place (the model's first two lines): the climate there, the outdoor, sheltered and water temperature (C). */
+    private record Air(String climate, double mean, double amp, double water, double precipitation, double day, double outdoor,
+                       double sheltered, double waterTemperature) {}
+
+    private static Air air(ServerLevel level, BlockPos feet, double y, TemperatureConfig c) {
         var dimension = c.dimensions.get(level.dimension().location().toString());
         double mean, amp, water, precipitation;
         String climate;
@@ -178,12 +181,31 @@ public final class PlayerTemperature {
         double outdoor = mean + (fixedTime ? 0 : amp) * day + weather + altitude;
         double sheltered = Mth.lerp(underground, mean + altitude, rock);
         double waterTemperature = Mth.lerp(underground, water, rock);
+        return new Air(climate, mean, amp, water, precipitation, day, outdoor, sheltered, waterTemperature);
+    }
+
+    /** {outdoor, sheltered} air (C) at a place, as a player there would have it (the T15 cab, vehicle/PickupTruckEntity). */
+    public static double[] outdoorAndSheltered(ServerLevel level, BlockPos feet, double y) {
+        Air a = air(level, feet, y, TemperatureConfig.get());
+        return new double[]{a.outdoor(), a.sheltered()};
+    }
+
+    private static void update(ServerPlayer player, State s, TemperatureConfig c, double dt) {
+        ServerLevel level = player.serverLevel();
+        BlockPos feet = player.blockPosition(), head = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
+        Air a = air(level, feet, player.getY(), c);
+        double outdoor = a.outdoor(), sheltered = a.sheltered(), waterTemperature = a.waterTemperature();
+        String climate = a.climate();
         double cover = TemperatureShelter.sample(level, head).cover();
         double[] q = sources(level, player, c);
         double factor = c.outdoorSourceFactor + (1 - c.outdoorSourceFactor) * cover;
         double heat = q[0] * factor, cold = q[1] * factor;
         double submersion = submersion(player);
-        double air = Mth.lerp(submersion, Mth.lerp(cover, outdoor, sheltered), waterTemperature), env = air + heat + cold;
+        // in a T15's cab (driver or passenger): its own air (vehicle/CabClimate: shelter, heater, air conditioning), no rain
+        PickupTruckEntity cab = CabClimate.cabOf(player);
+        double around = cab != null && !Double.isNaN(cab.cabTemperature()) ? cab.cabTemperature() : Mth.lerp(cover, outdoor, sheltered);
+        if (cab != null) climate += " | T15 cab " + cab.climateMode();
+        double air = Mth.lerp(submersion, around, waterTemperature), env = air + heat + cold;
         // what the wrist thermometer shows: the same air with the sources uncapped, only softly limited (right by a lava pool
         // it reads well over 100 °C, a large lava lake does not run into thousands);
         // the body keeps the capped value, so the heat stages stay as tuned
@@ -192,7 +214,7 @@ public final class PlayerTemperature {
         // wet: the water soaks the body up to a level set by the depth (fast), rain adds slowly; dries back down to that level
         var w = c.wetness;
         double soaked = Math.min(1, submersion * w.wetPerSubmersion);
-        boolean raining = level.isRainingAt(head);
+        boolean raining = cab == null && level.isRainingAt(head);
         if (raining) s.wet = Math.min(1, s.wet + w.rainPerSecond * dt);
         if (s.wet < soaked) s.wet = Math.min(soaked, s.wet + w.soakPerSecond * submersion * dt);
         else if (!raining && s.wet > soaked)
@@ -213,7 +235,7 @@ public final class PlayerTemperature {
         s.ambient = shown;
         s.target = target;
         s.comfortMin = c.comfortLow - insulation;
-        s.reading = new Reading(climate, mean, amp, water, precipitation, day, outdoor, sheltered, cover, heat + cold, env, shown,
+        s.reading = new Reading(climate, a.mean(), a.amp(), a.water(), a.precipitation(), a.day(), outdoor, sheltered, cover, heat + cold, env, shown,
                 submersion, exertionHeat, insulation, felt, target);
     }
 

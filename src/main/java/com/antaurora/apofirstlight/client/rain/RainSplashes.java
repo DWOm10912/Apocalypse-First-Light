@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.rain;
 
+import com.antaurora.apofirstlight.client.FastVertices;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -316,6 +317,8 @@ final class RainSplashes {
         nx = n.x();
         ny = n.y();
         nz = n.z();
+        normal = FastVertices.normal(nx, ny, nz);
+        FAST.reset();
         // the trucks as drawn this frame: a splash on one goes along with it; one left in the world where a truck now is
         // (it drove over or onto it) is not drawn inside the body
         List<RainTrucks.Frame> frames = RainTrucks.near(level, cam, RADIUS + 6, 8, pt);
@@ -418,9 +421,11 @@ final class RainSplashes {
             drawn++;
         }
         if (drawn == 0) {
+            FAST.reset();
             out.end().release();
             return;
         }
+        FAST.into(out);
         // now, under this stage's model-view (the camera's turn on it)
         RainRenderTypes.SPLASH.end(out, RenderSystem.getVertexSorting());
     }
@@ -451,8 +456,26 @@ final class RainSplashes {
     /** The world's up in view space this frame (render). */
     private static float nx, ny = 1, nz;
 
-    /** m is the identity (positions are camera-relative already): the whole-vertex call, BufferBuilder's fast path for NEW_ENTITY. */
+    /**
+     * m is the identity (positions are camera-relative already). NEW_ENTITY's bytes written straight (FastVertices, handed
+     * to the builder once in render): BufferBuilder's whole-vertex call was still most of the splashes' CPU time (2026-10-18).
+     */
     private static void vertex(VertexConsumer out, Matrix4f m, float x, float y, float z, float u, float v, float alpha, int light) {
-        out.vertex(x, y, z, 0.86F, 0.89F, 0.94F, alpha, u, v, OverlayTexture.NO_OVERLAY, light, nx, ny, nz);
+        long p = FAST.take(36);
+        FastVertices.f(p, x);
+        FastVertices.f(p + 4, y);
+        FastVertices.f(p + 8, z);
+        FastVertices.i(p + 12, COLOR | (int) (alpha * 255.0F) << 24);
+        FastVertices.f(p + 16, u);
+        FastVertices.f(p + 20, v);
+        FastVertices.i(p + 24, OverlayTexture.NO_OVERLAY);
+        FastVertices.i(p + 28, light);
+        FastVertices.i(p + 32, normal);
     }
+
+    /** The splashes' colour (0.86, 0.89, 0.94 as BufferBuilder rounds it), the alpha byte left for each vertex. */
+    private static final int COLOR = FastVertices.rgba((int) (0.86F * 255.0F), (int) (0.89F * 255.0F), (int) (0.94F * 255.0F), 0);
+    /** The up normal this frame, packed (render). */
+    private static int normal = FastVertices.normal(0, 1, 0);
+    private static final FastVertices FAST = new FastVertices(1 << 18);
 }

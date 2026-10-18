@@ -19,6 +19,8 @@ in vec2 glass;
 
 out vec4 fragColor;
 
+// Aureveil rebuilds the wetness from the baked cover with these (TILE, TILE2, TURN, the second layer's offset, wet * 0.55,
+// shown()'s spread; docs/rendering/rain_v1.md section 6, afl_glass_beads): changing them breaks the pack, tell Aureveil A first
 const float TILE = 0.22, TILE2 = 0.22 * 1.37, TEXELS = 1024.0;
 const vec4 FILM = vec4(-0.80, 0.0, 1.60, 0.88);
 const mat2 TURN = mat2(0.8, 0.6, -0.6, 0.8);

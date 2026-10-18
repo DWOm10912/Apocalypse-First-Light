@@ -103,13 +103,19 @@
     "tach",
     "speedo",
     "fuel_gauge",
-    "temp_gauge"
+    "temp_gauge",
+    "hvac_mode",
+    "hvac_temp",
+    "hvac_fan"
    ],
    "parts": [
     "body_dash",
     "body_pad",
     "body_trim",
     "body_liner",
+    "hvac_mode_vinyl",
+    "hvac_temp_vinyl",
+    "hvac_fan_vinyl",
     "body_vinyl",
     "body_steel",
     "body_dial",
@@ -429,6 +435,51 @@
    ],
    "open_deg": 120,
    "note": "needle about the dial axis; 40 - 120 C over 120 deg clockwise"
+  },
+  "hvac_mode": {
+   "parent": "body",
+   "pivot": [
+    -0.115,
+    0.901,
+    -0.558
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 0,
+   "note": "heater slider: slides along +z (across, to the right) 0 - 0.06 m; face, bi-level, foot, foot-defrost, defrost"
+  },
+  "hvac_temp": {
+   "parent": "body",
+   "pivot": [
+    -0.035,
+    0.901,
+    -0.558
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 0,
+   "note": "heater slider: slides along +z 0 - 0.06 m; cold (left) to hot (right)"
+  },
+  "hvac_fan": {
+   "parent": "body",
+   "pivot": [
+    0.045,
+    0.901,
+    -0.558
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 0,
+   "note": "heater slider: slides along +z 0 - 0.06 m; off (left) to 4 (right)"
   },
   "wheel": {
    "parent": null,

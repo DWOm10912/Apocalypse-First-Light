@@ -84,6 +84,7 @@
   "hud.apocalypse_firstlight.drive.signals": "Turn signals",
   "hud.apocalypse_firstlight.drive.hazard": "Hazard lights",
   "hud.apocalypse_firstlight.drive.wipers": "Wipers",
+  "hud.apocalypse_firstlight.drive.climate": "Heat / A/C",
   "hud.apocalypse_firstlight.drive.horn": "Horn",
   "hud.apocalypse_firstlight.drive.transfer": "2WD / 4WD / 4WD Low",
   "hud.apocalypse_firstlight.drive.get_out": "Get out",
@@ -727,6 +728,7 @@
   "key.apocalypse_firstlight.signal_right": "Right Turn Signal (Driving)",
   "key.apocalypse_firstlight.hazard": "Hazard Lights (Driving)",
   "key.apocalypse_firstlight.wipers": "Wipers: Off / Intermittent / Low / High (Driving)",
+  "key.apocalypse_firstlight.climate": "Climate: Off / Heat / A/C (Driving)",
   "key.apocalypse_firstlight.driving_hints": "Driving key hints: hide / show (Driving)",
   "key.apocalypse_firstlight.status_details": "Status details (hold)",
 

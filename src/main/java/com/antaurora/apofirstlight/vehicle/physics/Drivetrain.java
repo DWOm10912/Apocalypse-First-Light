@@ -22,7 +22,8 @@ package com.antaurora.apofirstlight.vehicle.physics;
  * 2H - 4H - 2H; nearly stopped (below {@code lowRangeSpeed}) 2H - 4H - 4L - 2H (in and out of low only standing, as a
  * real part-time case wants).</li>
  * <li>Fuel: litres per kWh of the engine's work plus a running base; the server takes it from the tank. Coolant:
- * warms to 88 C running, cools off (a gauge reading, no effect yet).</li>
+ * warms to 88 C running, cools off (the gauge, and the cab heater's warmth: vehicle/CabClimate). Accessories (the air
+ * conditioning's compressor) load the engine like friction.</li>
  * </ul>
  */
 public final class Drivetrain {
@@ -60,6 +61,11 @@ public final class Drivetrain {
     public double ignitionTime;
     /** Coolant temperature (C) and the fuel used last tick (litres per second). */
     public double coolant = AMBIENT, fuelFlow;
+    /**
+     * What the belt drives besides (Nm on the crankshaft while it runs, set by the vehicle each tick: the air conditioning's
+     * compressor, vehicle/CabClimate). Taken like friction, so the governor and the pedal pay for it in fuel.
+     */
+    public double accessoryTorque;
     // the key last tick, and a press that must be let go before the next counts; cranking needed this time; fuel this tick
     private boolean keyHeld, keyLatch;
     private double crankNeeded;
@@ -315,7 +321,7 @@ public final class Drivetrain {
     }
 
     private double friction() {
-        return omega <= 0 ? 0 : spec.frictionA + spec.frictionB * rpm();
+        return omega <= 0 ? 0 : spec.frictionA + spec.frictionB * rpm() + (running ? accessoryTorque : 0);
     }
 
     private double random() {

@@ -29,6 +29,7 @@ final class WindshieldGlass {
     /** The glass's sides bend back toward the A pillars (m, concept -x). */
     static double bend(double u) {
         double t = Math.max(0, Math.min(1, (Math.abs(u) - 0.42) / (0.74 - 0.42)));
+        if (t == 0) return 0;   // the flat middle (most drops): no pow
         return 0.022 * Math.pow(t * t * (3 - 2 * t), 1.6);
     }
 

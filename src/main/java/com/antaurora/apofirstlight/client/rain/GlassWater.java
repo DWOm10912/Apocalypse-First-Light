@@ -78,18 +78,36 @@ final class GlassWater {
     private final double gu0, gs0;
     private final int gu, gs;
     private final int[] head, next;
-    /** Each film cell's turn from the parked blade about each pivot (rad; NaN where the blade never reaches). */
-    private static final float[][] FILM_TURN = new float[WindshieldGlass.WIPERS.length][FW * FH];
+    /**
+     * Each film cell's turn from the parked blade about each pivot (rad), sorted, and the cells in that order (the cells
+     * the blade never reaches left out): a blade's sweep finds its cells by two searches instead of testing them all
+     * (2026-10-18, docs/rendering/rain_v1.md section 3.5).
+     */
+    private static final float[][] FILM_TURN = new float[WindshieldGlass.WIPERS.length][];
+    private static final int[][] FILM_CELL = new int[WindshieldGlass.WIPERS.length][];
+    /** The film's step (s): it builds and dries over seconds, so it runs at about 30 Hz whatever the frame rate. */
+    private static final double FILM_STEP = 1.0 / 30;
 
     static {
         for (int w = 0; w < WindshieldGlass.WIPERS.length; w++) {
             WindshieldGlass.Wiper wp = WindshieldGlass.WIPERS[w];
+            float[] turn = new float[FW * FH];
             for (int fs = 0; fs < FH; fs++)
                 for (int fu = 0; fu < FW; fu++) {
                     double uu = FU0 + (fu + 0.5) * (FU1 - FU0) / FW, ss = FS0 + (fs + 0.5) * (FS1 - FS0) / FH;
                     double du = uu - wp.pu(), ds = ss - wp.ps(), rest = wp.restAngle(Math.hypot(du, ds), 0);
-                    FILM_TURN[w][fs * FW + fu] = Double.isNaN(rest) ? Float.NaN : (float) (Math.atan2(ds, du) - rest);
+                    turn[fs * FW + fu] = Double.isNaN(rest) ? Float.NaN : (float) (Math.atan2(ds, du) - rest);
                 }
+            Integer[] order = new Integer[FW * FH];
+            int n = 0;
+            for (int c = 0; c < FW * FH; c++) if (!Float.isNaN(turn[c])) order[n++] = c;
+            Arrays.sort(order, 0, n, (a, b) -> Float.compare(turn[a], turn[b]));
+            FILM_TURN[w] = new float[n];
+            FILM_CELL[w] = new int[n];
+            for (int k = 0; k < n; k++) {
+                FILM_CELL[w][k] = order[k];
+                FILM_TURN[w][k] = turn[order[k]];
+            }
         }
     }
     private final Random rnd;
@@ -159,12 +177,17 @@ final class GlassWater {
         move(dt, wind);
         if (rain <= 0) evaporate(dt);
         for (int w = 0; w < pane.wipers.length; w++) wipe(w, blades[w], dt);
-        film(dt, rain, forward, ex);
+        filmDt += dt;
+        if (filmDt >= FILM_STEP) {
+            film(filmDt, rain, forward, ex);
+            filmDt = 0;
+        }
         for (int i = 0; i < TRAILS; i++) trail[i * 6 + 5] += (float) dt;
         any = count > 0 || filmAny || loaded();
     }
 
     private boolean filmAny;
+    private double filmDt = FILM_STEP;
 
     private boolean loaded() {
         for (float[] l : load) for (float v : l) if (v > 0) return true;
@@ -281,8 +304,8 @@ final class GlassWater {
                 runK[i] = (float) Math.max(0, runK[i] - dt * 2);   // settles back into a resting shape
                 continue;
             }
-            double du = vu[i] * dt, ds = vs[i] * dt, step = Math.hypot(du, ds);
-            double speed = Math.hypot(vu[i], vs[i]);
+            double du = vu[i] * dt, ds = vs[i] * dt, step = Math.sqrt(du * du + ds * ds);
+            double speed = Math.sqrt((double) vu[i] * vu[i] + (double) vs[i] * vs[i]);
             wu[i] = (float) (vu[i] / speed);
             ws[i] = (float) (vs[i] / speed);
             runK[i] = (float) Math.min(1, runK[i] + dt * 4 * Math.min(1, speed / 0.03));
@@ -312,7 +335,7 @@ final class GlassWater {
                 }
             }
             // a running big drop's wet trail, a segment every 6 mm
-            if (rr > rSlide * 0.9 && Math.hypot(u[i] - tu[i], s[i] - ts[i]) > 0.006) {
+            if (rr > rSlide * 0.9 && sq(u[i] - tu[i], s[i] - ts[i]) > 0.006 * 0.006) {
                 trail(tu[i], ts[i], u[i], s[i], r[i] * 1.3);
                 tu[i] = u[i];
                 ts[i] = s[i];
@@ -376,11 +399,17 @@ final class GlassWater {
             i--;
         }
         // the film under it: clear, a thin streak left (each cell's angle about this pivot worked out once, FILM_TURN)
-        float[] cells = FILM_TURN[w];
+        float[] turns = FILM_TURN[w];
+        int[] cells = FILM_CELL[w];
         float flo = (float) (lo - 0.01), fhi = (float) (hi + 0.01);
-        for (int c = 0; c < FW * FH; c++) {
-            float a = cells[c];
-            if (!(a >= flo && a <= fhi)) continue;   // NaN (off the blade) fails too
+        int from = 0, to = turns.length;
+        while (from < to) {
+            int mid = (from + to) >>> 1;
+            if (turns[mid] < flo) from = mid + 1;
+            else to = mid;
+        }
+        for (int k = from; k < turns.length && turns[k] <= fhi; k++) {
+            int c = cells[k];
             streak[c] = Math.max(streak[c], 0.4F + 1.2F * wet[c]);
             wet[c] = 0;
             filmDirty = true;
@@ -446,6 +475,10 @@ final class GlassWater {
         int cu = (int) Math.floor((uu - gu0) / CELL), cs = (int) Math.floor((ss - gs0) / CELL);
         if (cu < 0 || cs < 0 || cu >= gu || cs >= gs) return -1;
         return cs * gu + cu;
+    }
+
+    private static double sq(double a, double b) {
+        return a * a + b * b;
     }
 
     private void rebuildHash() {

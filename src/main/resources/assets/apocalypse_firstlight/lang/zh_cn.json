@@ -84,6 +84,7 @@
   "hud.apocalypse_firstlight.drive.signals": "转向灯",
   "hud.apocalypse_firstlight.drive.hazard": "应急灯",
   "hud.apocalypse_firstlight.drive.wipers": "雨刷",
+  "hud.apocalypse_firstlight.drive.climate": "暖风 / 冷气",
   "hud.apocalypse_firstlight.drive.horn": "喇叭",
   "hud.apocalypse_firstlight.drive.transfer": "两驱 / 四驱 / 低速四驱",
   "hud.apocalypse_firstlight.drive.get_out": "下车",
@@ -727,6 +728,7 @@
   "key.apocalypse_firstlight.signal_right": "右转向灯（驾驶）",
   "key.apocalypse_firstlight.hazard": "应急灯（驾驶）",
   "key.apocalypse_firstlight.wipers": "雨刷：关 / 间歇 / 慢 / 快（驾驶）",
+  "key.apocalypse_firstlight.climate": "空调：关 / 暖风 / 冷气（驾驶）",
   "key.apocalypse_firstlight.driving_hints": "驾驶按键提示：收起 / 显示（驾驶）",
   "key.apocalypse_firstlight.status_details": "状态详情（按住）",
 

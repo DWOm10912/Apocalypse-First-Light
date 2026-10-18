@@ -25,6 +25,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `temperature/TemperatureConfig.java` | 读 `data/apocalypse_firstlight/temperature/temperature_v1.json`（`/reload` 生效），加载时建好热源表 |
 | `temperature/PlayerTemperature.java` | 服务端：每秒一次计算环境温度和核心体温；处理阶段、效果、伤害、同步和保存 |
 | `temperature/TemperatureShelter.java` | 遮蔽度 S：9 条不朝下的射线 |
+| `vehicle/CabClimate.java` | T15 驾驶室的空气（2026-10-18）：坐驾驶室的人用它代替世界的气温，不淋雨 |
 | `temperature/ThermalInsulation.java` | 读 `data/<命名空间>/thermal_insulation/*.json`；给以后的服装系统留了 `register(Source)` |
 | `temperature/TemperaturePackets.java` | 本人体温状态（S2C） |
 | `temperature/ClientTemperature.java` | 客户端：保存本人状态，提供寒战时的持枪晃动倍率 |
@@ -65,6 +66,8 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
 ```
 
 各阶段只看核心体温 core。T_env 就是以后温度计显示的“环境温度”，它不包括湿冷、出力和保暖。
+
+**坐在 T15 驾驶室里**（驾驶座或副驾驶，2026-10-18）：上面的 lerp(T_out, T_in, S) 换成驾驶室自己的空气温度（关门保温、日照、暖风、冷气，见 [T15 设计 8.19](../vehicles/first_pickup_v0_design.md)），热源照常加；不淋雨，湿度照常晾干。驾驶室空气用的户外和遮蔽处气温也是这里的公式（`PlayerTemperature.outdoorAndSheltered`）。
 
 ### 时刻曲线 D（−1..+1）
 

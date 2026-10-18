@@ -122,7 +122,7 @@
 - 打开存档后：中午、下雨，玩家坐进最近一辆 T15 的驾驶座（第一人称，看前方），暖机 25 s，然后 6 个阶段各 12 s：车内全开 / 关玻璃水 / 关雨丝 / 都关，第三人称全开 / 都关。每段写平均、95% 和最慢帧时间，以及雨和玻璃水的 `status`，到 `build/rain-perf/afl_rain_perf.txt`，然后退出。不截图。10 分钟看门狗。
 - 步行模式（`-Prainperfwalk=true`，2026-10-17）：玩家站在离车 80 m 的地面上（没有玻璃水、雨的数据里没有车），手里一把 BR-51，第一人称。5 个阶段：下雨全开 / 关溅射（`RainRenderer.splashes`）/ 关 AFL 的雨（原版雨）/ 晴天 / 晴天空手。
 - 原地模式（`-Prainperfhere=true`，2026-10-17）：不传送，时间和天气都不动，玩家留在存档里的位置，第一人称。四个阶段：按存档的朝向看 / 转身 180° / 第三人称背后 / 第三人称正面（每段截一帧，看身上背着的枪）。用来在玩家自己存档的副本里测帧率（存档复制到测试客户端的 `saves/` 下）。窗口大小用 `-Prainperfsize=2560x1440` 改，默认 1920 × 1080。
-- 开车模式（`-Prainperfdrive=true`，2026-10-18）：半夜（18000）、下雨、生存模式，坐进最近一辆 T15，开大灯、雨刷调到低速，环绕镜头在车后。测试程序替换 `PickupTruckEntity.clientInput` 自己开车：按住钥匙直到发动，转速超过 2800 就升一挡，巡航 25 m/s；车道保持用 `RoadSurfaceQuery` 在前方 14 m（或 0.9 s 路程）−40°…40° 扫沥青，朝包含正前方的那一段的中间打方向。8 个阶段：停着 / 加速 / 巡航（都是下雨全开）/ 关溅射和车轮甩水 / 关 AFL 的雨（原版雨）/ 晴天 / 晴天 + F1 隐藏 HUD / 第一人称车内。报告每段另写慢帧（p99、p99.9、超过 25 / 50 ms 的帧数）、平均车速、在路上的 tick 数和区块统计。
+- 开车模式（`-Prainperfdrive=true`，2026-10-18；存档每次从用户的 `run/saves/新的世界` 重新复制到 `build/rain-perf/saves/drive` 并删掉 `session.lock`，跑过一次的存档里车已经开走了）：半夜（18000）、下雨、生存模式，坐进最近一辆 T15，开大灯、雨刷调到低速，环绕镜头在车后。测试程序替换 `PickupTruckEntity.clientInput` 自己开车：按住钥匙直到发动，转速超过 2800 就升一挡，巡航 25 m/s；车道保持用 `RoadSurfaceQuery` 在前方 14 m（或 0.9 s 路程）−40°…40° 扫沥青，朝包含正前方的那一段的中间打方向。8 个阶段：停着 / 加速 / 巡航（都是下雨全开）/ 关溅射和车轮甩水 / 关 AFL 的雨（原版雨）/ 晴天 / 晴天 + F1 隐藏 HUD / 第一人称车内。报告每段另写慢帧（p99、p99.9、超过 25 / 50 ms 的帧数）、平均车速、在路上的 tick 数和区块统计。
 - HUD 模式（`-Prainperfhud=true`，配合原地模式，2026-10-17）：切到生存模式，四个阶段：仪表不动 / 所有仪表每帧重画（`AflGauge.forceRedraw`，GPU 画法）/ 同样但用旧的 CPU 画法（`AflGaugeProgram.enabled = false`，体温表盘也退回 CPU）/ F1 隐藏 HUD。报告里每段写 `AflGauge.status()`（各仪表贴图重画的次数和平均耗时）。结果见 `docs/ui/hud_v2_research.md` 6.11。
 - `-Prainperfjfr=true`：整次运行录一份 JFR CPU 采样（`build/rain-perf/afl_rain_perf.jfr`，栈深 256），报告里每个阶段写测量窗口的墙钟时间（`wall ms`），按时间切分采样。导出时 `jfr print` 要加 `--stack-depth`（默认只有 5 层）；渲染线程在 JFR 里叫 `main`。
 - 光影开关：测试脚本按 `-Prainperfshaders` 改运行目录的 `config/oculus.properties`。**不加 `-PaflWithoutShaders`、光影关**才是玩家平常的环境（Embeddium 在，逐像素动态光源要它）；加了 `-PaflWithoutShaders` 时 Embeddium 和 Oculus 都不加载，结果和玩家的不一样（比如车尾灯地面红光会画）。
@@ -222,14 +222,37 @@ JFR（渲染线程 `main` 的 Java + native 采样，按帧时间折算）巡航
 
 区块：这段路以 27 m/s 开了约 3 km，12 秒内超过 25 ms 的帧 0–2 个，没有超过 50 ms 的；"区块上传 / 排序"只占 0.1–0.2 ms。这段路在用户存档里可能早就生成过，**还没测从没生成过的地方**。
 
-结论：雨夜开车的 CPU 帧时间约一半是玻璃水的逐属性写顶点。玻璃水、溅射、车窗三项改成显卡侧（实例化或缓存）后，估计巡航能到 4 ms 左右（约 250 fps）；这是按采样折算的估计，**还没改、没验证**。
+结论（改之前）：雨夜开车的 CPU 帧时间约一半是玻璃水的逐属性写顶点。
 
-计划（用户 2026-10-18 同意，次日开始；**都还没做**），按顺序：
+#### 3.5.1 改了什么（2026-10-18 同日，用户同意的四项计划按实际情况改了做法）
 
-1. **玻璃水珠交给显卡**：每颗水珠只上传几个数（位置、大小、形状），由显卡展开成方片（实例化），CPU 不再逐属性写顶点；镜头在车外时，背对镜头的车窗不画。目标约 5 ms → 0.5 ms 以下，画面不变。
-2. **车窗玻璃只建一次**：`PickupTruckRenderer.glass` → `AflMovingGlass.queue` 不再每帧新建 `BakedQuad`，缓存后每帧只做变换（或走 GPU 缓存）。目标约 1 ms → 0.1 ms。
-3. **地面溅射交给显卡**：同样改成实例化。目标约 1.2 ms → 0.3 ms，画面不变（已通过的样子不能变）。
-4. **重测**：同一个开车测试再跑一遍；再开进从没生成过的区域专门测区块卡顿（看超过 25 / 50 ms 的帧）。
+原计划的"交给显卡（实例化）"没有做：实例化要给玻璃水珠和溅射各写一个新的顶点着色器，还要逐项核对画面没变。实际做的是**直接写内存**：顶点按原格式的字节布局直接写进一块堆外内存（`client/FastVertices.java`，`MemoryUtil`），再用 `BufferBuilder.putBulkData` 一次拷进去。着色器、绘制、排序都和原来一样，所以画面不变；省下的是 `BufferBuilder` 一个属性一个属性带边界检查的写法。
+
+1. **玻璃水珠**（`WindshieldRenderer.quad / drawFilm`）：直接写 POSITION_COLOR_TEX_LIGHTMAP / POSITION_TEX；每块车窗算一次"水层在相机坐标里的原点 + 横向 / 向上 / 弯曲方向"，每颗水珠只做几次乘加（原来每颗都走 `pane.model` 和四元数变换）。镜头在车外、两扇门都关着时，镜头在驾驶室一侧的车窗（被前面那块玻璃的深度挡住）不画。
+2. **水珠模拟**（`GlassWater`、`TruckGlass`）：热路径里的 `Math.hypot`（很慢）换成平方根；车窗轮廓的四个角和边长在构造时算好（原来每次判断都新建数组）；水膜（192 × 112 格）的积水 / 变干改成约 30 Hz 更新；雨刷扫过的水膜格子按角度排好序，用二分查找找扫过的那一段，不再每帧检查全部格子；挡风玻璃两侧弯曲在平坦的中间不算 `pow`。
+3. **车窗玻璃只建一次**（`AflMovingGlass`）：每个部件的面读一次存成模型坐标的数组，每帧只做变换，直接写 BLOCK 格式。没开光影时用自己的 `BufferBuilder` 加 `RenderType.end` 画：Embeddium 下 `BufferSource.getBuffer` 给的是它的包装（`SodiumBufferBuilder`），只能一个顶点一个顶点地写。开光影时 Oculus 会扩展顶点格式，所以仍走原来的逐顶点写法。
+4. **地面溅射**（`RainSplashes.vertex`）：直接写 NEW_ENTITY 格式。
+5. **玻璃水的场景拷贝**（`WindshieldRenderer.SceneCopy`）：原来每帧都用 `glGetTexLevelParameteri` 查一次主深度纹理的格式（会让 CPU 等显卡），改成只在深度纹理换了（窗口改大小）时才查。
+
+#### 3.5.2 结果（同一个开车测试，用户存档"新的世界"的副本，2560 × 1440，不录 JFR）
+
+| 阶段 | 改前 | 改后 |
+| --- | --- | --- |
+| 停着，下雨全开 | 6.84 ms（146 fps） | 4.63 ms（216 fps） |
+| 加速 | 8.20 ms | 6.09 ms（164 fps） |
+| 巡航，下雨全开 | 9.14 ms（109 fps） | 6.12 ms（163 fps） |
+| 关溅射和车轮甩水 | 7.71 ms | 5.00 ms（200 fps） |
+| 关 AFL 的雨（原版雨） | 8.61 ms | 5.55 ms |
+| 晴天 | 7.02 ms | 4.55 ms（220 fps） |
+| 晴天 + F1 | 4.84 ms | 3.25 ms（308 fps） |
+| 第一人称车内，下雨全开 | 7.59 ms | 5.88 ms（170 fps） |
+
+- 巡航时玻璃水：模拟 764 → 约 450 us，绘制 3224 → 约 760 us；溅射 CPU 769 → 约 570 us。
+- 同一份代码两次测量之间差 ±0.5 ms（别的会话在跑构建时会更慢，有一次巡航测到 7.1 ms），表里是没有干扰的那次。
+- "改前"的起点是 4920, 98, 5，"改后"的存档用户玩过，起点变成 5440, 95, 484，巡航路段大致重合但不是同一段路。
+- **没到 200 fps 的巡航目标**：剩下的大头是玻璃水绘制约 0.8 ms、溅射约 0.6 ms、车本身约 0.7 ms（车灯光晕走 Vextris 的逐顶点写法，归 Vextris）。再往下要做实例化（新顶点着色器），用户 2026-10-18 决定先不做（"如果一定要搞到200+，但是需要浪费很多时间，那还不如就先这样"）。
+- **画面没进游戏看过**：做法上字节和原来一样，但这一点没有实机确认。
+- 从没生成过的区域的区块卡顿**还没测**。
 
 ## 4. 检查（2026-10-17）
 
@@ -295,7 +318,7 @@ Aureveil 那边的原文在它的仓库 `docs/afl-interface-rain-alpha49.md`；�
 
 **③ 车 `apocalypse_firstlight:dynamic/afl_rain_trucks`**
 - RGBA32F，85 × 3（2026-10-18 起，原来 76），NEAREST，一级。位置都相对 `Camera#getPosition`（这一帧的 partialTick），和车灯同一原点。每帧整张重写。
-- 第 0 行（头）：texel 0 = (车数 0–2, 布局版本, 0, 4243)，布局版本 1 = 有 texel 76–84 的车轮甩水（2026-10-18；0 是旧的 76 宽）。以后再扩宽：布局版本升到 2，并把图的宽度写进 texel 0 的 z（Aureveil 对版本 ≥ 2 读 z）；光影包的 gbuffers 是 GLSL 1.20，只能按 (x + 0.5) / 宽度 取样，扩宽不改版本号会让车窗数据读偏而没有任何报错（2026-10-18 扩到 85 宽时 Aureveil alpha.49–53 车窗水全没，alpha.54 已按版本号定宽修好）；texel 1 = T15 玻璃 sprite `apocalypse_firstlight:block/pickup_t15_glass` 在方块图集里的 UV 范围 (u0, v0, u1, v1)（图集里没有时全 0）。
+- 第 0 行（头）：texel 0 = (车数 0–2, 布局版本, 宽度, 4243)。布局版本 0 = 旧的 76 宽；1 = 有 texel 76–84 的车轮甩水（2026-10-18，85 宽）；2 = 另外有 ⑤ `afl_glass_beads`，z 写图的宽度 85（2026-10-18，Aureveil A 要的；texel 内容和宽度都没变）。版本 0、1 时 z 是 0。以后再扩宽：升布局版本，z 写新宽度（Aureveil 对版本 ≥ 2 读 z）；光影包的 gbuffers 是 GLSL 1.20，只能按 (x + 0.5) / 宽度 取样，扩宽不改版本号会让车窗数据读偏而没有任何报错（2026-10-18 扩到 85 宽时 Aureveil alpha.49–53 车窗水全没，alpha.54 已按版本号定宽修好）；texel 1 = T15 玻璃 sprite `apocalypse_firstlight:block/pickup_t15_glass` 在方块图集里的 UV 范围 (u0, v0, u1, v1)（图集里没有时全 0）。
 - 第 1–2 行：40 m 以内最近的两辆车，最近的在前（`RainTrucks.near`，和 AFL 自己的雨同一套）：
   - texel 0：原点（`truck.framePoint(0, 0, 0)`），w = 1；texel 1–3：前、右、上，世界坐标单位向量；
   - texel 4–51：挡雨外壳的盒子，每个 3 个 texel：(min.前, min.右, min.上, nf)、(max.前, max.右, max.上, nu)、(d, 1, 0, 0)。没用到的盒子全 0（有效位 0）。现在每车 13 个：`PickupTruckLayout.RAIN_SHELL` 12 个 + 尾门（关着或放平）。
@@ -330,6 +353,13 @@ Aureveil 那边的原文在它的仓库 `docs/afl-interface-rain-alpha49.md`；�
   - 干的玻璃 t5 也是 0；
   - **包要把 t5 全 0 当作没有水。**
 - 哪辆车都没有水时，图集清成空的一次，之后不再烘。
+
+**⑤ 水珠贴图 `apocalypse_firstlight:dynamic/afl_glass_beads`（2026-10-18，③ 布局版本 2 起）**
+
+- 就是 AFL 自己画水珠用的那张贴图（`textures/effect/windshield_beads.png`，0.2 mm 一个像素，平铺），同一个 GL 纹理：10 级以内的 mipmap、LINEAR_MIPMAP_LINEAR、各向异性（最多 16）、REPEAT。`afl_windshield_film` 和 ④ 的烘焙读的都是它。
+- 为什么要：④ 的图集 1 mm 一格，一格里有好几颗细水珠，包按图集画成了一层雾（Aureveil alpha.55 实机不通过）；包要像 `afl_windshield_film` 一样逐像素读水珠贴图。Oculus 按资源路径加载 PNG 时是没有 mipmap 的最近点采样，不能用，所以 AFL 把自己那张注册出去。
+- 注册：`WindshieldRenderer.SharedTexture`（`AbstractTexture`，id 就是 AFL 的 GL 名字，load 和 releaseId 都不做事，名字由 AFL 管）；每次资源重载重新加载贴图时更新 id。开着包时每帧 `packFrame` 都会先确保它已加载（不等玻璃变湿）。
+- 湿度：包从 ④ 的 B 按 `afl_glass_bake_film` 的公式反推。所以 `afl_glass_bake_film` 里的 TILE、TURN、第二层的偏移 (0.37, 0.61) 和 ×1.37、wet × 0.55、`shown()` 的 spread **不要改**；要改先告诉 Aureveil A。
 
 **布局（`GlassAtlas`，启动时算出来）**
 - 第一辆车在上面的 2048²，第二辆在下面的 2048 × 1024，每个槽按货架法排、高的先放。

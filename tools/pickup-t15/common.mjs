@@ -63,6 +63,8 @@ export const PIVOTS = {
   wiper_l: [WIPERS.l.pivot[0], WIPERS.l.pivot[1], WIPERS.l.pivot[2]], wiper_r: [WIPERS.r.pivot[0], WIPERS.r.pivot[1], WIPERS.r.pivot[2]],
   // gauge needles: the dial centres in the cluster face (cab.mjs cluster())
   tach: [0.6205, 1.066, -0.445], speedo: [0.6205, 1.066, -0.335], fuel_gauge: [0.6205, 1.08, -0.54], temp_gauge: [0.6205, 1.08, -0.24],
+  // heater sliders: each knob at its slot's left end (cab.mjs, heater control panel)
+  hvac_mode: [0.558, 0.901, -0.115], hvac_temp: [0.558, 0.901, -0.035], hvac_fan: [0.558, 0.901, 0.045],
   wheel: [0, 0, 0],
 };
 export const STEER_TILT = 27;
@@ -83,6 +85,9 @@ export const HINGES = {
   speedo: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-180 km/h over 270 deg clockwise'},
   fuel_gauge: {axis: [1, 0, 0], open: 120, note: 'needle about the dial axis; empty - full over 120 deg clockwise'},
   temp_gauge: {axis: [1, 0, 0], open: 120, note: 'needle about the dial axis; 40 - 120 C over 120 deg clockwise'},
+  hvac_mode: {axis: [0, 0, 1], open: 0, note: 'heater slider: slides along +z (across, to the right) 0 - 0.06 m; face, bi-level, foot, foot-defrost, defrost'},
+  hvac_temp: {axis: [0, 0, 1], open: 0, note: 'heater slider: slides along +z 0 - 0.06 m; cold (left) to hot (right)'},
+  hvac_fan: {axis: [0, 0, 1], open: 0, note: 'heater slider: slides along +z 0 - 0.06 m; off (left) to 4 (right)'},
 };
 // interaction / attachment anchors (concept frame, on a bone): seats and eye points for the player skeleton, hands on the
 // wheel, pedals and levers for IK, handles for interaction, lamps for light sources, filler and exhaust for effects
@@ -174,7 +179,8 @@ export const MESHES = {
   ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate', 'fuel_door'], atlas: 'ext'},
   front: {id: 'pickup_t15_front', bones: ['body', 'hood', 'wiper_l', 'wiper_r'], atlas: 'ext'},
   wheel: {id: 'pickup_t15_wheel', bones: ['wheel'], atlas: 'ext'},
-  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'shift', 'transfer', 'wiper_stalk', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge'], atlas: 'cab'},
+  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'shift', 'transfer', 'wiper_stalk', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge',
+    'hvac_mode', 'hvac_temp', 'hvac_fan'], atlas: 'cab'},
   seat: {id: 'pickup_t15_seat', bones: ['body'], atlas: 'cab'},
   engine: {id: 'pickup_t15_engine', bones: ['body'], atlas: 'under'},
   chassis: {id: 'pickup_t15_chassis', bones: ['body'], atlas: 'under'},

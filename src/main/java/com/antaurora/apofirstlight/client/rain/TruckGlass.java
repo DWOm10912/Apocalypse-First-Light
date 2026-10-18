@@ -63,6 +63,9 @@ final class TruckGlass {
         private final boolean bends;
         /** Its outline's extent and area (m, m^2), the share of gravity down it. */
         final double uMin, uMax, area, gravity;
+        /** The outline shrunk by the corner radius (inside): its corners, edges and their 1 / length, 1 / length^2. */
+        private final double[] qu = new double[4], qs = new double[4], eu = new double[4], es = new double[4],
+                inv = new double[4], inv2 = new double[4];
 
         Pane(String name, Hinge hinge, double aL, double bL, double aR, double bR, double s0, double s1, double corner,
              double[] o, double[] axisU, double[] axisS, double[] axisN, WindshieldGlass.Wiper[] wipers,
@@ -89,6 +92,19 @@ final class TruckGlass {
             uMin = Math.min(aL + bL * s0, aL + bL * s1);
             uMax = Math.max(aR + bR * s0, aR + bR * s1);
             gravity = axisS[1];
+            double r = corner, lo = s0 + r, hi = s1 - r;
+            double la = aL + r * Math.sqrt(1 + bL * bL), ra = aR - r * Math.sqrt(1 + bR * bR);
+            double[] cu = {la + bL * lo, ra + bR * lo, ra + bR * hi, la + bL * hi}, cs = {lo, lo, hi, hi};
+            for (int i = 0; i < 4; i++) {
+                int j = (i + 1) & 3;
+                qu[i] = cu[i];
+                qs[i] = cs[i];
+                eu[i] = cu[j] - cu[i];
+                es[i] = cs[j] - cs[i];
+                double len = Math.hypot(eu[i], es[i]);
+                inv[i] = 1 / len;
+                inv2[i] = 1 / (len * len);
+            }
             // the area by its outline (2 mm cells)
             int n = 0;
             for (double s = s0; s < s1; s += 0.002)
@@ -119,9 +135,23 @@ final class TruckGlass {
          * that quad taken off the radius (so the corners round, whatever their angle).
          */
         double inside(double u, double s) {
-            double r = corner, lo = s0 + r, hi = s1 - r;
-            double la = aL + r * Math.sqrt(1 + bL * bL), ra = aR - r * Math.sqrt(1 + bR * bR);
-            return r - quadDistance(la + bL * lo, lo, ra + bR * lo, lo, ra + bR * hi, hi, la + bL * hi, hi, u, s);
+            // the signed distance (positive outside) from the convex quad (counter-clockwise), its corners worked out once
+            // (2026-10-18: it ran for every moving drop every frame; docs/rendering/rain_v1.md section 3.5)
+            double out = -Double.MAX_VALUE;
+            for (int i = 0; i < 4; i++) out = Math.max(out, ((u - qu[i]) * es[i] - (s - qs[i]) * eu[i]) * inv[i]);
+            if (out <= 0) return corner - out;
+            double near = Double.MAX_VALUE;
+            for (int i = 0; i < 4; i++) {
+                double wu = u - qu[i], ws = s - qs[i], t = Math.max(0, Math.min(1, (wu * eu[i] + ws * es[i]) * inv2[i]));
+                double nu = wu - eu[i] * t, ns = ws - es[i] * t;
+                near = Math.min(near, nu * nu + ns * ns);
+            }
+            return corner - Math.sqrt(near);
+        }
+
+        /** How far the glass bends back at u (model +z; 0 but on the windshield). */
+        double bendAt(double u) {
+            return bends ? WindshieldGlass.bend(u) : 0;
         }
 
         /** A point of the water layer (model frame, off m out of the glass) into out[at..at + 2]. */
@@ -129,20 +159,5 @@ final class TruckGlass {
             double b = bends ? WindshieldGlass.bend(u) : 0;
             for (int i = 0; i < 3; i++) out[at + i] = (float) (o[i] + u * axisU[i] + s * axisS[i] + off * axisN[i] + (i == 2 ? b : 0));
         }
-    }
-
-    /** Signed distance (positive outside) from (u, s) to the convex quad a b c d (counter-clockwise). */
-    private static double quadDistance(double au, double as, double bu, double bs, double cu, double cs, double du, double ds, double u, double s) {
-        double[] pu = {au, bu, cu, du}, ps = {as, bs, cs, ds};
-        double out = -Double.MAX_VALUE, near = Double.MAX_VALUE;
-        for (int i = 0; i < 4; i++) {
-            int j = (i + 1) & 3;
-            double eu = pu[j] - pu[i], es = ps[j] - ps[i], len = Math.hypot(eu, es);
-            double wu = u - pu[i], ws = s - ps[i];
-            out = Math.max(out, (wu * es - ws * eu) / len);
-            double t = Math.max(0, Math.min(1, (wu * eu + ws * es) / (len * len)));
-            near = Math.min(near, Math.hypot(wu - eu * t, ws - es * t));
-        }
-        return out <= 0 ? out : near;
     }
 }

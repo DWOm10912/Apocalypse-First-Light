@@ -53,6 +53,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | ← / → | Left / right turn signal |
 | ↓ | Hazards |
 | C | Wipers: off / intermittent / low / high |
+| V | Climate: off / heat / A/C |
 | Caps Lock | Hide / show the key hints at the top right (remembered) |
 
 While you drive, these keys lend out their usual actions

@@ -40,7 +40,7 @@ import java.util.List;
  * <li>{@code apocalypse_firstlight:dynamic/afl_rain_columns}: the rain's column map, 128 x 129 RGBA8
  * ({@link RainColumns#uploadPack}).</li>
  * <li>{@code apocalypse_firstlight:dynamic/afl_rain_trucks}: RGBA32F 85 x 3. Row 0 the header: texel 0 (trucks 0-2, layout
- * 1, 0, 4243: the pack's check), texel 1 the T15 glass sprite's UV range in the block atlas (u0, v0, u1, v1). Rows 1-2 the
+ * 2, width 85, 4243: the pack's check), texel 1 the T15 glass sprite's UV range in the block atlas (u0, v0, u1, v1). Rows 1-2 the
  * nearest trucks within 40 m, nearest first: texel 0 the origin (w 1), 1-3 forward, right, up (unit); 4-51 the 16 rain
  * shell boxes, 3 texels each (min.f, min.r, min.u, nf), (max.f, max.r, max.u, nu), (d, 1 when used, 0, 0), in the
  * truck's (forward, right, up), what stays of a box being nf * f + nu * u <= d (no cut: nf = nu = 0, d = 1e9; as
@@ -54,6 +54,8 @@ import java.util.List;
  * (client/vehicle/TruckSpray#packWheel).</li>
  * <li>{@code apocalypse_firstlight:dynamic/afl_glass_water}: the glass water of the two trucks' panes, RGBA8
  * {@link GlassAtlas#W} x {@link GlassAtlas#H} with mip levels, baked by {@link WindshieldRenderer#packFrame}.</li>
+ * <li>{@code apocalypse_firstlight:dynamic/afl_glass_beads} (layout 2): AFL's own bead tile (textures/effect/windshield_beads,
+ * 0.2 mm texels, mip levels, trilinear, anisotropic, repeat), the one afl_windshield_film and the bake read.</li>
  * </ul>
  * With the option off, another pack or none: nothing is stopped and nothing is updated (the pack does not read them).
  */
@@ -64,8 +66,11 @@ public final class RainShaderPack {
             TRUCKS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_rain_trucks"),
             GLASS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_glass_water");
     static final int TRUCK_W = 85, TRUCK_H = 3, TRUCKS = 2, BOXES = 16, PANE_AT = 52, PANE_TEXELS = 6, WHEEL_AT = 76;
-    /** The header's texel 0 .y: the trucks texture's layout (1: the wheel spray texels 76-84 are there; 2026-10-18). */
-    private static final float LAYOUT = 1;
+    /**
+     * The header's texel 0 .y: the trucks texture's layout (1: the wheel spray texels 76-84 are there; 2: also
+     * dynamic/afl_glass_beads, and .z the width; 2026-10-18). Widening the texture again: a new layout, .z the width.
+     */
+    private static final float LAYOUT = 2;
     private static final float[] WHEEL = new float[8];
     private static final double RANGE = 40;
     private static final float CHECK = 4243.0F;
@@ -191,7 +196,7 @@ public final class RainShaderPack {
     private static void uploadTrucks(Vec3 cam, float pt, List<RainTrucks.Frame> near, boolean[][] baked) {
         FloatBuffer d = DATA;
         MemoryUtil.memSet(MemoryUtil.memAddress(d), 0, (long) d.capacity() * Float.BYTES);
-        d.put(0, near.size()).put(1, LAYOUT).put(3, CHECK);
+        d.put(0, near.size()).put(1, LAYOUT).put(2, TRUCK_W).put(3, CHECK);
         TextureAtlasSprite glass = AflStaticMeshModel.atlasSprite(GLASS);
         if (glass != null) d.put(4, glass.getU0()).put(5, glass.getV0()).put(6, glass.getU1()).put(7, glass.getV1());
         for (int t = 0; t < near.size(); t++) {

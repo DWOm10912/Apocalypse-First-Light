@@ -61,6 +61,7 @@ public final class VehicleKeyHints {
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.SIGNAL_LEFT), AflKeyHint.of(VehicleDriving.SIGNAL_RIGHT), t("signals")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.HAZARD), t("hazard")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.WIPERS), t("wipers")));
+        rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.CLIMATE), t("climate")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.HORN), t("horn")));
         if (VehicleSpec.T15.fourWheelSpeed > 0) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.TRANSFER), t("transfer")));
         if (truck.speed() <= PickupTruckEntity.GET_OUT_SPEED) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyShift), t("get_out")));

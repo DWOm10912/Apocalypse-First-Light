@@ -1,4 +1,4 @@
-// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering, the shift and transfer levers and the four gauge needles). Structure per the reference drawings (design
+// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering, the shift and transfer levers, the four gauge needles and the three heater sliders). Structure per the reference drawings (design
 // doc 2.4, Hilux LN106 instrument panel / seat / door trim groups): instrument panel with a padded top and a meter hood over
 // the driver's cluster; round side vents, centre vents, defroster grilles; heater control panel above the radio, ashtray
 // below; glovebox; tilt column with a two-piece square shroud, two stalks and the key cylinder; two-spoke wheel with a
@@ -59,12 +59,14 @@ function dash() {
     rbox(C(B, 'liner'), FRX, z0 + 0.008, z1 - 0.008, 0.948, 0.98, 0.562, 0.566, 0, {rc: 0});
     for (let z = z0 + 0.02; z < z1 - 0.01; z += 0.018) abox(C(B, 'trim'), 0.562, 0.574, 0.95, 0.978, z - 0.0018, z + 0.0018, 0.0008);
   }
-  // heater control panel: dark face, three slider slots (mode, temperature, fan) with knobs, recirculation lever
+  // heater control panel: dark face, three slider slots (mode, temperature, fan) with knobs, recirculation lever. Each knob
+  // on its own bone (hvac_mode / hvac_temp / hvac_fan, 2026-10-18), modelled at the slot's left end (face vents, cold, fan
+  // off); the renderer slides it right (+z) by HVAC_TRAVEL x its setting (vehicle/CabClimate: off, heat, cool)
   rbox(C(B, 'trim'), FRX, -0.13, 0.13, 0.875, 0.932, 0.564, 0.578, 0.004, {rc: 0.008});
-  [[-0.09, 0.3], [-0.03, 0.55], [0.03, 0.75]].forEach(([z, t], i) => {
+  ['hvac_mode', 'hvac_temp', 'hvac_fan'].forEach((bone, i) => {
     rbox(C(B, 'liner'), FRX, -0.115 + 0.08 * i, -0.055 + 0.08 * i, 0.898, 0.904, 0.561, 0.564, 0, {rc: 0});
-    const kz = -0.115 + 0.08 * i + 0.06 * t;
-    rbox(C(B, 'vinyl'), FRX, kz - 0.006, kz + 0.006, 0.892, 0.91, 0.552, 0.564, 0.002, {rc: 0.003});
+    const kz = -0.115 + 0.08 * i;
+    rbox(C(bone, 'vinyl'), FRX, kz - 0.006, kz + 0.006, 0.892, 0.91, 0.552, 0.564, 0.002, {rc: 0.003});
   });
   for (let k = 0; k < 4; k++) rbox(C(B, 'dash'), FRX, 0.05 + k * 0.018, 0.064 + k * 0.018, 0.912, 0.924, 0.557, 0.564, 0.0015, {rc: 0.002});   // mode buttons
   // radio: face plate, cassette door, two knobs

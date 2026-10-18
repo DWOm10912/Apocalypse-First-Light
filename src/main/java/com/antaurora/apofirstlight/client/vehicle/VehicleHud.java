@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.client.AflGauge;
 import com.antaurora.apofirstlight.client.FirstPersonBodyConfig;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
+import com.antaurora.apofirstlight.vehicle.CabClimate;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.physics.Drivetrain;
 import com.antaurora.apofirstlight.vehicle.physics.VehicleSpec;
@@ -119,6 +120,9 @@ public final class VehicleHud {
             set(DashTelltales.Telltale.FOUR, truck.transferMode() == 1, DashTelltales.GREEN);
             set(DashTelltales.Telltale.FOUR_LOW, truck.transferMode() == 2, DashTelltales.GREEN);
             set(DashTelltales.Telltale.FUEL, key && fuel < FUEL_LOW, DashTelltales.AMBER);
+            // the heater panel (CabClimate): lit while it works (the blower has power; the compressor needs the engine)
+            set(DashTelltales.Telltale.HEATER, key && truck.climateMode() == CabClimate.HEAT, DashTelltales.AMBER);
+            set(DashTelltales.Telltale.AIR_CON, running && truck.climateMode() == CabClimate.COOL, DashTelltales.COLD);
         }
 
         private void set(DashTelltales.Telltale t, boolean on, int rgb) {

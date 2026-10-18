@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client.rain;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.FastVertices;
 import com.antaurora.apofirstlight.client.GpuTimer;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.WiperSystem;
@@ -276,8 +277,8 @@ public final class WindshieldRenderer {
             // cleared to dry (normal 0.5, 0.5; cover 0) with an explicit value: the clear colour state is left alone
             GL30.glClearBufferfv(GL11.GL_COLOR, 0, DRY);
             atlasClear = !any;
+            TEXTURES.ensure(mc);   // also the pack's dynamic/afl_glass_beads: there before any glass gets wet
             if (any) {
-                TEXTURES.ensure(mc);
                 RenderSystem.disableDepthTest();
                 RenderSystem.depthMask(false);
                 RenderSystem.disableCull();
@@ -405,17 +406,30 @@ public final class WindshieldRenderer {
                 Vec3 pos = s.truck.getPosition(pt);
                 float ox = (float) (pos.x - cam.x), oy = (float) (pos.y - cam.y), oz = (float) (pos.z - cam.z);
                 float doorL = s.truck.doorAngle(false, pt), doorR = s.truck.doorAngle(true, pt);
-                for (GlassWater water : s.glass.panes) {
-                    if (!water.any) continue;
-                    TruckGlass.Pane pane = water.pane;
+                // which side of each pane the camera is on (the cab's or the world's). Outside the cab with both doors
+                // shut, a pane seen from the cab's side is behind another pane, whose depth hides its water anyway: left
+                // out (2026-10-18; from the chase camera most of the drops were on the far side of the truck)
+                boolean outsideCab = false;
+                for (int i = 0; i < s.glass.panes.length; i++) {
+                    TruckGlass.Pane pane = s.glass.panes[i].pane;
                     place(pane, q, ox, oy, oz, pane.hinge == TruckGlass.Hinge.DOOR_L ? -doorL : pane.hinge == TruckGlass.Hinge.DOOR_R ? doorR : 0);
-                    // the pane's axes in the world, and which side of it the camera is on (the cab's or the world's)
-                    axis(pane.axisU, AU);
-                    axis(pane.axisS, AS);
                     axis(pane.axisN, AN);
                     pane.model(pane.uMid(), pane.sMid(), 0, P, 0);
                     toCamera(P, V);
-                    inside = V.x * AN.x + V.y * AN.y + V.z * AN.z > 0;
+                    SIDE[i] = V.x * AN.x + V.y * AN.y + V.z * AN.z > 0;
+                    outsideCab |= !SIDE[i];
+                }
+                boolean cull = outsideCab && doorL == 0 && doorR == 0;
+                for (int i = 0; i < s.glass.panes.length; i++) {
+                    GlassWater water = s.glass.panes[i];
+                    if (!water.any || cull && SIDE[i]) continue;
+                    TruckGlass.Pane pane = water.pane;
+                    place(pane, q, ox, oy, oz, pane.hinge == TruckGlass.Hinge.DOOR_L ? -doorL : pane.hinge == TruckGlass.Hinge.DOOR_R ? doorR : 0);
+                    // the pane's axes in the world
+                    axis(pane.axisU, AU);
+                    axis(pane.axisS, AS);
+                    axis(pane.axisN, AN);
+                    inside = SIDE[i];
                     if (pass == 0) drawFilm(s.glass, water);
                     else drawDrops(water, false);
                 }
@@ -464,6 +478,7 @@ public final class WindshieldRenderer {
 
     private static final Vector3f SKY_LIGHT = new Vector3f(), AN = new Vector3f();
     private static boolean inside;
+    private static final boolean[] SIDE = new boolean[TruckGlass.PANES.length];
 
     private static void common(ShaderInstance sh) {
         sh.setSampler("Scene", COPY.color);
@@ -509,10 +524,17 @@ public final class WindshieldRenderer {
         b.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         float[] mesh = filmMesh(pane);
         Vector3f v = FILM_V;
+        FastVertices out = FAST;
         for (int k = 0; k < mesh.length; k += 5) {
             QP.transform(v.set(mesh[k] - PIVOT.x, mesh[k + 1] - PIVOT.y, mesh[k + 2] - PIVOT.z)).add(BASE);
-            b.vertex(v.x, v.y, v.z).uv(mesh[k + 3], mesh[k + 4]).endVertex();
+            long p = out.take(20);   // POSITION_TEX
+            FastVertices.f(p, v.x);
+            FastVertices.f(p + 4, v.y);
+            FastVertices.f(p + 8, v.z);
+            FastVertices.f(p + 12, mesh[k + 3]);
+            FastVertices.f(p + 16, mesh[k + 4]);
         }
+        out.into(b);
         BufferUploader.drawWithShader(b.end());
     }
 
@@ -578,6 +600,8 @@ public final class WindshieldRenderer {
 
     private static final float[] P = new float[3];
     private static final Vector3f V = new Vector3f(), AU = new Vector3f(), AS = new Vector3f();
+    /** drawDrops: the pane's water layer camera-relative (origin, per m across, up, of bend). */
+    private static final Vector3f C0 = new Vector3f(), CU = new Vector3f(), CS = new Vector3f(), CZ = new Vector3f();
     /** The drop shapes' cells are R_EQ cell half widths round (tools/blender/windshield_water/gen_textures.py). */
     private static final float R_EQ = 0.5F;
     /** A wet line's cover reaches this share of its quad's half width; its segments fade over their ends (afl_windshield_drop). */
@@ -600,6 +624,15 @@ public final class WindshieldRenderer {
             common(sh);
         }
         sh.setSampler("Drops", TEXTURES.drops);
+        if (!bake) {
+            // the pane's water layer camera-relative, as a sum: origin + u x across + s x up + its bend x model +z (the
+            // same point pane.model and toCamera make, worked out once a pane instead of once a drop)
+            pane.model(0, 0, WindshieldGlass.OFF, P, 0);
+            toCamera(P, C0);
+            axis(pane.axisU, CU);
+            axis(pane.axisS, CS);
+            QP.transform(CZ.set(0, 0, 1));
+        }
         BufferBuilder b = BUILDER;
         b.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
         int n = 0;
@@ -608,7 +641,7 @@ public final class WindshieldRenderer {
             int k = t * 6;
             float age = w.trail[k + 5], width = w.trail[k + 4];
             if (width <= 0 || age > 8) continue;
-            float du = w.trail[k + 2] - w.trail[k], ds = w.trail[k + 3] - w.trail[k + 1], len = (float) Math.hypot(du, ds);
+            float du = w.trail[k + 2] - w.trail[k], ds = w.trail[k + 3] - w.trail[k + 1], len = (float) Math.sqrt(du * du + ds * ds);
             if (len < 1e-5F) continue;
             quad(b, pane, (w.trail[k] + w.trail[k + 2]) * 0.5, (w.trail[k + 1] + w.trail[k + 3]) * 0.5, du / len, ds / len,
                     len / LINE_LENGTH, width * 0.5F / LINE_WIDTH, 0, LINE, 0.16F, 1 - age / 8);
@@ -619,7 +652,7 @@ public final class WindshieldRenderer {
         for (int i = 0; i < w.count; i++) {
             float k = w.runK[i], half = w.r[i] / R_EQ;
             float ru = (float) Math.sin(w.tilt[i]), rs = (float) Math.cos(w.tilt[i]);
-            float du = ru + (w.wu[i] - ru) * k, ds = rs + (w.ws[i] - rs) * k, len = (float) Math.hypot(du, ds);
+            float du = ru + (w.wu[i] - ru) * k, ds = rs + (w.ws[i] - rs) * k, len = (float) Math.sqrt(du * du + ds * ds);
             if (len < 1e-4F) {
                 du = w.wu[i];
                 ds = w.ws[i];
@@ -649,6 +682,7 @@ public final class WindshieldRenderer {
             }
         }
         lastDrops += n;
+        FAST.into(b);
         if (n > 0) BufferUploader.drawWithShader(b.end());
         // released even when empty: an unreleased batch keeps the shared builder from ever rewinding, so it grew every
         // frame until it hit 2 GB and the game went out of memory (user, 2026-10-17)
@@ -670,11 +704,10 @@ public final class WindshieldRenderer {
             gu = FLAT_U;
             gs = FLAT_S;
         } else {
-            pane.model(u, s, WindshieldGlass.OFF, P, 0);
-            toCamera(P, V);
-            cx = V.x;
-            cy = V.y;
-            cz = V.z;
+            float fu = (float) u, fs = (float) s, fb = (float) pane.bendAt(u);
+            cx = C0.x + fu * CU.x + fs * CS.x + fb * CZ.x;
+            cy = C0.y + fu * CU.y + fs * CS.y + fb * CZ.y;
+            cz = C0.z + fu * CU.z + fs * CS.z + fb * CZ.z;
             gu = AU;
             gs = AS;
         }
@@ -683,12 +716,48 @@ public final class WindshieldRenderer {
         float px = (gu.x * ds - gs.x * du) * across, py = (gu.y * ds - gs.y * du) * across, pz = (gu.z * ds - gs.z * du) * across;
         int bl = Math.round(Math.max(0, Math.min(1, blend)) * 255), al = Math.round(Math.max(0, Math.min(1, alpha)) * 255);
         int au = Math.round(du * 16383), as = Math.round(ds * 16383);
-        // local: x across (+ toward the truck's right when upright), y along (+ up the glass when upright)
-        b.vertex(cx - ax - px, cy - ay - py, cz - az - pz).color(a, bShape, bl, al).uv(-1, -1).uv2(au, as).endVertex();
-        b.vertex(cx - ax + px, cy - ay + py, cz - az + pz).color(a, bShape, bl, al).uv(1, -1).uv2(au, as).endVertex();
-        b.vertex(cx + ax + px, cy + ay + py, cz + az + pz).color(a, bShape, bl, al).uv(1, 1).uv2(au, as).endVertex();
-        b.vertex(cx + ax - px, cy + ay - py, cz + az - pz).color(a, bShape, bl, al).uv(-1, 1).uv2(au, as).endVertex();
+        int color = FastVertices.rgba(a, bShape, bl, al), uv2 = FastVertices.shorts(au, as);
+        // local: x across (+ toward the truck's right when upright), y along (+ up the glass when upright); the bytes are
+        // POSITION_COLOR_TEX_LIGHTMAP's, written straight (FastVertices; drawDrops hands them to b)
+        long p = FAST.take(4 * 28);
+        corner(p, cx - ax - px, cy - ay - py, cz - az - pz, color, -1, -1, uv2);
+        corner(p + 28, cx - ax + px, cy - ay + py, cz - az + pz, color, 1, -1, uv2);
+        corner(p + 56, cx + ax + px, cy + ay + py, cz + az + pz, color, 1, 1, uv2);
+        corner(p + 84, cx + ax - px, cy + ay - py, cz + az - pz, color, -1, 1, uv2);
     }
+
+    private static void corner(long p, float x, float y, float z, int color, float u, float v, int uv2) {
+        FastVertices.f(p, x);
+        FastVertices.f(p + 4, y);
+        FastVertices.f(p + 8, z);
+        FastVertices.i(p + 12, color);
+        FastVertices.f(p + 16, u);
+        FastVertices.f(p + 20, v);
+        FastVertices.i(p + 24, uv2);
+    }
+
+    /** The water's vertices this draw (drawFilm, quad), handed to BUILDER in one copy. */
+    private static final FastVertices FAST = new FastVertices(1 << 18);
+
+    /**
+     * The bead texture for the shader pack ({@code apocalypse_firstlight:dynamic/afl_glass_beads}, Aureveil A 2026-10-18;
+     * docs/rendering/rain_v1.md section 6): the very GL texture AFL draws the beads with (mip levels, trilinear, anisotropic,
+     * repeat), so the pack can follow afl_windshield_film per pixel. AFL owns the name: replaced on each resource reload,
+     * never released by the texture manager.
+     */
+    static final ResourceLocation BEADS_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_glass_beads");
+    private static final class SharedTexture extends net.minecraft.client.renderer.texture.AbstractTexture {
+        void use(int glId) { this.id = glId; }
+
+        @Override
+        public void load(net.minecraft.server.packs.resources.ResourceManager manager) {
+        }
+
+        @Override
+        public void releaseId() {
+        }
+    }
+    private static final SharedTexture SHARED_BEADS = new SharedTexture();
 
     /** The water textures, simulated offline: mipmapped by the GPU (every channel averages right), loaded on each resource reload. */
     private static final class WaterTextures {
@@ -704,6 +773,9 @@ public final class WindshieldRenderer {
             beads = load(mc, "windshield_beads", GL11.GL_REPEAT, 10, true);
             // the drop cells: a few levels only (the cells must not bleed into each other)
             drops = load(mc, "windshield_drops", GL12.GL_CLAMP_TO_EDGE, 4, false);
+            SHARED_BEADS.use(beads);
+            var textures = mc.getTextureManager();
+            if (textures.getTexture(BEADS_ID, null) != SHARED_BEADS) textures.register(BEADS_ID, SHARED_BEADS);
         }
 
         private static int load(Minecraft mc, String name, int wrap, int maxLevel, boolean anisotropic) {
@@ -736,11 +808,18 @@ public final class WindshieldRenderer {
      */
     private static final class SceneCopy {
         int fbo = -1, color = -1, depth = -1, width, height, depthFormat;
+        /** The main depth texture whose format was read (a glGet waits for the GPU: read again only when it is a new one). */
+        private int formatOf = -1, formatW, formatH, format;
 
         boolean copy(RenderTarget main) {
             int w = main.width, h = main.height;
             if (w <= 0 || h <= 0) return false;
-            int format = depthFormat(main);
+            if (main.getDepthTextureId() != formatOf || w != formatW || h != formatH) {
+                formatOf = main.getDepthTextureId();
+                formatW = w;
+                formatH = h;
+                format = depthFormat(main);
+            }
             if (fbo < 0 || w != width || h != height || format != depthFormat) create(w, h, format);
             GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
             GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, fbo);

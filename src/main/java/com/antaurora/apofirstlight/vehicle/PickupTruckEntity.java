@@ -115,9 +115,11 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
      * the left / right turn signal (on, or off when it already blinks) and the hazard switch.
      */
     public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3, SIGNAL_LEFT = 4, SIGNAL_RIGHT = 5, SWITCH_HAZARD = 6,
-            SWITCH_WIPER = 7;
+            SWITCH_WIPER = 7, SWITCH_CLIMATE = 8;
     /** The wiper switch (WiperSystem.OFF .. HIGH; the stalk right of the column), set on the server from the driver's key. */
     private static final EntityDataAccessor<Byte> WIPER = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
+    /** The heater panel's switch (CabClimate.OFF, HEAT, COOL), set on the server from the driver's key. */
+    private static final EntityDataAccessor<Byte> CLIMATE = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
     /** Flasher: one flash cycle (ticks; 90 a minute, inside the US 60-120) and its lit share. */
     public static final float BLINK_PERIOD = 20 * 60 / 90.0F, BLINK_ON = 0.5F;
     /**
@@ -339,6 +341,11 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         doorL = approach(doorL, doorOpen(false) ? DOOR_OPEN : 0.0F, DOOR_OPEN);
         doorR = approach(doorR, doorOpen(true) ? DOOR_OPEN : 0.0F, DOOR_OPEN);
         filler = approach(filler, fillerOpen() ? FILLER_OPEN : 0.0F, FILLER_OPEN);
+        float[] setting = HVAC[climateMode()];
+        for (int i = 0; i < hvac.length; i++) {
+            hvacO[i] = hvac[i];
+            hvac[i] += Mth.clamp(setting[i] - hvac[i], -HVAC_STEP, HVAC_STEP);
+        }
         drive();
         placeParts();
         carry();
@@ -369,6 +376,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             if (engineRunning() && Math.floorMod(now + getId(), NOISE_INTERVAL) == 0)
                 noise(server, engine, tachometer(1) > 1800 || throttlePedal() > 0.5F ? ENGINE_LOUD_NOISE : ENGINE_NOISE);
             if (horn() && Math.floorMod(now, HORN_INTERVAL) == 0) noise(server, engine, HORN_NOISE);
+            if (Math.floorMod(now + getId(), 20) == 0 || Double.isNaN(cabAir)) cabClimate(server, 1.0);
         }
     }
 
@@ -435,6 +443,11 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             entityData.set(WIPER, (byte) ((wiperMode() + 1) % WiperSystem.MODES));
             return;
         }
+        else if (action == SWITCH_CLIMATE) {
+            // the heater panel one step on: off, heat, cool, off
+            entityData.set(CLIMATE, (byte) ((climateMode() + 1) % CabClimate.MODES));
+            return;
+        }
         else return;
         entityData.set(LAMPS, (byte) lamps);
     }
@@ -443,6 +456,44 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
 
     /** The wiper switch: WiperSystem.OFF, INTERMITTENT, LOW, HIGH. */
     public int wiperMode() { return Math.floorMod(entityData.get(WIPER), WiperSystem.MODES); }
+
+    // ---- cab air (CabClimate, design doc 8.19) ----
+
+    /** The heater panel's switch: CabClimate.OFF, HEAT, COOL. */
+    public int climateMode() { return Math.floorMod(entityData.get(CLIMATE), CabClimate.MODES); }
+
+    /**
+     * The heater panel's three sliders (mode, temperature, fan; 0 left .. 1 right) for each setting: off (fan off), heat
+     * (foot, hot, fan 3), cool (face, cold, fan 3). A hand moves them in about a third of a second (HVAC_STEP a tick).
+     */
+    private static final float[][] HVAC = {{0.3F, 0.55F, 0.0F}, {0.75F, 0.95F, 0.67F}, {0.0F, 0.05F, 0.67F}};
+    private static final float HVAC_STEP = 0.15F;
+    private final float[] hvac = HVAC[CabClimate.OFF].clone(), hvacO = hvac.clone();
+
+    /** Client: a heater slider (0 mode, 1 temperature, 2 fan) this frame, 0 left .. 1 right. */
+    public float hvacSlider(int i, float partialTick) { return Mth.lerp(partialTick, hvacO[i], hvac[i]); }
+
+    /** Server: the cab's air (C; NaN until its first update). */
+    private double cabAir = Double.NaN;
+
+    public double cabTemperature() { return cabAir; }
+
+    /** Server, once a second: the cab's air one step on (CabClimate), from the air around the cab. */
+    private void cabClimate(net.minecraft.server.level.ServerLevel server, double dt) {
+        Vec3 roof = point(-0.06, 0, 1.9);
+        BlockPos at = BlockPos.containing(roof);
+        double[] air = com.antaurora.apofirstlight.temperature.PlayerTemperature.outdoorAndSheltered(server, at, getY());
+        // the sun on the cab: its height on a clear sky, with the sky open above the roof
+        double sun = server.dimensionType().hasSkyLight() && server.canSeeSky(at.above())
+                ? Math.max(0, Math.cos(server.getSunAngle(1))) * (1 - server.getRainLevel(1)) : 0;
+        boolean shut = !doorOpen(false) && !doorOpen(true);
+        Drivetrain d = drivetrain();
+        boolean running = d != null && d.running, power = electricsOn();
+        double coolant = d != null ? d.coolant : savedCoolant;
+        int mode = climateMode();
+        double target = CabClimate.target(air[0], air[1], sun, shut, mode, power, running, coolant);
+        cabAir = CabClimate.step(cabAir, target, dt, shut, mode != CabClimate.OFF && power);
+    }
 
     /** The electrics are on (the engine runs or the key is at preheat): the wipers and the gauges have power. */
     public boolean electricsOn() { Drivetrain d = drivetrain(); return d != null && (d.running || d.ignition == Drivetrain.PREHEAT); }
@@ -629,6 +680,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), physics.capture(), false));
         }
         boolean local = isControlledByLocalInstance();
+        // the air conditioning's compressor on the belt (CabClimate): wherever this truck is simulated
+        physics.drivetrain.accessoryTorque = climateMode() == CabClimate.COOL ? CabClimate.AC_TORQUE : 0;
         if (level().isClientSide) {
             if (local) {
                 if (!wasLocal && !synced) physics.reset(getX(), getY(), getZ(), orient());
@@ -1445,6 +1498,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.define(CARGO, new CompoundTag());
         entityData.define(LAMPS, (byte) 0);
         entityData.define(WIPER, (byte) WiperSystem.OFF);
+        entityData.define(CLIMATE, (byte) CabClimate.OFF);
         for (EntityDataAccessor<Integer> seat : SEAT) entityData.define(seat, -1);
     }
 
@@ -1462,6 +1516,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.set(LAMPS, (byte) ((tag.getBoolean("Headlights") ? LAMP_HEAD : 0) | (tag.getBoolean("HighBeam") ? LAMP_HIGH : 0)
                 | (tag.getByte("TurnSignal") < 0 ? TURN_L : tag.getByte("TurnSignal") > 0 ? TURN_R : 0) | (tag.getBoolean("Hazard") ? HAZARD : 0)));
         entityData.set(WIPER, (byte) Math.floorMod(tag.getByte("Wipers"), WiperSystem.MODES));
+        entityData.set(CLIMATE, (byte) Math.floorMod(tag.getByte("Climate"), CabClimate.MODES));
+        cabAir = tag.contains("CabAir") ? tag.getDouble("CabAir") : Double.NaN;
         cargo = GridStorage.load(CARGO_LAYOUT, tag.getList("Cargo", Tag.TAG_COMPOUND), false);
         cargoChanged();
         // a reloaded truck shows its parts where they were left, without swinging
@@ -1500,6 +1556,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putByte("TurnSignal", (byte) turnSignal());
         tag.putBoolean("Hazard", hazard());
         tag.putByte("Wipers", (byte) wiperMode());
+        tag.putByte("Climate", (byte) climateMode());
+        if (!Double.isNaN(cabAir)) tag.putDouble("CabAir", cabAir);
         ListTag grid = cargo.save();
         if (!grid.isEmpty()) tag.put("Cargo", grid);
         Quaterniond q = orient();

@@ -2,6 +2,12 @@
 
 2026-10-08 起 AFL 由 Claude 一个人开发，Codex 去做 ANANKE。用户当天定了顺序：**先把加油站做完；高速只记在文档里，以后再开，因为地形和群系还没做。**
 
+## V1 测试版范围（用户 2026-10-18）
+
+用户原话："V1 测试版只有 Linden + 老宅（老宅开局为默认，地堡开局先隐藏）"。其他 15 座城镇不建，只在路牌上出现名字；地形和公路照常生成。C 会话的记录在 C worktree（feature/federal-junctions-c3.3b，未合并）的 `docs/worldgen/federal_towns_v1.md` 6.2 节。前提是 C 10-17 的通知（同文档 6.1 的 1–3：城镇排在 G1 之后、G2 之前；老宅把 G1 走廊和 Linden 镇界当硬禁区、镇界外 300 m 软禁区；G3 TownSite 改成接 Linden 镇界入口），Main 侧的老宅选址（ForestHomeRuntime / StartAreaPlanner）**还没按它改**。
+
+开局（D 2026-10-18，D 分支 feature/gun-proficiency，未提交）：V1 有三个开局：老宅（默认）、野外、公路；地堡在建世界页隐藏，随机也抽不到，已选地堡的旧世界照常读档。老宅开局现在还在世界出生点出生，**门廊出生等 Main 接**。
+
 ## 现在做：Fuel Stop A1（加油站）
 
 在做的两条线：

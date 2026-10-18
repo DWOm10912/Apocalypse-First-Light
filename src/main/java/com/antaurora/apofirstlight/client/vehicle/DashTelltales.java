@@ -40,7 +40,9 @@ final class DashTelltales {
         DOOR(2, (x, y) -> door(x - 0.5, y - 0.5)),
         FOUR(3, (x, y) -> fourHigh(x - 0.5, y - 0.5)),
         FOUR_LOW(3, (x, y) -> fourLow(x - 0.5, y - 0.5)),
-        FUEL(3, (x, y) -> pump(x - 0.5, y - 0.5));
+        FUEL(3, (x, y) -> pump(x - 0.5, y - 0.5)),
+        HEATER(4, (x, y) -> heater(x - 0.5, y - 0.5)),
+        AIR_CON(4, (x, y) -> snowflake(x - 0.5, y - 0.5));
 
         final int group;
         final AflRingIcon.Glyph glyph;
@@ -249,6 +251,36 @@ final class DashTelltales {
         d = Math.min(d, Math.min(seg(u, v, -0.13, -0.16, -0.3, 0.06), seg(u, v, -0.3, 0.06, -0.04, 0.06)));
         d = Math.min(d, seg(u, v, -0.11, -0.16, -0.11, 0.16));
         return Math.min(d, Math.min(seg(u, v, 0.09, -0.16, 0.09, 0.16), seg(u, v, 0.09, 0.16, 0.29, 0.16)));
+    }
+
+    /** Heater (vehicle/CabClimate): three waves of warm air rising from a vent. */
+    private static double heater(double u, double v) {
+        double d = seg(u, v, -0.42, 0.4, 0.42, 0.4);
+        for (double x : new double[]{-0.24, 0, 0.24}) {
+            double[] p = new double[18];
+            for (int i = 0; i <= 8; i++) {
+                p[2 * i + 1] = 0.26 - 0.7 * i / 8;
+                p[2 * i] = x + Math.sin(i / 8.0 * Math.PI * 2) * 0.07;
+            }
+            d = Math.min(d, poly(u, v, false, p));
+        }
+        return d;
+    }
+
+    /** Air conditioning: a snowflake, six arms with a pair of twigs each. */
+    private static double snowflake(double u, double v) {
+        double d = Double.MAX_VALUE;
+        for (int k = 0; k < 6; k++) {
+            double a = Math.toRadians(90 + 60 * k), c = Math.cos(a), s = Math.sin(a);
+            d = Math.min(d, seg(u, v, 0, 0, 0.44 * c, 0.44 * s));
+            // the twigs at 0.27 out, 45 degrees off the arm
+            double bx = 0.27 * c, by = 0.27 * s;
+            for (double side : new double[]{-1, 1}) {
+                double t = a + side * Math.toRadians(45);
+                d = Math.min(d, seg(u, v, bx, by, bx + 0.14 * Math.cos(t), by + 0.14 * Math.sin(t)));
+            }
+        }
+        return d;
     }
 
     /** Fuel: a pump with its window and the hose. */
