@@ -463,9 +463,13 @@ final class SeatCheck {
         return 0.812F + (0.848F - 0.812F) * (gx + 0.21F) / 0.41F;
     }
 
+    /** A sample of when the rider shuts the door (ticks after sitting down / getting up): the vehicle no longer shuts it by
+     *  itself since 2026-10-16, so these are the old automatic timings kept as a test case. */
+    private static final int SHUT_IN_TICKS = 14, SHUT_OUT_TICKS = 20;
+
     /** The get-in / get-out moves through the door: timings, door, hands on the pull and the handle. */
     private static void moves(SkeletonRig rig, HumanoidPoser poser, T15 t, float torso, File dir) throws Exception {
-        System.out.println("  " + t.name + " get in (door shuts " + SeatPose.SHUT_IN_TICKS + " ticks after sitting down) / get out (shuts " + SeatPose.SHUT_OUT_TICKS + " ticks after getting up):");
+        System.out.println("  " + t.name + " get in (door shuts " + SHUT_IN_TICKS + " ticks after sitting down) / get out (shuts " + SHUT_OUT_TICKS + " ticks after getting up):");
         float sd = t.doorSide;
         for (SeatPose.Move move : new SeatPose.Move[]{SeatPose.Move.GET_IN, SeatPose.Move.GET_OUT}) {
             boolean in = move == SeatPose.Move.GET_IN;
@@ -473,8 +477,8 @@ final class SeatCheck {
             float pullBest = Float.MAX_VALUE, pushBest = Float.MAX_VALUE;
             StringBuilder line = new StringBuilder();
             for (float s = 0; s <= end + 1e-3F; s += 0.1F) {
-                float door = in ? 1 - SeatPose.smooth((s - SeatPose.SHUT_IN_TICKS / 20F) / 0.7F)
-                        : SeatPose.smooth(s / 0.7F) * (1 - SeatPose.smooth((s - SeatPose.SHUT_OUT_TICKS / 20F) / 0.7F));
+                float door = in ? 1 - SeatPose.smooth((s - SHUT_IN_TICKS / 20F) / 0.7F)
+                        : SeatPose.smooth(s / 0.7F) * (1 - SeatPose.smooth((s - SHUT_OUT_TICKS / 20F) / 0.7F));
                 SeatPose.Moment m = SeatPose.moment(move, true, s, door);
                 float scale = SeatPose.scale(m.size);
                 // get in: the render origin is the seat (the body yaw the seat's); get out: the exit spot, facing out
