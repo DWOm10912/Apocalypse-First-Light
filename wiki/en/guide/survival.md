@@ -1,0 +1,70 @@
+# Survival Stats
+
+AFL's survival HUD replaces vanilla hearts, hunger and the experience bar: a round module in the lower left, with health on the left arc, stamina on the right arc and a body temperature gauge in the middle. Three small dials beside it show food, thirst and load. They stay small and faint, and grow, show a number and turn red when you are in trouble
+
+<StatusTag s="new" /> These values are starting values and will be tuned
+
+## Stamina
+
+Maximum <V d="stamina/stamina_v1#max" />. After <V d="stamina/stamina_v1#delay_seconds" u="s" /> at rest it regenerates <V d="stamina/stamina_v1#regen" /> per second (<V d="stamina/stamina_v1#exhausted_delay_seconds" u="s" /> after running out)
+
+| Action | Cost |
+|---|---|
+| Walk | <V d="stamina/stamina_v1#costs.walk" u="/s" /> |
+| Sneak | <V d="stamina/stamina_v1#costs.sneak" u="/s" /> |
+| Sprint | <V d="stamina/stamina_v1#costs.sprint" u="/s" /> |
+| Swim | <V d="stamina/stamina_v1#costs.swim" u="/s" /> |
+| Climb | <V d="stamina/stamina_v1#costs.climb" u="/s" /> |
+| Mine | <V d="stamina/stamina_v1#costs.mining" u="/s" /> |
+| Jump (sprint jump) | <V d="stamina/stamina_v1#costs.jump" /> (<V d="stamina/stamina_v1#costs.sprint_jump" />) |
+| Empty hand / item / crowbar swing | <V d="stamina/stamina_v1#costs.melee_empty_hand" /> / <V d="stamina/stamina_v1#costs.melee" /> / <V d="stamina/stamina_v1#costs.melee_items.apocalypse_firstlight:crowbar" /> |
+| One axe chop | <V d="stamina/stamina_v1#costs.chop" /> |
+| One shot | <V d="stamina/stamina_v1#costs.shots_by_ammo.apocalypse_firstlight:9x19mm_round" /> (9 mm) to <V d="stamina/stamina_v1#costs.shots_by_ammo.apocalypse_firstlight:12_7x55mm_round" /> (12.7 mm) |
+
+- Regeneration ×<V d="stamina/stamina_v1#regen_in_water" /> in water, ×<V d="stamina/stamina_v1#regen_low_food" /> at food ≤ <V d="stamina/stamina_v1#low_food_level" />
+- **Winded**: after running out you can't sprint until you are back to <V d="stamina/stamina_v1#winded_resume" />; melee damage ×<V d="stamina/stamina_v1#winded.melee_damage" />, digging speed ×<V d="stamina/stamina_v1#winded.dig_speed" />, and people nearby hear you panting
+- **Fatigue**: below <V d="stamina/stamina_v1#fatigue.start" /> stamina your aim sways, with up to <V d="stamina/stamina_v1#fatigue.spread_extra" pct /> more spread
+- The heavier your load, the more everything costs and the slower you recover. See [Inventory and Weight](./inventory)
+
+## Thirst
+
+Full is <V d="thirst/thirst_v1#max" />. It drops <V d="thirst/thirst_v1#base_per_hour" /> per real-time hour, plus <V d="thirst/thirst_v1#exertion_per_100_stamina" /> for every 100 stamina you spend
+
+| Thirst | Effect |
+|---|---|
+| Below <V d="thirst/thirst_v1#thirsty_below" /> | Stamina regeneration ×<V d="thirst/thirst_v1#stamina_regen_thirsty" /> |
+| Below <V d="thirst/thirst_v1#dehydrated_below" /> | Stamina regeneration ×<V d="thirst/thirst_v1#stamina_regen_dehydrated" />, no natural healing |
+| 0 | 1 health every <V d="thirst/thirst_v1#damage_interval_seconds" u="s" /> until you die |
+
+**Drinking**
+
+- Use a glass bottle on a water source to fill **dirty water**. It carries the radiation of the place you filled it
+- Boil it in a furnace (10 s), smoker (5 s) or campfire (30 s). Clean water becomes **purified water**; irradiated water becomes **boiled water** and keeps its radiation
+- A bottle gives +<V d="thirst/thirst_v1#bottle" />; a sip from a water source (sneak, empty hand) gives +<V d="thirst/thirst_v1#sip" />
+- Melon slice +<V d="thirst/thirst_v1#foods.minecraft:melon_slice" />, apple +<V d="thirst/thirst_v1#foods.minecraft:apple" />, stews and soups +<V d="thirst/thirst_v1#foods.minecraft:mushroom_stew" />, honey bottle +<V d="thirst/thirst_v1#foods.minecraft:honey_bottle" />. Milk doesn't quench thirst
+
+**Stomach sickness**: dirty water has a <V d="thirst/thirst_v1#sickness.chance_bottle" pct /> chance per bottle (<V d="thirst/thirst_v1#sickness.chance_sip" pct /> per raw sip) to give you a stomach infection for <V d="thirst/thirst_v1#sickness.duration_seconds" u="s" />: thirst doubles and you get bouts of nausea that cost thirst and food. Milk doesn't cure it
+
+## Temperature
+
+Core temperature starts at <V d="temperature/temperature_v1#normal" u="°C" /> and drifts toward a target set by how it feels around you: air temperature, shelter, being wet, nearby heat sources, exertion and clothing. It feels best between <V d="temperature/temperature_v1#comfort_low" u="°C" /> and <V d="temperature/temperature_v1#comfort_high" u="°C" /> (warm clothing lowers the lower bound)
+
+| Stage | Core temperature | Effect |
+|---|---|---|
+| Cold 1 | Below <V d="temperature/temperature_v1#cold_stages.0.below" u="°C" /> | Slower stamina regeneration |
+| Cold 2 | Below <V d="temperature/temperature_v1#cold_stages.1.below" u="°C" /> | Also slower walking, faster hunger, no natural healing |
+| Cold 3 | Below <V d="temperature/temperature_v1#cold_stages.2.below" u="°C" /> | 1 health every <V d="temperature/temperature_v1#damage_interval_seconds" u="s" /> |
+| Heat 1 | Above <V d="temperature/temperature_v1#heat_stages.0.above" u="°C" /> | Faster thirst, higher stamina costs |
+| Heat 2 | Above <V d="temperature/temperature_v1#heat_stages.1.above" u="°C" /> | Also slower walking, no natural healing |
+| Heat 3 | Above <V d="temperature/temperature_v1#heat_stages.2.above" u="°C" /> | 1 health every <V d="temperature/temperature_v1#damage_interval_seconds" u="s" /> |
+
+- Frost creeps in from the screen edges when you are cold; heat makes the screen glare and shimmer
+- Rain soaks you in about a minute and being wet makes you colder; without a fire you take about <V d="temperature/temperature_v1#wetness.dry_seconds" u="s" /> to dry
+- Campfires, fire, furnaces and AFL's box stove keep you warm
+- **Readings**: a wrist thermometer shows air temperature; a clinical thermometer takes your temperature after a 3 s hold. Without them the HUD shows no numbers
+
+## Food
+
+Food uses the vanilla system; AFL has no foods of its own yet. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is halved, and stomach sickness and Cold 2 or worse burn extra food
+
+<StatusTag s="planned" /> Food spoilage and storage

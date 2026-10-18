@@ -1,0 +1,14 @@
+:root { --bg:#0b0d10; --glass:rgba(24,27,32,.78); --card:#14171c; --card2:#1a1e24; --line:rgba(255,255,255,.08); --text:#f1ece2; --dim:#8d939b; --amber:#f0a53a; --amber2:#ffcb7a; --green:#7fcf8b; --blue:#7fb6ea; }
+body { background: var(--bg); color: var(--text); width: 1440px; }
+.hdr { position: sticky; top:0; height: 64px; display:flex; align-items:center; padding: 0 36px; gap: 28px; background: rgba(11,13,16,.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); z-index: 10; }
+.brand { display:flex; align-items:center; gap: 10px; font-weight: 900; letter-spacing: .06em; font-size: 15px; }
+.brand img { height: 30px; }
+.brand span { color: var(--dim); font-weight: 500; letter-spacing: .02em; }
+.hnav { display:flex; gap: 22px; font-size: 14px; color: #c9c4ba; }
+.hnav a.on { color: var(--text); }
+.hsp { flex: 1; }
+.kbd { height: 36px; width: 260px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); display:flex; align-items:center; padding: 0 12px; color: var(--dim); font-size: 13px; gap: 8px; }
+.kbd i { margin-left:auto; font-style: normal; font-size: 11px; border:1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-family:'JetBrains Mono'; }
+.pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: #cfc9bf; }
+.pill.amber { color: #1a1206; background: var(--amber); border-color: var(--amber); font-weight: 700; }
+.note { position:absolute; right: 36px; top: 84px; font-size: 11px; color:#0b0d10; background: var(--amber); padding: 3px 9px; border-radius: 999px; font-weight:700; letter-spacing:.06em; z-index:5; }

@@ -29,7 +29,20 @@ Updated:
 
 Reason if NO:
 <why this task does not affect documentation>
+
+WIKI UPDATED = YES/NO/NOT NEEDED
 ```
+
+# Player Wiki
+
+The player wiki lives in `wiki/` (VitePress, see `docs/wiki/afl_wiki_v1_plan.md`). It is part of the Definition of Done for player-visible changes.
+
+- When a task changes something a player can see or feel (values, controls, items, names, recipes, how a system behaves, whether something is in the game), update the matching `wiki/` page in both languages (`wiki/<page>.md` and `wiki/en/<page>.md`) in the same task.
+- Never hand-copy numbers: use `<V d="folder/file#key.path" />` for datapack JSON and `<V j="Class.CONSTANT" />` for Java numeric constants. Gun, ammo, attachment and biome tables come from the data automatically.
+- New guns need `wiki/content/guns/<id>.zh.md` and `<id>.en.md`.
+- Mark unfinished content with `<StatusTag s="creative|test|planned|new|live" />`; never describe planned content as current.
+- Run `npm --prefix wiki run check` before finishing; it fails on missing values, missing translations, missing gun prose and unbuilt images.
+- The user's Obsidian overview under `docs/项目内容/` (for example `02 - 制作清单.md`) should be kept in step with the same change.
 
 # Blockbench Source Models
 

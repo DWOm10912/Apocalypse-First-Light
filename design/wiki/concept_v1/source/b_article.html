@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>AFL Wiki B 条目</title>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="b.css">
+<style>
+.note { top: 94px; right: auto; left: 640px; }
+.lay { display:grid; grid-template-columns: 250px 1fr 230px; gap: 40px; padding: 30px 36px 60px; }
+.tree { font-size: 13.5px; }
+.tree .g { font-size: 11px; letter-spacing: .2em; color: var(--dim); font-weight: 700; margin: 18px 0 8px 10px; }
+.tree .g:first-child { margin-top: 0; }
+.tree a { display:flex; justify-content:space-between; padding: 7px 10px; border-radius: 8px; color: #c9c4ba; }
+.tree a.on { background: rgba(240,165,58,.12); color: var(--amber2); }
+.tree a small { color: var(--dim); font-family:'JetBrains Mono'; font-size: 11px; }
+.tree .sub a { padding-left: 24px; }
+.crumb { font-size: 13px; color: var(--dim); }
+.crumb b { color: #c9c4ba; font-weight: 400; }
+.head { margin-top: 14px; display:grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 18px; overflow:hidden; border: 1px solid var(--line); background: var(--card); }
+.head .img { background: #070809; position:relative; min-height: 330px; }
+.head .img img { position:absolute; inset:0; width:100%; height:100%; object-fit: cover; }
+.head .img .vt { position:absolute; left: 14px; bottom: 14px; display:flex; gap: 6px; }
+.head .img .vt span { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.6); border: 1px solid var(--line); color: #cfc9bf; }
+.head .img .vt span.on { background: var(--amber); color: #1a1206; border-color: var(--amber); font-weight: 700; }
+.head .tx { padding: 26px 28px; }
+.head .cls { display:flex; gap: 6px; }
+.head h1 { font-size: 34px; font-weight: 900; margin: 12px 0 2px; }
+.head .en { color: var(--dim); font-size: 14px; }
+.head p { color: #cbc5ba; font-size: 14.5px; line-height: 1.75; margin-top: 12px; }
+.kpi { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+.kpi div { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.kpi small { font-size: 11.5px; color: var(--dim); display:block; }
+.kpi b { white-space: nowrap; font-family:'JetBrains Mono'; font-size: 22px; font-weight: 700; }
+.kpi b em { font-style: normal; font-size: 12px; color: var(--dim); margin-left: 3px; font-family: 'Noto Sans SC'; font-weight: 400; }
+.ct { font-size: 15px; line-height: 1.85; color: #d3cdc2; }
+.ct h2 { font-size: 22px; font-weight: 900; color: var(--text); margin: 34px 0 14px; display:flex; align-items:center; gap: 10px; }
+.ct h2::before { content:''; width: 4px; height: 20px; border-radius: 2px; background: var(--amber); }
+.meters { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; }
+.m { display:grid; grid-template-columns: 110px 1fr 120px; align-items:center; gap: 14px; padding: 8px 0; font-size: 13.5px; }
+.m .lb { color: var(--dim); }
+.m .tr { height: 8px; border-radius: 4px; background: rgba(255,255,255,.06); position: relative; }
+.m .tr i { position:absolute; left:0; top:0; bottom:0; border-radius: 4px; background: linear-gradient(90deg, #c67d1f, var(--amber2)); }
+.m .tr u { position:absolute; top: -4px; width: 2px; height: 16px; background: #6c727b; }
+.m .v { font-family: 'JetBrains Mono'; text-align: right; }
+.m .v small { color: var(--dim); font-family:'Noto Sans SC'; font-size: 12px; }
+.mnote { font-size: 12px; color: var(--dim); margin-top: 8px; display:flex; gap: 16px; }
+.mnote span::before { content:''; display:inline-block; width: 10px; height: 4px; border-radius: 2px; background: var(--amber); margin-right: 6px; vertical-align: middle; }
+.mnote span.g::before { width: 2px; height: 10px; background: #6c727b; }
+.modes { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mode { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; }
+.mode b { font-size: 15px; }
+.mode dl { display:grid; grid-template-columns: 1fr auto; gap: 6px 10px; margin-top: 10px; font-size: 13.5px; }
+.mode dt { color: var(--dim); }
+.mode dd { font-family:'JetBrains Mono'; }
+.atts { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.atts div { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; font-size: 13.5px; color: #cbc5ba; line-height: 1.6; }
+.atts div .ic { width: 40px; height: 40px; border-radius: 10px; background: rgba(240,165,58,.12); color: var(--amber2); display:flex; align-items:center; justify-content:center; font-weight: 900; margin-bottom: 10px; }
+.atts div b { display:block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+.callout { margin-top: 16px; border-radius: 14px; padding: 14px 18px; background: rgba(127,182,234,.08); border: 1px solid rgba(127,182,234,.2); font-size: 14px; color: #cfe0f0; }
+.callout b { color: var(--blue); }
+.otp { position: sticky; top: 90px; font-size: 13px; }
+.otp .t { font-size: 11px; letter-spacing: .2em; color: var(--dim); font-weight: 700; margin-bottom: 10px; }
+.otp a { display:block; padding: 5px 0 5px 12px; border-left: 2px solid #23272e; color: #a9a49b; }
+.otp a.on { border-left-color: var(--amber); color: var(--amber2); }
+.src { margin-top: 26px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 12.5px; color: var(--dim); line-height: 1.7; }
+.src b { color: var(--text); display:block; margin-bottom: 4px; font-size: 13px; }
+.src code { font-family: 'JetBrains Mono'; font-size: 11.5px; color: var(--blue); }
+.src .ok { color: var(--green); }
+.next { margin-top: 36px; display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.next a { border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; font-size: 13px; color: var(--dim); }
+.next a b { display:block; color: var(--text); font-size: 16px; margin-top: 2px; }
+.next a.r { text-align: right; }
+</style></head><body>
+<header class="hdr">
+  <div class="brand"><img src="../../../branding/afl_title.png">WIKI</div>
+  <nav class="hnav"><a>首页</a><a>新手指南</a><a class="on">枪械与装备</a><a>载具</a><a>工业制造</a><a>世界与探索</a><a>感染体</a><a>更新日志</a></nav>
+  <div class="hsp"></div>
+  <div class="kbd">🔍 搜索<i>Ctrl K</i></div>
+  <span class="pill">中 / EN</span>
+</header>
+<span class="note">概念 B · 现代游戏官网式 · 条目页</span>
+<div class="lay">
+  <nav class="tree">
+    <div class="g">枪械与装备</div>
+    <a>总览</a>
+    <a>手枪 <small>2</small></a>
+    <div class="sub"><a class="on">P9-01 制式手枪</a><a>Blackridge .50</a></div>
+    <a>步枪 <small>3</small></a>
+    <a>霰弹枪 <small>1</small></a>
+    <a>弹药 <small>5</small></a>
+    <a>配件 <small>3</small></a>
+    <a>维护工作台</a>
+    <div class="g">装备</div>
+    <a>护甲与胸挂</a>
+    <a>背包</a>
+    <a>盖革计数器</a>
+  </nav>
+  <main>
+    <div class="crumb">枪械与装备 › 手枪 › <b>P9-01 制式手枪</b></div>
+    <section class="head">
+      <div class="img"><img src="../../../items/p9_01_v3/sheets/p9_v3_01_hero.png"><div class="vt"><span class="on">默认</span><span>红点</span><span>消音器</span><span>扩容弹匣</span></div></div>
+      <div class="tx">
+        <div class="cls"><span class="pill amber">手枪</span><span class="pill">9×19mm</span><span class="pill">半自动 · 全自动</span></div>
+        <h1>P9-01 制式手枪</h1>
+        <div class="en">P9-01 Service Pistol</div>
+        <p>聚合物框架的 9 毫米手枪，最容易找到的枪。伤害不高，但换弹快、开镜快、枪声小，适合开局防身</p>
+        <div class="kpi">
+          <div><small>伤害</small><b>7</b></div>
+          <div><small>弹匣</small><b>17<em>发</em></b></div>
+          <div><small>有效射程</small><b>48<em>格</em></b></div>
+          <div><small>战术换弹</small><b>1.7<em>秒</em></b></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ct">
+      <h2>与其他枪械对比</h2>
+      <div class="meters">
+        <div class="m"><span class="lb">伤害</span><span class="tr"><i style="width:27%"></i><u style="left:53%"></u></span><span class="v">7 <small>/ 最高 26</small></span></div>
+        <div class="m"><span class="lb">弹匣容量</span><span class="tr"><i style="width:57%"></i><u style="left:53%"></u></span><span class="v">17 <small>/ 最高 30</small></span></div>
+        <div class="m"><span class="lb">有效射程</span><span class="tr"><i style="width:50%"></i><u style="left:58%"></u></span><span class="v">48 <small>/ 最高 96</small></span></div>
+        <div class="m"><span class="lb">换弹速度</span><span class="tr"><i style="width:100%"></i><u style="left:62%"></u></span><span class="v">1.7 秒 <small>最快</small></span></div>
+        <div class="m"><span class="lb">隐蔽性</span><span class="tr"><i style="width:50%"></i><u style="left:35%"></u></span><span class="v">64 格 <small>枪声</small></span></div>
+        <div class="mnote"><span>P9-01</span><span class="g">全部枪械平均</span></div>
+      </div>
+
+      <h2>射击模式</h2>
+      <div class="modes">
+        <div class="mode"><b>半自动</b><dl><dt>射击间隔</dt><dd>3 tick</dd><dt>射速上限</dt><dd>400 发/分</dd><dt>基础散布</dt><dd>1.2°</dd></dl></div>
+        <div class="mode"><b>全自动</b><dl><dt>射击间隔</dt><dd>2 tick</dd><dt>射速上限</dt><dd>600 发/分</dd><dt>散布扩大</dt><dd>每发 0.45°，最多 3°</dd></dl></div>
+      </div>
+      <div class="callout"><b>伤害衰减</b>　24 格以内满伤害 7，到 48 格降到约 4.6，64 格以外子弹消失</div>
+
+      <h2>配件</h2>
+      <div class="atts">
+        <div><div class="ic">◎</div><b>红点瞄具</b>装在套筒上</div>
+        <div><div class="ic">≡</div><b>消音器</b>枪声范围变小</div>
+        <div><div class="ic">▮</div><b>扩容弹匣</b>背包里占 1×2 格</div>
+      </div>
+
+      <div class="next"><a>← 上一篇<b>手枪总览</b></a><a class="r">下一篇 →<b>Blackridge .50</b></a></div>
+    </div>
+  </main>
+  <aside>
+    <div class="otp">
+      <div class="t">本页内容</div>
+      <a class="on">概览</a><a>与其他枪械对比</a><a>射击模式</a><a>配件</a><a>获取方式</a><a>更新历史</a>
+      <div class="src"><b>数值来源</b><code>native_guns/p9_01.json</code><br><code>item_mass/*.json</code><br>版本 1.0.0-alpha<br><span class="ok">● 与游戏数据一致</span></div>
+    </div>
+  </aside>
+</div>
+</body></html>

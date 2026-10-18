@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>AFL Wiki B 首页</title>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="b.css">
+<style>
+.hero { position: relative; height: 560px; overflow: hidden; }
+.hero img.bg { position:absolute; inset: 0; width:100%; height:100%; object-fit: cover; object-position: 50% 45%; }
+.hero::after { content:''; position:absolute; inset:0; background: linear-gradient(90deg, rgba(11,13,16,.96) 0%, rgba(11,13,16,.75) 38%, rgba(11,13,16,.1) 70%), linear-gradient(180deg, transparent 60%, var(--bg) 100%); }
+.hero .in { position: relative; z-index: 2; padding: 120px 72px 0; max-width: 760px; }
+.eyebrow { font-size: 12px; letter-spacing: .3em; color: var(--amber); font-weight: 700; }
+.hero h1 { font-size: 54px; line-height: 1.12; font-weight: 900; margin: 14px 0 16px; }
+.hero p { font-size: 17px; line-height: 1.75; color: #cbc5ba; max-width: 560px; }
+.bigsearch { margin-top: 30px; width: 560px; height: 56px; border-radius: 14px; background: rgba(20,23,28,.9); border: 1px solid rgba(255,255,255,.14); display:flex; align-items:center; padding: 0 18px; gap: 12px; color: var(--dim); font-size: 15px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.bigsearch i { margin-left:auto; font-style:normal; font-family:'JetBrains Mono'; font-size: 12px; border:1px solid var(--line); border-radius:6px; padding: 2px 8px; }
+.chips { margin-top: 14px; display:flex; gap: 8px; font-size: 12.5px; color: var(--dim); align-items:center; }
+.chips span.c { border:1px solid var(--line); border-radius: 999px; padding: 4px 11px; color: #d6d0c5; background: rgba(255,255,255,.03); }
+.main { padding: 0 72px 60px; margin-top: -40px; position: relative; z-index: 3; }
+.sh { display:flex; align-items: baseline; justify-content: space-between; margin: 40px 0 16px; }
+.sh h2 { font-size: 24px; font-weight: 900; }
+.sh a { color: var(--amber2); font-size: 13.5px; }
+.bento { display:grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 190px; gap: 14px; }
+.tile { position: relative; border-radius: 16px; overflow: hidden; background: var(--card); border: 1px solid var(--line); }
+.tile img { position:absolute; inset:0; width:100%; height:100%; object-fit: cover; }
+.tile::after { content:''; position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.85) 100%); }
+.tile .tx { position:absolute; left: 18px; right: 18px; bottom: 16px; z-index: 2; }
+.tile .tx .k { font-size: 11px; letter-spacing: .2em; color: var(--amber2); font-weight: 700; }
+.tile .tx b { display:block; font-size: 21px; font-weight: 900; margin: 3px 0 4px; }
+.tile .tx small { color: #cfc9bf; font-size: 13px; }
+.tile .ph { position:absolute; inset:0; background: radial-gradient(circle at 70% 30%, #2a2f37, #14171c 70%); color: #4c535d; }
+.tile.w2 { grid-column: span 2; } .tile.h2 { grid-row: span 2; }
+.tile .tx .cnt { position:absolute; right: 0; bottom: 2px; font-family: 'JetBrains Mono'; font-size: 12px; color: var(--dim); }
+.row3 { display:grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; }
+.card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display:flex; justify-content:space-between; align-items:center; }
+.tl { position: relative; padding-left: 22px; }
+.tl::before { content:''; position:absolute; left: 5px; top: 6px; bottom: 6px; width: 2px; background: #252a31; }
+.tl .it { position: relative; padding-bottom: 16px; }
+.tl .it::before { content:''; position:absolute; left: -22px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--amber); }
+.tl .it .d { font-size: 12px; color: var(--dim); font-family: 'JetBrains Mono'; }
+.tl .it b { display:block; font-size: 15px; margin: 2px 0 6px; }
+.tl .it .tg { display:flex; gap: 6px; flex-wrap: wrap; }
+.tg span { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.05); color: #d6d0c5; }
+.tg span.n { background: rgba(127,182,234,.12); color: var(--blue); }
+.tg span.a { background: rgba(127,207,139,.12); color: var(--green); }
+table.db { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.db th { text-align: left; color: var(--dim); font-weight: 500; font-size: 12px; padding: 0 8px 8px; border-bottom: 1px solid var(--line); }
+table.db th.s::after { content: ' ↓'; color: var(--amber); }
+table.db td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+table.db td.n { font-family: 'JetBrains Mono'; }
+table.db td .bar { display:inline-block; height: 6px; border-radius: 3px; background: var(--amber); vertical-align: middle; margin-right: 8px; }
+.auto { margin-top: 12px; font-size: 12px; color: var(--dim); display:flex; gap: 8px; align-items:center; }
+.auto .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+.foot { border-top: 1px solid var(--line); padding: 22px 72px; font-size: 12.5px; color: var(--dim); display:flex; justify-content:space-between; }
+</style></head><body>
+<header class="hdr">
+  <div class="brand"><img src="../../../branding/afl_title.png">WIKI</div>
+  <nav class="hnav"><a class="on">首页</a><a>新手指南</a><a>枪械与装备</a><a>载具</a><a>工业制造</a><a>世界与探索</a><a>感染体</a><a>更新日志</a></nav>
+  <div class="hsp"></div>
+  <div class="kbd">🔍 搜索<i>Ctrl K</i></div>
+  <span class="pill">中 / EN</span>
+</header>
+<span class="note">概念 B · 现代游戏官网式</span>
+<section class="hero">
+  <img class="bg" src="../../../items/p9_01_v3/ingame/2026-10-17/09_sundial_lite.webp">
+  <div class="in">
+    <div class="eyebrow">APOCALYPSE: FIRST LIGHT · WIKI</div>
+    <h1>末日之后，<br>从第一道光开始</h1>
+    <p>写实枪械、可驾驶的车辆、建筑供电、辐射与感染者。每个数值都来自游戏数据，版本更新时自动同步</p>
+    <div class="bigsearch">🔍 搜索物品、方块、机器、配方…<i>Ctrl K</i></div>
+    <div class="chips">热门：<span class="c">P9-01</span><span class="c">T15 皮卡</span><span class="c">柴油发电机</span><span class="c">负重</span><span class="c">辐射</span></div>
+  </div>
+</section>
+<div class="main">
+  <div class="sh"><h2>探索系统</h2><a>全部页面 →</a></div>
+  <div class="bento">
+    <div class="tile w2 h2"><img src="../../../items/p9_01_v3/sheets/p9_v3_01_hero.png"><div class="tx"><div class="k">ARMORY</div><b>枪械与装备</b><small>P9、BR51、弹药、配件、装备参数</small><span class="cnt">6 把枪</span></div></div>
+    <div class="tile"><img src="../../../../run/screenshots/2026-10-12_20.03.11.png" style="object-position:50% 85%"><div class="tx"><div class="k">START</div><b>新手指南</b><small>生存基础、开局流程</small></div></div>
+    <div class="tile"><img src="../../../vehicles/first_pickup_v0/sheets/v1_front34.png" style="object-position:50% 60%"><div class="tx"><div class="k">VEHICLES</div><b>载具</b><small>T15、油耗、维修</small><span class="cnt">1 辆</span></div></div>
+    <div class="tile"><div class="ph"></div><div class="tx"><div class="k">INDUSTRY</div><b>工业制造</b><small>机器、能源、配方</small></div></div>
+    <div class="tile"><div class="ph"></div><div class="tx"><div class="k">INFECTED</div><b>感染体</b><small>类型、行为、威胁等级</small></div></div>
+    <div class="tile w2"><img src="../../../worldgen/federal_c2/c2_national_ecology.png" style="object-position:50% 40%"><div class="tx"><div class="k">WORLD</div><b>世界与探索</b><small>生物群系、道路、建筑、地点</small><span class="cnt">11 个群系</span></div></div>
+    <div class="tile w2"><img src="../../../../run/screenshots/2026-10-14_18.33.39.png" style="object-position:50% 35%"><div class="tx"><div class="k">BUILDINGS</div><b>建筑与供电</b><small>插座、电线、配电盘、照明</small></div></div>
+  </div>
+
+  <div class="sh"><h2>数据与更新</h2><a>更新日志 →</a></div>
+  <div class="row3">
+    <div class="card">
+      <h3>枪械数据库 <span class="pill amber">1.0.0-alpha</span></h3>
+      <table class="db">
+        <tr><th>名称</th><th>类别</th><th class="s">伤害</th><th>弹匣</th><th>有效射程</th></tr>
+        <tr><td>HR-55 战斗步枪</td><td>步枪</td><td class="n"><span class="bar" style="width:100px"></span>26</td><td class="n">20</td><td class="n">64</td></tr>
+        <tr><td>BR-51 战斗步枪</td><td>步枪</td><td class="n"><span class="bar" style="width:69px"></span>18</td><td class="n">20</td><td class="n">96</td></tr>
+        <tr><td>Blackridge .50</td><td>手枪</td><td class="n"><span class="bar" style="width:58px"></span>15</td><td class="n">7</td><td class="n">56</td></tr>
+        <tr><td>C.A.T</td><td>步枪</td><td class="n"><span class="bar" style="width:50px"></span>13</td><td class="n">30</td><td class="n">40</td></tr>
+        <tr><td>P9-01 制式手枪</td><td>手枪</td><td class="n"><span class="bar" style="width:27px"></span>7</td><td class="n">17</td><td class="n">48</td></tr>
+        <tr><td>Silverwood 12</td><td>霰弹枪</td><td class="n"><span class="bar" style="width:17px"></span>4.5 ×弹丸</td><td class="n">2</td><td class="n">28</td></tr>
+      </table>
+      <div class="auto"><span class="dot"></span>从 native_guns/*.json 自动生成 · 2026-10-17 构建</div>
+    </div>
+    <div class="card">
+      <h3>最近更新</h3>
+      <div class="tl">
+        <div class="it"><div class="d">2026-10-17</div><b>雨和雨刷</b><div class="tg"><span class="a">新增 不开光影的雨丝和溅射</span><span class="a">新增 T15 雨刷、玻璃水</span></div></div>
+        <div class="it"><div class="d">2026-10-17</div><b>P9 返工</b><div class="tg"><span class="a">新增 掏枪 / 收枪</span><span class="n">数值 战术换弹 1.7 秒</span></div></div>
+        <div class="it"><div class="d">2026-10-16</div><b>布娃娃</b><div class="tg"><span class="a">新增 死亡后身体倒地</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="foot"><span>Apocalypse: First Light Wiki · staticgrove.net</span><span>CurseForge · Discord · 数值说明</span></div>
+</body></html>

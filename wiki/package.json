@@ -1,0 +1,16 @@
+{
+  "name": "afl-wiki",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev . --port 5178",
+    "build": "node scripts/check-wiki.mjs && vitepress build .",
+    "preview": "vitepress preview . --port 5179",
+    "check": "node scripts/check-wiki.mjs",
+    "images": "node scripts/sync-images.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.5",
+    "vitepress": "1.6.4"
+  }
+}

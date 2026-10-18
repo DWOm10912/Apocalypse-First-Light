@@ -1,0 +1,65 @@
+/* AFL wiki: dark + warm white + amber, same family as the in-game UI */
+:root, .dark {
+  --afl-bg: #0b0d10;
+  --afl-card: #14171c;
+  --afl-card2: #1a1e24;
+  --afl-line: rgba(255, 255, 255, 0.08);
+  --afl-text: #f1ece2;
+  --afl-dim: #8d939b;
+  --afl-amber: #f0a53a;
+  --afl-amber2: #ffcb7a;
+  --afl-green: #7fcf8b;
+  --afl-blue: #7fb6ea;
+  --afl-red: #ef7f6c;
+
+  --vp-font-family-base: 'Noto Sans SC', 'Inter', 'Microsoft YaHei', system-ui, sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', Consolas, monospace;
+  --vp-c-bg: var(--afl-bg);
+  --vp-c-bg-alt: #0e1014;
+  --vp-c-bg-elv: #15181d;
+  --vp-c-bg-soft: var(--afl-card);
+  --vp-c-text-1: var(--afl-text);
+  --vp-c-text-2: #b9b3a9;
+  --vp-c-text-3: var(--afl-dim);
+  --vp-c-divider: var(--afl-line);
+  --vp-c-gutter: #000;
+  --vp-c-border: rgba(255, 255, 255, 0.12);
+  --vp-c-brand-1: var(--afl-amber2);
+  --vp-c-brand-2: var(--afl-amber);
+  --vp-c-brand-3: #c67d1f;
+  --vp-c-brand-soft: rgba(240, 165, 58, 0.14);
+  --vp-nav-bg-color: rgba(11, 13, 16, 0.86);
+  --vp-sidebar-bg-color: #0e1014;
+  --vp-code-bg: #171a1f;
+  --vp-button-brand-text: #1a1206;
+  --vp-home-hero-name-color: var(--afl-text);
+}
+
+.VPNav { backdrop-filter: blur(10px); }
+.VPNavBar .title { gap: 10px; font-weight: 900; letter-spacing: .06em; }
+.VPNavBar .logo { height: 28px; }
+.VPSidebarItem.is-active > .item .text { color: var(--afl-amber2); }
+.vp-doc h1 { font-weight: 900; letter-spacing: 0; }
+.vp-doc h2 { font-weight: 900; border-top: 0; display: flex; align-items: center; gap: 10px; }
+.vp-doc h2::before { content: ''; width: 4px; height: 20px; border-radius: 2px; background: var(--afl-amber); flex: none; }
+.vp-doc a { text-decoration: none; }
+.vp-doc table { display: table; width: 100%; border-collapse: collapse; }
+.vp-doc tr:nth-child(2n) { background: transparent; }
+.vp-doc th { background: var(--afl-card2); color: var(--afl-dim); font-weight: 500; font-size: 13px; }
+.vp-doc td, .vp-doc th { border-color: var(--afl-line); }
+.vp-doc .custom-block { border-radius: 14px; }
+@media (max-width: 640px) {
+  .vp-doc table { display: block; overflow-x: auto; }
+}
+
+/* shared component bits */
+.afl-pill { display: inline-flex; align-items: center; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--afl-line); color: #d6d0c5; white-space: nowrap; }
+.afl-pill.amber { color: #1a1206; background: var(--afl-amber); border-color: var(--afl-amber); font-weight: 700; }
+.afl-pill.green { color: var(--afl-green); background: rgba(127, 207, 139, .1); border-color: transparent; }
+.afl-pill.blue { color: var(--afl-blue); background: rgba(127, 182, 234, .1); border-color: transparent; }
+.afl-card { background: var(--afl-card); border: 1px solid var(--afl-line); border-radius: 16px; }
+.afl-mono { font-family: var(--vp-font-family-mono); }
+.afl-src { font-size: 12px; color: var(--afl-dim); }
+.afl-src code { font-size: 11.5px; color: var(--afl-blue); background: none; padding: 0; }
+
+.afl-src code { word-break: break-all; }
