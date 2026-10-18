@@ -16,6 +16,18 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | Q (inventory) | Drop the item under the cursor |
 | F | Does nothing: AFL has no off hand |
 
+## Camera
+
+| Key | Action |
+|---|---|
+| F5 | First person / orbit camera (vanilla's front view is gone) |
+| Mouse (orbit) | Swing the camera all the way round you or the vehicle |
+| W A S D (orbit, on foot) | Walk the way the camera looks; your character turns by itself |
+| Left / right click (orbit, on foot) | Turn to the dot in the middle of the screen first, then dig, place or use; aiming a gun (right click) drops to first person until you let go |
+| Scroll (orbit, in a vehicle) | Camera distance |
+
+<StatusTag s="new" /> In a vehicle the camera chases behind it; the mouse swings it round, and a moment after you let the mouse be it eases back behind while the vehicle moves
+
 ## Guns
 
 | Key | Action |
@@ -41,5 +53,6 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | ← / → | Left / right turn signal |
 | ↓ | Hazards |
 | C | Wipers: off / intermittent / low / high |
+| Caps Lock | Hide / show the key hints at the top right (remembered) |
 
 While you drive, these keys lend out their usual actions

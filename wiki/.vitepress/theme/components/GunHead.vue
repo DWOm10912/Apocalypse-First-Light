@@ -35,8 +35,8 @@ const dmg = computed(() => (g.value.pellets > 1 ? `${fmt(g.value.damage.base)}×
 
 <style scoped>
 .head { margin: 8px 0 28px; display: grid; grid-template-columns: 1fr 1fr; border-radius: 18px; overflow: hidden; border: 1px solid var(--afl-line); background: var(--afl-card); }
-.img { background: #070809; position: relative; min-height: 280px; }
-.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.img { background: radial-gradient(ellipse at 50% 45%, #4a515b 0%, #262a31 55%, #14171b 100%); position: relative; min-height: 280px; }
+.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 14px; box-sizing: border-box; filter: drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
 .noimg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #4c535d; font-size: 13px; letter-spacing: .1em; background: radial-gradient(circle at 60% 40%, #22262d, #0b0d10 70%); }
 .tx { padding: 24px 26px; }
 .cls { display: flex; gap: 6px; flex-wrap: wrap; }

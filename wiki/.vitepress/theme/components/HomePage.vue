@@ -41,7 +41,7 @@ const tiles = computed(() => [
   { cls: '', img: 'hero_vehicle', k: 'VEHICLES', to: '/vehicles/', title: t('载具', 'Vehicles'), text: t('T15、燃料、加油站', 'T15, fuel, stations') },
   { cls: '', img: 'hero_building', k: 'PLACES', to: '/world/places', title: t('建筑与地点', 'Places'), text: t('隧道、木屋、加油站', 'Tunnels, cabin, fuel stop') },
   { cls: '', img: 'hud', k: 'START', to: '/guide/', title: t('新手指南', 'Getting Started'), text: t('生存状态、按键、开局', 'Stats, controls, first steps') },
-  { cls: '', img: 'gun_p9_01', k: 'ARMS', to: '/arms/', title: t('枪械与装备', 'Arms & Gear'), text: t(`${data.guns.length} 把枪、弹药、配件`, `${data.guns.length} guns, ammo, attachments`) },
+  { cls: '', img: 'hero_guns', k: 'ARMS', to: '/arms/', title: t('枪械与装备', 'Arms & Gear'), text: t(`${data.guns.length} 把枪、弹药、配件`, `${data.guns.length} guns, ammo, attachments`) },
   { cls: '', img: 'hero_cold', k: 'INDUSTRY', to: '/industry/', title: t('工业制造', 'Industry'), text: t('发电机、供电、材料', 'Generators, power, materials') },
   { cls: '', img: '', k: 'INFECTED', to: '/infected/', title: t('感染体', 'Infected'), text: t('类型、行为、威胁', 'Types, behaviour, threat') },
   { cls: 'w2', img: 'maintenance_bench', k: 'CHANGELOG', to: '/changelog/', title: t('更新日志', 'Changelog'), text: t('版本更新与数值变更', 'Releases and value changes') }

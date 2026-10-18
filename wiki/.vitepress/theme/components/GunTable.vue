@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { data } from '../../data/game.data.mjs'
-import { useLoc, CLASS_NAMES, fmt } from '../i18n'
+import { useLoc, CLASS_NAMES, fmt, hasImage, img } from '../i18n'
 
 const { loc, t, link } = useLoc()
 const cols = computed(() => [
@@ -45,7 +45,7 @@ function sortBy(k: string) {
       <tbody>
         <tr v-for="g in rows" :key="g.id">
           <td v-for="c in cols" :key="c.k" :class="{ n: c.k !== 'name' && c.k !== 'cls' }">
-            <a v-if="c.k === 'name'" :href="link('/arms/guns/' + g.id)">{{ c.v(g) }}</a>
+            <a v-if="c.k === 'name'" class="nm" :href="link('/arms/guns/' + g.id)"><img v-if="hasImage('gun_' + g.id)" class="thumb" :src="img('gun_' + g.id)" alt="" loading="lazy" />{{ c.v(g) }}</a>
             <template v-else-if="c.bar"><span class="bar" :style="{ width: (c.v(g) / maxDmg) * 70 + 'px' }"></span>{{ c.show!(g) }}</template>
             <template v-else>{{ c.show ? c.show(g) : c.v(g) }}</template>
           </td>
@@ -64,6 +64,8 @@ th.on { color: var(--afl-amber2) !important; }
 td { border: 0 !important; border-bottom: 1px solid rgba(255,255,255,.04) !important; padding: 9px 12px !important; font-size: 13.5px; white-space: nowrap; }
 td.n { font-family: var(--vp-font-family-mono); }
 td a { color: var(--afl-text); font-weight: 500; }
+.nm { display: flex; align-items: center; gap: 10px; white-space: normal; min-width: 220px; }
+.thumb { width: 64px; height: 40px; object-fit: contain; background: radial-gradient(ellipse, #3a4048, #1a1d22 75%); border-radius: 6px; }
 .bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--afl-amber); vertical-align: middle; margin-right: 8px; }
 .foot { padding: 10px 12px 12px; }
 </style>

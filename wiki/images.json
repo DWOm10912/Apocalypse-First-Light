@@ -1,14 +1,54 @@
 {
   "_comment": "Wiki images. src = path in the repo; crop = [left, top, width, height] as fractions; width = output width. Run: npm run images",
-  "afl_title": { "src": "design/branding/afl_title.png", "width": 600, "format": "webp" },
-  "favicon": { "src": "design/branding/afl_badge.png", "width": 64, "format": "png" },
+  "afl_title": {
+    "src": "design/branding/afl_title.png",
+    "width": 600,
+    "format": "webp"
+  },
+  "favicon": {
+    "src": "design/branding/afl_badge.png",
+    "width": 64,
+    "format": "png"
+  },
   "hero_vehicle": { "src": "design/vehicles/first_pickup_v0/sheets/v1_front34.png", "width": 1800 },
-  "hero_building": { "src": "run/screenshots/2026-10-14_18.33.39.png", "crop": [0, 0, 1, 0.78], "width": 1800 },
-  "hero_forest": { "src": "run/screenshots/2026-10-12_00.00.44.png", "crop": [0, 0, 0.82, 0.78], "width": 1800 },
+  "hero_building": {
+    "src": "run/screenshots/2026-10-14_18.33.39.png",
+    "crop": [
+      0,
+      0,
+      1,
+      0.78
+    ],
+    "width": 1800
+  },
+  "hero_forest": {
+    "src": "run/screenshots/2026-10-12_00.00.44.png",
+    "crop": [
+      0,
+      0,
+      0.82,
+      0.78
+    ],
+    "width": 1800
+  },
   "hero_cold": { "src": "run/screenshots/2026-10-04_14.35.51.png", "width": 1800 },
   "hero_guns": { "src": "design/items/p9_01_v3/ingame/2026-10-17/09_sundial_lite.webp", "width": 1800 },
-  "hud": { "src": "design/ui/hud_v2/sheets/hud_v2b_1_main.png", "crop": [0, 0, 1, 0.815], "width": 1600 },
+  "hud": {
+    "src": "design/ui/hud_v2/sheets/hud_v2b_1_main.png",
+    "crop": [
+      0,
+      0,
+      1,
+      0.815
+    ],
+    "width": 1600
+  },
   "world_map": { "src": "design/worldgen/federal_c2/c2_national_ecology.png", "width": 1400 },
   "maintenance_bench": { "src": "run/screenshots/2026-09-29_00.15.07.png", "width": 1400 },
-  "gun_p9_01": { "src": "design/items/p9_01_v3/sheets/p9_v3_01_hero.png", "width": 1200 }
+  "gun_p9_01": { "src": "design/wiki/gun_renders/p9_01.png", "width": 1200 },
+  "gun_blackridge_50": { "src": "design/wiki/gun_renders/blackridge_50.png", "width": 1200 },
+  "gun_br51_01": { "src": "design/wiki/gun_renders/br51_01.png", "width": 1200 },
+  "gun_cat": { "src": "design/wiki/gun_renders/cat.png", "width": 1200 },
+  "gun_hr55": { "src": "design/wiki/gun_renders/hr55.png", "width": 1200 },
+  "gun_silverwood_12": { "src": "design/wiki/gun_renders/silverwood_12.png", "width": 1200 }
 }

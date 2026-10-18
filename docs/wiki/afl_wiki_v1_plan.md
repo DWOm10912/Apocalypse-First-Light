@@ -57,11 +57,19 @@
 - 构建：`npm --prefix wiki run build`，输出 `wiki/.vitepress/dist/`
 - 更新截图：改 `wiki/images.json` 后 `npm --prefix wiki run images`
 
+## 枪械主图（透明背景渲染）
+
+- 做法：在 Blockbench 里打开每把枪的源模型（`src/main/blockbench/<id>.bbmodel`；C.A.T 没有 bbmodel，用 `assets/.../geo/cat.geo.json` + `textures/item/cat.png`），隐藏手、手臂参考方块、换弹用的弹匣和相机组，用离屏视图正交“等距左”拍（相机方向约 (80, 70, −86)，即枪口朝右、看到枪的左侧面），预览亮度临时调到 100，背景透明。拍完恢复模型可见性和亮度。
+- 原图放 `design/wiki/gun_renders/raw/<id>.png`；`node wiki/scripts/frame-renders.mjs` 裁掉透明边、统一居中到 1600×1000（模型最多占 84% × 76%），输出 `design/wiki/gun_renders/<id>.png`，`wiki/images.json` 的 `gun_<id>` 指向它。
+- 枪械页头卡和枪械总表（缩略图）都完整显示、不裁切，底下是浅一点的深灰渐变，黑色枪身才看得清。首页“枪械与装备”卡片改用游戏内截图 `hero_guns`。
+- 局限：Blockbench 只画底色贴图，没有法线和高光贴图，金属偏平；银色的 Blackridge 在亮度 100 下偏亮。改了枪模型要重新拍。
+- 2026-10-18 已出 6 把：P9-01、Blackridge .50、BR-51、HR-55、Silverwood 12、C.A.T。
+
 ## 截图
 
 已用：开发中的截图和概念图（T15 概念图、老宅、森林、寒冷画面、P9 V3、HUD 概念、联邦地图、维护台）。
 
-还要用户在游戏里拍：T15 实车（行驶、夜间车灯、雨中雨刷）、雨（`rain`）、感染体（`infected`）、发电机和配电箱、格子背包界面、生存 HUD、BR-51 等其他枪的游戏内图。
+还要用户在游戏里拍：T15 实车（行驶、夜间车灯、雨中雨刷）、雨（`rain`）、感染体（`infected`）、发电机和配电箱、格子背包界面、生存 HUD。
 
 页面截图（2026-10-18，桌面 1440 / 手机 390）：`design/wiki/v1_build/*.png`。
 
