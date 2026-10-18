@@ -13,3 +13,9 @@ Stamina V1 (2026-10-03): the target amplitude is also multiplied by `ClientStami
 Current files: `weapon/client/WeaponSwayProfile.java`, `NativeWeaponSway.java`, `NativeGunAds.java`, `ConfiguredGunFirstPerson.java` under `src/main/java/com/antaurora/apofirstlight/`. The earlier P9-only `P901FirstPerson.java` was retired when P9 moved to the configured path.
 
 Verification: compile/build log `build/gun-name-sway-build.log`. Code inspection confirms shared gun/arm transform and no gameplay writes. P9/BR51 graphical sway, ADS/red-dot alignment, reload and subjective amplitude have NOT been runtime-verified this round; do not interpret build success as visual acceptance.
+
+## 幸存者属性（2026-10-17）
+
+晃动幅度（包括疲劳和发抖带来的额外晃动）× `apocalypse_firstlight:weapon_sway`（默认 1）。以后枪械熟练度和特质改这个属性。
+
+属性层 P1，见 [幸存者背景、机能、特质与成长 V1](../gameplay/survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

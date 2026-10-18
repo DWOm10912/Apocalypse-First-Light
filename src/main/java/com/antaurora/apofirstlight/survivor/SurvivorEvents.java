@@ -54,6 +54,8 @@ public final class SurvivorEvents {
         SurvivorCorpses.reconcileStalePlayer(player);
         Survivors.ensureSurvivor(player);
         Survivors.onLogin(player);
+        SurvivorModifiers.apply(player);
+        SurvivorSetupFlow.onLogin(player);
     }
 
     @SubscribeEvent
@@ -78,11 +80,15 @@ public final class SurvivorEvents {
         SurvivorCorpses.onClone(event);
     }
 
-    /** First, so every later respawn handler (radiation, weight, terrain sync) already sees the successor's start. */
+    /**
+     * First, so every later respawn handler (radiation, weight, terrain sync) already sees the successor's start and its
+     * attribute modifiers (the new body has none). Leaving the End makes a new body too: it only gets the modifiers.
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.isEndConquered() || !(event.getEntity() instanceof ServerPlayer player)) return;
-        Survivors.takeOver(player);
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!event.isEndConquered()) Survivors.takeOver(player);
+        SurvivorModifiers.apply(player);
     }
 
     @SubscribeEvent

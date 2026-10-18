@@ -86,12 +86,37 @@ public final class SurvivorIdentity {
         if (mustChooseName(player)) AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(true, ""));
     }
 
-    /** The living first survivor of an active lineage whose name is not chosen yet. */
+    /**
+     * The living first survivor of an active lineage whose name is not chosen yet. A survivor still choosing its setup
+     * picks the name on the setup screen instead (SurvivorSetupFlow).
+     */
     static boolean mustChooseName(ServerPlayer player) {
         SurvivorLineage lineage = SurvivorWorldData.get(player.server).lineage(player.getUUID());
         SurvivorRecord current = lineage == null ? null : lineage.current();
         return current != null && !current.named && current.state == SurvivorRecord.State.ALIVE
-                && lineage.status == SurvivorLineage.Status.ACTIVE;
+                && lineage.status == SurvivorLineage.Status.ACTIVE && !SurvivorSetup.CHOOSING.equals(current.setup);
+    }
+
+    /** A checked name ({@code name} set), or why it was refused ({@code error}: "invalid", "taken"). */
+    record NameCheck(@Nullable String name, String error) {
+    }
+
+    /** The account name, or a nickname that passes the SurvivorNames rules and is not someone else's name. */
+    static NameCheck checkName(ServerPlayer player, String raw) {
+        String account = player.getGameProfile().getName();
+        String name = raw.strip().equals(account) ? account : SurvivorNames.nickname(raw);
+        if (name == null) return new NameCheck(null, "invalid");
+        if (!name.equals(account) && taken(player, name)) return new NameCheck(null, "taken");
+        return new NameCheck(name, "");
+    }
+
+    /** Fixes a checked name on the first survivor (the caller saves and announces). */
+    static void applyName(ServerPlayer player, SurvivorRecord record, String name) {
+        record.firstName = name;
+        record.lastName = "";
+        record.named = true;
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} names survivor #{}: {}", player.getGameProfile().getName(),
+                record.lifeIndex, name);
     }
 
     /**
@@ -104,26 +129,18 @@ public final class SurvivorIdentity {
             AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(false, ""));
             return;
         }
-        String account = player.getGameProfile().getName();
-        String name = raw.strip().equals(account) ? account : SurvivorNames.nickname(raw);
-        if (name == null) {
-            AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(true, "invalid"));
-            return;
-        }
-        if (!name.equals(account) && taken(player, name)) {
-            AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(true, "taken"));
+        NameCheck check = checkName(player, raw);
+        if (check.name() == null) {
+            AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(true, check.error()));
             return;
         }
         SurvivorWorldData data = SurvivorWorldData.get(player.server);
         SurvivorRecord record = data.lineage(player.getUUID()).current();
-        record.firstName = name;
-        record.lastName = "";
-        record.named = true;
+        applyName(player, record, check.name());
         data.setDirty();
         Survivors.markFlush();
         changed(player);
         AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(false, ""));
-        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} names survivor #{}: {}", account, record.lifeIndex, name);
     }
 
     /** Another player's account name or another lineage's current survivor name, ignoring case (no impersonation). */

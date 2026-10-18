@@ -1,0 +1,11 @@
+{
+  "group": "noise",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:hearing",
+      "op": "multiply",
+      "value": 1.2
+    }
+  ]
+}

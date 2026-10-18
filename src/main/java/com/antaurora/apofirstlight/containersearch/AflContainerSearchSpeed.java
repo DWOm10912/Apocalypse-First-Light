@@ -10,8 +10,8 @@ import java.util.List;
  *
  * <p>{@code duration = baseTicksPerSlot * (1 + jitter) / (player multiplier * environment multiplier)}. The jitter
  * comes from the container's search seed and slot index only, never from the slot's contents, so timing cannot
- * reveal what a hidden slot holds. Both multipliers are 1.0 in V1 and are the extension points for future
- * scavenging skills / traits and for darkness, light sources, fatigue or injuries.
+ * reveal what a hidden slot holds. The player multiplier is the survivor attribute search_speed (traits); the
+ * environment one is 1.0, the extension point for darkness, light sources, fatigue or injuries.
  */
 public final class AflContainerSearchSpeed {
     private AflContainerSearchSpeed() {
@@ -26,9 +26,9 @@ public final class AflContainerSearchSpeed {
         return (int) Math.max(1L, Math.min(Short.MAX_VALUE, Math.round(ticks / speed)));
     }
 
-    /** Future skill / trait hook. Several searchers never stack: the best one sets the pace. */
+    /** Survivor attribute search_speed. Several searchers never stack: the best one sets the pace. */
     public static double playerMultiplier(ServerPlayer player, AflSearchableContainer container) {
-        return 1.0;
+        return com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.SEARCH_SPEED, 0.1);
     }
 
     /** Future light / darkness / flashlight hook. */

@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.LevelResource;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Collection;
@@ -33,6 +34,16 @@ public final class SurvivorWorldData extends SavedData {
     SurvivorMode mode = SurvivorMode.UNSET;
     /** Set when this world was created with the survivor system present: the host is asked for the mode. */
     boolean freshWorld;
+    /**
+     * The start scene for everyone in this world (SurvivorScenes), picked on the Create World page; null = the wilderness
+     * (older worlds, dedicated servers, worlds made through the vanilla screen).
+     */
+    @Nullable String scene;
+    /**
+     * The host's survivor setup, made on the client between Create World and entering the world (Background, Body,
+     * Traits, Name); used once at the host's first login (SurvivorSetupFlow), then cleared. Null = none waiting.
+     */
+    @Nullable CompoundTag hostSetup;
     final Map<UUID, SurvivorLineage> lineages = new LinkedHashMap<>();
     final Map<UUID, SurvivorCorpseRecord> corpses = new LinkedHashMap<>();
 
@@ -42,6 +53,10 @@ public final class SurvivorWorldData extends SavedData {
 
     public SurvivorMode mode() {
         return mode;
+    }
+
+    public String scene() {
+        return scene != null ? scene : SurvivorScenes.WILDERNESS;
     }
 
     public Collection<SurvivorLineage> lineages() {
@@ -101,6 +116,8 @@ public final class SurvivorWorldData extends SavedData {
         tag.putInt("Format", FORMAT);
         tag.putString("Mode", mode.id());
         tag.putBoolean("Fresh", freshWorld);
+        if (scene != null) tag.putString("Scene", scene);
+        if (hostSetup != null) tag.put("HostSetup", hostSetup.copy());
         ListTag list = new ListTag();
         for (SurvivorLineage lineage : lineages.values()) list.add(lineage.save());
         tag.put("Lineages", list);
@@ -114,6 +131,8 @@ public final class SurvivorWorldData extends SavedData {
         SurvivorWorldData data = new SurvivorWorldData();
         data.mode = SurvivorMode.byId(tag.getString("Mode"));
         data.freshWorld = tag.getBoolean("Fresh");
+        if (tag.contains("Scene", Tag.TAG_STRING)) data.scene = tag.getString("Scene");
+        if (tag.contains("HostSetup", Tag.TAG_COMPOUND)) data.hostSetup = tag.getCompound("HostSetup");
         for (Tag t : tag.getList("Lineages", Tag.TAG_COMPOUND)) {
             SurvivorLineage lineage = SurvivorLineage.load((CompoundTag) t);
             if (lineage != null) data.lineages.put(lineage.playerId, lineage);

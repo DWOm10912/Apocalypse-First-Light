@@ -1,0 +1,14 @@
+{
+  "group": "hands",
+  "cost": -1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:qte_window",
+      "op": "multiply",
+      "value": 0.8
+    }
+  ],
+  "exclusive": [
+    "nimble_hands"
+  ]
+}

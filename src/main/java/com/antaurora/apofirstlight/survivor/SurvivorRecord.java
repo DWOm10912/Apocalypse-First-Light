@@ -9,7 +9,10 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -17,8 +20,9 @@ import java.util.UUID;
  * corpse. A successor is rolled at the moment of the previous death and stored as PENDING, so a relog or restart can
  * never re-roll it; it becomes ALIVE when the player takes it over (respawn).
  *
- * <p>Reserved fields (originState, background, profession, traits, body) are saved but stay empty in V0: there is no
- * state map, no background list, no profession or trait system and no body model yet. Nothing reads them.
+ * <p>Setup (docs/gameplay/survivor_background_skills_v1_plan.md 9, 11): background, traits, body stats and growth hold
+ * final values, never "background + points", so a data change never alters a living survivor. originState and
+ * profession stay reserved and empty.
  */
 public final class SurvivorRecord {
     public enum State { PENDING, ALIVE, DEAD }
@@ -54,12 +58,44 @@ public final class SurvivorRecord {
      */
     @Nullable Sex sex;
 
-    // Reserved for later systems; never filled in V0.
+    // Reserved for later systems; never filled yet.
     @Nullable String originState;
-    @Nullable String background;
     @Nullable String profession;
+
+    /**
+     * {@link SurvivorSetup#CHOOSING} until the first survivor's setup is confirmed, then {@link SurvivorSetup#DONE}; null
+     * only for a successor rolled before setups existed (set up at its takeover).
+     */
+    @Nullable String setup;
+    /** The start scene chosen for this survivor ({@link SurvivorScenes}); where it actually started is spawnSource. */
+    @Nullable String scene;
+    /** Background id ({@code afl:<name>}); for display only, an unknown id changes nothing. */
+    @Nullable String background;
+    /** Every trait: the background's and the chosen ones. */
     final List<String> traits = new ArrayList<>();
-    @Nullable String body;
+    /** Body stats by id: level (start + growth) and progress inside it. Missing = the stat's default. */
+    final Map<String, Progress> body = new LinkedHashMap<>();
+    /** Growth items by id (firearms...), same shape. Unknown ids are kept but do nothing. */
+    final Map<String, Progress> growth = new LinkedHashMap<>();
+
+    /** A level and the experience inside it. */
+    public static final class Progress {
+        int level;
+        int xp;
+
+        Progress(int level, int xp) {
+            this.level = level;
+            this.xp = xp;
+        }
+
+        public int level() {
+            return level;
+        }
+
+        public int xp() {
+            return xp;
+        }
+    }
 
     State state;
     long startGameTime = -1L;
@@ -123,6 +159,28 @@ public final class SurvivorRecord {
         return state;
     }
 
+    @Nullable
+    public String setup() {
+        return setup;
+    }
+
+    @Nullable
+    public String background() {
+        return background;
+    }
+
+    public List<String> traits() {
+        return Collections.unmodifiableList(traits);
+    }
+
+    public Map<String, Progress> body() {
+        return Collections.unmodifiableMap(body);
+    }
+
+    public Map<String, Progress> growth() {
+        return Collections.unmodifiableMap(growth);
+    }
+
     /** Whole in-game days between the start and the death (or now), from the world's day time; never negative. */
     public double daysSurvived(long nowDayTime) {
         if (startDayTime < 0) return 0;
@@ -157,7 +215,10 @@ public final class SurvivorRecord {
         putString(tag, "OriginState", originState);
         putString(tag, "Background", background);
         putString(tag, "Profession", profession);
-        putString(tag, "Body", body);
+        putString(tag, "Setup", setup);
+        putString(tag, "Scene", scene);
+        if (!body.isEmpty()) tag.put("Body", saveProgress(body));
+        if (!growth.isEmpty()) tag.put("Growth", saveProgress(growth));
         if (!traits.isEmpty()) {
             ListTag list = new ListTag();
             for (String trait : traits) list.add(StringTag.valueOf(trait));
@@ -213,8 +274,18 @@ public final class SurvivorRecord {
         r.originState = getString(tag, "OriginState");
         r.background = getString(tag, "Background");
         r.profession = getString(tag, "Profession");
-        r.body = getString(tag, "Body");
         for (Tag t : tag.getList("Traits", Tag.TAG_STRING)) r.traits.add(t.getAsString());
+        // V0 reserved "Body" as a string and never wrote it: only the compound form is read
+        loadProgress(tag.getCompound("Body"), r.body);
+        loadProgress(tag.getCompound("Growth"), r.growth);
+        r.scene = getString(tag, "Scene");
+        if (tag.contains("Setup", Tag.TAG_STRING)) {
+            r.setup = tag.getString("Setup");
+        } else if (state != State.PENDING) {
+            // a V0 survivor (section 9): an ordinary person with default stats, never asked
+            r.setup = SurvivorSetup.DONE;
+            if (r.background == null) r.background = SurvivorSetup.ORDINARY;
+        }
         r.startGameTime = tag.getLong("StartGame");
         r.startDayTime = tag.getLong("StartDay");
         r.deathGameTime = tag.getLong("DeathGame");
@@ -231,6 +302,24 @@ public final class SurvivorRecord {
         r.spawnPos = tag.contains("SpawnPos", Tag.TAG_LONG) ? BlockPos.of(tag.getLong("SpawnPos")) : null;
         r.spawnSource = getString(tag, "SpawnSource");
         return r;
+    }
+
+    private static CompoundTag saveProgress(Map<String, Progress> map) {
+        CompoundTag out = new CompoundTag();
+        map.forEach((id, p) -> {
+            CompoundTag entry = new CompoundTag();
+            entry.putInt("Lv", p.level);
+            entry.putInt("Xp", p.xp);
+            out.put(id, entry);
+        });
+        return out;
+    }
+
+    private static void loadProgress(CompoundTag tag, Map<String, Progress> into) {
+        for (String id : tag.getAllKeys()) {
+            CompoundTag entry = tag.getCompound(id);
+            into.put(id, new Progress(entry.getInt("Lv"), entry.getInt("Xp")));
+        }
     }
 
     private static void putString(CompoundTag tag, String key, @Nullable String value) {

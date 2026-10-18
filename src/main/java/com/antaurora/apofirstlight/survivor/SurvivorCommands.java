@@ -1,9 +1,16 @@
 package com.antaurora.apofirstlight.survivor;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -11,13 +18,24 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * Testing and audits (permission 2), read only: {@code /afl survivor} (own lineage), {@code /afl survivor player <name>},
- * {@code /afl survivor list}, {@code /afl survivor corpses}. No command changes the mode, rolls a successor or revives anyone.
+ * Testing and audits (permission 2): {@code /afl survivor} (own lineage), {@code /afl survivor player <name>},
+ * {@code /afl survivor list}, {@code /afl survivor corpses}. No command changes the mode, rolls a successor or revives anyone; only setup writes (below).
  * {@code /afl survivor ragdoll [hit|shot|blast|drop|collapse|clear]} (Ragdoll V1) puts a stand-in body of no lineage in front
  * of you that falls like a death of that kind, to watch a corpse from outside; {@code clear} removes them all.
+ *
+ * <p>Survivor setup (docs/gameplay/survivor_background_skills_v1_plan.md, P2a; stands in for the setup screen until P2b):
+ * {@code /afl survivor sheet [player]} shows background, body, traits, growth and the attributes they change;
+ * {@code /afl survivor catalog} lists the loaded data; {@code /afl survivor setup <background> [strength=4 fitness=2
+ * <trait> ...]} checks a choice by the screen's rules and, if it passes, writes it to your living survivor (also when its
+ * setup is already done: a dev override) and applies it; {@code /afl survivor setup reset} puts it back to choosing,
+ * which holds the player and opens the setup screen again (to test the screen).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class SurvivorCommands {
@@ -33,7 +51,173 @@ public final class SurvivorCommands {
                         .executes(c -> status(c.getSource(), EntityArgument.getPlayer(c, "target")))))
                 .then(Commands.literal("list").executes(c -> list(c.getSource())))
                 .then(Commands.literal("corpses").executes(c -> corpses(c.getSource())))
+                .then(Commands.literal("sheet").executes(c -> sheet(c.getSource(), c.getSource().getPlayerOrException()))
+                        .then(Commands.argument("target", EntityArgument.player())
+                                .executes(c -> sheet(c.getSource(), EntityArgument.getPlayer(c, "target")))))
+                .then(Commands.literal("catalog").executes(c -> catalog(c.getSource())))
+                .then(setup())
                 .then(ragdoll())));
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> setup() {
+        return Commands.literal("setup")
+                .then(Commands.literal("reset").executes(c -> reset(c.getSource())))
+                .then(Commands.argument("background", ResourceLocationArgument.id())
+                        .suggests((c, b) -> SharedSuggestionProvider.suggest(SurvivorCatalog.get().backgrounds().keySet(), b))
+                        .executes(c -> setup(c.getSource(), background(c), ""))
+                        .then(Commands.argument("picks", StringArgumentType.greedyString())
+                                .suggests((c, b) -> {
+                                    String typed = b.getRemaining();
+                                    var last = b.createOffset(b.getStart() + typed.lastIndexOf(' ') + 1);
+                                    List<String> options = new ArrayList<>();
+                                    SurvivorCatalog.Snapshot catalog = SurvivorCatalog.get();
+                                    for (var def : catalog.body().values()) {
+                                        for (int lv = def.startMin(); lv <= def.startMax(); lv++) options.add(shortId(def.id()) + "=" + lv);
+                                    }
+                                    for (var def : catalog.traits().values()) if (!def.backgroundOnly()) options.add(shortId(def.id()));
+                                    return SharedSuggestionProvider.suggest(options, last);
+                                })
+                                .executes(c -> setup(c.getSource(), background(c), StringArgumentType.getString(c, "picks")))));
+    }
+
+    private static String background(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c) {
+        ResourceLocation id = ResourceLocationArgument.getId(c, "background");
+        return "minecraft".equals(id.getNamespace()) ? SurvivorCatalog.AFL + ":" + id.getPath() : id.toString();
+    }
+
+    private static String shortId(String id) {
+        return id.startsWith(SurvivorCatalog.AFL + ":") ? id.substring(SurvivorCatalog.AFL.length() + 1) : id;
+    }
+
+    private static int setup(CommandSourceStack source, String background, String picks) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        SurvivorRecord record = living(player);
+        if (record == null) {
+            source.sendFailure(Component.literal("no living survivor"));
+            return 0;
+        }
+        Map<String, Integer> body = new LinkedHashMap<>();
+        List<String> traits = new ArrayList<>();
+        for (String token : picks.trim().split("\\s+")) {
+            if (token.isEmpty()) continue;
+            int eq = token.indexOf('=');
+            if (eq < 0) {
+                traits.add(SurvivorCatalog.normalize(token));
+                continue;
+            }
+            try {
+                body.put(SurvivorCatalog.normalize(token.substring(0, eq)), Integer.parseInt(token.substring(eq + 1)));
+            } catch (NumberFormatException e) {
+                source.sendFailure(Component.literal("not a level: " + token));
+                return 0;
+            }
+        }
+        SurvivorCatalog.Snapshot catalog = SurvivorCatalog.get();
+        SurvivorSetup.Choice choice = new SurvivorSetup.Choice(background, body, traits);
+        SurvivorSetup.Check check = SurvivorSetup.check(catalog, choice);
+        if (!check.ok()) {
+            source.sendFailure(Component.literal("refused (" + check.pointsLeft() + " points left): "
+                    + String.join("; ", check.problems())));
+            return 0;
+        }
+        SurvivorSetup.confirm(record, catalog, choice);
+        SurvivorWorldData.get(player.server).setDirty();
+        Survivors.markFlush();
+        SurvivorModifiers.apply(player);
+        SurvivorSetupFlow.sendSheet(player);
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} set up survivor #{} by command: {} body {} traits {}",
+                player.getGameProfile().getName(), record.lifeIndex, record.background, body, record.traits);
+        int left = check.pointsLeft();
+        source.sendSuccess(() -> Component.literal("setup done, " + left + " points unused\n" + describe(player, record)), false);
+        return 1;
+    }
+
+    private static int reset(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        SurvivorRecord record = living(player);
+        if (record == null) {
+            source.sendFailure(Component.literal("no living survivor"));
+            return 0;
+        }
+        SurvivorSetup.reset(record);
+        SurvivorWorldData.get(player.server).setDirty();
+        Survivors.markFlush();
+        SurvivorModifiers.apply(player);
+        SurvivorSetupFlow.reopened(player);
+        source.sendSuccess(() -> Component.literal("setup reset to choosing (the setup screen opens)\n" + describe(player, record)), false);
+        return 1;
+    }
+
+    private static SurvivorRecord living(ServerPlayer player) {
+        SurvivorLineage lineage = SurvivorWorldData.get(player.server).lineage(player.getUUID());
+        SurvivorRecord record = lineage == null ? null : lineage.current();
+        return record != null && record.state == SurvivorRecord.State.ALIVE && lineage.status == SurvivorLineage.Status.ACTIVE
+                ? record : null;
+    }
+
+    private static int sheet(CommandSourceStack source, ServerPlayer player) {
+        SurvivorLineage lineage = SurvivorWorldData.get(source.getServer()).lineage(player.getUUID());
+        SurvivorRecord record = lineage == null ? null : lineage.current();
+        if (record == null) {
+            source.sendFailure(Component.literal(player.getGameProfile().getName() + ": no survivor yet"));
+            return 0;
+        }
+        String text = describe(player, record);
+        source.sendSuccess(() -> Component.literal(text), false);
+        return 1;
+    }
+
+    /** Setup, background, body, traits, growth, and every attribute a survivor modifier changes (with its value now). */
+    private static String describe(ServerPlayer player, SurvivorRecord r) {
+        SurvivorCatalog.Snapshot catalog = SurvivorCatalog.get();
+        StringBuilder out = new StringBuilder();
+        out.append('#').append(r.lifeIndex).append(' ').append(r.fullName()).append(' ').append(r.state)
+                .append(" setup=").append(r.setup).append(" background=").append(r.background);
+        out.append("\n body:");
+        for (var def : catalog.body().values()) out.append(' ').append(shortId(def.id())).append('=').append(SurvivorSetup.bodyLevel(r, def));
+        out.append("\n traits: ").append(r.traits.isEmpty() ? "-" : String.join(", ", r.traits.stream().map(SurvivorCommands::shortId).toList()));
+        out.append("\n growth:");
+        for (var def : catalog.growth().values()) {
+            SurvivorRecord.Progress p = r.growth.get(def.id());
+            out.append(' ').append(shortId(def.id())).append('=').append(p == null ? def.defaultLevel() : p.level);
+        }
+        out.append("\n attributes:");
+        int changed = 0;
+        for (Attribute attribute : net.minecraftforge.registries.ForgeRegistries.ATTRIBUTES.getValues()) {
+            AttributeInstance instance = player.getAttribute(attribute);
+            if (instance == null || instance.getModifiers().stream().noneMatch(m -> m.getName().startsWith(SurvivorModifiers.PREFIX))) continue;
+            ResourceLocation key = net.minecraftforge.registries.ForgeRegistries.ATTRIBUTES.getKey(attribute);
+            out.append(String.format(Locale.ROOT, " %s=%.3f", key.getPath(), instance.getValue()));
+            changed++;
+        }
+        if (changed == 0) out.append(" none (ordinary)");
+        return out.toString();
+    }
+
+    private static int catalog(CommandSourceStack source) {
+        SurvivorCatalog.Snapshot c = SurvivorCatalog.get();
+        StringBuilder out = new StringBuilder("backgrounds:");
+        for (var b : c.backgrounds().values()) {
+            out.append("\n ").append(shortId(b.id())).append(" budget=").append(b.budget())
+                    .append(b.traits().isEmpty() ? "" : " traits=" + String.join(",", b.traits().stream().map(SurvivorCommands::shortId).toList()))
+                    .append(b.successorPool() ? "" : " (not for successors)");
+        }
+        out.append("\nbody:");
+        for (var b : c.body().values()) {
+            out.append(' ').append(shortId(b.id())).append(' ').append(b.startMin()).append('-').append(b.startMax())
+                    .append(" (").append(b.defaultLevel()).append(", max ").append(b.max()).append(')');
+        }
+        String group = null;
+        for (var t : c.traits().values()) {
+            if (!t.group().equals(group)) {
+                group = t.group();
+                out.append("\n ").append(group).append(':');
+            }
+            out.append(' ').append(shortId(t.id())).append(t.backgroundOnly() ? "(bg)" : String.format(Locale.ROOT, "(%+d)", -t.cost()));
+        }
+        String text = out.toString();
+        source.sendSuccess(() -> Component.literal(text), false);
+        return c.traits().size();
     }
 
     /** {@code /afl survivor ragdoll [hit|shot|blast|drop|collapse|clear]}: a stand-in body falls in front of you (Ragdoll V1). */

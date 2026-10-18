@@ -124,6 +124,13 @@ public final class PortableGeneratorPull {
         resultAt = -100;
     }
 
+    /** ZONE x the survivor attributes qte_window and mech_qte_window, kept inside the bar wherever the zone sits. */
+    static float zoneWidth() {
+        var player = Minecraft.getInstance().player;
+        double m = com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.QTE_WINDOW, 0.1) * com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.MECH_QTE_WINDOW, 0.1);
+        return Math.min(2 * (1 - ZONE_MAX), (float)(ZONE * m));
+    }
+
     private static float nextZone() {
         return ZONE_MIN + (ZONE_MAX - ZONE_MIN) * (float) Math.random();
     }
@@ -186,7 +193,7 @@ public final class PortableGeneratorPull {
         PortableDieselGeneratorBlockEntity g = qteSet();
         if (!event.isUseItem() || g == null || g.pulling() || g.running() || time(0) - enteredAt < BLEND_IN) return;
         float m = marker(0);
-        resultGood = Math.abs(m - zone) <= ZONE / 2;
+        resultGood = Math.abs(m - zone) <= zoneWidth() / 2;
         resultAt = time(0);
         AflNetwork.requestPortablePull(qte, true, resultGood);
         zone = nextZone();
@@ -243,7 +250,8 @@ public final class PortableGeneratorPull {
         float a = alpha * (busy ? 0.55F : 1F);
         AflUiDraw.panel(gr, cx - W / 2 - 6, y - 6, W + 12, H + 26, a);
         AflUiShapes.fill(gr, cx - W / 2, y, W, H, 2.5F, 0x2A2C2F, 0.9F * a);
-        AflUiShapes.fill(gr, cx - W / 2 + (zone - ZONE / 2) * W, y, ZONE * W, H, 2.5F, 0x7FB061, 0.85F * a);
+        float zw = zoneWidth();
+        AflUiShapes.fill(gr, cx - W / 2 + (zone - zw / 2) * W, y, zw * W, H, 2.5F, 0x7FB061, 0.85F * a);
         float m = marker(partial);
         double since = time(partial) - resultAt;
         int markRgb = since < 10 ? (resultGood ? 0xB6F08E : 0xE07A5F) : 0xF2EEE6;

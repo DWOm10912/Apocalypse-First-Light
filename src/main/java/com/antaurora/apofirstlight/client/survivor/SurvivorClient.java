@@ -27,6 +27,9 @@ public final class SurvivorClient {
     private static SurvivorPackets.Summary summary;
     private static boolean modePrompt;
     private static boolean namePrompt;
+    /** The open setup prompt (catalog and info), or null. */
+    @Nullable
+    private static com.antaurora.apofirstlight.survivor.SurvivorPackets.SetupPrompt setupPrompt;
 
     private SurvivorClient() {
     }
@@ -73,6 +76,18 @@ public final class SurvivorClient {
         }
     }
 
+    /** Packet: open (with its data) or close the survivor setup screen. */
+    public static void setupPrompt(com.antaurora.apofirstlight.survivor.SurvivorPackets.SetupPrompt packet) {
+        setupPrompt = packet.open() ? packet : null;
+        Minecraft mc = Minecraft.getInstance();
+        if (!packet.open() && mc.screen instanceof AflSurvivorSetupScreen) mc.setScreen(null);
+    }
+
+    /** Packet: the server refused the confirm; the screen shows why and can send again. */
+    public static void setupResult(com.antaurora.apofirstlight.survivor.SurvivorPackets.SetupResult packet) {
+        if (Minecraft.getInstance().screen instanceof AflSurvivorSetupScreen screen) screen.refused(packet.problems());
+    }
+
     /** Client display name of a player (the nametag over them): the survivor's name the server sent. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onNameFormat(PlayerEvent.NameFormat event) {
@@ -84,7 +99,8 @@ public final class SurvivorClient {
     /**
      * Before vanilla's own screen logic each tick: a dead player with a summary always looks at the AFL death screen
      * (also when the vanilla screen came first, after a relog, or with immediate respawn off and a HARD end); the mode
-     * choice opens as soon as nothing else is on screen (not over the terrain loading screen), the name choice after it.
+     * choice opens as soon as nothing else is on screen (not over the terrain loading screen), then the survivor setup
+     * (which also takes the name), or the name choice alone.
      */
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -99,6 +115,8 @@ public final class SurvivorClient {
         if (mc.screen != null) return;
         if (modePrompt) {
             mc.setScreen(new AflSurvivorModeScreen());
+        } else if (setupPrompt != null) {
+            mc.setScreen(new AflSurvivorSetupScreen(setupPrompt));
         } else if (namePrompt) {
             mc.setScreen(new AflSurvivorNameScreen());
         }
@@ -137,6 +155,8 @@ public final class SurvivorClient {
         summary = null;
         modePrompt = false;
         namePrompt = false;
+        setupPrompt = null;
+        SurvivorSheetClient.clear();
         SurvivorIdentityClient.clear();
     }
 }

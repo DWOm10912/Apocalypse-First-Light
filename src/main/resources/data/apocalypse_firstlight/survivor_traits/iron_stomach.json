@@ -1,0 +1,16 @@
+{
+  "group": "metabolism",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:raw_water_sickness",
+      "op": "multiply",
+      "value": 0.5
+    },
+    {
+      "attribute": "apocalypse_firstlight:hunger_rate",
+      "op": "multiply",
+      "value": 0.95
+    }
+  ]
+}

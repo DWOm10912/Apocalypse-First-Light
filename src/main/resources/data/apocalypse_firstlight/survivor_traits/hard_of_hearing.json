@@ -1,0 +1,19 @@
+{
+  "group": "noise",
+  "cost": -1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:tinnitus",
+      "op": "multiply",
+      "value": 0.7
+    },
+    {
+      "attribute": "apocalypse_firstlight:hearing",
+      "op": "multiply",
+      "value": 0.8
+    }
+  ],
+  "exclusive": [
+    "keen_hearing"
+  ]
+}

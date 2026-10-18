@@ -1,0 +1,11 @@
+{
+  "group": "noise",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:footstep_noise",
+      "op": "multiply",
+      "value": 0.7
+    }
+  ]
+}

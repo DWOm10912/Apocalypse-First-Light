@@ -27,7 +27,8 @@ import java.lang.ref.WeakReference;
  * vanilla-style "Survivor mode: Normal / Hard" button takes its place; its tooltip states the death and item rules.
  * Vanilla hardcore pins it to Hard. The pick goes to the new world when it is created (Survivors.applyCreateScreenChoice)
  * and is dropped when the player leaves for the world list or the title screen. Without the difficulty button (another
- * mod's screen) nothing is added and the host chooses on first join as before. Placeholder until the modern UI pass.
+ * mod's screen) nothing is added and the host chooses on first join as before. Since P2b the vanilla screen opens
+ * behind the AFL New World page (AflNewWorldScreen); this button is what the player sees after "Vanilla settings".
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class SurvivorCreateWorldClient {
@@ -42,10 +43,29 @@ public final class SurvivorCreateWorldClient {
     private SurvivorCreateWorldClient() {
     }
 
+    /**
+     * Every vanilla Create World screen opens behind the AFL New World page (the world list's Create, recreate), unless
+     * the player asked for the vanilla screen itself from that page.
+     */
+    @SubscribeEvent
+    public static void onOpening(ScreenEvent.Opening event) {
+        if (event.getNewScreen() instanceof CreateWorldScreen create && !AflNewWorldScreen.passesThrough(create)) {
+            event.setNewScreen(new AflNewWorldScreen(create));
+        }
+    }
+
+    /** The AFL page hands its mode pick over when the player opens the vanilla screen from it. */
+    static void preset(CreateWorldScreen create, SurvivorMode mode) {
+        screen = new WeakReference<>(create);
+        chosen = mode;
+    }
+
     @SubscribeEvent
     public static void onInit(ScreenEvent.Init.Post event) {
         if (event.getScreen() instanceof SelectWorldScreen || event.getScreen() instanceof TitleScreen) {
             Survivors.setCreateScreenChoice(null);
+            Survivors.setCreateScreenScene(null);
+            Survivors.setCreateScreenSetup(null);
             return;
         }
         if (!(event.getScreen() instanceof CreateWorldScreen create)) return;

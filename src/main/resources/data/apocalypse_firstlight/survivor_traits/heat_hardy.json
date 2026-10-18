@@ -1,0 +1,11 @@
+{
+  "group": "climate",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:heat_threshold",
+      "op": "add",
+      "value": 1
+    }
+  ]
+}

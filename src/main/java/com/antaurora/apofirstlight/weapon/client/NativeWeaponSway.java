@@ -36,6 +36,8 @@ public final class NativeWeaponSway {
             target*=com.antaurora.apofirstlight.stamina.ClientStamina.swayScale();
             // Temperature V1: shivering adds to it.
             target*=com.antaurora.apofirstlight.temperature.ClientTemperature.swayScale();
+            // Survivor attribute weapon_sway (later: gun proficiency, traits).
+            target*=(float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(mc.player, com.antaurora.apofirstlight.registry.AflAttributes.WEAPON_SWAY, 0);
         }
         // Exponential 150 ms time constant, followed by render partial-tick interpolation.
         amplitude+=(target-amplitude)*(float)(1-Math.exp(-.05/.15));

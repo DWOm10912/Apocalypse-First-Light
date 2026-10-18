@@ -1,0 +1,9 @@
+{
+  "order": 2,
+  "budget": 4,
+  "traits": [
+    "mechanic",
+    "smoker"
+  ],
+  "successor_pool": true
+}

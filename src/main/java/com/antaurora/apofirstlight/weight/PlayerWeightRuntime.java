@@ -48,6 +48,12 @@ public final class PlayerWeightRuntime {
     public static PlayerMassSources.Carried carried(ServerPlayer player) {
         var c = CACHES.get(player); return c == null ? null : c.carried;
     }
+    /** The comfort capacity for this player: the data's comfort_capacity_kg plus the carry_capacity attribute (kg), at least 1 kg.
+     *  An attribute change shows at the next verification (every VERIFY_INTERVAL ticks). */
+    public static long comfortGrams(ServerPlayer player, ItemMassData.Snapshot data) {
+        double kg = com.antaurora.apofirstlight.survivor.SurvivorStats.get(player, com.antaurora.apofirstlight.registry.AflAttributes.CARRY_CAPACITY);
+        return Math.max(1000L, data.policy().comfortGrams() + Math.round(kg * 1000));
+    }
     private static void remove(ServerPlayer player) {
         var c = CACHES.remove(player);
         if (c != null && c.menu != null) c.menu.removeSlotListener(c.listener);
@@ -86,7 +92,7 @@ public final class PlayerWeightRuntime {
             }
             if ((c.dirty || tick - c.lastVerification >= VERIFY_INTERVAL) && c.lastVerification != tick) {
                 c.carried = PlayerMassSources.calculate(player, data);
-                c.state = EncumbranceState.calculate(c.carried.mass(), c.carried.loadGrams(), data, enabled,
+                c.state = EncumbranceState.calculate(c.carried.mass(), c.carried.loadGrams(), comfortGrams(player, data), data, enabled,
                         c.state != null && c.state.sprintBlocked());
                 WeightPenalties.apply(player, c.state);
                 c.lastVerification = tick; c.dirty = false;

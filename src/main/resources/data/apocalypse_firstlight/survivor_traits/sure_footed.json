@@ -1,0 +1,11 @@
+{
+  "group": "body",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:fall_damage",
+      "op": "multiply",
+      "value": 0.8
+    }
+  ]
+}

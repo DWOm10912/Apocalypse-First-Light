@@ -16,7 +16,7 @@ public final class RadiationSicknessEvents {
     public static void reducePlayerHealing(LivingHealEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
-            int stage = RadiationSicknessManager.getStage(exposure.getDose());
+            int stage = RadiationSicknessManager.getStage(player, exposure.getDose());
             if (stage == 0) return;
             float amount = event.getAmount();
             if (!Float.isFinite(amount) || amount <= 0.0F) {

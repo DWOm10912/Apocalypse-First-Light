@@ -2,6 +2,8 @@ package com.antaurora.apofirstlight.stamina;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.network.AflNetwork;
+import com.antaurora.apofirstlight.registry.AflAttributes;
+import com.antaurora.apofirstlight.survivor.SurvivorStats;
 import com.antaurora.apofirstlight.temperature.PlayerTemperature;
 import com.antaurora.apofirstlight.weight.PlayerWeightRuntime;
 import net.minecraft.resources.ResourceLocation;
@@ -27,6 +29,8 @@ import java.util.*;
  * regeneration by "regen". At 0 the player is winded until stamina is back at winded_resume: no sprint, weaker melee,
  * slower digging, more weapon sway and spread, heavy breathing. Creative / Spectator: always full, no effects.
  * The value is kept in the player's persistent data across logins; a death starts full.
+ * Survivor attributes (AflAttributes): the maximum gets max_stamina added, regeneration x stamina_regen, movement costs x
+ * move_stamina_cost, every other cost x work_stamina_cost.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class PlayerStamina {
@@ -47,13 +51,20 @@ public final class PlayerStamina {
     private static State state(ServerPlayer player) {
         var s = STATES.computeIfAbsent(player, p -> new State());
         if (Double.isNaN(s.value)) {
-            double max = StaminaConfig.get().max;
+            double max = max(player);
             var data = player.getPersistentData();
             s.value = data.contains(KEY) ? Math.max(0, Math.min(max, data.getDouble(KEY))) : max;
         }
         return s;
     }
     private static boolean enabled(ServerPlayer player) { return !player.isCreative() && !player.isSpectator(); }
+    /** The config maximum plus the player's max_stamina, at least 10. */
+    public static double max(ServerPlayer player) {
+        return Math.max(10, StaminaConfig.get().max + SurvivorStats.get(player, AflAttributes.MAX_STAMINA));
+    }
+    private static double cost(ServerPlayer player, boolean movement) {
+        return SurvivorStats.multiplier(player, movement ? AflAttributes.MOVE_STAMINA_COST : AflAttributes.WORK_STAMINA_COST, 0);
+    }
 
     public static double value(ServerPlayer player) { return state(player).value; }
     public static boolean winded(ServerPlayer player) { return enabled(player) && state(player).winded; }
@@ -76,12 +87,12 @@ public final class PlayerStamina {
     public static void spend(ServerPlayer player, double amount, boolean movement) {
         if (!enabled(player) || amount <= 0) return;
         var s = state(player);
-        double cost = amount * weight(player)[movement ? 0 : 1] * PlayerTemperature.staminaCostMultiplier(player);
+        double cost = amount * weight(player)[movement ? 0 : 1] * cost(player, movement) * PlayerTemperature.staminaCostMultiplier(player);
         s.value -= cost;
         s.spent += cost;
         s.spentForTemperature += cost;
         s.delay = Math.max(s.delay, (int)Math.round(StaminaConfig.get().delaySeconds * 20));
-        settle(s);
+        settle(s, max(player));
     }
     /** NativeGunActions: an accepted shot. */
     public static void shot(ServerPlayer player, ResourceLocation ammo) {
@@ -112,13 +123,13 @@ public final class PlayerStamina {
         return spent;
     }
 
-    /** Clamp; entering 0 makes the player winded (longer delay); back at winded_resume clears it. */
-    private static void settle(State s) {
+    /** Clamp to 0..max; entering 0 makes the player winded (longer delay); back at winded_resume clears it. */
+    private static void settle(State s, double max) {
         var c = StaminaConfig.get();
         if (s.value <= 0) {
             s.value = 0;
             if (!s.winded) { s.winded = true; s.delay = Math.max(s.delay, (int)Math.round(c.exhaustedDelaySeconds * 20)); }
-        } else if (s.value > c.max) s.value = c.max;
+        } else if (s.value > max) s.value = max;
         if (s.winded && s.value >= c.windedResume) s.winded = false;
     }
 
@@ -130,8 +141,9 @@ public final class PlayerStamina {
         s.lastX = player.getX(); s.lastY = player.getY(); s.lastZ = player.getZ(); s.hasLast = true;
         double horizontal = Math.sqrt(dx * dx + dz * dz);
         if (horizontal > 4) horizontal = 0; // a teleport, not movement
+        double max = max(player);
         if (!enabled(player)) {
-            s.value = c.max; s.winded = false; s.delay = 0; s.mined = false;
+            s.value = max; s.winded = false; s.delay = 0; s.mined = false;
         } else {
             double[] w = weight(player);
             double drain = 0;
@@ -144,13 +156,13 @@ public final class PlayerStamina {
                     if (player.isSprinting()) { drain = c.costs.sprint; effort = true; }
                     else drain = player.isCrouching() ? c.costs.sneak : c.costs.walk;
                 }
-                drain *= w[0];
+                drain *= w[0] * cost(player, true);
             } else if (player.getVehicle() instanceof com.antaurora.apofirstlight.entity.OfficeChairEntity && horizontal > 0.01) {
                 // rolling on an office chair (pushing with the feet): light work, a little more under load, no delay;
                 // sitting still on it costs nothing (other mounts do the work themselves: no cost)
-                drain = c.costs.officeChair * (1 + (w[0] - 1) * c.costs.officeChairLoad);
+                drain = c.costs.officeChair * (1 + (w[0] - 1) * c.costs.officeChairLoad) * cost(player, true);
             }
-            if (s.mined) { drain += c.costs.mining * w[1]; effort = true; s.mined = false; }
+            if (s.mined) { drain += c.costs.mining * w[1] * cost(player, false); effort = true; s.mined = false; }
             drain *= PlayerTemperature.staminaCostMultiplier(player); // heat stages
             s.value -= drain / 20;
             s.spent += drain / 20;
@@ -158,30 +170,30 @@ public final class PlayerStamina {
             if (effort) s.delay = Math.max(s.delay, (int)Math.round(c.delaySeconds * 20));
             if (s.delay > 0) s.delay--;
             else {
-                double regen = c.regen * w[2];
+                double regen = c.regen * w[2] * SurvivorStats.multiplier(player, AflAttributes.STAMINA_REGEN, 0);
                 if (player.isInWater()) regen *= c.regenInWater;
                 if (player.getFoodData().getFoodLevel() <= c.lowFoodLevel) regen *= c.regenLowFood;
                 regen *= com.antaurora.apofirstlight.thirst.PlayerThirst.staminaRegenMultiplier(player); // thirsty, sick
                 regen *= PlayerTemperature.staminaRegenMultiplier(player); // cold / heat stages
                 s.value += regen / 20;
             }
-            settle(s);
+            settle(s, max);
             if (s.winded && player.isSprinting() && !player.isPassenger()) player.setSprinting(false);
         }
         player.getPersistentData().putDouble(KEY, s.value);
-        sync(player, s, c);
+        sync(player, s, c, max);
     }
 
-    private static void sync(ServerPlayer player, State s, StaminaConfig c) {
+    private static void sync(ServerPlayer player, State s, StaminaConfig c, double max) {
         int now = player.server.getTickCount();
         double fatigue = fatigue(player);
         float sway = (float)(1 + c.fatigue.swayExtra * fatigue);
         float value = (float)s.value;
         s.breath = !enabled(player) ? 0 : s.winded ? (byte)2 : s.value < c.breath.lightBelow ? (byte)1 : 0;
         boolean changed = s.forceSync || s.winded != s.sentWinded || s.breath != s.sentOwnBreath || Math.abs(sway - s.sentSway) > 0.02f
-                || (value != s.sentValue && (Math.abs(value - s.sentValue) >= 0.25f || value == (float)c.max || value == 0));
+                || (value != s.sentValue && (Math.abs(value - s.sentValue) >= 0.25f || value == (float)max || value == 0));
         if (changed && (s.forceSync || s.winded != s.sentWinded || s.breath != s.sentOwnBreath || now - s.lastSyncTick >= 2)) {
-            AflNetwork.staminaState(player, new StaminaPackets.State(value, (float)c.max, s.winded && enabled(player), sway,
+            AflNetwork.staminaState(player, new StaminaPackets.State(value, (float)max, s.winded && enabled(player), sway,
                     s.winded && enabled(player) ? (float)c.winded.digSpeed : 1f, s.breath));
             s.sentValue = value; s.sentWinded = s.winded; s.sentSway = sway; s.sentOwnBreath = s.breath; s.lastSyncTick = now; s.forceSync = false;
         }
@@ -254,13 +266,13 @@ public final class PlayerStamina {
         var s = state(player);
         double[] w = weight(player);
         return String.format(Locale.ROOT, "%s: stamina %.1f / %.0f | winded=%s | delay %d ticks | fatigue %.2f | load x move %.2f action %.2f regen %.2f | enabled=%s",
-                player.getGameProfile().getName(), s.value, StaminaConfig.get().max, s.winded, s.delay, fatigue(player), w[0], w[1], w[2], enabled(player));
+                player.getGameProfile().getName(), s.value, max(player), s.winded, s.delay, fatigue(player), w[0], w[1], w[2], enabled(player));
     }
     static void set(ServerPlayer player, double value) {
         var s = state(player);
         s.value = value;
         s.winded = false;
-        settle(s);
+        settle(s, max(player));
         s.forceSync = true;
     }
 }

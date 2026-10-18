@@ -1,0 +1,11 @@
+{
+  "group": "hands",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:search_speed",
+      "op": "multiply",
+      "value": 1.25
+    }
+  ]
+}

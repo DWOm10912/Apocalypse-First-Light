@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client.inventory;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.ui.AflUiStyle;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
 import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.inventory.grid.GridPackets;
@@ -15,6 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.settings.IKeyConflictContext;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -52,6 +54,20 @@ public final class GridClient {
         if (player == null || !(event.getNewScreen() instanceof InventoryScreen)) return;
         if (PlayerStorageCapacity.unrestricted(player)) return;
         event.setNewScreen(new AflInventoryScreen(player));
+    }
+
+    /**
+     * Item tooltips on the AFL inventory and external grid pages take the pages' panel colours instead of vanilla's purple
+     * (the text hints there are drawn in the same colours by the pages themselves). Vanilla chest screens keep theirs.
+     */
+    @SubscribeEvent
+    public static void tooltipColour(RenderTooltipEvent.Color event) {
+        var screen = Minecraft.getInstance().screen;
+        if (!(screen instanceof AflInventoryScreen || screen instanceof ExternalGridScreen)) return;
+        event.setBackground(AflUiStyle.argb(AflUiStyle.BACK, 0.94F));
+        int line = AflUiStyle.argb(AflUiStyle.LINE, AflUiStyle.LINE_ALPHA);
+        event.setBorderStart(line);
+        event.setBorderEnd(line);
     }
 
     @SubscribeEvent

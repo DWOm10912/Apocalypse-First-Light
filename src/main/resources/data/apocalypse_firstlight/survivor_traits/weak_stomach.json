@@ -1,0 +1,14 @@
+{
+  "group": "metabolism",
+  "cost": -1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:raw_water_sickness",
+      "op": "multiply",
+      "value": 1.5
+    }
+  ],
+  "exclusive": [
+    "iron_stomach"
+  ]
+}

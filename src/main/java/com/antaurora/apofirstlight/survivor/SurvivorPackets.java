@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.survivor;
 
 import com.antaurora.apofirstlight.client.survivor.SurvivorClient;
 import com.antaurora.apofirstlight.client.survivor.SurvivorIdentityClient;
+import com.antaurora.apofirstlight.client.survivor.SurvivorSheetClient;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -67,6 +68,25 @@ public final class SurvivorPackets {
     public record CorpsePose(int entity, net.minecraft.world.phys.Vec3 origin, float[] pose, boolean last) {
     }
 
+    /**
+     * Survivor setup (docs/gameplay/survivor_background_skills_v1_plan.md 9, 11), server: open (with the catalog files as
+     * JSON and the screen's info: base values, scene, account, a fixed name) or close the setup screen.
+     */
+    public record SetupPrompt(boolean open, String catalog, net.minecraft.nbt.CompoundTag info) {
+    }
+
+    /** Client: the setup to confirm; the server checks all of it (SurvivorSetupFlow). Empty name = the account name. */
+    public record SetupChoice(String background, java.util.Map<String, Integer> body, java.util.List<String> traits, String name) {
+    }
+
+    /** Server: why the confirm was refused (problem lines; "name.invalid", "name.taken" for the name). */
+    public record SetupResult(java.util.List<String> problems) {
+    }
+
+    /** Server, to the player alone: its current survivor (SurvivorSetupFlow#sheet), for the character page. */
+    public record Sheet(net.minecraft.nbt.CompoundTag record) {
+    }
+
     /** A pose as a count and floats (0: none). */
     public static void writePose(net.minecraft.network.FriendlyByteBuf b, @org.jetbrains.annotations.Nullable float[] pose) {
         if (pose == null) {
@@ -130,6 +150,25 @@ public final class SurvivorPackets {
         }, b -> new CorpsePose(b.readVarInt(), new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),
                 readPose(b), b.readBoolean()),
                 (p, s) -> client(s, () -> SurvivorClient.corpsePose(p)), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, SetupPrompt.class, (p, b) -> {
+            b.writeBoolean(p.open());
+            b.writeUtf(p.catalog(), 262144);
+            b.writeNbt(p.info());
+        }, b -> new SetupPrompt(b.readBoolean(), b.readUtf(262144), b.readNbt()),
+                (p, s) -> client(s, () -> SurvivorClient.setupPrompt(p)), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, SetupChoice.class, (p, b) -> {
+            b.writeUtf(p.background(), 256);
+            b.writeMap(p.body(), (buf, k) -> buf.writeUtf(k, 256), net.minecraft.network.FriendlyByteBuf::writeVarInt);
+            b.writeCollection(p.traits(), (buf, t) -> buf.writeUtf(t, 256));
+            b.writeUtf(p.name(), 64);
+        }, b -> new SetupChoice(b.readUtf(256), b.readMap(java.util.LinkedHashMap::new, buf -> buf.readUtf(256),
+                net.minecraft.network.FriendlyByteBuf::readVarInt), b.readList(buf -> buf.readUtf(256)), b.readUtf(64)),
+                (p, s) -> server(s, player -> SurvivorSetupFlow.onChoice(player, p)), Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(id++, SetupResult.class, (p, b) -> b.writeCollection(p.problems(), (buf, t) -> buf.writeUtf(t, 512)),
+                b -> new SetupResult(b.readList(buf -> buf.readUtf(512))),
+                (p, s) -> client(s, () -> SurvivorClient.setupResult(p)), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Sheet.class, (p, b) -> b.writeNbt(p.record()), b -> new Sheet(b.readNbt()),
+                (p, s) -> client(s, () -> SurvivorSheetClient.set(p.record())), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
 

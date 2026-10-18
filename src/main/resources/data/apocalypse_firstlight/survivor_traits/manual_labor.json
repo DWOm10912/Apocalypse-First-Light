@@ -1,0 +1,11 @@
+{
+  "group": "hands",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:work_stamina_cost",
+      "op": "multiply",
+      "value": 0.85
+    }
+  ]
+}
