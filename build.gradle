@@ -423,6 +423,31 @@ tasks.register('skeletonCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.skeleton.PlayerSkeletonCheck'
 }
 
+// Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 7): fixed scenes, a body falls and must end still, out of blocks, in limits.
+tasks.register('ragdollCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.RagdollCheck'
+}
+
+// AFL Rig Blockbench plugin (docs/dev/afl_rig_blockbench_plugin_v1.md): the player actions posed by the real poser, as JSON
+// for tools/blockbench/afl_rig_check.mjs, which compares the plugin's port of the poser with it.
+tasks.register('aflRigParity', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.AflRigParity'
+    args 'build/afl_rig_parity.json'
+}
+
+// P9 draw / holster V1 (docs/dev/p9_draw_holster_actions_v1.md 2.1-2.3): the guns' player prop files from their geo, mesh and
+// item model; --args="--check p9_01" compares instead.
+tasks.register('gunPropExport', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.GunPropExport'
+    args 'p9_01'
+}
+
 // Vehicle physics V0-b package 1 (docs/vehicles/first_pickup_v0_design.md 3.8): settle, drive, brake, slopes, kerb, wall, turns.
 tasks.register('vehicleCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

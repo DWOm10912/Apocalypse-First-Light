@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "about": "P9 drawn from the right thigh holster (gun/<id>_draw, SkeletonGunStance#action; docs/dev/p9_draw_holster_actions_v1.md). The right hand reaches the grip in the holster, pulls the gun straight up out of it, rocks the muzzle ahead at the right hip, brings it in to the idle's chest ready (gun/<id>_idle, chest frame) as the left hand meets it. The own first person keeps the gun's view model and its draw clip (first_person view_model). Seconds = the gun's draw clip (0.5 s); keyed in the AFL Rig Blockbench plugin.",
+  "afl_rig": {"plugin": "0.1.0", "animation": "gun.p9_01_draw"},
+  "clip": "gun.p9_01_draw",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {"in": 0, "out": 0.15},
+  "prop": {
+    "id": "p9_01",
+    "keys": [
+      {"at": 0, "frame": "carry", "point": "grip_r", "pos": [0, 0, 0], "rot": [0, 0, 0], "blend": 0},
+      {"at": 0, "frame": "carry", "point": "grip_r", "pos": [0, 0, 0], "rot": [0, 0, 0], "blend": 0.12},
+      {"at": 0.12, "frame": "bone:pelvis", "point": "grip_r", "pos": [-6.562, 10.704, 2.688], "rot": [-90, 0, 180], "blend": 0.1},
+      {"at": 0.22, "frame": "bone:pelvis", "point": "grip_r", "pos": [-5.971, 7.776, -6.5], "rot": [-169.946, -5.909, -178.954], "blend": 0.12},
+      {"at": 0.34, "frame": "chest", "point": "grip_r", "pos": [-1.3, 6.6, -7.4], "rot": [-156.887, 5.521, 177.648], "blend": 0.14}
+    ]
+  },
+  "hands": {
+    "right": [
+      {"at": 0, "target": "pose", "blend": 0, "roll": 0},
+      {"at": 0, "target": "prop:grip_r", "blend": 0.12, "roll": 0, "pole": [-0.27, 0.89, 0.37]}
+    ],
+    "left": [
+      {"at": 0, "target": "pose", "blend": 0, "roll": 0},
+      {"at": 0.34, "target": "prop:grip_l", "blend": 0.14, "roll": 0, "pole": [0.26, 0.95, 0.16]}
+    ]
+  },
+  "events": []
+}

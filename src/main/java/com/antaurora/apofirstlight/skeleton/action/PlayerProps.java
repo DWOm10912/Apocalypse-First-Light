@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.io.IOException;
@@ -27,13 +28,44 @@ import java.util.Optional;
  * <p>
  * The prop's frame in the model (Java model px: y down, front -z) is the item's turned half round x (y and z flipped, as a
  * model part turns an item up), scaled to px: {@link #local}.
+ * <p>
+ * A gun (docs/dev/p9_draw_holster_actions_v1.md 2.1-2.3): {@code "gun": <gun id path>}, the held gun itself, drawn by the
+ * gun's renderer (client/skeleton/SkeletonGunStance), never as an item model; its "item units" are the gun's bare GeckoLib
+ * frame (blocks) and {@code scale} its size on the body (GunStance.Carried#scale). {@code "grips": {"name": {"pos": [x, y,
+ * z], "quat": [x, y, z, w], "grip": [pitch, yaw, roll]}}}: a hand's frame on the gun (item units: the gun's hand anchor,
+ * origin at the hand cap's centre, the forearm along -y) and the hand's turn on it (deg, GunStance.Grip), so a hand target
+ * {@code prop:<id>:<name>} holds the gun as the gun stance does. {@code "carry": {"bone", "pos", "quat", "scale"}}: the
+ * prop's placement at the gun's carry mount at rest (rest model px carried by the bone; its size there over {@code scale});
+ * the game uses the live mount (ActionPose.Moment#carry), the plugin and the checks this.
  */
 public final class PlayerProps {
     private static final String ROOT = "assets/apocalypse_firstlight/player_props/";
     private static final Map<String, Optional<Prop>> PROPS = new HashMap<>();
 
+    /** A hand's frame on a gun prop: the anchor (item units) and the hand's turn on it (deg, GunStance.Grip). */
+    public record Grip(Vector3f pos, Quaternionf rot, Vector3f turn) {
+        /** The anchor frame in item units. */
+        public Matrix4f anchor() {
+            return new Matrix4f().translation(pos).rotate(rot);
+        }
+    }
+
+    /** A gun prop at its carry mount at rest: on {@code bone}, the placement's origin at {@code pos} (rest model px), turned, sized. */
+    public record Carry(String bone, Vector3f pos, Quaternionf rot, float scale) {
+        /** The placement (the prop's model frame to rest model px, before the bone's pose). */
+        public Matrix4f rest() {
+            return new Matrix4f().translation(pos).rotate(rot).scale(scale);
+        }
+    }
+
+    /**
+     * A part of a gun shown on its own as a prop ({@code gun_part}: a magazine out of the gun, docs/dev/p9_reload_inspect_v1.md
+     * 3): the gun's renderer draws that bone of the held gun where the action places this prop; the prop's frame is the gun's.
+     */
+    public record GunPart(String gun, String bone) {}
+
     public record Prop(String id, List<String> items, float scale, Vector3f min, Vector3f max, int symmetry, String openBlock,
-                       Map<String, Vector3f> points) {
+                       Map<String, Vector3f> points, String gun, Map<String, Grip> grips, Carry carry, GunPart gunPart) {
         /** A point (item block units) in the prop's model frame (px, before its placement), or null when unknown. */
         public Vector3f local(String point) {
             Vector3f p = points.get(point);
@@ -86,11 +118,33 @@ public final class PlayerProps {
                 Vector3f min = vec(b.get(0).getAsJsonArray()), max = vec(b.get(1).getAsJsonArray());
                 int symmetry = json.has("symmetry") ? "xyz".indexOf(json.get("symmetry").getAsString()) : -1;
                 String open = json.has("open_block") ? json.get("open_block").getAsString() : null;
-                return Optional.of(new Prop(k, List.copyOf(items), json.get("scale").getAsFloat(), min, max, symmetry, open, Map.copyOf(points)));
+                String gun = json.has("gun") ? json.get("gun").getAsString() : null;
+                Map<String, Grip> grips = new HashMap<>();
+                if (json.has("grips")) for (var e : json.getAsJsonObject("grips").entrySet()) {
+                    JsonObject g = e.getValue().getAsJsonObject();
+                    grips.put(e.getKey(), new Grip(vec(g.getAsJsonArray("pos")), quat(g.getAsJsonArray("quat")), vec(g.getAsJsonArray("grip"))));
+                }
+                Carry carry = null;
+                if (json.has("carry")) {
+                    JsonObject c = json.getAsJsonObject("carry");
+                    carry = new Carry(c.get("bone").getAsString(), vec(c.getAsJsonArray("pos")), quat(c.getAsJsonArray("quat")),
+                            c.get("scale").getAsFloat());
+                }
+                GunPart part = null;
+                if (json.has("gun_part")) {
+                    JsonObject g = json.getAsJsonObject("gun_part");
+                    part = new GunPart(g.get("gun").getAsString(), g.get("bone").getAsString());
+                }
+                return Optional.of(new Prop(k, List.copyOf(items), json.get("scale").getAsFloat(), min, max, symmetry, open,
+                        Map.copyOf(points), gun, Map.copyOf(grips), carry, part));
             } catch (IOException e) {
                 throw new IllegalStateException("player prop file " + k, e);
             }
         }).orElse(null);
+    }
+
+    private static Quaternionf quat(JsonArray a) {
+        return new Quaternionf(a.get(0).getAsFloat(), a.get(1).getAsFloat(), a.get(2).getAsFloat(), a.get(3).getAsFloat()).normalize();
     }
 
     private static Vector3f vec(JsonArray a) {

@@ -50,10 +50,76 @@ public final class ActionPose {
         public boolean mirror;
         /** The action's anchors (model px), or null for one it does not know. */
         public Function<String, Vector3f> anchors = name -> null;
-        /** Out ({@link #hands}): the held prop's placement this moment (its model frame to model px), or null. */
+        /** Out ({@link #hands}): the first prop's placement this moment (its model frame to model px), or null. */
         public Matrix4f prop;
-        /** Out ({@link #hands}): the prop is drawn open (PlayerAction#propOpenFrom). */
+        /** Out ({@link #hands}): the first prop is drawn open (PlayerAction#propOpenFrom). */
         public boolean propOpen;
+        /**
+         * Out ({@link #hands}), per PlayerAction#props: each prop's placement (null: none), not drawn (its current key is
+         * hidden), drawn open.
+         */
+        public Matrix4f[] props = new Matrix4f[0];
+        public boolean[] propHidden = new boolean[0], propsOpen = new boolean[0];
+        /**
+         * In: the action's gun prop at its carry mount this moment (its model frame to model px, the mount's size included:
+         * the {@code carry} frame, docs/dev/p9_draw_holster_actions_v1.md 2.3), or null: the prop file's preview
+         * ({@link #carryPreview}).
+         */
+        public Matrix4f carry;
+        /**
+         * In: the view this moment (the {@code view} frame, docs/dev/p9_stance_loops_v1.md: px from the eye, axes as the rest
+         * model's, turned as the look; to model px), or null: keys in it are not placed. {@link #viewFrame} where only the
+         * view's angles are known; the gun stance adds the first person's sway and recoil.
+         */
+        public Matrix4f view;
+        /**
+         * In: the {@code view} frame's keys this much further ahead along the look (px): the first person's longer reach
+         * with a gun (GunStance#firstPersonReach, docs/dev/p9_stance_loops_v1.md 4.2), 0 otherwise.
+         */
+        public float viewAhead;
+    }
+
+    /**
+     * The {@code view} frame from the eye (model px) and the view's yaw and pitch against the body (deg; the head's
+     * HumanoidPoser turn, without sway).
+     */
+    public static Matrix4f viewFrame(Vector3f eye, float viewYaw, float viewPitch) {
+        return new Matrix4f().translation(eye).rotateY((float) Math.toRadians(viewYaw)).rotateX((float) Math.toRadians(viewPitch));
+    }
+
+    /** PlayerAction#viewPitch eases in over this many degrees before its limits. */
+    public static final float VIEW_KNEE = 10F;
+
+    /**
+     * The view frame an action's keys use: turned back about its own x where the look's pitch passes PlayerAction#viewPitch
+     * (eased: the pitch followed approaches the limit, never passes it).
+     */
+    static Matrix4f actionView(Matrix4f view, float[] limits) {
+        if (limits == null) return view;
+        Vector3f ahead = view.transformDirection(new Vector3f(0, 0, -1)).normalize();
+        float pitch = (float) Math.toDegrees(Math.asin(Math.max(-1F, Math.min(1F, ahead.y))));   // model y is down: + = looking down
+        float held = eased(pitch, limits[0], limits[1]);
+        return held == pitch ? view : new Matrix4f(view).rotateX((float) Math.toRadians(held - pitch));
+    }
+
+    /** A pitch held within [up, down]: as it is until VIEW_KNEE before a limit, then easing toward it. */
+    public static float eased(float pitch, float up, float down) {
+        float knee = Math.min(VIEW_KNEE, (down - up) / 2F);
+        if (pitch > down - knee) return down - knee * (float) Math.exp(-(pitch - (down - knee)) / knee);
+        if (pitch < up + knee) return up + knee * (float) Math.exp(-((up + knee) - pitch) / knee);
+        return pitch;
+    }
+
+    /**
+     * A stance loop's time (s; PlayerAction.Loop, docs/dev/p9_stance_loops_v1.md): the clock (s) or the stride phase (0..1)
+     * within its length, the action's or its clip's.
+     */
+    public static float loopSeconds(PlayerAction a, double clock, float stride) {
+        SkeletonClips.Clip clip = a.length > 0 || a.clip == null ? null : SkeletonClips.byKey(a.clip);
+        float length = a.length > 0 ? a.length : clip == null ? 0F : clip.length;
+        if (!(length > 0)) return 0F;
+        double t = a.loop == PlayerAction.Loop.STRIDE ? stride * length : clock;
+        return (float) (((t % length) + length) % length);
     }
 
     /** How much of the action shows: eased in over its blend-in, out over its blend-out after it stopped. */
@@ -140,12 +206,19 @@ public final class ActionPose {
         return f.lengthSquared() < 1e-8F ? new Vector3f(0, 0, -1) : f.normalize();
     }
 
-    /** After solveBody: the prop's placement ({@link Moment#prop}), then both hands' targets. */
+    /** After solveBody: the props' placements ({@link Moment#props}), then both hands' targets. */
     public static void hands(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Moment m) {
-        m.prop = prop(pose, m);
-        m.propOpen = m.prop != null && m.seconds >= m.action.propOpenFrom;
+        props(pose, m);
         float w = weight(m);
         if (w <= 0) return;
+        handsAt(in, pose, poser, m, w);
+    }
+
+    /**
+     * Both hands' targets from their timelines, the IK weights times {@code w}; the props are placed ({@link #props}). The gun
+     * stance (client/skeleton/SkeletonGunStance) takes them at full weight and blends them with its own.
+     */
+    public static void handsAt(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Moment m, float w) {
         List<PlayerAction.HandKey> right = m.mirror ? m.action.left : m.action.right,
                 left = m.mirror ? m.action.right : m.action.left;
         hand(in, pose, poser, m, right, true, w);
@@ -196,17 +269,26 @@ public final class ActionPose {
 
     /** A key's IK target (the rest arm frame to model px), or null when it resolves to nothing. */
     static Matrix4f target(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Moment m, PlayerAction.HandKey key, boolean right) {
-        PlayerAction.Target t = m.mirror ? key.target().mirrored() : key.target();
+        PlayerAction.Target t = key.target();
+        if (t.kind().equals("prop") && !m.mirror) {
+            Matrix4f held = gripTarget(m, t.name(), right, in.slim);
+            if (held != null) return held;
+        }
         Vector3f grip = switch (t.kind()) {
             case "socket" -> {
-                SkeletonRig.Socket s = pose.rig.sockets.get(t.name());
+                SkeletonRig.Socket s = socket(pose.rig, t.name(), m.mirror);
                 yield s == null ? null : pose.point(s.bone(), s.pos(), new Vector3f());
             }
             case "block" -> m.anchors.apply(t.name());
             case "prop" -> {
-                PlayerProps.Prop prop = m.action.prop == null || m.prop == null ? null : PlayerProps.get(m.action.prop);
-                Vector3f local = prop == null ? null : point(prop, t.name(), m.mirror);
-                yield local == null ? null : m.prop.transformPosition(local);
+                // prop:<point> on the first prop, prop:<id>:<point> on that one
+                String name = t.name();
+                int colon = name.indexOf(':'), track = colon < 0 ? 0 : m.action.propIndex(name.substring(0, colon));
+                if (colon >= 0) name = name.substring(colon + 1);
+                Matrix4f placed = track >= 0 && track < m.props.length ? m.props[track] : null;
+                PlayerProps.Prop prop = placed == null ? null : PlayerProps.get(m.action.props.get(track).id());
+                Vector3f local = prop == null ? null : point(prop, name, m.mirror);
+                yield local == null ? null : placed.transformPosition(local);
             }
             default -> null;   // held:, object:, clip_ik, entity: come with the later stages
         };
@@ -215,21 +297,58 @@ public final class ActionPose {
     }
 
     /**
-     * The action's prop placed at this moment (its model frame to model px, PlayerProps.Prop#local), between the keys
-     * about the gripped point, or null without a prop. Mirrored for the left side: the placement reflected across the
-     * body's middle and the prop across its own symmetry plane (PlayerProps.Prop#reflection), which together are a turn,
-     * so the prop is drawn as itself; a prop without one keeps its turn reflected only.
+     * A hand on a gun prop's grip ({@code prop:<point>} or {@code prop:<id>:<point>} naming one of PlayerProps.Prop#grips):
+     * the hand locked to the gun as GunStance#handTarget places it, or null (no such grip, the prop not placed). Not for a
+     * mirrored action: there the grip is a point like any other (guns are held right-handed, gun_handling_reference_v1.md 4.8).
      */
-    public static Matrix4f prop(SkeletonPose pose, Moment m) {
-        PlayerAction a = m.action;
-        if (a.prop == null || a.propKeys.isEmpty()) return null;
-        PlayerProps.Prop prop = PlayerProps.get(a.prop);
+    static Matrix4f gripTarget(Moment m, String name, boolean right, boolean slim) {
+        int colon = name.indexOf(':'), track = colon < 0 ? 0 : m.action.propIndex(name.substring(0, colon));
+        String point = colon < 0 ? name : name.substring(colon + 1);
+        Matrix4f placed = track >= 0 && track < m.props.length ? m.props[track] : null;
+        PlayerProps.Prop prop = placed == null ? null : PlayerProps.get(m.action.props.get(track).id());
+        PlayerProps.Grip g = prop == null ? null : prop.grips().get(point);
+        if (g == null) return null;
+        Matrix4f gun = new Matrix4f().scaling(1F / 16F).mul(placed).mul(prop.itemToLocal());   // gun blocks to model blocks
+        Vector3f turn = g.turn();
+        return GunStance.handTarget(gun, g.anchor(), new GunStance.Grip(turn.x, turn.y, turn.z), right, slim, new Matrix4f());
+    }
+
+    /**
+     * Every prop of the action placed at this moment ({@link Moment#props}, in order, so one riding on another finds it
+     * placed), whether it is hidden, open; {@link Moment#prop} and {@link Moment#propOpen} the first's.
+     */
+    public static void props(SkeletonPose pose, Moment m) {
+        List<PlayerAction.PropTrack> tracks = m.action.props;
+        int n = tracks.size();
+        m.props = new Matrix4f[n];
+        m.propHidden = new boolean[n];
+        m.propsOpen = new boolean[n];
+        for (int i = 0; i < n; i++) {
+            m.props[i] = prop(pose, m, i);
+            m.propsOpen[i] = m.props[i] != null && m.seconds >= tracks.get(i).openFrom();
+        }
+        m.prop = n > 0 ? m.props[0] : null;
+        m.propOpen = n > 0 && m.propsOpen[0];
+    }
+
+    /**
+     * The action's prop {@code track} placed at this moment (its model frame to model px, PlayerProps.Prop#local), between
+     * the keys about the gripped point, or null without it; sets {@link Moment#propHidden} for it. Mirrored for the left
+     * side: the placement reflected across the body's middle and the prop across its own symmetry plane
+     * (PlayerProps.Prop#reflection), which together are a turn, so the prop is drawn as itself; a prop without one keeps
+     * its turn reflected only.
+     */
+    private static Matrix4f prop(SkeletonPose pose, Moment m, int track) {
+        PlayerAction.PropTrack t = m.action.props.get(track);
+        List<PlayerAction.PropKey> keys = t.keys();
+        PlayerProps.Prop prop = keys.isEmpty() ? null : PlayerProps.get(t.id());
         if (prop == null) return null;
         int k = 0;
-        for (int i = 0; i < a.propKeys.size(); i++) if (a.propKeys.get(i).at() <= m.seconds) k = i;
-        Matrix4f to = place(pose, prop, a.propKeys.get(k), m);
-        while (to == null && k > 0) to = place(pose, prop, a.propKeys.get(--k), m);   // its anchor unknown: the key before
-        PlayerAction.PropKey cur = a.propKeys.get(k), prev = k > 0 ? a.propKeys.get(k - 1) : null;
+        for (int i = 0; i < keys.size(); i++) if (keys.get(i).at() <= m.seconds) k = i;
+        Matrix4f to = place(pose, prop, keys.get(k), m);
+        while (to == null && k > 0) to = place(pose, prop, keys.get(--k), m);   // its anchor unknown: the key before
+        PlayerAction.PropKey cur = keys.get(k), prev = k > 0 ? keys.get(k - 1) : null;
+        if (track < m.propHidden.length) m.propHidden[track] = cur.hidden();
         if (to == null || prev == null) return to;
         float p = cur.blend() <= 0 ? 1F : GunStance.smooth((m.seconds - cur.at()) / cur.blend());
         if (p >= 1F) return to;
@@ -239,7 +358,11 @@ public final class ActionPose {
         Vector3f pa = from.transformPosition(new Vector3f(pivot)), pb = to.transformPosition(new Vector3f(pivot));
         Quaternionf qa = from.getUnnormalizedRotation(new Quaternionf()), qb = to.getUnnormalizedRotation(new Quaternionf());
         if (qa.dot(qb) < 0) qb.set(-qb.x, -qb.y, -qb.z, -qb.w);
-        return new Matrix4f().translation(pa.lerp(pb, p)).rotate(qa.slerp(qb, p)).translate(-pivot.x, -pivot.y, -pivot.z);
+        Matrix4f out = new Matrix4f().translation(pa.lerp(pb, p)).rotate(qa.slerp(qb, p));
+        // a gun leaving its carry mount (drawn larger there) changes size on the way
+        float sa = from.getScale(new Vector3f()).x, sb = to.getScale(new Vector3f()).x, s = sa + (sb - sa) * p;
+        if (Math.abs(s - 1F) > 1e-5F) out.scale(s);
+        return out.translate(-pivot.x, -pivot.y, -pivot.z);
     }
 
     /**
@@ -256,9 +379,15 @@ public final class ActionPose {
         boolean mirror = m.mirror;
         Vector3f local = prop.local(key.point());
         if (local == null) return null;
+        if (key.frame().startsWith("prop:")) return onProp(prop, key, local, m);
+        if (key.frame().equals("carry")) {
+            // the mounted gun, turned about the key's point in its own (mounted, sized) frame
+            Matrix4f carry = m.carry != null ? m.carry : carryPreview(pose, prop);
+            if (carry == null) return null;
+            return new Matrix4f(carry).translate(local).translate(key.pos()).rotate(turn(key.rot())).translate(-local.x, -local.y, -local.z);
+        }
         Vector3f rest = new Vector3f(key.pos());
-        Quaternionf turn = new Quaternionf().rotateX((float) Math.toRadians(key.rot().x)).rotateY((float) Math.toRadians(key.rot().y))
-                .rotateZ((float) Math.toRadians(key.rot().z));
+        Quaternionf turn = turn(key.rot());
         Matrix4f reflection = mirror ? prop.reflection() : null;
         if (mirror) {
             rest.x = -rest.x;
@@ -273,7 +402,12 @@ public final class ActionPose {
         local = point(prop, key.point(), mirror);
         Vector3f at;
         Quaternionf r;
-        if (key.frame().startsWith("anchor:")) {
+        if (key.frame().equals("view")) {
+            if (m.view == null) return null;
+            Matrix4f view = actionView(m.view, m.action.viewPitch);
+            at = view.transformPosition(new Vector3f(rest).sub(0F, 0F, m.viewAhead), new Vector3f());
+            r = view.getNormalizedRotation(new Quaternionf()).mul(turn);
+        } else if (key.frame().startsWith("anchor:")) {
             Vector3f anchor = m.anchors.apply(key.frame().substring(7));
             if (anchor == null) return null;
             Quaternionf root = pose.rotation(pose.rig.root, new Quaternionf());
@@ -285,12 +419,77 @@ public final class ActionPose {
             Quaternionf root = pose.rotation(pose.rig.root, new Quaternionf());
             at = pose.point(upper, pose.rig.pivot[upper], new Vector3f()).add(root.transform(rest));
             r = root.mul(turn);
+        } else if (key.frame().startsWith("socket:")) {
+            SkeletonRig.Socket s = socket(pose.rig, key.frame().substring(7), mirror);
+            if (s == null || arm(pose.rig, s.bone())) return null;
+            at = pose.point(s.bone(), rest.add(s.pos()), new Vector3f());
+            r = pose.rotation(s.bone(), new Quaternionf()).mul(turn);
         } else {
-            int bone = key.frame().equals("root") ? pose.rig.root : pose.rig.chest;
+            String name = key.frame().startsWith("bone:") ? key.frame().substring(5) : key.frame();   // chest, root, bone:<name>
+            int bone = pose.rig.find(mirror ? otherSide(name) : name);
+            if (bone < 0 || arm(pose.rig, bone)) return null;
             at = pose.point(bone, rest, new Vector3f());
             r = pose.rotation(bone, new Quaternionf()).mul(turn);
         }
         return new Matrix4f().translation(at).rotate(r).translate(-local.x, -local.y, -local.z);
+    }
+
+    /**
+     * A gun prop at its carry mount as its file previews it (PlayerProps.Prop#carry on the posed bone; its model frame to
+     * model px), or null without one: the {@code carry} frame where the game gives no live mount (the plugin, the checks).
+     */
+    public static Matrix4f carryPreview(SkeletonPose pose, PlayerProps.Prop prop) {
+        PlayerProps.Carry c = prop.carry();
+        int bone = c == null ? -1 : pose.rig.find(c.bone());
+        return bone < 0 ? null : new Matrix4f(pose.world[bone]).mul(c.rest());
+    }
+
+    /** A prop key's turn (deg): about z, then y, then x. */
+    private static Quaternionf turn(Vector3f rot) {
+        return new Quaternionf().rotateX((float) Math.toRadians(rot.x)).rotateY((float) Math.toRadians(rot.y)).rotateZ((float) Math.toRadians(rot.z));
+    }
+
+    /**
+     * A key on an earlier prop (frame {@code prop:<id>}): {@code local} (the key's point) at pos in that prop's placed model
+     * frame, turned from it. Mirrored, the earlier prop is drawn as M P Sp (PlayerProps.Prop#reflection), so the rider as
+     * M P L Sc = (M P Sp) Sp L Sc; without both symmetry planes it rides unreflected. Null while the earlier one is not placed.
+     */
+    private static Matrix4f onProp(PlayerProps.Prop prop, PlayerAction.PropKey key, Vector3f local, Moment m) {
+        int parent = m.action.propIndex(key.frame().substring(5));
+        Matrix4f on = parent >= 0 && parent < m.props.length ? m.props[parent] : null;
+        if (on == null) return null;
+        Matrix4f rel = new Matrix4f().translation(key.pos()).rotate(turn(key.rot())).translate(-local.x, -local.y, -local.z);
+        if (!m.mirror) return new Matrix4f(on).mul(rel);
+        PlayerProps.Prop under = PlayerProps.get(m.action.props.get(parent).id());
+        Matrix4f sp = under == null ? null : under.reflection(), sc = prop.reflection();
+        if (sp == null || sc == null) return new Matrix4f(on).mul(rel);
+        return new Matrix4f(on).mul(sp).mul(rel).mul(sc);
+    }
+
+    /**
+     * A body socket for this side: a left-side player's {@code _r} socket is its {@code _l} one; a socket without a side
+     * (the holster) is reflected across the body's middle onto its bone's other side. Null when unknown.
+     */
+    public static SkeletonRig.Socket socket(SkeletonRig rig, String name, boolean mirror) {
+        if (!mirror) return rig.sockets.get(name);
+        String other = otherSide(name);
+        if (!other.equals(name)) return rig.sockets.get(other);
+        SkeletonRig.Socket s = rig.sockets.get(name);
+        if (s == null) return null;
+        int bone = rig.find(otherSide(rig.names[s.bone()]));
+        return bone < 0 ? null : new SkeletonRig.Socket(bone, new Vector3f(-s.pos().x, s.pos().y, s.pos().z));
+    }
+
+    /** {@code x_r} <-> {@code x_l}; a name without a side stays. */
+    static String otherSide(String name) {
+        return name.endsWith("_r") ? name.substring(0, name.length() - 2) + "_l"
+                : name.endsWith("_l") ? name.substring(0, name.length() - 2) + "_r" : name;
+    }
+
+    /** An arm bone: the IK places it after the props, so a prop cannot ride on it. */
+    private static boolean arm(SkeletonRig rig, int bone) {
+        return bone == rig.upperArmR || bone == rig.forearmR || bone == rig.handR || bone == rig.upperArmL || bone == rig.forearmL
+                || bone == rig.handL;
     }
 
     /**

@@ -158,13 +158,17 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 6. 尸体
 
-记录（`SurvivorCorpseRecord`，存在世界幸存者数据 `Corpses` 里）才是真相：ID、所属账号、幸存者 ID、姓名、生涯序号、外貌（`Skin` / `Arms`）、维度、位置、朝向、死亡时间、物品、搜索状态。实体（`SurvivorCorpse`，注册 ID `apocalypse_firstlight:survivor_corpse`）只是世界里的躯体和点击目标：
+记录（`SurvivorCorpseRecord`，存在世界幸存者数据 `Corpses` 里）才是真相：ID、所属账号、幸存者 ID、姓名、生涯序号、外貌（`Skin` / `Arms`）、维度、位置、朝向、死亡时间、物品、搜索状态，以及布娃娃停下来的姿势（`PoseV` = 1 和 `Pose`：11 个刚体 × 7 个浮点数，布娃娃 V1 起，见 `docs/dev/ragdoll_v1_plan.md` 第 3 节）；还在半空时区块就卸载了的尸体带 `Unsettled` 标记，下次实体放回时先落到下面的地面上。实体（`SurvivorCorpse`，注册 ID `apocalypse_firstlight:survivor_corpse`）只是世界里的躯体和点击目标：
 
 - `noSave` + `noSummon`：不随区块保存，不能召唤；`/kill` 或区块卸载移除实体也不影响记录。
 - 服务器每 20 tick 检查一遍尸体记录：所在区块的实体已加载、却找不到同 UUID 的实体，就放回一个。实体 UUID 就是尸体 ID，世界自己的 UUID 检查拒绝第二份。
-- 每 tick 什么都不做：无物理、无重力、不着火、不能受伤、不能推动、可以穿过；可以被点击（准星选中），会挡住子弹（无伤害）。
-- 位置：死亡时站在地上就用原位置（含 Terrain Smooth 的斜坡）；空中、水中等向下落到第一个有碰撞的表面；虚空死亡放到该列顶部；卡在方块里就留在原处。
-- 外观（占位）：原版玩家模型绑定姿态，仰面躺下，沿死亡朝向，以尸体位置为中心，整体压暗。皮肤与手臂类型：死者生前的外貌，建尸体时从死者记录复制，与主人后来换成谁无关（第 13 节）；首位幸存者的遗体显示主人的账号皮肤（主人不在玩家列表里时用其 UUID 对应的原版默认皮肤）。没有腐烂、骨架或布娃娃。
+- 布娃娃 V1（2026-10-16 写好，未实机确认）：
+  - 死亡时，能倒下的尸体从死者站的位置开始，由服务端按布娃娃模拟倒下。
+  - 停下以后，把落点和姿势写进记录，实体也移到落点。
+  - 以下情况不倒，直接用下面的旧位置规则：虚空、骑乘、水中或岩浆中、卡在方块里、全服已有 8 具尸体正在倒。
+- 停下以后每 tick 什么都不做：无物理、无重力、不着火、不能受伤、不能推动、可以穿过；可以被点击（准星选中），会挡住子弹（无伤害）。
+- 位置（不倒的尸体）：死亡时站在地上就用原位置（含 Terrain Smooth 的斜坡）；空中等情况向下落到第一个有碰撞的表面；虚空死亡放到该列顶部；卡在方块里就留在原处。
+- 外观（占位）：原版玩家模型绑定姿态，仰面躺下，沿死亡朝向，以尸体位置为中心，整体压暗。这是没有布娃娃姿势的尸体；有姿势的按姿势画，倒下过程也画出来（`docs/dev/ragdoll_v1_plan.md` 第 4 节）。皮肤与手臂类型：死者生前的外貌，建尸体时从死者记录复制，与主人后来换成谁无关（第 13 节）；首位幸存者的遗体显示主人的账号皮肤（主人不在玩家列表里时用其 UUID 对应的原版默认皮肤）。没有腐烂和骨骼遗骸。
 - 名字：`<姓名> 的遗体`（实体 `getName`；没有单独的 Jade 提供器，Jade 是否显示这个名字未实机确认）。准星提示（`client/WorldInteractionHint`）：未搜完“搜索”，搜完“查看”。
 
 搜刮：接入渐进容器搜索（实体宿主，见 `progressive_container_search_v1.md`）。
@@ -211,7 +215,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 9. 命令
 
-只读审计，权限 2：`/afl survivor`、`/afl survivor player <玩家>`、`/afl survivor list`、`/afl survivor corpses`（每具尸体的位置、物品堆数、搜索状态）。传承列表每一位显示 `look=<皮肤>/<手臂>`，有性别的继任者再加 `sex=female|male`；接手日志行末尾也带性别（首位和旧记录是 `null`）。没有任何命令能改模式、重抽继任者或复活。
+只读审计，权限 2：`/afl survivor`、`/afl survivor player <玩家>`、`/afl survivor list`、`/afl survivor corpses`（正在倒下的尸体数 `falling=`、布娃娃服务端耗时 `ragdoll_ms_per_tick`；每具尸体的位置、姿势 `pose=ragdoll|lying`、物品堆数、搜索状态）。测试用（布娃娃 V1）：`/afl survivor ragdoll [hit|shot|blast|drop|collapse|clear]` 在面前放一具不属于任何传承的替身尸体并让它倒下，`clear` 全部删掉（`docs/dev/ragdoll_v1_plan.md` 第 3 节第 8 条）。传承列表每一位显示 `look=<皮肤>/<手臂>`，有性别的继任者再加 `sex=female|male`；接手日志行末尾也带性别（首位和旧记录是 `null`）。替身命令只加删替身尸体；没有任何命令能改模式、重抽继任者或复活。
 
 ## 10. 困难模式
 
@@ -224,7 +228,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 11. 死亡结算界面与模式选择（客户端）
 
-客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。
+客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。之后的版本号随 master 走；布娃娃 V1 R-B 新增 `CorpsePose`，D 分支先从 50 升到 51；master 的 T15 车灯也用了 51，所以 D 分支改为 **52**（2026-10-16，合并时以 52 为准）。
 
 | 包 | 方向 | 内容 |
 |---|---|---|
@@ -234,10 +238,12 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 | `Identity` | 服务器 → 客户端 | 某个账号 UUID 当前幸存者的姓名、皮肤 ID 与手臂类型（第 13 节） |
 | `NamePrompt` | 服务器 → 客户端 | 打开 / 关闭首位幸存者的姓名界面，或拒绝原因（`invalid` / `taken`） |
 | `NameChoice` | 客户端 → 服务器 | 首位幸存者选的姓名；服务器重新检查字符、长度和重名 |
+| `CorpsePose` | 服务器 → 跟踪该尸体的客户端 | 布娃娃 V1：倒下时每 tick 一次刚体位置和朝向；停下时再发一次（`last`），带落点；空姿势表示仰面躺平 |
 
 死亡结算 `AflDeathScreen`（替换原版死亡界面）：
 
 - 发送时机：死亡事件里（早于原版的死亡包）、死亡状态下登录、重生被拒或被撤回时。
+- 布娃娃 V1：第一人称死亡、自己的尸体会倒下时，先由死亡镜头跟着尸体的头倒下，身体停下 1 秒后（从死亡起最多 6 秒）才出这个界面（`client/survivor/DeathCamera`，`docs/dev/ragdoll_v1_plan.md` 第 4 节）。第三人称和旁观时照旧立刻出现。
 - 内容：姓名（放大）、存活天数（“存活不足一天” / “存活 1 天” / “存活 n 天”，2026-10-14 起不显示“第 n 位幸存者”；`Summary` 包仍带生涯序号，界面不用）、死因、地点（维度 + 坐标）、结束语。
 - NORMAL：“开始另一段人生”（就是原版重生请求，服务器把身体交给已决定的继任者）和“返回标题画面”。
 - HARD：只有“结束旅程”（断开并回到标题画面）。界面不能用 Esc 关；原版死亡界面每次想出现都被换成 AFL 界面；重新进入世界仍回到这个界面。任何菜单都不能复活，服务器本身就拒绝。

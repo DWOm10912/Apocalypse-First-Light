@@ -49,7 +49,9 @@ import java.util.Map;
  * <li>a crowbar smash (S2; client/CrowbarSmashClient: the server sends each smash's start and impact to the players
  * around), its hand anchors from the view ({@link PlayerAction.ViewAnchor});</li>
  * <li>a jerry can in the main hand (S2): carried, or pouring (item/FuelCanItem's pour tag, synced with the stack); the
- * pour's time runs back twice as fast after it stops, so the can is tipped back and lowered.</li>
+ * pour's time runs back twice as fast after it stops, so the can is tipped back and lowered;</li>
+ * <li>first of all, a gun's draw or put-away (SkeletonGunStance#action: {@code gun/<id>_draw}, {@code gun/<id>_holster};
+ * docs/dev/p9_draw_holster_actions_v1.md 2.4), played only with the gun stance (PlayerSkeleton).</li>
  * </ul>
  * A source with its own clock (item use, crowbar, jerry can) sets the action's time every frame; the others count from
  * when this client first saw it. Actions that keep their first-person view model ({@link PlayerAction.FirstPerson}) are
@@ -64,8 +66,12 @@ import java.util.Map;
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class SkeletonActions {
-    /** What a player does now, as its source sees it: the anchors in the world, the parameter, the side. */
-    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror) {}
+    /** What a player does now, as its source sees it: the anchors in the world, the parameter, the side, its time's speed. */
+    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed) {
+        Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror) {
+            this(id, started, param, anchors, mirror, 1F);
+        }
+    }
 
     private static final class Track {
         String id;
@@ -189,7 +195,7 @@ public final class SkeletonActions {
         }
         ActionPose.Moment m = new ActionPose.Moment();
         m.action = t.action;
-        double speed = p == Minecraft.getInstance().player && devAction != null ? devSpeed : 1;
+        double speed = p == Minecraft.getInstance().player && devAction != null ? devSpeed : t.last.speed();
         m.seconds = (float) ((t.stoppedAt >= 0 ? t.stoppedAt : now) - t.start) * (float) speed;
         m.stopped = t.stoppedAt >= 0 ? (float) (now - t.stoppedAt) : -1F;
         m.age = (float) ((t.stoppedAt >= 0 ? t.stoppedAt : now) - t.shown);
@@ -268,6 +274,8 @@ public final class SkeletonActions {
     private static Live live(AbstractClientPlayer p, float partial, double now) {
         Minecraft mc = Minecraft.getInstance();
         if (p == mc.player && devAction != null) return dev(p, partial, now);
+        SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
+        if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed());
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);
         if (set != null && set.getLevel() != null) {
             Vec3[] a = PortableGeneratorPull.anchors(set, partial);

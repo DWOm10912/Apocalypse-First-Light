@@ -1,0 +1,11 @@
+{
+  "about": "Test only (AflRigParity, tools/blockbench/afl_rig_check.mjs): a stand-in pistol magazine for the AFL Rig phase 2 prop frames.",
+  "items": ["afl_rig_test_magazine"],
+  "scale": 0.15,
+  "bounds": [[0.4, 0.0, 0.3], [0.6, 1.0, 0.7]],
+  "symmetry": "x",
+  "points": {
+    "top": [0.5, 1.0, 0.5],
+    "base": [0.5, 0.0, 0.5]
+  }
+}

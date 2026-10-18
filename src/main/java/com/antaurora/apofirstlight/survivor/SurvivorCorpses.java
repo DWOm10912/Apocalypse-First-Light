@@ -55,11 +55,15 @@ public final class SurvivorCorpses {
     private SurvivorCorpses() {
     }
 
-    /** At the death (Survivors.recordDeath): the body record at the resting place, its entity at once. */
-    static void create(ServerPlayer player, SurvivorRecord record) {
+    /**
+     * At the death (Survivors.recordDeath): the body record and its entity at once. A body that can fall (Ragdoll V1,
+     * SurvivorRagdolls#canFall) starts where the survivor stood and falls; any other lies down at the resting place.
+     */
+    static void create(ServerPlayer player, SurvivorRecord record, @Nullable net.minecraft.world.damagesource.DamageSource source) {
         ServerLevel level = player.serverLevel();
         SurvivorWorldData data = SurvivorWorldData.get(player.server);
-        Vec3 at = restingPlace(level, player);
+        boolean falls = SurvivorRagdolls.canFall(player);
+        Vec3 at = falls ? player.position() : restingPlace(level, player);
         SurvivorCorpseRecord corpse = new SurvivorCorpseRecord(UUID.randomUUID(), player.getUUID(), record.id,
                 record.fullName(), record.lifeIndex, level.dimension().location().toString(), at.x, at.y, at.z,
                 player.yBodyRot, record.deathGameTime, record.deathDayTime);
@@ -68,7 +72,8 @@ public final class SurvivorCorpses {
         data.addCorpse(corpse);
         record.corpseId = corpse.id;
         PENDING.put(player.getUUID(), corpse.id);
-        spawn(level, corpse);
+        SurvivorCorpse entity = spawn(level, corpse);
+        if (falls && entity != null) entity.fall(SurvivorRagdolls.start(player, source));
     }
 
     /**
@@ -184,12 +189,23 @@ public final class SurvivorCorpses {
      */
     static Vec3 restingPlace(ServerLevel level, ServerPlayer player) {
         Vec3 at = player.position();
+        if (player.onGround() && at.y >= level.getMinBuildHeight()) return at;
+        return ground(level, at);
+    }
+
+    /** A body let go at {@code at}: on the first solid surface below, or on top of the column when below the world. */
+    static Vec3 ground(ServerLevel level, Vec3 at) {
         int min = level.getMinBuildHeight();
         if (at.y < min) {
             int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(at.x), Mth.floor(at.z));
             return new Vec3(at.x, Math.max(min + 1, top), at.z);
         }
-        if (player.onGround()) return at;
+        return surfaceBelow(level, at);
+    }
+
+    /** The first solid surface at or below a point (64 blocks at most), or the point itself (inside a block, none found). */
+    static Vec3 surfaceBelow(ServerLevel level, Vec3 at) {
+        int min = level.getMinBuildHeight();
         BlockPos.MutableBlockPos pos = BlockPos.containing(at).mutable();
         for (int i = 0; i < 64 && pos.getY() >= min; i++, pos.move(Direction.DOWN)) {
             VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
@@ -201,7 +217,10 @@ public final class SurvivorCorpses {
         return at;
     }
 
-    /** Server tick: puts missing corpse entities back into loaded chunks (one UUID lookup per corpse per second). */
+    /**
+     * Server tick: puts missing corpse entities back into loaded chunks (one UUID lookup per corpse per second). A body
+     * that stopped in the air when its chunk unloaded (record unsettled) is put on the ground first.
+     */
     static void tick(MinecraftServer server) {
         if (++reconcileClock < RECONCILE_TICKS) return;
         reconcileClock = 0;
@@ -212,16 +231,27 @@ public final class SurvivorCorpses {
             if (level == null) continue;
             long chunk = ChunkPos.asLong(Mth.floor(corpse.x) >> 4, Mth.floor(corpse.z) >> 4);
             if (!level.areEntitiesLoaded(chunk) || level.getEntity(corpse.id) != null) continue;
+            if (corpse.unsettled) {
+                Vec3 g = ground(level, new Vec3(corpse.x, corpse.y, corpse.z));
+                corpse.rest(g.x, g.y, g.z, null);
+                Survivors.markFlush();
+            }
             spawn(level, corpse);
         }
     }
 
-    private static void spawn(ServerLevel level, SurvivorCorpseRecord corpse) {
+    @Nullable
+    static SurvivorCorpse spawnForTest(ServerLevel level, SurvivorCorpseRecord corpse) {
+        return spawn(level, corpse);
+    }
+
+    @Nullable
+    private static SurvivorCorpse spawn(ServerLevel level, SurvivorCorpseRecord corpse) {
         SurvivorCorpse entity = AflEntities.SURVIVOR_CORPSE.get().create(level);
-        if (entity == null) return;
+        if (entity == null) return null;
         entity.setup(corpse);
         entity.setSearched(container(corpse).aflSearchState().isComplete(container(corpse)));
-        level.addFreshEntity(entity);
+        return level.addFreshEntity(entity) ? entity : null;
     }
 
     /** The search finished: the body's prompt changes from search to view. */
@@ -285,6 +315,8 @@ public final class SurvivorCorpses {
         SurvivorWorldData data = SurvivorWorldData.get(server);
         int stacks = 0;
         for (SurvivorCorpseRecord corpse : data.corpses.values()) stacks += corpse.itemCount();
-        return "corpses=" + data.corpses.size() + " stacks=" + stacks;
+        double[] cost = SurvivorRagdolls.cost();
+        return "corpses=" + data.corpses.size() + " stacks=" + stacks + " falling=" + SurvivorRagdolls.active()
+                + String.format(java.util.Locale.ROOT, " ragdoll_ms_per_tick=%.2f max=%.2f over %d ticks", cost[1], cost[2], (int) cost[0]);
     }
 }

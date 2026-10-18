@@ -1,0 +1,308 @@
+{
+  "format_version": 1,
+  "about": "P9 empty inspect, trained tier (gun/p9_01_inspect_empty; docs/dev/p9_reload_inspect_v1.md 2.4-2.5, 3): the support hand lets go, the gun shows its left side, turns to show its right side (the open chamber), then a magazine check: it drops into the support hand, is tipped toward the eyes, seated with the palm; back to the chest ready. Same beats and length as the first-person clip. Written by tools/author-p9-01-reload-actions.mjs.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 5.3,
+  "props": [
+    {
+      "id": "p9_01",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.3,
+            6.6,
+            -7.4
+          ],
+          "rot": [
+            -156.887,
+            5.521,
+            177.648
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.02,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.2,
+            1.2,
+            -10
+          ],
+          "rot": [
+            164.66,
+            48.974,
+            171.692
+          ],
+          "blend": 0.5693
+        },
+        {
+          "at": 1.6685,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.6,
+            1.8,
+            -9.8
+          ],
+          "rot": [
+            174.681,
+            -19.921,
+            138.183
+          ],
+          "blend": 0.687
+        },
+        {
+          "at": 2.9444,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.5,
+            1.6,
+            -9.6
+          ],
+          "rot": [
+            149.619,
+            8.649,
+            -152.962
+          ],
+          "blend": 0.2944
+        },
+        {
+          "at": 4.4363,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.3,
+            6.6,
+            -7.4
+          ],
+          "rot": [
+            -156.887,
+            5.521,
+            177.648
+          ],
+          "blend": 0.4711
+        }
+      ]
+    },
+    {
+      "id": "p9_01_mag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 3.2585,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 3.2585,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            0.467,
+            -1.723
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.1767
+        },
+        {
+          "at": 3.4646,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            2.2,
+            3.6,
+            -8.4
+          ],
+          "rot": [
+            -121.233,
+            16.666,
+            154.689
+          ],
+          "blend": 0.2159
+        },
+        {
+          "at": 3.7787,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            2,
+            3.4,
+            -8.6
+          ],
+          "rot": [
+            -130.575,
+            11.933,
+            156.425
+          ],
+          "blend": 0.1472
+        },
+        {
+          "at": 3.9259,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            0.146,
+            -1.593
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.1178
+        },
+        {
+          "at": 4.0437,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.368,
+            -0.982
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.2061
+        },
+        {
+          "at": 4.3283,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.0393
+        },
+        {
+          "at": 4.3676,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:p9_01:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.27,
+          0.89,
+          0.37
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:p9_01:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      },
+      {
+        "at": 0.02,
+        "target": "pose",
+        "blend": 0.3,
+        "roll": 0
+      },
+      {
+        "at": 2.846296296296296,
+        "target": "prop:p9_01_mag:base",
+        "blend": 0.37296296296296294,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 4.406851851851852,
+        "target": "prop:p9_01:grip_l",
+        "blend": 0.3925925925925926,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      }
+    ]
+  },
+  "events": []
+}

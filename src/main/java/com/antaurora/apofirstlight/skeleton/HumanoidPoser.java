@@ -4,6 +4,9 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Player skeleton V1 (docs/dev/player_skeleton_v1_design.md 4.2, 5, 10.5): one frame of the player's pose from plain
  * inputs, Java model px (the vanilla PlayerModel's space after LivingEntityRenderer's transforms). Pure: the game glue
@@ -70,6 +73,14 @@ public final class HumanoidPoser {
         public float actionTime, actionWeight, paramWeight;
         public boolean[] actionMask;
         public boolean actionMirror;
+        /**
+         * A gun's stance loops (docs/dev/p9_stance_loops_v1.md: the ready's idle, the sprint), before the action's clips:
+         * each on its mask's bones by its weight, the locomotion keeping what is left of a bone (its clips' weights summing
+         * to at most 1). Never mirrored (guns are right-handed).
+         */
+        public final List<StanceClip> stance = new ArrayList<>();
+        /** One stance loop's clip at its time (s), weight and mask (PlayerAction#mask). */
+        public record StanceClip(SkeletonClips.Clip clip, float time, float weight, boolean[] mask) {}
         /** Model px the root moves (an action stepping up to what it works on), before the eye's own shift. */
         public final Vector3f rootOffset = new Vector3f();
         /** Riding: the legs take vanilla's angles. */
@@ -170,6 +181,7 @@ public final class HumanoidPoser {
         Report report = new Report();
         pose.reset();
         locomotion(in, pose);
+        stance(in, pose);
         action(in, pose);
         if (in.rootTurn != null) pose.local[rig.root].set(in.rootTurn);
         else pose.local[rig.root].rotationY(rad(in.rootYaw));
@@ -370,6 +382,45 @@ public final class HumanoidPoser {
                 pose.local[b].mul(new Quaternionf().slerp(step, turn)).normalize();
                 Vector3f firstPos = c.position(b, 0, new Vector3f());
                 offset.add(c.position(b, in.turnStep, p).sub(firstPos).mul(turn));
+            }
+        }
+    }
+
+    /**
+     * The stance loops over the locomotion ({@link Input#stance}): on each bone, the turns and offsets of the clips that key
+     * it by their weights, the locomotion's by what is left (none past a total of 1, the clips' then shared).
+     */
+    private void stance(Input in, SkeletonPose pose) {
+        if (in.stance.isEmpty()) return;
+        Quaternionf base = new Quaternionf(), q = new Quaternionf(), sum = new Quaternionf();
+        Vector3f p = new Vector3f();
+        for (int b = 0; b < rig.size(); b++) {
+            float turned = 0, moved = 0;
+            for (Input.StanceClip s : in.stance) {
+                if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b]) continue;
+                if (s.clip().rotates(b)) turned += s.weight();
+                if (s.clip().moves(b)) moved += s.weight();
+            }
+            if (turned > 0) {
+                float share = turned > 1 ? 1 / turned : 1, rest = Math.max(0, 1 - turned);
+                base.set(pose.local[b]);
+                sum.set(base.x * rest, base.y * rest, base.z * rest, base.w * rest);
+                for (Input.StanceClip s : in.stance) {
+                    if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b] || !s.clip().rotates(b)) continue;
+                    s.clip().rotation(b, s.time(), q);
+                    if (base.dot(q) < 0) q.set(-q.x, -q.y, -q.z, -q.w);
+                    float w = s.weight() * share;
+                    sum.set(sum.x + q.x * w, sum.y + q.y * w, sum.z + q.z * w, sum.w + q.w * w);
+                }
+                if (sum.lengthSquared() > 1e-12F) pose.local[b].set(sum).normalize();
+            }
+            if (moved > 0) {
+                float share = moved > 1 ? 1 / moved : 1;
+                Vector3f offset = pose.offset[b].mul(Math.max(0, 1 - moved));
+                for (Input.StanceClip s : in.stance) {
+                    if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b] || !s.clip().moves(b)) continue;
+                    offset.add(s.clip().position(b, s.time(), p).mul(s.weight() * share));
+                }
             }
         }
     }

@@ -64,7 +64,8 @@ import java.util.WeakHashMap;
  * ({@link SkinMesh}) in place of renderToBuffer; the head stays vanilla's;</li>
  * <li>hands: empty hands hang (the clips), an ordinary item takes vanilla's arm angles with a straight arm, the BR51
  * ({@link SkeletonGunStance}) is placed against the eye and both hands reach for its anchors by IK; a player action
- * ({@link SkeletonActions}: thermometer, recoil starter, fuel nozzle) poses the body and the hands it names;</li>
+ * ({@link SkeletonActions}: thermometer, recoil starter, fuel nozzle) poses the body and the hands it names; with a gun
+ * up only the gun's own draw and put-away actions play, through the gun stance (the P9);</li>
  * <li>held items: drawn on the hand bone (ItemInHandLayer's translateToHand, {@link #translateToHand}), so they follow a
  * bent elbow.</li>
  * </ul>
@@ -77,7 +78,7 @@ public final class PlayerSkeleton {
     /** Waist twist (deg) that starts a step turn while standing; the waist's hard limit is 45. */
     private static final float TURN_TRIGGER = 40F, WAIST = 45F, CHEST_LAG = 15F;
     /** Vanilla part pivots (model px), the frames the write-back reproduces. */
-    private static final Vector3f HEAD = new Vector3f(0, 0, 0), BODY = new Vector3f(0, 0, 0),
+    static final Vector3f HEAD = new Vector3f(0, 0, 0), BODY = new Vector3f(0, 0, 0),
             RIGHT_ARM = new Vector3f(-5, 2, 0), LEFT_ARM = new Vector3f(5, 2, 0),
             RIGHT_LEG = new Vector3f(-1.9F, 12, 0), LEFT_LEG = new Vector3f(1.9F, 12, 0);
 
@@ -199,7 +200,11 @@ public final class PlayerSkeleton {
         /** The prop the action holds (player actions S2) and its placement this frame (its model frame to model px), or null. */
         PlayerProps.Prop prop;
         final Matrix4f propPose = new Matrix4f();
-        boolean propOpen;
+        boolean propOpen, propHidden;
+        /** The action's other props this frame (AFL Rig phase 2: the pistol's magazines), drawn from their own items. */
+        final List<Extra> extras = new java.util.ArrayList<>();
+
+        record Extra(PlayerProps.Prop prop, Matrix4f pose, boolean open) {}
 
         Solved(SkeletonRig rig) {
             pose = new SkeletonPose(rig);
@@ -303,16 +308,36 @@ public final class PlayerSkeleton {
             consumer.vertex(p.x, p.y, p.z, r, g, b, a, u, v, overlay, light, n.x, n.y, n.z);
         };
         SkeletonRig rig = d.solved.pose.rig;
+        // the own first person's arms thinner with a pistol held out (GunStance#firstPersonArm)
+        float arms = d.solved.hold != null ? d.solved.hold.arms() : 1F;
         for (SkeletonRig.SkinPart part : rig.skin) {
-            if (base(m, part.part()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, sink);
-            if (layer(m, part.overlay()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, true, sink);
+            float thick = part.part().endsWith("_arm") ? arms : 1F;
+            if (base(m, part.part()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, thick, sink);
+            if (layer(m, part.overlay()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, true, thick, sink);
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
-        if (d.solved.hold != null && !AflShaderCompat.activeShadowPass())
-            SkeletonGunStance.render(d.solved.hold, pose, d.buffers, light,
-                    d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts());
+        // the own first-person body draws a gun only on its own hands (#firstPersonHands); a held one is the view model's
+        boolean ownView = d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts();
+        if (d.solved.hold != null && !AflShaderCompat.activeShadowPass() && (!ownView || firstPersonHands(d.player)))
+            SkeletonGunStance.render(d.solved.hold, pose, d.buffers, light);
+        for (Solved.Extra e : d.solved.extras) {
+            ItemStack stack = extraStack(e.prop());
+            if (!stack.isEmpty()) drawPlaced(d, e.prop(), e.pose(), e.open(), stack, pose, d.buffers, light);
+        }
         return true;
+    }
+
+    private static final Map<String, ItemStack> EXTRA_STACKS = new java.util.HashMap<>();
+
+    /** An extra prop's look: its first listed item (PlayerProps.Prop#items), or empty when it is not an item. */
+    private static ItemStack extraStack(PlayerProps.Prop prop) {
+        return EXTRA_STACKS.computeIfAbsent(prop.id(), k -> {
+            if (prop.items().isEmpty()) return ItemStack.EMPTY;
+            net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(
+                    new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, prop.items().get(0)));
+            return item == null || item == net.minecraft.world.item.Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
+        });
     }
 
     /**
@@ -327,22 +352,30 @@ public final class PlayerSkeleton {
 
     /**
      * ItemInHandLayer#renderArmWithItem HEAD: the held item an action holds as its prop (player actions S2) is drawn where
-     * the action placed it, not in the hand. True: drawn (the vanilla hand item is skipped).
+     * the action placed it, not in the hand, or not at all while its key hides it. True: the action owns it (the vanilla
+     * hand item is skipped).
      */
     public static boolean drawProp(LivingEntity entity, ItemStack stack, PoseStack pose, MultiBufferSource buffers, int light) {
         Draw d = DRAWS.peek();
         if (d == null || d.player != entity || d.solved == null || d.solved.prop == null || stack != d.player.getMainHandItem()) return false;
         net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (id == null || !ApocalypseFirstLight.MOD_ID.equals(id.getNamespace()) || !d.solved.prop.holds(id.getPath())) return false;
+        if (!d.solved.propHidden) drawPlaced(d, d.solved.prop, d.solved.propPose, d.solved.propOpen, stack, pose, buffers, light);
+        return true;
+    }
+
+    /** A prop at its placement (its model frame to model px), from the model-frame pose stack (blocks). */
+    private static void drawPlaced(Draw d, PlayerProps.Prop prop, Matrix4f propPose, boolean opened, ItemStack stack, PoseStack pose,
+                                   MultiBufferSource buffers, int light) {
         pose.pushPose();
         pose.scale(1F / 16F, 1F / 16F, 1F / 16F);   // model px
-        Matrix4f place = new Matrix4f(d.solved.propPose).mul(d.solved.prop.itemToLocal());   // item block units
+        Matrix4f place = new Matrix4f(propPose).mul(prop.itemToLocal());   // item block units
         pose.last().pose().mul(place);
         Matrix3f normal = new Matrix3f().set(place).invert().transpose();   // mulPoseMatrix would leave the normals unturned
         normal.scale(1F / (float) Math.cbrt(Math.abs(normal.determinant())));
         pose.last().normal().mul(normal);
         Minecraft mc = Minecraft.getInstance();
-        net.minecraft.world.level.block.state.BlockState open = d.solved.propOpen ? openState(d.solved.prop) : null;
+        net.minecraft.world.level.block.state.BlockState open = opened ? openState(prop) : null;
         if (open != null) {
             // the block in its open state (the same geometry, block units as the item's): the jerry can's cap swung off
             mc.getBlockRenderer().renderSingleBlock(open, pose, buffers, light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
@@ -353,7 +386,6 @@ public final class PlayerSkeleton {
                     d.player.level(), light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, d.player.getId());
         }
         pose.popPose();
-        return true;
     }
 
     /** The prop's open block state (PlayerProps.Prop#openBlock, facing north, open), or null. */
@@ -451,21 +483,30 @@ public final class PlayerSkeleton {
             }
             SeatPose.body(in, seat, stand, moment, seated.torso(), eyeModel.y);
         }
-        // a player action (not with a gun up: the gun has both hands): its clips, step and facing before the body
-        ActionPose.Moment action = gun || seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
+        // a player action: its clips, step and facing before the body. With a gun up only the gun's own draw and put-away
+        // (the gun has both hands), and those only with it (docs/dev/p9_draw_holster_actions_v1.md 2.4)
+        ActionPose.Moment action = seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
+        if (action != null && gun != action.action.id.startsWith("gun/")) action = null;
+        if (action != null) action.view = ActionPose.viewFrame(eyeModel, in.viewYaw, in.viewPitch);   // a gun's own: its stance's
         // the own first-person body leaves an action that keeps its view model alone (the view model is the hands)
         if (action != null && firstPerson && action.action.firstPerson == PlayerAction.FirstPerson.VIEW_MODEL) action = null;
         if (action != null && !ActionPose.body(in, poser().rig(), action)) action = null;
         if (action != null && d.world) SkeletonActions.stepped(p, in.rootOffset, toModel);
+        // a gun's stance loops (idle, sprint) on the body under its draw or put-away (docs/dev/p9_stance_loops_v1.md)
+        // the gun's stance as others see it, the own first-person body too: there a held gun is its old view model's
+        // (#firstPersonHands), the body's hands carry one only back to its mount
+        if (gun && seated == null) SkeletonGunStance.stanceClips(p, in, poser().rig(), partial);
         HumanoidPoser.Report report = poser().solveBody(in, out.pose);
         if (seated != null && d.world && seated.move() == SeatPose.Move.NONE) SeatedRiders.solvedTorso(p, report.torso);
         out.hold = null;
         out.prop = null;
+        out.extras.clear();
         if (gun) {
             // the gun hangs on the posed body (its mounts) or the eye; the arms reach for it
             write(model, out.pose);
             float viewYaw = firstPerson ? camera.getYRot() : head, viewPitch = firstPerson ? camera.getXRot() : pitch;
-            out.hold = SkeletonGunStance.hold(p, model, out.pose, in, eye, viewYaw, viewPitch, partial, firstPerson, toModel);
+            out.hold = SkeletonGunStance.hold(p, model, out.pose, in, eye, viewYaw, viewPitch, partial, false, toModel, action);
+            if (out.hold == null) action = null;   // a gun action's hands and prop belong to the stance
         }
         if (out.hold == null) {
             boolean rightMain = p.getMainArm() == HumanoidArm.RIGHT;
@@ -488,6 +529,11 @@ public final class PlayerSkeleton {
                     out.prop = PlayerProps.get(action.action.prop);
                     out.propPose.set(action.prop);
                     out.propOpen = action.propOpen;
+                    out.propHidden = action.propHidden[0];
+                }
+                for (int i = 1; i < action.props.length; i++) {
+                    PlayerProps.Prop extra = action.props[i] == null || action.propHidden[i] ? null : PlayerProps.get(action.action.props.get(i).id());
+                    if (extra != null) out.extras.add(new Solved.Extra(extra, new Matrix4f(action.props[i]), action.propsOpen[i]));
                 }
             }
         }
@@ -563,14 +609,16 @@ public final class PlayerSkeleton {
     }
 
     /**
-     * The own first-person body's hands are the skeleton's: both hands empty, or the BR51 alone (not while one of its
-     * actions plays: reload, draw, inspect keep the old first-person rig in P1). Otherwise the old first-person view model.
+     * The own first-person body's hands are the skeleton's: both hands empty, or an action the body draws in first person
+     * (a gun's put-away to its mount). Otherwise the old first-person view model: a held gun keeps its own (its hip and
+     * ADS hold, rigid arms and clips; user 2026-10-17, docs/dev/first_person_gun_view_v1_design.md), the body's arms and
+     * the gun on them hidden.
      */
     public static boolean firstPersonHands(Player p) {
         if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
         if (SkeletonActions.drawsFirstPerson(p)) return true;
         if (p.isUsingItem()) return false;
-        return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty() || SkeletonGunStance.busy(p);
+        return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -582,7 +630,7 @@ public final class PlayerSkeleton {
 
     // ---------------------------------------------------------------- vanilla parts
 
-    private static ModelPart base(PlayerModel<?> m, String name) {
+    static ModelPart base(PlayerModel<?> m, String name) {
         return switch (name) {
             case "body" -> m.body;
             case "right_arm" -> m.rightArm;
@@ -593,7 +641,7 @@ public final class PlayerSkeleton {
         };
     }
 
-    private static ModelPart layer(PlayerModel<?> m, String name) {
+    static ModelPart layer(PlayerModel<?> m, String name) {
         return switch (name) {
             case "jacket" -> m.jacket;
             case "right_sleeve" -> m.rightSleeve;
@@ -628,7 +676,7 @@ public final class PlayerSkeleton {
     }
 
     /** Vanilla parts <- head, chest, upper arms, thighs; the second layer copies its base as vanilla does. */
-    private static void write(PlayerModel<?> m, SkeletonPose pose) {
+    static void write(PlayerModel<?> m, SkeletonPose pose) {
         SkeletonRig rig = pose.rig;
         set(m.head, pose.world[rig.head], HEAD);
         set(m.body, pose.world[rig.chest], BODY);
@@ -645,7 +693,7 @@ public final class PlayerSkeleton {
     }
 
     /** The part's frame: the bone's skinning matrix at the part's rest pivot, as translation and Z-Y-X angles. */
-    private static void set(ModelPart part, Matrix4f skin, Vector3f pivot) {
+    static void set(ModelPart part, Matrix4f skin, Vector3f pivot) {
         Matrix4f f = new Matrix4f(skin).translate(pivot);
         part.x = f.m30();
         part.y = f.m31();

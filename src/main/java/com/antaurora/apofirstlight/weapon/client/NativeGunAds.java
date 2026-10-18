@@ -34,7 +34,8 @@ public final class NativeGunAds {
                 && mc.player.getMainHandItem().getItem()==item
                 && (gunId==0 || GeoItem.getId(mc.player.getMainHandItem())==gunId);
     }
-    public static void reloadRequested() { reloadRequestTicks=3; }
+    /** A reload asked for: the aim drops until its clip starts, unless aiming (the server then plays the ADS variant). */
+    public static void reloadRequested() { if(bodyProgress(1)<=.5F)reloadRequestTicks=3; }
     public static void leaveForField() { PROGRESS.reset(); }
     static String swayBlockReason(){return blocked;}
     private static String action(NativeGunItem gun,long id) {
@@ -42,6 +43,7 @@ public final class NativeGunAds {
         if(c==null || c.getTriggeredAnimation()==null || c.getAnimationState()==AnimationController.State.STOPPED
                 || c.getCurrentAnimation()==null) return "";
         String clip=c.getCurrentAnimation().animation().name();
+        if(clip.endsWith(NativeGunActions.ADS_SUFFIX))return "";   // an ADS reload keeps the aim (docs/dev/p9_reload_inspect_v1.md 2.7)
         return clip.contains("reload")||clip.equals("draw")||clip.equals("put_away")||clip.equals("inspect")
                 ||clip.equals("inspect_empty")?clip:"";
     }
@@ -67,7 +69,6 @@ public final class NativeGunAds {
         if(mc.player.isSprinting())blocked="sprint";
         if(mc.player.isUsingItem())blocked="item use";
         if(mc.screen!=null||!mc.isWindowActive())blocked="screen/focus";
-        if(!mc.options.getCameraType().isFirstPerson())blocked="third person";
         if(NativeGunInspect.blocksAds())blocked="inspect/release aim";
         float ticks=gun.definition().adsTicks();
         PROGRESS.tick(blocked.isEmpty()&&mc.options.keyUse.isDown(),ticks,ticks);
@@ -75,10 +76,14 @@ public final class NativeGunAds {
             ApocalypseFirstLight.LOGGER.info("[AFL ADS] gun={} progress={} blocked={} HIP={} ADS={} correction={} FOV={}",
                     gun.definition().id(),PROGRESS.sample(1),blocked,profile.hip(),profile.ads(),profile.translation(),gun.definition().adsFov());
     }
+    /** The first-person ADS: view-model correction, FOV, sway, crosshair and the aimed shot. 0 in third person. */
     public static float progress(float partial) {
+        return Minecraft.getInstance().options.getCameraType().isFirstPerson()?bodyProgress(partial):0;
+    }
+    /** The aim held in any camera: the own body raises the gun by it in third person too (SkeletonGunStance). */
+    public static float bodyProgress(float partial) {
         if(FieldAttachmentViewState.isActive())return 0;
-        var mc=Minecraft.getInstance();
-        return same(mc)&&profile!=null&&mc.options.getCameraType().isFirstPerson()?PROGRESS.sample(partial):0;
+        return same(Minecraft.getInstance())&&profile!=null?PROGRESS.sample(partial):0;
     }
     public static void apply(PoseStack pose,boolean right,float partial) {
         float p=progress(partial);if(p<=0)return;

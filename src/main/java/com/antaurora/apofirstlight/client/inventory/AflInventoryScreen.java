@@ -56,8 +56,8 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     private static final long DRAG_WAIT_NANOS = 600_000_000L;
     private static final float LABEL = 5.2F;
     private static final int PLACEHOLDER = -1;
-    /** Menu indices: 2x2 crafting result and grid, armour (head, chest, legs, feet), off hand, the AFL Curios slots. */
-    private static final int RESULT = 0, CRAFT = 1, HEAD = 5, CHEST = 6, LEGS = 7, FEET = 8, OFFHAND = 45;
+    /** Menu indices: 2x2 crafting result and grid, armour (head, chest, legs, feet), the AFL Curios slots (no off hand: NoOffHand). */
+    private static final int RESULT = 0, CRAFT = 1, HEAD = 5, CHEST = 6, LEGS = 7, FEET = 8;
     private static final int BACK_SLOT = 46, WRIST_SLOT = 47, EARS_SLOT = 48, RIG_SLOT = 49, HOLSTER_SLOT = 50;
     /** Menu indices of the weapon positions and the hand (hotbar 0..3, HotbarRoles). */
     private static final int PRIMARY_MENU = 36, PISTOL_MENU = 37, MELEE_MENU = 38, HAND_MENU = 39;
@@ -381,9 +381,6 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         text(g, Component.literal("→"), C_X + 55, C_Y + 26, 9, AflUiStyle.TEXT_DIM, 1);
         slotBox(g, C_X + 72, C_Y + 18, BOX, BOX);
         hits.add(new SlotHit(menu.getSlot(RESULT), C_X + 72, C_Y + 18, BOX, BOX));
-        label(g, "offhand", C_X + 126, C_Y + 18);
-        slotBox(g, C_X + 126, C_Y + 18, BOX, BOX);
-        hits.add(new SlotHit(menu.getSlot(OFFHAND), C_X + 126, C_Y + 18, BOX, BOX));
     }
 
     /** Whatever lies where it cannot be put now: the unused vanilla slots, and grid stacks that fit nowhere. */

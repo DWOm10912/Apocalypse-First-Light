@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "50";
+    private static final String PROTOCOL = "52";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -195,6 +195,11 @@ public final class AflNetwork {
     /** Survivor Death and Succession V0: a player's survivor identity (name and look), to every client. */
     public static void survivorToAll(Object packet) {
         if (channel != null) channel.send(PacketDistributor.ALL.noArg(), packet);
+    }
+
+    /** Ragdoll V1: a corpse's falling pose, to the clients that track it. */
+    public static void survivorToTracking(net.minecraft.world.entity.Entity entity, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity), packet);
     }
 
     /** Survivor Death and Succession V0 (client): the host's mode choice, the first survivor's name choice. */

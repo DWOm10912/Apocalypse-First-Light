@@ -1,7 +1,9 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
+import com.antaurora.vextris.client.MeshGpuCache;
 import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshLayer;
 import com.antaurora.vextris.mesh.MeshModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -15,6 +17,7 @@ import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.renderer.GeoItemRenderer;
+import software.bernie.geckolib.util.RenderUtils;
 
 /** Shared context policy for both configured guns and the original pistol renderer. */
 public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemRenderer<T> {
@@ -29,20 +32,35 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
      */
     private static boolean skeletonAnimated;
     private static String skeletonStill;
+    private static java.util.Map<String, org.joml.Matrix4f> skeletonParts = java.util.Map.of();
 
     /** Set around one skeleton draw of a gun; {@link #skeletonDrawEnd} after. */
     public static void skeletonDraw(boolean animated, String still) {
+        skeletonDraw(animated, still, java.util.Map.of());
+    }
+
+    /**
+     * As {@link #skeletonDraw(boolean, String)}, with bones the skeleton's action places itself (docs/dev/p9_reload_inspect_v1.md
+     * 3: a reload's magazines as props): bone name to its frame in the gun's GeckoLib frame (blocks, about the root's
+     * origin), drawn there at its bind pose with its subtree unscaled; null hides the bone and its subtree.
+     */
+    public static void skeletonDraw(boolean animated, String still, java.util.Map<String, org.joml.Matrix4f> parts) {
         skeletonAnimated = animated;
         skeletonStill = still;
+        skeletonParts = parts;
     }
 
     public static void skeletonDrawEnd() {
         skeletonAnimated = false;
         skeletonStill = null;
+        skeletonParts = java.util.Map.of();
     }
 
     /** The bone held still for the skeleton's draw, or null. */
     protected static String skeletonStill() { return skeletonStill; }
+
+    /** The bones the skeleton's action places itself (#skeletonDraw), empty when none. */
+    protected static java.util.Map<String, org.joml.Matrix4f> skeletonParts() { return skeletonParts; }
 
     protected NativeGunContextRenderer(GeoModel<T> model, String idle) {
         super(model);
@@ -87,7 +105,33 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         // This per-bone geometry hook also runs on reRender. GeoRenderLayers do not.
         // Parent hiding and NativeAnimatedWeaponRenderer's replacement/early-return policy
         // already control entry here. The backend checks the bone's own hidden flag.
-        if (mesh != null && !skipMeshShadow) NativeGunRenderProfile.render(mesh, bone, pose, buffer, light, overlay,
-                red, green, blue, alpha, currentItemStack, renderPerspective);
+        if (mesh != null && !skipMeshShadow && !drawCached(pose, bone, light, overlay, red, green, blue, alpha))
+            NativeGunRenderProfile.render(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha, currentItemStack, renderPerspective);
+    }
+
+    /**
+     * P9 V3 game model (docs/native_guns/p9_01_v3_game_model_v1.md 5): a gun mesh with shading normals (Vextris format 3,
+     * crease_angle) is drawn from the Vextris GPU cache in first and third person. Under a shader pack the cache keeps its
+     * smooth parts as TRIANGLES, while GeckoLib's QUADS consumer would let Oculus replace their normals per face (the
+     * curved parts would look faceted against their baked normal map); it also stops resubmitting the mesh every frame.
+     * Format 1 / 2 meshes, other display contexts, Oculus' translucent hand phase and -Dvextris.gpuCache=false keep the CPU
+     * path. Returns whether the bone's parts are drawn.
+     */
+    private boolean drawCached(PoseStack pose, GeoBone bone, int light, int overlay, float red, float green, float blue, float alpha) {
+        if (mesh.formatVersion() < 3 || !MeshGpuCache.enabled() || renderPerspective == null || animatable == null) return false;
+        boolean firstPerson = renderPerspective.firstPerson();
+        boolean thirdPerson = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
+                || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+        if (!firstPerson && !thirdPerson) return false;
+        if (firstPerson && "HAND_TRANSLUCENT".equals(AflShaderCompat.handPhase())) return false;
+        if (bone.isHidden() || mesh.parts(bone.getName(), MeshLayer.CUTOUT).isEmpty()) return true;
+        pose.pushPose();
+        try {
+            RenderUtils.translateToPivotPoint(pose, bone);
+            return MeshGpuCache.drawBone(mesh, bone.getName(), MeshLayer.CUTOUT, MeshGpuCache.ALL_PARTS,
+                    getGeoModel().getTextureResource(animatable), pose, light, overlay, red, green, blue, alpha);
+        } finally {
+            pose.popPose();
+        }
     }
 }

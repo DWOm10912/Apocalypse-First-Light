@@ -2,7 +2,8 @@
 // Rebuilds the in-game chain: [P9 composition offset] -> item Display -> GeckoLib bone matrices (Blockbench source
 // values) -> NativePlayerArmRenderer (canonical anchor, presentation scale .62/.78/.62, Vanilla 4x12x4 arm).
 //   node tools/preview-fp-arms.mjs <gun> <clip> <t1,t2,...> <out.png> [--gun2 <gun> <clip>]
-//   gun = p9_01 (legacy rig) | p9_01_v2_native | blackridge_50
+//   gun = p9_01 (legacy rig) | p9_01_v2_native | p9_01_v3_native | blackridge_50; <gun>@ads = fully aimed down the sights
+//   (guns with a `def`: NativeGunAds#apply's correction ads() * hip()^-1 on the display, the FOV times ads.fov_multiplier)
 // Colours: grey = gun meshes, amber = magazines, blue = right arm, green = left arm.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,6 +16,8 @@ const read = p => JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''));
 const GUNS = {
   p9_01: {src: 'src/main/blockbench/p9_01.bbmodel', display: 'models/item/p9_01_in_hand.json', comp: [0.07, 0.045], right: 'right_hand_anchor', left: 'left_hand_anchor'},
   p9_01_v2_native: {src: 'src/main/blockbench/p9_01_v2_native.bbmodel', display: 'models/item/p9_01_v2_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor'},
+  p9_01_v3_native: {src: 'src/main/blockbench/p9_01_v3_native.bbmodel', display: 'models/item/p9_01_v3_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor',
+    def: 'src/main/resources/data/apocalypse_firstlight/native_guns/p9_01.json'},
   blackridge_50: {src: 'src/main/blockbench/blackridge_50.bbmodel', display: 'models/item/blackridge_50_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor'},
 };
 
@@ -38,12 +41,22 @@ function sample(keys, ch, t, def) {
   return vec(a).map((n, j) => n + (vec(b)[j] - n) * u);
 }
 
-export function rig(gun) {
+/** NativeAdsProfile#ads (the display's own hip() cancels against the item display): sights at the eye, eye_relief ahead. */
+function adsBase(def) {
+  const a = def.ads.profile, r = a.ads_rotation || [0, 0, 0];
+  return chain(T([0, 0, -a.eye_relief]), S([a.scale, a.scale, a.scale]), R(0, r[0]), R(1, r[1]), R(2, r[2]), T(sc(a.aim, -1 / 16)));
+}
+
+export function rig(name) {
+  const [gun, mode] = name.split('@'), ads = mode === 'ads';
   const cfg = GUNS[gun], src = read(path.join(root, cfg.src)), disp = read(path.join(assets, cfg.display)).display.firstperson_righthand;
+  const def = cfg.def ? read(path.join(root, cfg.def)) : null;
+  if (ads && !def) throw new Error(gun + ': no gun definition for @ads');
+  const fovHalf = 35 * (ads ? def.ads.fov_multiplier : 1);   // vanilla FOV 70 (vertical), ADS times fov_multiplier
   const groups = new Map(src.groups.map(g => [g.uuid, g])), by = new Map(src.groups.map(g => [g.name, g])), parents = new Map(), owner = new Map();
   (function walk(nodes, parent) { for (const n of nodes) { if (typeof n === 'string') owner.set(n, parent); else { const g = groups.get(n.uuid); parents.set(g.name, parent); walk(n.children || [], g.name); } } })(src.outliner, null);
   const r = disp.rotation || [0, 0, 0], tr = disp.translation.map(n => n / 16);
-  const base = chain(T([cfg.comp[0], cfg.comp[1], 0]), T(tr), R(0, r[0]), R(1, r[1]), R(2, r[2]), S(disp.scale), T([0, 0.01, 0]));
+  const base = ads ? adsBase(def) : chain(T([cfg.comp[0], cfg.comp[1], 0]), T(tr), R(0, r[0]), R(1, r[1]), R(2, r[2]), S(disp.scale), T([0, 0.01, 0]));
   function scene(clip, t) {
     const anim = src.animations.find(a => a.name === clip || a.name.endsWith('.' + clip)), cache = new Map();
     const matrix = name => { if (!name) return base; if (cache.has(name)) return cache.get(name);
@@ -54,7 +67,7 @@ export function rig(gun) {
     const anchor = name => chain(matrix(name), T(sc(by.get(name).origin, 1 / 16)));
     return {matrix, anchor};
   }
-  return {cfg, src, by, owner, scene};
+  return {cfg, src, by, owner, scene, fovHalf, ads};
 }
 
 // Vanilla player arm (Classic) in the canonical anchor frame, exactly as NativePlayerArmRenderer + NativeHandBinding.
@@ -65,7 +78,7 @@ export function armMatrix(anchorM, right) {
 const ARM_BOX = right => right ? [[-3, -2, -2], [1, 10, 2]] : [[-1, -2, -2], [3, 10, 2]];
 
 function renderFrame(g, clip, t, W, H, pixels, zbuf, ox, oy, stride) {
-  const sc2 = g.scene(clip, t), f = H / 2 / Math.tan(35 * Math.PI / 180);
+  const sc2 = g.scene(clip, t), f = H / 2 / Math.tan(g.fovHalf * Math.PI / 180);
   const drawPoly = (P, color) => {
     const clipped = []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], ia = a[2] <= -0.025, ib = b[2] <= -0.025; if (ia) clipped.push(a); if (ia !== ib) { const q = (-0.025 - a[2]) / (b[2] - a[2]); clipped.push(a.map((v, j) => v + (b[j] - v) * q)); } }
     if (clipped.length < 3) return;

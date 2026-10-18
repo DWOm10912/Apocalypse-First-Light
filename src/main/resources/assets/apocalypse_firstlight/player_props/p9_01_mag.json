@@ -1,0 +1,33 @@
+{
+  "about": "The P9's fresh magazine as a player action's prop (docs/dev/p9_reload_inspect_v1.md 3): the gun's own mag_out bone, drawn by the gun renderer where the action places this prop (gun_part); its frame is the gun's (the magazine seated when it sits on the gun prop unturned), same scale. Points: top (the magazine pivot), base (the base plate). Written by tools/author-p9-01-reload-actions.mjs.",
+  "items": [],
+  "gun_part": {
+    "gun": "p9_01",
+    "bone": "mag_out"
+  },
+  "scale": 0.49467,
+  "bounds": [
+    [
+      -0.045247,
+      -0.06159,
+      0.05038
+    ],
+    [
+      0.045247,
+      0.26362,
+      0.28979
+    ]
+  ],
+  "points": {
+    "top": [
+      0,
+      0.22495,
+      0.102938
+    ],
+    "base": [
+      0,
+      -0.037641,
+      0.218671
+    ]
+  }
+}

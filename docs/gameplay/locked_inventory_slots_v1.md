@@ -45,7 +45,7 @@
 
 使用 `Player.isCreative()` / `isSpectator()`；当前 Minecraft 服务端读取真实 game mode，客户端读取同步的 PlayerInfo game mode。不用 `mayBuild` 推断模式。每次交互与界面绘制即时查询，无 tick 轮询、额外网络包或独立玩家存档。
 
-Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得内部储物索引；不依据菜单中的 `Slot.index` 或 GUI 坐标。36 格原版数组与布局保留；盔甲、副手、合成、容器及机器槽不锁定。
+Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得内部储物索引；不依据菜单中的 `Slot.index` 或 GUI 坐标。36 格原版数组与布局保留；盔甲、合成、容器及机器槽不锁定。副手 2026-10-16 起整个去掉（任何模式都放不进，见 `docs/ui/afl_inventory_grid_v0_plan.md` 第 16 节）。
 
 ## 锁定及 Overflow
 
@@ -53,7 +53,7 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 - **LOCKED_OCCUPIED**：保留原 ItemStack/NBT 与索引；可整组、拆分、Shift 或双击收集取出，不可向该槽追加/换入物品。取空后自然成为 LOCKED_EMPTY。
 - 切换模式不搬运、清除或抛出已有物品。读取、存档、`setItem` 状态恢复及 `replaceWith` 未被限制；管理员直接写入锁定槽可形成 Overflow。`/clear` 保持原版。
 - 容量机制本身不另作死亡处理。2026-10-14 起生存 / 冒险模式的死亡由幸存者死亡与随机继任 V0 接管：全部 36 格（含锁定格 Overflow）、盔甲、副手与 Curios 物品进入尸体，keepInventory 不再保留物品，继任者空手开始，见 [survivor_death_succession_v0.md](survivor_death_succession_v0.md)。Overflow 仍保存在原版物品栏，[Weight Core V1](weight_system_v1.md) 独立读取全部36格计重，不改变这里的容量规则。
-- `/give`、关闭容器返还与现有交易的“无空间”回退沿用原有逻辑。地面拾取在无合法目标时保留地面实体，不做拾取后立即丢出的处理。副手已有兼容堆叠仍可按原版合并。
+- `/give`、关闭容器返还与现有交易的“无空间”回退沿用原有逻辑。地面拾取在无合法目标时保留地面实体，不做拾取后立即丢出的处理。拾取不再合并进副手（2026-10-16 起没有副手）。
 
 ## 共用执行路径
 

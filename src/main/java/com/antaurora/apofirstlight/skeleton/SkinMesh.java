@@ -23,12 +23,25 @@ public final class SkinMesh {
 
     /** One part (base or second layer) in the given pose. */
     public static void emit(SkeletonPose pose, SkeletonRig.SkinPart part, boolean slim, boolean overlay, Sink sink) {
+        emit(pose, part, slim, overlay, 1F, sink);
+    }
+
+    /**
+     * One part, {@code thick} as wide (its box's x about the middle; 1 = as it is; depth and length as they are): the own
+     * first person's narrower arms with a pistol held out (GunStance#firstPersonArm). The UV stays the box's.
+     */
+    public static void emit(SkeletonPose pose, SkeletonRig.SkinPart part, boolean slim, boolean overlay, float thick, Sink sink) {
         SkeletonRig rig = pose.rig;
         SkeletonRig.Box b = part.box(slim);
         float g = overlay ? rig.overlayInflate : 0F;
         int u = overlay ? part.overlayU() : part.u(), v = overlay ? part.overlayV() : part.v();
         int w = b.w(), h = b.h(), d = b.d();
         float x0 = b.x() - g, x1 = b.x() + w + g, z0 = b.z() - g, z1 = b.z() + d + g, top = b.y() - g;
+        if (thick != 1F) {
+            float cx = b.x() + w / 2F;
+            x0 = cx + (x0 - cx) * thick;
+            x1 = cx + (x1 - cx) * thick;
+        }
         float stretch = (h + 2 * g) / h;
         int[] bones = part.bones();
         int rings = bones.length + 1;

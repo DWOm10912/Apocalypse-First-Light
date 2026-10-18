@@ -58,6 +58,9 @@ public final class NativeGunActions {
         SESSIONS.clear(); NEXT_FIRE.clear(); NEXT_DRY_FIRE.clear();
     }
 
+    /** A reload clip's variant played while aiming down the sights. */
+    public static final String ADS_SUFFIX = "_ads";
+
     public static String animationName(boolean reload) { return reload ? "reload_tactical" : "shoot"; }
 
     /** Read-only guard for atomic attachment changes, sharing the existing action lock. */
@@ -155,6 +158,11 @@ public final class NativeGunActions {
         state.lastShot = lastShot;
         state.clip = reload ? item.reloadClip(held, state.reloadStartedEmpty)
                 : item.fireClip(state.lastShot);
+        // started while aiming: the clip's ADS variant (<clip>_ads, same length and beats; docs/dev/p9_reload_inspect_v1.md
+        // 2.7) when the gun has one, and the client keeps the aim through it (NativeGunAds)
+        if (reload && com.antaurora.apofirstlight.skeleton.SkeletonPackets.aiming(player) && item.animationAsset() != null
+                && NativeGunAnimations.hasClip(item.animationAsset(), state.clip + ADS_SUFFIX))
+            state.clip += ADS_SUFFIX;
         if (reload && item.animationAsset() != null) state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);

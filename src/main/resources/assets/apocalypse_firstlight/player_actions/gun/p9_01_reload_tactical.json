@@ -1,0 +1,421 @@
+{
+  "format_version": 1,
+  "about": "P9 tactical reload, trained tier (gun/p9_01_reload_tactical; docs/dev/p9_reload_inspect_v1.md 2-3): the gun comes up before the upper chest rolled so its magwell faces the support hand; the thumb drops the old magazine (it falls to the ground); the support hand takes a fresh one from the belt pouch at the left front, brings it up and seats it with the palm; back to the chest ready. Same beats and length as the first-person clip; the own first person shows the view model. Written by tools/author-p9-01-reload-actions.mjs.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 1.7,
+  "props": [
+    {
+      "id": "p9_01",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.3,
+            6.6,
+            -7.4
+          ],
+          "rot": [
+            -156.887,
+            5.521,
+            177.648
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.5,
+            1.6,
+            -9.6
+          ],
+          "rot": [
+            149.905,
+            4.329,
+            -149.495
+          ],
+          "blend": 0.28
+        },
+        {
+          "at": 0.34,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            0.3,
+            2.5,
+            -9.1
+          ],
+          "rot": [
+            154.785,
+            7.246,
+            -148.601
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 0.86,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.3,
+            1.9,
+            -9.4
+          ],
+          "rot": [
+            149.619,
+            8.649,
+            -152.962
+          ],
+          "blend": 0.12
+        },
+        {
+          "at": 0.93,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.3,
+            6.6,
+            -7.4
+          ],
+          "rot": [
+            -156.887,
+            5.521,
+            177.648
+          ],
+          "blend": 0.41
+        }
+      ]
+    },
+    {
+      "id": "p9_01_mag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5.2,
+            10.4,
+            -4.6
+          ],
+          "rot": [
+            158,
+            0,
+            -180
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.28,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5.2,
+            10.4,
+            -4.6
+          ],
+          "rot": [
+            158,
+            0,
+            -180
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.3,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            2.6,
+            8,
+            -8
+          ],
+          "rot": [
+            152.85,
+            16.126,
+            -131.894
+          ],
+          "blend": 0.18
+        },
+        {
+          "at": 0.48,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            0.146,
+            -1.593
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.14
+        },
+        {
+          "at": 0.62,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.368,
+            -0.982
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.12
+        },
+        {
+          "at": 0.82,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.04
+        },
+        {
+          "at": 0.86,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "p9_01_mag_old",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.24,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            -1.78,
+            -0.815
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.24,
+          "frame": "prop:p9_01",
+          "point": "top",
+          "pos": [
+            0,
+            0.467,
+            -1.723
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.08
+        },
+        {
+          "at": 0.32,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.64,
+            3.057,
+            -8.732
+          ],
+          "rot": [
+            123.036,
+            8.506,
+            -136.963
+          ],
+          "blend": 0.1044
+        },
+        {
+          "at": 0.4244,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.64,
+            5.625,
+            -8.962
+          ],
+          "rot": [
+            95.883,
+            12.684,
+            -124.431
+          ],
+          "blend": 0.1044
+        },
+        {
+          "at": 0.5289,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.64,
+            9.905,
+            -9.191
+          ],
+          "rot": [
+            68.729,
+            16.861,
+            -111.898
+          ],
+          "blend": 0.1044
+        },
+        {
+          "at": 0.6333,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.64,
+            15.896,
+            -9.421
+          ],
+          "rot": [
+            41.576,
+            21.039,
+            -99.366
+          ],
+          "blend": 0.1044
+        },
+        {
+          "at": 0.7377,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.64,
+            23.6,
+            -9.651
+          ],
+          "rot": [
+            14.423,
+            25.216,
+            -86.834
+          ],
+          "blend": 0.1044
+        },
+        {
+          "at": 0.8622,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.64,
+            23.6,
+            -9.651
+          ],
+          "rot": [
+            14.423,
+            25.216,
+            -86.834
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:p9_01:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.27,
+          0.89,
+          0.37
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:p9_01:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      },
+      {
+        "at": 0.02,
+        "target": "prop:p9_01_mag:base",
+        "blend": 0.26,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 0.9,
+        "target": "prop:p9_01:grip_l",
+        "blend": 0.38,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      }
+    ]
+  },
+  "events": []
+}

@@ -22,6 +22,8 @@ import java.util.UUID;
  */
 public final class SurvivorCorpseRecord {
     static final int MAX_SLOTS = 54;
+    /** The saved pose's layout: 1 = Ragdoll V1, 11 boxes x 7 floats. */
+    static final int POSE_VERSION = 1;
 
     final UUID id;
     final UUID playerId;
@@ -29,9 +31,10 @@ public final class SurvivorCorpseRecord {
     final String survivorName;
     final int lifeIndex;
     final String dimension;
-    final double x;
-    final double y;
-    final double z;
+    /** Where the body lies (the entity's place): the death's place, then where its ragdoll came to rest. */
+    double x;
+    double y;
+    double z;
     final float yaw;
     final long deathGameTime;
     final long deathDayTime;
@@ -39,6 +42,16 @@ public final class SurvivorCorpseRecord {
     String skin = SurvivorSkins.ACCOUNT;
     SurvivorSkins.Arms arms = SurvivorSkins.Arms.ACCOUNT;
     NonNullList<ItemStack> items = NonNullList.withSize(9, ItemStack.EMPTY);
+    /**
+     * Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 3): the pose the body came to rest in (RagdollSnapshot, relative to x y z),
+     * or null: a body from before V1, a death that did not fall as a ragdoll, or one still falling. Null lies on its back.
+     */
+    @Nullable float[] pose;
+    /**
+     * Ragdoll V1: the body stopped in the air or below the world when its chunk unloaded (the level may not be read
+     * then); it lies down on the surface below when its entity is put back (SurvivorCorpses#tick).
+     */
+    boolean unsettled;
     final AflContainerSearchState search = new AflContainerSearchState();
 
     /** The data this record belongs to (dirty marking); set on add and load. */
@@ -104,6 +117,26 @@ public final class SurvivorCorpseRecord {
         return overflow;
     }
 
+    /** The body came to rest: its place and pose. */
+    void rest(double x, double y, double z, @Nullable float[] pose) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.pose = pose;
+        this.unsettled = false;
+        changed();
+    }
+
+    /** The body stopped where it hung (chunk unloaded mid-fall): no pose, put on the ground later. */
+    void stopInAir(double x, double y, double z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.pose = null;
+        this.unsettled = true;
+        changed();
+    }
+
     void changed() {
         if (owner != null) owner.setDirty();
     }
@@ -127,6 +160,13 @@ public final class SurvivorCorpseRecord {
         tag.putInt("Size", items.size());
         ContainerHelper.saveAllItems(tag, items, true);
         search.save(tag);
+        if (pose != null) {
+            tag.putInt("PoseV", POSE_VERSION);
+            net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+            for (float f : pose) list.add(net.minecraft.nbt.FloatTag.valueOf(f));
+            tag.put("Pose", list);
+        }
+        if (unsettled) tag.putBoolean("Unsettled", true);
         return tag;
     }
 
@@ -145,6 +185,15 @@ public final class SurvivorCorpseRecord {
         r.items = NonNullList.withSize(size, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, r.items);
         r.search.load(tag);
+        if (tag.getInt("PoseV") == POSE_VERSION && tag.contains("Pose", Tag.TAG_LIST)) {
+            net.minecraft.nbt.ListTag list = tag.getList("Pose", Tag.TAG_FLOAT);
+            float[] pose = new float[list.size()];
+            for (int i = 0; i < pose.length; i++) pose[i] = list.getFloat(i);
+            // a pose of another body layout (a later rig) is dropped: the body lies on its back
+            if (com.antaurora.apofirstlight.skeleton.ragdoll.RagdollSnapshot.valid(pose,
+                    com.antaurora.apofirstlight.skeleton.ragdoll.RagdollDefinition.get().bodies.length)) r.pose = pose;
+        }
+        r.unsettled = tag.getBoolean("Unsettled");
         return r;
     }
 }

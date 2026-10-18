@@ -30,7 +30,7 @@ public final class NativeGunRuntimeSmokeCheck {
         try {
             check(AflItems.P9_01.get() instanceof ConfiguredNativeGunItem, "item registry");
             var item = (ConfiguredNativeGunItem) AflItems.P9_01.get();
-            check(item.profile.id().equals("p9_01_v2_native"), "P9 V2 profile");
+            check(item.profile.id().equals("p9_01_v3_native"), "P9 V3 profile");
             check(net.minecraftforge.client.extensions.common.IClientItemExtensions.of(item.getDefaultInstance())
                     .getCustomRenderer() instanceof NativeAnimatedWeaponRenderer<?>, "generic renderer");
             var geo = GeckoLibCache.getBakedModels().get(item.profile.resource("geo", ".geo.json"));

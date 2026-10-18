@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.dev;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.equipment.AflEquipmentSlots;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
+import com.antaurora.apofirstlight.inventory.NoOffHand;
 import com.antaurora.apofirstlight.inventory.grid.GridActions;
 import com.antaurora.apofirstlight.inventory.grid.GridContainerItem;
 import com.antaurora.apofirstlight.inventory.grid.GridLayout;
@@ -21,12 +22,18 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.util.FakePlayerFactory;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -238,6 +245,44 @@ public final class GridInventoryGameTests {
         h.assertTrue(player.inventoryMenu.getSlot(1).getItem().isEmpty() && inventory.getItem(HotbarRoles.HAND_SLOT).isEmpty()
                 && inGrids(player, Items.OAK_PLANKS),
                 "shift-click out of the crafting grid lands in the grids, never in the hand");
+        h.succeed();
+    }
+
+    /** No off hand (plan 16, inventory/NoOffHand), and guns held right-handed (mixin/PlayerGunRightArmMixin). */
+    @GameTest(template = "network_empty")
+    public static void noOffHand(GameTestHelper h) {
+        var player = survivor(h, "grid_no_off_hand");
+        var inventory = player.getInventory();
+        var menu = player.inventoryMenu;
+        wear(player, AflEquipmentSlots.BACK, new ItemStack(AflItems.CANVAS_BACKPACK.get()));
+        menu.setCarried(new ItemStack(Items.TORCH, 8));
+        menu.clicked(InventoryMenu.SHIELD_SLOT, 0, ClickType.PICKUP, player);
+        h.assertTrue(inventory.offhand.get(0).isEmpty() && menu.getCarried().getCount() == 8, "a click does not put anything into the off hand");
+        menu.setCarried(ItemStack.EMPTY);
+        inventory.items.set(HotbarRoles.HAND_SLOT, new ItemStack(Items.TORCH, 8));
+        menu.clicked(InventoryMenu.USE_ROW_SLOT_START + HotbarRoles.HAND_SLOT, Inventory.SLOT_OFFHAND, ClickType.SWAP, player);
+        h.assertTrue(inventory.offhand.get(0).isEmpty() && inventory.items.get(HotbarRoles.HAND_SLOT).getCount() == 8,
+                "F over a slot does not swap it into the off hand");
+        h.assertTrue(ForgeHooks.onLivingSwapHandItems(player).isCanceled(), "the swap-hands key is cancelled");
+
+        inventory.offhand.set(0, new ItemStack(Items.FLINT, 5));   // an older save, a command
+        NoOffHand.playerTick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
+        h.assertTrue(inventory.offhand.get(0).isEmpty() && inGrids(player, Items.FLINT), "what is in the off hand goes into the grids");
+        player.setGameMode(GameType.CREATIVE);
+        menu.setCarried(new ItemStack(Items.TORCH, 8));
+        menu.clicked(InventoryMenu.SHIELD_SLOT, 0, ClickType.PICKUP, player);
+        h.assertTrue(inventory.offhand.get(0).isEmpty(), "no off hand in Creative either");
+        menu.setCarried(ItemStack.EMPTY);
+        player.setGameMode(GameType.SURVIVAL);
+
+        player.setMainArm(HumanoidArm.LEFT);
+        wear(player, AflEquipmentSlots.HOLSTER, new ItemStack(AflItems.PISTOL_HOLSTER.get()));
+        inventory.items.set(HotbarRoles.PISTOL_SLOT, new ItemStack(AflItems.P9_01.get()));
+        inventory.selected = HotbarRoles.PISTOL_SLOT;
+        h.assertTrue(player.getMainArm() == HumanoidArm.RIGHT, "a gun is held right-handed whatever the Main Hand option");
+        inventory.selected = HotbarRoles.MELEE_SLOT;
+        h.assertTrue(player.getMainArm() == HumanoidArm.LEFT, "other items keep the Main Hand option");
+        player.setMainArm(HumanoidArm.RIGHT);
         h.succeed();
     }
 
@@ -565,7 +610,7 @@ public final class GridInventoryGameTests {
     /**
      * What the other players' clients are sent of a carrier's body (CarriedWeaponsSync): the slung primary on the back
      * and its sling, the pistol in the holster while one is worn; a gun in the hand is not on the body (the sling still
-     * is); nothing in creative.
+     * is); creative the same, by the guns' roles; nothing for a spectator.
      */
     @GameTest(template = "network_empty")
     public static void carriedWeaponsShown(GameTestHelper h) {
@@ -591,10 +636,19 @@ public final class GridInventoryGameTests {
         inventory.selected = HotbarRoles.HAND_SLOT;
         shown = com.antaurora.apofirstlight.inventory.grid.CarriedWeaponsSync.of(player);
         h.assertTrue(shown.back().isEmpty() && !shown.sling(), "a rifle without a sling is not on the back");
+        // creative by the same rules (user 2026-10-17: a P9 put back into the holster vanished), the guns' roles checked:
+        // its hotbar takes anything at index 1
         player.setGameMode(GameType.CREATIVE);
+        shown = com.antaurora.apofirstlight.inventory.grid.CarriedWeaponsSync.of(player);
+        h.assertTrue(ItemStack.matches(pistol, shown.thigh()), "creative: the pistol in the holster");
+        inventory.setItem(HotbarRoles.PISTOL_SLOT, slung(AflItems.BR51_01.get()));
+        shown = com.antaurora.apofirstlight.inventory.grid.CarriedWeaponsSync.of(player);
+        h.assertTrue(shown.thigh().isEmpty(), "creative: a rifle at the pistol's index is not in the holster");
+        player.setGameMode(GameType.SPECTATOR);
         h.assertTrue(com.antaurora.apofirstlight.inventory.grid.CarriedWeaponsSync.of(player) == com.antaurora.apofirstlight.inventory.grid.CarriedWeaponsSync.Shown.NONE,
-                "creative: nothing on the body");
+                "spectator: nothing on the body");
         player.setGameMode(GameType.SURVIVAL);
+        inventory.setItem(HotbarRoles.PISTOL_SLOT, ItemStack.EMPTY);
         wear(player, AflEquipmentSlots.HOLSTER, ItemStack.EMPTY);
         h.succeed();
     }

@@ -59,6 +59,32 @@ public final class SurvivorPackets {
     public record NameChoice(String name) {
     }
 
+    /**
+     * Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 3), server to the clients tracking a corpse: its falling body's boxes
+     * (RagdollSnapshot relative to {@code origin}) every tick, and once more with {@code last} when it is still (then
+     * {@code origin} is where it lies; an empty pose: it lies on its back).
+     */
+    public record CorpsePose(int entity, net.minecraft.world.phys.Vec3 origin, float[] pose, boolean last) {
+    }
+
+    /** A pose as a count and floats (0: none). */
+    public static void writePose(net.minecraft.network.FriendlyByteBuf b, @org.jetbrains.annotations.Nullable float[] pose) {
+        if (pose == null) {
+            b.writeVarInt(0);
+            return;
+        }
+        b.writeVarInt(pose.length);
+        for (float f : pose) b.writeFloat(f);
+    }
+
+    public static float[] readPose(net.minecraft.network.FriendlyByteBuf b) {
+        int n = b.readVarInt();
+        if (n < 0 || n > 256) throw new IllegalArgumentException("corpse pose of " + n + " floats");
+        float[] pose = new float[n];
+        for (int i = 0; i < n; i++) pose[i] = b.readFloat();
+        return pose;
+    }
+
     public static int register(SimpleChannel channel, int id) {
         channel.registerMessage(id++, Summary.class, (p, b) -> {
             b.writeUtf(p.name(), 64);
@@ -94,6 +120,16 @@ public final class SurvivorPackets {
         channel.registerMessage(id++, NameChoice.class, (p, b) -> b.writeUtf(p.name(), 64), b -> new NameChoice(b.readUtf(64)),
                 (p, s) -> server(s, player -> SurvivorIdentity.onNameChoice(player, p.name())),
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(id++, CorpsePose.class, (p, b) -> {
+            b.writeVarInt(p.entity());
+            b.writeDouble(p.origin().x);
+            b.writeDouble(p.origin().y);
+            b.writeDouble(p.origin().z);
+            writePose(b, p.pose());
+            b.writeBoolean(p.last());
+        }, b -> new CorpsePose(b.readVarInt(), new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),
+                readPose(b), b.readBoolean()),
+                (p, s) -> client(s, () -> SurvivorClient.corpsePose(p)), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
 

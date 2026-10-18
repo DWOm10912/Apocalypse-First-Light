@@ -42,6 +42,12 @@ public final class SurvivorEvents {
         Survivors.resolveStartMode(event.getServer());
     }
 
+    /** Ragdoll V1: bodies still falling stop and are written down before the world is saved. */
+    @SubscribeEvent
+    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        SurvivorRagdolls.stopAll(event.getServer());
+    }
+
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;

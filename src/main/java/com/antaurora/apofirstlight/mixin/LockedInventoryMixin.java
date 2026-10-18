@@ -34,16 +34,15 @@ public abstract class LockedInventoryMixin {
         cir.setReturnValue(-1);
     }
 
-    /** Vanilla's order (selected slot, off hand, then the list), skipping slots that would refuse the stack. */
+    /**
+     * Vanilla's order (selected slot, then the list; never the off hand: inventory/NoOffHand), skipping slots that
+     * would refuse the stack.
+     */
     @Inject(method = "getSlotWithRemainingSpace", at = @At("HEAD"), cancellable = true)
     private void afl$mergeIntoAllowedSlot(ItemStack stack, CallbackInfoReturnable<Integer> cir) {
         Inventory inventory = (Inventory) (Object) this;
         if (mergeable(inventory, inventory.selected, stack)) {
             cir.setReturnValue(inventory.selected);
-            return;
-        }
-        if (hasRemainingSpaceForItem(inventory.getItem(Inventory.SLOT_OFFHAND), stack)) {
-            cir.setReturnValue(Inventory.SLOT_OFFHAND);
             return;
         }
         for (int i = 0; i < inventory.items.size(); i++) {

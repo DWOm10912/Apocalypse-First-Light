@@ -35,8 +35,22 @@ public final class SurvivorClient {
     public static void summary(SurvivorPackets.Summary packet) {
         summary = packet;
         Minecraft mc = Minecraft.getInstance();
+        if (DeathCamera.holdsDeathScreen()) return;   // the death camera first; the tick opens it after
         if (mc.player != null && mc.player.isDeadOrDying() && !(mc.screen instanceof AflDeathScreen)) {
             mc.setScreen(new AflDeathScreen(packet));
+        }
+    }
+
+    /** The server sent the dead survivor's summary (the AFL death screen will show). */
+    static boolean hasSummary() {
+        return summary != null;
+    }
+
+    /** Packet: a corpse's falling or final pose (Ragdoll V1). */
+    public static void corpsePose(SurvivorPackets.CorpsePose packet) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null && mc.level.getEntity(packet.entity()) instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse) {
+            corpse.receivePose(packet.origin(), packet.pose(), packet.last());
         }
     }
 
@@ -78,6 +92,7 @@ public final class SurvivorClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (summary != null && mc.player.isDeadOrDying()) {
+            if (DeathCamera.holdsDeathScreen()) return;
             if (!(mc.screen instanceof AflDeathScreen)) mc.setScreen(new AflDeathScreen(summary));
             return;
         }
@@ -89,9 +104,18 @@ public final class SurvivorClient {
         }
     }
 
-    /** The vanilla death screen is swapped for the AFL one whenever the summary is known. */
+    /**
+     * The vanilla death screen is swapped for the AFL one whenever the summary is known; while the death camera holds,
+     * neither opens yet (Ragdoll V1: the vanilla one is kept for later when there is no summary).
+     */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
+        if ((event.getNewScreen() instanceof DeathScreen || event.getNewScreen() instanceof AflDeathScreen)
+                && DeathCamera.holdsDeathScreen()) {
+            if (event.getNewScreen() instanceof DeathScreen) DeathCamera.defer(event.getNewScreen());
+            event.setCanceled(true);
+            return;
+        }
         if (summary == null || !(event.getNewScreen() instanceof DeathScreen)) return;
         if (event.getCurrentScreen() instanceof AflDeathScreen) {
             event.setCanceled(true);

@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "about": "Test only (AflRigParity, tools/blockbench/afl_rig_check.mjs): every AFL Rig phase 2 prop frame (bone:, socket:, prop:), hidden keys and prop:<id>:<point> hand targets. Not a real animation.",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 50,
+  "first_person": "body",
+  "blend": {"in": 0.1, "out": 0.2},
+  "props": [
+    {
+      "id": "afl_rig_test_pistol",
+      "keys": [
+        {"at": 0, "frame": "socket:holster", "point": "muzzle", "pos": [0, 3.2, 0.4], "rot": [90, 0, 0], "blend": 0},
+        {"at": 0.05, "frame": "socket:holster", "point": "muzzle", "pos": [0, 1.5, 0.4], "rot": [80, 5, 0], "blend": 0.15},
+        {"at": 0.2, "frame": "bone:thigh_r", "point": "grip", "pos": [-5.6, 9.5, 1.2], "rot": [40, 10, -5], "blend": 0.1},
+        {"at": 0.3, "frame": "chest", "point": "grip", "pos": [-3.5, 6.5, -6], "rot": [-8, 12, 3], "blend": 0.3},
+        {"at": 0.6, "frame": "root", "point": "grip", "pos": [-2.5, 7, -8.5], "rot": [-15, 5, -10], "blend": 0.25},
+        {"at": 0.85, "frame": "shoulder_r", "point": "grip", "pos": [2, 5, -7], "rot": [5, 0, 20], "blend": 0.2},
+        {"at": 1.1, "frame": "bone:pelvis", "point": "grip", "pos": [-4, 4, -5], "rot": [0, 0, 0], "blend": 0.05, "hidden": true}
+      ]
+    },
+    {
+      "id": "afl_rig_test_magazine",
+      "keys": [
+        {"at": 0, "frame": "prop:afl_rig_test_pistol", "point": "top", "pos": [0, 2.0, -4.0], "rot": [0, 0, 0], "blend": 0},
+        {"at": 0.3, "frame": "bone:pelvis", "point": "base", "pos": [3.5, 14.5, -3], "rot": [0, 0, 25], "blend": 0.2, "hidden": true},
+        {"at": 0.5, "frame": "socket:armpit_l", "point": "base", "pos": [-1, 2, -2], "rot": [30, -10, 0], "blend": 0.2},
+        {"at": 0.75, "frame": "prop:afl_rig_test_pistol", "point": "top", "pos": [0, 2.4, -4.2], "rot": [5, 0, 0], "blend": 0.15},
+        {"at": 0.95, "frame": "prop:afl_rig_test_pistol", "point": "top", "pos": [0, 2.0, -4.0], "rot": [0, 0, 0], "blend": 0.05}
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {"at": 0, "target": "prop:grip", "blend": 0},
+      {"at": 1.1, "target": "pose", "blend": 0.2}
+    ],
+    "left": [
+      {"at": 0.2, "target": "prop:afl_rig_test_magazine:base", "blend": 0.15},
+      {"at": 0.8, "target": "prop:afl_rig_test_pistol:support", "blend": 0.2, "roll": 30},
+      {"at": 1.15, "target": "socket:holster", "blend": 0.2}
+    ]
+  },
+  "events": []
+}

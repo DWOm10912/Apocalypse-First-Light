@@ -213,7 +213,7 @@ public final class Survivors {
         }
         player.setRespawnPosition(Level.OVERWORLD, null, 0.0F, false, false);
         lineage.status = data.mode == SurvivorMode.HARD ? SurvivorLineage.Status.ENDED : SurvivorLineage.Status.AWAITING_SUCCESSOR;
-        SurvivorCorpses.create(player, record);
+        SurvivorCorpses.create(player, record, source);
         if (lineage.status == SurvivorLineage.Status.AWAITING_SUCCESSOR) rollSuccessor(player.server, lineage, record);
         data.setDirty();
         flushPending = true;

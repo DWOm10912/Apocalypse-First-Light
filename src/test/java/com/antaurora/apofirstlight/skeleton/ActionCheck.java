@@ -41,12 +41,23 @@ final class ActionCheck {
 
     /**
      * A scene: seconds into the action, its parameter, the anchors (render-origin blocks), what the player looked at before
-     * (null: 20 deg down; sets the view the action starts from), planted feet, crouched.
+     * (null: 20 deg down; sets the view the action starts from), planted feet, crouched; the own first person's longer reach
+     * with a gun (GunStance#firstPersonReach) and the look's pitch (NaN: as {@code look} says).
      */
     private record Scene(String action, String name, float seconds, float param, Map<String, Vector3f> anchors, Vector3f look, boolean planted,
-                         boolean crouch, boolean mirror, float age) {
+                         boolean crouch, boolean mirror, float age, boolean fp, float pitch) {
         Scene(String action, String name, float seconds, float param, Map<String, Vector3f> anchors, Vector3f look, boolean planted, boolean crouch) {
             this(action, name, seconds, param, anchors, look, planted, crouch, false, Float.NaN);
+        }
+
+        Scene(String action, String name, float seconds, float param, Map<String, Vector3f> anchors, Vector3f look, boolean planted,
+              boolean crouch, boolean mirror, float age) {
+            this(action, name, seconds, param, anchors, look, planted, crouch, mirror, age, false, Float.NaN);
+        }
+
+        /** A gun action in the own first person, looking {@code pitch} down. */
+        static Scene firstPerson(String action, String name, float seconds, float pitch, boolean crouch) {
+            return new Scene(action, name, seconds, 0, Map.of(), null, false, crouch, false, Float.NaN, true, pitch);
         }
     }
 
@@ -131,6 +142,44 @@ final class ActionCheck {
             }
             list.add(new Scene("tool/crowbar_smash", (fp ? "crowbar_fp_" : "crowbar_") + Math.round(t * 100), t, 0, a, null, false, false));
         }
+        // P9 draw / holster (docs/dev/p9_draw_holster_actions_v1.md): the authored poses at full weight (the hand on the
+        // holstered gun, pulled out, muzzle ahead at the hip; back the same way), the carry frame as the gun prop's carry
+        // preview (no live mount here). The draw ends (0.44: both hands on) and the holster starts at the idle's chest
+        // ready (chest frame, docs/dev/p9_stance_loops_v1.md).
+        for (float t : new float[]{0.12F, 0.2F, 0.32F, 0.44F})
+            list.add(new Scene("gun/p9_01_draw", "p9_draw_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_draw", "p9_draw_12_crouch", 0.12F, 0, Map.of(), null, false, true));
+        for (float t : new float[]{0.2F, 0.32F, 0.4F})
+            list.add(new Scene("gun/p9_01_holster", "p9_holster_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        // P9 idle (docs/dev/p9_stance_loops_v1.md): the chest ready at full weight, standing and crouched, and looking 45 down
+        // (the chest follows the look in part); the runtime weighs it under the raise and the sprint
+        // (SkeletonGunStance#stanceClips) and wraps its time. The own first person holds a gun through its old view model
+        // (client/skeleton/PlayerSkeleton#firstPersonHands): no first-person gun scenes
+        list.add(new Scene("gun/p9_01_idle", "p9_idle", 1F, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_idle", "p9_idle_crouch", 1F, 0, Map.of(), null, false, true));
+        list.add(new Scene("gun/p9_01_idle", "p9_idle_down", 1F, 0, Map.of(), new Vector3f(), false, false));
+        // P9 sprint (user 2026-10-17): the idle's chest ready, its clip turning the chest left and right over the stride
+        // (a STRIDE loop: seconds = the stride's phase); standing here, the run's hips not turned against it
+        for (float t : new float[]{0F, 0.25F, 0.5F, 0.75F})
+            list.add(new Scene("gun/p9_01_sprint", "p9_sprint_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_sprint", "p9_sprint_0_down", 0F, 0, Map.of(), new Vector3f(), false, false));
+        // P9 trained-tier reload / inspect (docs/dev/p9_reload_inspect_v1.md 3): the support hand on the magazine prop at the
+        // pouch, the old magazine falling, the new one going in; the inspect's left and right turns and its magazine check
+        for (float t : new float[]{0.12F, 0.2F, 0.28F, 0.4F, 0.62F, 0.86F, 1.3F})
+            list.add(new Scene("gun/p9_01_reload_tactical", "p9_reload_tac_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_reload_tactical", "p9_reload_tac_40_crouch", 0.4F, 0, Map.of(), null, false, true));
+        for (float t : new float[]{0.66F, 1.0F, 1.6F})
+            list.add(new Scene("gun/p9_01_reload_empty", "p9_reload_empty_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        for (float t : new float[]{1.2F, 2.6F, 3.8F, 4.3F})
+            list.add(new Scene("gun/p9_01_inspect", "p9_inspect_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_inspect_empty", "p9_inspect_empty_260", 2.6F, 0, Map.of(), null, false, false));
+        // reloads while aiming (2.7): the gun on the view frame under the eye line, the magazine change by feel
+        for (float t : new float[]{0.1F, 0.3F, 0.62F, 0.86F, 1.0F})
+            list.add(new Scene("gun/p9_01_reload_tactical_ads", "p9_reload_tac_ads_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_reload_tactical_ads", "p9_reload_tac_ads_30_crouch", 0.3F, 0, Map.of(), null, false, true));
+        list.add(new Scene("gun/p9_01_reload_tactical_ads", "p9_reload_tac_ads_62_down", 0.62F, 0, Map.of(), new Vector3f(), false, false));
+        for (float t : new float[]{0.9F, 1.1F})
+            list.add(new Scene("gun/p9_01_reload_empty_ads", "p9_reload_empty_ads_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
         return list.toArray(Scene[]::new);
     }
 
@@ -157,7 +206,14 @@ final class ActionCheck {
         SkeletonPose pose = null;
         boolean locks = sc.anchors().containsKey("opening") && sc.action().equals("item/jerry_can");
         for (int pass = 0; pass < (locks ? 3 : 1); pass++) {
-            in = PlayerSkeletonCheck.standing(false, 0, 0, lock != null ? lock[1] : sc.look() == null ? 20 : 45, false, sc.crouch());
+            float look = !Float.isNaN(sc.pitch()) ? sc.pitch() : sc.look() == null ? 20 : 45;
+            in = PlayerSkeletonCheck.standing(false, action.chestTwist, 0, lock != null ? lock[1] : look, false, sc.crouch());
+            m.view = ActionPose.viewFrame(in.eyeTarget, in.viewYaw, in.viewPitch);
+            if (sc.fp()) {
+                // client/skeleton/SkeletonGunStance#hold: the view frame's keys ahead, the shoulders reaching as much more
+                m.viewAhead = GunStance.firstPersonReach(in.viewPitch);
+                in.protraction += m.viewAhead;
+            }
             if (!ActionPose.body(in, rig, m)) {
                 fail(sc.name() + ": the action does not show");
                 return;
@@ -296,7 +352,8 @@ final class ActionCheck {
         Vector3f eye = new Matrix4f(toModel).invert().transformPosition(
                 (in.rootOffset.lengthSquared() > 0 ? ActionPose.cameraEye(pose) : pose.point(s.bone(), s.pos(), new Vector3f())).div(16F));
         // the view as client/skeleton/SkeletonActions turns it: the body's facing, the action's pitch
-        float yaw = 0, pitch = sc.action().contains("crowbar") ? 20 : 30;   // the crowbar: looking ahead at the glass
+        // the crowbar: looking ahead at the glass; a first-person gun scene: its own look
+        float yaw = 0, pitch = sc.fp() ? in.viewPitch : sc.action().contains("crowbar") ? 20 : 30;
         if (lock != null) {
             yaw = lock[0];
             pitch = lock[1];

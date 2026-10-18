@@ -1,6 +1,12 @@
 package com.antaurora.apofirstlight.client.survivor;
 
+import com.antaurora.apofirstlight.client.skeleton.PlayerSkeleton;
+import com.antaurora.apofirstlight.client.skeleton.SkeletonBodyRenderer;
+import com.antaurora.apofirstlight.skeleton.SkeletonPose;
+import com.antaurora.apofirstlight.skeleton.SkeletonRig;
 import com.antaurora.apofirstlight.survivor.SurvivorCorpse;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import com.antaurora.apofirstlight.survivor.SurvivorSkins;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -18,8 +24,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Survivor Death and Succession V0: the placeholder body (docs/gameplay/survivor_death_succession_v0.md 6). The vanilla
- * player model in its bind pose, lying on its back along the death yaw, centred on the corpse position, darkened. Skin:
+ * A dead survivor's body (docs/gameplay/survivor_death_succession_v0.md 6), darkened.
+ * <ul>
+ *   <li>With a ragdoll pose (Ragdoll V1, docs/dev/ragdoll_v1_plan.md 4): the pose, interpolated between the server's
+ *   snapshots while it falls, drawn by SkeletonBodyRenderer (skin mesh with the skeleton on, vanilla's rigid parts with
+ *   it off). The own body's head is left out while the death camera looks out of it.</li>
+ *   <li>Without (older bodies, deaths that did not fall): the vanilla player model in its bind pose, lying on its back
+ *   along the death yaw, centred on the corpse position.</li>
+ * </ul>
+ * Skin:
  * the dead survivor's own look (section 13), whatever the owner wears now; a first survivor's body shows the owner's
  * account skin (the default skin of the owner's UUID while the owner is not in the tab list). No animation, no decay;
  * the mesh character replaces this later.
@@ -32,6 +45,7 @@ public final class SurvivorCorpseRenderer extends EntityRenderer<SurvivorCorpse>
 
     private final PlayerModel<LivingEntity> wide;
     private final PlayerModel<LivingEntity> slim;
+    private final SkeletonPose skeleton = new SkeletonPose(SkeletonRig.get());
 
     public SurvivorCorpseRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -61,6 +75,23 @@ public final class SurvivorCorpseRenderer extends EntityRenderer<SurvivorCorpse>
             slimArms = corpse.arms() == SurvivorSkins.Arms.SLIM;
         }
         PlayerModel<LivingEntity> model = slimArms ? slim : wide;
+        if (CorpsePoses.pose(corpse, partialTick, skeleton)) {
+            pose.pushPose();
+            // the pose is for a model drawn at the pose origin facing yaw 0 (LivingEntityRenderer's transform)
+            Vec3 o = corpse.poseOrigin();
+            double ex = Mth.lerp(partialTick, corpse.xOld, corpse.getX()), ey = Mth.lerp(partialTick, corpse.yOld, corpse.getY()),
+                    ez = Mth.lerp(partialTick, corpse.zOld, corpse.getZ());
+            pose.translate(o.x - ex, o.y - ey, o.z - ez);
+            pose.mulPose(Axis.YP.rotationDegrees(180.0F));
+            pose.scale(-MODEL_SCALE, -MODEL_SCALE, MODEL_SCALE);
+            pose.translate(0.0F, -1.501F, 0.0F);
+            SkeletonBodyRenderer.draw(model, skeleton, slimArms, PlayerSkeleton.enabled(), !DeathCamera.insideHead(corpse),
+                    pose, buffers.getBuffer(model.renderType(getTextureLocation(corpse))), light, OverlayTexture.NO_OVERLAY,
+                    TINT_R, TINT_G, TINT_B, 1.0F);
+            pose.popPose();
+            super.render(corpse, yaw, partialTick, pose, buffers, light);
+            return;
+        }
         pose.pushPose();
         pose.translate(0.0F, LIFT, 0.0F);
         pose.mulPose(Axis.YP.rotationDegrees(180.0F - corpse.bodyYaw()));

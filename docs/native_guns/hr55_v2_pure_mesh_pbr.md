@@ -1,5 +1,7 @@
 # HR55 V2 Pure Mesh + PBR（Phase 2）
 
+> 2026-10-17：用户评价 BR51、HR55 的贴图“很平滑”（P9 好一点），要求原版下就有塔科夫、COD 那样明显的表面质感。原因（法线没有表面纹理、颜色只有低频斑块）和重做方案见 [gun_surface_texture_reference_v1.md](gun_surface_texture_reference_v1.md)；本文的贴图做法会被取代，还没动。
+
 > 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
 
 2026-09-29，已实现，离线校验全部通过。**未实机验证**：没有运行 runClient、GameTest，也没有在 Iris / Oculus 光影下看过。

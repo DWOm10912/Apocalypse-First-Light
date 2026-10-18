@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.weapon.client.NativeSightRendering;
 import com.antaurora.vextris.client.VextrisMeshes;
 import com.antaurora.vextris.mesh.MeshModel;
 import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.client.MeshGpuCache;
 import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
@@ -203,7 +204,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             p.pushPose();DRAWER.renderCube(p,cube,buffers.getBuffer(type),light,
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);p.popPose();
         }
-        if(!magazine && mesh!=null){
+        if(!magazine && mesh!=null && !drawCached(mesh,b,stack,p,buffers,light)){
             if(buffers instanceof ClosedFaces faces)meshParts(mesh,b,p,buffers.getBuffer(type),light,faces);
             else GeckoMeshRenderer.renderBone(mesh,b,p,buffers.getBuffer(type),light,
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
@@ -212,6 +213,21 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         if(!magazine||!com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replacesSubtree(stack))
             for(var child:b.getChildBones())draw(child,stack,p,buffers,type,light,mesh);
         p.popPose();
+    }
+    /**
+     * Format 3 meshes (smooth normals) from the Vextris GPU cache, like the held gun and the pickup: with a shader pack the
+     * QUADS path gets per-face normals from Oculus and the curved parts turn faceted. Only for a real buffer source (the
+     * bench, rack, carried and ground renderers); the inspection capture and the gun rack's chunk capture stay on the CPU.
+     */
+    private static boolean drawCached(MeshModel mesh,GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,int light){
+        if(mesh.formatVersion()<3 || !MeshGpuCache.enabled() || !(buffers instanceof MultiBufferSource.BufferSource) || buffers instanceof ClosedFaces)return false;
+        if(b.isHidden() || mesh.parts(b.getName(),com.antaurora.vextris.mesh.MeshLayer.CUTOUT).isEmpty())return true;
+        p.pushPose();
+        try{
+            RenderUtils.translateToPivotPoint(p,b);
+            return MeshGpuCache.drawBone(mesh,b.getName(),com.antaurora.vextris.mesh.MeshLayer.CUTOUT,MeshGpuCache.ALL_PARTS,
+                    asset(stack,"textures/item/",".png"),p,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
+        }finally{p.popPose();}
     }
     /** A buffer source told which mesh faces close a solid (their back sides are never seen): the gun rack's chunk capture (WoodGunRackChunking). */
     public interface ClosedFaces { void closedFaces(boolean closed); }

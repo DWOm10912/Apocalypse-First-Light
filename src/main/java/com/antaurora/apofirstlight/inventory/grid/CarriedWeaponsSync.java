@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.inventory.grid;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
-import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -22,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * their inventories are not synced, so the client's CarriedWeaponsLayer could only draw its own player. What is drawn is
  * worked out here, by the same rules as for the own player: the slung primary (key 1, a gun with a sling) on the back
  * and its sling across the body, the pistol (key 2) in the holster while one is worn; a gun in the hand is not on the
- * body (the sling still is), nothing for creative / spectator. Sent to the players tracking the carrier when it changes
+ * body (the sling still is), nothing for a spectator. Creative too, by the same rules and the guns' roles (user
+ * 2026-10-17: in Creative a P9 put back into the holster vanished; Creative had been left out). Sent to the players tracking the carrier when it changes
  * (checked every tick, the stacks compared with their NBT; a gun in the hand is left out, so firing it sends nothing) and
  * to a player who starts tracking the carrier.
  */
@@ -44,14 +44,17 @@ public final class CarriedWeaponsSync {
     private CarriedWeaponsSync() {}
 
     public static Shown of(Player player) {
-        if (PlayerStorageCapacity.unrestricted(player)) return Shown.NONE;
+        if (player.isSpectator()) return Shown.NONE;
         var inventory = player.getInventory();
+        // by the weapon's role as well: Survival's hotbar only takes a primary at index 0 and a pistol at index 1
+        // (HotbarRoles#accepts), Creative's takes anything
         var primary = inventory.items.get(HotbarRoles.PRIMARY_SLOT);
-        boolean sling = primary.getItem() instanceof NativeGunItem && GunSling.has(primary);
+        boolean sling = primary.getItem() instanceof NativeGunItem && HotbarRoles.weaponRole(primary) == HotbarRoles.Role.PRIMARY
+                && GunSling.has(primary);
         var back = sling && inventory.selected != HotbarRoles.PRIMARY_SLOT ? primary : ItemStack.EMPTY;
         var pistol = inventory.items.get(HotbarRoles.PISTOL_SLOT);
-        var thigh = inventory.selected != HotbarRoles.PISTOL_SLOT && pistol.getItem() instanceof NativeGunItem && HotbarRoles.holsterWorn(player)
-                ? pistol : ItemStack.EMPTY;
+        var thigh = inventory.selected != HotbarRoles.PISTOL_SLOT && pistol.getItem() instanceof NativeGunItem
+                && HotbarRoles.weaponRole(pistol) == HotbarRoles.Role.SECONDARY && HotbarRoles.holsterWorn(player) ? pistol : ItemStack.EMPTY;
         return new Shown(back, sling, thigh);
     }
 

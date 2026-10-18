@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "AFL player skeleton V1 (docs/dev/player_skeleton_v1_design.md 1, 10.1). Single source for the runtime (skeleton/SkeletonRig.java), the Blockbench template (tools/build-player-rig-template.mjs) and the checks. Units: Blockbench / Bedrock model px, +y up, origin on the ground between the feet, front -z, right arm at x -5. Runtime: Java model px = (x, 24 - y, z); rotations keep their numbers (deg, order Z-Y-X).",
+  "about": "AFL player skeleton V1 (docs/dev/player_skeleton_v1_design.md 1, 10.1). Single source for the runtime (skeleton/SkeletonRig.java), the AFL Rig Blockbench plugin (tools/blockbench/afl_rig.js) and the checks. Units: Blockbench / Bedrock model px, +y up, origin on the ground between the feet, front -z, right arm at x -5. Runtime: Java model px = (x, 24 - y, z); rotations keep their numbers (deg, order Z-Y-X).",
   "bones": [
     {"name": "root", "parent": null, "pivot": [0, 0, 0]},
     {"name": "pelvis", "parent": "root", "pivot": [0, 12, 0]},
@@ -41,7 +41,8 @@
   "sockets": {
     "eye": {"bone": "head", "pos": [0, 27.63, -2.5]},
     "armpit_l": {"bone": "chest", "pos": [3.0, 19.5, -4.8]},
-    "armpit_r": {"bone": "chest", "pos": [-3.0, 19.5, -4.8]}
+    "armpit_r": {"bone": "chest", "pos": [-3.0, 19.5, -4.8]},
+    "holster": {"bone": "thigh_r", "pos": [-5.15, 9.4, 0], "about": "the pistol holster's mouth, centre of its opening on the outside of the right thigh (tools/build-equipment-meshes-v1.mjs HOLSTER, leg frame (3.25, -2.6, 0))"}
   },
   "limits_deg": {
     "forearm_r": {"x": [-145, 0], "y": [-90, 90]},

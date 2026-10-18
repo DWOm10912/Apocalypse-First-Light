@@ -20,8 +20,35 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                 || controller.getCurrentAnimation() == null ? "" : controller.getCurrentAnimation().animation().name();
     }
 
+    /** Inside a bone the skeleton's action places (#renderRecursively): its subtree is drawn unscaled. */
+    private static int skeletonPartDepth;
+
     @Override public void renderRecursively(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,
             boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
+        var parts = skeletonParts();
+        if (!parts.isEmpty() && parts.containsKey(bone.getName())) {
+            // a part the skeleton's action places as a prop (docs/dev/p9_reload_inspect_v1.md 3): there at its bind pose,
+            // its subtree unscaled (the first-person clip shows and hides it on its own timing); hidden while the prop is
+            org.joml.Matrix4f at = parts.get(bone.getName());
+            if (at == null) return;
+            var bind = bone.getInitialSnapshot();
+            bone.setPosX(bind.getOffsetX()); bone.setPosY(bind.getOffsetY()); bone.setPosZ(bind.getOffsetZ());
+            bone.setRotX(bind.getRotX()); bone.setRotY(bind.getRotY()); bone.setRotZ(bind.getRotZ());
+            bone.setScaleX(1); bone.setScaleY(1); bone.setScaleZ(1);
+            bone.setHidden(false);
+            pose.pushPose();
+            pose.last().pose().mul(at);
+            pose.last().normal().mul(new org.joml.Matrix3f(at).normal());
+            skeletonPartDepth++;
+            try {
+                super.renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
+            } finally {
+                skeletonPartDepth--;
+                pose.popPose();
+            }
+            return;
+        }
+        if (skeletonPartDepth > 0) { bone.setScaleX(1); bone.setScaleY(1); bone.setScaleZ(1); bone.setHidden(false); }
         if (bone.getName().equals(skeletonStill())) {
             // the player skeleton moves the whole gun itself during draw / put-away: this bone at its bind pose
             var bind = bone.getInitialSnapshot();

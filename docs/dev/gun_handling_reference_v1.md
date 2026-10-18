@@ -104,9 +104,43 @@
 
 **注意**：教范里**没有"单手低位"这种携枪姿势**。P9 平时原来是单手低位（[player_skeleton_v1_design.md](player_skeleton_v1_design.md) 第 10.9 节）。用户 2026-10-15 看过资料后改为**教范的双手预备**。
 
+
+### 3.4 网上资料补充（2026-10-17 整理，用于第一人称持枪画面）
+
+**来源可信度**：多数是教练、行业媒体文章，不是正式研究；TC 3-23.35 的全文这次没读到（FAS 的 PDF 取不出文字），下面没有引用它。标“估”的是我按资料和人体比例推的。
+
+- 握法：
+  - 右手虎口尽量高地贴着握把后背，中指顶在扳机护圈下面（Max Michel，[How to Obtain a Proper Pistol Grip](https://athlonoutdoors.com/article/proper-pistol-grip-max-michel/)）。
+  - 左手拇指朝前，左手掌根和拇指差不多和枪管轴线同高，在套筒下沿（论坛作者 SIG_Fiend，2013，[A Slightly Scientific Look at the Thumbs Forward Pistol Grip](https://www.texasguntalk.com/threads/a-slightly-scientific-look-at-the-thumbs-forward-pistol-grip.51592/)）。
+  - 左手腕往前压的角度说法不一：0–20°（Pistol Wizard，[How to grip a pistol](https://pistolwizard.com/guides/how-to-grip-a-pistol)）到“压到底”；常说的“45°”是左手手指朝下的角度。
+  - 握力：左手 60–70%、右手 30–40%（Michel）；也有人认为这个比例说不准（GUNS Magazine）。
+  - 手顶约在枪管轴线下 1–2 cm（估），套筒和照门露在手上面。
+- 站姿：
+  - 等腰式：俯视时两臂和胸口成等腰三角形，正对目标，肩在臀前（[Wikipedia: Isosceles Stance](https://en.wikipedia.org/wiki/Isosceles_Stance)）。
+  - 肘锁不锁有分歧：Ayoob（[Shooting the Isosceles Stance](https://www.thearmorylife.com/ayoob-shooting-the-isosceles-stance/)）和 Shooting Illustrated 说锁死；Max Michel 说不锁（[Proper Shooting Stance](https://athlonoutdoors.com/article/max-michel-proper-shooting-stance/)）。没有资料给角度，照片上约差 10–25° 伸直（估）。
+  - 头正，把枪抬到视线上，不是低头找枪（Michel）。
+  - 实战统计：1989 年 *Law and Order* 对 98 起事件的统计，78.6% 用等腰式、12.2% 用韦弗式（[NCJRS 摘要](https://ojp.gov/ncjrs/virtual-library/abstracts/isosceles-vs-weaver-shooting-stances)）。
+  - 韦弗式：右肘几乎伸直、左肘向下弯约 45°，推拉，身体侧着（[Wikipedia: Weaver stance](https://en.wikipedia.org/wiki/Weaver_stance)）。
+- 预备姿势：
+
+  | 姿势 | 枪在哪 | 枪口 | 肘、手 | 来源 |
+  |---|---|---|---|---|
+  | 胸前预备（chest / compressed ready） | 胸口正中偏高，在枪套上方、视线下方 | 朝前略向下 | 肘夹在身体两侧，往前直推就射击 | [PDN Chest Ready](https://www.personaldefensenetwork.com/post/chest-ready-position) |
+  | 拔枪第 3 步（合握位置） | 胸口正中偏高、主视眼下方 | 朝目标 | 双手在胸前合握；贴身距离可以从这里开枪，往前推到第 4 步伸直 | [Gun Digest](https://gundigest.com/handguns/concealed-carry/four-steps-to-drawing-from-your-concealed-carry-holster) |
+  | 高位预备（Landers） | 下巴下方约一掌，尽量贴身但套筒不碰身体 | 水平 | — | [RECOIL](https://www.recoilweb.com/preview-the-twilight-zone-62869.html?nonamp=1) |
+  | 低位预备 | 腰腹前，手臂伸出 | 向下约 45° | 手臂直或略弯 | [USA Carry](https://www.usacarry.com/ready-positions-7-types-for-pistol-self-defense/) |
+  | SUL | 贴胸骨，左手平放胸骨上 | 竖直向下 | 肘贴身 | [PDN Position SUL](https://www.personaldefensenetwork.com/video/position-sul-015705) |
+
+  - 移动时：膝盖微弯，小步，上身像炮塔一样稳；枪往身体收一点；队形里用胸前预备或 SUL（[SWAT Magazine, Pilgrim](https://www.swatmag.com/article/situational-handgun-ready-positions-another-perspective/)）。
+- 从自己眼睛看：
+  - 胸前预备时枪“只在视野下方的余光里”（PDN）；高位预备的枪在下巴下，也在余光里（Landers）。
+  - 胸前预备时枪在视线下方约 35–60°（估）；SUL 约 65–80°，基本看不到（估）；举枪伸直时枪在视线正中，照门离眼睛 50–77 cm（专利 US20190226801），双手和前臂远端从画面左下、右下伸进来。
+  - 游戏视野上下只有 ±35° 左右，所以现实的预备姿势在游戏画面里都看不到，游戏都把枪抬高、挪近放进画面里。这是我的推论。
+- 人体比例（Drillis & Contini 1966，常见引用，原表没读到）：上臂 0.186 H、前臂 0.146 H、手 0.108 H、整条手臂约 0.44 H、两肩宽约 0.259 H、肩高 0.818 H、眼高 0.936 H（H = 身高）。和方块人的对比见 [first_person_gun_view_v1_design.md](first_person_gun_view_v1_design.md) 第 1.2 节。
+- 缺口：肘弯曲的实测角度、第一人称（头盔摄像）画面的描述都没找到；需要时用户可以用手机在眼睛高度拍自己的几种预备姿势。
 ---
 
-## 4. 动画规格（4.1–4.4 草案未实现；4.5 已实现第一轮；4.6 重做手法未实现）
+## 4. 动画规格（4.1–4.4 草案未实现；4.5 已实现第一轮；4.6 重做手法未实现；4.7 枪的 Blockbench 分级改法未实现；4.8 枪只用右手已实现）
 
 ### 4.1 共同规则
 - **握点我们自己定**：每把枪放两个握点：
@@ -152,8 +186,16 @@
 |---|---|
 | 平时 | **教范的双手预备**（用户 2026-10-15 定，取代原来的单手低位）：上臂贴身，前臂约 45°，枪在胸前偏下，枪口朝前 |
 | 举枪、瞄准 | 站姿无依托：双臂朝前伸、肘略弯，左手腕锁住，右手拇指压在左手拇指上；肩略往前 |
-| 掏枪 | 第 3.2 节五步：右手笔直向上拔出 → 沉肘转枪口 → 胸前合握 → 推出。左手从一开始就贴在胸口中间等枪 |
+| 掏枪 | **枪套挂右大腿**（用户 2026-10-16 定，骨架挂点 `holster` = thigh_r）。第 3.2 节五步：右手笔直向上拔出 → 沉肘转枪口 → 胸前合握 → 推出。左手从一开始就贴在胸口中间等枪 |
 | 收枪 | 低头看着枪套，慢于掏枪 |
+
+**2026-10-17 做出来的版本**（[p9_draw_holster_actions_v1.md](p9_draw_holster_actions_v1.md) 第 3 节，离线检查通过，未进游戏）和上表不同的地方：
+- 0.5 s 的片段长度没改，所以只做到“胸前合握”就交给持枪姿势的双手预备，没有“推出”；推出是举枪时持枪姿势自己做的。
+- 左手没有先贴在胸口等枪，而是垂着，0.34 s 起直接上枪合握：0.5 s 里先贴胸口再去握，手来不及也看不清。
+- 收枪没有低头看枪套，也不比掏枪慢（同样 0.5 s，跟着枪的 `put_away` 片段）；头随视线。
+- 方块人手臂够不到枪套里的握把，所以伸手时胸口右肩下沉、往后转（p9 文档第 3.3 节）。
+
+**2026-10-17 第三轮**（用户实机看了正握版：第一人称看不到枪、枪歪、套筒切进手里）：平时的姿势改成 CS2 式腰射预备，握法是双手等腰式（两条手臂和胸口成等腰三角形，手腕锁直，枪不侧倾，本文第 3.1、3.3 节），两只手在枪上放低到套筒下面；自己的第一人称往前伸、手臂画窄，让枪和手臂一起在画面右下。数值和检查见 [p9_stance_loops_v1.md](p9_stance_loops_v1.md) 第 4 节。离线检查通过，但用户同日实机**不通过**：「姿势太别扭了……旧版的就挺顺眼的（第一人称两个手臂的交叉握枪姿势）」。下一步先研究现实中的真实持枪（p9 文档第 8 节）。
 
 ---
 
@@ -255,6 +297,56 @@
 - 两种手型之间（托护木 ↔ 握弹匣 ↔ 拉枪机）绕手掌插值，不插手臂根部，否则手掌会划弧线。
 - 换弹和检视从托护木的手型开始，也在同一手型结束。
 
+### 4.7 枪的 Blockbench 分级怎么改（2026-10-16 定方向，**枪的分级未改**；需要的插件和运行时能力已做完：掏枪用的 `socket:holster` / `bone:thigh_r` 坐标系、多道具、弹匣换挂点）
+
+来源：用户 2026-10-16 问，有了 AFL Rig 插件（[afl_rig_blockbench_plugin_v1.md](afl_rig_blockbench_plugin_v1.md)）以后，原来枪在 Blockbench 里的分级要不要改。要改。
+
+**原因**：
+- 原来一把枪的 .bbmodel 里既有枪，也有手：
+  - `righthand` / `lefthand` 下挂着锚点和参考方手臂；
+  - 整把枪在 `handling` 下面动；
+  - 掏枪、换弹、检视全在枪的文件里做。
+- 现在手由人物骨架的 IK 去够，枪在手里怎么动由动作的道具关键帧决定。所以枪的文件里只该留枪自己的机械结构。
+
+**以 P9 的源模型 `src/main/blockbench/p9_01_v2_native.bbmodel` 为例**（只读核对过，没改；2026-10-17 起游戏用 `p9_01_v3_native.bbmodel`，组和骨骼与 v2 完全相同，见 [p9_01_v3_game_model_v1.md](../native_guns/p9_01_v3_game_model_v1.md)）：
+
+| 现在的组 | 以后 | 说明 |
+|---|---|---|
+| `gun_body`、`barrel`、`trigger`、`slide`、`front_sight`、`rear_sight`、`magazine`、`follower` | **留在枪里** | 机械零件。枪自己的片段只动它们：套筒后坐、空仓挂机、扳机、弹匣卡笋 |
+| `muzzle_anchor`、`chamber_round_anchor`、`ejection_anchor`、`sight_anchor`、`magazine_round_anchor`、`maintenance_anchor` | **留在枪里** | 效果和逻辑挂点：枪口火、抛壳、瞄具、弹匣里的子弹、维修台 |
+| `righthand` → `right_hand_anchor` → `right_arm_reference` | **换成固定握点定位器 `grip_r`** | 不做动画，不挂手臂。位置和朝向按第 4.1 节，放在握把后背的虎口处 |
+| `lefthand` → `lefthand_pos` → `left_hand_anchor` → `left_arm_reference` | **换成固定握点 `grip_l`** | 同上；P9 是左手包住右手的握点 |
+| `handling` | **搬到动作里** | 整把枪在手里的移动，以后是动作里道具组 `prop_<id>` 的关键帧（插件第 4 节） |
+| `mag_out` → `reload_magazine`、`empty_old_mag` | **搬到动作里** | 离开枪的弹匣是单独的道具，在弹匣井、左手、弹匣包、地上之间换挂点（第 4.6 节）。**底层能力 2026-10-16 已实现**（插件第二阶段，[afl_rig_blockbench_plugin_v1.md](afl_rig_blockbench_plugin_v1.md) 第 10 节）：动作可以有多个道具；弹匣用 `prop:<枪>` 坐标系骑在枪上，换到 `socket:` / `bone:` 坐标系就离开枪，`hidden` 让它在弹匣包里不画。**P9 熟练档换弹、检视 2026-10-17 第一次用它**（[p9_reload_inspect_v1.md](p9_reload_inspect_v1.md) 第 3 节）：弹匣道具 `p9_01_mag` / `p9_01_mag_old` 带 `gun_part`，枪的渲染器把 `mag_out` / `empty_old_mag` 画在道具的位置；枪自己的 `magazine` 照枪的片段显示 / 隐藏。只在第三人称，第一人称仍是枪自己的片段 |
+| `positioning`、`camera` | **待定** | 旧的第一人称摆放和镜头晃动。新做法下第一人称画面由骨架的眼睛决定，`positioning` 应该不再需要；镜头晃动可能变成动作事件 |
+
+**片段怎么分**：
+
+| 动作 | 以后 |
+|---|---|
+| 掏枪、收枪、换弹、检视、待机 | 都变成人物动作（身体、手的目标、枪的道具关键帧），用插件做。枪自己的机械片段，例如换弹时的空仓挂机释放，由动作的事件触发 |
+| 开火 | 枪的套筒片段留在枪里，后坐对手臂的影响程序化（熟练度可以用代码调，第 6 节） |
+| 三档熟练度的换弹 | 三个动作文件，最低一档会出错（第 6.3 节），共用同一把枪的机械片段 |
+
+**旧枪**：
+- 现在的枪照旧能用：`tools/export-native-gun.mjs`、旧的分级、旧的片段都不动。
+- 每把枪从头重做时，再按本节改它的源模型。
+
+### 4.8 枪只用右手（2026-10-16 用户定；已实现，**未实机验证**）
+
+用户：枪默认不能左手拿，否则很奇怪；副手这个功能用得不多，还可能和双手动作冲突，直接去掉。
+
+- **没有副手**：任何东西都放不进副手，F 不起作用（`docs/ui/afl_inventory_grid_v0_plan.md` 第 16 节）。
+- **选项里主手设成左手**：主手拿着枪（`NativeGunItem`）时，`Player#getMainArm` 一律返回右手（`mixin/PlayerGunRightArmMixin`，客户端和服务器都生效）。
+  - 所以第一人称视图模型、第三人称的手、骨架持枪姿势都只有右手一种；
+  - `SkeletonGunStance.holds` 不再检查主手方向。
+- 拿别的东西（撬棍、油壶、温度计等）仍按选项，左手玩家照旧镜像。
+- **对枪的动作的约定**（掏枪、收枪 2026-10-17 已照此做，见 [p9_draw_holster_actions_v1.md](p9_draw_holster_actions_v1.md) 第 2.4 节；换弹还没做）：
+  - 枪的动作不做左手镜像；
+  - 枪套挂点 `holster` 永远在右大腿，和枪套模型一致；
+  - 收枪时主手已经换成别的东西、左手玩家的主手方向回到左边，收枪仍是右手放回右大腿。
+- 这样插件文档第 10.5 节的“左手玩家的枪套挂点和枪套模型对不上”就不会出现。
+
 ## 5. 和 P2 第一段 NOT PASS 的对应关系
 
 | 问题 | 测出来的原因 | 规格里怎么改 |
@@ -306,6 +398,14 @@
 - **这一步只写规格，没有实现**。先做的 BR51、P9 持枪动画用的是"熟练"档的数值，但数值放在同一个姿势结构里，以后新手档可以加进来插值。
 
 ### 6.3 动作怎么按熟练度区分（建议）
+
+**用户 2026-10-16 定**（取代下面"掏枪、换弹"一条里的"两版加混合"，以及"还没定"里的失败问题）：
+- 后坐力、瞄准这类可以用代码按熟练度调。
+- 换弹**必须做 3 个熟练度的动画**，是 3 个独立的动作，不靠混合。
+- 最低一档**可以出错**：装得慢，或者弹匣没对准弹匣井、要再插一次。
+- 怎么出错（固定演出，还是随机或 QTE）还没定。
+
+原来的建议：
 - **姿势**：
   - 同一套关键帧结构，新手和熟练各一组数值；
   - 中间按熟练度连续插值，不是硬切三档。

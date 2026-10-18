@@ -34,10 +34,12 @@ public final class PlayerStorageCapacity {
     }
 
     /**
-     * Whether putting this stack at the storage index is refused: a locked slot, or a weapon position that does not take
-     * the item (HotbarRoles: role, sling, holster). Taking out is never refused here.
+     * Whether putting this stack at the storage index is refused: the off hand in every game mode (NoOffHand), a locked
+     * slot, or a weapon position that does not take the item (HotbarRoles: role, sling, holster). Taking out is never
+     * refused here.
      */
     public static boolean rejects(Inventory inventory, int storageIndex, ItemStack stack) {
+        if (storageIndex == Inventory.SLOT_OFFHAND) return true;
         if (isLocked(inventory, storageIndex)) return true;
         return !unrestricted(inventory.player) && !HotbarRoles.accepts(inventory.player, storageIndex, stack);
     }

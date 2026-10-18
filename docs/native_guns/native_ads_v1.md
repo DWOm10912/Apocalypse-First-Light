@@ -14,7 +14,7 @@ P9-01 / BR51-01 共用 `weapon/client/NativeGunAds.java`，按住 Vanilla `keyUs
 
 读取现有Gecko `action` 控制器的触发动作：reload/reload_empty/reload_tactical、draw、put_away、inspect禁止ADS；射击、空仓idle、干击不禁止。R请求先退出，等待服务器动画同步；请求被拒绝时仅3tick临时抑制。配置枪切入至少等待原draw时长，P9等待3tick equip。动画结束后仍按住右键可重新进入。
 
-Sprint禁止进入ADS，已ADS时疾跑按原退出时长平滑退出；停止疾跑且仍按右键时重新进入。走路/蹲伏/空中允许，精度仍受原姿态系统约束。切物品/槽位/枪ID、死亡、重生、换世界重置两端进度；渲染即时验证身份，避免新物品继承一帧ADS。第三人称不应用ADS。切枪FOV立即恢复而非把旧枪缩放交给新枪。
+Sprint禁止进入ADS，已ADS时疾跑按原退出时长平滑退出；停止疾跑且仍按右键时重新进入。走路/蹲伏/空中允许，精度仍受原姿态系统约束。切物品/槽位/枪ID、死亡、重生、换世界重置两端进度；渲染即时验证身份，避免新物品继承一帧ADS。第三人称不应用ADS的画面部分：`progress()` 只在第一人称有值，FOV、视图模型修正、晃动、准星和瞄准射击标记都读它。2026-10-17 晚起第三人称不再阻断进度本身：按住右键在第三人称也涨进度，`NativeGunAds#bodyProgress`（不分视角）只给玩家骨骼举枪（自己的第三人称和发给别的玩家的瞄准状态）和检视等待用，见 [p9_stance_loops_v1.md](../dev/p9_stance_loops_v1.md) 4.6。切枪FOV立即恢复而非把旧枪缩放交给新枪。
 
 ## 锚点与参数
 

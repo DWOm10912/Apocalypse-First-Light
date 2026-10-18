@@ -62,7 +62,7 @@ RIFLE / 半自动战斗步枪
 
 注册/生产 Item
 
-YES；通用 ConfiguredNativeGunItem（`p9_01_v2_native` Pure Mesh 资产）
+YES；通用 ConfiguredNativeGunItem（`p9_01_v3_native` Pure Mesh 资产，2026-10-17 起；之前是 `p9_01_v2_native`）
 
 YES；通用 ConfiguredNativeGunItem
 
@@ -242,11 +242,11 @@ runtime 至少有：geo/<weapon>.geo.json、animations/<weapon>.animation.json�
 
 GUI 推荐继续使用 forge:separate_transforms，平面 inventory 图与 builtin/entity 手持模型分离。
 
-ConfiguredNativeGunItem 自动创建 NativeAnimatedWeaponRenderer(Profile)；P9 V2 使用 profile `p9_01_v2_native`，由 Profile/Presentation 指定动画、锚点和呈现值。
+ConfiguredNativeGunItem 自动创建 NativeAnimatedWeaponRenderer(Profile)；P9 使用 profile `p9_01_v3_native`（2026-10-17 起；骨骼、锚点、动画与 V2 相同，见 p9_01_v3_game_model_v1.md），由 Profile/Presentation 指定动画、锚点和呈现值。
 
 第一/第三人称及左右手 Display 都要显式检查。右/左手 scale 不一致会直接破坏 ADS 对称假设。
 
-runtime geometry identifier 当前分别为 geometry.p9_01_v2_native、geometry.br51_01。维护台按 ResourceLocation 读取 geo 文件，不按 identifier 查找，但 identifier 仍应与资产 ID 规范一致，避免工具/导出/诊断漂移。
+runtime geometry identifier 当前分别为 geometry.p9_01_v3_native、geometry.br51_01。维护台按 ResourceLocation 读取 geo 文件，不按 identifier 查找，但 identifier 仍应与资产 ID 规范一致，避免工具/导出/诊断漂移。
 
 .bbmodel metadata 不是运行时真值：当前 P9 V2 与 BR51（V2 Pure Mesh，2026-09-28）源均为 Free Model Pure Mesh，都以导出的 runtime geo/animation/mesh sidecar 为准。不能把某个 model_format 字符串当成通用硬要求。
 
@@ -615,7 +615,7 @@ HIP 显示先正确。
 
 用固定目标在多个距离做“Crosshair→ADS”和“ADS→Crosshair”双向测试；不能只在一个距离视觉对上。
 
-Sprint 禁止进入 ADS，已 ADS 时平滑退出，停止 sprint 且仍按住 use 会恢复。draw/equip、reload request、reload/draw/put-away/inspect、使用物品、界面/失焦、第三人称均阻断。
+Sprint 禁止进入 ADS，已 ADS 时平滑退出，停止 sprint 且仍按住 use 会恢复。draw/equip、reload request、reload/draw/put-away/inspect、使用物品、界面/失焦均阻断。第三人称（2026-10-17 晚起）不阻断进度，只是 `progress()` 在第三人称返回 0（不缩放、不修正视图模型、按腰射散布）；骨骼举枪读不分视角的 `bodyProgress`。
 
 P9 左手 Display 是否与右手完全一致仍应在每枪视觉 QA 中单独检查；不要用右手通过来替代左手验收。
 

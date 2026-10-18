@@ -39,7 +39,7 @@ final class NativeMagazineRoundRendering {
                 // gun's own magazine with its real count
                 boolean reloading = clip != null && clip.startsWith("reload_");
                 if (!reloading && !("inspect".equals(clip) && ammo > loadedAuxiliary)) return;
-            } else if (!"reload_tactical".equals(clip) || ammo <= oldMagazine) return;
+            } else if (clip == null || !clip.startsWith("reload_tactical") || ammo <= oldMagazine) return;   // incl. reload_tactical_ads
         }
 
         // GeckoLib has already applied this bone and all ancestors to incoming.

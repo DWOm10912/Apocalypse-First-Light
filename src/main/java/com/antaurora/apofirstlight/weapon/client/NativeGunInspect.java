@@ -66,7 +66,7 @@ public final class NativeGunInspect {
         String action = action();
         if (action.isEmpty()) canceledId = Long.MAX_VALUE;
         if (pending && !action.isEmpty()) cancel();
-        if (pending && NativeGunAds.progress(0) == 0 && NativeGunAds.progress(1) == 0) {
+        if (pending && NativeGunAds.bodyProgress(0) == 0 && NativeGunAds.bodyProgress(1) == 0) {
             pending = false;
             awaitingTrigger = 40; // Network acknowledgement guard only, never animation duration.
             AflNetwork.requestInspect(slot, id, false);

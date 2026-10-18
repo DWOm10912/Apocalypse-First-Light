@@ -380,7 +380,7 @@ public final class PlayerSkeletonCheck {
         float real = g.carried().scale();
         if (kind.readyHand == null) raise = 1F;
         float up = raise * (1F - lower);
-        Matrix4f rightRest = g.sampler().frame("right_hand_anchor", "static_idle", 0F);
+        Matrix4f rightRest = g.carried().rightHand(g.sampler().frame("right_hand_anchor", "static_idle", 0F));
         Matrix4f raised = toModel().mul(GunStance.eye(eyeO(in.crouch > 0.5F), in.viewYaw, in.viewPitch));
         Vector3f back = raised.transformDirection(new Vector3f(0, 0, 1)).normalize();
         Matrix4f chestSkin = pose.world[pose.rig.chest];
@@ -404,8 +404,9 @@ public final class PlayerSkeletonCheck {
         in.shoulderRight.set(kind.shoulderRight).mul(up);
         in.shoulderLeft.set(kind.shoulderLeft).mul(up * leftOn);
         String still = clip.contains("draw") || clip.equals("put_away") ? g.still() : null;
-        Matrix4f rightAnchor = g.sampler().frame("right_hand_anchor", clip, t, still, "static_idle");
-        Matrix4f leftAnchor = g.sampler().frame("left_hand_anchor", clip, t, still, "static_idle");
+        Matrix4f rightAnchor = g.carried().rightHand(g.sampler().frame("right_hand_anchor", clip, t, still, "static_idle"));
+        Matrix4f leftAnchor = g.carried().leftHand(g.sampler().frame("left_hand_anchor", clip, t, still, "static_idle"),
+                g.sampler().frame("left_hand_anchor", "static_idle", 0F));
         boolean acting0 = clip.startsWith("reload") || clip.startsWith("inspect");
         if (up > 0) gun = GunStance.inReach(kind, acting0 || labLeft != null ? null : g.carried().support(), poser, in, pose, gun, back,
                 rightAnchor, leftAnchor);

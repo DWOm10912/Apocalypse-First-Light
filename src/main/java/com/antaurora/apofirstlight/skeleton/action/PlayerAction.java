@@ -13,7 +13,7 @@ import java.util.List;
  * Player actions V1 (docs/dev/player_actions_v1_plan.md 2; design docs/dev/player_skeleton_v1_design.md 10.2): one action
  * definition, {@code assets/apocalypse_firstlight/player_actions/<group>/<name>.json}. V1 reads the clip and its
  * parameter clip, layer, mask, priority, blend times, the step up to what the action works on ({@link Approach}), both
- * hands' target timelines, the held prop's placement timeline ({@link PropKey}, S2), the first-person mode and the check
+ * hands' target timelines, the props' placement timelines ({@link PropKey}, S2; several since AFL Rig phase 2), the first-person mode and the check
  * values; {@code events}, {@code locks} and {@code cancel} are kept as JSON for the later stages. Authored for the right
  * side; a left-side player plays it mirrored. Pure.
  */
@@ -28,8 +28,16 @@ public final class PlayerAction {
     public enum FirstPerson { BODY, VIEW_MODEL }
 
     /**
+     * A gun's stance loop (docs/dev/p9_stance_loops_v1.md): NONE, played once; TIME, over and over by the clock (standing
+     * idle); STRIDE, once a stride, its time the locomotion's stride phase (sprinting). The gun stance plays these by its
+     * state, not by their blend times.
+     */
+    public enum Loop { NONE, TIME, STRIDE }
+
+    /**
      * A hand target: {@code pose}, {@code socket:<name>}, {@code block:<name>} (V1), {@code prop:<point>} (a point on the
-     * action's prop where its placement puts it, S2); the other kinds parse, resolve to none.
+     * action's first prop where its placement puts it, S2), {@code prop:<id>:<point>} (a point on the prop {@code id} of
+     * {@link #props}, AFL Rig phase 2); the other kinds parse, resolve to none.
      */
     public record Target(String kind, String name) {
         public static final Target POSE = new Target("pose", "");
@@ -40,14 +48,6 @@ public final class PlayerAction {
         }
 
         public boolean pose() { return kind.equals("pose"); }
-
-        /** The same target for a left-side player: body sockets swap sides, the rest stays. */
-        Target mirrored() {
-            if (!kind.equals("socket")) return this;
-            String n = name.endsWith("_l") ? name.substring(0, name.length() - 2) + "_r"
-                    : name.endsWith("_r") ? name.substring(0, name.length() - 2) + "_l" : name;
-            return new Target(kind, n);
-        }
     }
 
     /**
@@ -75,9 +75,21 @@ public final class PlayerAction {
      * bone), {@code shoulder_r} / {@code shoulder_l} (pos: px from that posed shoulder joint, turned as the root: within an
      * arm's reach standing or crouched, and level however the chest leans), {@code anchor:<name>} (pos: px from one of the
      * action's anchors, turned as the root: the jerry can's spout over the fill opening; a key whose anchor is unknown
-     * holds the key before it). The hands reach for it with {@code prop:} targets.
+     * holds the key before it). AFL Rig phase 2 (docs/dev/afl_rig_blockbench_plugin_v1.md 10): {@code bone:<bone>} (pos:
+     * rest model px carried by that bone, as chest and root: the thigh; not an arm bone, which the IK places after the
+     * props), {@code socket:<name>} (pos: px from that body socket, turned as its bone: the holster on the right thigh),
+     * {@code prop:<id>} (pos: px in an earlier prop's model frame, turned from it: a magazine seated in the pistol rides
+     * with it). {@code carry} (a gun prop, docs/dev/p9_draw_holster_actions_v1.md 2.3): the gun at its carry mount as the
+     * body's carried-weapons layer draws it, its size there included (ActionPose.Moment#carry); pos (px) and rot turn it
+     * about the key's point in that frame, normally 0. The hands reach for it with {@code prop:} targets. {@code view}
+     * (docs/dev/p9_stance_loops_v1.md): pos px from the eye (the camera's), turned as the view (yaw and pitch, with the first
+     * person's sway and recoil), axes as the rest model's: a pistol held out before the view (ActionPose.Moment#view). {@code hidden}:
+     * from this key on the prop is not drawn (its placement still counts: hands, props riding on it).
      */
-    public record PropKey(float at, String frame, String point, Vector3f pos, Vector3f rot, float blend) {}
+    public record PropKey(float at, String frame, String point, Vector3f pos, Vector3f rot, float blend, boolean hidden) {}
+
+    /** One prop of the action: its PlayerProps id, placement timeline, and the second from which it is drawn open (NaN). */
+    public record PropTrack(String id, List<PropKey> keys, float openFrom) {}
 
     /**
      * An anchor the action places from the player's view (S2: the crowbar's swing, where nothing in the world gives one):
@@ -98,10 +110,35 @@ public final class PlayerAction {
     public final Approach approach;
     public final List<HandKey> right, left;
     public final FirstPerson firstPerson;
-    /** The held prop (PlayerProps id) and its placement timeline, or null / empty. */
+    /** JSON {@code loop} ({@code "time"}, {@code "stride"}) and the loop's {@code length} (s; NaN: the clip's). */
+    public final Loop loop;
+    public final float length;
+    /**
+     * JSON {@code hip_fire}: an idle loop that is the gun's hip-fire stance (docs/dev/p9_stance_loops_v1.md: the gun held out
+     * before the view, its muzzle on the crosshair): a shot does not raise the gun from it, and it is brought back toward
+     * the eye where the arms are too short, as the raised stance is.
+     */
+    public final boolean hipFire;
+    /**
+     * JSON {@code view_pitch} [up, down] (deg, - = up), or null: how far up and down its {@code view} frame follows the
+     * look's pitch (docs/dev/p9_stance_loops_v1.md: past it the arms cannot hold the gun on the view, it would go into the
+     * chest); eased over the last ActionPose#VIEW_KNEE.
+     */
+    public final float[] viewPitch;
+    /**
+     * JSON {@code chest_twist} (deg, + = the chest right of the view): a gun stance loop's bladed body (SkeletonGunStance
+     * #chestTwist, under its weight; docs/dev/p9_stance_loops_v1.md); the plugin and the checks pose it too. 0: square.
+     */
+    public final float chestTwist;
+    /**
+     * The props, JSON {@code prop} (one) or {@code props} (a list, AFL Rig phase 2: the pistol and its magazines), in
+     * order: a prop placed on another ({@code prop:<id>} frame) comes after it. The first is the held item.
+     */
+    public final List<PropTrack> props;
+    /** The first prop (PlayerProps id) and its placement timeline, or null / empty. */
     public final String prop;
     public final List<PropKey> propKeys;
-    /** From this second on the prop is drawn open (PlayerProps.Prop#openBlock: the jerry can's cap swung off), or NaN. */
+    /** From this second on the first prop is drawn open (PlayerProps.Prop#openBlock: the jerry can's cap swung off), or NaN. */
     public final float propOpenFrom;
     public final List<ViewAnchor> viewAnchors;
     /** Kept for later stages and the checks. */
@@ -131,16 +168,27 @@ public final class PlayerAction {
         right = keys(id, hands, "right");
         left = keys(id, hands, "left");
         firstPerson = json.has("first_person") ? FirstPerson.valueOf(json.get("first_person").getAsString().toUpperCase()) : FirstPerson.BODY;
-        if (json.has("prop")) {
-            JsonObject p = json.getAsJsonObject("prop");
-            prop = p.get("id").getAsString();
-            propKeys = propKeys(id, p);
-            propOpenFrom = p.has("open_from") ? p.get("open_from").getAsFloat() : Float.NaN;
+        loop = json.has("loop") ? Loop.valueOf(json.get("loop").getAsString().toUpperCase()) : Loop.NONE;
+        length = json.has("length") ? json.get("length").getAsFloat() : Float.NaN;
+        hipFire = json.has("hip_fire") && json.get("hip_fire").getAsBoolean();
+        chestTwist = json.has("chest_twist") ? json.get("chest_twist").getAsFloat() : 0F;
+        if (json.has("view_pitch")) {
+            JsonArray v = json.getAsJsonArray("view_pitch");
+            viewPitch = new float[]{v.get(0).getAsFloat(), v.get(1).getAsFloat()};
+            if (!(viewPitch[0] < viewPitch[1])) throw new IllegalArgumentException("view_pitch: up " + viewPitch[0] + " not above down " + viewPitch[1]);
         } else {
-            prop = null;
-            propKeys = List.of();
-            propOpenFrom = Float.NaN;
+            viewPitch = null;
         }
+        if (loop != Loop.NONE && !(length > 0) && clip == null) throw new IllegalArgumentException("player action " + id + ": a loop without a length or clip");
+        if (json.has("prop") && json.has("props")) throw new IllegalArgumentException("player action " + id + ": both prop and props");
+        List<PropTrack> tracks = new ArrayList<>();
+        if (json.has("prop")) tracks.add(track(id, json.getAsJsonObject("prop"), tracks));
+        if (json.has("props")) for (JsonElement e : json.getAsJsonArray("props")) tracks.add(track(id, e.getAsJsonObject(), tracks));
+        props = List.copyOf(tracks);
+        PropTrack first = props.isEmpty() ? null : props.get(0);
+        prop = first == null ? null : first.id();
+        propKeys = first == null ? List.of() : first.keys();
+        propOpenFrom = first == null ? Float.NaN : first.openFrom();
         List<ViewAnchor> view = new ArrayList<>();
         if (json.has("view_anchors")) for (var e : json.getAsJsonObject("view_anchors").entrySet()) {
             JsonObject a = e.getValue().getAsJsonObject();
@@ -154,6 +202,12 @@ public final class PlayerAction {
 
     public static PlayerAction parse(String id, JsonObject json) {
         return new PlayerAction(id, json);
+    }
+
+    /** The index of the prop {@code propId} in {@link #props}, or -1. */
+    public int propIndex(String propId) {
+        for (int i = 0; i < props.size(); i++) if (props.get(i).id().equals(propId)) return i;
+        return -1;
     }
 
     /** The bones the action's clips may move (V1 names: full, upper, arms, arm_r, arm_l, legs), for this rig. */
@@ -199,7 +253,10 @@ public final class PlayerAction {
         return List.copyOf(out);
     }
 
-    private static List<PropKey> propKeys(String id, JsonObject prop) {
+    /** One prop object ({@code {"id", "keys", "open_from"}}); {@code before}: the props listed before it. */
+    private static PropTrack track(String id, JsonObject prop, List<PropTrack> before) {
+        String propId = prop.get("id").getAsString();
+        if (before.stream().anyMatch(t -> t.id().equals(propId))) throw new IllegalArgumentException("player action " + id + ": prop " + propId + " twice");
         List<PropKey> out = new ArrayList<>();
         float last = -1;
         for (JsonElement e : prop.getAsJsonArray("keys")) {
@@ -208,12 +265,16 @@ public final class PlayerAction {
             if (at < last) throw new IllegalArgumentException("player action " + id + ": prop keys out of order");
             last = at;
             String frame = k.has("frame") ? k.get("frame").getAsString() : "chest";
-            if (!List.of("chest", "root", "shoulder_r", "shoulder_l").contains(frame) && !frame.startsWith("anchor:")) throw new IllegalArgumentException("player action " + id + ": prop frame " + frame);
+            boolean known = List.of("chest", "root", "shoulder_r", "shoulder_l", "carry", "view").contains(frame) || frame.startsWith("anchor:")
+                    || frame.startsWith("bone:") || frame.startsWith("socket:")
+                    || frame.startsWith("prop:") && before.stream().anyMatch(t -> t.id().equals(frame.substring(5)));
+            if (!known) throw new IllegalArgumentException("player action " + id + ": prop frame " + frame
+                    + (frame.startsWith("prop:") ? " (a prop listed before this one)" : ""));
             out.add(new PropKey(at, frame, k.get("point").getAsString(), vector(k, "pos"), vector(k, "rot"),
-                    k.has("blend") ? k.get("blend").getAsFloat() : 0.3F));
+                    k.has("blend") ? k.get("blend").getAsFloat() : 0.3F, k.has("hidden") && k.get("hidden").getAsBoolean()));
         }
         if (out.isEmpty()) throw new IllegalArgumentException("player action " + id + ": a prop without keys");
-        return List.copyOf(out);
+        return new PropTrack(propId, List.copyOf(out), prop.has("open_from") ? prop.get("open_from").getAsFloat() : Float.NaN);
     }
 
     private static Vector3f vector(JsonObject o, String key) {

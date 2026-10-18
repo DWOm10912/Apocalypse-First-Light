@@ -43,11 +43,14 @@ public final class GunStance {
         /**
          * Both hands: the ready (TC 3-23.35 6-31: two-handed grip, upper arms close to the body, forearms about 45 deg, the
          * muzzle toward the target) by default, raised to the eye while aiming, shooting, reloading; square to the view.
-         * Sprinting: one hand, lowered.
+         * Sprinting: one hand, lowered. The firing hand holds the gun nearly as its own anchor does: the wrist straight,
+         * the forearm back along the bore but for the isosceles' slant toward the body's middle (yaw 15: the arms make a V
+         * to the gun; the -30 / -10 / -30 grip looked like holding it from the side); the support hand wraps it from below
+         * (both tuned offline over the look's pitch, docs/dev/p9_stance_loops_v1.md 4.1).
          */
         PISTOL(0F, new Vector3f(0.03F, -0.09F, 0.03F), new Vector3f(0.5F, 0F, -2F), new Vector3f(-0.5F, 0F, -2F), 0F,
-                new Vector3f(0.17F, -0.12F, -0.17F), -50F, 0F, 0.34F,
-                new Grip(-30, -10, -30), new Grip(-25, 0, 15), new Vector3f(-0.35F, 1F, 0.45F), new Vector3f(0.35F, 1F, 0.45F),
+                new Vector3f(0.17F, -0.12F, -0.17F), -50F, 0F, 0.62F,
+                new Grip(-5, 15, -10), new Grip(-35, 15, 30), new Vector3f(-0.35F, 1F, 0.45F), new Vector3f(0.35F, 1F, 0.45F),
                 new Vector3f(0.03F, 0.10F, -0.33F), -10F, null);
 
         /** Chest yaw right of the view (deg) while the gun is held. */
@@ -65,7 +68,10 @@ public final class GunStance {
          * Aimed: the rear sight's distance ahead of the eye (blocks), or 0 for the ADS profile's eye relief at real size. A
          * rifle's stock sets it (the profile); a pistol is held out at arm's length, much further than its old view-model
          * eye relief (0.47 at the view model's 0.53 scale: 0.23 at real size, the hands 15 cm from the eye, the arm skin
-         * 2-4 cm). 0.34: the arms nearly straight; {@link #inReach} brings it back where they fall short.
+         * 2-4 cm). 0.62 (user 2026-10-17, third person: at 0.34 the gun was 1.4 px before the face, the elbows out, "挤"):
+         * further than the arms reach at any look, so {@link #inReach} always brings it back to the arms' reach (0.98),
+         * the arms out straight as the isosceles holds them. Only the skeleton's third person and the other players use
+         * it: the own first person holds a gun through its old view model.
          */
         public final float sightDistance;
         /** How each hand sits on the gun against the gun's own anchor (the designer's arm runs straight back along the bore). */
@@ -118,12 +124,36 @@ public final class GunStance {
     /**
      * A gun the skeleton carries: how it is held, its real size over the model, its geo / animation asset, its size on
      * the body over the real one (a long gun's real length looks short against the block body's head and arms), the butt
-     * plate's centre (gun px; shouldered guns) and the support hand's place under its handguard (or null: the anchor).
+     * plate's centre (gun px; shouldered guns), the support hand's place under its handguard (or null: the anchor) and how
+     * much lower than its {@code right_hand_anchor} / {@code left_hand_anchor} the firing / support hand sits (model px:
+     * the 4 px block hand is taller than a pistol's grip, so a hand centred on the anchor cuts into the slide; lower, its
+     * top stays under the slide).
      */
-    public record Carried(Kind kind, float realScale, String asset, float bodyScale, Vector3f butt, Support support) {
+    public record Carried(Kind kind, float realScale, String asset, float bodyScale, Vector3f butt, Support support, float handDrop,
+                          float supportDrop) {
         /** The gun's size on the body (gun blocks to model blocks, with the profile's frame). */
         public float scale() {
             return realScale * bodyScale;
+        }
+
+        /** The firing hand's anchor (gun blocks): the gun's {@code right_hand_anchor} frame, {@link #handDrop} lower on the gun. */
+        public Matrix4f rightHand(Matrix4f anchor) {
+            return lower(anchor, handDrop);
+        }
+
+        /**
+         * The support hand's anchor (gun blocks): the clip's {@code left_hand_anchor} frame, {@link #supportDrop} lower on the
+         * gun while the clip keeps it on the grip ({@code rest}: its {@code static_idle} frame), none once a reload or an
+         * inspect has taken it {@link #SUPPORT_DROP_FADE} px away (to the magazine, the slide).
+         */
+        public Matrix4f leftHand(Matrix4f anchor, Matrix4f rest) {
+            if (supportDrop == 0F) return anchor;
+            float away = anchor.getTranslation(new Vector3f()).distance(rest.getTranslation(new Vector3f())) * 16F * scale();
+            return lower(anchor, supportDrop * (1F - smooth(away / SUPPORT_DROP_FADE)));
+        }
+
+        private Matrix4f lower(Matrix4f anchor, float drop) {
+            return drop == 0F ? anchor : new Matrix4f().translation(0F, -drop / (16F * scale()), 0F).mul(anchor);
         }
     }
 
@@ -131,12 +161,58 @@ public final class GunStance {
      * By gun id path. Real scale = rack length over the model's longest side (tools/check-skeleton-arm-reach.mjs).
      * P2 first part: the BR51 and the P9 (design 10.9); the other four follow once both pass. The BR51 is 1.25 x on the body
      * (user 2026-10-15: a rifle must look long; 1.25 x is the most the arms reach without growing), the support hand at
-     * the handguard's rear (gun_handling_reference_v1.md 4.5).
+     * the handguard's rear (gun_handling_reference_v1.md 4.5). The P9 is as large in the hands as in its holster (its item
+     * model's third-person size, 0.49467: 1.8953 x real; user 2026-10-17: at real size, 3.2 px long, the fists hid it); its
+     * hands {@link #P9_HAND_DROP} / {@link #P9_SUPPORT_DROP} lower than its anchors.
      */
     private static final Map<String, Carried> CARRIED = Map.of(
             "br51_01", new Carried(Kind.RIFLE, 0.307F, "br51_01", 1.25F, new Vector3f(0F, 8F, 26.8F),
-                    new Support(new Vector3f(-0.2F, 8.6F, SUPPORT_Z), SUPPORT_DOWN, SUPPORT_OUT, SUPPORT_ROLL, SUPPORT_POLE)),
-            "p9_01", new Carried(Kind.PISTOL, 0.261F, "p9_01_v2_native", 1F, null, null));
+                    new Support(new Vector3f(-0.2F, 8.6F, SUPPORT_Z), SUPPORT_DOWN, SUPPORT_OUT, SUPPORT_ROLL, SUPPORT_POLE), 0F, 0F),
+            "p9_01", new Carried(Kind.PISTOL, 0.261F, "p9_01_v3_native", 0.49467F / 0.261F, null, null, GunStance.P9_HAND_DROP,
+                    GunStance.P9_SUPPORT_DROP));
+
+    /**
+     * The P9's hands under their anchors (model px; Carried#handDrop, #supportDrop), measured on the posed block hands in
+     * the AFL Rig Blockbench plugin (docs/dev/p9_stance_loops_v1.md 4.1): the right anchor is 0.89 px under the slide, the
+     * block hand's top 2 px above its centre, so centred there it cut 1.1 px into the slide (user 2026-10-17, first
+     * person); turned by its grip, 1.6 px lower its highest corner is under the beavertail. The left anchor is 1.1 px over
+     * the right one: centred there the support hand rose 1.6 px over the slide's bottom beside it and hid the slide from the
+     * eye; 2 px lower its top is 0.4 px under the slide (the first person's narrower arms the same).
+     */
+    public static final float P9_HAND_DROP = 1.6F, P9_SUPPORT_DROP = 2F;
+
+    /** Carried#leftHand: how far (model px) a clip takes the support hand from the grip before its drop is gone. */
+    public static final float SUPPORT_DROP_FADE = 1F;
+
+    /**
+     * First person (docs/dev/p9_stance_loops_v1.md 4.2): the camera sits on the eye socket, the body 4 px behind it
+     * (HumanoidPoser's root shift), so the real arms hold a gun no further than about 6 px ahead of the eye, low on the
+     * screen. With the gun held out (its stance loop and actions in the {@code view} frame) the first person draws the arms
+     * reaching further, as the old view model and shooters' view models do: the view frame's keys this far ahead along the
+     * look, the shoulders' reach (HumanoidPoser.Input#protraction) as much more. Full looking ahead or up, none looking
+     * down (there the own body shows, the arms on it), eased between {@link #FIRST_PERSON_REACH_FROM} and {@link
+     * #FIRST_PERSON_REACH_TO} degrees down. Third person never: others see the real arms.
+     */
+    public static final float FIRST_PERSON_REACH = 5F, FIRST_PERSON_REACH_FROM = 15F, FIRST_PERSON_REACH_TO = 45F;
+
+    /** {@link #FIRST_PERSON_REACH} at the look's pitch (deg, + = down). */
+    public static float firstPersonReach(float pitch) {
+        return FIRST_PERSON_REACH * (1F - smooth((pitch - FIRST_PERSON_REACH_FROM) / (FIRST_PERSON_REACH_TO - FIRST_PERSON_REACH_FROM)));
+    }
+
+    /**
+     * First person with the reach (docs/dev/p9_stance_loops_v1.md 4.3): the arms are drawn this wide (their skin boxes' x,
+     * about the box's middle, so the palm stays on the grip), as thin as the old view model drew them (NativePlayerArmRenderer's
+     * 0.62). Full 4 px block hands around a pistol's grip hid the gun from the eye. Only the width: held out, the box's x
+     * is across the view and its z up the gun, so the hands' tops stay under the slide (thinner in z too they sank 0.76 px
+     * and the grip showed above them).
+     */
+    public static final float FIRST_PERSON_ARM = 0.62F;
+
+    /** How wide the arms are drawn (1 = as they are) for a first-person reach {@code ahead} (px, #firstPersonReach). */
+    public static float firstPersonArm(float ahead) {
+        return 1F - (1F - FIRST_PERSON_ARM) * Math.min(1F, ahead / FIRST_PERSON_REACH);
+    }
 
     /** The gun's size on the body (Carried#scale) by id path, or 1 when the skeleton does not carry it. */
     public static float bodyScale(String gunPath) {

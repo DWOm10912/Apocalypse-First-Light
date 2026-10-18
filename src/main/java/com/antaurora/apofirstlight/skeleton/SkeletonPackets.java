@@ -62,6 +62,11 @@ public final class SkeletonPackets {
         context.setPacketHandled(true);
     }
 
+    /** The player's aim as last sent (Aim): a reload started while aiming plays the gun's ADS variant (NativeGunActions). */
+    public static boolean aiming(ServerPlayer player) {
+        return Boolean.TRUE.equals(AIMING.get(player));
+    }
+
     @SubscribeEvent
     public static void startTracking(PlayerEvent.StartTracking event) {
         if (event.getTarget() instanceof ServerPlayer target && event.getEntity() instanceof ServerPlayer tracker
