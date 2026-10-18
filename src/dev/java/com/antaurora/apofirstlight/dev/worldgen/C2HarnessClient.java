@@ -61,6 +61,8 @@ public final class C2HarnessClient {
             C2Harness.log("creating world " + world + " preset " + preset.location() + " seed " + seed);
             LevelSettings settings = new LevelSettings(world, GameType.CREATIVE, false, Difficulty.PEACEFUL, true,
                     new GameRules(), WorldDataConfiguration.DEFAULT);
+            // the survivor mode is picked like the Create World screen would, else the host's prompt pauses the run
+            com.antaurora.apofirstlight.survivor.Survivors.setCreateScreenChoice(com.antaurora.apofirstlight.survivor.SurvivorMode.NORMAL);
             mc.createWorldOpenFlows().createFreshLevel(world, settings, new WorldOptions(seed, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(preset).value().createWorldDimensions());
         });
@@ -122,6 +124,7 @@ public final class C2HarnessClient {
         mc.tell(() -> {
             C2Harness.log("probe done: saving and quitting");
             C2Harness.log("road client: " + com.antaurora.apofirstlight.client.road.RoadClient.status());
+            C2Harness.log("tunnel fixtures client: " + com.antaurora.apofirstlight.client.road.TunnelFixtureClient.status());
             // the bridge's hit meshes as the crosshair meets them (outline context), around the player (2026-10-15)
             if (mc.level != null && mc.player != null && C3RoadProbe.active())
                 C2Harness.log("road hits (client, crosshair): " + C3HitCheck.run(mc.level, mc.player.getBlockX(), mc.player.getBlockZ(), 24,

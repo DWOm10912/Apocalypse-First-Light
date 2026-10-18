@@ -6,7 +6,7 @@ import java.util.List;
  * One built route (C3.2, C3.3a; docs/worldgen/federal_highways_c3.md, 10 and 11): the planned alignment (RoadCurve),
  * the planned vertical profile (RoadProfile, the crown line datum E) and its class's cross-section (CrossSection: R4 on
  * an interstate, R2 on a state highway) with its superelevation runoff, plus the bridge spans where the road leaves the
- * ground. The formal counterpart of the dev R4Design, on the C3 plan's curve instead of the sample's RoadAlignment. Pure
+ * ground, and the tunnels. The formal counterpart of the dev R4Design, on the C3 plan's curve instead of the sample's RoadAlignment. Pure
  * Java, immutable; every height the terrain works, the chunk pass, the collision columns, the turf corners and the
  * client mesh use comes from here.
  * <p>
@@ -47,6 +47,19 @@ public final class RoadDesign {
         public double reach(double sOut, double u) { return reach[(sOut == s0 ? 0 : 2) + (u < 0 ? 0 : 1)]; }
     }
 
+    /**
+     * A road tunnel (Tunnel V1; docs/worldgen/federal_tunnels_v1.md): stations s0 .. s1 run in the bores (s0, s1 the
+     * portal faces); TunnelWorks builds the bores, the portals and their approaches, TunnelMesh draws them.
+     */
+    public record Tunnel(double s0, double s1) {
+        public double length() { return s1 - s0; }
+
+        public boolean contains(double s) { return s >= s0 && s <= s1; }
+
+        /** Within the tunnel or its approaches (margin m beyond the portals). */
+        public boolean near(double s, double margin) { return s >= s0 - margin && s <= s1 + margin; }
+    }
+
     public final String id;
     public final CrossSection section;
     public final RoadCurve curve;
@@ -55,6 +68,8 @@ public final class RoadDesign {
     public final List<Span> spans;
     /** The box culverts under the road (group D; their stations are the network JSON's, not trimmed). */
     public final List<Culvert> culverts;
+    /** The tunnels (Tunnel V1), in station order. */
+    public final List<Tunnel> tunnels;
     private final double[] laneLeft, laneRight;
     private final boolean[] noPass;
 
@@ -63,6 +78,11 @@ public final class RoadDesign {
     }
 
     public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts) {
+        this(id, section, curve, profile, spans, culverts, List.of());
+    }
+
+    public RoadDesign(String id, CrossSection section, RoadCurve curve, RoadProfile profile, List<Span> spans, List<Culvert> culverts,
+                      List<Tunnel> tunnels) {
         if (profile.length > curve.length + RoadProfile.DS + 1e-6) throw new IllegalArgumentException("PROFILE_LONGER_THAN_CURVE " + id);
         this.id = id;
         this.section = section;
@@ -71,6 +91,7 @@ public final class RoadDesign {
         this.length = Math.min(curve.length, profile.length);
         this.spans = List.copyOf(spans);
         this.culverts = List.copyOf(culverts);
+        this.tunnels = List.copyOf(tunnels);
         // lane slopes on the profile's 2 m lattice: the curvature targets with the superelevation runoff
         int m = profile.size();
         double[] tl = new double[m], tr = new double[m];
@@ -112,6 +133,7 @@ public final class RoadDesign {
             // ahead: blocked from i; behind: blocked from i - sight
             w[i] = s < NO_PASS_END || s > length - NO_PASS_END || blocked[i] || (i >= sight && blocked[i - sight]);
             for (Span sp : spans) if (s >= sp.s0() - NO_PASS_LEAD && s <= sp.s1() + NO_PASS_LEAD) w[i] = true;
+            for (Tunnel t : tunnels) if (t.near(s, NO_PASS_LEAD)) w[i] = true;
         }
         close(w, false, (int) Math.round(MIN_PASS / RoadProfile.DS));
         close(w, true, (int) Math.round(MIN_NO_PASS / RoadProfile.DS));
@@ -156,11 +178,32 @@ public final class RoadDesign {
     /** Pavement height at (s, u), 0 <= s <= length, paved band. */
     public double pavementY(double s, double u) { return datum(s) + section.pavement(cross(s), u); }
 
+    /** #pavementY without allocation (the same arithmetic, the same result): the road ground query's per-wheel path. */
+    double pavementYAt(double s, double u) {
+        double x = Math.max(0, Math.min(length, s)) / RoadProfile.DS;
+        int i = Math.min(laneLeft.length - 2, (int) Math.floor(x));
+        double t = x - i;
+        double lane = u < 0 ? laneLeft[i] + (laneLeft[i + 1] - laneLeft[i]) * t : laneRight[i] + (laneRight[i + 1] - laneRight[i]) * t;
+        return datum(s) + section.pavement(lane, u);
+    }
+
     /** The formation turf (median swale, or the turf just under the paved band) at (s, u), |u| <= edge. */
     public double formationY(double s, double u) { return datum(s) + section.formation(cross(s), u); }
 
     /** Station and lateral offset of a world point within maxDist of the centreline (stations -END .. length + END), or null. */
     public double[] local(double x, double z, double maxDist) { return curve.local(x, z, maxDist, END); }
+
+    /** Whether the lane lines are solid at station s (no lane changes): in a tunnel and NO_PASS_LEAD before and after it. */
+    public boolean solidLanes(double s) {
+        for (Tunnel t : tunnels) if (t.near(s, NO_PASS_LEAD)) return true;
+        return false;
+    }
+
+    /** The tunnel whose bores or approaches (margin beyond its portals) hold station s, or null. */
+    public Tunnel tunnel(double s, double margin) {
+        for (Tunnel t : tunnels) if (t.near(s, margin)) return t;
+        return null;
+    }
 
     /** The bridge span holding station s, or null. */
     public Span span(double s) {

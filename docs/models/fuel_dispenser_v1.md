@@ -265,7 +265,7 @@
     - 现在只会滴油：每 6 tick 从身上掉一滴这种油，所有人都看得到。
       - 用的是自己的粒子类型 `apocalypse_firstlight:gasoline_drip` / `diesel_drip`，客户端画成和油柱溅油一样的油滴（`LiquidDroplet`，圆形油滴染成油的颜色，落地消失）。
       - 第四版用的是原版蜂蜜滴，落地后留下方块状的痕，用户要求改掉。
-    - 没有原版的药水漩涡粒子，但有状态图标：`textures/mob_effect/{gasoline,diesel}_soaked.png`，一滴淡黄或琥珀色的油，由 `tools/build-fuel-soaked-icon-v1.mjs` 生成。
+    - 没有原版的药水漩涡粒子。状态图标 `textures/mob_effect/{gasoline,diesel}_soaked.png`（一滴淡黄或琥珀色的油，由 `tools/build-fuel-soaked-icon-v1.mjs` 生成）2026-10-17 起不再在原版效果栏里画（`FuelSoakedEffect.initializeClient`），改成 HUD 左下的棕色油桶徽章，外圈白弧是剩余时间、旁边带时间（`docs/ui/hud_v2_research.md` 第 6 节）。
     - 着火（2026-10-05）：碰到烧着的油斑时，沾油的着火 10 秒（没沾油 5 秒）；沾油时一旦着火，火一直不灭（进水除外），直到沾油效果结束，每秒额外烧伤 1 点。见 [fuel_fire_v1.md](../gameplay/fuel_fire_v1.md)。
   - 贴图：`textures/block/liquid_film.png`（地面油摊，第八版）、`textures/block/liquid_splat_*.png`（32 × 32，浅灰，边缘柔和透明，边上略深一圈）、`liquid_sheet_*.png`（32 × 64，四五道长短粗细不一的流线，末端各一颗小油珠，底下一层往下渐淡的薄油膜，顶端渐隐。流线按到中线的距离画，不用叠球的方法，否则会糊成一片；第七版代替了单根细线的 `liquid_run_*`，后者又代替了一动不动的 `liquid_streak_*`）。LabPBR `_s` 是湿润光滑的（光滑度 215，F0 12），不发光，没有 `_n`。都染色使用，所以一套贴图给所有液体用。生成器：`tools/build-liquid-decals-v1.mjs`（`--check`）。
   - 只在加油机同步过来的"正在出油"标记亮着、并且拿枪的玩家正按着右键时才发射；没电或没油时不出现。

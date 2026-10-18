@@ -228,7 +228,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 11. 死亡结算界面与模式选择（客户端）
 
-客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。之后的版本号随 master 走；布娃娃 V1 R-B 新增 `CorpsePose`，D 分支先从 50 升到 51；master 的 T15 车灯也用了 51，所以 D 分支改为 **52**（2026-10-16，合并时以 52 为准）。
+客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。之后的版本号随 master 走；布娃娃 V1 R-B 新增 `CorpsePose`，D 分支先从 50 升到 51；master 的 T15 车灯也用了 51，所以 D 分支改为 52（2026-10-16）。2026-10-17 合并 master（协议 55：HUD V2 53、4L 54、雨刷 55）后取 **56**。
 
 | 包 | 方向 | 内容 |
 |---|---|---|

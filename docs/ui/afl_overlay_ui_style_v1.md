@@ -136,7 +136,7 @@
 | `client/ui/AflUiShapes` | 距离场圆角矩形的栅格化和九宫格绘制（底、描边、柔和投影），按（半径、样式、界面缩放）缓存角贴图；小鼠标图标、指示条胶囊 |
 | `client/ui/AflUiDraw` | 面板、标签、按钮格、键帽、横向渐变面板这些组合件 |
 | `client/ui/AflUiTween` | 按真实时间的渐变值（目标、时长、曲线），位移对齐屏幕像素 |
-| `client/ui/AflKeyHintPanel` | 通用按键提示面板：传入"键位来源 + 说明"的列表；处理进场、内容切换、按下反馈。即时改装界面先用，以后载具、机器、油壶倾倒都能复用 |
+| `client/ui/AflKeyHintPanel` | 通用按键提示面板：传入"键位来源 + 说明"的列表；处理进场、内容切换、按下反馈。即时改装界面先用；驾驶皮卡时的车辆按键（`client/vehicle/VehicleKeyHints`，2026-10-17）也用它；以后机器、油壶倾倒都能复用 |
 
 改动的现有类：`AttachmentHintStyle`（改用新画法，接口不变）、`MaintenanceAttachmentHud`（候选格、操作小窗、按钮）、`GunMaintenanceScreen`（取回 / 拿取按钮）、`FieldAttachmentScreen`（接面板、新键位）、`WorldInteractionHint`（加键帽）、`NativeGunInput`（注册新键位），以及中英文语言文件。原版快捷栏上顶如果做，另加一个客户端 mixin。
 
@@ -180,7 +180,7 @@
 ### 10.1 快捷栏
 
 - `AflHudEvents` 在非旁观模式下取消原版 `HOTBAR` overlay；`AflHotbarOverlay` 注册为 overlay `apocalypse_firstlight:hotbar`（在 `HOTBAR` 之上）自己画。旁观模式不取消，原版的旁观快捷栏照旧。即时改装视图里它和原版一样被藏起来（加进 `FIELD_VIEW_HIDDEN`）。
-- 占位和原版一样：底板 182×22，底边离屏幕底 1，物品横向位置和原版相同（中线 −88 + 20 i），纵向比原版高 1 GUI 像素。所以生存仪表组、负重条（经验条位置）、物品名的位置都不受影响。选中物品上顶 3 后仍在底板里。
+- 占位和原版一样：底板 182×22，底边离屏幕底 1，物品横向位置和原版相同（中线 −88 + 20 i），纵向比原版高 1 GUI 像素。所以生存仪表组、负重条（经验条位置）、物品名的位置都不受影响（2026-10-17 起生存 HUD 改成左下的 HUD V2 身体组件，负重条已去掉，见 [hud_v2_research.md](hud_v2_research.md) 第 6 节）。选中物品上顶 3 后仍在底板里。
 - 选中的格子亮起、物品上顶、琥珀指示条滑过去（`AflItemStrip`）。
 - 副手：有东西时在副手一侧单独一个 22×22 小底板，物品位置和原版相同。（2026-10-16 起没有副手，副手里的东西下一 tick 就被放回物品栏，这块平时不出现；见 `afl_inventory_grid_v0_plan.md` 第 16 节。）
 - 攻击冷却指示器设成"快捷栏"时：原版画剑的位置改画一个小环形进度（用生存 HUD 的 `AflGauge`，半径 7、宽 1.6、暖白）。

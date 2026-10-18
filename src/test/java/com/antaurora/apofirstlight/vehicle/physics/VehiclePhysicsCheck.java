@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.vehicle.physics;
 
+import com.antaurora.apofirstlight.vehicle.TransferLever;
 import org.joml.Vector3d;
 
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ public final class VehiclePhysicsCheck {
         double plane(double x, double z) { return y0 + sx * x + sz * z; }
 
         @Override
-        public boolean ground(double x, double z, double yTop, double yBottom, Ground out) {
+        public boolean ground(double x, double z, double yHint, double yTop, double yBottom, Ground out) {
             double best = plane(x, z);
             boolean box = false;
             for (double[] b : boxes) {
@@ -287,6 +288,91 @@ public final class VehiclePhysicsCheck {
             for (int t = 0; t < 200; t++) ld.tick(l, loose, 1, 0, 0, false);
             double climbed = l.origin(new Vector3d()).z - z1;
             check(four ? "4H loose 18" : "2H loose 18", String.format(Locale.ROOT, "%.1f m in 10 s, %.0f rpm", climbed, l.drivetrain.rpm()), four ? climbed > 5 : climbed < 1);
+        }
+
+        // 11b. the transfer key: standing 2H 4H 4L 2H; rolling (10 km/h) 2H 4H 2H, 4L kept; at 30 km/h nothing
+        {
+            Drivetrain tk = new Drivetrain(spec);
+            VehicleInput press = new VehicleInput(0, 0, 0, true, 0, true, false, true, true);
+            StringBuilder seq = new StringBuilder();
+            for (int i = 0; i < 3; i++) {
+                tk.controls(press, 0, 0);
+                seq.append(tk.transferMode());
+            }
+            tk.controls(press, 10 / 3.6, 0);
+            seq.append(' ').append(tk.transferMode());
+            tk.controls(press, 10 / 3.6, 0);
+            seq.append(tk.transferMode());
+            tk.controls(press, 0, 0);
+            tk.controls(press, 0, 0);
+            seq.append(' ').append(tk.transferMode());
+            tk.controls(press, 10 / 3.6, 0);
+            seq.append(tk.transferMode());
+            tk.controls(press, 0, 0);
+            tk.controls(press, 30 / 3.6, 0);
+            seq.append(' ').append(tk.transferMode());
+            check("transfer key", seq + " (modes 0 2H, 1 4H, 2 4L)", seq.toString().equals("120 10 22 0"));
+        }
+
+        // 11c. 4H against 4L up 32 degrees of firm ground, a standing start: low range pulls up it without stalling
+        for (boolean low : new boolean[]{false, true}) {
+            TestWorld steep = new TestWorld(64, 0, Math.tan(Math.toRadians(32)), 1.0);
+            VehiclePhysics l = new VehiclePhysics(spec);
+            l.reset(0, 64.02, 0, 0);
+            l.drivetrain.fourWheel = true;
+            l.drivetrain.low = low;
+            Driver ld = new Driver();
+            for (int t = 0; t < 120; t++) ld.tick(l, steep, 0, 1, 0, false);
+            double z1 = l.origin(new Vector3d()).z, zMin = z1;
+            boolean stall = false;
+            for (int t = 0; t < 200; t++) {
+                ld.tick(l, steep, 1, 0, 0, false);
+                zMin = Math.min(zMin, l.origin(new Vector3d()).z);
+                stall |= !l.drivetrain.running;
+            }
+            double climbed = l.origin(new Vector3d()).z - z1;
+            check(low ? "4L steep 32" : "4H steep 32", String.format(Locale.ROOT, "%.1f m in 10 s, rolled back %.2f m, gear %d, %.0f rpm, stalled %s",
+                    climbed, z1 - zMin, l.drivetrain.gear, l.drivetrain.rpm(), stall), !low || climbed > 4 && !stall);
+        }
+
+        // 11d. 4L top speed on the flat (the cut-off in 5th, 2.28 times lower than in 4H: about 70 km/h)
+        {
+            VehiclePhysics l = new VehiclePhysics(spec);
+            l.reset(0, 64.02, 0, 0);
+            l.drivetrain.fourWheel = true;
+            l.drivetrain.low = true;
+            Driver ld = new Driver();
+            for (int t = 0; t < 1200; t++) ld.tick(l, flat, 1, 0, 0, false);
+            double kmh = l.forwardSpeed() * 3.6;
+            check("4L top", String.format(Locale.ROOT, "%.0f km/h in gear %d", kmh, l.drivetrain.gear), kmh > 60 && kmh < 80);
+        }
+
+        // 11e. the transfer lever: 2H -> 4H -> 4L -> 2H at 60 fps; each move gets there, never overshoots, stops in N on the
+        // way in or out of low, the hand back on the wheel after each
+        {
+            TransferLever tl = new TransferLever();
+            double now = 0;
+            tl.update(now, 0);
+            int[] modes = {1, 2, 0};
+            boolean ok = true;
+            StringBuilder out = new StringBuilder();
+            for (int m : modes) {
+                double from = tl.fore, to = TransferLever.tilt(m), lo = Math.min(from, to) - 1e-6, hi = Math.max(from, to) + 1e-6;
+                double start = now, settled = Double.NaN, maxRate = 0, prev = tl.fore, atN = 0;
+                for (int f = 0; f < 90; f++) {
+                    now += 1 / 60.0;
+                    tl.update(now, m);
+                    ok &= tl.fore >= lo && tl.fore <= hi;
+                    maxRate = Math.max(maxRate, Math.abs(tl.fore - prev) * 60);
+                    if (Math.abs(tl.fore - TransferLever.NEUTRAL) < 1e-9) atN += 1 / 60.0;
+                    prev = tl.fore;
+                    if (Double.isNaN(settled) && Math.abs(tl.fore - to) < 1e-9) settled = now - start;
+                }
+                ok &= Math.abs(tl.fore - to) < 1e-9 && tl.hand == 0 && !tl.handGoing;
+                ok &= (m == 2 || from == TransferLever.tilt(2)) == (atN > 0.05);
+                out.append(String.format(Locale.ROOT, "%.0f->%.0f deg in %.2f s (max %.0f deg/s, %.2f s in N); ", from, to, settled, maxRate, atN));
+            }
+            check("transfer lever", out.toString(), ok);
         }
 
         // 12. fuel: the tank runs dry while idling (it stops); cranking without fuel never fires

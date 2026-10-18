@@ -72,7 +72,8 @@ public final class PlayerTemperature {
         double core = Double.NaN, wet, exertion, ambient = Double.NaN, target = Double.NaN, comfortMin = Double.NaN, damageTimer;
         int coldStage, heatStage, lastUpdate = Integer.MIN_VALUE, lastSyncTick = Integer.MIN_VALUE;
         boolean forceSync = true;
-        float sentCore = Float.NaN, sentAmbient, sentCold, sentHeat, sentDanger, sentSway, sentTrend, sentTarget, sentComfort;
+        float sentCore = Float.NaN, sentAmbient, sentCold, sentHeat, sentDanger, sentSway, sentTrend, sentTarget, sentComfort, sentWet;
+        int sentColdStage, sentHeatStage;
         Reading reading;
     }
     private PlayerTemperature() {}
@@ -361,11 +362,15 @@ public final class PlayerTemperature {
         boolean changed = s.forceSync || Float.isNaN(s.sentCore) || Math.abs((float)core - s.sentCore) >= 0.05f
                 || Math.abs(ambient - s.sentAmbient) >= 0.05f || Math.abs(coldness - s.sentCold) >= 0.01f
                 || Math.abs(heat - s.sentHeat) >= 0.01f || Math.abs(danger - s.sentDanger) >= 0.01f
-                || Math.abs(sway - s.sentSway) >= 0.01f || Math.abs(trend - s.sentTrend) >= 0.05f || Math.abs(target - s.sentTarget) >= 0.02f || Math.abs(comfort - s.sentComfort) >= 0.1f || now - s.lastSyncTick >= SYNC_KEEP_ALIVE;
+                || Math.abs(sway - s.sentSway) >= 0.01f || Math.abs(trend - s.sentTrend) >= 0.05f || Math.abs(target - s.sentTarget) >= 0.02f || Math.abs(comfort - s.sentComfort) >= 0.1f
+                || s.coldStage != s.sentColdStage || s.heatStage != s.sentHeatStage || Math.abs((float)s.wet - s.sentWet) >= 0.02f
+                || now - s.lastSyncTick >= SYNC_KEEP_ALIVE;
         if (!changed) return;
-        AflNetwork.temperatureState(player, new TemperaturePackets.State((float)core, ambient, coldness, heat, danger, sway, trend, target, comfort));
+        AflNetwork.temperatureState(player, new TemperaturePackets.State((float)core, ambient, coldness, heat, danger, sway, trend, target, comfort,
+                s.coldStage, s.heatStage, (float)s.wet));
         s.sentCore = (float)core; s.sentAmbient = ambient; s.sentCold = coldness; s.sentHeat = heat; s.sentDanger = danger;
-        s.sentSway = sway; s.sentTrend = trend; s.sentTarget = target; s.sentComfort = comfort; s.lastSyncTick = now; s.forceSync = false;
+        s.sentSway = sway; s.sentTrend = trend; s.sentTarget = target; s.sentComfort = comfort;
+        s.sentColdStage = s.coldStage; s.sentHeatStage = s.heatStage; s.sentWet = (float)s.wet; s.lastSyncTick = now; s.forceSync = false;
     }
 
     // ---- lifecycle

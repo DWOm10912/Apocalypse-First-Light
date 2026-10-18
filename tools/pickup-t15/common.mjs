@@ -13,7 +13,7 @@ export const FX = 1.60, RX = -1.25;               // front / rear axle (wheelbas
 export const R = 0.36, TW = 0.225, TR = 0.712;     // tyre radius (225/75 R15: 0.718 m), width, wheel centre |z|
 export const AY = 0.40, AR = 0.455;                // wheel arch centre height and radius
 export const YB = 0.46;                            // body bottom (sills, panel lower edges)
-export const BELT = 1.07, ROOF = 1.745;            // window sill line, roof top
+export const BELT = 1.07, ROOF = 1.845;            // window sill line, roof top (raised 10 cm 2026-10-16: room for a larger seated rider)
 export const HF = 1.005;                           // hood top at its front edge
 export const FX0 = 2.275;                          // front face of the body (lamps, grille)
 export const CB = -0.30;                           // outer face of the cab back panel
@@ -31,6 +31,17 @@ export const hy = x => 1.077 + (x - 1.08) * (HF - 1.077) / (2.25 - 1.08);
 /** Windshield line (x at height y, on the glass plane). */
 export const wsX = y => WS0 + (y - BELT) * (WS1 - WS0) / (ROOF - 0.045 - BELT);
 export const HOOD_X0 = 1.095;                      // hood rear edge
+/** Up the windshield (unit, in the glass plane at the centre line) and its outward normal (forward and up). */
+export const GLASS_UP = (() => { const d = (WS1 - WS0) / (ROOF - 0.045 - BELT), n = Math.hypot(d, 1); return [d / n, 1 / n, 0]; })();
+export const GLASS_OUT = [GLASS_UP[1], -GLASS_UP[0], 0];
+/**
+ * Tandem wipers (2026-10-17, lengthened at the user's ask for a bigger wiped area; were arm 0.42 / blade 0.43): pivot on
+ * the cowl (concept frame), arm (pivot to the blade's middle, in the glass plane) and blade length (m), the turn to the
+ * end of the stroke (deg, up the glass from the parked line toward the driver's side). Parked along the glass base toward
+ * the passenger side, the blades end to end. The runtime sweeps both with one stroke phase (vehicle/WiperSystem).
+ */
+export const WIPERS = (() => { const x = WS0 + 0.042, y = hy(HOOD_X0 - 0.004) - 0.002;
+  return {l: {pivot: [x, y, -0.47], arm: 0.49, blade: 0.49, sweep: 105}, r: {pivot: [x, y, 0.03], arm: 0.465, blade: 0.45, sweep: 92}}; })();
 export const HOOD_Z = HW - 0.112;                  // hood half width
 
 // bone pivots (concept frame); runtime turns: hood +X 58 deg, tailgate +X 90 deg, doors about Y
@@ -41,6 +52,15 @@ export const PIVOTS = {
   tailgate: [BED_R + 0.01, 0.615, 0],
   fuel_door: [-0.545, 0.94, -HW],
   steering: [0.40, 1.125, -0.37],
+  // the gear lever's rod and knob tilt about the top of its rubber boot (2026-10-16: the H gate, vehicle/ShiftLever)
+  shift: [0.43, 0.725, -0.02],
+  // the transfer case lever beside it: rod and knob tilt fore / aft about its boot's top (2026-10-17: 2H 4H N 4L, vehicle/TransferLever)
+  transfer: [0.38, 0.725, 0.07],
+  // the wiper stalk right of the column: its root on the shroud (cab.mjs steering(); 2026-10-17, vehicle/WiperSystem)
+  wiper_stalk: [0.40 + 0.10 * Math.cos(27 * Math.PI / 180), 1.125 - 0.10 * Math.sin(27 * Math.PI / 180), -0.33],
+  // wipers (2026-10-17, docs/vehicles/t15_windshield_rain_design.md): each arm turns about the glass normal through its
+  // pivot on the cowl (exterior.mjs cowl(); driver side left, -z)
+  wiper_l: [WIPERS.l.pivot[0], WIPERS.l.pivot[1], WIPERS.l.pivot[2]], wiper_r: [WIPERS.r.pivot[0], WIPERS.r.pivot[1], WIPERS.r.pivot[2]],
   // gauge needles: the dial centres in the cluster face (cab.mjs cluster())
   tach: [0.6205, 1.066, -0.445], speedo: [0.6205, 1.066, -0.335], fuel_gauge: [0.6205, 1.08, -0.54], temp_gauge: [0.6205, 1.08, -0.24],
   wheel: [0, 0, 0],
@@ -54,6 +74,11 @@ export const HINGES = {
   tailgate: {axis: [0, 0, 1], open: 90, note: 'bottom hinges; drops flat'},
   fuel_door: {axis: [0, 1, 0], open: 80, note: 'front edge; swings out like the doors'},
   steering: {axis: [Math.cos(27 * Math.PI / 180), -Math.sin(27 * Math.PI / 180), 0], open: 540, note: 'column axis; +-1.5 turns lock to lock'},
+  shift: {axis: [0, 0, 1], open: 11, note: 'gear lever: fore / aft 11 deg about the across axis, across 9 deg about the fore axis (H gate: 1 3 5 forward, 2 4 R back)'},
+  transfer: {axis: [0, 0, 1], open: 14, note: 'transfer lever: fore / aft about the across axis; 2H +8, 4H -1, N -7, 4L -14 deg (knob forward +)'},
+  wiper_stalk: {axis: [Math.cos(27 * Math.PI / 180), -Math.sin(27 * Math.PI / 180), 0], open: 21, note: 'the column axis through its root: + steps the stalk down; off 0, intermittent 7, low 14, high 21 deg'},
+  wiper_l: {axis: GLASS_OUT.map(v => -v || 0), open: WIPERS.l.sweep, note: 'the glass normal through the pivot, inward: + turns the parked arm up the glass'},
+  wiper_r: {axis: GLASS_OUT.map(v => -v || 0), open: WIPERS.r.sweep, note: 'the glass normal through the pivot, inward: + turns the parked arm up the glass'},
   tach: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-5000 rpm over 270 deg clockwise'},
   speedo: {axis: [1, 0, 0], open: 270, note: 'needle about the dial axis; 0-180 km/h over 270 deg clockwise'},
   fuel_gauge: {axis: [1, 0, 0], open: 120, note: 'needle about the dial axis; empty - full over 120 deg clockwise'},
@@ -62,11 +87,12 @@ export const HINGES = {
 // interaction / attachment anchors (concept frame, on a bone): seats and eye points for the player skeleton, hands on the
 // wheel, pedals and levers for IK, handles for interaction, lamps for light sources, filler and exhaust for effects
 export const ANCHORS = {
-  seat_driver_hip: ['body', [-0.06, 0.845, -0.37]], seat_passenger_hip: ['body', [-0.06, 0.845, 0.37]],
-  eye_driver: ['body', [-0.12, 1.47, -0.37]], eye_passenger: ['body', [-0.12, 1.47, 0.37]],
+  // the cushion's top under the hips (lowered 3 cm 2026-10-16) and the seated eye (SeatPose: cushion + EYE_OVER_SEAT, EYE_AHEAD ahead)
+  seat_driver_hip: ['body', [-0.06, 0.815, -0.37]], seat_passenger_hip: ['body', [-0.06, 0.815, 0.37]],
+  eye_driver: ['body', [0.04, 1.487, -0.37]], eye_passenger: ['body', [0.04, 1.487, 0.37]],
   steering_centre: ['steering', [0.40, 1.125, -0.37]], steering_grip_l: ['steering', [0.40, 1.125, -0.56]], steering_grip_r: ['steering', [0.40, 1.125, -0.18]],
   pedal_clutch: ['body', [0.735, 0.665, -0.53]], pedal_brake: ['body', [0.735, 0.665, -0.41]], pedal_accelerator: ['body', [0.735, 0.62, -0.25]],
-  shift_knob: ['body', [0.33, 1.02, -0.055]], transfer_knob: ['body', [0.33, 0.895, 0.07]], parking_brake: ['body', [0.548, 0.79, -0.13]],
+  shift_knob: ['shift', [0.33, 1.02, -0.055]], transfer_knob: ['transfer', [0.33, 0.895, 0.07]], parking_brake: ['body', [0.548, 0.79, -0.13]],
   door_l_outer_handle: ['door_l', [-0.057, 0.98, -0.85]], door_r_outer_handle: ['door_r', [-0.057, 0.98, 0.85]],
   door_l_inner_handle: ['door_l', [0.73, 0.925, -0.755]], door_r_inner_handle: ['door_r', [0.73, 0.925, 0.755]],
   door_l_entry: ['body', [0.30, 0.0, -1.45]], door_r_entry: ['body', [0.30, 0.0, 1.45]],
@@ -79,7 +105,8 @@ export const ANCHORS = {
 // faces sharing a corner position are smoothed together when their dihedral angle is under the crease angle (rounded edges are built from steps of at most
 // 45 deg, so they come out smooth; 90 deg panel edges, folds and flanges stay hard; separate primitives never share
 // vertices, so seams between them stay hard). Per-material overrides where a surface must stay faceted or fully soft.
-export const SMOOTHING = {crease_deg: 50, materials: {glass: 0, mirror: 0, dial: 0, lens: 30, tire: 60}};
+export const SMOOTHING = {crease_deg: 50, materials: {glass: 0, mirror: 0, dial: 0, lens: 30, tire: 60,
+  lamp_low: 30, lamp_high: 30, lamp_reverse: 30, lamp_plate: 30, lamp_dome: 30}};
 // spare wheel: under the bed behind the rear axle, lying flat with its outer face down (hung from the carrier winch)
 export const SPARE = {x: -1.86, y: 0.50};   // degrees the steering wheel plane leans back from vertical
 
@@ -98,6 +125,15 @@ export const MATS = {
   lens: {c: [214, 218, 220], sm: 232, f0: 10},
   amber: {c: [214, 128, 32], sm: 226, f0: 10},
   red: {c: [158, 22, 22], sm: 226, f0: 10},
+  // lamps that light (2026-10-16, docs/vehicles/first_pickup_v0_design.md 8.10): their own parts, so the renderer can light
+  // each group; they look like the lens / red / amber above
+  lamp_low: {c: [214, 218, 220], sm: 232, f0: 10},     // outer headlamps: low and high beam
+  lamp_high: {c: [214, 218, 220], sm: 232, f0: 10},    // inner headlamps: high beam only
+  lamp_park: {c: [214, 128, 32], sm: 226, f0: 10},     // front amber parking lamps and side markers (with the lights)
+  lamp_tail: {c: [158, 22, 22], sm: 226, f0: 10},      // stop / tail section (dim with the lights, bright braking)
+  lamp_reverse: {c: [214, 218, 220], sm: 232, f0: 10}, // reverse section
+  lamp_plate: {c: [214, 218, 220], sm: 232, f0: 10},   // licence plate lamp (with the lights)
+  lamp_dome: {c: [214, 218, 220], sm: 232, f0: 10},    // cab dome lamp (a door open)
   mirror: {c: [150, 158, 162], sm: 252, f0: 237, env: 1},
   liner: {c: [24, 24, 24], sm: 34, f0: 8},
   under: {c: [30, 30, 31], sm: 70, f0: 10},          // black underbody paint (frame, axles, springs)
@@ -136,9 +172,9 @@ export const PAINTED = new Set(['paint', 'paint2']);
 // bay (drawn while the hood is open); chassis: frame, axles, running gear, radiator (drawn near).
 export const MESHES = {
   ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate', 'fuel_door'], atlas: 'ext'},
-  front: {id: 'pickup_t15_front', bones: ['body', 'hood'], atlas: 'ext'},
+  front: {id: 'pickup_t15_front', bones: ['body', 'hood', 'wiper_l', 'wiper_r'], atlas: 'ext'},
   wheel: {id: 'pickup_t15_wheel', bones: ['wheel'], atlas: 'ext'},
-  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge'], atlas: 'cab'},
+  cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'shift', 'transfer', 'wiper_stalk', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge'], atlas: 'cab'},
   seat: {id: 'pickup_t15_seat', bones: ['body'], atlas: 'cab'},
   engine: {id: 'pickup_t15_engine', bones: ['body'], atlas: 'under'},
   chassis: {id: 'pickup_t15_chassis', bones: ['body'], atlas: 'under'},
@@ -146,12 +182,14 @@ export const MESHES = {
 export const ATLASES = {ext: {size: 2048, file: 'pickup_t15'}, cab: {size: 2048, file: 'pickup_t15_cab'}, under: {size: 1024, file: 'pickup_t15_under'}};
 const REG = new Map();
 /** The part of a mesh for a bone and material (created on first use). */
-export function P(mesh, bone, mat) {
+// tag: an extra part name suffix (the same material), so the game can switch one side's lamps on their own
+// (bone_mat_tag, e.g. body_lamp_park_l: the turn signals, docs/vehicles/first_pickup_v0_design.md 8.12)
+export function P(mesh, bone, mat, tag) {
   if (!MESHES[mesh]) throw new Error('unknown mesh ' + mesh);
   if (!MESHES[mesh].bones.includes(bone)) throw new Error(`bone ${bone} not in mesh ${mesh}`);
   if (!MATS[mat]) throw new Error('unknown material ' + mat);
-  const k = mesh + '|' + bone + '|' + mat;
-  if (!REG.has(k)) { const p = new Part(bone + '_' + mat, bone, mat); p.mesh = mesh; REG.set(k, p); }
+  const k = mesh + '|' + bone + '|' + mat + (tag ? '|' + tag : '');
+  if (!REG.has(k)) { const p = new Part(bone + '_' + mat + (tag ? '_' + tag : ''), bone, mat); p.mesh = mesh; REG.set(k, p); }
   return REG.get(k);
 }
 export const allParts = () => [...REG.values()].filter(p => p.f.length);

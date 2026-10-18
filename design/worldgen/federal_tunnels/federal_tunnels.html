@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AFL Federal Tunnels</title>
+<style>
+/* Concept sheet set for the C3 national-road tunnels (round 1). Sheets are rendered by source/gen.mjs + source/render.sh. */
+:root{--bg:#e9ecec;--fg:#1c2124;--mute:#5b6569;--line:#c5cccd;--accent:#8e3a32}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#131618;--fg:#e1e5e5;--mute:#97a1a4;--line:#2f3639;--accent:#d27b6d}}
+:root[data-theme="dark"]{--bg:#131618;--fg:#e1e5e5;--mute:#97a1a4;--line:#2f3639;--accent:#d27b6d}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.65 "Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;margin:0}
+.wrap{max-width:1400px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:28px}
+header{border-bottom:2px solid var(--fg);padding-bottom:12px}
+h1{font-size:clamp(26px,4vw,40px);line-height:1.1;margin:0}
+.meta{color:var(--mute);font-size:13px;margin-top:6px}
+section{display:grid;gap:10px}
+h2{font-size:20px;margin:0;border-top:1px solid var(--fg);padding-top:8px}
+h2 b{color:var(--accent);font-family:Consolas,monospace;margin-right:10px}
+img{display:block;width:100%;height:auto;border:1px solid var(--line);background:#fbfbf8}
+p{margin:0;max-width:80ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>C3 全国道路 · 隧道概念（第 1 轮）</h1>
+<div class="meta">2026-10-15 · 概念，未实现 · 说明见 docs/worldgen/federal_tunnels_v1.md · 重新出图：在 source 目录里 node gen.mjs ../sheets，再 sh render.sh ../sheets</div>
+</header>
+<section><h2><b>T1</b>横断面：州际 R4 单向孔 / 州道 R2 双向孔</h2><img src="sheets/t1_sections.png" alt="两种隧道横断面，带尺寸"></section>
+<section><h2><b>T2</b>洞内透视：设备布置</h2><img src="sheets/t2_interior.png" alt="州际单向孔洞内驾驶员视角"></section>
+<section><h2><b>T3</b>洞口透视：州际双孔洞门</h2><img src="sheets/t3_portal.png" alt="双孔洞门、洞顶仰坡、引道和洞口交通设施"></section>
+<section><h2><b>T4</b>洞口立面和平面</h2><img src="sheets/t4_elevation_plan.png" alt="洞口立面和平面图"></section>
+<section><h2><b>T5</b>纵向布置、按长度配设备、新 Mesh 清单和分期</h2><img src="sheets/t5_layout_meshes.png" alt="一公里隧道的设备布置和模型清单"></section>
+</div>
+</body>
+</html>

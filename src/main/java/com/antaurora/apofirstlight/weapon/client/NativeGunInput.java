@@ -25,6 +25,8 @@ public final class NativeGunInput {
             KeyConflictContext.GUI, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
     public static boolean firing(){return triggerSent||attackHeld;}
+    /** The reload key, for the gun HUD's empty-magazine prompt. */
+    public static KeyMapping reloadKey(){return RELOAD;}
     private static final KeyMapping RELOAD = new KeyMapping("key.apocalypse_firstlight.reload",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");

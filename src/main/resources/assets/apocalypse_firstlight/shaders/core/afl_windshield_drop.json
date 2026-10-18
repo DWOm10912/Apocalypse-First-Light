@@ -1,0 +1,33 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1-srcalpha",
+        "srcalpha": "0",
+        "dstalpha": "1"
+    },
+    "vertex": "apocalypse_firstlight:afl_windshield_drop",
+    "fragment": "apocalypse_firstlight:afl_windshield_drop",
+    "attributes": [
+        "Position",
+        "Color",
+        "UV0",
+        "UV2"
+    ],
+    "samplers": [
+        { "name": "Scene" },
+        { "name": "SceneDepth" },
+        { "name": "Drops" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ScreenSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+        { "name": "SkyLight", "type": "float", "count": 3, "values": [ 1.0, 1.0, 1.0 ] },
+        { "name": "Interior", "type": "float", "count": 3, "values": [ 0.05, 0.05, 0.05 ] },
+        { "name": "Inside", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "GlassAcross", "type": "float", "count": 3, "values": [ 1.0, 0.0, 0.0 ] },
+        { "name": "GlassUp", "type": "float", "count": 3, "values": [ 0.0, 0.80658, 0.591125 ] },
+        { "name": "GlassOut", "type": "float", "count": 3, "values": [ 0.0, 0.591125, -0.80658 ] }
+    ]
+}

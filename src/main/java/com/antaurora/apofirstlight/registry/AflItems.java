@@ -554,4 +554,26 @@ public final class AflItems {
 
     private AflItems() {
     }
+
+    /**
+     * Tunnel parts removable V1.1 (2026-10-16): the small tunnel parts a crowbar takes down, placeable again
+     * (TunnelFixtureItem); the large ones (jet fan, gantry, portal signal, closure gate, fire door) have none.
+     */
+    public static final java.util.Map<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Item>> TUNNEL_FIXTURE_ITEMS = tunnelFixtureItems();
+
+    private static java.util.Map<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Item>> tunnelFixtureItems() {
+        var out = new java.util.EnumMap<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Item>>(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.class);
+        for (var kind : com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.values()) {
+            if (!kind.item()) continue;
+            int stack = switch (kind) {
+                case HEADLIGHT_SIGN, NAME_PLATE, EMERGENCY_CABINET -> 1;
+                case LANE_SIGNAL -> 2;
+                case EGRESS_SIGN -> 8;
+                default -> 4;
+            };
+            out.put(kind, ITEMS.register(kind.id(), () -> new com.antaurora.apofirstlight.item.TunnelFixtureItem(
+                    (com.antaurora.apofirstlight.block.TunnelFixtureBlock) AflBlocks.TUNNEL_FIXTURES.get(kind).get(), new Item.Properties().stacksTo(stack))));
+        }
+        return java.util.Collections.unmodifiableMap(out);
+    }
 }

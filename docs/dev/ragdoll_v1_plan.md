@@ -220,7 +220,7 @@
 | `survivor/SurvivorCorpse.java` | 每 tick 模拟、广播、停下来存档、移除时当场停下、生成数据带姿势、客户端收姿势 | R-B 已写 |
 | `survivor/SurvivorCorpseRecord.java` | 落点可变，`pose` 字段，`PoseV` / `Pose` 存读；`unsettled`（`Unsettled`） | R-B 已写 |
 | `survivor/SurvivorCorpses.java`、`Survivors.java` | 死亡时决定倒不倒并开始；`surfaceBelow`、`ground`；对账时先把 `unsettled` 的记录放到地面 | R-B 已写 |
-| `survivor/SurvivorPackets.java`、`client/survivor/SurvivorClient.java`、`network/AflNetwork.java` | `CorpsePose` 包，协议 52 | R-B 已写 |
+| `survivor/SurvivorPackets.java`、`client/survivor/SurvivorClient.java`、`network/AflNetwork.java` | `CorpsePose` 包，协议 52（2026-10-17 合并 master 55 后为 56） | R-B 已写 |
 | `src/dev/.../RagdollCorpseGameTests.java` | GameTest：平地、台阶、半空移除 | R-B 已写 |
 | `client/skeleton/SkeletonBodyRenderer.java` | 通用身体渲染：皮肤网格 + 原版头，或骨架关闭时的原版六块 | R-C 已写 |
 | `client/skeleton/PlayerSkeleton.java` | `write` / `set` / `base` / `layer` 和部件枢轴开放给同包 | R-C 已写 |

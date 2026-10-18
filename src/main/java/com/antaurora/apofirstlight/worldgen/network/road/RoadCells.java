@@ -8,7 +8,8 @@ import java.util.Map;
 /**
  * The paved block cells of a chunk and its one-cell ring (C3.2; docs/worldgen/federal_highways_c3.md, 10.5): the
  * collision blocks the chunk pass put there (the same pure RoadWorks.paved), which the client compares with the world
- * to cut a hole into the pavement mesh where they were dug out, and the asphalt walls of such a hole. Pure Java.
+ * to cut a hole into the pavement mesh where they were dug out, and the asphalt walls of such a hole; not the squares a
+ * tunnel's works fill with road_structure (Tunnel V1). Pure Java.
  */
 public final class RoadCells {
     private RoadCells() {}
@@ -40,6 +41,14 @@ public final class RoadCells {
             if (h == null) continue;
             double[] pave = RoadWorks.pavedRange(h.road(), x, z);
             if (pave == null) continue;
+            // a tunnel's works filling the pavement's cell (in a bore beside its pavement): road_structure, not a
+            // road_surface the client could find dug (Tunnel V1); works standing on the finish (ON_GROUND: walls,
+            // lead-ins, a portal's front) and a bore's pavement keep their road_surface
+            RoadDesign.Tunnel tn = TunnelWorks.near(h);
+            if (tn != null) {
+                RoadWorks.Column t = TunnelWorks.column(h, tn, x, z, pave);
+                if (t != null && t.kind() != RoadWorks.Kind.PAVED && (t.data() & TunnelWorks.ON_GROUND) == 0) continue;
+            }
             RoadWorks.Column c = RoadWorks.paved(RoadWorks.Kind.PAVED, pave, 0);
             out.put(index(lx, lz), new Cell(index(lx, lz), c.y(), c.layers(), c.upper(), roads.indexOf(h.road())));
         }

@@ -73,7 +73,8 @@ public final class C2Probe {
 
     @SubscribeEvent
     public static void onTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ticks < 0) return;
+        // fly= (C2Fly) moves the player instead of probing
+        if (event.phase != TickEvent.Phase.END || ticks < 0 || C2Fly.active()) return;
         ticks++;
         MinecraftServer server = event.getServer();
         ServerLevel level = server.overworld();
@@ -113,8 +114,10 @@ public final class C2Probe {
         String[] xz = C2Harness.arg("look", "").split(",");
         int x = Integer.parseInt(xz[0].trim()), z = Integer.parseInt(xz[1].trim());
         level.getChunk(x >> 4, z >> 4);
-        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-        for (ServerPlayer p : server.getPlayerList().getPlayers()) p.teleportTo(level, x + 0.5, y + 1, z + 0.5, 0F, 30F);
+        // look=x,z[,y,yaw]: with y (feet) and yaw the player stands there level (inside a tunnel), else on the surface
+        int y = xz.length > 2 ? Integer.parseInt(xz[2].trim()) - 1 : level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        float yaw = xz.length > 3 ? Float.parseFloat(xz[3].trim()) : 0F, pitch = xz.length > 2 ? 0F : 30F;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) p.teleportTo(level, x + 0.5, y + 1, z + 0.5, yaw, pitch);
         start = 40 + 20 * Integer.parseInt(C2Harness.arg("lookSeconds", "45"));
         C2Harness.log("looking at " + x + " " + y + " " + z + " for " + (start - 40) / 20 + " s before the probe");
     }

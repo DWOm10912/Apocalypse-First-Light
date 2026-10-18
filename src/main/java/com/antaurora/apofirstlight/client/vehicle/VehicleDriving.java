@@ -10,6 +10,8 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.world.level.GrassColor;
+import net.minecraft.network.chat.Component;
+import net.minecraftforge.client.event.MovementInputUpdateEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.settings.IKeyConflictContext;
@@ -27,7 +29,8 @@ import org.lwjgl.glfw.GLFW;
 /**
  * Vehicle physics V0-b, the client's hooks (docs/vehicles/first_pickup_v0_design.md section 4, package 2): the driver's
  * pedals are the movement keys (forward: throttle; back: brake; left / right: steer), jump is the handbrake and sneak
- * gets out as before. Driving keys of their own, active only in the driver's seat ({@link #DRIVING}): shift up (R) and
+ * gets out (only below PickupTruckEntity#GET_OUT_SPEED: faster, sneak does nothing and says "stop first"; any seat).
+ * Driving keys of their own, active only in the driver's seat ({@link #DRIVING}): shift up (R) and
  * down (F), 2H / 4H (X), the ignition key held (G). Whatever else sits on those keys (reload, the off-hand swap) gets no
  * press while driving. Also the local player (carried on a moving truck by its own client) and the synced states
  * (VehiclePackets.Sync).
@@ -50,10 +53,37 @@ public final class VehicleDriving {
     public static final KeyMapping SHIFT_DOWN = new KeyMapping("key.apocalypse_firstlight.shift_down", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F, CATEGORY);
     public static final KeyMapping TRANSFER = new KeyMapping("key.apocalypse_firstlight.transfer_case", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_X, CATEGORY);
     public static final KeyMapping IGNITION = new KeyMapping("key.apocalypse_firstlight.ignition", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
-    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION};
+    /**
+     * The lights on one key, GTA-style (user 2026-10-16; design doc 8.10): a tap turns them on / off, a hold flips the high
+     * beam (and turns the lights on with it).
+     */
+    public static final KeyMapping LIGHTS = new KeyMapping("key.apocalypse_firstlight.headlights", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY);
+    /** The horn, held (design doc 8.11). */
+    public static final KeyMapping HORN = new KeyMapping("key.apocalypse_firstlight.horn", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Y, CATEGORY);
+    /** Turn signals and hazard lamps (design doc 8.12; user 2026-10-16: the arrow keys for now): a press on, again off. */
+    public static final KeyMapping SIGNAL_LEFT = new KeyMapping("key.apocalypse_firstlight.signal_left", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, CATEGORY);
+    public static final KeyMapping SIGNAL_RIGHT = new KeyMapping("key.apocalypse_firstlight.signal_right", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, CATEGORY);
+    public static final KeyMapping HAZARD = new KeyMapping("key.apocalypse_firstlight.hazard", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_DOWN, CATEGORY);
+    /**
+     * The wiper stalk (docs/vehicles/t15_windshield_rain_design.md; 2026-10-17, the user left the key to me: C, beside the
+     * transfer case's X and free while driving): a press steps it on, off - intermittent - low - high - off.
+     */
+    public static final KeyMapping WIPERS = new KeyMapping("key.apocalypse_firstlight.wipers", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, CATEGORY);
+    private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD, WIPERS};
+    /** Ticks the light key is held before it counts as a hold (the high beam) instead of a tap. */
+    private static final int HOLD_TICKS = 8;
+    /** Ticks the light key has been held; -1 once this hold flipped the high beam (the release then does nothing). */
+    private static int lightHeld;
+    /** The horn key as last sent to the server. */
+    private static boolean hornSent;
     /** Presses since the truck last asked (one gear step and one lever pull per tick at most). */
     private static int shifts;
     private static boolean transfer;
+    /**
+     * Each key's state last tick. Held, a key's clicks are the keyboard's auto-repeat (about every 30 ms after half a
+     * second), not new presses: holding X kept turning the transfer case over with its sound each time (user 2026-10-17).
+     */
+    private static final boolean[] WAS_DOWN = new boolean[KEYS.length];
 
     private VehicleDriving() {
     }
@@ -91,6 +121,12 @@ public final class VehicleDriving {
                 mc.screen == null && IGNITION.isDown(), fuel, true);
     }
 
+    /** The driver's light switch, high beam, horn, turn signals, hazards or wipers to the server. */
+    private static void lampSwitch(int action) {
+        if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getVehicle() instanceof PickupTruckEntity truck)
+            com.antaurora.apofirstlight.network.AflNetwork.vehicleToServer(new VehiclePackets.Lamps(truck.getId(), action));
+    }
+
     private static void sync(VehiclePackets.Sync sync) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null && level.getEntity(sync.entity()) instanceof PickupTruckEntity truck) truck.acceptSync(sync.state(), sync.correct());
@@ -99,17 +135,72 @@ public final class VehicleDriving {
     /** Forge bus: the driving keys' presses, before the game and other mods read theirs this tick. */
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
     public static final class Keys {
+        /** The sneak key held last tick (the "stop first" message once per press). */
+        private static boolean sneakHeld;
+
         private Keys() {
+        }
+
+        /**
+         * A new press of a step key this tick (gears, transfer case, signals): its clicks count only if it was up last
+         * tick, so holding it does one step, not one per auto-repeat. Its clicks are drained either way.
+         */
+        private static boolean pressed(KeyMapping key) {
+            int i = java.util.Arrays.asList(KEYS).indexOf(key);
+            boolean clicked = false;
+            while (key.consumeClick()) clicked = true;
+            boolean was = WAS_DOWN[i];
+            WAS_DOWN[i] = key.isDown();
+            return clicked && !was;
+        }
+
+        /** On a moving truck the sneak key does not get anyone out: it does not reach the game (nor the server). */
+        @SubscribeEvent
+        public static void input(MovementInputUpdateEvent event) {
+            if (!(event.getEntity() instanceof LocalPlayer player) || !(player.getVehicle() instanceof PickupTruckEntity truck)) {
+                sneakHeld = false;
+                return;
+            }
+            Input input = event.getInput();
+            boolean pressed = input.shiftKeyDown;
+            if (pressed && truck.speed() > PickupTruckEntity.GET_OUT_SPEED) {
+                input.shiftKeyDown = false;
+                if (!sneakHeld) Minecraft.getInstance().gui.setOverlayMessage(Component.translatable("hint.apocalypse_firstlight.pickup_t15.stop_first"), false);
+            }
+            sneakHeld = pressed;
         }
 
         @SubscribeEvent(priority = EventPriority.HIGHEST)
         public static void tick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.START) return;
             boolean driving = DRIVING.isActive();
-            while (SHIFT_UP.consumeClick()) if (driving) shifts++;
-            while (SHIFT_DOWN.consumeClick()) if (driving) shifts--;
-            while (TRANSFER.consumeClick()) if (driving) transfer = true;
+            if (pressed(SHIFT_UP) && driving) shifts++;
+            if (pressed(SHIFT_DOWN) && driving) shifts--;
+            if (pressed(TRANSFER) && driving) transfer = true;
             while (IGNITION.consumeClick()) {
+            }
+            boolean lightTap = false;
+            while (LIGHTS.consumeClick()) lightTap = true;
+            if (driving && LIGHTS.isDown()) {
+                if (lightHeld >= 0 && ++lightHeld >= HOLD_TICKS) {
+                    lampSwitch(PickupTruckEntity.SWITCH_HIGH);
+                    lightHeld = -1;
+                }
+            } else {
+                // released before the hold time (or pressed and let go within one tick): a tap
+                if (driving && (lightHeld > 0 || lightHeld == 0 && lightTap)) lampSwitch(PickupTruckEntity.SWITCH_LIGHTS);
+                lightHeld = 0;
+            }
+            if (pressed(SIGNAL_LEFT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_LEFT);
+            if (pressed(SIGNAL_RIGHT) && driving) lampSwitch(PickupTruckEntity.SIGNAL_RIGHT);
+            if (pressed(HAZARD) && driving) lampSwitch(PickupTruckEntity.SWITCH_HAZARD);
+            if (pressed(WIPERS) && driving) lampSwitch(PickupTruckEntity.SWITCH_WIPER);
+            while (HORN.consumeClick()) {
+            }
+            boolean horn = driving && HORN.isDown();
+            if (horn != hornSent) {
+                lampSwitch(horn ? PickupTruckEntity.HORN_ON : PickupTruckEntity.HORN_OFF);
+                hornSent = horn;
             }
             if (!driving) {
                 shifts = 0;
@@ -118,7 +209,7 @@ public final class VehicleDriving {
             }
             // the same keys bound to anything else (reload, the off-hand swap, ...) do nothing while driving
             for (KeyMapping other : Minecraft.getInstance().options.keyMappings) {
-                if (other == SHIFT_UP || other == SHIFT_DOWN || other == TRANSFER || other == IGNITION) continue;
+                if (java.util.Arrays.asList(KEYS).contains(other)) continue;
                 for (KeyMapping mine : KEYS)
                     if (!other.isUnbound() && other.getKey().equals(mine.getKey())) {
                         while (other.consumeClick()) {

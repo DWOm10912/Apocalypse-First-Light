@@ -1,4 +1,4 @@
-// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering and the four gauge needles). Structure per the reference drawings (design
+// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering, the shift and transfer levers and the four gauge needles). Structure per the reference drawings (design
 // doc 2.4, Hilux LN106 instrument panel / seat / door trim groups): instrument panel with a padded top and a meter hood over
 // the driver's cluster; round side vents, centre vents, defroster grilles; heater control panel above the radio, ashtray
 // below; glovebox; tilt column with a two-piece square shroud, two stalks and the key cylinder; two-spoke wheel with a
@@ -124,10 +124,11 @@ function steering() {
   tube(C(B, 'under'), [at(0.27), at(0.36)], 0.022, 10);
   // key cylinder on the right of the shroud, stalks either side
   lathe(C(B, 'chrome'), add(at(0.13), [0, -0.01, 0.044]), [0, 0, 1], [[0, 0], [0, 0.012], [0.006, 0.012], [0.009, 0.009], [0.009, 0]], 12);
+  // (the right one, the wiper stalk, is bone wiper_stalk: it steps down about the column axis through its root)
   sym(s => {
-    const p0 = add(at(0.10), [0, 0, s * 0.04]);
-    tube(C(B, 'dash'), [p0, add(p0, [-0.03, -0.012, s * 0.07]), add(p0, [-0.05, -0.024, s * 0.13])], 0.0065, 8);
-    tube(C(B, 'trim'), [add(p0, [-0.05, -0.024, s * 0.13]), add(p0, [-0.055, -0.027, s * 0.15])], 0.008, 8);
+    const p0 = add(at(0.10), [0, 0, s * 0.04]), b = s > 0 ? 'wiper_stalk' : B;
+    tube(C(b, 'dash'), [p0, add(p0, [-0.03, -0.012, s * 0.07]), add(p0, [-0.05, -0.024, s * 0.13])], 0.0065, 8);
+    tube(C(b, 'trim'), [add(p0, [-0.05, -0.024, s * 0.13]), add(p0, [-0.055, -0.027, s * 0.15])], 0.008, 8);
   });
   // the wheel itself (bone steering): rim, two spokes dipping toward the hub, horn pad, hub boss
   const S = C('steering', 'vinyl'), Rr = 0.19, nd = mul(d, -1);
@@ -170,24 +171,26 @@ function floor() {
   }
   abox(C(B, 'under'), 0.84, 0.90, 0.90, 0.96, -0.58, -0.20, 0.004);   // pedal bracket
   // floor shift lever: boot, long bent rod leaning back to the driver, oval knob; transfer lever beside it
-  const lever = (base, path, knobR, bootR) => {
+  // each lever's rod and knob on its own bone (it tilts about the boot's top: PIVOTS.shift, PIVOTS.transfer); the boots stay
+  const lever = (base, path, knobR, bootR, bone) => {
     lathe(C(B, 'rubber'), base, [0, 1, 0], [[0, 0], [0, bootR], [0.02, bootR * 0.8], [0.05, bootR * 0.35], [0.06, 0.012], [0.06, 0]], 14);
-    tube(C(B, 'trim'), path, 0.0075, 8);
+    tube(C(bone, 'trim'), path, 0.0075, 8);
     const tip = path[path.length - 1], dir = norm(sub(tip, path[path.length - 2]));
-    lathe(C(B, 'trim'), tip, dir, [[-0.012, 0], [-0.012, 0.012], [0.0, knobR], [0.018, knobR * 0.9], [0.03, knobR * 0.5], [0.034, 0]], 14);
+    lathe(C(bone, 'trim'), tip, dir, [[-0.012, 0], [-0.012, 0.012], [0.0, knobR], [0.018, knobR * 0.9], [0.03, knobR * 0.5], [0.034, 0]], 14);
   };
-  lever([0.43, 0.665, -0.02], roundPath([[0.43, 0.70, -0.02], [0.43, 0.82, -0.03], [0.35, 0.97, -0.05], [0.33, 1.0, -0.055]], 0.06, 4), 0.021, 0.05);
-  lever([0.38, 0.665, 0.07], roundPath([[0.38, 0.70, 0.07], [0.38, 0.80, 0.07], [0.33, 0.88, 0.07]], 0.05, 3), 0.017, 0.035);
+  lever([0.43, 0.665, -0.02], roundPath([[0.43, 0.70, -0.02], [0.43, 0.82, -0.03], [0.35, 0.97, -0.05], [0.33, 1.0, -0.055]], 0.06, 4), 0.021, 0.05, 'shift');
+  lever([0.38, 0.665, 0.07], roundPath([[0.38, 0.70, 0.07], [0.38, 0.80, 0.07], [0.33, 0.88, 0.07]], 0.05, 3), 0.017, 0.035, 'transfer');
 }
 
 // ================================================================ bench seat
 function seat() {
+  const DY = -0.03;   // the cushion lowered 3 cm (2026-10-16); the backrest's top stays
   const zs = [];
   for (let i = 0; i <= 8; i++) zs.push(-0.55 + 1.10 * i / 8);   // eight pleats, about 14 cm each
   // cushion: pleated cloth insert (separate pleats leave the seams as grooves), vinyl ends
-  const cushO = [[-0.25, 0.68], [0.27, 0.68], [0.305, 0.80], [0.285, 0.868], [0.20, 0.878], [-0.21, 0.842], [-0.25, 0.80]], cushR = [0.02, 0.03, 0.04, 0.035, 0.03, 0.03, 0.02];
+  const cushO = [[-0.25, 0.68], [0.27, 0.68], [0.305, 0.80], [0.285, 0.868], [0.20, 0.878], [-0.21, 0.842], [-0.25, 0.80]].map(([x, y]) => [x, y + DY]), cushR = [0.02, 0.03, 0.04, 0.035, 0.03, 0.03, 0.02];
   const cush = fillet(cushO, cushR, 3);
-  const backO = [[-0.215, 0.80], [-0.10, 0.83], [-0.105, 0.98], [-0.155, 1.39], [-0.20, 1.43], [-0.272, 1.415], [-0.262, 1.10]], backR = [0.02, 0.03, 0.04, 0.04, 0.035, 0.03, 0.02];
+  const backO = [[-0.215, 0.80 + DY], [-0.10, 0.83 + DY], [-0.105, 0.98], [-0.155, 1.39], [-0.20, 1.43], [-0.272, 1.415], [-0.262, 1.10]], backR = [0.02, 0.03, 0.04, 0.04, 0.035, 0.03, 0.02];
   const back = fillet(backO, backR, 3);
   const cushP = fillet(cushO, cushR, 2), backP = fillet(backO, backR, 2);
   for (let i = 0; i < 8; i++) {
@@ -204,21 +207,21 @@ function seat() {
     slab(C(B, 'cloth'), FZ, hr, [], h0, h1, {r0: 0.035, r1: 0.035});
     // side shield over the recliner / hinge, tracks, belts
     const [w0, w1] = zr(s, 0.70, 0.716);
-    slab(C(B, 'dash'), FZ, fillet([[-0.25, 0.62], [0.12, 0.62], [0.10, 0.80], [-0.24, 0.84]], 0.025, 2), [], w0, w1, s > 0 ? {r0: 0, r1: 0.005} : {r0: 0.005, r1: 0});
+    slab(C(B, 'dash'), FZ, fillet([[-0.25, 0.62 + DY], [0.12, 0.62 + DY], [0.10, 0.80 + DY], [-0.24, 0.84 + DY]], 0.025, 2), [], w0, w1, s > 0 ? {r0: 0, r1: 0.005} : {r0: 0.005, r1: 0});
     abox(C(B, 'steel'), -0.20, 0.30, FLOOR, FLOOR + 0.04, s * 0.40 - 0.018, s * 0.40 + 0.018, 0.003);
-    abox(C(B, 'under'), -0.22, 0.25, FLOOR + 0.04, 0.685, s * 0.40 - 0.03, s * 0.40 + 0.03, 0.006);
+    abox(C(B, 'under'), -0.22, 0.25, FLOOR + 0.04, 0.685 + DY, s * 0.40 - 0.03, s * 0.40 + 0.03, 0.006);
     // outboard three-point belt: webbing hanging down the B pillar from the D-ring, retractor cover low
     const zb = s * (DZ - 0.006), xb = -0.235;
     lathe(C(B, 'steel'), [xb, 1.48, zb], [0, 0, s], [[0, 0.004], [0, 0.03], [0.006, 0.03], [0.006, 0.004]], 12);
     abox(C(B, 'belt'), xb - 0.024, xb + 0.024, 0.66, 1.475, zb - 0.0015 - s * 0.004, zb + 0.0015 - s * 0.004, 0);
-    abox(C(B, 'steel'), xb - 0.02, xb + 0.02, 0.82, 0.88, zb - 0.002 - s * 0.007, zb + 0.002 - s * 0.007, 0.002);   // latch plate
+    abox(C(B, 'steel'), xb - 0.02, xb + 0.02, 0.82 + DY, 0.88 + DY, zb - 0.002 - s * 0.007, zb + 0.002 - s * 0.007, 0.002);   // latch plate
     // centre buckle on a short stalk between the places
     const zc = s * 0.06;
-    abox(C(B, 'trim'), -0.21, -0.17, 0.80, 0.88, zc - 0.012, zc + 0.012, 0.004);
+    abox(C(B, 'trim'), -0.21, -0.17, 0.80 + DY, 0.88 + DY, zc - 0.012, zc + 0.012, 0.004);
   });
   // release bar under the cushion front
-  tube(C(B, 'steel'), roundPath([[0.24, 0.64, -0.44], [0.31, 0.64, -0.40], [0.31, 0.64, -0.18], [0.24, 0.64, -0.14]], 0.03, 3), 0.006, 8);
-  abox(C(B, 'under'), -0.24, 0.26, 0.60, 0.685, -0.68, 0.68, 0.006);   // seat frame
+  tube(C(B, 'steel'), roundPath([[0.24, 0.64 + DY, -0.44], [0.31, 0.64 + DY, -0.40], [0.31, 0.64 + DY, -0.18], [0.24, 0.64 + DY, -0.14]], 0.03, 3), 0.006, 8);
+  abox(C(B, 'under'), -0.24, 0.26, 0.60 + DY, 0.685 + DY, -0.68, 0.68, 0.006);   // seat frame
 }
 
 // ================================================================ door trims (door bones), pillars, roof lining
@@ -268,7 +271,7 @@ function pillars() {
     const ax = y => wsX(y) - 0.06;
     sweep(C(B, 'panel'), [[ax(BELT + 0.02), BELT + 0.02, s * (sideZ(BELT) - 0.07)], [ax(ROOF - 0.08), ROOF - 0.08, s * (sideZ(ROOF - 0.08) - 0.07)]],
       fillet([[-0.03, -0.012], [0.03, -0.012], [0.03, 0.01], [-0.03, 0.01]], [0.008, 0.008, 0.012, 0.012], 2), {up: [0, 0, s]});
-    if (s > 0) tube(C(B, 'dash'), roundPath([[0.0, 1.66, ROOF_W - 0.06], [0.03, 1.60, ROOF_W - 0.07], [0.27, 1.60, ROOF_W - 0.07], [0.30, 1.66, ROOF_W - 0.06]], 0.03, 3), 0.011, 8);
+    if (s > 0) tube(C(B, 'dash'), roundPath([[0.0, ROOF - 0.085, ROOF_W - 0.06], [0.03, ROOF - 0.145, ROOF_W - 0.07], [0.27, ROOF - 0.145, ROOF_W - 0.07], [0.30, ROOF - 0.085, ROOF_W - 0.06]], 0.03, 3), 0.011, 8);
   });
   // back panel trim around the rear window
   const top = ROOF - 0.10;
@@ -279,7 +282,7 @@ function roofLining() {
   // headliner: a moulded board under the roof with rounded edges, dome lamp, sun visors, rear-view mirror
   const y = ROOF - 0.042;
   slab(C(B, 'headliner'), FY, fillet([[CB + 0.03, -(ROOF_W - 0.02)], [WS1 + 0.03, -(ROOF_W - 0.02)], [WS1 + 0.03, ROOF_W - 0.02], [CB + 0.03, ROOF_W - 0.02]], 0.05, 3), [], y - 0.012, y, {r0: 0.01, r1: 0});
-  rbox(C(B, 'lens'), FY, -0.10, 0.02, -0.06, 0.06, y - 0.022, y - 0.012, 0.005, {rc: 0.015});
+  rbox(C(B, 'lamp_dome'), FY, -0.10, 0.02, -0.06, 0.06, y - 0.022, y - 0.012, 0.005, {rc: 0.015});
   sym(s => {
     const [z0, z1] = zr(s, 0.12, 0.70);
     rbox(C(B, 'headliner'), FY, WS1 + 0.04, WS1 + 0.20, z0, z1, y - 0.04, y - 0.022, 0.008, {rc: 0.03});

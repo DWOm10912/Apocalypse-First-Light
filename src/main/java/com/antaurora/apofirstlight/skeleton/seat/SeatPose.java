@@ -19,30 +19,42 @@ import java.util.Map;
  * <p>Moves (seconds from the start; the door is the vehicle's own, the hand follows it as it swings):
  * <ul>
  * <li>{@link Move#GET_IN} through a door: 0-{@link #IN_BODY} s the body steps from where it stood into the seat, the
- * inner leg first, turning to the seat's way and shrinking to {@link #SCALE}; from {@link #PULL_FROM} s the door-side
- * hand reaches for the door's inside pull and rides it while the door shuts (the vehicle shuts it
- * {@link #SHUT_IN_TICKS} ticks after the rider sat down), letting go once it is nearly shut; the hands go to the wheel
+ * inner leg first, turning to the seat's way; it shrinks to {@link #SCALE} only while it ducks in through the opening
+ * ({@link Moment#size}); from {@link #PULL_FROM} s the door-side
+ * hand reaches for the door's inside pull and rides it while the door shuts (when the rider shuts it within the move;
+ * since 2026-10-16 the vehicle never shuts it by itself), letting go once it is nearly shut; the hands go to the wheel
  * or the lap; done at {@link #IN_END} s.</li>
  * <li>{@link Move#GET_OUT} through a door: the door-side hand rides the inside pull while the door opens, the body leaves
- * the seat {@link #OUT_FROM}-{@link #OUT_BODY} s and grows back, then the hand nearer the door takes its outside handle
- * and pushes while the door shuts (the vehicle shuts it {@link #SHUT_OUT_TICKS} ticks after the rider got up), letting go
+ * the seat {@link #OUT_FROM}-{@link #OUT_BODY} s and grows back while it ducks out, then the hand nearer the door takes its outside handle
+ * and pushes while the door shuts (when someone shuts it within the move), letting go
  * half way; done then (or at {@link #OUT_MAX} s when the door stays open).</li>
  * <li>Without a door (a bench): only the body, {@link #BENCH_BODY} s each way.</li>
  * </ul>
  */
 public final class SeatPose {
-    /** How large a seated rider is drawn (the vanilla-sized body in a real-size cab). */
-    public static final float SCALE = 0.72F;
+    /**
+     * How large a seated rider is drawn (the vanilla-sized body in a real-size cab). 0.72 under the T15's first roof; the
+     * roof went up 10 cm and the cushion down 3 cm (user 2026-10-16, plan B) so the size step is smaller
+     * (docs/dev/seated_rider_v1_plan.md 11).
+     */
+    public static final float SCALE = 0.82F;
     /**
      * Metres the seated eye is ahead of the cushion point (the body sits a little forward of upright at the wheel): where
-     * the vehicle puts the rider's camera, with {@link #EYE_OVER_SEAT}.
+     * the vehicle puts the rider's camera, with {@link #EYE_OVER_SEAT}. With the size (0.09 m at 0.72).
      */
-    public static final float EYE_AHEAD = 0.09F;
+    public static final float EYE_AHEAD = 0.125F * SCALE;
     /**
      * Metres from the cushion's top to a seated rider's eyes: where the vehicle puts the rider's camera
-     * ({@code riderY = cushion + EYE_OVER_SEAT - eyeHeight}). The torso is compressed to bring the drawn eye there.
+     * ({@code riderY = cushion + EYE_OVER_SEAT - eyeHeight}). The torso is compressed to bring the drawn eye there. With
+     * the size (0.59 m at 0.72).
      */
-    public static final float EYE_OVER_SEAT = 0.59F;
+    public static final float EYE_OVER_SEAT = 0.8194F * SCALE;
+    /**
+     * The neck turns the head this far off the chest before a driver's shoulders follow the look (deg, under the rig's
+     * 70 deg head limit): looking back over a shoulder the chest turns up to {@link #DRIVER_LOOK_BACK} more, the hands
+     * stay on the wheel; the view turns on past what the head shows (the eyes).
+     */
+    public static final float NECK_TURN = 64F, DRIVER_LOOK_BACK = 8F;
     /** The pelvis pivot over the cushion's top (px): the thighs' half thickness, a little sunk in. */
     public static final float HIP_LIFT = 2.2F;
     /**
@@ -52,12 +64,14 @@ public final class SeatPose {
     public static final float THIGH = 1F / SCALE, SHIN = 1.6F;
     /** The ankle over the sole (px). */
     public static final float ANKLE = 2F;
+    /** The share of the rim's turn (about the forearm) a hand on the steering wheel turns with. */
+    public static final float WHEEL_ROLL = 0.8F;
+    /** A grip this share of the rim's radius off the rim no longer turns with it. */
+    public static final float OFF_RIM = 0.25F;
     /** Model px from the hand's contact point back to the wrist. */
     public static final float PALM = 1F;
     public static final float IN_BODY = 0.75F, PULL_FROM = 0.45F, IN_END = 1.7F;
     public static final float OUT_FROM = 0.25F, OUT_BODY = 1.0F, OUT_MAX = 2.0F, BENCH_BODY = 0.5F;
-    /** The door timings the vehicle should use (game ticks after the rider sat down / got up until the door shuts). */
-    public static final int SHUT_IN_TICKS = 14, SHUT_OUT_TICKS = 20;
 
     public enum Move { NONE, GET_IN, GET_OUT }
 
@@ -92,8 +106,14 @@ public final class SeatPose {
 
     /** The weights at one moment of a move. */
     public static final class Moment {
-        /** 0 standing .. 1 seated: hips, torso, scale; the turn; each leg (inner leads). */
+        /** 0 standing .. 1 seated: hips, torso; the turn; each leg (inner leads). */
         public float seated = 1F, turned = 1F, innerLeg = 1F, outerLeg = 1F;
+        /**
+         * 0 standing size .. 1 seated size ({@link #scale}): only while the body ducks through the door opening (seated
+         * share {@link #SIZE_FROM}-{@link #SIZE_TO}), where it moves most and the door frame hides part of it; a size
+         * changing over the whole move showed (user 2026-10-16).
+         */
+        public float size = 1F;
         /** The seated hands (wheel / lap) for the door-side and the other hand. */
         public float doorHandGoal = 1F, otherHandGoal = 1F;
         /** The door-side hand on the inside pull; the pushing hand on the outside handle. */
@@ -102,6 +122,9 @@ public final class SeatPose {
         public float lean;
         public boolean done = true;
     }
+
+    /** The seated share over which a move through a door changes the size. */
+    public static final float SIZE_FROM = 0.3F, SIZE_TO = 0.75F;
 
     private SeatPose() {
     }
@@ -113,7 +136,7 @@ public final class SeatPose {
         float s = Math.max(0F, seconds);
         if (!hasDoor) {
             float e = smooth(s / BENCH_BODY);
-            m.seated = m.turned = m.innerLeg = m.outerLeg = move == Move.GET_IN ? e : 1 - e;
+            m.seated = m.turned = m.innerLeg = m.outerLeg = m.size = move == Move.GET_IN ? e : 1 - e;
             m.doorHandGoal = m.otherHandGoal = move == Move.GET_IN ? smooth((s - 0.2F) / 0.4F) : 1 - smooth(s / 0.3F);
             m.done = s >= (move == Move.GET_IN ? 0.6F : BENCH_BODY);
             return m;
@@ -124,11 +147,14 @@ public final class SeatPose {
             m.turned = smooth(p * 1.3F);
             m.innerLeg = smooth(p * 1.25F);
             m.outerLeg = smooth(p * 1.25F - 0.25F);
-            // the pull: reached for from PULL_FROM, let go as the door comes shut
-            m.pull = smooth((s - PULL_FROM) / 0.25F) * smooth((door - 0.04F) / 0.16F) * (1 - smooth((s - IN_END + 0.3F) / 0.3F));
+            // the pull: reached for from PULL_FROM while the rider shuts the door, let go as it comes shut; not into a door
+            // left wide open (the rider shuts it when it likes: user 2026-10-16)
+            m.pull = smooth((s - PULL_FROM) / 0.25F) * smooth((door - 0.04F) / 0.16F) * (1 - smooth((door - 0.6F) / 0.25F))
+                    * (1 - smooth((s - IN_END + 0.3F) / 0.3F));
             m.lean = 20F * m.pull;
             m.doorHandGoal = smooth((s - 0.7F) / 0.5F);
             m.otherHandGoal = smooth((s - 0.5F) / 0.4F);
+            m.size = sizeShare(m.seated);
             m.done = s >= IN_END;
         } else {
             float p = Math.max(0F, Math.min(1F, (s - OUT_FROM) / (OUT_BODY - OUT_FROM)));
@@ -140,6 +166,7 @@ public final class SeatPose {
             m.lean = 20F * m.pull;
             m.doorHandGoal = 0F;
             m.otherHandGoal = 1 - smooth(s / 0.3F);
+            m.size = sizeShare(m.seated);
             // the push: on the outside handle once out, with the door until it has swung half shut
             m.push = smooth((s - 0.8F) / 0.25F) * smooth((door - 0.4F) / 0.2F) * (1 - smooth((s - OUT_MAX + 0.2F) / 0.2F));
             m.done = s >= OUT_BODY + 0.1F && door < 0.35F || s >= OUT_MAX;
@@ -175,7 +202,11 @@ public final class SeatPose {
         if (seat.doorSide != 0) in.viewPitch = Math.max(in.viewPitch, -12F * m.seated + in.viewPitch * (1 - m.seated));
         if (driver) in.protraction = 2F;
         float share = driver ? 0.1F : 0.35F, limit = driver ? 6F : 30F;
-        float twist = Math.max(-limit, Math.min(limit, in.viewYaw * share)) - seat.doorSide * m.lean;
+        float look = Math.max(-limit, Math.min(limit, in.viewYaw * share));
+        // a driver looking back past the neck's turn: the shoulders follow a little (the hands stay on the wheel)
+        float over = Math.abs(in.viewYaw - look) - NECK_TURN;
+        if (driver && over > 0) look += Math.copySign(Math.min(over, DRIVER_LOOK_BACK), in.viewYaw);
+        float twist = look - seat.doorSide * m.lean;
         in.chestYaw = in.chestYaw + (twist - in.chestYaw) * m.seated;
         // legs: from under the standing hips to the floor rests, the inner leg (away from the door) first, lifted between
         in.legIkWeight = 1F;
@@ -237,12 +268,48 @@ public final class SeatPose {
     private static Matrix4f goal(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Seat seat, boolean right) {
         SkeletonRig rig = pose.rig;
         Vector3f grip = seat.kind == RiderSeat.Kind.DRIVER ? seat.anchors.get(right ? "grip_r" : "grip_l") : null;
-        if (grip != null) return contact(in, pose, poser, right, grip);
+        if (grip != null) return wheel(in, pose, poser, seat, right, grip);
         int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL;
         Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f()), knee = pose.point(shin, rig.pivot[shin], new Vector3f());
         Vector3f up = pose.rotation(rig.pelvis, new Quaternionf()).transform(new Vector3f(0, -1, 0));
         Vector3f lap = new Vector3f(hip).lerp(knee, 0.6F).add(up.mul(2.6F));
         return contact(in, pose, poser, right, lap);
+    }
+
+    /**
+     * A hand on the steering wheel: {@link #contact}, the hand then turned about the forearm by the part of the rim's turn
+     * from its rest (9 / 3 o'clock) that is about the forearm ({@link #WHEEL_ROLL} of it), so the wrist goes round with
+     * the rim (the anchors {@code wheel_hub} and {@code wheel_axis}: the column's axis; without them, no turn). With
+     * {@code wheel_rim} (a point on the rim), the turn fades out as the grip leaves the rim (the right hand on its way to the
+     * gear lever's knob): none {@link #OFF_RIM} of the rim's radius off it.
+     */
+    private static Matrix4f wheel(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Seat seat, boolean right, Vector3f grip) {
+        Vector3f hub = seat.anchors.get("wheel_hub"), axisPoint = seat.anchors.get("wheel_axis");
+        if (hub == null || axisPoint == null) return contact(in, pose, poser, right, grip);
+        Vector3f wrist = new Vector3f(grip);
+        Quaternionf q = new Quaternionf();
+        for (int i = 0; i < 2; i++) {
+            q = poser.forearm(in, pose, right, wrist);
+            wrist.set(grip).sub(q.transform(new Vector3f(0, 1, 0)).mul(PALM));
+        }
+        Vector3f axis = new Vector3f(axisPoint).sub(hub).normalize();
+        Vector3f rest = new Vector3f(axis).cross(seat.up()).normalize().mul(right ? 1 : -1);
+        Vector3f radial = new Vector3f(grip).sub(hub);
+        radial.sub(new Vector3f(axis).mul(radial.dot(axis)));
+        float on = 1F;
+        Vector3f rim = seat.anchors.get("wheel_rim");
+        if (rim != null) {
+            Vector3f r0 = new Vector3f(rim).sub(hub);
+            r0.sub(new Vector3f(axis).mul(r0.dot(axis)));
+            float radius = r0.length();
+            if (radius > 1e-3F) on = 1F - smooth(Math.abs(radial.length() - radius) / (OFF_RIM * radius));
+        }
+        if (radial.lengthSquared() > 1e-6F && on > 0) {
+            float turn = (float) Math.atan2(new Vector3f(rest).cross(radial).dot(axis), rest.dot(radial));
+            float along = axis.dot(q.transform(new Vector3f(0, 1, 0)));
+            q.rotateY(turn * along * WHEEL_ROLL * on);
+        }
+        return frame(pose.rig, right, wrist, q);
     }
 
     /**
@@ -274,9 +341,14 @@ public final class SeatPose {
         return new Matrix4f().translation(wa.lerp(wb, w)).rotate(qa.slerp(qb, w)).translate(-o.x, -o.y, -o.z);
     }
 
-    /** The draw scale for a seated share. */
-    public static float scale(float seated) {
-        return 1F + (SCALE - 1F) * Math.max(0F, Math.min(1F, seated));
+    /** The draw scale for a size share ({@link Moment#size}). */
+    public static float scale(float size) {
+        return 1F + (SCALE - 1F) * Math.max(0F, Math.min(1F, size));
+    }
+
+    /** A move's size share from its seated share: all of it within SIZE_FROM-SIZE_TO. */
+    static float sizeShare(float seated) {
+        return smooth((seated - SIZE_FROM) / (SIZE_TO - SIZE_FROM));
     }
 
     public static float smooth(float t) {

@@ -573,6 +573,42 @@
       "unit_mass_kg": 0.35,
       "estimated": true
     },
+    "apocalypse_firstlight:tunnel_luminaire": {
+      "unit_mass_kg": 14,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_cctv": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_lane_signal": {
+      "unit_mass_kg": 22,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_headlight_sign": {
+      "unit_mass_kg": 45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_clearance_plate": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_egress_sign": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_name_plate": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_emergency_cabinet": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tunnel_handrail": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
     "apocalypse_firstlight:modern_office_chair": {
       "unit_mass_kg": 12,
       "estimated": true

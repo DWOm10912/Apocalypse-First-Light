@@ -52,8 +52,11 @@ public final class VehicleSpec {
     public final double reverseGear, finalDrive, efficiency;
     /** Clutch: the most torque it carries (Nm); the shift (s: out, lever across) and the time to let it in again (s). */
     public final double clutchTorque, shiftTime, engageTime;
-    /** 2H / 4H: the change only below this speed (m/s). */
-    public final double fourWheelSpeed;
+    /**
+     * Transfer case: 2H / 4H change only below this speed (m/s); the low range's ratio (4L, times every gear; 1: none) and
+     * the speed below which it goes in or out (m/s: standing).
+     */
+    public final double fourWheelSpeed, lowRange, lowRangeSpeed;
     /** Brakes: all four at once (N), the front's share; rolling resistance; drag (0.5 rho Cd A). */
     public final double brakeForce, brakeFront, rolling, drag;
     /** Tyres: the slip angle of peak side force (rad), the sliding grip left past it, the speed below which slip is linear. */
@@ -121,6 +124,8 @@ public final class VehicleSpec {
         shiftTime = b.shiftTime;
         engageTime = b.engageTime;
         fourWheelSpeed = b.fourWheelSpeed;
+        lowRange = b.lowRange;
+        lowRangeSpeed = b.lowRangeSpeed;
         brakeForce = b.brakeForce;
         brakeFront = b.brakeFront;
         rolling = b.rolling;
@@ -184,6 +189,8 @@ public final class VehicleSpec {
         b.shiftTime = 0.35;
         b.engageTime = 0.25;
         b.fourWheelSpeed = 20 / 3.6;
+        b.lowRange = 2.28;   // a small pickup's part-time case (2.28 : 1 low range)
+        b.lowRangeSpeed = 0.8;
         b.brakeForce = 14000;
         b.brakeFront = 0.65;
         b.rolling = 0.015;
@@ -213,12 +220,12 @@ public final class VehicleSpec {
             for (double z : new double[]{-2.2, -1.1, -0.6, -0.1, 0.4, 0.9, 1.8, 2.2}) p.add(new double[]{side * 0.845, 1.00, z});
             for (double z : new double[]{-2.2, -0.9, -0.3, 0.3, 0.6, 2.2}) p.add(new double[]{side * 0.845, 0.55, z});
             for (double z : new double[]{-0.55, -0.1, 0.28}) p.add(new double[]{side * 0.79, 1.45, z});
-            p.add(new double[]{side * 0.75, 1.74, -0.42});   // roof corners
-            p.add(new double[]{side * 0.75, 1.74, 0.30});
+            p.add(new double[]{side * 0.75, 1.84, -0.42});   // roof corners (raised 10 cm 2026-10-16)
+            p.add(new double[]{side * 0.75, 1.84, 0.30});
             p.add(new double[]{side * 0.45, 0.30, -0.6});    // frame rails under the cab and the bed
             p.add(new double[]{side * 0.45, 0.30, 0.3});
         }
-        p.add(new double[]{0, 1.745, -0.05});
+        p.add(new double[]{0, 1.845, -0.05});
         double[] out = new double[p.size() * 3];
         for (int i = 0; i < p.size(); i++) System.arraycopy(p.get(i), 0, out, i * 3, 3);
         return out;
@@ -248,7 +255,7 @@ public final class VehicleSpec {
         double mass, ix, iy, iz, comY, comZ, frontZ, rearZ, halfTrack, radius, bump, droop, springFront, springRear, dampFront,
                 dampRear, stopRate, stopDepth, maxSteer, steerGrip, antiRollFront, antiRollRear, steerRate, steerReturn, topSpeed,
                 idleRpm, cutRpm, frictionA, frictionB, engineInertia, stallRpm, starterTorque, starterRpm, preheat, crankMin, crankMax, fuelPerKwh, fuelIdle,
-                reverseGear, finalDrive, efficiency, clutchTorque, shiftTime, engageTime, fourWheelSpeed, brakeForce, brakeFront, rolling, drag, slipPeak, slideGrip, slipSpeed;
+                reverseGear, finalDrive, efficiency, clutchTorque, shiftTime, engageTime, fourWheelSpeed, lowRange, lowRangeSpeed, brakeForce, brakeFront, rolling, drag, slipPeak, slideGrip, slipSpeed;
         double[] hull, torqueRpm, torqueNm, gears;
     }
 }

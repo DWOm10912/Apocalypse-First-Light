@@ -33,6 +33,9 @@ public final class VehiclePackets {
     /** Server -> clients: a truck's state; correct: the driver must take it too (the server refused its own). */
     public record Sync(int entity, VehicleState state, boolean correct) {}
 
+    /** Driver's client -> server: the light switch or the high beam (PickupTruckEntity#SWITCH_*). */
+    public record Lamps(int entity, int action) {}
+
     /** The client's handling of a {@link Sync} (client/vehicle/VehicleDriving, set at client setup). */
     public static volatile Consumer<Sync> clientSync = s -> {};
 
@@ -53,7 +56,21 @@ public final class VehiclePackets {
             context.enqueueWork(() -> clientSync.accept(p));
             context.setPacketHandled(true);
         }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Lamps.class, (p, b) -> {
+            b.writeVarInt(p.entity());
+            b.writeVarInt(p.action());
+        }, b -> new Lamps(b.readVarInt(), b.readVarInt()), VehiclePackets::onLamps, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         return id;
+    }
+
+    private static void onLamps(Lamps packet, Supplier<NetworkEvent.Context> supplier) {
+        NetworkEvent.Context context = supplier.get();
+        ServerPlayer player = context.getSender();
+        if (player != null) context.enqueueWork(() -> {
+            if (player.level().getEntity(packet.entity()) instanceof PickupTruckEntity truck && truck.getControllingPassenger() == player)
+                truck.lampSwitch(packet.action());
+        });
+        context.setPacketHandled(true);
     }
 
     private static void write(FriendlyByteBuf b, VehicleState s) {
@@ -66,7 +83,7 @@ public final class VehiclePackets {
             b.writeFloat(s.spinRate()[i]);
         }
         Drivetrain.State d = s.drive();
-        b.writeByte((s.asleep() ? 1 : 0) | (d.running() ? 2 : 0) | (d.locked() ? 4 : 0) | (d.fourWheel() ? 8 : 0));
+        b.writeByte((s.asleep() ? 1 : 0) | (d.running() ? 2 : 0) | (d.locked() ? 4 : 0) | (d.fourWheel() ? 8 : 0) | (d.low() ? 16 : 0));
         b.writeByte(d.gear());
         b.writeByte(d.shiftTarget());
         b.writeByte(d.ignition());
@@ -87,7 +104,7 @@ public final class VehiclePackets {
         float[] d = new float[8];
         for (int i = 0; i < d.length; i++) d[i] = b.readFloat();
         Drivetrain.State drive = new Drivetrain.State((flags & 2) != 0, d[0], gear, d[1], (flags & 4) != 0, d[2], target, d[3], d[4],
-                (flags & 8) != 0, ignition, d[5], d[6], d[7]);
+                (flags & 8) != 0, (flags & 16) != 0, ignition, d[5], d[6], d[7]);
         return new VehicleState(x, y, z, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10], travel, spin, (flags & 1) != 0, drive);
     }
 

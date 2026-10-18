@@ -1,0 +1,25 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "1",
+        "dstrgb": "1-srcalpha",
+        "srcalpha": "0",
+        "dstalpha": "1"
+    },
+    "vertex": "apocalypse_firstlight:afl_glass_bake_drop",
+    "fragment": "apocalypse_firstlight:afl_glass_bake_drop",
+    "attributes": [
+        "Position",
+        "Color",
+        "UV0",
+        "UV2"
+    ],
+    "samplers": [
+        { "name": "Drops" }
+    ],
+    "uniforms": [
+        { "name": "Box", "type": "float", "count": 4, "values": [ -0.8, 0.0, 0.8, 0.9 ] },
+        { "name": "Outline", "type": "float", "count": 4, "values": [ -0.773, 0.06036, 0.773, -0.06036 ] },
+        { "name": "Span", "type": "float", "count": 3, "values": [ 0.031, 0.8617, 0.07 ] }
+    ]
+}

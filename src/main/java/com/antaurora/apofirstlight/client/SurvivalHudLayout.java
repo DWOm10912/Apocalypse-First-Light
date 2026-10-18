@@ -1,65 +1,54 @@
 package com.antaurora.apofirstlight.client;
 
 /**
- * The survival cluster above the hotbar (GUI pixels; Survival HUD V1, 2026-10-03): one tight group, centred on the screen,
- * nested like Winter Rescue's: left to right the stamina crescent "(" (air as one more arc outside it, only under water),
- * the health ring (armour as an arc over its top, the health number inside), the temperature dial with its dark metal
- * bezel, the hunger ring (the mount's health while riding one), the thirst crescent ")". Crescents open toward the centre
- * with their icon in the opening on a faint dark disc; rings and crescents carry a faint light outline. Vanilla hearts,
- * food, armour, air and mount hearts are hidden. Everything is SCALE times the original sizes (1.0 was small, 1.25 a
- * little big and too low); the item name and the action bar are lifted above the group.
+ * HUD V2 (2026-10-16, docs/ui/hud_v2_research.md): the body module at the bottom left (GUI pixels). A round module: the
+ * health arc on its left (armour as a thin lane outside it), the stamina arc on its right (air as a lane outside it under
+ * water), the temperature dial in the middle, the heart and the health number in the bottom gap; three small needs rings
+ * (hunger, thirst, load) round its upper right; the status badges in a column above it (client/StatusBadgeHud). It
+ * replaced Survival HUD V1's centred cluster over the hotbar.
  */
 public final class SurvivalHudLayout {
-    /** Size factor over the original rings and dial (geometry only; the half-size numbers stay pixel-exact). */
+    /** The temperature dial's size factor over TemperatureDial's own numbers (geometry only). */
     public static final double SCALE = 1.15;
-    /** Centre height above the screen bottom, shared by every gauge: the dial's trend chevrons (its lowest part, 15.2 px
-     *  below the centre) stay ~4 px above the load bar (24-29 px above the bottom). */
-    public static final double CENTRE_Y = 48;
-    /** Temperature dial face radius and its bezel width (TemperatureDial.RADIUS / BEZEL x SCALE). */
-    public static final double DIAL_RADIUS = 9.5 * SCALE, DIAL_BEZEL = 1.15 * SCALE;
-    /** Health / hunger rings: outer radius, band width, segment gap along the band; centres just clear of the bezel. */
-    public static final double VITAL_RADIUS = 7.5 * SCALE, VITAL_BAND = 2.1 * SCALE, SEGMENT_GAP = 0.85 * SCALE;
-    public static final double VITAL_OFFSET_X = DIAL_RADIUS + DIAL_BEZEL + 0.45 * SCALE + VITAL_RADIUS;
-    /** Stamina / thirst crescents: outer radius, band width; centred on their icon, which sits clear of the big ring. */
-    public static final double CRESCENT_RADIUS = 6.1 * SCALE, CRESCENT_BAND = 1.55 * SCALE;
-    public static final double CRESCENT_OFFSET_X = VITAL_OFFSET_X + VITAL_RADIUS + 3.6 * SCALE;
-    /** How far past the vertical each crescent's tips run (degrees): until their outer corner meets the big ring's
-     *  outline, so crescent and ring read as one piece with the icon held between them (user 2026-10-04). */
-    public static final double CRESCENT_REACH = reach();
-    /** Icon in a crescent: glyph size, the faint dark disc behind it (radius, alpha). */
-    public static final double CRESCENT_ICON = 4.7 * SCALE, ICON_DISC = 2.9 * SCALE, ICON_DISC_ALPHA = 0.35;
-    /** The dark translucent face inside the health / hunger rings. */
-    public static final double FACE_ALPHA = 0.45;
-    /** Outer arcs (armour over health, air outside the stamina crescent): gap to their gauge, width. */
-    public static final double LANE_GAP = 0.9 * SCALE, LANE_WIDTH = 0.95 * SCALE;
-    /** Faint light outline round rings, crescents and the dial's bezel (Winter Rescue-like): colour, width (GUI px), alpha. */
+    /** The module's centre: from the left edge, above the bottom edge. */
+    public static final double CENTRE_X = 40, CENTRE_Y = 40;
+    /** Health / stamina arcs: outer radius and band; health from the bottom left (200°) up to the top left (340°), stamina
+     *  from the top right (20°) down to the bottom right (160°), degrees clockwise from the top. The radius keeps the dial's
+     *  air temperature arc (TemperatureDial.AMBIENT_BASE × SCALE = 18.2) clear of the bands. */
+    public static final double RADIUS = 22, BAND = 3.2;
+    public static final double HEALTH_START = 200, STAMINA_START = 20, ARC_SPAN = 140, SEGMENT_GAP = 0.8;
+    /** Outer lanes (armour beside health, air beside stamina): gap to the arc, width. */
+    public static final double LANE_GAP = 0.8, LANE_WIDTH = 1.3;
+    /** The soft dark disc behind the module: radius over RADIUS, alpha. */
+    public static final double BACKING = 3.6, BACKING_ALPHA = 0.32;
+    /** Heart and health number in the bottom gap: heart size, the row's centre below the module centre. */
+    public static final double HEART_SIZE = 4.4, NUMBER_ROW = 20.2;
+    /** Needs rings (hunger, thirst, load): their angles (degrees clockwise from the top) and distance from the centre;
+     *  quiet: radius, band, icon; grown (the need matters, with a number): radius, band, icon. */
+    public static final double[] NEED_ANGLES = {22, 52, 82};
+    public static final double NEED_DISTANCE = 36.5, NEED_R = 5.2, NEED_BAND = 1.4, NEED_ICON = 4.2, NEED_ALPHA = 0.8,
+            NEED_R_GROWN = 7.4, NEED_BAND_GROWN = 1.8, NEED_ICON_GROWN = 3.6;
+    /** Status badges: column centre from the left edge, the lowest badge's centre above the module centre, step upward,
+     *  radius. */
+    public static final double BADGE_X = 12, BADGE_RISE = 52, BADGE_STEP = 13.5, BADGE_R = 5.4;
+    /** Faint light outline round arcs, rings and the dial's bezel: colour, width (GUI px), alpha. */
     public static final int OUTLINE = 0xE8E4DC;
     public static final double OUTLINE_WIDTH = 0.3, OUTLINE_ALPHA = 0.28;
-    /** The selected item's name and the action bar move up by this much while the cluster shows (vanilla: 50-68 px), clear
-     *  of the air temperature number above the dial (top ~71 px). */
-    public static final int TEXT_LIFT = 26;
     private SurvivalHudLayout() {}
 
-    /** Where the crescent's outer circle crosses the big ring's outline, as an angle from the vertical (degrees). */
-    private static double reach() {
-        double a = CRESCENT_RADIUS, b = VITAL_RADIUS + OUTLINE_WIDTH, d = CRESCENT_OFFSET_X - VITAL_OFFSET_X;
-        double x = (a * a - b * b + d * d) / (2 * d), y = Math.sqrt(Math.max(0, a * a - x * x));
-        return Math.toDegrees(Math.atan2(x, y));
-    }
+    public static double centreX() { return CENTRE_X; }
+    public static double centreY(int screenHeight) { return screenHeight - CENTRE_Y; }
 
-    /** A crescent gauge: its band (opening toward the centre, side -1 is "(" on the left, +1 is ")" on the right, its tips
-     *  running CRESCENT_REACH past the vertical to the big ring), filled from the bottom tip up, with its outlines, the
-     *  icon disc and the icon. */
-    public static void crescent(net.minecraft.client.gui.GuiGraphics graphics, String name, double cx, double cy, int side,
-                                double fill, int rgb, AflRingIcon.Glyph icon) {
-        double r = CRESCENT_RADIUS, band = CRESCENT_BAND, span = 180 + 2 * CRESCENT_REACH;
-        double start = side < 0 ? 180 - CRESCENT_REACH : 360 - CRESCENT_REACH;   // "(": bottom tip round the left; ")": top tip round the right
-        double from = side < 0 ? 0 : 1 - fill, to = side < 0 ? fill : 1;
-        var bands = java.util.List.of(
-                AflGauge.Band.disc(ICON_DISC, AflGauge.BACK, ICON_DISC_ALPHA),
-                AflGauge.Band.arc(r, band, start, span, 0, 0, from, to, rgb, 1),
-                AflGauge.Band.line(r + OUTLINE_WIDTH, OUTLINE_WIDTH, start, span, OUTLINE, OUTLINE_ALPHA),
-                AflGauge.Band.line(r - band, OUTLINE_WIDTH, start, span, OUTLINE, OUTLINE_ALPHA));
-        AflGauge.draw(graphics, name, cx, cy, r + OUTLINE_WIDTH + 0.5, bands, new AflGauge.Glyph(icon, CRESCENT_ICON, rgb, 1));
+    /** Centre of needs ring i (0 hunger, 1 thirst, 2 load). */
+    public static double needX(int i) { return CENTRE_X + Math.sin(Math.toRadians(NEED_ANGLES[i])) * NEED_DISTANCE; }
+    public static double needY(int screenHeight, int i) { return centreY(screenHeight) - Math.cos(Math.toRadians(NEED_ANGLES[i])) * NEED_DISTANCE; }
+
+    /** Centre height of badge i (0 the lowest). */
+    public static double badgeY(int screenHeight, int i) { return centreY(screenHeight) - BADGE_RISE - i * BADGE_STEP; }
+
+    /** Top of the left HUD stack with `badges` badges showing (GUI y): the chat moves up above it. */
+    public static double stackTop(int screenHeight, int badges) {
+        double module = needY(screenHeight, 0) - NEED_R_GROWN - 1;
+        return badges <= 0 ? module : Math.min(module, badgeY(screenHeight, badges - 1) - BADGE_R - 2);
     }
 }

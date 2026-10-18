@@ -203,7 +203,7 @@ public final class HumanoidPoser {
         Quaternionf view = new Quaternionf().rotationY(rad(in.viewYaw)).rotateX(rad(in.viewPitch));
         Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
         pose.local[rig.head].set(new Quaternionf(chestWorld).conjugate().mul(view));
-        clampEuler(pose.local[rig.head], rig.limits[rig.head]);
+        clampHead(pose.local[rig.head], rig.limits[rig.head]);
         pose.update(rig.head);
         if (in.eyeTarget != null) {
             SkeletonRig.Socket eye = rig.sockets.get("eye");
@@ -616,6 +616,19 @@ public final class HumanoidPoser {
         float x = clampDeg(e.x, limit.minX(), limit.maxX()), y = clampDeg(e.y, limit.minY(), limit.maxY()),
                 z = clampDeg(e.z, limit.minZ(), limit.maxZ());
         q.rotationZYX(z, y, x);
+    }
+
+    /**
+     * The head's limits, turn first, then nod (the way the view is built): Z-Y-X angles keep their middle (the turn)
+     * within 90 deg, so a look turned further (a seated rider looks up to 120 deg off the seat's way) came out as a flip
+     * and a nod, and the clamped nod tipped the head over onto its side (user 2026-10-16).
+     */
+    static void clampHead(Quaternionf q, SkeletonRig.Limit limit) {
+        if (limit == null) return;
+        Vector3f e = q.getEulerAnglesYXZ(new Vector3f());
+        float x = clampDeg(e.x, limit.minX(), limit.maxX()), y = clampDeg(e.y, limit.minY(), limit.maxY()),
+                z = clampDeg(e.z, limit.minZ(), limit.maxZ());
+        q.rotationYXZ(y, x, z);
     }
 
     private static float clampDeg(float radians, float min, float max) {

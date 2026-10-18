@@ -111,32 +111,9 @@ public final class PickupTruckCommands {
                             truck.cargoChanged();
                             return report(c.getSource(), truck);
                         })))
-                .then(Commands.literal("seat")
-                        .executes(c -> seat(c.getSource()))
-                        .then(Commands.argument("scale", com.mojang.brigadier.arguments.FloatArgumentType.floatArg(0.4f, 1.2f))
-                                .executes(c -> {
-                                    PickupTruckLayout.riderScale = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(c, "scale");
-                                    return seat(c.getSource());
-                                })
-                                .then(Commands.argument("cab_hip", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.4, 1.1))
-                                        .executes(c -> {
-                                            PickupTruckLayout.riderScale = com.mojang.brigadier.arguments.FloatArgumentType.getFloat(c, "scale");
-                                            PickupTruckLayout.cabHip = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(c, "cab_hip");
-                                            return seat(c.getSource());
-                                        }))))
                 .then(Commands.literal("door")
                         .then(Commands.literal("left").executes(c -> door(c.getSource(), false)))
                         .then(Commands.literal("right").executes(c -> door(c.getSource(), true)))))));
-    }
-
-    /** The interim rider scale and the cab hip / eye heights (dev, not saved). */
-    private static int seat(CommandSourceStack source) {
-        PickupTruckLayout.Seat driver = PickupTruckLayout.SEATS[PickupTruckLayout.DRIVER];
-        double hip = Double.isNaN(PickupTruckLayout.cabHip) ? driver.hip() : PickupTruckLayout.cabHip;
-        String text = String.format(Locale.ROOT, "T15 seat scale=%.2f cab hip=%.3f eye=%.3f (not saved)", PickupTruckLayout.riderScale,
-                hip, hip + PickupTruckLayout.EYE_OVER_HIP * PickupTruckLayout.riderScale);
-        source.sendSuccess(() -> Component.literal(text), false);
-        return 1;
     }
 
     private static int door(CommandSourceStack source, boolean right) throws CommandSyntaxException {

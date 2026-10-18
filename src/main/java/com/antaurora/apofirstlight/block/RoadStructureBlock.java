@@ -18,12 +18,16 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -138,22 +142,55 @@ public final class RoadStructureBlock extends Block implements SimpleWaterlogged
         return super.updateShape(s, d, n, level, p, np);
     }
 
-    /** The mesh's solid in this block, capped by the layers; null without a network or where the mesh has nothing. */
+    /**
+     * The mesh's solid in this block, capped by the layers; null without a network or where the mesh has nothing. Built
+     * once per position and layers (cached): the column boxes capped, rows with the same x run and heights merged along z,
+     * joined unoptimised and optimised once. Shapes.or optimises after every box, which made a tunnel cell with a few
+     * dozen boxes cost milliseconds; vanilla's ambient particle tick asks hundreds of new cells a tick when flying fast
+     * through a tunnel (2026-10-16).
+     */
     private static VoxelShape meshShape(Holder h, BlockState s, BlockPos p) {
         int layers = s.getValue(LAYERS);
         long key = p.asLong() * 33 + layers;
         VoxelShape shape = h.shapes().get(key);
         if (shape == null) {
-            VoxelShape out = Shapes.empty();
+            List<double[]> boxes = new ArrayList<>();
             for (double[] b : BridgeMesh.boxes(h.works(), p.getX(), p.getY(), p.getZ())) {
                 double y1 = Math.min(b[4], layers / 32.0);
-                if (y1 > b[1]) out = Shapes.or(out, Shapes.box(b[0], b[1], b[2], b[3], y1, b[5]));
+                if (y1 > b[1]) boxes.add(new double[]{b[0], b[1], b[2], b[3], y1, b[5]});
             }
+            VoxelShape out = Shapes.empty();
+            for (double[] b : mergeAlongZ(boxes)) out = Shapes.joinUnoptimized(out, Shapes.box(b[0], b[1], b[2], b[3], b[4], b[5]), BooleanOp.OR);
             shape = out.isEmpty() ? NOTHING : out.optimize();
             if (h.shapes().size() > CACHE) h.shapes().clear();
             h.shapes().put(key, shape);
         }
         return shape == NOTHING ? null : shape;
+    }
+
+    /** Boxes with the same x run and heights whose z ranges touch, merged (the rows of a uniform cell become one box). */
+    public static List<double[]> mergeAlongZ(List<double[]> boxes) {
+        boxes.sort(Comparator.<double[]>comparingDouble(b -> b[0]).thenComparingDouble(b -> b[3]).thenComparingDouble(b -> b[1])
+                .thenComparingDouble(b -> b[4]).thenComparingDouble(b -> b[2]));
+        List<double[]> out = new ArrayList<>();
+        for (double[] b : boxes) {
+            double[] last = out.isEmpty() ? null : out.get(out.size() - 1);
+            if (last != null && last[0] == b[0] && last[3] == b[3] && last[1] == b[1] && last[4] == b[4] && last[5] == b[2]) last[5] = b[5];
+            else out.add(b.clone());
+        }
+        return out;
+    }
+
+    /**
+     * The collision a road_structure block with these layers has at p (a tunnel fixture that took over a lining cell keeps
+     * it, TunnelFixtureBlock); empty where the mesh has nothing there.
+     */
+    public static VoxelShape structureShape(BlockPos p, int layers) {
+        BlockState s = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState().setValue(LAYERS, Math.max(1, Math.min(32, layers)));
+        Holder h = holder;
+        if (h == null) return SHAPES[s.getValue(LAYERS) - 1];
+        VoxelShape m = meshShape(h, s, p);
+        return m != null && m != NOTHING ? m : Shapes.empty();
     }
 
     @Override public VoxelShape getShape(BlockState s, BlockGetter l, BlockPos p, CollisionContext c) {

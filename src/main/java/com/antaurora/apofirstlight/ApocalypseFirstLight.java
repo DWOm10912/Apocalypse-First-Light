@@ -61,6 +61,9 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.CLIENT,
                 com.antaurora.apofirstlight.client.FirstPersonBodyConfig.SPEC, "apocalypse_firstlight-client.toml");
+        // its screen (Mods > Config): AFL settings, client only
+        if (net.minecraftforge.fml.loading.FMLEnvironment.dist == net.minecraftforge.api.distmarker.Dist.CLIENT)
+            com.antaurora.apofirstlight.client.settings.AflSettingsScreen.register();
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflFluids.FLUID_TYPES.register(modEventBus);

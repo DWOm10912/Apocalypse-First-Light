@@ -48,6 +48,11 @@ public final class RoadNetworkBuild {
      * with gaps of at most RUN_GAP; the extra margin; the clearance from structures, m.
      */
     public static final double TOUCH = 80, RUN_GAP = 10, TRIM_MARGIN = 4, STRUCTURE_CLEAR = 10;
+    /**
+     * A tunnel's clearance from a road's end (Tunnel V1): its portal approaches (TunnelWorks.APPROACH) and a margin; an
+     * end within it (also an untrimmed end: a route's town) moves past the tunnel, m.
+     */
+    public static final double TUNNEL_CLEAR = TunnelWorks.APPROACH + 10;
     /** The shortest piece of a road kept after trims and splits, m; the most splits of one network. */
     public static final double MIN_PIECE = 200;
     public static final int MAX_SPLITS = 32;
@@ -303,6 +308,9 @@ public final class RoadNetworkBuild {
 
     // ------------------------------------------------------------------ trims
 
+    /** How far a road's end keeps from a structure: TUNNEL_CLEAR from a tunnel, STRUCTURE_CLEAR from the others. */
+    static double clearance(Structure s) { return s.kind().equals("TUNNEL") ? TUNNEL_CLEAR : STRUCTURE_CLEAR; }
+
     private static int rank(String roadClass) { return roadClass.equals("interstate") ? 2 : roadClass.equals("state") ? 1 : 0; }
 
     /** The stations (2 m, -END .. length + END) of road r whose works or formation conflict with road q. */
@@ -381,10 +389,13 @@ public final class RoadNetworkBuild {
             }
             a = Math.ceil(a / RoadProfile.DS - 1e-9) * RoadProfile.DS;
             b = Math.floor(b / RoadProfile.DS + 1e-9) * RoadProfile.DS;
-            // never inside a structure: move the end past it
+            // never inside a structure: move the end past it; a tunnel keeps its approaches clear of any end, the route's own
+            // too (a portal never faces a town or a trimmed end)
             for (Structure s : r.structures()) {
-                if (a > 0 && a >= s.s0() - STRUCTURE_CLEAR && a <= s.s1() + STRUCTURE_CLEAR) a = Math.ceil((s.s1() + STRUCTURE_CLEAR) / RoadProfile.DS) * RoadProfile.DS;
-                if (b < len && b >= s.s0() - STRUCTURE_CLEAR && b <= s.s1() + STRUCTURE_CLEAR) b = Math.floor((s.s0() - STRUCTURE_CLEAR) / RoadProfile.DS) * RoadProfile.DS;
+                boolean tunnel = s.kind().equals("TUNNEL");
+                double clear = clearance(s);
+                if ((a > 0 || tunnel) && a >= s.s0() - clear && a <= s.s1() + clear) a = Math.ceil((s.s1() + clear) / RoadProfile.DS) * RoadProfile.DS;
+                if ((b < len || tunnel) && b >= s.s0() - clear && b <= s.s1() + clear) b = Math.floor((s.s0() - clear) / RoadProfile.DS) * RoadProfile.DS;
             }
             if (b - a < MIN_PIECE) {
                 report.add(String.format(Locale.ROOT, "left out: %s (trimmed to %.0f .. %.0f)", r.id(), a, b));
@@ -429,8 +440,9 @@ public final class RoadNetworkBuild {
                 double b0 = Math.floor((c0 - RoadDesign.END - TRIM_MARGIN) / RoadProfile.DS) * RoadProfile.DS;
                 double a1 = Math.ceil((c1 + RoadDesign.END + TRIM_MARGIN) / RoadProfile.DS) * RoadProfile.DS;
                 for (Structure st : r.structures()) {
-                    if (b0 >= st.s0() - STRUCTURE_CLEAR && b0 <= st.s1() + STRUCTURE_CLEAR) b0 = Math.floor((st.s0() - STRUCTURE_CLEAR) / RoadProfile.DS) * RoadProfile.DS;
-                    if (a1 >= st.s0() - STRUCTURE_CLEAR && a1 <= st.s1() + STRUCTURE_CLEAR) a1 = Math.ceil((st.s1() + STRUCTURE_CLEAR) / RoadProfile.DS) * RoadProfile.DS;
+                    double clear = clearance(st);
+                    if (b0 >= st.s0() - clear && b0 <= st.s1() + clear) b0 = Math.floor((st.s0() - clear) / RoadProfile.DS) * RoadProfile.DS;
+                    if (a1 >= st.s0() - clear && a1 <= st.s1() + clear) a1 = Math.ceil((st.s1() + clear) / RoadProfile.DS) * RoadProfile.DS;
                 }
                 pieces = new ArrayList<>();
                 double[][] w = {{off, b0}, {a1, full}};

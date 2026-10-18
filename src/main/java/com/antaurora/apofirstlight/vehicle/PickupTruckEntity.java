@@ -11,6 +11,9 @@ import com.antaurora.apofirstlight.item.FuelCanItem;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
 import com.antaurora.apofirstlight.registry.AflEntities;
 import com.antaurora.apofirstlight.registry.AflFluids;
+import com.antaurora.apofirstlight.skeleton.seat.RiderSeat;
+import com.antaurora.apofirstlight.skeleton.seat.SeatPose;
+import com.antaurora.apofirstlight.skeleton.seat.SeatedRiderHost;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Box;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Pick;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout.Seat;
@@ -34,6 +37,8 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -58,7 +63,9 @@ import org.joml.Quaternionf;
 import org.joml.Vector3d;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -70,10 +77,13 @@ import java.util.function.Supplier;
  * two {@link Part}s (front, bed), as the ender dragon does (Forge PartEntity, ids following this entity's). Which part a
  * click works is not the box it hit but the part the look ray meets in the truck's own frame
  * ({@link PickupTruckLayout#pick}); the world prompt (client/WorldInteractionHint) asks {@link #actionFor} the same. A
- * creative player's hit removes the truck (test cleanup; the cargo drops); other damage does nothing.
+ * creative player's sneaking hit removes the truck (test cleanup; the cargo drops); a punch only sounds on the metal;
+ * other damage does nothing.
  * <p>Collision ({@link VehicleColliders}): the layout's boxes turned to the heading; who rides it goes through.
  * <p>Seats: the passengers' seats are synced (one entity id per seat). Driver and passenger get in through an open door
  * (it shuts behind them) and out the same side (the door opens; it shuts again), else the other side, the bed, the roof.
+ * The seats for the player skeleton ({@link SeatedRiderHost}, docs/dev/seated_rider_v1_plan.md): the full orientation,
+ * the hands on the steering wheel turning with it, the door's points swinging with the door.
  * <p>Frame: the model's front is -Z (rendered turned by 180 - yaw), so the truck's front points along its look direction.
  * <p>Driving (V0-b package 1): the driver's seat controls it ({@link #getControllingPassenger}); the driver's client runs
  * {@link VehiclePhysics} with its keys and sends the state each tick, the server checks and passes it on (VehiclePackets),
@@ -83,7 +93,7 @@ import java.util.function.Supplier;
  * yaw-only. Who stands on it is carried along (the server moves mobs and items, each client its own player); who is in
  * the way of a moving truck is pushed aside.
  */
-public final class PickupTruckEntity extends Entity implements VehicleColliders.Collider, FuelFillEntity {
+public final class PickupTruckEntity extends Entity implements VehicleColliders.Collider, FuelFillEntity, SeatedRiderHost {
     private static final EntityDataAccessor<Integer> PAINT = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> PAINT2 = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> WEAR = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.FLOAT);
@@ -94,6 +104,34 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private static final EntityDataAccessor<Boolean> FILLER = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> FUEL = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<CompoundTag> CARGO = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.COMPOUND_TAG);
+    /**
+     * The lamps (design doc 8.10), the horn (8.11), the turn signals and hazard lamps (8.12): LAMP_* bits, set on the
+     * server (the switches by the driver, the brake from the driver's back key, the horn while the driver holds its key).
+     */
+    private static final EntityDataAccessor<Byte> LAMPS = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
+    public static final int LAMP_HEAD = 1, LAMP_HIGH = 2, LAMP_BRAKE = 4, HORN = 8, TURN_L = 16, TURN_R = 32, HAZARD = 64;
+    /**
+     * VehiclePackets.Lamps actions: the light key (a tap: lights on / off; a hold: the high beam), the horn pressed / let go,
+     * the left / right turn signal (on, or off when it already blinks) and the hazard switch.
+     */
+    public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3, SIGNAL_LEFT = 4, SIGNAL_RIGHT = 5, SWITCH_HAZARD = 6,
+            SWITCH_WIPER = 7;
+    /** The wiper switch (WiperSystem.OFF .. HIGH; the stalk right of the column), set on the server from the driver's key. */
+    private static final EntityDataAccessor<Byte> WIPER = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
+    /** Flasher: one flash cycle (ticks; 90 a minute, inside the US 60-120) and its lit share. */
+    public static final float BLINK_PERIOD = 20 * 60 / 90.0F, BLINK_ON = 0.5F;
+    /**
+     * Infected hearing (design doc 8.11; the sounds carry as far, client/vehicle/TruckSounds and sounds.json): the engine
+     * idling and revving (every NOISE_INTERVAL ticks while it runs), the horn (every HORN_INTERVAL ticks while it sounds),
+     * a light and a heavy crash, a door, the hood and the tailgate, the filler cap (blocks).
+     */
+    public static final double ENGINE_NOISE = 32, ENGINE_LOUD_NOISE = 48, HORN_NOISE = 64, CRASH_NOISE = 24, CRASH_HEAVY_NOISE = 48,
+            DOOR_NOISE = 8, TAILGATE_NOISE = 10, CAP_NOISE = 3;
+    private static final int NOISE_INTERVAL = 40, HORN_INTERVAL = 10;
+    /** A loss of speed in one tick this big is a crash (m/s; braking takes at most about 0.4 m/s a tick), a heavy one past the second. */
+    public static final double CRASH_DROP = 2.5, CRASH_HEAVY_DROP = 6.0;
+    /** Server: the speed of the driver's last accepted state (m/s). */
+    private double acceptedSpeed;
     @SuppressWarnings("unchecked")
     private static final EntityDataAccessor<Integer>[] SEAT = new EntityDataAccessor[PickupTruckLayout.SEATS.length];
 
@@ -113,8 +151,13 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     public static final GridLayout CARGO_LAYOUT = GridLayout.of(9, 7);
     /** Half the truck's length (with the open tailgate) and its height with the hood open (blocks), for render culling. */
     private static final double HALF_LENGTH = 2.9, HEIGHT = 2.2;
-    /** Ticks before a door shuts behind someone getting in / out. */
-    private static final int SHUT_IN = 12, SHUT_OUT = 24;
+    /**
+     * A cab rider shuts its own open door (user 2026-10-16: doors no longer shut by themselves) looking out that way: the
+     * view's sideways share toward the door at least this.
+     */
+    private static final double CLOSE_LOOK = 0.35;
+    /** Faster than this (m/s, about 2 km/h) nobody gets out (client/vehicle/VehicleDriving keeps the sneak key from it). */
+    public static final double GET_OUT_SPEED = 0.55;
     /** How far a click / prompt looks along the view (blocks). */
     public static final double REACH = 4.5;
 
@@ -131,8 +174,26 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private GridStorage cargo = new GridStorage(CARGO_LAYOUT, false);
     private int cargoVersion;
     /** Server: when each door (left, right) shuts by itself (game time, -1 none); who left which seat last (for the dismount spot). */
-    private final long[] shutAt = {-1, -1};
     private int leftId = -1, leftSeat = -1;
+    /**
+     * Server: a player who just got out, and where (sent to its client the tick after: the server alone moves it there,
+     * and in creative the client's own place, still on the seat inside the cab, would win: user 2026-10-16, out through the roof).
+     */
+    private int exitId = -1;
+    private Vec3 exitSpot = Vec3.ZERO;
+    /** Client: the driver's hands on the wheel (push-pull steering). */
+    private final SteeringHands hands = new SteeringHands();
+    private int handsDriver = -1;
+    /** Client: the gear lever and the right hand on it (drawn for everyone; the hand with the seated driver's skeleton). */
+    private final ShiftLever lever = new ShiftLever();
+    /** Client: the transfer case lever and the right hand on it (as the gear lever). */
+    private final TransferLever transferLever = new TransferLever();
+    private double handsTime = Double.NaN;
+    /** Riders moving over (MOVE_OVER): passenger id -> {the seat it came from, the tick it started}; the seat each was last on. */
+    private final Map<Integer, int[]> slides = new HashMap<>();
+    private final Map<Integer, Integer> lastSeat = new HashMap<>();
+    /** Moving over takes this long (ticks). */
+    private static final int SLIDE_TICKS = 14;
     // collision cache (VehicleColliders)
     private List<AABB> boxes = List.of();
     private AABB bounds = new AABB(0, 0, 0, 0, 0, 0);
@@ -174,7 +235,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     // ---- drivetrain (V0-b package 2) ----
     /** The drivetrain as saved, for the physics once it exists: gear, 2H / 4H, coolant (the engine is off after loading). */
     private int savedGear;
-    private boolean savedFour;
+    private boolean savedFour, savedLow;
     private float savedCoolant = 20;
     /** Server: fuel burnt and not yet taken from the tank (litres; the tank counts whole litres). */
     private double fuelBurnt;
@@ -221,13 +282,35 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     }
 
     public void setWear(float wear) { entityData.set(WEAR, Mth.clamp(wear, 0.0F, 1.0F)); }
-    public void setHoodOpen(boolean open) { entityData.set(HOOD, open); }
-    public void setTailgateOpen(boolean open) { entityData.set(TAILGATE, open); }
-    public void setFillerOpen(boolean open) { entityData.set(FILLER, open); }
+    public void setHoodOpen(boolean open) {
+        if (open != hoodOpen()) partNoise(point(2.0, 0, 1.0), TAILGATE_NOISE);
+        entityData.set(HOOD, open);
+    }
+
+    public void setTailgateOpen(boolean open) {
+        if (open != tailgateOpen()) partNoise(point(-2.3, 0, 0.8), TAILGATE_NOISE);
+        entityData.set(TAILGATE, open);
+    }
+
+    public void setFillerOpen(boolean open) {
+        if (open != fillerOpen()) partNoise(point(-1.6, -0.8, 0.9), CAP_NOISE);
+        entityData.set(FILLER, open);
+    }
 
     public void setDoorOpen(boolean right, boolean open) {
+        if (open != doorOpen(right)) partNoise(point(0.3, right ? 0.8 : -0.8, 1.0), DOOR_NOISE);
         entityData.set(right ? DOOR_R : DOOR_L, open);
-        shutAt[right ? 1 : 0] = -1;
+    }
+
+    /** Server, in play (not while loading): a part of the truck heard by the infected (design doc 8.11). */
+    private void partNoise(Vec3 at, double radius) {
+        if (tickCount > 0 && level() instanceof net.minecraft.server.level.ServerLevel server) noise(server, at, radius);
+    }
+
+    private void noise(net.minecraft.server.level.ServerLevel server, Vec3 at, double radius) {
+        com.antaurora.apofirstlight.noise.NoiseSystem.emit(new com.antaurora.apofirstlight.noise.NoiseEvent(getControllingPassenger(), at,
+                com.antaurora.apofirstlight.noise.NoiseType.MACHINE, server.getGameTime(), com.antaurora.apofirstlight.registry.AflEntities.PICKUP_T15.getId(),
+                radius), server);
     }
 
     /** Server: litres in the tank (diesel), 0..TANK. */
@@ -262,15 +345,126 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         if (level() instanceof net.minecraft.server.level.ServerLevel server) flattenPlants(server);
         if (!level().isClientSide) {
             long now = level().getGameTime();
-            for (int side = 0; side < 2; side++) {
-                if (shutAt[side] >= 0 && now >= shutAt[side]) setDoorOpen(side == 1, false);
+            // the one who got out last tick: its client to the spot outside (after the passengers packet that let it go)
+            if (exitId >= 0) {
+                if (level().getEntity(exitId) instanceof ServerPlayer player && !player.isPassenger() && player.distanceToSqr(exitSpot) < 64)
+                    player.connection.teleport(exitSpot.x, exitSpot.y, exitSpot.z, player.getYRot(), player.getXRot());
+                exitId = -1;
             }
             // a seat whose rider is gone (left another way, died) frees up
             for (int i = 0; i < SEAT.length; i++) {
                 int id = entityData.get(SEAT[i]);
                 if (id >= 0 && getPassengers().stream().noneMatch(p -> p.getId() == id)) entityData.set(SEAT[i], -1);
             }
+            // the stop lamps: the driver's back key is the brake pedal (VehicleInput#brake; the server sees it in the
+            // vanilla riding input)
+            LivingEntity driver = getControllingPassenger();
+            boolean braking = driver != null && driver.zza < -0.01F;
+            int lamps = lamps(), next = braking ? lamps | LAMP_BRAKE : lamps & ~LAMP_BRAKE;
+            if (driver == null) next &= ~HORN;   // the horn needs a hand on it
+            if (next != lamps) entityData.set(LAMPS, (byte) next);
+            // what the infected hear (design doc 8.11): the engine (louder revving or pulling), the horn
+            net.minecraft.server.level.ServerLevel server = (net.minecraft.server.level.ServerLevel) level();
+            Vec3 engine = point(1.7, 0, 0.8);
+            if (engineRunning() && Math.floorMod(now + getId(), NOISE_INTERVAL) == 0)
+                noise(server, engine, tachometer(1) > 1800 || throttlePedal() > 0.5F ? ENGINE_LOUD_NOISE : ENGINE_NOISE);
+            if (horn() && Math.floorMod(now, HORN_INTERVAL) == 0) noise(server, engine, HORN_NOISE);
         }
+    }
+
+    // ---- lamps (design doc 8.10) ----
+
+    public int lamps() { return entityData.get(LAMPS); }
+
+    /** The light switch is on: headlamps (low beam), parking lamps, tail and plate lamps, the dash lights. */
+    public boolean headlights() { return (lamps() & LAMP_HEAD) != 0; }
+
+    /** The high beam is lit (the switch on and the high beam on). */
+    public boolean highBeam() { return (lamps() & (LAMP_HEAD | LAMP_HIGH)) == (LAMP_HEAD | LAMP_HIGH); }
+
+    public boolean braking() { return (lamps() & LAMP_BRAKE) != 0; }
+
+    /** The horn sounds (the driver holds its key; design doc 8.11). */
+    public boolean horn() { return (lamps() & HORN) != 0; }
+
+    /** In reverse, or shifting into it (the reverse lamp switch on the gearbox). */
+    public boolean reversing() { return gear() < 0 || shiftTarget() < 0; }
+
+    /** The turn signal lever: -1 left, 1 right, 0 none (design doc 8.12). */
+    public int turnSignal() { int l = lamps(); return (l & TURN_L) != 0 ? -1 : (l & TURN_R) != 0 ? 1 : 0; }
+
+    /** The hazard switch is on (both sides flash). */
+    public boolean hazard() { return (lamps() & HAZARD) != 0; }
+
+    /** The flasher's bits as last seen and the tick they changed (the first flash comes at once; client). */
+    private int flasherBits = -1;
+    private int flasherStart;
+
+    /**
+     * Client, this frame: one side's turn lamps lit, the flasher's lit half (the turn signal that way or the hazards); the
+     * cycle starts when the switch changes, so the first flash comes at once. The lamps, the flares and the HUD all ask.
+     */
+    public boolean turnLit(boolean right, float partialTick) {
+        int bits = lamps() & (TURN_L | TURN_R | HAZARD);
+        if (bits != flasherBits) {
+            flasherBits = bits;
+            flasherStart = tickCount;
+        }
+        if ((bits & HAZARD) == 0 && (bits & (right ? TURN_R : TURN_L)) == 0) return false;
+        float t = (tickCount + partialTick - flasherStart) % BLINK_PERIOD;
+        return t >= 0 && t < BLINK_PERIOD * BLINK_ON;
+    }
+
+    /**
+     * Server: the driver's light key (VehiclePackets.Lamps; one key, GTA-style, user 2026-10-16). SWITCH_LIGHTS (a tap)
+     * turns the lights on on low beam, or off; SWITCH_HIGH (a hold) flips the high beam, turning the lights on with it.
+     * The turn signal keys (user 2026-10-16: one press on, the same again off; the other side's key moves it over) and the
+     * hazard switch (on / off; flashes both sides over a turn signal, which comes back when the hazards go off).
+     */
+    void lampSwitch(int action) {
+        int lamps = lamps();
+        if (action == SWITCH_LIGHTS) lamps = (lamps & LAMP_HEAD) != 0 ? lamps & ~(LAMP_HEAD | LAMP_HIGH) : (lamps | LAMP_HEAD) & ~LAMP_HIGH;
+        else if (action == SWITCH_HIGH) lamps = (lamps & LAMP_HEAD) == 0 ? lamps | LAMP_HEAD | LAMP_HIGH : lamps ^ LAMP_HIGH;
+        else if (action == HORN_ON) lamps |= HORN;
+        else if (action == HORN_OFF) lamps &= ~HORN;
+        else if (action == SIGNAL_LEFT) lamps = (lamps & TURN_L) != 0 ? lamps & ~TURN_L : (lamps | TURN_L) & ~TURN_R;
+        else if (action == SIGNAL_RIGHT) lamps = (lamps & TURN_R) != 0 ? lamps & ~TURN_R : (lamps | TURN_R) & ~TURN_L;
+        else if (action == SWITCH_HAZARD) lamps ^= HAZARD;
+        else if (action == SWITCH_WIPER) {
+            // the wiper stalk one step on: off, intermittent, low, high, off
+            entityData.set(WIPER, (byte) ((wiperMode() + 1) % WiperSystem.MODES));
+            return;
+        }
+        else return;
+        entityData.set(LAMPS, (byte) lamps);
+    }
+
+    // ---- wipers (docs/vehicles/t15_windshield_rain_design.md) ----
+
+    /** The wiper switch: WiperSystem.OFF, INTERMITTENT, LOW, HIGH. */
+    public int wiperMode() { return Math.floorMod(entityData.get(WIPER), WiperSystem.MODES); }
+
+    /** The electrics are on (the engine runs or the key is at preheat): the wipers and the gauges have power. */
+    public boolean electricsOn() { Drivetrain d = drivetrain(); return d != null && (d.running || d.ignition == Drivetrain.PREHEAT); }
+
+    /** Client: the wipers' stroke and the stalk (WiperSystem). */
+    private final WiperSystem wipers = new WiperSystem();
+
+    /** Client: the wipers to this frame (once per frame time; the renderer and the windshield water both ask). */
+    public WiperSystem wipers(float partialTick) {
+        wipers.update((tickCount + partialTick) / 20.0, wiperMode(), electricsOn());
+        return wipers;
+    }
+
+    /** Client: a point of the truck's frame (forward, right, up from the origin) in the world this frame. */
+    public Vec3 framePoint(double f, double r, double y, float partialTick) {
+        return model(getPosition(partialTick), orientation(partialTick, new Quaternionf()), r, y, -f);
+    }
+
+    /** Client: a direction of the truck's frame (forward, right, up) in the world this frame (unit for a unit input). */
+    public Vec3 frameDirection(double f, double r, double y, float partialTick) {
+        org.joml.Vector3f v = orientation(partialTick, new Quaternionf()).transform(new org.joml.Vector3f((float) r, (float) y, (float) -f));
+        return new Vec3(v.x, v.y, v.z);
     }
 
     /** Eased swing over 0..span degrees: fast in the middle, slow at both ends. */
@@ -424,7 +618,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             world = new LevelVehicleWorld(level(), this);
             physics.reset(getX(), getY(), getZ(), orient());
             physics.drivetrain.gear = savedGear;
-            physics.drivetrain.fourWheel = savedFour;
+            physics.drivetrain.fourWheel = savedFour || savedLow;
+            physics.drivetrain.low = savedLow;
             physics.drivetrain.coolant = savedCoolant;
             placed();
         } else if (!level().isClientSide && (getX() != placedX || getY() != placedY || getZ() != placedZ || getYRot() != placedYaw)) {
@@ -530,6 +725,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         physics.apply(state);
         place();
         burn(state.drive());
+        // a crash (design doc 8.11): the speed lost in this tick beyond any braking, heard by the infected
+        double drop = acceptedSpeed - state.speed();
+        acceptedSpeed = state.speed();
+        if (drop > CRASH_DROP) noise(driver.serverLevel(), position().add(0, 0.8, 0), drop > CRASH_HEAVY_DROP ? CRASH_HEAVY_NOISE : CRASH_NOISE);
         driver.serverLevel().getChunkSource().move(driver);
         VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), state, false));
     }
@@ -555,7 +754,13 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     /** -1 R, 0 N, 1..5. */
     public int gear() { Drivetrain d = drivetrain(); return d != null ? d.gear : savedGear; }
 
-    public boolean fourWheel() { Drivetrain d = drivetrain(); return d != null ? d.fourWheel : savedFour; }
+    public boolean fourWheel() { Drivetrain d = drivetrain(); return d != null ? d.fourWheel : savedFour || savedLow; }
+
+    /** The transfer case in low range (4L). */
+    public boolean lowRange() { Drivetrain d = drivetrain(); return d != null ? d.low : savedLow; }
+
+    /** The transfer case: 0 2H, 1 4H, 2 4L. */
+    public int transferMode() { return lowRange() ? 2 : fourWheel() ? 1 : 0; }
 
     /** Drivetrain.KEY_OFF / PREHEAT / CRANK. */
     public int ignitionPhase() { Drivetrain d = drivetrain(); return d != null ? d.ignition : Drivetrain.KEY_OFF; }
@@ -564,6 +769,36 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     public float shiftProgress() { Drivetrain d = drivetrain(); return d != null ? (float) d.shiftProgress() : 1.0F; }
 
     public int shiftTarget() { Drivetrain d = drivetrain(); return d != null && d.shifting() ? d.shiftTarget : gear(); }
+
+    /** The shift under way's whole time (s; 0 when none or unknown). */
+    public double shiftTotal() { Drivetrain d = drivetrain(); return d != null && d.shifting() ? d.shiftTotal : 0; }
+
+    /** Client: the gear lever's tilts this frame (deg; ShiftLever, PickupTruckLayout#leverTurn). */
+    public float leverFore(float partialTick) { driverHands(partialTick); return (float) lever.fore; }
+
+    public float leverAcross(float partialTick) { driverHands(partialTick); return (float) lever.across; }
+
+    /** Client: the transfer case lever's tilt this frame (deg; TransferLever, PickupTruckLayout#transferTurn). */
+    public float transferFore(float partialTick) { driverHands(partialTick); return (float) transferLever.fore; }
+
+    /**
+     * Client: the gear lever and the driver's hands to this frame. Once per frame time: the renderer (the lever) and the
+     * seated pose (the hands) both ask.
+     */
+    private void driverHands(float partialTick) {
+        double now = (tickCount + partialTick) / 20.0;
+        if (now == handsTime) return;
+        handsTime = now;
+        double wheel = Math.toDegrees(steerAngle(partialTick) * PickupTruckLayout.STEERING_RATIO);
+        lever.update(now, shiftTarget(), shiftTotal());
+        transferLever.update(now, transferMode());
+        int driver = entityData.get(SEAT[PickupTruckLayout.DRIVER]);
+        if (driver != handsDriver) {
+            handsDriver = driver;
+            hands.reset(now, wheel);
+        }
+        hands.update(now, wheel, lever.handOff() || transferLever.handOff());
+    }
 
     /** The clutch pedal as the driver holds it (0 up .. 1 down). */
     public float clutchPedal() { Drivetrain d = drivetrain(); return d != null ? (float) d.clutchPedal() : 0.0F; }
@@ -714,7 +949,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     public enum Action {
         OPEN_HOOD("open"), CLOSE_HOOD("close"), OPEN_DOOR("open_door"), CLOSE_DOOR("close_door"), GET_IN("get_in"),
         OPEN_TAILGATE("lower"), CLOSE_TAILGATE("close"), OPEN_FILLER("open"), CLOSE_FILLER("close"), REFUEL("refuel"),
-        STOP_POUR("stop"), SIT("sit"), CARGO("open");
+        STOP_POUR("stop"), SIT("sit"), CARGO("open"), MOVE_OVER("move_over");
 
         public final String hint;
 
@@ -738,7 +973,11 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     /** What a click by this player does, or null (also the prompt's test). */
     @Nullable
     public Offer actionFor(Player player) {
-        if (player.isSpectator() || player.getRootVehicle() == this) return null;
+        if (player.isSpectator()) return null;
+        if (player.getRootVehicle() == this) {
+            Offer close = closeOwnDoorFor(player);
+            return close != null ? close : moveOverFor(player);
+        }
         Pick pick = pick(player);
         if (pick == null) return null;
         ItemStack held = player.getMainHandItem();
@@ -747,7 +986,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             case DOOR_L, DOOR_R -> {
                 boolean right = pick.zone() == Zone.DOOR_R;
                 if (!doorOpen(right)) yield Action.OPEN_DOOR;
-                yield player.isShiftKeyDown() || seated(right ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER) ? Action.CLOSE_DOOR : Action.GET_IN;
+                // the open door itself shuts it; its opening gets in (sneaking shuts it from there too; user 2026-10-17:
+                // with the doors open one could only get in)
+                yield pick.leaf() || player.isShiftKeyDown() || seated(right ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER) ? Action.CLOSE_DOOR : Action.GET_IN;
             }
             case FILLER -> {
                 if (FuelCanItem.isPouring(held)) yield Action.STOP_POUR;
@@ -762,12 +1003,43 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         return action == null ? null : new Offer(action, anchor(pick), pick);
     }
 
+    /** A cab rider looking out toward its own open door: shut it (the doors stay as left; user 2026-10-16). */
+    @Nullable
+    private Offer closeOwnDoorFor(Player player) {
+        int seat = seatOf(player);
+        if (seat != PickupTruckLayout.DRIVER && seat != PickupTruckLayout.PASSENGER) return null;
+        boolean right = PickupTruckLayout.SEATS[seat].right();
+        if (!doorOpen(right)) return null;
+        double[] d = PickupTruckLayout.localDir(getYRot(), player.getViewVector(1.0F));
+        if ((right ? d[1] : -d[1]) < CLOSE_LOOK) return null;
+        Pick pick = new Pick(right ? Zone.DOOR_R : Zone.DOOR_L, 0, seat);
+        return new Offer(Action.CLOSE_DOOR, anchor(pick), pick);
+    }
+
+    /**
+     * A cab rider looking at the other cab seat while it is free and the truck (nearly) stands: move over to it (across
+     * the bench, without getting out; user 2026-10-16).
+     */
+    @Nullable
+    private Offer moveOverFor(Player player) {
+        if (player.getVehicle() != this || speed() > GET_OUT_SPEED) return null;
+        int seat = seatOf(player);
+        if (seat != PickupTruckLayout.DRIVER && seat != PickupTruckLayout.PASSENGER) return null;
+        int other = seat == PickupTruckLayout.DRIVER ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER;
+        if (seated(other)) return null;
+        double t = PickupTruckLayout.cabSeatHit(other, PickupTruckLayout.local(position(), getYRot(), player.getEyePosition()),
+                PickupTruckLayout.localDir(getYRot(), player.getViewVector(1.0F)), 2.0);
+        if (t < 0) return null;
+        Seat s = PickupTruckLayout.SEATS[other];
+        return new Offer(Action.MOVE_OVER, point(s.f(), s.r(), 0.95), new Pick(Zone.SEAT, t, other));
+    }
+
     /** Where a part's prompt sits: the hood latch, a door's handle, the filler, the tailgate handle, a seat. */
     private Vec3 anchor(Pick pick) {
         return switch (pick.zone()) {
             case HOOD -> point(2.24, 0, hoodOpen() ? 1.45 : 1.05);
-            case DOOR_L -> point(-0.10, -0.90, 0.98);
-            case DOOR_R -> point(-0.10, 0.90, 0.98);
+            case DOOR_L -> pick.leaf() ? point(0.52, -1.72, 0.98) : point(-0.10, -0.90, 0.98);
+            case DOOR_R -> pick.leaf() ? point(0.52, 1.72, 0.98) : point(-0.10, 0.90, 0.98);
             case FILLER -> point(-0.62, -0.90, 0.94);
             case TAILGATE -> tailgateOpen() ? point(-2.70, 0, 0.62) : point(-2.27, 0, 1.05);
             case SEAT -> { Seat s = PickupTruckLayout.SEATS[pick.seat()]; yield point(s.f(), s.r(), 0.95); }
@@ -796,12 +1068,13 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             case OPEN_DOOR, CLOSE_DOOR -> setDoorOpen(offer.pick().zone() == Zone.DOOR_R, offer.action() == Action.OPEN_DOOR);
             case GET_IN -> {
                 boolean right = offer.pick().zone() == Zone.DOOR_R;
-                if (sit(player, right ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER)) shutAt[right ? 1 : 0] = level().getGameTime() + SHUT_IN;
+                sit(player, right ? PickupTruckLayout.PASSENGER : PickupTruckLayout.DRIVER);
             }
             case OPEN_FILLER, CLOSE_FILLER -> setFillerOpen(!fillerOpen());
             case REFUEL, STOP_POUR -> refuel(player, held);
             case OPEN_TAILGATE, CLOSE_TAILGATE -> setTailgateOpen(!tailgateOpen());
             case SIT -> sit(player, offer.pick().seat());
+            case MOVE_OVER -> moveOver(player, offer.pick().seat());
             case CARGO -> {}
         }
         return offer.action() == Action.REFUEL || offer.action() == Action.STOP_POUR ? InteractionResult.CONSUME : InteractionResult.SUCCESS;
@@ -861,6 +1134,14 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         return false;
     }
 
+    /** Server: a rider slides over to this free seat (the other cab seat). */
+    private void moveOver(Player player, int seat) {
+        int from = seatOf(player);
+        if (from < 0 || seated(seat)) return;
+        entityData.set(SEAT[from], -1);
+        entityData.set(SEAT[seat], player.getId());
+    }
+
     @Override
     protected boolean canAddPassenger(Entity passenger) { return getPassengers().size() < SEAT.length; }
 
@@ -870,12 +1151,84 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         int seat = seatOf(passenger);
         if (seat < 0) return;   // its seat not synced yet: it stays where it is
         Seat s = PickupTruckLayout.SEATS[seat];
-        Vec3 p = point(s.f(), s.r(), PickupTruckLayout.riderY(s, passenger.getEyeHeight()));
-        move.accept(passenger, p.x, p.y, p.z);
+        Integer last = lastSeat.put(passenger.getId(), seat);
+        if (last != null && last != seat && PickupTruckLayout.SEATS[last].cab() && s.cab()) slides.put(passenger.getId(), new int[]{last, tickCount});
+        // the eyes (the camera) EYE_OVER_SEAT over the cushion and EYE_AHEAD ahead of its point, in the tilted truck's frame
+        double yaw = Math.toRadians(s.yaw()), r = s.r() + slideOffset(passenger.getId(), seat, 0F);
+        Vec3 eye = point(s.f() + Math.cos(yaw) * SeatPose.EYE_AHEAD, r + Math.sin(yaw) * SeatPose.EYE_AHEAD, s.cushion() + SeatPose.EYE_OVER_SEAT);
+        move.accept(passenger, eye.x, eye.y - passenger.getEyeHeight(), eye.z);
         // riders turn with the truck (as in a boat)
         passenger.setYRot(passenger.getYRot() + turned);
         passenger.setYHeadRot(passenger.getYHeadRot() + turned);
         clampRotation(passenger, s);
+    }
+
+    @Override
+    public int riderSeatIndex(Entity passenger) { return seatOf(passenger); }
+
+    /** Client: a seat this frame in the world (the truck's full orientation), with its hands', feet's and door's points. */
+    @Nullable
+    @Override
+    public RiderSeat riderSeat(int index, float partialTick) {
+        if (index < 0 || index >= PickupTruckLayout.SEATS.length) return null;
+        Seat s = PickupTruckLayout.SEATS[index];
+        Vec3 origin = getPosition(partialTick);
+        Quaternionf q = orientation(partialTick, new Quaternionf());
+        boolean cab = s.cab();
+        double floor = cab ? PickupTruckLayout.CAB_FLOOR : PickupTruckLayout.BED_FLOOR;
+        int rider = entityData.get(SEAT[index]);
+        // moving over: the seat (cushion, feet) still part of the way from the one it left
+        Vec3 cushion = model(origin, q, s.r() + (rider >= 0 ? slideOffset(rider, index, partialTick) : 0), s.cushion(), -s.f());
+        Quaternionf frame = new Quaternionf(q).rotateY((float) Math.toRadians(-s.yaw()));
+        RiderSeat.Kind kind = index == PickupTruckLayout.DRIVER ? RiderSeat.Kind.DRIVER : cab ? RiderSeat.Kind.PASSENGER : RiderSeat.Kind.BENCH;
+        int side = cab ? (s.right() ? 1 : -1) : 0;
+        float angle = cab ? doorAngle(s.right(), partialTick) : 0F;
+        Map<String, Vec3> anchors = new HashMap<>();
+        RiderSeat seat = new RiderSeat(kind, cushion, frame, side, angle / DOOR_OPEN, anchors);
+        double ahead = cab ? 0.40 : 0.30;
+        anchors.put("floor_l", seat.local(-0.10, floor - s.cushion(), -ahead));
+        anchors.put("floor_r", seat.local(0.10, floor - s.cushion(), -ahead));
+        if (kind == RiderSeat.Kind.DRIVER) {
+            driverHands(partialTick);
+            anchors.put("grip_l", model(origin, q, PickupTruckLayout.grip(false, Math.toRadians(hands.angle[0]), hands.lift[0])));
+            // the right hand: on the rim, or on its way to / on / back from the gear lever's knob or the transfer lever's
+            // (from where it let go, back to its rest); the gear lever first when both want it
+            boolean onTransfer = lever.hand <= 0 && !lever.handGoing && transferLever.hand > 0;
+            double reach = onTransfer ? transferLever.hand : lever.hand;
+            boolean going = onTransfer ? transferLever.handGoing : lever.handGoing;
+            double[] rim = reach > 0 ? PickupTruckLayout.grip(true, going ? Math.toRadians(hands.angle[1]) : 0, 0)
+                    : PickupTruckLayout.grip(true, Math.toRadians(hands.angle[1]), hands.lift[1]);
+            double[] knob = onTransfer ? PickupTruckLayout.transferKnob(transferLever.fore) : PickupTruckLayout.knob(lever.fore, lever.across);
+            anchors.put("grip_r", model(origin, q, PickupTruckLayout.rightHand(rim, knob, reach)));
+            anchors.put("wheel_hub", model(origin, q, PickupTruckLayout.HUB));
+            anchors.put("wheel_axis", model(origin, q, PickupTruckLayout.AXIS));
+            anchors.put("wheel_rim", model(origin, q, PickupTruckLayout.grip(true, 0, 0)));
+            anchors.put("shift_knob", model(origin, q, PickupTruckLayout.knob(lever.fore, lever.across)));
+            anchors.put("transfer_knob", model(origin, q, PickupTruckLayout.transferKnob(transferLever.fore)));
+        }
+        if (side != 0) {
+            anchors.put("door_pull", model(origin, q, PickupTruckLayout.door(side, PickupTruckLayout.PULL, angle)));
+            anchors.put("door_outer", model(origin, q, PickupTruckLayout.door(side, PickupTruckLayout.OUTER, angle)));
+            double[] entry = PickupTruckLayout.ENTRY;
+            anchors.put("entry", model(origin, q, side * entry[0], entry[1], entry[2]));
+        }
+        return seat;
+    }
+
+    /** A model-frame point (x right, y up, z back) to the world at this frame's origin and orientation. */
+    private static Vec3 model(Vec3 origin, Quaternionf q, double x, double y, double z) {
+        org.joml.Vector3f v = q.transform(new org.joml.Vector3f((float) x, (float) y, (float) z));
+        return origin.add(v.x, v.y, v.z);
+    }
+
+    private static Vec3 model(Vec3 origin, Quaternionf q, double[] p) {
+        return model(origin, q, p[0], p[1], p[2]);
+    }
+
+    /** How fast the truck moves (m/s, from its last tick's step). */
+    public double speed() {
+        double dx = getX() - xo, dy = getY() - yo, dz = getZ() - zo;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz) * 20.0;
     }
 
     @Override
@@ -894,9 +1247,27 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         passenger.setYHeadRot(passenger.getYRot());
     }
 
+    /**
+     * A rider moving over to this seat: how far it still is from it across the cab (m, + to the right), 0 once there. The
+     * cab seats differ only across (PickupTruckLayout.SEATS).
+     */
+    private double slideOffset(int id, int seat, float partialTick) {
+        int[] slide = slides.get(id);
+        if (slide == null) return 0;
+        double t = (tickCount - slide[1] + partialTick) / SLIDE_TICKS;
+        if (t >= 1 || t < 0) {
+            if (t >= 1) slides.remove(id);
+            return 0;
+        }
+        double e = t * t * (3 - 2 * t);
+        return (PickupTruckLayout.SEATS[slide[0]].r() - PickupTruckLayout.SEATS[seat].r()) * (1 - e);
+    }
+
     @Override
     protected void removePassenger(Entity passenger) {
         int seat = seatOf(passenger);
+        lastSeat.remove(passenger.getId());
+        slides.remove(passenger.getId());
         super.removePassenger(passenger);
         if (level().isClientSide || seat < 0) return;
         entityData.set(SEAT[seat], -1);
@@ -910,6 +1281,15 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
      */
     @Override
     public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        Vec3 spot = dismountSpot(passenger);
+        if (passenger instanceof ServerPlayer) {
+            exitId = passenger.getId();
+            exitSpot = spot;
+        }
+        return spot;
+    }
+
+    private Vec3 dismountSpot(LivingEntity passenger) {
         int seat = passenger.getId() == leftId ? leftSeat : -1;
         Seat s = seat >= 0 ? PickupTruckLayout.SEATS[seat] : PickupTruckLayout.SEATS[PickupTruckLayout.DRIVER];
         double side = s.right() ? 1 : -1;
@@ -919,13 +1299,12 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
                 if (out != null) {
                     int door = sd > 0 ? 1 : 0;
                     setDoorOpen(sd > 0, true);
-                    shutAt[door] = level().getGameTime() + SHUT_OUT;
                     return out;
                 }
             }
             Vec3 bedFloor = onTruck(passenger, point(-1.30, 0, 0.775));
             if (bedFloor != null) return bedFloor;
-            return point(0.10, 0, 1.75);   // the roof
+            return point(0.10, 0, 1.85);   // the roof
         }
         Vec3 floor = onTruck(passenger, point(s.f(), side * 0.25, 0.775));
         if (floor != null) return floor;
@@ -933,14 +1312,26 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         return out != null ? out : point(s.f(), side * 0.25, 0.775);
     }
 
-    /** A standing spot on the ground near `at` (its block floor a little above or below the truck's), or null. */
+    /**
+     * A standing spot on the ground near `at` (its block floor a little above or below the truck's), or null. The floors
+     * under all four corners of the standing box count, lowest first: on a road's cross slope the corners stand on
+     * different road_surface layer heights, and the floor under the middle alone left the box in the higher neighbour
+     * (user 2026-10-16: out of the driver's seat by the right door).
+     */
     @Nullable
     private Vec3 ground(LivingEntity passenger, Vec3 at) {
-        BlockPos base = BlockPos.containing(at.x, at.y + 0.5, at.z);
-        for (BlockPos pos : new BlockPos[]{base, base.below(), base.above()}) {
-            double floor = level().getBlockFloorHeight(pos);
-            if (!DismountHelper.isBlockFloorValid(floor)) continue;
-            Vec3 spot = new Vec3(at.x, pos.getY() + floor, at.z);
+        double half = passenger.getBbWidth() / 2;
+        java.util.TreeSet<Double> floors = new java.util.TreeSet<>();
+        for (double dx : new double[]{-half, half})
+            for (double dz : new double[]{-half, half}) {
+                BlockPos column = BlockPos.containing(at.x + dx, at.y + 0.5, at.z + dz);
+                for (BlockPos pos : new BlockPos[]{column, column.below(), column.above()}) {
+                    double floor = level().getBlockFloorHeight(pos);
+                    if (DismountHelper.isBlockFloorValid(floor)) floors.add(pos.getY() + floor);
+                }
+            }
+        for (double y : floors) {
+            Vec3 spot = new Vec3(at.x, y, at.z);
             if (free(passenger, spot)) return spot;
         }
         return null;
@@ -990,9 +1381,18 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
 
     // ---- damage ----
 
-    /** A creative player's hit removes the truck (its cargo drops); nothing else harms it in V0. */
+    /**
+     * A creative player's sneaking hit removes the truck (its cargo drops; test cleanup); any other punch only sounds on
+     * the metal; nothing else harms it in V0 (damage: P2).
+     */
     boolean hurtFrom(DamageSource source) {
-        if (isRemoved() || !source.isCreativePlayer()) return false;
+        if (isRemoved()) return false;
+        boolean remove = source.isCreativePlayer() && source.getEntity() != null && source.getEntity().isShiftKeyDown();
+        if (!remove) {
+            if (!level().isClientSide && source.getDirectEntity() instanceof Player)
+                level().playSound(null, getX(), getY() + 0.9, getZ(), SoundEvents.METAL_HIT, SoundSource.NEUTRAL, 1.0F, 0.7F);
+            return false;
+        }
         if (!level().isClientSide) {
             for (ItemStack stack : cargo.stacks()) if (!stack.isEmpty()) spawnAtLocation(stack.copy(), 1.0F);
             cargo = new GridStorage(CARGO_LAYOUT, false);
@@ -1035,6 +1435,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.define(FILLER, false);
         entityData.define(FUEL, 0);
         entityData.define(CARGO, new CompoundTag());
+        entityData.define(LAMPS, (byte) 0);
+        entityData.define(WIPER, (byte) WiperSystem.OFF);
         for (EntityDataAccessor<Integer> seat : SEAT) entityData.define(seat, -1);
     }
 
@@ -1049,6 +1451,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         setDoorOpen(true, tag.getBoolean("DoorRightOpen"));
         setFillerOpen(tag.getBoolean("FillerOpen"));
         setFuel(tag.getInt("Fuel"));
+        entityData.set(LAMPS, (byte) ((tag.getBoolean("Headlights") ? LAMP_HEAD : 0) | (tag.getBoolean("HighBeam") ? LAMP_HIGH : 0)
+                | (tag.getByte("TurnSignal") < 0 ? TURN_L : tag.getByte("TurnSignal") > 0 ? TURN_R : 0) | (tag.getBoolean("Hazard") ? HAZARD : 0)));
+        entityData.set(WIPER, (byte) Math.floorMod(tag.getByte("Wipers"), WiperSystem.MODES));
         cargo = GridStorage.load(CARGO_LAYOUT, tag.getList("Cargo", Tag.TAG_COMPOUND), false);
         cargoChanged();
         // a reloaded truck shows its parts where they were left, without swinging
@@ -1059,6 +1464,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         filler = fillerO = fillerOpen() ? FILLER_OPEN : 0.0F;
         savedGear = Mth.clamp(tag.getInt("Gear"), -1, 5);
         savedFour = tag.getBoolean("FourWheel");
+        savedLow = tag.getBoolean("LowRange");
         savedCoolant = tag.contains("Coolant") ? tag.getFloat("Coolant") : 20;
         fuelBurnt = tag.getDouble("FuelBurnt");
         ListTag q = tag.getList("Orientation", Tag.TAG_FLOAT);
@@ -1081,12 +1487,18 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putBoolean("DoorRightOpen", doorOpen(true));
         tag.putBoolean("FillerOpen", fillerOpen());
         tag.putInt("Fuel", tank.getFluidAmount());
+        tag.putBoolean("Headlights", headlights());
+        tag.putBoolean("HighBeam", (lamps() & LAMP_HIGH) != 0);
+        tag.putByte("TurnSignal", (byte) turnSignal());
+        tag.putBoolean("Hazard", hazard());
+        tag.putByte("Wipers", (byte) wiperMode());
         ListTag grid = cargo.save();
         if (!grid.isEmpty()) tag.put("Cargo", grid);
         Quaterniond q = orient();
         tag.put("Orientation", newFloatList((float) q.x, (float) q.y, (float) q.z, (float) q.w));
         tag.putInt("Gear", gear());
         tag.putBoolean("FourWheel", fourWheel());
+        tag.putBoolean("LowRange", lowRange());
         tag.putFloat("Coolant", physics != null ? (float) physics.drivetrain.coolant : savedCoolant);
         tag.putDouble("FuelBurnt", fuelBurnt);
     }

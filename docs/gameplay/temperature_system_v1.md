@@ -28,12 +28,12 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `temperature/ThermalInsulation.java` | 读 `data/<命名空间>/thermal_insulation/*.json`；给以后的服装系统留了 `register(Source)` |
 | `temperature/TemperaturePackets.java` | 本人体温状态（S2C） |
 | `temperature/ClientTemperature.java` | 客户端：保存本人状态，提供寒战时的持枪晃动倍率 |
-| `temperature/ClientTemperatureHud.java` | 体温表盘 HUD 层（缓动、目标框的快速缓动、趋势箭头的流动、位置、隐藏条件） |
+| `temperature/ClientTemperatureHud.java` | 体温表盘（缓动、目标框的快速缓动、趋势箭头的流动、位置、隐藏条件）；2026-10-17 起不自己注册，`OVERLAY` 由 HUD V2 身体组件调用 |
 | `temperature/TemperatureDial.java` | 体温表盘的绘制：逐像素画进一张贴图，最多每秒重画 30 次，每帧贴一次 |
 | `temperature/ClientTemperatureScreenEffects.java` | 屏幕遮罩：冷暖边缘、冷光 / 强光泛白、冰晶闪光、热浪、脉动和平滑 |
 | `temperature/TemperatureFrost.java` | 像素冰霜：雪花图案、布局和随冷程度生长；记下当前显示的雪花中心，给冰晶闪光用 |
 | `temperature/ClientShiver.java` | 打寒颤：第二个寒冷阶段起，镜头短暂、细小地抖动（只动镜头） |
-| `client/SurvivalHudLayout.java` | 生存 HUD 一排仪表的位置和尺寸（生命、耐力、体温表盘、口渴、饥饿共用，见 `docs/ui/survival_hud_v1.md`） |
+| `client/SurvivalHudLayout.java` | HUD V2 身体组件的位置和尺寸（表盘、生命弧、耐力弧、需求小圆、徽章列，见 `docs/ui/hud_v2_research.md` 第 6 节） |
 | `temperature/TemperatureReadout.java` | 决定显示哪些数字：戴着腕式温度计时显示气温；体温计读数显示 10 秒；`Source` 接口给以后的监测仪 |
 | `temperature/ClinicalThermometerItem.java`、`WristThermometerItem.java` | 体温计（手持测量）、腕式温度计（手腕栏） |
 | `temperature/TemperatureCommands.java` | `/afltemp` 调试命令 |
@@ -42,7 +42,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `mixin/FoodDataThirstMixin.java` | 脱水，或体温到 C2/H2 及以上时，不自然回血 |
 | `weight/ClientWeightPenalties.java` | 视野补偿同时去掉负重和体温两个减速修饰器的影响 |
 | `weapon/client/NativeWeaponSway.java` | 持枪晃动乘 `ClientTemperature.swayScale()` |
-| `network/AflNetwork.java` | 注册体温包，协议 37 |
+| `network/AflNetwork.java` | 注册体温包，协议 37（2026-10-17 包里加冷热阶段和湿度后为 53） |
 
 资源：
 - 数值 `data/apocalypse_firstlight/temperature/temperature_v1.json`；
@@ -225,7 +225,7 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
 
 ## 同步和保存
 
-- 包 `TemperaturePackets.State`：core、ambient（T_env）、coldness、heat、danger、swayScale、trend、target，以及 comfortMin（2026-10-14 网格背包 V0 分支加：comfortLow − 当前保暖，°C，背包界面显示“舒适 ≥ X °C”；变化 ≥ 0.1 也触发发送；协议 43 → 44），只发给本人。核心体温变化 ≥ 0.05、环境温度变化 ≥ 0.05、表盘的输入变化 ≥ 0.01、趋势变化 ≥ 0.05、目标变化 ≥ 0.02，或者距上次已过 40 tick 时发送。
+- 包 `TemperaturePackets.State`：core、ambient（T_env）、coldness、heat、danger、swayScale、trend、target，以及 comfortMin（2026-10-14 网格背包 V0 分支加：comfortLow − 当前保暖，°C，背包界面显示“舒适 ≥ X °C”；变化 ≥ 0.1 也触发发送；协议 43 → 44），只发给本人。2026-10-17 HUD V2 再加 coldStage、heatStage（各一字节，0–3）和 wet（0–1）给徽章用，阶段变化或湿度变化 ≥ 0.02 也触发发送，协议 51 → 53。核心体温变化 ≥ 0.05、环境温度变化 ≥ 0.05、表盘的输入变化 ≥ 0.01、趋势变化 ≥ 0.05、目标变化 ≥ 0.02，或者距上次已过 40 tick 时发送。
 - target：目标体温在刻度上的位置，`clamp((目标 − 37.2)/2.8) − clamp((36.8 − 目标)/2.8)`，和实心指针（热 − 冷）用同一个刻度。
 - 表盘的输入由服务端算好，客户端不需要配置文件：
   - `coldness = clamp((36.8 − core)/2.8)`：36.8 及以上为 0，34.0 为 1；
@@ -234,7 +234,9 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
 - 36.8–37.2 是纯中性色。在出现减益之前（36.0–36.8、37.2–38.0）环已经开始变色，起预警作用。
 - 保存：玩家持久数据 `afl_temperature` = {core, wet, exertion}，每秒写一次。退出重进保留；从末地返回（不是死亡）保留；死亡重置。
 
-## HUD：体温表盘（生存指标组中间）
+## HUD：体温表盘（身体组件中间）
+
+- **HUD V2（2026-10-17，当前，没有实机验证）**：表盘本身不变，挪到左下身体组件的正中（圆心离左边 40、离底边 40 GUI 像素，`client/SurvivalHudLayout`），左边是生命弧、右边是耐力弧，由 `client/SurvivalVitalsHud` 在深色圆底之后调用 `ClientTemperatureHud.OVERLAY` 画。冷 / 热阶段和潮湿另外显示成左下的徽章（雪花蓝 / 太阳棕，3 期红；潮湿 ≥ 15%、湿透 ≥ 60% 水波蓝），偏冷且体温在回升时有绿色"取暖"徽章；按住"状态详情"键（默认左 Alt）的卡片里有体温一行（感觉、趋势箭头、能读核心体温时的 °C）和右上角的气温 / 湿度（**2026-10-17 起卡片关掉了**，等生命监测仪）。见 [hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节。下面一条是 V1 的排版，位置已过时。
 
 - 布局（`client/SurvivalHudLayout`，生存 HUD V1，`docs/ui/survival_hud_v1.md`）：体温表盘在屏幕中线、整组的正中，圆心在屏幕底边上方 48 GUI 像素；生命环、饥饿环紧贴在它左右（圆心 ±21.39），耐力、口渴半环在最外侧（±34.16），同高。2026-10-04 起表盘外面加了一圈深色金属边框（`TemperatureDial.BEZEL`，原尺寸 1.15，上亮下暗，外沿暗边加一圈淡色描边），画在光晕之上、气温弧之下。原版红心、饱食、护甲、氧气已隐藏。整排按原尺寸 ×1.15 绘制（`SCALE`；第一稿 ×1.25、圆心 44 时下方的趋势箭头碰到负重条）：表盘的几何（`TemperatureDial` 里的半径、环宽、箭头、气温弧等常量）都乘这个系数，表盘里的半号数字仍按整数屏幕像素画、不放大，气温数字的位置跟着弧往上移。趋势箭头最低处离负重条约 4 像素；光晕在极端体温时可能略微碰到负重条。历史：2026-10-03 体温 V1 时圆心在 55 像素、原尺寸，两边小环在 ±19。
 - 生存 / 冒险模式显示；创造、旁观、F1 隐藏 HUD、枪械附件视图下不显示。

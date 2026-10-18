@@ -46,7 +46,7 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `weight/WeightPenalties.java` | 服务端：移速属性修饰、疾跑标记；跳跃缩放的公共方法 |
 | `weight/ClientWeightPenalties.java` | 客户端：本人跳跃、疾跑判断、抵消移速带来的视野缩小 |
 | `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重时禁止疾跑（和饿肚子同一个检查点）；2026-10-03 起也拦耐力力竭（`stamina_system_v1.md`） |
-| `weight/ClientWeightHud.java` | 负重条 HUD（原版经验条的位置） |
+| `client/SurvivalVitalsHud.java` | 负重小圆（HUD V2，2026-10-17；原来的负重条 `weight/ClientWeightHud` 已删除） |
 | `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33；惩罚 V1 的 State 加字段后为 34；耐力 V1 加了两种包后为 35；口渴 V1 为 36；体温 V1 为 37 |
 | `weapon/NativeGunActions.java` | 既有射击/换弹库存同步处新增 dirty 通知 |
 | `weapon/AttachmentInteractionCore.java` | 成功提交处新增 dirty 通知 |
@@ -171,7 +171,9 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 
 21 种新材料：steel_billet 1；lead_brick 0.75（第一版 2，2026-10-03 改）；tungsten_filament 0.05；silver_scrap、cemented_carbide_blank、steel_scrap 各 0.25；plastic_scrap、plastic_pellets 各 0.1；bauxite、alumina、galena、sphalerite、cassiterite、pentlandite、electrolytic_nickel、wolframite、tungsten_oxide、tungsten_powder、spodumene_concentrate、lithium_carbonate、tungsten_carbide_powder 各 0.5。
 
-其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
+其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。
+
+隧道部件物品（[隧道 V1](../worldgen/federal_tunnels_v1.md) 第 7 节"可拆部件"，2026-10-16，写在 `afl_content_v1.json`）：tunnel_luminaire 14、tunnel_cctv 4、tunnel_lane_signal 22、tunnel_headlight_sign 45、tunnel_clearance_plate 8、tunnel_egress_sign 3、tunnel_name_plate 30、tunnel_emergency_cabinet 40、tunnel_handrail 12（一段 2.4 m 的方管连两个支架）。按实物估：隧道 LED 灯具连支架、监控球机、车道控制灯箱、开灯牌连两根立柱、铝牌、紧急柜（灭火器另算）。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
 
 以上是 core_v1.json：6 组 gun 定义 + 46 个普通 item override（42 AFL、4 Vanilla）。其余 87 个 AFL 物品见下文“携带质量 V1”（2026-10-03 之前它们没有规则，全部是 250 g fallback）。完整 live Registry 的来源与缺失数量通过 coverage 查看，不把静态列表宣称为运行时覆盖结果。
 
@@ -385,7 +387,19 @@ Tier（2026-10-03 改为 5 档，按 onset→severe 三等分；30 kg 舒适负�
 
 Tooltip实机仍待验证：检查64发9mm、1/10个苹果、安装配件/射击前后枪重与`/aflweight held`一致；在远程服务器登录、`/reload`修改/删除质量规则后查看更新，重连另一世界应清旧表。确认原有弹药、辐射及Locked Overflow提示保持。
 
-## 负重条 HUD（2026-10-03）
+## 负重小圆 HUD（HUD V2，2026-10-17）
+
+负重条 2026-10-17 随 HUD V2 去掉（[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节），换成左下身体组件右上方的第三个需求小圆（`client/SurvivalVitalsHud`，角度 82°，秤砣图标），没有实机验证：
+
+- 满圈 = severe 倍舒适负重（和原来的条一样按负担算）；颜色跟档位：轻松灰、负担黄、重载琥珀、搬运橙、极重红（`SurvivalVitalsHud.tierColour`）。
+- 平时小而淡、只有图标；档位不是"轻松"时一直变大并带 kg 数字（一位小数）；轻松时负担变化 ≥ 50 g 或换档后变大 3 秒。
+- 不显示：负重惩罚关掉（创造 / 旁观）、坐车、F1、装配件视角、还没收到负重状态时。
+- 档位到"很重"及以上时，左下徽章列多一个棕色秤砣徽章（极限超载是红色），效果写减速百分比、是否不能冲刺。
+- 按住"状态详情"键（默认左 Alt）的状态卡片里有一行负重：kg + 档位名 + 细条。**2026-10-17 起卡片关掉了**（等生命监测仪，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6.4 节）。
+
+下面是负重条的记录（已过时）。
+
+## 负重条 HUD（2026-10-03，2026-10-17 已删除）
 
 用户定：放在原版经验条的位置。第一版一直显示；2026-10-04 用户改成被动显示（平常隐藏，负担变化时淡入）；2026-10-06 用户再改：**条一直显示，只有数字被动显示**（见下面"数字被动显示"）。AFL 本来就隐藏了经验条（`client/AflHudEvents`），这个位置是空的。实现在 `weight/ClientWeightHud`，作为 overlay `apocalypse_firstlight:weight_bar` 注册在 `EXPERIENCE_BAR` 之上。
 
@@ -419,7 +433,7 @@ Tooltip实机仍待验证：检查64发9mm、1/10个苹果、安装配件/射击
 
 位置固定在经验条那里，没有接 HUD 布局编辑器。没有实机验证（被动显示、2026-10-06 的条常驻也没有）。
 
-以后的生存 HUD（生命、饱食、口渴、体力等圆环）讨论中，还没做；这条负重条留在经验条的位置不动。
+（已过时：2026-10-17 HUD V2 把负重条换成了负重小圆，见上一节。）
 
 ## Debug 与手动验收
 

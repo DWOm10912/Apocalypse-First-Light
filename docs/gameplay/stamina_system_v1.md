@@ -1,6 +1,6 @@
 # AFL Stamina V1（耐力）
 
-状态：**已实现，用户实机测试 PASS（2026-10-03）**。临时耐力环 HUD 按用户安排留到正式生存 HUD 时一起重做。设计和取舍见 `docs/项目内容/01 - 设计/生存/耐力.md`；本文写的是当前实际行为。数值全部是测试起点。
+状态：**已实现，用户实机测试 PASS（2026-10-03）**。耐力显示 2026-10-17 随 HUD V2 重做：左下身体组件的右弧（[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节），没有实机验证。设计和取舍见 `docs/项目内容/01 - 设计/生存/耐力.md`；本文写的是当前实际行为。数值全部是测试起点。
 
 ## 文件
 
@@ -12,7 +12,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `stamina/PlayerStamina.java` | 服务端：每 tick 的消耗和恢复、各动作事件、力竭、同步、保存 |
 | `stamina/StaminaPackets.java` | 两种 S2C 包：本人状态、别人的呼吸等级 |
 | `stamina/ClientStamina.java` | 客户端：本人状态、喘息声调度、力竭挖掘变慢 |
-| `stamina/ClientStaminaHud.java` | 耐力环 HUD（生存指标组左边） |
+| `client/SurvivalVitalsHud.java` | 耐力弧（HUD V2 身体组件的右弧，`ClientStaminaHud` 2026-10-17 已删除） |
 | `stamina/StaminaCommands.java` | `/aflstamina` 调试命令 |
 | `stamina/PlayerStamina#consumeSpent` | 口渴 V1：把实际花掉的耐力交给口渴（每 100 点口渴 −3） |
 | `stamina/PlayerStamina#consumeSpentForTemperature` | 体温 V1：同样的数，独立累加，用来算出力产热 |
@@ -118,15 +118,14 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 ## HUD
 
-`ClientStaminaHud`，overlay `apocalypse_firstlight:stamina_ring`，属于生存 HUD V1 的一排仪表（`docs/ui/survival_hud_v1.md`）。
+HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节）：耐力是左下身体组件的**右弧**，由 `client/SurvivalVitalsHud` 画（overlay `apocalypse_firstlight:survival_vitals`）。原来的 `stamina/ClientStaminaHud`（overlay `stamina_ring`，屏幕底部中间的半环 "("）已删除。
 
-- 位置：整组最左端的半环 "("（`client/SurvivalHudLayout.crescent`：圆心在屏幕中线左边 34.16 GUI 像素、屏幕底边上方 48 像素，外半径 7.015、环宽 1.78），开口朝向右边的生命环，两端延伸到生命环上，跑步小人在开口里，垫一个淡色深底。历史：2026-10-03 体温 V1 把它挪到体温表盘左边（之前在负重条左端左边 22 像素）；生存 HUD V1 先是一排五环里的整圆小环，2026-10-04 改成嵌套排版的半环（`docs/ui/survival_hud_v1.md`）。绘制用 `client/AflGauge`。
-- 外面：水下或氧气不满时出现的氧气弧，由 `client/SurvivalVitalsHud` 绘制。
-- 半环从下端开始往上随耐力填充。
-- 颜色：正常浅灰，< 30 琥珀，力竭红。
-- 填充和负重条一样平滑过渡（时间常数 0.12 秒）。
-- 一直显示（用户 2026-10-03：生命和饥饿都一直显示，耐力也要，不然会缺东西；以前是掉下去时淡入、回满 2 秒后淡出）。
-- 按真实像素逐点画，环、填充两端、小人都做了抗锯齿。
+- 位置：圆心离左边 40、离底边 40 GUI 像素，外半径 22、环宽 3.2，从右上 20° 到右下 160°（`client/SurvivalHudLayout`），从下往上随耐力填充。
+- 外面：眼睛在水里或氧气不满时，一条 10 格的氧气细道。
+- 颜色：正常浅灰 `#C8C6BE`，< 30 琥珀 `#D6983A`，力竭红 `#BE443A`。
+- 数值平滑过渡（0.15 秒）。
+- 一直显示（用户 2026-10-03：生命和饥饿都一直显示，耐力也要，不然会缺东西）。
+- 按住"状态详情"键（默认左 Alt）的状态卡片里有一行耐力百分比。**2026-10-17 起卡片关掉了**（等生命监测仪，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6.4 节）。
 - 创造 / 旁观、F1、装配件视角时不显示。
 
 ## 创造 / 旁观、保存

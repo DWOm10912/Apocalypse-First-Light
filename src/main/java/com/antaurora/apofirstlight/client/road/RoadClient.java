@@ -10,11 +10,14 @@ import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkJson;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
+import com.antaurora.apofirstlight.worldgen.network.road.TunnelMesh;
+import com.antaurora.vextris.client.GpuGeometry;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -23,6 +26,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -35,11 +39,13 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,17 +72,52 @@ import java.util.concurrent.CompletableFuture;
  * wing walls and the repairs of broken cells; the same comparison rebuilds it when a structure cell changes. Faces are
  * shaded by direction like blocks (not with a shader pack, which shades by the normal itself) and lit from the block in
  * front of them.
+ * <p>
+ * Tunnels (Tunnel V1, docs/worldgen/federal_tunnels_v1.md) are drawn the same way: the lining, walkways, drains and
+ * portals (TunnelMesh, with the bridges). Their equipment and handrails are fixture blocks a player can take down, drawn
+ * by TunnelFixtureClient (V1.1). Nothing in a tunnel gives light: its faces take the world's light like any other.
+ * <p>
+ * Drawing (docs 10.5): each chunk's solid vertices (pavement, bridges, lining) and its marking vertices are
+ * uploaded once into a Vextris GpuGeometry (0.1.1-alpha.4) with a per-vertex light stream; a frame draws one matrix per
+ * chunk and render type inside one GpuGeometry.Batch, and the light refresh uploads only the light stream. A geometry is
+ * rebuilt when Vextris marks it stale (resource reload, shader pack on or off, pipeline rebuild) and freed when its chunk
+ * unloads or is rebuilt (dug, broken structure). -Dafl.roadGpu=false submits every vertex each frame instead (the path
+ * before 0.1.1-alpha.4, for comparison).
+ * <p>
+ * A chunk coming into view costs render-thread time once: its first light lookup and its geometry upload. Both are spread
+ * over frames (FIRST_BUDGET_NS per frame, nearest chunks first, at least one step per frame), and a chunk's geometry is
+ * uploaded in pieces of at most PIECE vertices; a chunk is drawn once all its pieces are up. Flying fast through new
+ * country, a tunnel chunk took up to 24 ms in one frame before this (2026-10-16).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class RoadClient {
     static final ResourceLocation ASPHALT = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/asphalt"),
             WHITE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/paint_white"),
             YELLOW = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/paint_yellow"),
-            CONCRETE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/reinforced_concrete");
+            CONCRETE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/reinforced_concrete"),
+            TUNNEL_PANEL = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/panel"),
+            TUNNEL_ARCH = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/arch"),
+            STEEL = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/steel"),
+            DRAIN = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/drain");
     /** Floats per vertex: x, y, z (chunk-relative, absolute y), u, v (atlas), nx, ny, nz. */
     static final int STRIDE = 8;
+    /** Ticks a mesh's per-vertex light is kept: near the player (two chunks) and farther away. */
+    static final int LIGHT_NEAR = 4, LIGHT_FAR = 40;
     /** Mesh builds started per tick (each about 0.3 ms of worker time per road). */
     static final int BUILDS_PER_TICK = 4;
+    /** False (-Dafl.roadGpu=false): every vertex submitted each frame, no GPU geometry. */
+    static final boolean GPU = !"false".equals(System.getProperty("afl.roadGpu"));
+    /**
+     * Render-thread time of the road client since the dev frame log last read it (ns; src/dev C2FrameLog): light lookups,
+     * geometry builds, light uploads, draws, client tick; and the chunks whose light was taken and the geometries built.
+     */
+    public static final long[] NANOS = new long[5];
+    public static final int LIGHTS = 0, BUILD = 1, UPLOAD = 2, DRAW = 3, TICK = 4;
+    public static final int[] COUNTS = new int[2];
+    /** Render-thread time per frame for chunks coming into view (first light lookups, geometry pieces); at least one step. */
+    static final long FIRST_BUDGET_NS = 2_000_000L;
+    /** Vertices per uploaded geometry piece (a multiple of 4: whole quads). */
+    static final int PIECE = 4096;
 
     private static List<RoadDesign> roads = List.of();
     private static RoadWorks index;
@@ -84,12 +125,43 @@ public final class RoadClient {
     private static final Map<Long, CompletableFuture<ChunkMesh>> PENDING = new HashMap<>();
 
     /**
-     * One chunk's pavement and bridges: solid (asphalt, concrete) and marking vertices (four per triangle: a, b, c, c), its
-     * height range, the paved cells and the dug ones, the expected bridge structure cells and the found ones (null: not
-     * scanned yet).
+     * One chunk's pavement, bridges and tunnels: solid (asphalt, concrete, a tunnel's lining) and marking vertices (four
+     * per triangle: a, b, c, c), its box (chunk-relative), the paved cells and the dug ones, the expected bridge structure
+     * cells and the found ones (null: not scanned yet), the per-vertex light kept for a few ticks and the GPU copies. The
+     * tunnels' equipment is not here: its parts are fixture blocks drawn by TunnelFixtureClient (V1.1).
      */
-    record ChunkMesh(int cx, int cz, float[] asphalt, float[] marking, float minY, float maxY, Map<Integer, RoadCells.Cell> cells, BitSet dug,
-                     Map<Integer, BridgeMesh.Expect> bridge, Map<Integer, BridgeMesh.Found> found) {}
+    record ChunkMesh(int cx, int cz, float[] asphalt, float[] marking, float[] box, Map<Integer, RoadCells.Cell> cells, BitSet dug,
+                     Map<Integer, BridgeMesh.Expect> bridge, Map<Integer, BridgeMesh.Found> found, Light light) {}
+
+    /**
+     * A mesh's per-vertex light (solid, marking) and the game time it was taken; its GPU geometry (render thread only):
+     * pieces of the solid stream and the marking stream (ranges: stream 0 or 1, first and end vertex), built in order, the
+     * shade they were written with, whether the light taken last was uploaded. TunnelFixtureClient uses stream 0 only.
+     */
+    static final class Light {
+        final int[][] values = new int[2][];
+        long at = Long.MIN_VALUE;
+        final List<GpuGeometry> pieces = new ArrayList<>();
+        int[][] ranges;
+        boolean shaded, uploaded;
+
+        void close() {
+            for (GpuGeometry g : pieces) if (g != null) g.close();
+            pieces.clear();
+            ranges = null;
+            uploaded = false;
+        }
+
+        boolean complete() { return ranges != null && pieces.size() == ranges.length; }
+
+        /** Some piece is stale (Vextris epoch) or was written with the other shade. */
+        boolean stale(boolean shade) {
+            if (ranges == null) return false;
+            if (shaded != shade) return true;
+            for (GpuGeometry g : pieces) if (g != null && !g.isCurrent()) return true;
+            return false;
+        }
+    }
 
     /** Meshes compared with the world per tick besides the 3 x 3 chunks around the player. */
     static final int CHECKS_PER_TICK = 8;
@@ -125,7 +197,7 @@ public final class RoadClient {
 
     private static long key(int cx, int cz) { return ((long) cx << 32) ^ (cz & 0xffffffffL); }
 
-    private static float[] sprite(ResourceLocation id) {
+    static float[] sprite(ResourceLocation id) {
         TextureAtlasSprite s = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(id);
         if (s == null || s.contents().name().equals(MissingTextureAtlasSprite.getLocation()))
             throw new IllegalStateException("missing road texture " + id);
@@ -135,6 +207,15 @@ public final class RoadClient {
     @SubscribeEvent
     public static void tick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        long t0 = System.nanoTime();
+        try {
+            tickRoads();
+        } finally {
+            NANOS[TICK] += System.nanoTime() - t0;
+        }
+    }
+
+    private static void tickRoads() {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (!active(level) || mc.player == null) { if (!MESHES.isEmpty() || !PENDING.isEmpty()) clear(); return; }
@@ -147,7 +228,8 @@ public final class RoadClient {
             try {
                 ChunkMesh m = e.getValue().join();
                 if (level.getChunkSource().hasChunk(m.cx(), m.cz())) {
-                    MESHES.put(e.getKey(), m);
+                    ChunkMesh old = MESHES.put(e.getKey(), m);
+                    if (old != null) old.light().close();
                     finished.add(e.getKey());
                 }
             } catch (RuntimeException ex) {
@@ -156,7 +238,11 @@ public final class RoadClient {
         }
         for (long k : finished) recheck(level, k, MESHES.get(k));
         // unloaded chunks
-        MESHES.values().removeIf(m -> !level.getChunkSource().hasChunk(m.cx(), m.cz()));
+        MESHES.values().removeIf(m -> {
+            if (level.getChunkSource().hasChunk(m.cx(), m.cz())) return false;
+            m.light().close();
+            return true;
+        });
         // dug-out pavement: the chunks around the player every tick, the others round robin
         int pcx = mc.player.chunkPosition().x, pcz = mc.player.chunkPosition().z, r = mc.options.getEffectiveRenderDistance() + 1;
         for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
@@ -188,7 +274,8 @@ public final class RoadClient {
     }
 
     private static Map<String, float[]> atlas() {
-        return Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW), "concrete", sprite(CONCRETE));
+        return Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW), "concrete", sprite(CONCRETE),
+                "panel", sprite(TUNNEL_PANEL), "arch", sprite(TUNNEL_ARCH), "steel", sprite(STEEL), "drain", sprite(DRAIN), "equipment", sprite(TunnelParts.SHEET));
     }
 
     /** Compare a mesh's paved and structure cells with the world; rebuild it when the dug or the found cells changed. */
@@ -249,13 +336,16 @@ public final class RoadClient {
         if (expect.isEmpty()) found = Map.of();
         tris = BridgeMesh.finish(tris, rs, works, cx, cz, cells, dug, expect, found);
         int na = 0, nm = 0;
-        for (RoadMesh.Triangle t : tris) if (solid(t.material())) na++; else nm++;
+        for (RoadMesh.Triangle t : tris) if (t.material().solid()) na++; else nm++;
         float[] a = new float[na * 4 * STRIDE], m = new float[nm * 4 * STRIDE];
         int ia = 0, im = 0;
         float lo = Float.POSITIVE_INFINITY, hi = Float.NEGATIVE_INFINITY;
         for (RoadMesh.Triangle t : tris) {
-            boolean asphalt = solid(t.material());
-            float[] r = uv.get(switch (t.material()) { case ASPHALT -> "asphalt"; case WHITE -> "white"; case YELLOW -> "yellow"; case CONCRETE -> "concrete"; });
+            boolean asphalt = t.material().solid();
+            float[] r = uv.get(switch (t.material()) {
+                case ASPHALT -> "asphalt"; case WHITE -> "white"; case YELLOW -> "yellow"; case CONCRETE -> "concrete";
+                case TUNNEL_PANEL -> "panel"; case TUNNEL_ARCH -> "arch"; case STEEL -> "steel"; case DRAIN -> "drain"; case PART -> "equipment";
+            });
             float[] out = asphalt ? a : m;
             int i = asphalt ? ia : im;
             for (RoadMesh.Vertex v : new RoadMesh.Vertex[]{t.a(), t.b(), t.c(), t.c()}) {
@@ -273,12 +363,8 @@ public final class RoadClient {
             if (asphalt) ia = i; else im = i;
         }
         // an empty mesh marks a chunk the index reaches but the road misses (never rebuilt while loaded)
-        return tris.isEmpty() ? new ChunkMesh(cx, cz, a, m, 0, 0, cells, dug, expect, found) : new ChunkMesh(cx, cz, a, m, lo, hi, cells, dug, expect, found);
-    }
-
-    /** Drawn in the solid pass (the asphalt render type); the paint goes in the marking pass. */
-    private static boolean solid(RoadMesh.Material material) {
-        return material == RoadMesh.Material.ASPHALT || material == RoadMesh.Material.CONCRETE;
+        float[] box = tris.isEmpty() ? new float[]{0, 0, 0, 16, 0, 16} : new float[]{0, lo, 0, 16, hi, 16};
+        return new ChunkMesh(cx, cz, a, m, box, cells, dug, expect, found, new Light());
     }
 
     /**
@@ -307,55 +393,182 @@ public final class RoadClient {
         List<ChunkMesh> visible = new ArrayList<>();
         for (ChunkMesh m : MESHES.values()) {
             if (m.asphalt().length + m.marking().length == 0) continue;
-            AABB box = new AABB(m.cx() * 16, m.minY() - 0.5, m.cz() * 16, m.cx() * 16 + 16, m.maxY() + 0.5, m.cz() * 16 + 16);
+            float[] b = m.box();
+            AABB box = new AABB(m.cx() * 16 + b[0], b[1] - 0.5, m.cz() * 16 + b[2], m.cx() * 16 + b[3], b[4] + 0.5, m.cz() * 16 + b[5]);
             if (event.getFrustum().isVisible(box)) visible.add(m);
         }
         if (visible.isEmpty()) return;
-        var buffers = mc.renderBuffers().bufferSource();
-        Map<Long, Integer> lights = new HashMap<>();
-        PoseStack pose = event.getPoseStack();
+        // per-vertex light, taken again every LIGHT_NEAR ticks near the player and LIGHT_FAR ticks farther away (a tunnel
+        // holds tens of thousands of vertices; looking each one up every frame cost more than drawing it)
+        Long2IntOpenHashMap lights = new Long2IntOpenHashMap();
+        lights.defaultReturnValue(Integer.MIN_VALUE);
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        long now = mc.level.getGameTime();
+        int pcx = Mth.floor(camera.x) >> 4, pcz = Mth.floor(camera.z) >> 4;
+        // nearest first: chunks coming into view get their first light and their geometry in this order
+        visible.sort(Comparator.comparingInt(m -> (m.cx() - pcx) * (m.cx() - pcx) + (m.cz() - pcz) * (m.cz() - pcz)));
+        long t0 = System.nanoTime(), deadline = t0 + FIRST_BUDGET_NS;
+        boolean first = false;
+        for (ChunkMesh m : visible) {
+            Light l = m.light();
+            // a chunk a truck's headlamps light (HeadlightField, design doc 8.10) counts as near: the beam moves with the truck
+            boolean near = Math.abs(m.cx() - pcx) <= 2 && Math.abs(m.cz() - pcz) <= 2
+                    || com.antaurora.apofirstlight.client.vehicle.HeadlightField.litChunk(m.cx(), m.cz(), now);
+            if (l.values[0] == null) {
+                // a chunk coming into view: within the frame budget (one at least)
+                if (first && System.nanoTime() > deadline) continue;
+                first = true;
+            } else if (now >= l.at && now - l.at < (near ? LIGHT_NEAR : LIGHT_FAR + ((m.cx() * 7 + m.cz() * 13) & 15))) continue;
+            l.values[0] = lights(mc.level, m.cx(), m.cz(), m.asphalt(), lights, p);
+            l.values[1] = lights(mc.level, m.cx(), m.cz(), m.marking(), lights, p);
+            l.at = now;
+            l.uploaded = false;
+            COUNTS[0]++;
+        }
+        NANOS[LIGHTS] += System.nanoTime() - t0;
+        PoseStack pose = event.getPoseStack();
         // a shader pack shades by the normal itself
         boolean shaded = !com.antaurora.apofirstlight.weapon.client.AflShaderCompat.shaderPackInUse();
-        for (boolean asphalt : new boolean[]{true, false}) {
-            RenderType type = asphalt ? RoadRenderTypes.ASPHALT : RoadRenderTypes.MARKING;
-            VertexConsumer out = buffers.getBuffer(type);
+        if (GPU) drawCached(visible, pose, camera, shaded, deadline);
+        else drawSubmitted(visible, pose, camera, shaded, mc.renderBuffers().bufferSource());
+    }
+
+    /**
+     * One draw per chunk, piece and render type from the chunk's GPU geometry, all in one batch; built or rebuilt here, a
+     * piece at a time within the frame budget (one piece at least), nearest chunks first (visible is sorted).
+     */
+    private static void drawCached(List<ChunkMesh> visible, PoseStack pose, Vec3 camera, boolean shaded, long deadline) {
+        boolean built = false;
+        try (var batch = GpuGeometry.Batch.begin()) {
             for (ChunkMesh m : visible) {
-                float[] v = asphalt ? m.asphalt() : m.marking();
-                if (v.length == 0) continue;
+                Light l = m.light();
+                if (l.values[0] == null) continue;
+                long t0 = System.nanoTime();
+                if (l.stale(shaded)) l.close();
+                if (l.ranges == null) {
+                    l.ranges = ranges(m);
+                    l.shaded = shaded;
+                }
+                while (!l.complete() && (!built || System.nanoTime() < deadline)) {
+                    int[] r = l.ranges[l.pieces.size()];
+                    l.pieces.add(GpuGeometry.build(r[0] == 0 ? RoadRenderTypes.ASPHALT : RoadRenderTypes.MARKING, new GpuGeometry.Options().lightStream(),
+                            out -> write(out, m, r, shaded)));
+                    built = true;
+                    COUNTS[1]++;
+                }
+                long t1 = System.nanoTime();
+                NANOS[BUILD] += t1 - t0;
+                if (!l.complete()) continue;
+                if (!l.uploaded) {
+                    for (int i = 0; i < l.ranges.length; i++) if (l.pieces.get(i) != null) l.pieces.get(i).setLights(slice(l, l.ranges[i]));
+                    l.uploaded = true;
+                }
+                long t2 = System.nanoTime();
+                NANOS[UPLOAD] += t2 - t1;
                 pose.pushPose();
                 pose.translate(m.cx() * 16 - camera.x, -camera.y, m.cz() * 16 - camera.z);
                 Matrix4f mat = pose.last().pose();
-                Matrix3f nor = pose.last().normal();
-                for (int i = 0; i < v.length; i += STRIDE) {
-                    // the light of the block in front of the face (half a block along the normal): a wall's own block is dark
-                    int bx = m.cx() * 16 + (int) Math.floor(v[i] + v[i + 5] * 0.5f), by = (int) Math.floor(v[i + 1] + v[i + 6] * 0.5f),
-                            bz = m.cz() * 16 + (int) Math.floor(v[i + 2] + v[i + 7] * 0.5f);
-                    long lk = BlockPos.asLong(bx, by, bz);
-                    Integer light = lights.get(lk);
-                    if (light == null) {
-                        // that block may itself hold the light (a parapet's own partial top block, the ground a wall's foot is
-                        // buried in): its light is 0, which would smear black across the face; take the first open block above
-                        p.set(bx, by, bz);
-                        for (int up = 0; up < 4 && occludes(mc.level, p); up++) p.move(0, 1, 0);
-                        light = LevelRenderer.getLightColor(mc.level, p);
-                        lights.put(lk, light);
-                    }
-                    float sh = shaded ? shade(v[i + 5], v[i + 6], v[i + 7]) : 1f;
-                    out.vertex(mat, v[i], v[i + 1], v[i + 2]).color(sh, sh, sh, 1f).uv(v[i + 3], v[i + 4]).uv2(light)
-                            .normal(nor, v[i + 5], v[i + 6], v[i + 7]).endVertex();
+                for (int i = 0; i < l.ranges.length; i++) {
+                    GpuGeometry g = l.pieces.get(i);
+                    if (g != null) g.draw(l.ranges[i][0] == 0 ? RoadRenderTypes.ASPHALT : RoadRenderTypes.MARKING, mat, 1f, 1f, 1f, 1f, 0, 0);
                 }
                 pose.popPose();
+                NANOS[DRAW] += System.nanoTime() - t2;
+            }
+        }
+    }
+
+    /** The pieces of a chunk's geometry: solid stream and marking stream, PIECE vertices at most. */
+    private static int[][] ranges(ChunkMesh m) {
+        List<int[]> out = new ArrayList<>();
+        int solid = m.asphalt().length / STRIDE, marking = m.marking().length / STRIDE;
+        for (int a = 0; a < solid; a += PIECE) out.add(new int[]{0, a, Math.min(solid, a + PIECE)});
+        for (int a = 0; a < marking; a += PIECE) out.add(new int[]{1, a, Math.min(marking, a + PIECE)});
+        return out.toArray(new int[0][]);
+    }
+
+    /**
+     * Vertices [r[1], r[2]) of stream r[0] in the BLOCK format, chunk-relative, shaded as drawSubmitted does; light 0 (the
+     * light stream holds it).
+     */
+    private static void write(VertexConsumer out, ChunkMesh m, int[] r, boolean shaded) {
+        write(out, r[0] == 1 ? m.marking() : m.asphalt(), r[1], r[2], shaded);
+    }
+
+    /** Vertices [from, to) of v (STRIDE floats each) in the BLOCK format, light 0 (the light stream holds it). */
+    static void write(VertexConsumer out, float[] v, int from, int to, boolean shaded) {
+        for (int j = from; j < to; j++) {
+            int i = j * STRIDE;
+            float sh = shaded ? shade(v[i + 5], v[i + 6], v[i + 7]) : 1f;
+            out.vertex(v[i], v[i + 1], v[i + 2]).color(sh, sh, sh, 1f).uv(v[i + 3], v[i + 4]).uv2(0)
+                    .normal(v[i + 5], v[i + 6], v[i + 7]).endVertex();
+        }
+    }
+
+    /** The light of vertices [r[1], r[2]) of stream r[0]. */
+    static int[] slice(Light l, int[] r) {
+        int[] out = new int[r[2] - r[1]];
+        System.arraycopy(l.values[r[0]], r[1], out, 0, out.length);
+        return out;
+    }
+
+    /** Every vertex submitted each frame (-Dafl.roadGpu=false). */
+    private static void drawSubmitted(List<ChunkMesh> visible, PoseStack pose, Vec3 camera, boolean shaded, MultiBufferSource.BufferSource buffers) {
+        for (int pass = 0; pass < 2; pass++) {
+            RenderType type = pass == 0 ? RoadRenderTypes.ASPHALT : RoadRenderTypes.MARKING;
+            VertexConsumer out = buffers.getBuffer(type);
+            for (ChunkMesh m : visible) {
+                {
+                    int k = pass;
+                    float[] v = k == 0 ? m.asphalt() : m.marking();
+                    int[] light = m.light().values[k];
+                    if (v.length == 0 || light == null) continue;
+                    pose.pushPose();
+                    pose.translate(m.cx() * 16 - camera.x, -camera.y, m.cz() * 16 - camera.z);
+                    Matrix4f mat = pose.last().pose();
+                    Matrix3f nor = pose.last().normal();
+                    for (int i = 0, j = 0; i < v.length; i += STRIDE, j++) {
+                        float sh = shaded ? shade(v[i + 5], v[i + 6], v[i + 7]) : 1f;
+                        out.vertex(mat, v[i], v[i + 1], v[i + 2]).color(sh, sh, sh, 1f).uv(v[i + 3], v[i + 4]).uv2(light[j])
+                                .normal(nor, v[i + 5], v[i + 6], v[i + 7]).endVertex();
+                    }
+                    pose.popPose();
+                }
             }
             buffers.endBatch(type);
         }
     }
 
+    /**
+     * The light of each vertex: of the block in front of its face (half a block along the normal; a wall's own block is
+     * dark), looked up once per block per frame.
+     */
+    static int[] lights(ClientLevel level, int cx, int cz, float[] v, Long2IntOpenHashMap cache, BlockPos.MutableBlockPos p) {
+        int[] out = new int[v.length / STRIDE];
+        for (int i = 0, j = 0; i < v.length; i += STRIDE, j++) {
+            int bx = cx * 16 + (int) Math.floor(v[i] + v[i + 5] * 0.5f), by = (int) Math.floor(v[i + 1] + v[i + 6] * 0.5f),
+                    bz = cz * 16 + (int) Math.floor(v[i + 2] + v[i + 7] * 0.5f);
+            long lk = BlockPos.asLong(bx, by, bz);
+            int light = cache.get(lk);
+            if (light == Integer.MIN_VALUE) {
+                // that block may itself hold the light (a parapet's own partial top block, the ground a wall's foot is
+                // buried in): its light is 0, which would smear black across the face; take the first open block above
+                p.set(bx, by, bz);
+                for (int up = 0; up < 4 && occludes(level, p); up++) p.move(0, 1, 0);
+                light = LevelRenderer.getLightColor(level, p);
+                cache.put(lk, light);
+            }
+            out[j] = light;
+        }
+        return out;
+    }
+
     /** Built and drawn pavement chunks and the bridge chunks among them, for /afl roads and the dev harness. */
     public static String status() {
         if (index == null) return "no roads from the server";
-        int bridge = 0, scanned = 0, broken = 0, absent = 0;
+        int bridge = 0, scanned = 0, broken = 0, absent = 0, dug = 0;
         for (ChunkMesh m : MESHES.values()) {
+            if (m.dug() != null) for (int i = m.dug().nextSetBit(0); i >= 0; i = m.dug().nextSetBit(i + 1)) if (RoadCells.inner(i)) dug++;
             if (m.bridge() == null || m.bridge().isEmpty()) continue;
             bridge++;
             if (m.found() == null) continue;
@@ -367,11 +580,12 @@ public final class RoadClient {
                 else if (st == BridgeMesh.State.ABSENT) absent++;
             }
         }
-        return roads.size() + " route(s), " + MESHES.size() + " chunk meshes, " + PENDING.size() + " building; bridge chunks " + bridge
+        return roads.size() + " route(s), " + MESHES.size() + " chunk meshes, " + PENDING.size() + " building, dug paved cells " + dug + "; bridge chunks " + bridge
                 + " (scanned " + scanned + ", broken cells " + broken + ", absent wing cells " + absent + ")";
     }
 
     private static void clear() {
+        for (ChunkMesh m : MESHES.values()) m.light().close();
         MESHES.clear();
         PENDING.clear();
     }

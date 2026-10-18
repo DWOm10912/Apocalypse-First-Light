@@ -2,11 +2,15 @@ package com.antaurora.apofirstlight.worldgen.network;
 
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
 import com.antaurora.apofirstlight.block.RoadStructureBlock;
+import com.antaurora.apofirstlight.block.TunnelFixtureBlock;
+import com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity;
 import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.worldgen.network.road.Culvert;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks.Column;
+import com.antaurora.apofirstlight.worldgen.network.road.TunnelFixtures;
+import com.antaurora.apofirstlight.worldgen.network.road.TunnelWorks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.WorldGenLevel;
@@ -44,6 +48,17 @@ import java.util.Set;
  *   road_structure (waterlogged in the water), the open channel cleared above; a PAVED or TURF column over the culvert's
  *   body gets the culvert under its finish (the barrel kept open). Over a culvert the fills reach down to its bed (the
  *   stream's trench through the embankment, which the river fill cut, is filled again).</li>
+ *   <li>TUNNEL (Tunnel V1): a tunnel's works (TunnelWorks#cells): road_structure for the lining, the walkways, the
+ *   portals' concrete and the retaining walls, the bore and the cross passages carved out of the mountain, the mountain
+ *   kept around them; on an approach everything above the floor is cleared to the sky. A PAVED column of a bore
+ *   (RoadWorks.TUNNEL_PAVED) has its pavement as usual and the bore carved above it instead of the sky cleared; a PAVED
+ *   or TURF column under a tunnel's works (RoadWorks.TUNNEL_OVER: walls, lead-ins, a portal's front) has its finish as
+ *   usual and the works' cells above it, so the ground runs on under the concrete.</li>
+ *   <li>a tunnel's equipment and handrail segments (TunnelFixtures, V1.1: gates, signs, signals, gantries, fans,
+ *   cabinets, fire doors, luminaires, cameras, plates, rails), last in any column: the part's fixture block
+ *   (TunnelFixtureBlock, its block entity holding the placement) in the cells its boxes reach above the finish, where the
+ *   cell is open (the road_structure of a wall it reaches into is taken over, its layers kept for when the part is
+ *   taken down).</li>
  * </ul>
  * Structure written where the noise put water keeps the water (waterlogged, group D); structure filled over the ground
  * leaves its grass (the ground under a deck stays green).
@@ -94,7 +109,7 @@ public final class RoadChunkPass {
             case NONE -> Integer.MAX_VALUE;
             case PAVED -> (c.data() & RoadWorks.CULVERT_BODY) != 0 ? Math.min(c.y() - 3, c.bottom()) : c.y() - 3;
             case TURF -> (c.data() & RoadWorks.CULVERT_BODY) != 0 ? Math.min(c.y(), c.bottom()) : c.y();
-            case DECK, ABUTMENT, BARRIER, CULVERT -> c.bottom();
+            case DECK, ABUTMENT, BARRIER, CULVERT, TUNNEL -> c.bottom();
             case OPEN -> c.y() - 3;
         };
     }
@@ -132,7 +147,9 @@ public final class RoadChunkPass {
                     set(chunk, p, x, c.y() - 2, z, gravel);
                     set(chunk, p, x, c.y() - 3, z, base);
                     fill(chunk, p, x, c.y() - 4, z, dirt, lowest);
-                    clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
+                    if ((c.data() & RoadWorks.TUNNEL_PAVED) != 0) tunnel(chunk, p, n.works(), x, z, c.top() + 1, c.roof(), structure);
+                    else if ((c.data() & RoadWorks.TUNNEL_OVER) != 0) over(chunk, p, n.works(), x, z, c, surf, structure);
+                    else clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
                     if (body) culvert(chunk, p, x, z, n.works().culvertCell(x, z), c.y() - 2, Integer.MIN_VALUE, false);
                 }
                 case TURF -> {
@@ -142,6 +159,10 @@ public final class RoadChunkPass {
                     if (body) culvert(chunk, p, x, z, n.works().culvertCell(x, z), c.y() - 1, Integer.MIN_VALUE, false);
                     // a plant a neighbour's features already put on this turf (the guard lets them, any chunk order) stays,
                     // except beside the pavement (RoadWorks#bare)
+                    if ((d & RoadWorks.TUNNEL_OVER) != 0) {
+                        over(chunk, p, n.works(), x, z, c, surf, structure);
+                        break;
+                    }
                     BlockState on = chunk.getBlockState(p.set(x, c.y() + 1, z));
                     boolean tall = on.getBlock() instanceof DoublePlantBlock;
                     int keep = (d & RoadWorks.BARE) == 0 && plantOnTurf(on) && (!tall || on.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.LOWER)
@@ -169,6 +190,11 @@ public final class RoadChunkPass {
                 // beside and between the decks: the natural ground stays (cut to the planned ground it left bare stone and
                 // dirt pits in front of the walls, 2026-10-15); only what rises above the deck level goes
                 case OPEN -> clear(chunk, p, x, c.y() + 1, surf + 1, z, false);
+                case TUNNEL -> {
+                    boolean approach = (c.data() & TunnelWorks.APPROACH_COLUMN) != 0;
+                    tunnel(chunk, p, n.works(), x, z, c.bottom(), c.y(), structure);
+                    if (approach) clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
+                }
                 case CULVERT -> {
                     Culvert.Cell cell = n.works().culvertCell(x, z);
                     if (cell == null) break;
@@ -176,6 +202,43 @@ public final class RoadChunkPass {
                     clear(chunk, p, x, Math.max(c.y(), cell.channel() ? cell.culvert().level : c.y()) + 1, surf + 1, z, true);
                 }
                 default -> { }
+            }
+            parts(chunk, p, n.works(), x, z, c);
+        }
+    }
+
+    /**
+     * A tunnel's parts in a column (TunnelFixtures, V1.1, 2026-10-16): the part's fixture block in each of its cells in
+     * this column, after the works and the clearing, above a finish (a pole's foot never replaces the turf or the pavement
+     * it stands on), where the cell is open (air or a plant: no layers to keep) or road_structure (a sign or a rail against
+     * a wall: its layers kept); a cell an earlier part took holds both (two rail segments meet in a cell); never the ground.
+     */
+    private static void parts(ChunkAccess chunk, BlockPos.MutableBlockPos p, RoadWorks works, int x, int z, Column c) {
+        TunnelFixtures.Part[] parts = works.parts().at(x, z);
+        if (parts.length == 0) return;
+        int floor = c.kind() == RoadWorks.Kind.PAVED || c.kind() == RoadWorks.Kind.TURF ? c.top() + 1 : Integer.MIN_VALUE;
+        for (TunnelFixtures.Part part : parts) {
+            TunnelFixtureBlock.Kind kind = TunnelFixtureBlock.Kind.of(part.placement.mesh());
+            if (kind == null) continue;
+            BlockState fixture = AflBlocks.TUNNEL_FIXTURES.get(kind).get().defaultBlockState();
+            TunnelFixtureBlockEntity.Entry entry = new TunnelFixtureBlockEntity.Entry(kind, part.placement);
+            for (long cell : part.cells()) {
+                if (BlockPos.getX(cell) != x || BlockPos.getZ(cell) != z) continue;
+                int y = BlockPos.getY(cell);
+                if (y < floor || y < chunk.getMinBuildHeight() || y >= chunk.getMaxBuildHeight()) continue;
+                BlockState old = chunk.getBlockState(p.set(x, y, z));
+                if (old.getBlock() instanceof TunnelFixtureBlock && chunk.getBlockEntity(p) instanceof TunnelFixtureBlockEntity taken) {
+                    taken.add(entry);
+                    continue;
+                }
+                int layers;
+                if (old.is(AflBlocks.ROAD_STRUCTURE.get())) layers = old.getValue(RoadStructureBlock.LAYERS);
+                else if (old.isAir() || old.canBeReplaced()) layers = 0;
+                else continue;
+                chunk.setBlockState(p, fixture, false);
+                TunnelFixtureBlockEntity be = new TunnelFixtureBlockEntity(p.immutable(), fixture);
+                be.set(java.util.List.of(entry), layers);
+                chunk.setBlockEntity(be);
             }
         }
     }
@@ -223,6 +286,33 @@ public final class RoadChunkPass {
                 if (tip) chunk.markPosForPostprocessing(p.set(x, y, z));
             } else set(chunk, p, x, y, z, air);
         }
+    }
+
+    /**
+     * A tunnel column's cells y0 .. y1 (TunnelWorks#cells): road_structure, air (fluids too: the bore is dry), or the
+     * mountain as the noise made it.
+     */
+    private static void tunnel(ChunkAccess chunk, BlockPos.MutableBlockPos p, RoadWorks works, int x, int z, int y0, int y1, BlockState structure) {
+        y0 = Math.max(y0, chunk.getMinBuildHeight());
+        y1 = Math.min(y1, chunk.getMaxBuildHeight() - 1);
+        if (y1 < y0) return;
+        byte[] cells = TunnelWorks.cells(works, x, z, y0, y1);
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int y = y0; y <= y1; y++) {
+            byte st = cells[y - y0];
+            if (st == TunnelWorks.STRUCTURE) chunk.setBlockState(p.set(x, y, z), structure, false);
+            else if (st == TunnelWorks.AIR && !chunk.getBlockState(p.set(x, y, z)).isAir()) chunk.setBlockState(p, air, false);
+        }
+    }
+
+    /**
+     * A tunnel's works standing on a finish (RoadWorks.TUNNEL_OVER): its cells from the finish's top up to the roof; on an
+     * approach (roof MAX_VALUE) up to the works' top or the chunk's surface, whichever is higher (every cell over the
+     * floor is the works' structure or air there: the sky cleared).
+     */
+    private static void over(ChunkAccess chunk, BlockPos.MutableBlockPos p, RoadWorks works, int x, int z, Column c, int surf, BlockState structure) {
+        int top = c.roof() == Integer.MAX_VALUE ? Math.max(surf + 1, TunnelWorks.worksTop(works, x, z)) : c.roof();
+        tunnel(chunk, p, works, x, z, c.top() + 1, top, structure);
     }
 
     /** road_structure at (x, y, z), waterlogged where it replaces water. */
@@ -293,8 +383,9 @@ public final class RoadChunkPass {
         Column[] cols = columns(n, pos.getX() >> 4, pos.getZ() >> 4);
         if (cols == null) return false;
         Column c = cols[(pos.getX() & 15) | (pos.getZ() & 15) << 4];
-        if (pos.getY() < guard(c)) return false;
-        return !(c.kind() == RoadWorks.Kind.TURF && (c.data() & RoadWorks.BARE) == 0 && pos.getY() > c.y() && pos.getY() <= c.y() + 2
+        if (pos.getY() < guard(c) || pos.getY() > c.roof()) return false;
+        // no plant over turf under a tunnel's works (the cells over it are the works' structure and air)
+        return !(c.kind() == RoadWorks.Kind.TURF && (c.data() & (RoadWorks.BARE | RoadWorks.TUNNEL_OVER)) == 0 && pos.getY() > c.y() && pos.getY() <= c.y() + 2
                 && plantOnTurf(state));
     }
 

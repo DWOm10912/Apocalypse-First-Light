@@ -381,15 +381,17 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         text(g, Component.literal("→"), C_X + 55, C_Y + 26, 9, AflUiStyle.TEXT_DIM, 1);
         slotBox(g, C_X + 72, C_Y + 18, BOX, BOX);
         hits.add(new SlotHit(menu.getSlot(RESULT), C_X + 72, C_Y + 18, BOX, BOX));
+        // no off-hand box: AFL has no off hand (2026-10-16); a stack still in it shows under overflow
     }
 
-    /** Whatever lies where it cannot be put now: the unused vanilla slots, and grid stacks that fit nowhere. */
+    /** Whatever lies where it cannot be put now: the unused vanilla slots (the off hand too), and grid stacks that fit nowhere. */
     private void overflowPanel(GuiGraphics g, PlayerGrids.View view) {
         List<Hit> items = new ArrayList<>();
         for (int i = HotbarRoles.USED; i < Inventory.INVENTORY_SIZE; i++) {
             var slot = menu.getSlot(i);
             if (slot.hasItem()) items.add(new SlotHit(slot, 0, 0, CELL, CELL));
         }
+        if (menu.getSlot(OFFHAND).hasItem()) items.add(new SlotHit(menu.getSlot(OFFHAND), 0, 0, CELL, CELL));
         for (var target : PlayerGrids.Target.values()) {
             var storage = view.get(target);
             if (storage == null) continue;

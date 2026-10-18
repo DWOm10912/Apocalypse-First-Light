@@ -68,6 +68,7 @@ public final class WorldInteractionHint {
         var ground=nozzleIn==null?GroundItemPick.offer(mc):null;
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
         else if(seatedPrompt(mc)) target=new Target(Component.translatable("hint.apocalypse_firstlight.pickup_t15.get_out"),null);
+        else if(riderDoor(mc)!=null) target=riderDoor(mc);
         else if(drivingPrompt(mc)!=null) target=new Target(Component.translatable(drivingPrompt(mc)),null);
         else if(ground!=null) target=new Target(ground.label(),ground.anchor());
         // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
@@ -102,6 +103,7 @@ public final class WorldInteractionHint {
             if(target==null) target=boxStove(mc,hit);
             if(target==null) target=emergencyRadio(mc,hit);
             if(target==null) target=woodFurniture(mc,hit);
+            if(target==null) target=tunnelFixture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         // the T15 pickup (docs/vehicles/first_pickup_v0_design.md 8.2): the part looked at, resolved as a click is
@@ -141,6 +143,14 @@ public final class WorldInteractionHint {
     private static long seatedAt;
     private static final long SEATED_PROMPT_NANOS=4_000_000_000L;
 
+    /** A cab rider looking out toward its own open door: shut it (PickupTruckEntity#actionFor; before the driving prompts). */
+    private static Target riderDoor(Minecraft mc) {
+        if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity truck)) return null;
+        var offer=truck.actionFor(mc.player);
+        return offer!=null&&offer.action()==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.CLOSE_DOOR
+                ?new Target(Component.translatable(offer.action().key()),offer.anchor()):null;
+    }
+
     private static boolean seatedPrompt(Minecraft mc) {
         if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity)) {seatedAt=0;return false;}
         long now=System.nanoTime();
@@ -162,6 +172,7 @@ public final class WorldInteractionHint {
         if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
+        if(key.endsWith(".tunnel_fixture.dismantle")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyAttack));
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }
@@ -171,6 +182,17 @@ public final class WorldInteractionHint {
         VIEW.transform(v);PROJECTION.transform(v);
         if(v.w<=.05f) return null;
         return new float[]{(v.x/v.w*.5f+.5f)*width,(.5f-v.y/v.w*.5f)*height};
+    }
+
+    /**
+     * Tunnel fixtures (Tunnel parts removable V1.1): with the crowbar "Take down" (hold attack); hitting one with anything
+     * else says the crowbar is needed (not shown just for looking: a tunnel is full of them).
+     */
+    private static Target tunnelFixture(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK||!(mc.level.getBlockState(hit.getBlockPos()).getBlock() instanceof com.antaurora.apofirstlight.block.TunnelFixtureBlock)) return null;
+        if(com.antaurora.apofirstlight.block.TunnelFixtureBlock.tool(mc.player.getMainHandItem()))
+            return new Target(Component.translatable("hint.apocalypse_firstlight.tunnel_fixture.dismantle"),null);
+        return mc.options.keyAttack.isDown()?new Target(Component.translatable("hint.apocalypse_firstlight.tunnel_fixture.needs_crowbar"),null):null;
     }
 
     private static Target vendingMachine(Minecraft mc,BlockHitResult hit) {

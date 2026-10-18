@@ -170,7 +170,7 @@ public final class RoadStructureHits {
 
     /** The asphalt and the concrete (the markings lie on the asphalt). */
     private static boolean solid(RoadMesh.Triangle t) {
-        return t.material() == RoadMesh.Material.ASPHALT || t.material() == RoadMesh.Material.CONCRETE;
+        return t.material().solid();
     }
 
     /** The triangles of c inside the block at pos, cut to it, block-local; null when none. */

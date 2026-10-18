@@ -632,6 +632,21 @@ public final class AflBlocks {
                     // the shape follows the bridge mesh per position (RoadStructureBlock); still solid for heightmaps and fills
                     .dynamicShape().forceSolidOn()
                     .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
+    /**
+     * Tunnel parts removable V1.1 (2026-10-16): a tunnel's equipment and handrail segments as fixtures, one block per kind
+     * (tunnel_<mesh>, TunnelFixtureBlock); invisible (drawn by TunnelFixtureClient), taken down with the crowbar.
+     */
+    public static final java.util.Map<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Block>> TUNNEL_FIXTURES = tunnelFixtures();
+
+    private static java.util.Map<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Block>> tunnelFixtures() {
+        var out = new java.util.EnumMap<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Block>>(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.class);
+        for (var kind : com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.values())
+            out.put(kind, BLOCKS.register(kind.id(), () -> new com.antaurora.apofirstlight.block.TunnelFixtureBlock(kind, BlockBehaviour.Properties.of()
+                    .mapColor(net.minecraft.world.level.material.MapColor.METAL).sound(SoundType.METAL).strength(5.0F, 15.0F)
+                    .noOcclusion().noLootTable().dynamicShape().pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
+                    .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false).isRedstoneConductor((st, l, p) -> false))));
+        return java.util.Collections.unmodifiableMap(out);
+    }
     public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",

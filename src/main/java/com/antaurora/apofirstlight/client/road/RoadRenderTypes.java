@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.road;
 
+import com.antaurora.apofirstlight.client.light.DynamicLitPrograms;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -8,7 +9,8 @@ import net.minecraft.client.renderer.RenderType;
 /**
  * Render types of the generated road mesh (C3.2; the accepted R4 sample's R4RenderTypes, formalised): the terrain solid
  * program and the mipmapped block atlas (the same lighting and shader-pack path as the surrounding terrain), each with
- * a polygon offset that scales with the depth precision at its distance:
+ * a polygon offset that scales with the depth precision at its distance (while the dynamic lights are drawn, AFL's copy of
+ * that program which adds them: client/light/DynamicLitPrograms, docs/rendering/dynamic_lights_v1.md):
  * <ul>
  *   <li>ASPHALT (-1, -10, vanilla's layering offset): the turf 2 cm and the collision tops about 3 cm under the pavement
  *   would show through it far away;</li>
@@ -25,13 +27,15 @@ public final class RoadRenderTypes extends RenderType {
         RenderSystem.disablePolygonOffset();
     });
 
+    private static final ShaderStateShard SOLID_SHADER = new ShaderStateShard(DynamicLitPrograms::solid);
+
     public static final RenderType ASPHALT = create("afl_road_asphalt", POLYGON_OFFSET_LAYERING);
     public static final RenderType MARKING = create("afl_road_marking", MARKING_LAYERING);
 
     private static RenderType create(String name, LayeringStateShard layering) {
         return RenderType.create(name, DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS, 262144, true, false, CompositeState.builder()
                 .setLightmapState(LIGHTMAP)
-                .setShaderState(RENDERTYPE_SOLID_SHADER)
+                .setShaderState(SOLID_SHADER)
                 .setTextureState(BLOCK_SHEET_MIPPED)
                 .setLayeringState(layering)
                 .createCompositeState(true));

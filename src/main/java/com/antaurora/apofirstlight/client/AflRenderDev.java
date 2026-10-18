@@ -121,6 +121,30 @@ public final class AflRenderDev {
                     c.getSource().sendSuccess(() -> Component.literal("mirror = " + mirror), false);
                     return 1;
                 })))
+                // Dynamic Lights V1 (docs/rendering/dynamic_lights_v1.md): off brings back the lamps' block light to compare
+                .then(Commands.literal("dynamic_lights").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.light.DynamicLights.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("dynamic_lights " + com.antaurora.apofirstlight.client.light.DynamicLights.status()), false);
+                    return 1;
+                })))
+                // Rain V1 (docs/rendering/rain_v1.md): off brings back vanilla rain to compare
+                .then(Commands.literal("rain").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.rain.RainRenderer.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("rain " + com.antaurora.apofirstlight.client.rain.RainRenderer.status()), false);
+                    return 1;
+                })))
+                // T15 windshield water (docs/vehicles/t15_windshield_rain_design.md): off dries the glass (the wipers still run)
+                .then(Commands.literal("windshield").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.rain.WindshieldRenderer.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("windshield " + com.antaurora.apofirstlight.client.rain.WindshieldRenderer.status()), false);
+                    return 1;
+                })))
                 .then(Commands.literal("status").executes(c -> {
                     c.getSource().sendSuccess(() -> Component.literal("shadow_cull = " + shadowCull + ", static_mesh = " + (staticMesh ? "on" : "off") + ", mirror = " + mirror), false);
                     return 1;

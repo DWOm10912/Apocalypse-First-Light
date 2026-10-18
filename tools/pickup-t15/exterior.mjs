@@ -8,11 +8,13 @@
 import {FX as FRX, FY, FZ, slab, rbox, abox, obox, loftSolid, loftRings, sweep, tube, lathe, roundPath, fillet, arc, ccw,
   thicken, rotAbout, splitAtY, triangulate, offsetLoop, circle, clamp, smoothstep, add, sub, mul, norm, cross, dot} from '../vehicle-mesh-kit.mjs';
 import {HW, FX, RX, AY, AR, YB, BELT, ROOF, HF, FX0, CB, BED_F, BED_R, BED_TOP, BED_FL, SPLIT, WS0, WS1, DOOR_R, DOOR_F,
-  ROOF_W, sideZ, hy, wsX, HOOD_X0, HOOD_Z, P, sym} from './common.mjs';
+  ROOF_W, sideZ, hy, wsX, HOOD_X0, HOOD_Z, P, sym, WIPERS, GLASS_UP, GLASS_OUT} from './common.mjs';
 
 // the outside is two meshes (each inside the Vextris per-mesh limits): 'front' (front clip, hood, cowl) and 'ext' (the rest)
 let MESH = 'ext';
-const E = (bone, mat) => P(MESH, bone, mat);
+const E = (bone, mat, tag) => P(MESH, bone, mat, tag);
+/** A side's tag for the lamps the turn signals flash (sym: s = 1 right, -1 left). */
+const side = s => s > 0 ? 'r' : 'l';
 const zr = (s, a, b) => s > 0 ? [a, b] : [-b, -a];
 /** A side panel (outline in x, y) between |z| zIn and zOut, the outer face rounded by rOut. */
 function sidePanel(p, s, outline, zIn, zOut, rOut, rIn = 0.002, holes = []) {
@@ -75,7 +77,7 @@ function fenders() {
       rbox(E('body', 'trim'), FZ, a, b, SPLIT - 0.016, SPLIT + 0.016, z0, z1, 0.003, {rc: 0.006});
     }
     const [mz0, mz1] = zr(s, HW - 0.002, HW + 0.005);
-    rbox(E('body', 'amber'), FZ, 2.13, 2.21, 0.835, 0.865, mz0, mz1, 0.002, {rc: 0.008});
+    rbox(E('body', 'lamp_park', side(s)), FZ, 2.13, 2.21, 0.835, 0.865, mz0, mz1, 0.002, {rc: 0.008});
   });
 }
 
@@ -101,12 +103,12 @@ function frontEnd() {
     const holes = [0.571, 0.746].map(zc => fillet([[zc - 0.072, 0.742], [zc + 0.072, 0.742], [zc + 0.072, 0.878], [zc - 0.072, 0.878]].map(([z, y]) => [s * z, y]), 0.012, 2));
     slab(E(B, 'chrome'), FRX, H, holes, FX0 - 0.006, FX0 + 0.026, {r0: 0.002, r1: 0.01});
     for (const zc of [0.571, 0.746]) {
-      // lens: slightly domed (a flat plate with a rounded edge), set back in the bezel
-      rbox(E(B, 'lens'), FRX, s * zc - 0.074, s * zc + 0.074, 0.74, 0.88, FX0 - 0.01, FX0 + 0.012, 0.008, {rc: 0.014});
+      // lens: slightly domed (a flat plate with a rounded edge), set back in the bezel; outer: low + high beam, inner: high
+      rbox(E(B, zc > 0.6 ? 'lamp_low' : 'lamp_high'), FRX, s * zc - 0.074, s * zc + 0.074, 0.74, 0.88, FX0 - 0.01, FX0 + 0.012, 0.008, {rc: 0.014});
     }
     const T = fillet([[hz0, 0.655], [hz1, 0.655], [hz1, 0.705], [hz0, 0.705]].map(([z, y]) => [s * z, y]), 0.01, 2);
     slab(E(B, 'chrome'), FRX, T, [], FX0 - 0.006, FX0 + 0.012, {r0: 0.002, r1: 0.004});
-    rbox(E(B, 'amber'), FRX, s > 0 ? hz0 + 0.008 : -hz1 + 0.008, s > 0 ? hz1 - 0.008 : -hz0 - 0.008, 0.662, 0.698, FX0 + 0.008, FX0 + 0.018, 0.003, {rc: 0.006});
+    rbox(E(B, 'lamp_park', side(s)), FRX, s > 0 ? hz0 + 0.008 : -hz1 + 0.008, s > 0 ? hz1 - 0.008 : -hz0 - 0.008, 0.662, 0.698, FX0 + 0.008, FX0 + 0.018, 0.003, {rc: 0.006});
   });
   // front bumper: chrome C-section swept along a plan line that wraps back at the corners
   const plan = roundPath([[2.20, 0.505, -0.885], [2.33, 0.505, -0.79], [2.37, 0.505, -0.60], [2.37, 0.505, 0.60], [2.33, 0.505, 0.79], [2.20, 0.505, 0.885]], 0.09, 5);
@@ -187,13 +189,16 @@ function cowl() {
   for (let i = 0; i < edges.length; i += 2) rbox(T, FY, s0, s1, edges[i], edges[i + 1], y - 0.008, y, 0.002, {rc: 0});
   // dark plenum floor under the slots
   abox(E('body', 'liner'), x0 + 0.02, x1 - 0.01, y - 0.06, y - 0.05, -zH + 0.03, zH - 0.03);
-  // wipers parked along the glass base (arms from their pivots, blades)
-  for (const zp of [-0.47, 0.03]) {
-    const pv = [x0 + 0.03, y + 0.004, zp], end = [wsX(BELT + 0.03) + 0.012, BELT + 0.035, zp + 0.42];
-    lathe(E('body', 'trim'), pv, [0, 1, 0], [[0, 0], [0, 0.016], [0.014, 0.016], [0.02, 0]], 10);
-    tube(E('body', 'trim'), [add(pv, [0, 0.02, 0]), add(pv, [-0.02, 0.03, 0.06]), end], 0.0055, 5, {up: [0, 1, 0]});
-    const g = norm(sub([wsX(BELT + 0.1), BELT + 0.1, 0], [wsX(BELT), BELT, 0]));   // up the glass
-    obox(E('body', 'trim'), add(end, mul(g, 0.004)), [0, 0, 1], g, 0.215, 0.006, 0.009, 0.002);
+  // wipers parked along the glass base, end to end toward the passenger side (bones wiper_l / wiper_r: each turns about
+  // the glass normal through its pivot, so the blade stays on the glass; lengthened 2026-10-17, common.mjs WIPERS)
+  for (const [bone, w] of [['wiper_l', WIPERS.l], ['wiper_r', WIPERS.r]]) {
+    const pv = w.pivot, c = add([wsX(BELT + 0.035), BELT + 0.035, pv[2] + w.arm], mul(GLASS_OUT, 0.014));
+    // the pivot cap turns with the arm (its axis is the turn axis, so it does not wobble)
+    lathe(E(bone, 'trim'), pv, GLASS_OUT, [[0, 0], [0, 0.016], [0.014, 0.016], [0.02, 0]], 10);
+    tube(E(bone, 'trim'), [add(pv, mul(GLASS_OUT, 0.018)), add(add(pv, mul(GLASS_OUT, 0.026)), [0, 0, 0.06]), add(c, mul(GLASS_OUT, 0.008))], 0.0055, 5, {up: GLASS_OUT});
+    // blade: the frame, the rubber edge on the glass
+    obox(E(bone, 'trim'), c, [0, 0, 1], GLASS_UP, w.blade / 2, 0.006, 0.009, 0.002);
+    obox(E(bone, 'rubber'), add(c, mul(GLASS_OUT, -0.0102)), [0, 0, 1], GLASS_UP, w.blade / 2 - 0.005, 0.0025, 0.0028, 0.0008);
   }
 }
 
@@ -208,8 +213,10 @@ function cabShell() {
   const corners = fillet([[-gz(yg0), yg0], [gz(yg0), yg0], [gz(yg1), yg1], [-gz(yg1), yg1]], 0.07, 6);
   // densify the long edges so the bend shows
   for (let i = 0; i < corners.length; i++) { const a = corners[i], b = corners[(i + 1) % corners.length]; outline2.push(a);
-    const n = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.09); for (let k = 1; k < n; k++) outline2.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
-  plate3(E(B, 'glass'), outline2, (z, y) => at(z, y));
+    const n = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.045); for (let k = 1; k < n; k++) outline2.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+  // inner rings too: the bend has to be in the glass itself, not only on its rim (client/rain/WindshieldGlass draws the
+  // water on this exact surface and depth-tests against it)
+  plateRings(E(B, 'glass'), outline2, (z, y) => at(z, y), 10);
   // its moulding: black rubber lip around the glass
   moulding(E(B, 'trim'), outline2, (z, y) => at(z, y), 0.016, 0.009);
   // A pillars: from the cowl to the roof header along the glass edges
@@ -273,6 +280,19 @@ function plate3(p, outline, map) {
   const L = ccw(outline), {pts, tris} = triangulate(L, []), ids = pts.map(([u, v]) => p.vtx(map(u, v)));
   for (const t of tris) { const q = t.map(i => ids[i]), A = p.v[q[0]], Bq = p.v[q[1]], C = p.v[q[2]];
     p.face(q, cross(sub(Bq, A), sub(C, A)), 'cap'); }
+}
+/** plate3 for a convex outline with interior vertices: the outline scaled toward its centre in `rings` steps, so a curved
+ *  map(u, v) bends the whole plate instead of only its rim. */
+function plateRings(p, outline, map, rings) {
+  const L = ccw(outline), n = L.length, c = [0, 1].map(k => L.reduce((s, q) => s + q[k], 0) / n), ids = [];
+  for (let k = rings; k >= 1; k--) ids.push(L.map(([u, v]) => p.vtx(map(c[0] + (u - c[0]) * k / rings, c[1] + (v - c[1]) * k / rings))));
+  const mid = p.vtx(map(c[0], c[1])), tri = q => { const A = p.v[q[0]], Bq = p.v[q[1]], C = p.v[q[2]]; p.face(q, cross(sub(Bq, A), sub(C, A)), 'cap'); };
+  for (let k = 0; k < rings; k++) for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n, a = ids[k][i], b = ids[k][j];
+    if (k === rings - 1) { tri([a, b, mid]); continue; }
+    const d = ids[k + 1][i], e = ids[k + 1][j];
+    tri([a, b, e]); tri([a, e, d]);
+  }
 }
 /** A rubber or chrome surround along a closed outline on a mapped plate: width w outward, depth d (toward -normal). */
 function moulding(p, outline, map, w, d, side = 1) {
@@ -394,9 +414,9 @@ function bed() {
     }
     // tail lamp: three sections (turn / stop-tail / reverse) on the post's rear face
     const lz0 = 0.69, lz1 = HW - 0.012;
-    const lamp = (y0, y1, mat, d) => rbox(E(B, mat), FRX, s > 0 ? lz0 : -lz1, s > 0 ? lz1 : -lz0, y0, y1, xr - d, xr + 0.004, 0.004, {rc: 0.008});
+    const lamp = (y0, y1, mat, d, tag) => rbox(E(B, mat, tag), FRX, s > 0 ? lz0 : -lz1, s > 0 ? lz1 : -lz0, y0, y1, xr - d, xr + 0.004, 0.004, {rc: 0.008});
     rbox(E(B, 'trim'), FRX, s > 0 ? lz0 - 0.008 : -lz1 - 0.004, s > 0 ? lz1 + 0.004 : -lz0 + 0.008, 0.645, 1.045, xr - 0.016, xr + 0.002, 0.004, {rc: 0.012});
-    lamp(0.92, 1.035, 'amber', 0.026); lamp(0.745, 0.912, 'red', 0.026); lamp(0.655, 0.737, 'lens', 0.026);
+    lamp(0.92, 1.035, 'amber', 0.026, side(s)); lamp(0.745, 0.912, 'lamp_tail', 0.026); lamp(0.655, 0.737, 'lamp_reverse', 0.026);
   });
   // floor with longitudinal ribs, front wall with two horizontal ribs
   const fz = HW - 0.096;
@@ -413,7 +433,7 @@ function bed() {
   bumperSweep(E(B, 'chrome'), plan.map(q => q), bs.map(([u, v]) => [u, v]));
   rbox(E(B, 'rubber'), FY, -2.345, -2.25, -0.30, 0.30, 0.558, 0.566, 0.003, {rc: 0.01});
   rbox(E(B, 'trim'), FRX, -0.17, 0.17, 0.40, 0.54, -2.37, -2.356, 0.003, {rc: 0.01});   // plate holder (no plate)
-  lathe(E(B, 'lens'), [-2.352, 0.552, 0], [0, -1, 0], [[0, 0], [0, 0.018], [0.008, 0.014], [0.01, 0]], 10);   // plate lamp
+  lathe(E(B, 'lamp_plate'), [-2.352, 0.552, 0], [0, -1, 0], [[0, 0], [0, 0.018], [0.008, 0.014], [0.01, 0]], 10);   // plate lamp
 }
 
 function tailgate() {

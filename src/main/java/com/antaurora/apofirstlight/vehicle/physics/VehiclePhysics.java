@@ -373,7 +373,8 @@ public final class VehiclePhysics {
             hz /= len;
         }
         double top = y + spec.bump + 0.25, bottom = y - spec.droop - r - 0.6;
-        if (!world.ground(x, z, top, bottom, ground)) return false;
+        double hint = y - r;   // where the tyre meets the ground at rest travel
+        if (!world.ground(x, z, hint, top, bottom, ground)) return false;
         double best = Double.NEGATIVE_INFINITY;
         if (ground.found) {
             best = ground.height + r / Math.max(ground.ny, 0.3);
@@ -384,7 +385,7 @@ public final class VehiclePhysics {
         }
         for (double k : SAMPLES) {
             double off = k * r;
-            if (!world.ground(x + hx * off, z + hz * off, top, bottom, ground) || !ground.found) continue;
+            if (!world.ground(x + hx * off, z + hz * off, hint, top, bottom, ground) || !ground.found) continue;
             double lift = Math.sqrt(Math.max(0, r * r - off * off)), centre = ground.height + lift;
             if (centre > best + 0.005) {
                 best = centre;

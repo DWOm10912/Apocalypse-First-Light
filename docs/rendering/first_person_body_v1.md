@@ -151,6 +151,7 @@
 ```
 
 - 默认开（用户决定）。不加快捷键。这是 AFL 第一个客户端配置，以后的客户端选项放进同一个文件。
+- 同一个文件里后来加的：`[vehicle_hud]`（仪表盘样式和速度单位，2026-10-16，见 [第一辆车 第 8.12 节](../vehicles/first_pickup_v0_design.md)）。这一节在 AFL 的设置界面里能改（`client/settings/AflSettingsScreen`，模组列表的"配置"按钮）；`[first_person]` 还没放进界面。
 
 ## 7. 代码
 

@@ -17,7 +17,10 @@ package com.antaurora.apofirstlight.vehicle.physics;
  * <li>Gears: R, N, 1..5, one step per key press; the lever goes across while the clutch is out ({@code shiftTime}), then
  * the clutch lets in again. A downshift that would over-rev, or reverse while rolling forward, is refused. Downshifting
  * blips the throttle to the new gear's speed.</li>
- * <li>2H / 4H: rear wheels, or all four (shared by axle load); changed only below {@code fourWheelSpeed}.</li>
+ * <li>Transfer case 2H / 4H / 4L: rear wheels, or all four (shared by axle load), or all four through the low range
+ * ({@code lowRange} times every gear; user 2026-10-17). One lever, one key: below {@code fourWheelSpeed} it goes
+ * 2H - 4H - 2H; nearly stopped (below {@code lowRangeSpeed}) 2H - 4H - 4L - 2H (in and out of low only standing, as a
+ * real part-time case wants).</li>
  * <li>Fuel: litres per kWh of the engine's work plus a running base; the server takes it from the tank. Coolant:
  * warms to 88 C running, cools off (a gauge reading, no effect yet).</li>
  * </ul>
@@ -50,6 +53,8 @@ public final class Drivetrain {
     public int shiftTarget;
     public double shiftLeft, shiftTotal;
     public boolean fourWheel;
+    /** The transfer case's low range (4L; always with {@link #fourWheel}). */
+    public boolean low;
     /** Ignition phase and its time so far (s). */
     public int ignition;
     public double ignitionTime;
@@ -82,7 +87,13 @@ public final class Drivetrain {
     public double clutchPedal() { return shifting() || gear != 0 && running && !locked ? 1 - clutch : 0; }
 
     /** Overall ratio now (engine turns per wheel turn, signed). */
-    public double ratio() { return spec.ratio(gear); }
+    public double ratio() { return ratio(gear); }
+
+    /** A gear's overall ratio through the transfer case's range now. */
+    private double ratio(int g) { return spec.ratio(g) * (low ? spec.lowRange : 1); }
+
+    /** The transfer case: 0 2H, 1 4H, 2 4L. */
+    public int transferMode() { return low ? 2 : fourWheel ? 1 : 0; }
 
     public void reset() {
         running = false;
@@ -101,7 +112,7 @@ public final class Drivetrain {
 
     public State capture() {
         return new State(running, (float) omega, (byte) gear, (float) clutch, locked, (float) pedal, (byte) shiftTarget, (float) shiftLeft, (float) shiftTotal,
-                fourWheel, (byte) ignition, (float) ignitionTime, (float) coolant, (float) fuelFlow);
+                fourWheel, low, (byte) ignition, (float) ignitionTime, (float) coolant, (float) fuelFlow);
     }
 
     public void apply(State s) {
@@ -115,6 +126,7 @@ public final class Drivetrain {
         shiftLeft = s.shiftLeft();
         shiftTotal = s.shiftTotal();
         fourWheel = s.fourWheel();
+        low = s.low();
         ignition = s.ignition();
         ignitionTime = s.ignitionTime();
         coolant = s.coolant();
@@ -139,7 +151,7 @@ public final class Drivetrain {
         }
         double target = in.driver() ? in.throttle() : 0;
         pedal += clamp(target - pedal, -PEDAL_UP * VehiclePhysics.TICK, PEDAL_DOWN * VehiclePhysics.TICK);
-        if (in.transfer() && Math.abs(forwardSpeed) < spec.fourWheelSpeed) fourWheel = !fourWheel;
+        if (in.transfer()) transfer(Math.abs(forwardSpeed));
         if (in.shift() != 0 && !shifting()) shift(in.shift(), forwardSpeed, wheelOmega);
     }
 
@@ -177,13 +189,28 @@ public final class Drivetrain {
         }
     }
 
+    /** One step of the transfer lever: 2H - 4H (- 4L nearly stopped) - 2H; refused too fast. */
+    private void transfer(double speed) {
+        if (speed >= spec.fourWheelSpeed) return;
+        boolean standing = speed < spec.lowRangeSpeed;
+        if (low) {
+            if (!standing) return;
+            low = false;
+            fourWheel = false;
+        } else if (fourWheel && standing && spec.lowRange > 1) {
+            low = true;
+        } else {
+            fourWheel = !fourWheel;
+        }
+    }
+
     /** One step of the lever: R - N - 1 .. 5; refused into reverse while rolling forward, or down into an over-rev. */
     private void shift(int dir, double forwardSpeed, double wheelOmega) {
         int next = gear + (dir > 0 ? 1 : -1);
         if (next > spec.gears.length || next < -1) return;
         if (next == -1 && forwardSpeed > 1.0) return;
         if (next > 0 && forwardSpeed < -1.0) return;
-        if (next > 0 && running && Math.abs(wheelOmega * spec.ratio(next)) * RPM > spec.cutRpm) return;
+        if (next > 0 && running && Math.abs(wheelOmega * ratio(next)) * RPM > spec.cutRpm) return;
         shiftTarget = next;
         shiftTotal = gear == 0 || next == 0 ? spec.shiftTime * 0.6 : spec.shiftTime;
         shiftLeft = shiftTotal;
@@ -198,14 +225,14 @@ public final class Drivetrain {
      */
     public double clutchTorque(double wheelOmega, double dt, double forwardSpeed) {
         lastWheel = wheelOmega;
-        double ratio = spec.ratio(gear);
+        double ratio = ratio(gear);
         double drive = wheelOmega * ratio;   // the clutch's driven side (rad/s)
         if (shifting()) {
             shiftLeft -= dt;
             if (shiftLeft <= 0) {
                 shiftLeft = 0;
                 gear = shiftTarget;
-                ratio = spec.ratio(gear);
+                ratio = ratio(gear);
                 drive = wheelOmega * ratio;
             }
         }
@@ -241,12 +268,12 @@ public final class Drivetrain {
 
     /** The force the clutch's torque puts on the road through the gears (N, + forward along the heading). */
     public double wheelForce(double clutchTorque) {
-        return clutchTorque * spec.ratio(gear) * spec.efficiency / spec.radius;
+        return clutchTorque * ratio(gear) * spec.efficiency / spec.radius;
     }
 
     /** The clutch torque that a road force corresponds to (inverse of {@link #wheelForce}). */
     public double clutchFor(double wheelForce) {
-        double r = spec.ratio(gear);
+        double r = ratio(gear);
         return r == 0 ? 0 : wheelForce * spec.radius / (r * spec.efficiency);
     }
 
@@ -275,7 +302,7 @@ public final class Drivetrain {
         double rpm = rpm(), demand = pedal;
         if (shifting()) {
             // the lever across: off the throttle, but blip up to the lower gear's speed when shifting down
-            double target = Math.abs(lastWheel * spec.ratio(shiftTarget)) * RPM;
+            double target = Math.abs(lastWheel * ratio(shiftTarget)) * RPM;
             demand = shiftTarget != 0 && target > rpm ? clamp((target - rpm) / 300, 0, 1) : 0;
         }
         if (Math.abs(forwardSpeed) > spec.topSpeed - 0.5) demand *= clamp((spec.topSpeed - Math.abs(forwardSpeed)) / 0.5, 0, 1);
@@ -304,8 +331,8 @@ public final class Drivetrain {
 
     /** The drivetrain's part of a {@link VehicleState} (network). */
     public record State(boolean running, float omega, byte gear, float clutch, boolean locked, float pedal, byte shiftTarget, float shiftLeft,
-                        float shiftTotal, boolean fourWheel, byte ignition, float ignitionTime, float coolant, float fuelFlow) {
-        public static final State OFF = new State(false, 0, (byte) 0, 0, false, 0, (byte) 0, 0, 0, false, (byte) 0, 0, 20, 0);
+                        float shiftTotal, boolean fourWheel, boolean low, byte ignition, float ignitionTime, float coolant, float fuelFlow) {
+        public static final State OFF = new State(false, 0, (byte) 0, 0, false, 0, (byte) 0, 0, 0, false, false, (byte) 0, 0, 20, 0);
 
         public boolean valid() {
             double sum = omega + clutch + pedal + shiftLeft + shiftTotal + ignitionTime + coolant + fuelFlow;
