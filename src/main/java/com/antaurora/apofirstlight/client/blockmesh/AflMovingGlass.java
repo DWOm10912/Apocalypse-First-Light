@@ -9,6 +9,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraftforge.api.distmarker.Dist;
@@ -19,8 +20,8 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.lwjgl.system.MemoryUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -45,6 +46,9 @@ import java.util.WeakHashMap;
 public final class AflMovingGlass {
     /** The queued glass: RenderType.translucent()'s format (BLOCK: position, colour, UV, light, normal; 32 bytes a vertex). */
     private static final FastVertices QUEUED = new FastVertices(1 << 16);
+    /** The queued glass with a shader pack: baked quads and their light (the way before 2026-10-18). */
+    private static final List<BakedQuad> QUADS = new ArrayList<>();
+    private static final List<Integer> LIGHTS = new ArrayList<>();
     private static final int VERTEX = 32;
     private static final MultiBufferSource.BufferSource BUFFERS = MultiBufferSource.immediate(new BufferBuilder(1 << 16));
     private static final BufferBuilder BUILDER = new BufferBuilder(1 << 16);
@@ -103,6 +107,20 @@ public final class AflMovingGlass {
      */
     public static boolean queue(List<MeshPart> parts, Matrix4f pose, TextureAtlasSprite sprite, int light) {
         if (parts.isEmpty()) return true;
+        if (AflShaderCompat.shaderPackInUse()) {
+            // with a pack: the way it was before 2026-10-18, word for word (baked quads, read back vertex by vertex at the
+            // stage): the one checked in game. Oculus widens the translucent format, so the fast queue's bytes do not fit
+            // its builder. (The spikes and shifted scene on the windshield in the user's 2026-10-18 videos were not this
+            // glass: Oculus widened the glass water drops' format the same way, WindshieldRenderer.DROP_FORMAT; rain_v1.md
+            // section 6)
+            int start = QUADS.size();
+            if (AflStaticMeshModel.emit(parts, pose, sprite, 0, false, QUADS) != null) {
+                QUADS.subList(start, QUADS.size()).clear();
+                return false;
+            }
+            for (int i = start; i < QUADS.size(); i++) LIGHTS.add(light);
+            return true;
+        }
         float determinant = pose.determinant3x3();
         if (!Float.isFinite(determinant) || Math.abs(determinant) < 1e-12F) return true;   // zero scale: nothing to draw
         boolean mirrored = determinant < 0;
@@ -158,36 +176,46 @@ public final class AflMovingGlass {
     /** A frame whose stage never came (no world drawn) leaves nothing behind. */
     @SubscribeEvent
     public static void onRenderTick(TickEvent.RenderTickEvent event) {
-        if (event.phase == TickEvent.Phase.START) QUEUED.reset();
+        if (event.phase == TickEvent.Phase.START) {
+            QUEUED.reset();
+            QUADS.clear();
+            LIGHTS.clear();
+        }
     }
 
     @SubscribeEvent
     public static void onStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || QUEUED.bytes() == 0) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
         RenderType type = RenderType.translucent();
+        if (!QUADS.isEmpty()) {
+            // with a pack (queue): the baked quads vertex by vertex into the buffer source (Oculus widens its format)
+            VertexConsumer out = BUFFERS.getBuffer(type);
+            for (int q = 0; q < QUADS.size(); q++) {
+                int[] data = QUADS.get(q).getVertices();
+                int light = LIGHTS.get(q);
+                for (int i = 0; i < 4; i++) {
+                    int o = i * 8, normal = data[o + 7];
+                    out.vertex(Float.intBitsToFloat(data[o]), Float.intBitsToFloat(data[o + 1]), Float.intBitsToFloat(data[o + 2]),
+                            1.0F, 1.0F, 1.0F, 1.0F, Float.intBitsToFloat(data[o + 4]), Float.intBitsToFloat(data[o + 5]),
+                            OverlayTexture.NO_OVERLAY, light,
+                            (byte) normal / 127.0F, (byte) (normal >> 8) / 127.0F, (byte) (normal >> 16) / 127.0F);
+                }
+            }
+            BUFFERS.endBatch(type);
+            QUADS.clear();
+            LIGHTS.clear();
+        }
+        if (QUEUED.bytes() == 0) return;
         // positions are view space already (the renderer's pose); the normal is the baked one (view space too)
-        if (!AflShaderCompat.shaderPackInUse()) {
-            // no shader pack: the queued bytes into an own builder in one copy, drawn (sorted) as the buffer source would.
-            // The source's builder is no help here: Embeddium hands out its wrapper (SodiumBufferBuilder), which takes
-            // vertex by vertex (2026-10-18, rain_v1.md section 3.5). With a pack Oculus widens the format, so it stays below.
-            BUILDER.begin(type.mode(), type.format());
-            QUEUED.into(BUILDER);
-            type.end(BUILDER, RenderSystem.getVertexSorting());
+        // no shader pack (queue): the queued bytes into an own builder in one copy, drawn (sorted) as the buffer source would.
+        // The source's builder is no help here: Embeddium hands out its wrapper (SodiumBufferBuilder), which takes vertex by
+        // vertex (2026-10-18, rain_v1.md section 3.5). A pack switched on between queue and stage: dropped for this frame
+        if (AflShaderCompat.shaderPackInUse()) {
+            QUEUED.reset();
             return;
         }
-        VertexConsumer out = BUFFERS.getBuffer(type);
-        if (out instanceof BufferBuilder b) QUEUED.into(b);
-        else {
-            for (int o = 0; o < QUEUED.bytes(); o += VERTEX) {
-                long p = QUEUED.address(o);
-                int normal = MemoryUtil.memGetInt(p + 28);
-                out.vertex(MemoryUtil.memGetFloat(p), MemoryUtil.memGetFloat(p + 4), MemoryUtil.memGetFloat(p + 8),
-                        1.0F, 1.0F, 1.0F, 1.0F, MemoryUtil.memGetFloat(p + 16), MemoryUtil.memGetFloat(p + 20),
-                        OverlayTexture.NO_OVERLAY, MemoryUtil.memGetInt(p + 24),
-                        (byte) normal / 127.0F, (byte) (normal >> 8) / 127.0F, (byte) (normal >> 16) / 127.0F);
-            }
-            QUEUED.reset();
-        }
-        BUFFERS.endBatch(type);
+        BUILDER.begin(type.mode(), type.format());
+        QUEUED.into(BUILDER);
+        type.end(BUILDER, RenderSystem.getVertexSorting());
     }
 }

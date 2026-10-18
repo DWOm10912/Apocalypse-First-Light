@@ -140,6 +140,16 @@ public final class FireFx {
                 life + r.nextInt(Math.max(1, life / 3)), r);
     }
 
+    /**
+     * A puff blown out at vx, vy, vz (blocks a tick; the T15's tail pipe, client/vehicle/TruckExhaust): it slows in the air
+     * and then rises and drifts as {@link #smoke} puffs do.
+     */
+    public static void blown(ClientLevel level, double x, double y, double z, double vx, double vy, double vz, float size, float shade, float alpha, int life) {
+        if (PUFFS.size() >= MAX_PUFFS || !allowed(level.random)) return;
+        RandomSource r = level.random;
+        puff(x, y, z, vx, vy, vz, size * (0.85F + 0.3F * r.nextFloat()), shade, alpha, life + r.nextInt(Math.max(1, life / 3)), r);
+    }
+
     private static void puff(double x, double y, double z, double vx, double vy, double vz, float size, float shade, float alpha, int life, RandomSource r) {
         Puff p = new Puff();
         p.x = p.ox = x;

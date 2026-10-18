@@ -1206,6 +1206,28 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     @Override
     protected boolean canAddPassenger(Entity passenger) { return getPassengers().size() < SEAT.length; }
 
+    /**
+     * Who sat where when the truck was saved (by UUID; the seats themselves hold entity ids, new on every load). A player
+     * who left the game in the truck rides it again on joining (PlayerList#placeNewPlayer: startRiding from the saved
+     * RootVehicle) without going through sit: no seat named them, positionRider left them where they were, and they moved
+     * about in the seated pose, through the body (user, 2026-10-18).
+     */
+    private final java.util.UUID[] savedSeats = new java.util.UUID[SEAT.length];
+
+    /** Server: a passenger added without a seat (back from the save) gets the one it had, else the driver's, else a free one. */
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        if (level().isClientSide || seatOf(passenger) >= 0) return;
+        int seat = -1;
+        for (int i = 0; i < SEAT.length && seat < 0; i++) if (passenger.getUUID().equals(savedSeats[i]) && !seated(i)) seat = i;
+        if (seat < 0 && !seated(PickupTruckLayout.DRIVER)) seat = PickupTruckLayout.DRIVER;
+        for (int i = 0; i < SEAT.length && seat < 0; i++) if (!seated(i)) seat = i;
+        if (seat < 0) return;
+        entityData.set(SEAT[seat], passenger.getId());
+        savedSeats[seat] = null;
+    }
+
     @Override
     protected void positionRider(Entity passenger, MoveFunction move) {
         if (!hasPassenger(passenger)) return;
@@ -1518,6 +1540,12 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.set(WIPER, (byte) Math.floorMod(tag.getByte("Wipers"), WiperSystem.MODES));
         entityData.set(CLIMATE, (byte) Math.floorMod(tag.getByte("Climate"), CabClimate.MODES));
         cabAir = tag.contains("CabAir") ? tag.getDouble("CabAir") : Double.NaN;
+        ListTag seats = tag.getList("Seats", Tag.TAG_COMPOUND);
+        for (int i = 0; i < seats.size(); i++) {
+            CompoundTag seat = seats.getCompound(i);
+            int index = seat.getInt("Seat");
+            if (index >= 0 && index < SEAT.length && seat.hasUUID("Rider")) savedSeats[index] = seat.getUUID("Rider");
+        }
         cargo = GridStorage.load(CARGO_LAYOUT, tag.getList("Cargo", Tag.TAG_COMPOUND), false);
         cargoChanged();
         // a reloaded truck shows its parts where they were left, without swinging
@@ -1558,6 +1586,16 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putByte("Wipers", (byte) wiperMode());
         tag.putByte("Climate", (byte) climateMode());
         if (!Double.isNaN(cabAir)) tag.putDouble("CabAir", cabAir);
+        ListTag seats = new ListTag();
+        for (Entity p : getPassengers()) {
+            int index = seatOf(p);
+            if (index < 0) continue;
+            CompoundTag seat = new CompoundTag();
+            seat.putInt("Seat", index);
+            seat.putUUID("Rider", p.getUUID());
+            seats.add(seat);
+        }
+        if (!seats.isEmpty()) tag.put("Seats", seats);
         ListTag grid = cargo.save();
         if (!grid.isEmpty()) tag.put("Cargo", grid);
         Quaterniond q = orient();

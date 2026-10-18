@@ -198,7 +198,8 @@
     "body_steel",
     "body_chrome",
     "body_alu",
-    "body_iron"
+    "body_iron",
+    "body_soot"
    ]
   }
  },
@@ -747,6 +748,14 @@
     0.77,
     0.83,
     2.285
+   ]
+  },
+  "exhaust_tip": {
+   "bone": "body",
+   "pos": [
+    0.7,
+    0.42,
+    1.86
    ]
   }
  },

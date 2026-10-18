@@ -91,6 +91,8 @@ export const HINGES = {
 };
 // interaction / attachment anchors (concept frame, on a bone): seats and eye points for the player skeleton, hands on the
 // wheel, pedals and levers for IK, handles for interaction, lamps for light sources, filler and exhaust for effects
+// the tail pipe's outlet (chassis.mjs exhaust; vehicle/PickupTruckLayout.EXHAUST_TIP): its centre and the way the gas leaves
+export const EXHAUST_TIP = {at: [-1.86, 0.42, 0.70], dir: [-0.6, 0, 0.8]};
 export const ANCHORS = {
   // the cushion's top under the hips (lowered 3 cm 2026-10-16) and the seated eye (SeatPose: cushion + EYE_OVER_SEAT, EYE_AHEAD ahead)
   seat_driver_hip: ['body', [-0.06, 0.815, -0.37]], seat_passenger_hip: ['body', [-0.06, 0.815, 0.37]],
@@ -105,6 +107,7 @@ export const ANCHORS = {
   fuel_filler: ['body', [-0.6225, 0.94, -(HW - 0.015)]],
   headlamp_l: ['body', [2.282, 0.81, -0.66]], headlamp_r: ['body', [2.282, 0.81, 0.66]],
   tail_lamp_l: ['body', [-2.285, 0.83, -0.77]], tail_lamp_r: ['body', [-2.285, 0.83, 0.77]],
+  exhaust_tip: ['body', EXHAUST_TIP.at],
 };
 // soft / hard edges for the per-corner normals (Vextris format 3 crease_angle, written into every sidecar): within one part,
 // faces sharing a corner position are smoothed together when their dihedral angle is under the crease angle (rounded edges are built from steps of at most
@@ -160,6 +163,7 @@ export const MATS = {
   cover: {c: [34, 34, 35], sm: 70, f0: 12},          // crinkle-black valve cover
   alu: {c: [140, 140, 136], sm: 120, f0: 232},       // cast aluminium
   iron: {c: [82, 66, 56], sm: 56, f0: 24},           // exhaust iron, heat-browned
+  soot: {c: [27, 25, 24], sm: 24, f0: 10, aoK: 0.5},   // inside the tail pipe
   radiator: {c: [38, 38, 38], sm: 70, f0: 20},
   cream: {c: [196, 190, 170], sm: 118, f0: 10},      // translucent-white reservoir plastic
   washer: {c: [112, 150, 178], sm: 118, f0: 10},

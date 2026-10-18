@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
@@ -159,7 +160,7 @@ public final class PlayerTemperature {
     private record Air(String climate, double mean, double amp, double water, double precipitation, double day, double outdoor,
                        double sheltered, double waterTemperature) {}
 
-    private static Air air(ServerLevel level, BlockPos feet, double y, TemperatureConfig c) {
+    private static Air air(Level level, BlockPos feet, double y, TemperatureConfig c) {
         var dimension = c.dimensions.get(level.dimension().location().toString());
         double mean, amp, water, precipitation;
         String climate;
@@ -182,6 +183,14 @@ public final class PlayerTemperature {
         double sheltered = Mth.lerp(underground, mean + altitude, rock);
         double waterTemperature = Mth.lerp(underground, water, rock);
         return new Air(climate, mean, amp, water, precipitation, day, outdoor, sheltered, waterTemperature);
+    }
+
+    /**
+     * The outdoor air (C) at a place, on either side (the T15's exhaust vapour, client/vehicle/TruckExhaust): the same
+     * climate, day and weather as the server's; a client without the server's data pack has the config's defaults.
+     */
+    public static double outdoorAir(Level level, BlockPos feet, double y) {
+        return air(level, feet, y, TemperatureConfig.get()).outdoor();
     }
 
     /** {outdoor, sheltered} air (C) at a place, as a player there would have it (the T15 cab, vehicle/PickupTruckEntity). */
@@ -247,7 +256,7 @@ public final class PlayerTemperature {
     }
 
     /** {mean, amp, water, precipitation share} averaged over the feet and ±biome_blend blocks on x and z. */
-    private static double[] climate(ServerLevel level, BlockPos feet, TemperatureConfig c) {
+    private static double[] climate(Level level, BlockPos feet, TemperatureConfig c) {
         int b = (int)Math.round(c.biomeBlend);
         BlockPos[] points = b <= 0 ? new BlockPos[]{feet}
                 : new BlockPos[]{feet, feet.offset(b, 0, 0), feet.offset(-b, 0, 0), feet.offset(0, 0, b), feet.offset(0, 0, -b)};

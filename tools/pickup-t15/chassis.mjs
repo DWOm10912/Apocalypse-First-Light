@@ -6,8 +6,10 @@
 // propeller shafts with their joints; exhaust from the downpipe through the muffler, over the rear axle outside the right
 // rail to the outlet behind the right rear wheel; fuel tank with straps and filler hose (left); spare carrier and winch
 // cable; tow hooks, bumper brackets, body mounts. Concept frame (metres, x forward, y up, z right).
-import {FX as FRX, FY, FZ, slab, rbox, abox, obox, sweep, tube, lathe, roundPath, fillet, circle, add, mul, sub, norm} from '../vehicle-mesh-kit.mjs';
-import {FX, RX, R, SPARE, P, sym} from './common.mjs';
+import {FX as FRX, FY, FZ, slab, rbox, abox, obox, sweep, tube, lathe, roundPath, fillet, circle, add, mul, sub, norm, ptFrames} from '../vehicle-mesh-kit.mjs';
+import {FX, RX, R, SPARE, P, sym, EXHAUST_TIP} from './common.mjs';
+
+const TIP_DEPTH = 0.04;
 
 const U = mat => P('chassis', 'body', mat);
 const RZ = 0.41;                                              // rail centre |z|
@@ -103,7 +105,16 @@ function exhaust() {
   // muffler: an oval can between the gearbox and the right rail
   const mf = circle(1, 18).map(([u, v]) => [u * 0.075, v * 0.06]);
   sweep(U('iron'), [[0.38, 0.42, 0.28], [-0.12, 0.42, 0.28]], mf, {up: [0, 1, 0]});
-  tube(U('iron'), roundPath([[-0.12, 0.42, 0.28], [-0.45, 0.42, 0.30], [-0.70, 0.43, 0.52], [-1.00, 0.47, 0.52], [-1.50, 0.47, 0.52], [-1.68, 0.43, 0.52], [-1.80, 0.42, 0.62], [-1.86, 0.42, 0.70]], 0.08, 4), 0.025, 10);
+  // tail pipe to the open outlet (EXHAUST_TIP): solid up to TIP_DEPTH inside it, then a 2 mm wall, sooted inside, round
+  // the bore (2026-10-18, first_pickup_v0_design.md section 8.20; the smoke leaves from the exhaust_tip anchor)
+  const tip = EXHAUST_TIP.at, dir = EXHAUST_TIP.dir, deep = add(tip, mul(dir, -TIP_DEPTH));
+  const tail = roundPath([[-0.12, 0.42, 0.28], [-0.45, 0.42, 0.30], [-0.70, 0.43, 0.52], [-1.00, 0.47, 0.52], [-1.50, 0.47, 0.52], [-1.68, 0.43, 0.52], [-1.80, 0.42, 0.62], deep], 0.08, 4);
+  tube(U('iron'), tail, 0.025, 10);
+  // the open end turned about the pipe's axis from the tube's own last frame, so its ten edges carry straight on
+  const e1 = ptFrames(tail).at(-1).N;
+  lathe(U('soot'), deep, dir, [[0, 0], [0, 0.0229], [0.001, 0.0229], [0.001, 0]], 10, {e1});   // the bottom of the bore
+  lathe(U('iron'), tip, dir, [[-TIP_DEPTH, 0.024], [-TIP_DEPTH, 0.025], [0, 0.025], [0, 0.024]], 10, {e1});
+  lathe(U('soot'), tip, dir, [[-TIP_DEPTH, 0.023], [-TIP_DEPTH, 0.024], [0, 0.024], [0, 0.023]], 10, {e1});
   for (const x of [0.10, -1.10, -1.70]) abox(U('rubber'), x - 0.015, x + 0.015, x > 0 ? 0.48 : 0.50, x > 0 ? 0.52 : 0.58, x > 0 ? 0.27 : 0.50, x > 0 ? 0.29 : 0.54, 0.004);   // hangers
 }
 

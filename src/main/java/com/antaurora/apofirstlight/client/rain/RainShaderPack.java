@@ -139,6 +139,81 @@ public final class RainShaderPack {
         }
     }
 
+    /** Dev counters (the glitch watch, RainPerfProbe): glass map bakes and trucks texture uploads since the probe last read them. */
+    public static int debugBakes, debugUploads, debugTrucks;
+    private static java.nio.ByteBuffer debugLevel;
+
+    /**
+     * Dev check (the glitch watch; reads the GPU back, a wait: dev runs only): per slot and pane (slot x panes + pane), the
+     * glass map's mean cover B (0-255) and its texels with B at or over 217 (the pack's big-drop lens, 0.85) at mip level 2
+     * inside the pane's rectangle, as {mean, over}; {-1, -1} when not baked this frame. Null without DSA.
+     */
+    public static int[][] debugPaneCover() {
+        if (!org.lwjgl.opengl.GL.getCapabilities().OpenGL45) return null;
+        int level = 2, w = GlassAtlas.W >> level, h = GlassAtlas.H >> level;
+        if (debugLevel == null) debugLevel = MemoryUtil.memAlloc(w * h * 4);
+        debugLevel.clear();
+        org.lwjgl.opengl.GL45C.glGetTextureImage(GLASS_TEX.getId(), level, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, debugLevel);
+        int panes = TruckGlass.PANES.length;
+        int[][] out = new int[GlassAtlas.SLOTS * panes][];
+        for (int t = 0; t < GlassAtlas.SLOTS; t++)
+            for (int i = 0; i < panes; i++) {
+                if (!WindshieldRenderer.BAKED[t][i]) {
+                    out[t * panes + i] = new int[]{-1, -1};
+                    continue;
+                }
+                int[] r = GlassAtlas.TEXELS[t][i];
+                int x0 = r[0] >> level, y0 = r[1] >> level, x1 = (r[0] + r[2]) >> level, y1 = (r[1] + r[3]) >> level;
+                long sum = 0;
+                int n = 0, over = 0;
+                for (int y = y0; y < y1; y++)
+                    for (int x = x0; x < x1; x++) {
+                        int b = debugLevel.get((y * w + x) * 4 + 2) & 0xFF;
+                        sum += b;
+                        n++;
+                        if (b >= 217) over++;
+                    }
+                out[t * panes + i] = new int[]{n > 0 ? (int) (sum / n) : 0, over};
+            }
+        return out;
+    }
+
+    private static java.nio.ByteBuffer debugBase;
+
+    /**
+     * Dev check (the glitch watch, Aureveil A 2026-10-18): over the nearest truck's windshield rectangle at mip 0, the
+     * streak channel A (mean, p50, p90; 0-255), the share of texels with B - A at or over 2 and B - A's p50 and p90. Empty
+     * when not baked or without DSA.
+     */
+    public static String debugStreakStats() {
+        if (!org.lwjgl.opengl.GL.getCapabilities().OpenGL45 || !WindshieldRenderer.BAKED[0][0]) return "";
+        if (debugBase == null) debugBase = MemoryUtil.memAlloc(GlassAtlas.W * GlassAtlas.H * 4);
+        debugBase.clear();
+        org.lwjgl.opengl.GL45C.glGetTextureImage(GLASS_TEX.getId(), 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, debugBase);
+        int[] r = GlassAtlas.TEXELS[0][0];
+        int[] a = new int[256], d = new int[256];
+        long sum = 0;
+        int n = 0, over = 0;
+        for (int y = r[1]; y < r[1] + r[3]; y++)
+            for (int x = r[0]; x < r[0] + r[2]; x++) {
+                int o = (y * GlassAtlas.W + x) * 4, b = debugBase.get(o + 2) & 0xFF, s = debugBase.get(o + 3) & 0xFF, k = Math.max(0, b - s);
+                a[s]++;
+                d[k]++;
+                sum += s;
+                n++;
+                if (k >= 2) over++;
+            }
+        if (n == 0) return "";
+        return String.format("A mean %.1f p50 %d p90 %d; B-A >= 2 %.1f%%, p50 %d p90 %d (%d texels)", (double) sum / n, rank(a, n * 0.5), rank(a, n * 0.9),
+                100.0 * over / n, rank(d, n * 0.5), rank(d, n * 0.9), n);
+    }
+
+    private static int rank(int[] histogram, double at) {
+        long seen = 0;
+        for (int v = 0; v < histogram.length; v++) if ((seen += histogram[v]) >= at) return v;
+        return histogram.length - 1;
+    }
+
     /** The trucks (nearest first) the glass map was baked for this frame: the trucks texture's rows. */
     private static List<RainTrucks.Frame> slots = List.of();
 
@@ -163,6 +238,7 @@ public final class RainShaderPack {
             float pt = event.renderTickTime;
             slots = RainTrucks.near(level, cam, RANGE, TRUCKS, pt);
             WindshieldRenderer.packFrame(mc, level, cam, pt, slots, GLASS_TEX.getId());
+            debugBakes++;
         } catch (RuntimeException e) {
             failed = true;
             slots = List.of();
@@ -183,6 +259,8 @@ public final class RainShaderPack {
             RainRenderer.columns().uploadPack(COLUMNS_TEX.getId(), Mth.floor(cam.x), Mth.floor(cam.z), frame);
             // the trucks baked at the start of the frame (renderTick), placed for this camera
             uploadTrucks(cam, event.getPartialTick(), slots, WindshieldRenderer.BAKED);
+            debugUploads++;
+            debugTrucks = slots.size();
         } catch (RuntimeException e) {
             failed = true;
             LOGGER.error("AFL rain for the shader pack: switched off after an error (vanilla rain is back)", e);

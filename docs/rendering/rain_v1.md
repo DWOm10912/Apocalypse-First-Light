@@ -230,7 +230,7 @@ JFR（渲染线程 `main` 的 Java + native 采样，按帧时间折算）巡航
 
 1. **玻璃水珠**（`WindshieldRenderer.quad / drawFilm`）：直接写 POSITION_COLOR_TEX_LIGHTMAP / POSITION_TEX；每块车窗算一次"水层在相机坐标里的原点 + 横向 / 向上 / 弯曲方向"，每颗水珠只做几次乘加（原来每颗都走 `pane.model` 和四元数变换）。镜头在车外、两扇门都关着时，镜头在驾驶室一侧的车窗（被前面那块玻璃的深度挡住）不画。
 2. **水珠模拟**（`GlassWater`、`TruckGlass`）：热路径里的 `Math.hypot`（很慢）换成平方根；车窗轮廓的四个角和边长在构造时算好（原来每次判断都新建数组）；水膜（192 × 112 格）的积水 / 变干改成约 30 Hz 更新；雨刷扫过的水膜格子按角度排好序，用二分查找找扫过的那一段，不再每帧检查全部格子；挡风玻璃两侧弯曲在平坦的中间不算 `pow`。
-3. **车窗玻璃只建一次**（`AflMovingGlass`）：每个部件的面读一次存成模型坐标的数组，每帧只做变换，直接写 BLOCK 格式。没开光影时用自己的 `BufferBuilder` 加 `RenderType.end` 画：Embeddium 下 `BufferSource.getBuffer` 给的是它的包装（`SodiumBufferBuilder`），只能一个顶点一个顶点地写。开光影时 Oculus 会扩展顶点格式，所以仍走原来的逐顶点写法。
+3. **车窗玻璃只建一次**（`AflMovingGlass`）：每个部件的面读一次存成模型坐标的数组，每帧只做变换，直接写 BLOCK 格式。没开光影时用自己的 `BufferBuilder` 加 `RenderType.end` 画：Embeddium 下 `BufferSource.getBuffer` 给的是它的包装（`SodiumBufferBuilder`），只能一个顶点一个顶点地写。开光影时 Oculus 会把格式加宽（它的 terrain 格式），所以开光影时完全用回 c0f4ce07 的写法（每帧烘焙 BakedQuad，再逐顶点写进 `BufferSource`），快路径只在没开光影时用。**2026-10-18 排查**：用户在 Aureveil alpha.56 下看到挡风玻璃上有直边尖角和错位的景色，一开始以为是这里的顶点错位，后来查明不是车窗玻璃，也不是 alpha.56：是水珠顶点的快速写入在开光影时被 Oculus 换了格式（见第 6.x 节）。开光影的写法测帧客户端里跑过，没进用户游戏验证。
 4. **地面溅射**（`RainSplashes.vertex`）：直接写 NEW_ENTITY 格式。
 5. **玻璃水的场景拷贝**（`WindshieldRenderer.SceneCopy`）：原来每帧都用 `glGetTexLevelParameteri` 查一次主深度纹理的格式（会让 CPU 等显卡），改成只在深度纹理换了（窗口改大小）时才查。
 
@@ -427,3 +427,24 @@ Aureveil 那边的原文在它的仓库 `docs/afl-interface-rain-alpha49.md`；�
 - 定位用：这两张图上传前逐个检查是不是有限数（`client/GlTex#checkFinite`）。发现坏值就记一条 WARN：`AFL afl_lights / afl_rain_trucks: N non-finite floats; first at texel (x, y) component c = v`，每张图最多 10 秒记一次。值照原样上传，不修改。光影包那边也会加一层，跳过非有限的灯和车。
 - 状态：用户重启游戏后 alpha.49 和 alpha.48 都不黑了（那次启动还没有这项检查）。最可能是之前游戏开着时编译、新旧类混在一起，**没有确认**。检查已编译（`compileJava` 通过），留在开发版里；之后再黑屏，看日志里有没有这条 WARN。
 - 重启后两个版本都只有约 28–35 fps，GPU 占用 58%。Aureveil A 判断这是光影包本身在这个世界里的 CPU 开销（怀疑阴影通道没做剔除），不是 alpha.49 新增的，也不在 AFL 的雨这条路上，由 A 那边查。
+
+### 6.x 开光影时车窗碎、闪：AFL 水珠顶点格式被 Oculus 换掉（2026-10-18，已修）
+
+- **现象**：开光影（Aureveil alpha.56）在驾驶室里看出去，挡风玻璃上有大块直边、尖角的深色区域和错位的景色（用户录屏）。
+- **对照**：同一个 AFL 构建在测帧客户端里跑开车测试，只换光影包。alpha.55 正常，alpha.56 坏。AFL 给光影的数据两次一样：每帧烘焙一次、上传一次；第一人称阶段挡风玻璃在图集 mip 2 上的平均 B 是 234–237（0–255），几乎全部超过 0.85。A 查明（2026-10-18）：这个 0.92 来自雨刷刚刮过的水膜（`afl_glass_bake_film.fsh` 最后的 `cover = max(cover, streak)`，刮后 streak = 0.4 + 1.2 × wet，按 e^(−t/0.9) 衰减；低速每 1.33 s 刮两次，扫过的区域一直在 0.9 左右），细水珠本身平均只有 0.24–0.3。alpha.56 判断大水滴时没有先减去 A 通道里的水膜，就把整块挡风玻璃都当成了透镜；alpha.55 用的是 B − A，所以正常。A 在 alpha.57 修，AFL 不用改。A 还提了一个以后可选的 layout 3（另加一张 `aflGlassDrops`，把细水珠湿度和水滴覆盖分开），等用户决定。
+- **单帧检查工具**：`-Prainperfglitch=true`（和 `-Prainperfshaders=true` 一起用；开车加 `-Prainperfdrive=true`，熄火停车用 `-Prainperf=park`；`src/dev/java/.../dev/GlitchWatch.java`）。每帧读回 AFL 的烘焙 / 上传次数、每块玻璃的平均覆盖（`RainShaderPack.debugPaneCover`）和水珠状态（`WindshieldRenderer.debugWater`），再把画面缩小切成方块找"只有这一帧不一样"的事件。事件帧的前一帧、这一帧、后一帧存成 `build/rain-perf/glitch_<n>.png`，统计写进 `afl_rain_perf.txt`。另外两项：烘焙刚结束时读一次覆盖，和帧末的读数对比，用来区分是烘焙本身在跳，还是这一帧里图集被别人改写；每 300 帧给 A 统计一次挡风玻璃 mip 0 的 A 通道（平均、p50、p90）和 B − A（≥ 2 的比例、p50、p90，`RainShaderPack.debugStreakStats`）。每帧都要读回，测出的帧率偏低。
+- **真正的原因（AFL 的 bug，2026-10-18 查明并修好）**：雨夜提速那次提交（78330565）把水珠顶点改成直接按字节写（`FastVertices`，POSITION_COLOR_TEX_LIGHTMAP，每个顶点 28 字节）。加载了光影包时，Oculus 会在每个用这个格式**对象**开始的 `BufferBuilder` 里把格式换成更宽的 GLYPH（`net/irisshaders/iris/mixin/vertices/MixinBufferBuilder`，按对象相等判断，和是不是在画世界无关；同样 BLOCK → TERRAIN，NEW_ENTITY → ENTITY）。按字节写进去的窄数据被当成宽格式读，水珠变成随机的大三角形，形状每帧都随水珠数据变化。
+  - 结果：烘焙出的图集逐帧在两种结果之间跳，光影包据此画出碎块和错位的景色。用户录屏（熄火停车、雨刷不动）正是这个问题；不开光影时 Oculus 不换格式，所以正常。
+  - 修法：`WindshieldRenderer.DROP_FORMAT`，元素和 POSITION_COLOR_TEX_LIGHTMAP 完全一样，但是 AFL 自己的对象。Oculus 不会换它，快速写入保留，着色器按属性名绑定，不用改。
+  - 排除过的方向，都实测过：纹理绑定缓存过期（4132 次烘焙全部一致）、残留的采样器对象（没有）、烘焙后这一帧里图集被别人改写（0 / 4040）。这样才确定是烘焙本身。再把每块玻璃拆成水膜层和水珠层分别读，就发现只有水珠层在跳：同一块门玻璃 183 → 47 → 184，quad 数几乎不变，而 370 个 2–3 mm 的水珠本该只盖住百分之几。
+  - 之前的错误判断，已改正：一开始以为是 Aureveil alpha.56 的回归，也接受过 A 关于 streak 的解释。A 说的 alpha.56 没减去 A 通道水膜的问题是真的，alpha.57 已修，但它只影响雨刷在刮的时候；用户场景下 A = 0，所以 alpha.57 对它没有效果。上面"对照"那条里挡风玻璃 B 234–237 的读数，至少有一部分是这些错读的大三角形：修好后同一个停车场景，挡风玻璃中间 B 从 249 降到 17。开车、雨刷在刮时修好后的读数还没测。
+- **实测（测帧客户端、alpha.57、`-Prainperf=park -Prainperfshaders=true -Prainperfglitch=true`，熄火停车第一人称，中午下雨）**：
+
+  | | 修之前（park57） | 修之后（park57f） |
+  | --- | --- | --- |
+  | AFL 每块玻璃覆盖的单帧跳变 | 145 | 0 |
+  | 画面单帧事件 | 208 / 5100 帧 | 7 / 6858 帧（都是测试切换镜头、开门，驾驶室阶段 0 次） |
+  | 驾驶室、全开时的帧率 | 41 fps | 58 fps（错读的大三角形也很费 GPU） |
+
+  没进用户游戏验证。
+- **同类问题全面排查**：多代理审查（ultracode）。所有按字节写顶点、或者缓存顶点的地方，只要用的是这三个会被换掉的格式、又可能在开光影时运行，都要查。结果见下一条。

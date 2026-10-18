@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.client.GpuTimer;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.WiperSystem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
+import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -15,6 +16,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -134,6 +136,22 @@ public final class WindshieldRenderer {
     /** The shader pack draws the water from AFL's glass map (RainShaderPack): the water is kept and baked for it. */
     static boolean packActive() {
         return enabled && !packFailed && bakeFilm != null && bakeDrop != null && RainShaderPack.active();
+    }
+
+    /** Dev check (the glitch watch): per kept truck and pane, drops / the biggest drop's radius (mm) / outside wetness / live trails. */
+    public static String debugWater() {
+        StringBuilder s = new StringBuilder();
+        synchronized (GLASS) {
+            for (Glass g : GLASS.values())
+                for (GlassWater w : g.panes) {
+                    float big = 0;
+                    for (int i = 0; i < w.count; i++) big = Math.max(big, w.r[i]);
+                    int trails = 0;
+                    for (int t = 0; t < GlassWater.TRAILS; t++) if (w.trail[t * 6 + 4] > 0 && w.trail[t * 6 + 5] <= 8) trails++;
+                    s.append(String.format(" %d/%.1f/%.2f/%d", w.count, big * 1000, w.outside, trails));
+                }
+        }
+        return s.toString();
     }
 
     public static String status() {
@@ -304,6 +322,7 @@ public final class WindshieldRenderer {
             GlStateManager._bindTexture(atlas);
             GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
             GlStateManager._bindTexture(0);
+            if (debugAfterBake != null) debugAfterBake.run();
         } finally {
             mc.getMainRenderTarget().bindWrite(true);
             RenderSystem.colorMask(true, true, true, true);
@@ -316,6 +335,9 @@ public final class WindshieldRenderer {
     }
 
     private static final float[] DRY = {0.5F, 0.5F, 0, 0};
+
+    /** Dev hook (GlitchWatch): run right after a bake. */
+    public static Runnable debugAfterBake;
 
     /** The glass map's storage (RGBA8, GlassAtlas.LEVELS mip levels below the base, linear) and the framebuffer onto level 0. */
     private static void allocateAtlas(int atlas) {
@@ -634,7 +656,7 @@ public final class WindshieldRenderer {
             QP.transform(CZ.set(0, 0, 1));
         }
         BufferBuilder b = BUILDER;
-        b.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+        b.begin(VertexFormat.Mode.QUADS, DROP_FORMAT);
         int n = 0;
         // slide trails first, under the drops: thin wet lines (a flat, round-edged film), fading over about eight seconds
         for (int t = 0; t < GlassWater.TRAILS; t++) {
@@ -735,6 +757,18 @@ public final class WindshieldRenderer {
         FastVertices.f(p + 20, v);
         FastVertices.i(p + 24, uv2);
     }
+
+    /**
+     * The drops' vertex format: POSITION_COLOR_TEX_LIGHTMAP's elements, as an own instance. With a shader pack loaded Oculus
+     * widens that very instance to its GLYPH format in every BufferBuilder begun with it (MixinBufferBuilder, by identity,
+     * in or out of the world pass), and the drops' bytes, written straight (FAST), are POSITION_COLOR_TEX_LIGHTMAP's: read as
+     * GLYPH they made random big quads, different every frame. The glass map's panes jumped between two results frame to
+     * frame and the pack drew the windshield and door glass broken (the user's 2026-10-18 videos, parked, wipers off;
+     * rain_v1.md section 6). An equal copy is left alone and fits the same shaders (their attributes go by name).
+     */
+    private static final VertexFormat DROP_FORMAT = new VertexFormat(ImmutableMap.<String, VertexFormatElement>builder()
+            .put("Position", DefaultVertexFormat.ELEMENT_POSITION).put("Color", DefaultVertexFormat.ELEMENT_COLOR)
+            .put("UV0", DefaultVertexFormat.ELEMENT_UV0).put("UV2", DefaultVertexFormat.ELEMENT_UV2).build());
 
     /** The water's vertices this draw (drawFilm, quad), handed to BUILDER in one copy. */
     private static final FastVertices FAST = new FastVertices(1 << 18);

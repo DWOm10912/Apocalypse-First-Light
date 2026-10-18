@@ -94,6 +94,9 @@ public final class RainPerfProbe {
         }
     }
 
+    /** The phase being measured (-1 before the first): GlitchWatch. */
+    static int phaseNow() { return phase; }
+
     private static void log(String s) { ApocalypseFirstLight.LOGGER.info("[AFL RAIN PERF] {}", s); }
 
     @SubscribeEvent
@@ -407,6 +410,7 @@ public final class RainPerfProbe {
 
     private static void finish(Minecraft mc) {
         Minecraft m = Minecraft.getInstance();
+        if (GlitchWatch.ON) OUT.append(GlitchWatch.summary());
         OUT.insert(0, "GL " + com.mojang.blaze3d.platform.GlUtil.getRenderer() + (SHADERS ? "; shader pack on" : "") + "; window " + m.getWindow().getWidth() + "x" + m.getWindow().getHeight() + "\n");
         try {
             Files.writeString(FMLPaths.GAMEDIR.get().resolve("afl_rain_perf.txt"), OUT.toString(), StandardCharsets.UTF_8);

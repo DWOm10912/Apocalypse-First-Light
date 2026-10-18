@@ -286,9 +286,11 @@ function roofLining() {
   slab(C(B, 'headliner'), FY, fillet([[CB + 0.03, -(ROOF_W - 0.02)], [WS1 + 0.03, -(ROOF_W - 0.02)], [WS1 + 0.03, ROOF_W - 0.02], [CB + 0.03, ROOF_W - 0.02]], 0.05, 3), [], y - 0.012, y, {r0: 0.01, r1: 0});
   rbox(C(B, 'lamp_dome'), FY, -0.10, 0.02, -0.06, 0.06, y - 0.022, y - 0.012, 0.005, {rc: 0.015});
   sym(s => {
+    // sun visors folded up under the headliner, behind the glass top (wsX(ROOF - 0.08) = WS1 + 0.026): they were 4-20 cm
+    // forward of WS1, out in front of the windshield, a dark band seen through it from the cab (2026-10-18)
     const [z0, z1] = zr(s, 0.12, 0.70);
-    rbox(C(B, 'headliner'), FY, WS1 + 0.04, WS1 + 0.20, z0, z1, y - 0.04, y - 0.022, 0.008, {rc: 0.03});
-    tube(C(B, 'steel'), [[WS1 + 0.18, y - 0.031, s * 0.70], [WS1 + 0.18, y - 0.031, s * 0.74]], 0.004, 6);
+    rbox(C(B, 'headliner'), FY, WS1 - 0.20, WS1 - 0.04, z0, z1, y - 0.04, y - 0.022, 0.008, {rc: 0.03});
+    tube(C(B, 'steel'), [[WS1 - 0.06, y - 0.031, s * 0.70], [WS1 - 0.06, y - 0.031, s * 0.74]], 0.004, 6);
   });
   tube(C(B, 'dash'), [[WS1 + 0.06, y - 0.012, 0], [WS1 + 0.05, y - 0.06, 0]], 0.007, 8);
   const mc = [WS1 + 0.045, y - 0.085, 0];
