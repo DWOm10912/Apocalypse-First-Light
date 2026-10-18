@@ -1,5 +1,6 @@
 // Tunnel V1 (docs/worldgen/federal_tunnels_v1.md): the textures of the drawn lining (TunnelMesh: wall panels, the dark
-// arch, steel, the slot drain) and the equipment parts the client places along a tunnel (client/road/TunnelParts), as
+// arch, steel, the slot drain) and the equipment parts the client places along a tunnel (client/road/TunnelParts), with
+// the C3.3b road signs (docs/worldgen/federal_junctions_c3_3b.md: STOP, side road, curve + 30 MPH; RoadSigns), as
 // standalone Vextris meshes (assets/apocalypse_firstlight/meshes/road/tunnel/<name>.vxmesh.json) on one shared sheet
 // (textures/block/road/tunnel/equipment). Every part is unlit: the world has no power (user, 2026-10-15), so luminaires,
 // signals, lane signals and the message sign are dark lenses and dark LED faces, and every _s map keeps alpha 255
@@ -47,7 +48,7 @@ const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
  * f(x, y) -> {c, s, f0, p, h, ao} (x, y local to the rect, supersampled ss x ss); finish() derives the normal map (heights
  * in mm, neighbours only within the same region; wrap: a tiling texture) and returns the three PNGs.
  */
-class Raster {
+export class Raster {
   constructor(W, H) { this.W = W; this.H = H; this.col = Buffer.alloc(W * H * 4); this.spec = Buffer.alloc(W * H * 4); this.ao = new Float64Array(W * H).fill(1); this.h = new Float64Array(W * H); this.id = new Int32Array(W * H); this.next = 1; }
   paint(rx, ry, rw, rh, f, ss = 2) {
     const id = this.next++;
@@ -146,7 +147,10 @@ const EXTRA = {
   '2': [540, W => U(and(ring(0, H * 0.4, W, H, 220), U(box(-1, H * 0.66, W + 1, H + 1), box(W / 2, H * 0.4, W + 1, H + 1))), seg(W - S * 0.55, H * 0.58, S * 0.35, S * 0.6), box(0, 0, W, S))],
   '3': [540, W => U(minus(ring(10, H / 2 - S / 2, W - 10, H, 170), box(-1, H / 2 - S / 2 - 1, W * 0.4, H * 0.78)), minus(ring(0, 0, W, H / 2 + S / 2, 180), box(-1, H * 0.22, W * 0.4, H / 2 + S / 2 + 1)))],
   '4': [580, W => U(box(W * 0.6, 0, W * 0.6 + S, H), box(0, H * 0.26, W, H * 0.26 + S), seg(S * 0.45, H * 0.26 + S / 2, W * 0.6 + S / 2, H + 60, S))],
-  '5': [540, W => U(box(20, H - S, W, H), box(20, H * 0.5, 20 + S, H), minus(ring(0, 0, W, H * 0.62, 210), box(-1, H * 0.12, W * 0.4, H * 0.5)))],
+  // the stem down to the bowl's inner top, the bowl open on the left below it (C3.3b fix: the stem ended above the bowl's
+  // shoulder, a notch where they met)
+  '5': [540, W => U(box(20, H - S, W, H), box(20, H * 0.62 - S, 20 + S, H),
+    minus(ring(0, 0, W, H * 0.62, 210), box(-1, H * 0.12, W * 0.4, H * 0.62 - S), box(-1, H * 0.62 - S, 20, H)))],
   '6': [560, W => U(minus(ring(0, 0, W, H, 250), box(W / 2, H * 0.3, W + 1, H * 0.8)), ring(0, 0, W, H * 0.62, 220))],
   '7': [520, W => U(box(0, H - S, W, H), seg(W - S * 0.5, H - S / 2, W * 0.3, -80, S))],
   '8': [560, W => U(ring(25, H / 2 - S / 2, W - 25, H, 170), ring(0, 0, W, H / 2 + S / 2, 185))],
@@ -174,11 +178,13 @@ function line(text, {gap = 110, space = 320} = {}) {
  * with `margin` px either side), text colour on the background, an optional border `border` px in from the edge.
  */
 function signFace(w, h, lines, {cap, margin, fg, bg, border = 0, bw = 0, gapLines = 0.7}) {
+  // cap: one height for every line, or one per line (the gaps then from the smallest)
+  const caps = Array.isArray(cap) ? cap : lines.map(() => cap), gapCap = Array.isArray(cap) ? Math.min(...cap) : cap;
   const L = lines.map(t => line(t));
-  const scales = L.map(l => Math.min(cap / CAP, (w - 2 * margin) / l.width));
-  const heights = scales.map(s => s * CAP), total = heights.reduce((a, b) => a + b, 0) + gapLines * cap * (L.length - 1);
+  const scales = L.map((l, i) => Math.min(caps[i] / CAP, (w - 2 * margin) / l.width));
+  const heights = scales.map(s => s * CAP), total = heights.reduce((a, b) => a + b, 0) + gapLines * gapCap * (L.length - 1);
   const base = []; let y = (h - total) / 2;
-  for (let i = 0; i < L.length; i++) { y += heights[i]; base.push(y); y += gapLines * cap; }
+  for (let i = 0; i < L.length; i++) { y += heights[i]; base.push(y); y += gapLines * gapCap; }
   const t = (x, yy) => 0.012 * vn(x, yy, 51, 24) + 0.006 * vn(x, yy, 52, 6);
   return (x, yy) => {
     const n = 1 + t(x, yy);
@@ -225,6 +231,96 @@ R.exit = [1776, 1136, 144, 60];                                                 
 R.clearance = [0, 1600, 576, 128];                                                        // 2.4 x 0.533 m
 R.headlight = [576, 1600, 384, 288];                                                      // 1.6 x 1.2 m
 R.cms = [960, 1600, 720, 216];                                                            // 6 x 1.8 m at 120 / m
+// C3.3b road signs (RoadSigns): faces drawn for bone r, mirrored for l
+R.stop = [306, 1728, 180, 180];                                                           // R1-1 0.75 m
+R.side_road = [1680, 1600, 306, 306];                                                     // W2-2 diamond, 0.9 m sides
+R.curve = [0, 1728, 306, 306];                                                            // W1-2 diamond, 0.9 m sides
+R.plaque = [306, 1908, 108, 108];                                                         // W13-1P 0.45 m
+// C3.3b group 2 ramp terminals (RoadSigns)
+R.do_not_enter = [960, 1816, 180, 180];                                                   // R5-1 0.75 m
+R.wrong_way = [1140, 1816, 216, 144];                                                     // R5-1a 0.9 x 0.6 m
+/**
+ * Sign sizes as RoadSigns: STOP across the flats, the diamond corner to corner, the plaque, DO NOT ENTER, WRONG WAY wide
+ * and high; the faces' bottoms, m.
+ */
+const SIGNS = {stop: 0.75, diamond: 0.9 * Math.SQRT2, plaque: 0.45, doNotEnter: 0.75, wrongWay: [0.9, 0.6], bottom: 1.5, curveBottom: 1.5 + 0.45 + 0.05};
+
+/** R1-1 for a w x w region: the red octagon, its white border (3/4 in on 30 in) inset from a thin red rim, STOP. */
+function stopFace(w) {
+  const c = w / 2, text = line('STOP'), s = Math.min(w / 3 / CAP, w * 0.78 / text.width), x0 = (w - text.width * s) / 2, base = c + CAP * s / 2;
+  const oct = (x, y) => { const dx = Math.abs(x - c), dy = Math.abs(y - c); return Math.max(dx, dy, (dx + dy) / Math.SQRT2) - c; };
+  const t = (x, y) => 0.012 * vn(x, y, 53, 24) + 0.006 * vn(x, y, 54, 6);
+  return (x, y) => {
+    const n = 1 + t(x, y), d = oct(x, y);
+    const white = {c: mul(SIGN.white, n), s: 120, f0: 14, h: 0.3}, red = {c: mul(SIGN.red, n), s: 110, f0: 14, h: 0};
+    if (d > -w * 0.012) return red;
+    if (d > -w * 0.037) return white;
+    return text.sdf((x - x0) / s, (base - y) / s) < 0 ? white : red;
+  };
+}
+/**
+ * R5-1 for a w x w region: the white square, the red disc nearly to its edges, the white bar across the middle, DO NOT
+ * over it and ENTER under it (white, 0.12 w caps).
+ */
+function doNotEnterFace(w) {
+  const c = w / 2, r = w * 0.475, bw = w * 0.73, bh = w * 0.15, cap = w * 0.12, gap = w * 0.055;
+  const t1 = line('DO NOT'), t2 = line('ENTER');
+  const s1 = Math.min(cap / CAP, w * 0.62 / t1.width), s2 = Math.min(cap / CAP, w * 0.62 / t2.width);
+  const x1 = (w - t1.width * s1) / 2, x2 = (w - t2.width * s2) / 2, base1 = c - bh / 2 - gap, base2 = c + bh / 2 + gap + CAP * s2;
+  const t = (x, y) => 0.012 * vn(x, y, 57, 24) + 0.006 * vn(x, y, 58, 6);
+  return (x, y) => {
+    const n = 1 + t(x, y);
+    const white = {c: mul(SIGN.white, n), s: 120, f0: 14, h: 0.3}, red = {c: mul(SIGN.red, n), s: 110, f0: 14, h: 0};
+    if (Math.hypot(x - c, y - c) > r) return white;
+    if (Math.abs(x - c) <= bw / 2 && Math.abs(y - c) <= bh / 2) return white;
+    if (t1.sdf((x - x1) / s1, (base1 - y) / s1) < 0 || t2.sdf((x - x2) / s2, (base2 - y) / s2) < 0) return white;
+    return red;
+  };
+}
+/**
+ * A warning diamond for a w x w region (its corners at the region's mid-edges): yellow, the black border (7/8 in on 36 in)
+ * inset 1/2 in, the black symbol (sdf in px, negative inside) on it.
+ */
+function diamondFace(w, symbol) {
+  const c = w / 2, side = w / Math.SQRT2;
+  const t = (x, y) => 0.012 * vn(x, y, 55, 24) + 0.006 * vn(x, y, 56, 6);
+  return (x, y) => {
+    const n = 1 + t(x, y), d = (Math.abs(x - c) + Math.abs(y - c) - c) / Math.SQRT2;
+    const black = {c: mul(SIGN.black, n), s: 120, f0: 14, h: 0.3}, yellow = {c: mul(SIGN.yellow, n), s: 110, f0: 14, h: 0};
+    if (d > -side * 0.014) return yellow;
+    if (d > -side * 0.038) return black;
+    return symbol(x, y) < 0 ? black : yellow;
+  };
+}
+const disc = (cx, cy, r) => (x, y) => Math.hypot(x - cx, y - cy) - r;
+/** A triangle's sdf (inside negative, exact enough for a fill): the largest of its edges' signed distances. */
+function triangle(ax, ay, bx, by, cx, cy) {
+  const P = [[ax, ay], [bx, by], [cx, cy]], o = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax) > 0 ? 1 : -1;
+  return (x, y) => Math.max(...P.map((p, i) => { const q = P[(i + 1) % 3], ex = q[0] - p[0], ey = q[1] - p[1], L = Math.hypot(ex, ey); return -o * (ex * (y - p[1]) - ey * (x - p[0])) / L; }));
+}
+/** W2-2 (side road on the right): the through road up the middle, the side road from it to the right (region px). */
+function sideRoadSymbol(w) {
+  const c = w / 2, b = w * 0.085;
+  return U(box(c - b / 2, c - w * 0.29, c + b / 2, c + w * 0.29), box(c, c - b / 2, c + w * 0.22, c + b / 2));
+}
+/** W1-2 (curve to the right): a shaft up from below the middle bending right on a 0.2 w radius, the arrowhead (px). */
+function curveSymbol(w) {
+  const c = w / 2, b = w * 0.075, r = w * 0.2, xm = c - w * 0.07, yb = c + w * 0.29, ym = c + w * 0.02, sweep = 50 * Math.PI / 180;
+  const parts = [box(xm - b / 2, ym, xm + b / 2, yb)];
+  const cx = xm + r, cy = ym;
+  let px = xm, py = ym;
+  for (let i = 1; i <= 10; i++) {
+    const a = Math.PI + sweep * i / 10, qx = cx + r * Math.cos(a), qy = cy + r * Math.sin(a);
+    parts.push(seg(px, py, qx, qy, b), disc(qx, qy, b / 2));
+    px = qx; py = qy;
+  }
+  // heading at the arc's end (screen y down), a short shaft on, then the head
+  const hx = -Math.sin(Math.PI + sweep), hy = Math.cos(Math.PI + sweep), L = w * 0.03, ex = px + hx * L, ey = py + hy * L;
+  parts.push(seg(px, py, ex, ey, b));
+  const hl = w * 0.13, hw = w * 0.11, nx = -hy, ny = hx;
+  parts.push(triangle(ex + nx * hw, ey + ny * hw, ex - nx * hw, ey - ny * hw, ex + hx * hl, ey + hy * hl));
+  return U(...parts);
+}
 
 function sheet() {
   const Rs = new Raster(SW, SH);
@@ -243,6 +339,14 @@ function sheet() {
   paint('headlight', signFace(384, 288, ['TUNNEL', 'TURN ON', 'HEADLIGHTS'], {cap: 46, margin: 26, fg: SIGN.black, bg: SIGN.white, border: 9, bw: 6, gapLines: 0.55}));
   paint('emergency', signFace(216, 48, ['EMERGENCY'], {cap: 26, margin: 14, fg: SIGN.white, bg: SIGN.red}));
   paint('exit', signFace(144, 60, ['EXIT'], {cap: 32, margin: 16, fg: SIGN.white, bg: SIGN.green, border: 3, bw: 2}));
+  paint('stop', stopFace(180));
+  paint('side_road', diamondFace(306, sideRoadSymbol(306)));
+  paint('curve', diamondFace(306, curveSymbol(306)));
+  // W13-1P on 18 in: the speed 8 in, MPH 4 in (US signs give speeds in mph, user 2026-10-16; the 50 km/h design speed)
+  paint('plaque', signFace(108, 108, ['30', 'MPH'], {cap: [46, 23], margin: 9, fg: SIGN.black, bg: SIGN.yellow, border: 2, bw: 3, gapLines: 0.5}));
+  // C3.3b group 2: R5-1 and R5-1a (36 x 24 in: WRONG over WAY, 5 in caps, a white border on red)
+  paint('do_not_enter', doNotEnterFace(180));
+  paint('wrong_way', signFace(216, 144, ['WRONG', 'WAY'], {cap: 30, margin: 18, fg: SIGN.white, bg: SIGN.red, border: 4, bw: 4, gapLines: 0.5}));
   // dark LED faces: black boards with unlit LED dots (lane signal 12 x 12 at 5 cm, message sign 120 x 36 at 5 cm)
   const dots = (pitch, r) => (x, y) => {
     const cx = (Math.floor(x / pitch) + 0.5) * pitch, cy = (Math.floor(y / pitch) + 0.5) * pitch, d = Math.hypot(x - cx, y - cy);
@@ -277,7 +381,11 @@ function face(p, pts, uvs, out) {
   if (dot(n, out) < 0) { pts = pts.slice().reverse(); uvs = uvs.slice().reverse(); }
   const b = p.vertices.length;
   pts.forEach((q, i) => p.vertices.push([r6(q[0]), r6(q[1]), r6(q[2]), r6(uvs[i][0] / SW), r6(uvs[i][1] / SH)]));
-  p.faces.push(pts.map((_, i) => b + i));
+  // Vextris faces have 3 or 4 corners: a larger convex polygon (the STOP octagon) as a fan of quads from its first corner
+  if (pts.length <= 4) { p.faces.push(pts.map((_, i) => b + i)); return; }
+  let i = 1;
+  for (; i + 2 < pts.length; i += 2) p.faces.push([b, b + i, b + i + 1, b + i + 2]);
+  if (i + 1 < pts.length) p.faces.push([b, b + i, b + i + 1]);
 }
 /** A uniform material's UV square for n corners (its tile's middle). */
 const matUV = (mat, n) => { const [x, y] = R['mat:' + mat]; const q = [[x + 16, y + 16], [x + 48, y + 16], [x + 48, y + 48], [x + 16, y + 48]]; return n === 4 ? q : [q[0], q[1], q[2]]; };
@@ -326,6 +434,28 @@ function annulusZ(p, cx, cy, r0, r1, z, n, mat, s) {
     face(p, [[cx + r0 * Math.cos(a), cy + r0 * Math.sin(a), z], [cx + r1 * Math.cos(a), cy + r1 * Math.sin(a), z], [cx + r1 * Math.cos(b), cy + r1 * Math.sin(b), z], [cx + r0 * Math.cos(b), cy + r0 * Math.sin(b), z]], matUV(mat, 4), [0, 0, s]);
   }
 }
+
+/**
+ * A flat sign plate: outline [x, y] in the part's frame (convex, any winding), from z0 (back) to z1 (front); the front
+ * maps region `key` over the metre box [x0, y0, x1, y1] (1.5 texels in from the region's edge; mirror: left to right),
+ * the back and the edges `mat`.
+ */
+function plate(p, outline, z0, z1, key, box, mirror = false, mat = 'galv') {
+  const [rx, ry, rw, rh] = R[key], e = 1.5;
+  const fu = x => { const f = (x - box[0]) / (box[2] - box[0]); return mirror ? 1 - f : f; }, fv = y => (box[3] - y) / (box[3] - box[1]);
+  face(p, outline.map(([x, y]) => [x, y, z1]), outline.map(([x, y]) => [rx + e + (rw - 2 * e) * fu(x), ry + e + (rh - 2 * e) * fv(y)]), [0, 0, 1]);
+  const [mx, my] = R['mat:' + mat];
+  face(p, outline.map(([x, y]) => [x, y, z0]), outline.map(([x, y]) => [mx + 16 + 32 * fu(x), my + 16 + 32 * fv(y)]), [0, 0, -1]);
+  const cx = outline.reduce((a, q) => a + q[0], 0) / outline.length, cy = outline.reduce((a, q) => a + q[1], 0) / outline.length;
+  outline.forEach((a, i) => {
+    const b = outline[(i + 1) % outline.length];
+    let nx = b[1] - a[1], ny = a[0] - b[0];
+    if (nx * ((a[0] + b[0]) / 2 - cx) + ny * ((a[1] + b[1]) / 2 - cy) < 0) { nx = -nx; ny = -ny; }
+    face(p, [[a[0], a[1], z0], [b[0], b[1], z0], [b[0], b[1], z1], [a[0], a[1], z1]], matUV(mat, 4), [nx, ny, 0]);
+  });
+}
+/** A diamond (corner to corner d) standing on its bottom corner at y0. */
+const diamond = (y0, d) => [[0, y0], [d / 2, y0 + d / 2], [0, y0 + d], [-d / 2, y0 + d / 2]];
 
 /** Lateral offsets of the signal heads / sign over the lanes (road toward -x from the shoulder part). */
 const ROADSIDE = {r4: {arm: 11.0, heads: [-5.8, -9.5], cms: [-10.2, -4.2]}, r2: {arm: 6.0, heads: [-3.9], cms: [-6.0, -2.4]}};
@@ -424,6 +554,48 @@ export function meshes() {
       cuboid(P('sign'), x0, 5.5, -0.35, x1, 7.3, 0.35, 'black', ['cms', [0, 0, w / 6, 1]]);
       for (const [k, x] of [['a', x0 + 0.4], ['b', x1 - 0.4]]) cuboid(P('hanger_' + k), x - 0.04, 7.3, -0.04, x + 0.04, 7.45, 0.04, 'galv');
     } }
+  // C3.3b road signs: aluminium faces on a 2 in square galvanised post (down into the ground 0.3 m), the face clear of it.
+  // The post has no front face where a face covers its width (hidden: [y0, y1] spans from below): only 18 mm behind the
+  // face's front, it showed through the face far away (depth precision; user, 2026-10-16).
+  const PX = 0.025, PZ0 = -0.065, PZ1 = -0.015, FZ0 = -0.01, FZ1 = 0.003;
+  const post = (p, top, hidden) => {
+    const F = (pts, out) => face(p, pts, matUV('galv', 4), out), y0 = -0.3;
+    F([[PX, top, PZ0], [-PX, top, PZ0], [-PX, y0, PZ0], [PX, y0, PZ0]], [0, 0, -1]);
+    F([[-PX, top, PZ0], [PX, top, PZ0], [PX, top, PZ1], [-PX, top, PZ1]], [0, 1, 0]);
+    F([[-PX, y0, PZ1], [PX, y0, PZ1], [PX, y0, PZ0], [-PX, y0, PZ0]], [0, -1, 0]);
+    F([[PX, top, PZ1], [PX, top, PZ0], [PX, y0, PZ0], [PX, y0, PZ1]], [1, 0, 0]);
+    F([[-PX, top, PZ0], [-PX, top, PZ1], [-PX, y0, PZ1], [-PX, y0, PZ0]], [-1, 0, 0]);
+    let y = y0;
+    for (const [a, b] of [...hidden, [top, top]]) {
+      if (a > y) F([[-PX, a, PZ1], [PX, a, PZ1], [PX, y, PZ1], [-PX, y, PZ1]], [0, 0, 1]);
+      y = b;
+    }
+  };
+  // STOP (R1-1), flat top
+  { const m = mesh('stop_sign'), w = SIGNS.stop, y0 = SIGNS.bottom, q = w / (1 + Math.SQRT2);
+    post(m.part('post'), y0 + w - 0.1, [[y0, y0 + w - 0.1]]);
+    plate(m.part('face'), [[-q / 2, y0], [q / 2, y0], [w / 2, y0 + (w - q) / 2], [w / 2, y0 + (w + q) / 2], [q / 2, y0 + w], [-q / 2, y0 + w],
+      [-w / 2, y0 + (w + q) / 2], [-w / 2, y0 + (w - q) / 2]], FZ0, FZ1, 'stop', [-w / 2, y0, w / 2, y0 + w]); }
+  // side road (W2-2): bone r the side road on the right, l mirrored
+  { const m = mesh('side_road_sign'), d = SIGNS.diamond, y0 = SIGNS.bottom;
+    for (const b of ['l', 'r']) {
+      post(m.part(b + '_post', b), y0 + d - 0.15, [[y0 + PX, y0 + d - 0.15]]);
+      plate(m.part(b + '_face', b), diamond(y0, d), FZ0, FZ1, 'side_road', [-d / 2, y0, d / 2, y0 + d], b === 'l');
+    } }
+  // curve (W1-2) over its 30 MPH advisory plaque (W13-1P): bone r curving right, l mirrored
+  { const m = mesh('curve_sign'), d = SIGNS.diamond, y1 = SIGNS.curveBottom, y0 = SIGNS.bottom, q = SIGNS.plaque;
+    for (const b of ['l', 'r']) {
+      post(m.part(b + '_post', b), y1 + d - 0.15, [[y0, y0 + q], [y1 + PX, y1 + d - 0.15]]);
+      plate(m.part(b + '_face', b), diamond(y1, d), FZ0, FZ1, 'curve', [-d / 2, y1, d / 2, y1 + d], b === 'l');
+      plate(m.part(b + '_plaque', b), [[-q / 2, y0], [q / 2, y0], [q / 2, y0 + q], [-q / 2, y0 + q]], FZ0, FZ1, 'plaque', [-q / 2, y0, q / 2, y0 + q]);
+    } }
+  // C3.3b group 2, an exit ramp's terminal: DO NOT ENTER (R5-1) and WRONG WAY (R5-1a), flat plates on the same post
+  { const m = mesh('do_not_enter_sign'), w = SIGNS.doNotEnter, y0 = SIGNS.bottom;
+    post(m.part('post'), y0 + w - 0.1, [[y0, y0 + w - 0.1]]);
+    plate(m.part('face'), [[-w / 2, y0], [w / 2, y0], [w / 2, y0 + w], [-w / 2, y0 + w]], FZ0, FZ1, 'do_not_enter', [-w / 2, y0, w / 2, y0 + w]); }
+  { const m = mesh('wrong_way_sign'), [w, h] = SIGNS.wrongWay, y0 = SIGNS.bottom;
+    post(m.part('post'), y0 + h - 0.1, [[y0, y0 + h - 0.1]]);
+    plate(m.part('face'), [[-w / 2, y0], [w / 2, y0], [w / 2, y0 + h], [-w / 2, y0 + h]], FZ0, FZ1, 'wrong_way', [-w / 2, y0, w / 2, y0 + h]); }
   return M;
 }
 
@@ -475,6 +647,8 @@ if (isMain) {
     assert(m.parts.length <= 128, m.name + ' has more than 128 parts');
     assert(m.tris() <= 16384, m.name + ' over 16384 triangles');
     for (const p of m.parts) for (const v of p.vertices) assert(v.slice(0, 3).every(c => Math.abs(c) <= 256) && v[3] >= 0 && v[3] <= 1 && v[4] >= 0 && v[4] <= 1, m.name + ' vertex out of range');
+    // Vextris V1 takes faces of 3 or 4 corners only (it rejects the whole mesh otherwise)
+    for (const p of m.parts) for (const f of p.faces) assert(f.length === 3 || f.length === 4, m.name + ' ' + p.name + ' has a face of ' + f.length + ' corners');
   }
   const list = outputs();
   if (process.argv.includes('--check')) {

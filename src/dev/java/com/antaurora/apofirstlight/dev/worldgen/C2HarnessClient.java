@@ -31,13 +31,42 @@ import net.minecraftforge.fml.common.Mod;
  * does, through the vanilla "Create New World" screen (CreateWorldScreen#openFresh): it logs the type and overworld the
  * screen starts on, optionally switches the type like the button does (type=minecraft:flat), and presses Create; {@link #quit} saves and closes the client when the probe is
  * done. Screens that would wait for a click (the experimental-settings warning of a data-pack world type) are answered
- * by the vanilla flow's own defaults: createFreshLevel does not ask, loadLevel is called with the check off.
+ * by the vanilla flow's own defaults: createFreshLevel does not ask, loadLevel is called with the check off. The survivor
+ * prompts (they pause the game) are answered: the name with the account's name, as its left button would, the host's
+ * mode with NORMAL.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class C2HarnessClient {
     private C2HarnessClient() {}
 
-    private static boolean started;
+    private static boolean started, named, moded;
+
+    /**
+     * The survivor prompts of a new world (both pause the game): never shown. The name prompt is answered once with the
+     * account's name; the host's NORMAL / HARD prompt (mode=ui leaves the Create World screen's pick empty) with NORMAL,
+     * as mode=create picks it.
+     */
+    @SubscribeEvent
+    public static void onNamePrompt(ScreenEvent.Opening event) {
+        if (!C2Harness.active()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (event.getNewScreen() instanceof com.antaurora.apofirstlight.client.survivor.AflSurvivorModeScreen) {
+            event.setCanceled(true);
+            if (moded || mc.player == null) return;
+            moded = true;
+            C2Harness.log("UI: the survivor mode prompt came up; choosing NORMAL");
+            com.antaurora.apofirstlight.network.AflNetwork.survivorToServer(new com.antaurora.apofirstlight.survivor.SurvivorPackets.ModeChoice(
+                    com.antaurora.apofirstlight.survivor.SurvivorMode.NORMAL));
+            return;
+        }
+        if (!(event.getNewScreen() instanceof com.antaurora.apofirstlight.client.survivor.AflSurvivorNameScreen)) return;
+        event.setCanceled(true);
+        if (named || mc.player == null) return;
+        named = true;
+        String name = mc.player.getGameProfile().getName();
+        C2Harness.log("UI: the survivor name prompt came up; choosing " + name);
+        com.antaurora.apofirstlight.network.AflNetwork.survivorToServer(new com.antaurora.apofirstlight.survivor.SurvivorPackets.NameChoice(name));
+    }
 
     @SubscribeEvent
     public static void onTitle(ScreenEvent.Init.Post event) {

@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadCells;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
+import com.antaurora.apofirstlight.worldgen.network.road.JunctionMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
 import net.minecraft.core.BlockPos;
@@ -146,8 +147,7 @@ public final class RoadStructureHits {
         Map<Integer, BridgeMesh.Expect> expect = c != null && c.works == works ? c.expect : BridgeMesh.expected(works, cx, cz);
         Map<Integer, BridgeMesh.Found> found = RoadStructureBlock.scan(level, cx, cz, expect);
         if (c != null && c.works == works && found.equals(c.found)) { c.checked = now; return c; }
-        List<RoadMesh.Triangle> pavement = new ArrayList<>();
-        for (RoadDesign d : works.roads()) pavement.addAll(RoadMesh.chunk(d, cx, cz));
+        List<RoadMesh.Triangle> pavement = JunctionMesh.pavement(works, works.roads(), cx, cz);
         Map<Integer, RoadCells.Cell> cells = pavement.isEmpty() ? Map.of() : RoadCells.of(works.roads(), works, cx, cz);
         List<RoadMesh.Triangle> tris = BridgeMesh.finish(pavement, works.roads(), works, cx, cz, cells, new BitSet(), expect, found);
         int n = 0;
@@ -211,7 +211,7 @@ public final class RoadStructureHits {
      * A convex polygon cut to component axis >= edge (upper false) or <= edge (upper true), widened by EPS: a face lying on
      * the block's side (a wall's side towards a cell that is not wall) stays whole.
      */
-    private static List<double[]> cut(List<double[]> in, int axis, double edge, boolean upper) {
+    static List<double[]> cut(List<double[]> in, int axis, double edge, boolean upper) {
         List<double[]> out = new ArrayList<>(in.size() + 2);
         if (in.size() < 3) return out;   // cut away by the previous side
         double[] a = in.get(in.size() - 1);

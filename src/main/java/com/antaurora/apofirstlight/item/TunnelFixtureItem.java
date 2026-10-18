@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.TunnelFixtureBlock;
 import com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.worldgen.network.road.GuideSigns;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelFixtures;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelMesh;
 import net.minecraft.core.BlockPos;
@@ -31,7 +32,7 @@ import java.util.function.Consumer;
  * A small tunnel part a player took down (block/TunnelFixtureBlock; Tunnel parts removable V1.1, 2026-10-16), placed
  * again as the whole part: on a wall (facing out of it, centred on the click), under a ceiling (hanging from the click),
  * or standing on a floor (facing the player, in 16 directions), as Kind#mount says. Its variant (the egress sign's way
- * and distance, the name plate's name) rides in the stack's "Bone" tag. Every cell the part needs must be open (air or
+ * and distance, the name plate's name, a guide sign's legend) rides in the stack's "Bone" tag. Every cell the part needs must be open (air or
  * replaceable), road_structure (taken over, its layers kept) or another fixture's (holding both), except that a wall
  * part's cells on the wall's side of the clicked face keep the wall's blocks (its boxes reach into the wall); and the
  * part clear of entities, else nothing is placed.
@@ -51,7 +52,7 @@ public final class TunnelFixtureItem extends BlockItem {
         return stack.getTag() != null && stack.getTag().contains("Bone") ? stack.getTag().getString("Bone") : kind.defaultBone();
     }
 
-    /** The stacks the creative tab lists: every egress sign and name plate, else the one item. */
+    /** The stacks the creative tab lists: every egress sign and name plate, both road warning arrows, a guide sign of each type, else the one item. */
     public List<ItemStack> variants() {
         List<String> bones = switch (kind) {
             case EGRESS_SIGN -> {
@@ -60,6 +61,10 @@ public final class TunnelFixtureItem extends BlockItem {
                 yield out;
             }
             case NAME_PLATE -> List.of(TunnelMesh.NAMES);
+            case SIDE_ROAD_SIGN, CURVE_SIGN -> List.of("l", "r");
+            // one of each guide sign (an interchange's signs carry their own legends)
+            case GUIDE_SIGN -> List.of("adv|4|R61|S|Redfield|1|0,0", "dir|5|R61|N|Elmwood|ur|0,0", "gore|4||||ur|0,0", GuideSigns.DEFAULT,
+                    "split||F40+F65|E+S|Bellhaven|ul|0,0");
             default -> java.util.Collections.singletonList(null);
         };
         List<ItemStack> out = new java.util.ArrayList<>();
@@ -188,6 +193,11 @@ public final class TunnelFixtureItem extends BlockItem {
             tooltip.add(Component.translatable("tooltip.apocalypse_firstlight.tunnel_egress_sign." + (b.charAt(0) == 'l' ? "left" : "right"), b.substring(1)));
         else if (kind == TunnelFixtureBlock.Kind.NAME_PLATE && b != null)
             tooltip.add(Component.translatable("tooltip.apocalypse_firstlight.tunnel_name." + b));
+        else if ((kind == TunnelFixtureBlock.Kind.SIDE_ROAD_SIGN || kind == TunnelFixtureBlock.Kind.CURVE_SIGN) && b != null)
+            tooltip.add(Component.translatable("tooltip.apocalypse_firstlight." + kind.id() + "." + ("l".equals(b) ? "left" : "right")));
+        // the legend as the sign reads (English in every language, as the world's signs)
+        else if (kind == TunnelFixtureBlock.Kind.GUIDE_SIGN && b != null)
+            tooltip.add(Component.literal(GuideSigns.describe(b)).withStyle(net.minecraft.ChatFormatting.GRAY));
         super.appendHoverText(stack, level, tooltip, flag);
     }
 

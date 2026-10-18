@@ -88,7 +88,8 @@ public final class RoadStructures {
             double a = r.trim() == null ? 0 : r.trim()[0];
             List<double[]> wings = new ArrayList<>();
             for (RoadDesign.Span sp : d.spans) {
-                if (sp.s1() - sp.s0() < 2) continue;
+                // an overpass stands on spill-through slopes, no wing walls (C3.3b group 2)
+                if (sp.s1() - sp.s0() < 2 || sp.over()) continue;
                 wings.add(new double[]{RoadNetworkJson.round2(sp.s0() + a), RoadNetworkJson.round2(sp.s1() + a),
                         reach(d, sp, sp.s0(), -1, terrain, ground), reach(d, sp, sp.s0(), 1, terrain, ground),
                         reach(d, sp, sp.s1(), -1, terrain, ground), reach(d, sp, sp.s1(), 1, terrain, ground)});

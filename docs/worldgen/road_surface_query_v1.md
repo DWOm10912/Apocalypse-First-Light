@@ -1,7 +1,7 @@
 # 道路接地查询 RoadSurfaceQuery V1
 
-日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，已同步到 master `7507bd11`，同步后离线回归仍 PASS），未提交、未合并。
-状态：**已实现，离线回归通过，隔离客户端探针在新建测试世界 `rsq1` 里通过（13 个隧道探针窗口，2026-10-16）**。Main 那边还没接（见第 7 节），车上还没用到它，**没有实机开车测过**。
+日期：2026-10-16。分支 `feature/federal-tunnels`（C 的 worktree `AFL-federal-worldgen-v1`，已同步到 master `7507bd11`，同步后离线回归仍 PASS）；提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送）。
+状态：**已实现，离线回归通过，隔离客户端探针在新建测试世界 `rsq1` 里通过（13 个隧道探针窗口，2026-10-16）**。Main 已在 `LevelVehicleWorld#ground` 开头接上（2026-10-16，Main 目录，未提交；见第 7 节），**还没有实机开车测过**。
 
 和 Main 的约定：Main 工作目录里的 `docs/vehicles/first_pickup_v0_design.md` 第 5 / 5.1 节（2026-10-16 双方确认）。
 
@@ -32,6 +32,20 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 
 先按道路设计算出 (x, z) 处的路面（`pavement`，纯计算，不读世界）：所有可能经过这个区块的道路里，(x, z) 落在铺装带（内路肩边到外路肩边，桩号在路线上）的那些，取设计路面高度离 yHint 最近、且在 1.5 m 以内的那条。
 
+C3.3b 第一组（2026-10-16）起，(x, z) 落在 T 字路口的路口面里时（`RoadWorks#pad`），路口面也是一个候选：高度取 `Junction#height`，法线取它的梯度（`Junction#normal`，中心差分 0.05 m），表面是沥青、不挡车。它比各条路的铺装更接近 yHint（也在 1.5 m 以内）时用它。路口面在主路铺装边和支路端线上跟两条路的设计面一致，所以从路上开进路口面高度是连续的（[C3.3b 第一组](federal_junctions_c3_3b.md) 第 3 节）。后面"扫方块"那一步照旧。
+
+C3.3b 第二组（2026-10-16）起：
+
+- 立交的匝道落在州际铺装带里的点不算匝道的（那里的路面是州际的，`RoadWorks#yields` 同一条规则），只按州际算；
+- 跨线桥上下两条路都是候选，照旧取离 yHint 最近的那条：车在桥面上问得到跨线州道，在桥下问得到州际（桥面和桥下的州际路面至少差 5 m，远大于 1.5 m 的范围）；
+- 道路端点外 1 cm 内的点算在端点上（`RoadCurve#local`；2026-10-18 起查询这边也照这样夹到端点上。之前投影算出的桩号因为浮点误差比路长多一点点时会被丢掉：种子 4011 的路网里有条州道正好 2808.00 m 长，离线回归在它终点那一排漏了 7 个点），所以入口匝道起点外几毫米、已经在路口面上的点，可能给匝道起点的高程而不是路口面的：两者实测最大差 0.16 mm（[C3.3b 第二组](federal_interchanges_c3_3b.md) 11.1）。
+
+城镇框架 V1（2026-10-18）起，(x, z) 落在框架城镇的铺装上（`TownWorks#spot` 是沥青、路缘、人行道或车道口）时，镇也是一个候选：
+- 高度取镇的设计高度（含路拱、路缘、车道口的坡）；表面是沥青（`ASPHALT` 部件）或混凝土（其余）；不挡车。
+- 法线用镇设计高度的中心差分（0.05 m）。差分只在同一种材质上取：沥青和沥青、混凝土和混凝土。另一边是别的材质或不是铺装时取单边，两边都不是时那个方向算平的。所以路缘的立面不会被当成坡。
+- 镇里穿过的道路路基和路口面先按道路算；只有比它们更接近 yHint 时才用镇的。
+- 镇的铺装列，方块碰撞取的是这一格 9 个点里最高的（`TownWorks#pavedRange`），一格跨在路缘上时碰撞是路缘顶，比沥青高 0.19 m。所以镇的"上 0.1 m"放宽到 0.25 m（`TOWN_COVER`）。镇里没有立在路上的东西（牌子是部件方块，本来就跳过），放宽不会误判。
+
 然后从 yHint + 1.5 m 往下扫这一列方块，到 yHint − 1.5 m 下一格为止，第一个碰到的东西决定结果：
 
 | 碰到的 | 结果 |
@@ -61,9 +75,10 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 
 ## 4. 性能和一致性
 
-- `sample(..., Out)` 不分配对象：每线程缓冲（输出、方块坐标、曲线查找）；`RoadCurve#local / #frame` 和 `RoadDesign#pavementY` 各加了一个不分配的版本（`RoadCurve.Scratch`、`RoadDesign#pavementYAt`、`CrossSection#pavement(double, double)`），计算和原版本一模一样——离线回归逐点比对，结果完全相同（第 5 节）。世界生成仍用原来的版本，世界生成结果不变，不动版本锁。
+- 镇里那一支（`TownWorks#spot`）每个点会分配几个短命的小对象，没有做成不分配的版本，也没测过对帧时间的影响。
+- `sample(..., Out)` 在道路上不分配对象：每线程缓冲（输出、方块坐标、曲线查找）；`RoadCurve#local / #frame` 和 `RoadDesign#pavementY` 各加了一个不分配的版本（`RoadCurve.Scratch`、`RoadDesign#pavementYAt`、`CrossSection#pavement(double, double)`），计算和原版本一模一样——离线回归逐点比对，结果完全相同（第 5 节）。世界生成仍用原来的版本，世界生成结果不变，不动版本锁。
 - `sample(Level, x, z, yHint)` 只多一个返回的 `Hit` 记录对象（约定里的接口）；要零分配就用 `Out` 版本。
-- 两端结果相同：单人游戏里服务端和客户端共用同一个道路网络对象（`RoadStructureBlock.boundWorks()`），方块也相同。**已知差异**：专用服务器上，服务端第一次新建网络时用的是刚算出的数据，客户端用的是 JSON 读回的数据（缓存里的数保留两位小数），两边高度可能差几毫米；服务器重启后都从同一份缓存读，就一样了。
+- 两端结果相同：单人游戏里服务端和客户端共用同一个道路网络对象（`RoadStructureBlock.boundWorks()`），方块也相同。这个对象是客户端收到网络后从 JSON 读回的那份（`RoadClient.receive` 会替换全局绑定），不是服务端生成世界时的那份；两份的镇高度实测差 ≤ 0.000011 m（2026-10-18 探针 drive3），道路的差 0。**已知差异**：专用服务器上，服务端第一次新建网络时用的是刚算出的数据，客户端用的是 JSON 读回的数据（缓存里的数保留两位小数），两边高度可能差几毫米；服务器重启后都从同一份缓存读，就一样了。
 - 离线：单次 `pavement` 约 **1.06 µs**（含测试本身取样点的计算）。
 - 实际世界里（服务端线程，含读方块）：平均 **1.71 µs / 次**，各窗口 1.03–3.46 µs（205,456 次）。每辆车每 tick 约 100 次，约 0.17 ms；两端各算一次。
 
@@ -75,7 +90,7 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 ./gradlew roadSurfaceCheck --offline
 ```
 
-- 文件：`src/test/java/com/antaurora/apofirstlight/worldgen/network/road/RoadSurfaceCheck.java`；gradle 任务 `roadSurfaceCheck`（不进 `check`，因为要一份道路网络缓存文件；默认读种子 4 的 `build/federal-c2-client/afl_cache/road_network/afl_road_network_c3_v1_4_225bd321232e0bda.json`，`-ProadNetwork=<文件>` 换别的）。
+- 文件：`src/test/java/com/antaurora/apofirstlight/worldgen/network/road/RoadSurfaceCheck.java`；gradle 任务 `roadSurfaceCheck`（不进 `check`，因为要道路网络缓存）。不带参数时检查这个目录里所有缓存的道路网络：`run/afl_cache/road_network/` 和 `build/federal-c2-client/afl_cache/road_network/` 下的 `afl_road_network_c3_v1_*.json`（游戏第一次打开一个联邦世界时写，一个种子一份）；一份都没有就提示先打开一次联邦世界，退出码 2。`-ProadNetwork=<文件>` 只查一份。第一版写死了 C 的测试客户端里种子 4 那份，Main 的目录里没有，跑不起来（Main 2026-10-16 反馈），已改。
 - 做法：用网络 JSON 重建全部道路（和客户端一样：建好、写出、读回），每条路沿桩号每 **0.25 m** 一个点，横向在铺装带上每 0.5 m 一条线（两侧、车道、车道线、路肩），yHint 用上一个点的结果（像车一样）。
 - 检查：有没有空洞；拿到的是不是这条路自己的路面（不是别的路）；不分配版本和原版本是否完全一致；相邻点高度的二阶差（折角）；法线每步转角；每 4 m 用 ±1 cm 的世界坐标差分比对解析法线；单次耗时。
 - 阈值：空洞 0、不一致 0、二阶差 ≤ 0.01 m、法线每步转角 ≤ 1°、法线误差 ≤ 0.25°。
@@ -93,6 +108,17 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 | 法线每步转角最大 | 0.55°（同一处，超高渐变） |
 | 解析法线 vs 差分 | 739,804 点，最大 0.098° |
 | 单次耗时 | 1.05 µs |
+
+其他种子（2026-10-16，同一套阈值，全部 PASS）：
+
+| 网络缓存 | 道路 | 空洞 | 二阶差最大 | 法线每步转角最大 | 法线 vs 差分最大 |
+|---|---|---|---|---|---|
+| `..._18151365494840402103_05c318c57fca5c3a`（r1 默认种子 -295378578869149513） | 21 | 0 | 0.0051 m | 0.57° | 0.114° |
+| `..._10164326571583364449_80bd3ad668204936` | 21 | 0 | 0.0049 m | 0.58° | 0.120° |
+| `..._11823271242869393782_9f681f3ccc4ee2c4` | 18 | 0 | 0.0042 m | 0.49° | 0.074° |
+| `..._16060040187792812410_abbf3adfc5d4f7db` | 19 | 0 | 0.0042 m | 0.49° | 0.095° |
+
+后三份是 Main 目录 `run/afl_cache/road_network/` 里的缓存（只读，用 `-ProadNetwork` 指过去跑的）。
 
 ### 隔离客户端探针
 
@@ -122,9 +148,21 @@ boolean RoadSurfaceQuery.sample(Level level, double x, double z, double yHint, R
 
 没测的：客户端那一侧的调用（单人游戏两端共用同一个网络对象，方块相同）；专用服务器；真车在路上开。
 
+镇里的铺装（2026-10-18，测试世界 `drive3`，种子 8551，`roads=1;only=towns`，8 个窗口；报告 `afl_c2_probe/drive3_drive3.txt`）：**全部符合**
+
+| 项 | 结果 |
+|---|---|
+| 镇的铺装点（沥青、路缘、人行道、车道口） | 41,132 / 41,132 符合（车道口 1,293 点），材质对、不挡车 |
+| 查询高度 vs 镇的设计 | 最大 0.000011 m（另一份网络对象的舍入，见第 4 节） |
+| 查询高度 vs 方块碰撞顶面 | 最大 0.131 m（在 `TOWN_COVER` 0.25 m 以内） |
+| 同一批窗口里道路的设计路面 | 全部符合，vs 设计最大 0.000000 m |
+
+同一天离线回归 `roadSurfaceCheck` 跑了 17 份路网缓存，全部 PASS（包括终点夹紧修好的那份）。真车没在镇里开过。
+
 ## 6. 没做 / 限制
 
-- 路口、互通（C3.3b）还没有，所以没有"两条路的路面重叠"的情况；做路口时要复查"取最近的那层"在路口里是否合适。
+- C3.3b 第一组的路口面已经接上（第 3 节）。离线检查（`junctionCheck`，6 个种子）：路口面上查询高度和路口面设计高度最大差 0.0002 m。州道接州际的菱形立交（第二组）已经接上（第 3 节），新世界探针 ic1 上匝道、路口面、跨线桥上下的查询全部和设计一致（路口面上最大差 0.16 mm，[C3.3b 第二组](federal_interchanges_c3_3b.md) 11.1）。州际之间的互通还没有。
+- 路口面那一支会分配几个小数组（`Junction#height` 里的投影），没有做成不分配的版本；路口面只有几百平方米，影响不大，没有测。
 - 隧道部件（扶手、标志等）不算地面，也不挡车轮；它们的方块碰撞照旧。
 - 护栏墙等 `blocking` 处只给方块碰撞顶面，法线朝上；不给墙的侧面法线（车身碰撞由方块负责）。
 - 没有实车测过：Main 接上调用、皮卡在路上开过之后才知道实际效果。

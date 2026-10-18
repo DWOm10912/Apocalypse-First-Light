@@ -17,7 +17,8 @@ import java.util.Locale;
 /**
  * {@code /afl worldgen roads} (C3.2): the overworld's built routes, read-only: each route's ends and bridges (pavement
  * coordinates of the right carriageway's lane centre), and where the caller stands on a road (station, lateral offset,
- * column kind). Generates and loads nothing.
+ * column kind). {@code /afl worldgen town} (Town Framework V1): the framework towns and what the caller stands on in one.
+ * Generates and loads nothing.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RoadNetworkCommand {
@@ -27,7 +28,33 @@ public final class RoadNetworkCommand {
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("afl").then(Commands.literal("worldgen")
                 .requires(source -> source.hasPermission(2))
-                .then(Commands.literal("roads").executes(c -> status(c.getSource())))));
+                .then(Commands.literal("roads").executes(c -> status(c.getSource())))
+                .then(Commands.literal("town").executes(c -> town(c.getSource())))));
+    }
+
+    /**
+     * {@code /afl worldgen town} (Town Framework V1): the framework towns (name, state, exit, the limit's corners and
+     * centre in the world, blocks, lots, streets) and what the caller stands on in one (TownWorks#describe). Read-only.
+     */
+    private static int town(CommandSourceStack source) {
+        RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(source.getServer().overworld());
+        if (n == null || n.works().towns().isEmpty()) {
+            source.sendSuccess(() -> Component.literal("AFL towns: no framework town in this world."), false);
+            return 0;
+        }
+        StringBuilder b = new StringBuilder("AFL towns (Town Framework V1):").append('\n');
+        for (com.antaurora.apofirstlight.worldgen.network.town.TownPlan p : n.works().towns().plans()) {
+            double[] c = p.world((p.limit[0] + p.limit[1]) / 2, (p.limit[2] + p.limit[3]) / 2), e = p.world(0, 0);
+            b.append(String.format(Locale.ROOT, "%s (%s, %s): %d blocks, %d lots, %d streets; exit crossing %.0f %.0f, centre %.0f %.0f, %.0f x %.0f m%n",
+                    p.name, p.town, p.state, p.blocks.size(), p.lots.size(), p.streets.size(), e[0], e[1], c[0], c[1],
+                    p.limit[1] - p.limit[0], p.limit[3] - p.limit[2]));
+        }
+        Vec3 pos = source.getPosition();
+        String here = n.works().towns().describe(pos.x, pos.z);
+        b.append(here == null ? "you are in no town" : "you: " + here);
+        String text = b.toString();
+        source.sendSuccess(() -> Component.literal(text), false);
+        return 1;
     }
 
     private static int status(CommandSourceStack source) {

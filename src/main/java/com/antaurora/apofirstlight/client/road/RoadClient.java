@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadCells;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
+import com.antaurora.apofirstlight.worldgen.network.road.JunctionMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkJson;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
@@ -136,7 +137,8 @@ public final class RoadClient {
     /**
      * A mesh's per-vertex light (solid, marking) and the game time it was taken; its GPU geometry (render thread only):
      * pieces of the solid stream and the marking stream (ranges: stream 0 or 1, first and end vertex), built in order, the
-     * shade they were written with, whether the light taken last was uploaded. TunnelFixtureClient uses stream 0 only.
+     * shade they were written with, whether the light taken last was uploaded. TunnelFixtureClient: its parts and the
+     * guide signs' legends.
      */
     static final class Light {
         final int[][] values = new int[2][];
@@ -183,7 +185,8 @@ public final class RoadClient {
         if (json == null || json.isEmpty()) { roads = List.of(); index = null; return; }
         try {
             roads = RoadNetworkJson.designs(json);
-            index = new RoadWorks(roads, RoadWorks.Water.NONE);
+            index = new RoadWorks(roads, RoadWorks.Water.NONE, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(
+                    com.antaurora.apofirstlight.worldgen.network.town.TownPlan.read(json)));
             // road_structure's collision follows the bridge mesh (a dedicated server's client has only this copy)
             com.antaurora.apofirstlight.block.RoadStructureBlock.works(index);
         } catch (RuntimeException e) {
@@ -328,8 +331,8 @@ public final class RoadClient {
      */
     static ChunkMesh build(List<RoadDesign> rs, RoadWorks works, int cx, int cz, Map<String, float[]> uv, BitSet dug,
                            Map<Integer, BridgeMesh.Expect> expect, Map<Integer, BridgeMesh.Found> found) {
-        List<RoadMesh.Triangle> tris = new ArrayList<>();
-        for (RoadDesign d : rs) tris.addAll(RoadMesh.chunk(d, cx, cz));
+        // the roads and the T junction pads (C3.3b)
+        List<RoadMesh.Triangle> tris = JunctionMesh.pavement(works, rs, cx, cz);
         Map<Integer, RoadCells.Cell> cells = tris.isEmpty() ? Map.of() : RoadCells.of(rs, works, cx, cz);
         if (expect == null) expect = BridgeMesh.expected(works, cx, cz);
         // no structure cells: nothing to scan (an empty scan then equals it, so the mesh is not rebuilt for it)
@@ -545,22 +548,40 @@ public final class RoadClient {
      */
     static int[] lights(ClientLevel level, int cx, int cz, float[] v, Long2IntOpenHashMap cache, BlockPos.MutableBlockPos p) {
         int[] out = new int[v.length / STRIDE];
-        for (int i = 0, j = 0; i < v.length; i += STRIDE, j++) {
-            int bx = cx * 16 + (int) Math.floor(v[i] + v[i + 5] * 0.5f), by = (int) Math.floor(v[i + 1] + v[i + 6] * 0.5f),
-                    bz = cz * 16 + (int) Math.floor(v[i + 2] + v[i + 7] * 0.5f);
-            long lk = BlockPos.asLong(bx, by, bz);
-            int light = cache.get(lk);
-            if (light == Integer.MIN_VALUE) {
-                // that block may itself hold the light (a parapet's own partial top block, the ground a wall's foot is
-                // buried in): its light is 0, which would smear black across the face; take the first open block above
-                p.set(bx, by, bz);
-                for (int up = 0; up < 4 && occludes(level, p); up++) p.move(0, 1, 0);
-                light = LevelRenderer.getLightColor(level, p);
-                cache.put(lk, light);
-            }
-            out[j] = light;
+        for (int i = 0, j = 0; i < v.length; i += STRIDE, j++)
+            out[j] = light(level, cx * 16 + (int) Math.floor(v[i] + v[i + 5] * 0.5f), (int) Math.floor(v[i + 1] + v[i + 6] * 0.5f),
+                    cz * 16 + (int) Math.floor(v[i + 2] + v[i + 7] * 0.5f), cache, p);
+        return out;
+    }
+
+    /**
+     * As lights, but the vertices of each range {from, to} with a point {x, y, z} (chunk-relative, y absolute) take that
+     * point's block's light (TunnelFixtureClient: a guide sign's face and legend lit as one).
+     */
+    static int[] lights(ClientLevel level, int cx, int cz, float[] v, List<int[]> ranges, List<double[]> points, Long2IntOpenHashMap cache,
+                        BlockPos.MutableBlockPos p) {
+        int[] out = lights(level, cx, cz, v, cache, p);
+        for (int k = 0; k < ranges.size(); k++) {
+            double[] q = points.get(k);
+            int light = light(level, cx * 16 + (int) Math.floor(q[0]), (int) Math.floor(q[1]), cz * 16 + (int) Math.floor(q[2]), cache, p);
+            for (int j = ranges.get(k)[0]; j < Math.min(out.length, ranges.get(k)[1]); j++) out[j] = light;
         }
         return out;
+    }
+
+    /** The light of block (bx, by, bz), looked up once per frame (cache). */
+    private static int light(ClientLevel level, int bx, int by, int bz, Long2IntOpenHashMap cache, BlockPos.MutableBlockPos p) {
+        long lk = BlockPos.asLong(bx, by, bz);
+        int light = cache.get(lk);
+        if (light == Integer.MIN_VALUE) {
+            // that block may itself hold the light (a parapet's own partial top block, the ground a wall's foot is
+            // buried in): its light is 0, which would smear black across the face; take the first open block above
+            p.set(bx, by, bz);
+            for (int up = 0; up < 4 && occludes(level, p); up++) p.move(0, 1, 0);
+            light = LevelRenderer.getLightColor(level, p);
+            cache.put(lk, light);
+        }
+        return light;
     }
 
     /** Built and drawn pavement chunks and the bridge chunks among them, for /afl roads and the dev harness. */

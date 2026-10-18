@@ -205,7 +205,7 @@ S1 与 S2 的差别不只是边界数据：地形起伏（Y p90 124 vs 115，坡
 
 ## 7. 实测（隔离开发客户端，2026-10-14）
 
-运行方式：`gradlew runClient --offline -PaflWithoutShaders -I src/dev/federal-c2-client.init.gradle -Pc2="mode=create|open;world=名字;preset=预设;seed=种子;tag=标记;minutes=超时;verify=基线报告"`。2026-10-14 加了 `mode=ui`（走原版建世界界面，可加 `type=` 切类型，§12.3）。
+运行方式：`gradlew runClient --offline -PaflWithoutShaders -I src/dev/federal-c2-client.init.gradle -Pc2="mode=create|open;world=名字;preset=预设;seed=种子;tag=标记;minutes=超时;verify=基线报告"`。2026-10-14 加了 `mode=ui`（走原版建世界界面，可加 `type=` 切类型，§12.3）。2026-10-16（C3.3b）起，幸存者 V0 在新世界弹的两个窗口（会暂停游戏）由测试程序直接回答，不显示：起名用账号名，房主的 NORMAL / HARD 选 NORMAL（`C2HarnessClient#onNamePrompt`）。
 
 - 运行目录 `build/federal-c2-client/`，存档全部是新建的测试存档；
 - 客户端自己建 / 开世界，服务器端探针（`dev/worldgen/C2Probe`）在玩家进入后逐个生成测点（阻塞 FULL 区块），写报告到 `afl_c2_probe/`，存盘退出；看门狗超时强退；

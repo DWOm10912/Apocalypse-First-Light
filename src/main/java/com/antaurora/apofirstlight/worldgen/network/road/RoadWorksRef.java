@@ -18,7 +18,8 @@ public final class RoadWorksRef {
 
     /**
      * The rock a tunnel keeps round its bores and under its approaches against caves and carvers at block column (x, z):
-     * {lo, hi} (TunnelWorks#rock), null without works or away from a tunnel.
+     * {lo, hi} (TunnelWorks#rock), or the ground kept under a town's footprint (TownWorks#rock); null without works or
+     * away from both.
      */
     public double[] rock(int x, int z) {
         RoadWorks w = works;
@@ -28,7 +29,10 @@ public final class RoadWorksRef {
         if (c[0] != w || c[1] == null || (long) c[1] != key) {
             c[0] = w;
             c[1] = key;
-            c[2] = TunnelWorks.rock(w, x, z);
+            double[] r = TunnelWorks.rock(w, x, z);
+            // a town's footprint: ROCK under its finished surface (Town Framework V1, 2026-10-17)
+            if (r == null && !w.towns().isEmpty()) r = w.towns().rock(x, z);
+            c[2] = r;
         }
         return (double[]) c[2];
     }

@@ -32,6 +32,9 @@ import java.util.TreeSet;
  *   is left of its collision is drawn as a plain concrete box, and the faces of the intact cells around it are closed.
  *   A wing cell with no structure at all is simply absent (the chunk pass leaves it out where the ground already stands
  *   at the embankment's height, or over water).</li>
+ *   <li>overpasses (C3.3b group 2, RoadDesign.Span#over): the same deck, bent and abutment walls over the road they span
+ *   (RoadWorks.Column#deck); no wing walls (the approach embankment spills through under the deck's ends); a broken deck
+ *   cell cuts the mesh from its underside up and a dug pavement cell under it up to its pavement only.</li>
  * </ul>
  * Texture: the reinforced concrete sprite, 1 m per tile. World triangles are clipped to the chunk (RoadMesh.clipInto);
  * the repairs of broken cells are chunk-relative already.
@@ -146,7 +149,7 @@ public final class BridgeMesh {
      */
     public static double wingStrip(RoadDesign d, RoadDesign.Span sp, double sOut, double u) {
         double v = Math.abs(u);
-        if (footprint(d.section, v) || v > Math.min(WALL_REACH, sp.reach(sOut, u)) + 1e-9) return Double.NaN;
+        if (sp.over() || footprint(d.section, v) || v > Math.min(WALL_REACH, sp.reach(sOut, u)) + 1e-9) return Double.NaN;
         double[] breaks = breaks(d.section);
         int k = Arrays.binarySearch(breaks, u);
         if (k >= 0) return wingTop(d, sOut, u);
@@ -169,7 +172,9 @@ public final class BridgeMesh {
         // a box culvert's concrete (group D; never within NEAR of a bridge: RoadStructures)
         double[] c = works.culvertSolid(x, z);
         if (c != null) return c;
-        RoadWorks.Hit h = works.hit(x, z, RoadWorks.REACH);
+        // an overpass's deck over another road (C3.3b group 2) is the structure there
+        RoadWorks.Hit h = works.overHit(x, z);
+        if (h == null) h = works.hit(x, z, RoadWorks.REACH);
         if (h == null || h.beyond() > 0) return null;
         RoadDesign d = h.road();
         double s = h.s(), u = h.u(), v = h.v();
@@ -346,12 +351,15 @@ public final class BridgeMesh {
         if (!near) return out;
         for (int lz = -1; lz <= 16; lz++) for (int lx = -1; lx <= 16; lx++) {
             int x = cx * 16 + lx, z = cz * 16 + lz;
-            RoadWorks.Hit h = works.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
+            // an overpass's deck (C3.3b group 2) stands over the finish of the road under it
+            RoadWorks.Hit h = works.overHit(x + 0.5, z + 0.5);
+            if (h == null) h = works.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
             if (h == null || h.beyond() > 0) continue;
             RoadDesign d = h.road();
             RoadDesign.Span sp = d.span(h.sc());
             if (sp == null) continue;
             RoadWorks.Column c = works.column(x, z, LOW);
+            if (c.deck() != null) c = c.deck();
             boolean end = RoadWorks.band(d, sp, x, z);
             int side = h.u() < 0 ? -1 : 1, i = RoadCells.index(lx, lz);
             double v = h.v();
@@ -427,13 +435,32 @@ public final class BridgeMesh {
                                         Map<Integer, RoadCells.Cell> cells, BitSet dug, Map<Integer, Expect> expect, Map<Integer, Found> found) {
         List<Triangle> tris = new ArrayList<>(pavement);
         tris.addAll(chunk(works, cx, cz, expect, found));
-        boolean[] removed = broken(expect, found);
-        for (int i = dug.nextSetBit(0); i >= 0; i = dug.nextSetBit(i + 1))
-            if (RoadCells.inner(i)) removed[RoadCells.lx(i) | RoadCells.lz(i) << 4] = true;
+        // the removed cells, each over a height range: a broken structure cell from its mesh's underside up (the road under
+        // an overpass's deck stays, C3.3b group 2), a dug paved cell up to its pavement (the deck over it stays)
+        boolean[] removed = new boolean[256];
+        double[] lo = new double[256], hi = new double[256];
+        Arrays.fill(lo, Double.POSITIVE_INFINITY);
+        Arrays.fill(hi, Double.NEGATIVE_INFINITY);
+        if (found != null)
+            for (Expect e : expect.values()) {
+                if (!RoadCells.inner(e.index()) || e.probe() || state(e, found.get(e.index())) != State.BROKEN) continue;
+                int k = RoadCells.lx(e.index()) | RoadCells.lz(e.index()) << 4;
+                removed[k] = true;
+                lo[k] = Math.min(lo[k], Double.isNaN(e.meshBottom()) ? Double.NEGATIVE_INFINITY : e.meshBottom() - 0.5);
+                hi[k] = Double.POSITIVE_INFINITY;
+            }
+        for (int i = dug.nextSetBit(0); i >= 0; i = dug.nextSetBit(i + 1)) {
+            if (!RoadCells.inner(i)) continue;
+            int k = RoadCells.lx(i) | RoadCells.lz(i) << 4;
+            RoadCells.Cell cl = cells.get(i);
+            removed[k] = true;
+            lo[k] = Double.NEGATIVE_INFINITY;
+            hi[k] = Math.max(hi[k], cl == null ? Double.POSITIVE_INFINITY : cl.y() + 2.0);
+        }
         boolean any = false;
         for (boolean b : removed) any |= b;
-        if (any) tris = RoadMesh.without(tris, removed);
-        if (!dug.isEmpty()) tris.addAll(RoadCells.walls(rs, cells, dug, cx, cz));
+        if (any) tris = RoadMesh.without(tris, removed, lo, hi);
+        if (!dug.isEmpty()) tris.addAll(RoadCells.walls(works, rs, cells, dug, cx, cz));
         tris.addAll(repairs(expect, found, cells));
         // the tunnels (Tunnel V1): drawn whole, never cut by broken cells (no damage scan for their cells yet)
         tris.addAll(TunnelMesh.chunk(works, cx, cz));

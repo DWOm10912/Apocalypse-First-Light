@@ -39,6 +39,21 @@ public final class TunnelFixtures {
         }
     }
 
+    /**
+     * A handrail segment of length len in its frame (x along it, centred; y up from the walkway; z out of the wall), as
+     * boxes {x0, y0, z0, x1, y1, z1}: the tube (TunnelMesh.RAIL_H high, RAIL_X off the wall, 2 RAIL square), then an arm
+     * from the wall under the tube's back half BRACKET_IN in from each end (one in the middle of a short piece). The client
+     * draws them (client/road/TunnelParts), the hit mesh is them (meshhit/TunnelFixtureHits).
+     */
+    public static double[][] handrail(double len) {
+        double h = len / 2, r = TunnelMesh.RAIL, y = TunnelMesh.RAIL_H, z = TunnelMesh.RAIL_X;
+        double[] at = len >= 2 * TunnelMesh.BRACKET_IN + 0.2 ? new double[]{-h + TunnelMesh.BRACKET_IN, h - TunnelMesh.BRACKET_IN} : new double[]{0};
+        double[][] out = new double[1 + at.length][];
+        out[0] = new double[]{-h, y - r, z - r, h, y + r, z + r};
+        for (int i = 0; i < at.length; i++) out[1 + i] = new double[]{at[i] - 0.03, y - r - 0.06, 0, at[i] + 0.03, y - r, z};
+        return out;
+    }
+
     /** Whether a part collides (the thin ones on a wall only have an outline: plates, signs, luminaires, cameras). */
     public static boolean collides(String mesh) {
         return switch (mesh) {
@@ -82,6 +97,20 @@ public final class TunnelFixtures {
             case "clearance_plate" -> new double[][]{{-1.2, 0, 0, 1.2, 0.53, MIN}};
             case "egress_sign" -> new double[][]{{-0.6, 0, 0, 0.6, 0.3, MIN}};
             case "name_plate" -> new double[][]{{-3.2, -0.4, 0, 3.2, 0.4, MIN}};
+            // road signs (C3.3b, RoadSigns): the face from its bottom at RoadSigns.BOTTOM, the post under it
+            case "stop_sign" -> new double[][]{{-RoadSigns.STOP / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.STOP / 2, RoadSigns.BOTTOM + RoadSigns.STOP, 0.17},
+                    {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};
+            case "side_road_sign" -> new double[][]{{-RoadSigns.DIAMOND / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.DIAMOND / 2, RoadSigns.BOTTOM + RoadSigns.DIAMOND, 0.17},
+                    {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};
+            case "do_not_enter_sign" -> new double[][]{{-RoadSigns.DO_NOT_ENTER / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.DO_NOT_ENTER / 2,
+                    RoadSigns.BOTTOM + RoadSigns.DO_NOT_ENTER, 0.17}, {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};
+            case "wrong_way_sign" -> new double[][]{{-RoadSigns.WRONG_WAY_W / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.WRONG_WAY_W / 2,
+                    RoadSigns.BOTTOM + RoadSigns.WRONG_WAY_H, 0.17}, {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};
+            case "curve_sign" -> new double[][]{{-RoadSigns.DIAMOND / 2, RoadSigns.CURVE_BOTTOM, -0.07, RoadSigns.DIAMOND / 2, RoadSigns.CURVE_BOTTOM + RoadSigns.DIAMOND, 0.17},
+                    {-RoadSigns.PLAQUE / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.PLAQUE / 2, RoadSigns.BOTTOM + RoadSigns.PLAQUE, 0.17},
+                    {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};
+            // interchange guide signs (C3.3b group 2): the panel as wide as its legend (GuideSigns, bone: the legend)
+            case "guide_sign" -> GuideSigns.boxes(bone);
             // the rail with its brackets, from the wall (TunnelMesh.RAIL_H, RAIL_X, RAIL)
             case "handrail" -> {
                 double h = railLength(bone) / 2;
@@ -312,7 +341,7 @@ public final class TunnelFixtures {
         return ((long) x & 0x3FFFFFFL) << 38 | ((long) z & 0x3FFFFFFL) << 12 | (long) y & 0xFFFL;
     }
 
-    /** Every tunnel part of a road network, by the block columns its boxes reach. */
+    /** Every tunnel part and road sign of a road network, by the block columns its boxes reach. */
     public static final class Index {
         private final Map<Long, Part[]> columns;
         private final int parts;
@@ -322,19 +351,22 @@ public final class TunnelFixtures {
             this.parts = parts;
         }
 
-        static Index of(List<RoadDesign> roads) {
+        static Index of(List<RoadDesign> roads) { return of(roads, List.of()); }
+
+        /** Every tunnel part of the roads and the other parts given (the road signs, C3.3b). */
+        static Index of(List<RoadDesign> roads, List<TunnelMesh.Placement> others) {
+            List<TunnelMesh.Placement> all = new ArrayList<>(others);
+            for (RoadDesign d : roads) for (RoadDesign.Tunnel tn : d.tunnels) all.addAll(TunnelMesh.all(d, tn));
             Map<Long, List<Part>> m = new HashMap<>();
             int parts = 0;
-            for (RoadDesign d : roads)
-                for (RoadDesign.Tunnel tn : d.tunnels)
-                    for (TunnelMesh.Placement p : TunnelMesh.all(d, tn)) {
-                        Part part = new Part(p);
-                        parts++;
-                        double[] r = part.bounds;
-                        for (int z = (int) Math.floor(r[2]); z <= (int) Math.floor(r[5]); z++)
-                            for (int x = (int) Math.floor(r[0]); x <= (int) Math.floor(r[3]); x++)
-                                m.computeIfAbsent(key(x, z), k -> new ArrayList<>()).add(part);
-                    }
+            for (TunnelMesh.Placement p : all) {
+                Part part = new Part(p);
+                parts++;
+                double[] r = part.bounds;
+                for (int z = (int) Math.floor(r[2]); z <= (int) Math.floor(r[5]); z++)
+                    for (int x = (int) Math.floor(r[0]); x <= (int) Math.floor(r[3]); x++)
+                        m.computeIfAbsent(key(x, z), k -> new ArrayList<>()).add(part);
+            }
             Map<Long, Part[]> out = new HashMap<>();
             for (Map.Entry<Long, List<Part>> e : m.entrySet()) out.put(e.getKey(), e.getValue().toArray(new Part[0]));
             return new Index(out, parts);

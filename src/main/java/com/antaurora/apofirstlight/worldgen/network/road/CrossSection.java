@@ -7,7 +7,8 @@ package com.antaurora.apofirstlight.worldgen.network.road;
  *   <li>{@link #R4}: the rural four-lane interstate, the accepted R4 sample section (docs/worldgen/highway_r4_sample_v1.md,
  *   section B; dev class R4Section), same numbers and the same functions;</li>
  *   <li>{@link #R2}: the two-lane state highway (C3.3a): 3.65 m lanes, 2.4 m paved shoulders, undivided, crowned on the
- *   centreline; its roadside is the R4 template at the state's scale.</li>
+ *   centreline; its roadside is the R4 template at the state's scale;</li>
+ *   <li>{@link #RAMP}: an interchange ramp (C3.3b group 2): one lane one way, the whole section one plane.</li>
  * </ul>
  * Lateral offset u: 0 on the centreline, positive to the right of the direction of travel of the station (Minecraft XZ,
  * the same convention as RoadCurve). v = |u|. The design datum E(s) is the height of the crown line (R4: the yellow
@@ -48,6 +49,13 @@ public final class CrossSection {
      * bottom (the state's smaller runoff and lower speed).
      */
     public static final CrossSection R2 = new CrossSection("R2", 3.65, 0, 2.4, 0, 1, 0.06, 335, 0.0044 / 3.65, 5.0, 0.8, 1.0);
+    /**
+     * C3.3b group 2 (docs/worldgen/federal_interchanges_c3_3b.md 5): the one-lane, one-way interchange ramp, 60 km/h: one
+     * 4.2 m lane (2.1 each side of the centreline), 1.8 m paved shoulders, the whole section one plane (#oneWay):
+     * normally falling 2 % to the right, superelevated toward the inside of a curve (emax 6 %, AASHTO Rmin 135 m at
+     * 60 km/h), the lane edge 2.1 m from the axis rising by at most 1:167 (0.60 %); clear zone 4 m, ditch 0.8 m deep.
+     */
+    public static final CrossSection RAMP = new CrossSection("RAMP", 2.1, 0, 1.8, 0, 1, 0.06, 135, 0.0060 / 2.1, 4.0, 0.8, 1.0, true);
 
     public final String name;
     public final double lane, inner, outer, median;
@@ -56,11 +64,22 @@ public final class CrossSection {
     public final double halfMedian, crown, lanesOut, edge;
     /** two carriageways with a turf median between them (R4); an undivided road is crowned on its centreline (R2) */
     public final boolean divided;
+    /**
+     * One-way (RAMP): no crown, the lane and both shoulders one plane; laneRight is its slope (positive: falling toward
+     * +u) and laneLeft its negative, so #pavement keeps the two sides' formula.
+     */
+    public final boolean oneWay;
     public final double eMax, rMin, runoffRate;
     public final double clearZone, ditchDepth, ditchBottom;
 
     private CrossSection(String name, double lane, double inner, double outer, double median, int lanes, double eMax, double rMin,
                          double runoffRate, double clearZone, double ditchDepth, double ditchBottom) {
+        this(name, lane, inner, outer, median, lanes, eMax, rMin, runoffRate, clearZone, ditchDepth, ditchBottom, false);
+    }
+
+    private CrossSection(String name, double lane, double inner, double outer, double median, int lanes, double eMax, double rMin,
+                         double runoffRate, double clearZone, double ditchDepth, double ditchBottom, boolean oneWay) {
+        this.oneWay = oneWay;
         this.name = name;
         this.lane = lane;
         this.inner = inner;
@@ -80,11 +99,15 @@ public final class CrossSection {
         this.ditchBottom = ditchBottom;
     }
 
-    /** The section of a route class (RoadClassSpec id): interstate R4, state R2; others are not built yet. */
+    /**
+     * The section of a route class (RoadClassSpec id): interstate R4, state R2, the interchange ramps (C3.3b group 2, not
+     * a planner class: RoadInterchanges builds them) RAMP; others are not built yet.
+     */
     public static CrossSection of(String roadClass) {
         return switch (roadClass) {
             case "interstate" -> R4;
             case "state" -> R2;
+            case "ramp" -> RAMP;
             default -> throw new IllegalArgumentException("no built cross-section for class " + roadClass);
         };
     }
@@ -113,6 +136,12 @@ public final class CrossSection {
         double e = superelevation(curvature);
         double w = smooth((e - 0.015) / 0.01);
         double inside = Math.max(LANE_SLOPE, e), outside = LANE_SLOPE * (1 - w) - e * w;
+        if (oneWay) {
+            // one plane: normally falling to the right; in a left-hand curve rotated through flat to falling left (the
+            // outside rule of a two-lane road's outer half)
+            double k = curvature > 0 ? inside : curvature < 0 ? outside : LANE_SLOPE;
+            return section(-k, k, e);
+        }
         double left, right;
         if (curvature > 0) { right = inside; left = outside; } else if (curvature < 0) { left = inside; right = outside; } else { left = right = LANE_SLOPE; }
         return lanes(left, right, e);
@@ -121,6 +150,11 @@ public final class CrossSection {
     /** A cross-section from the two lane slopes (shoulders derived). */
     public static Cross lanes(double left, double right, double e) {
         return new Cross(left, right, innerSlope(left), innerSlope(right), outerSlope(left), outerSlope(right), e);
+    }
+
+    /** #lanes for this section: a one-way section's shoulders lie in its lanes' plane. */
+    public Cross section(double left, double right, double e) {
+        return oneWay ? new Cross(left, right, 0, 0, left, right, e) : lanes(left, right, e);
     }
 
     /**
@@ -159,6 +193,7 @@ public final class CrossSection {
         int side = u < 0 ? -1 : 1;
         double v = Math.abs(u);
         if (!paved(v)) throw new IllegalArgumentException("NOT_PAVED " + u);
+        if (oneWay) return -c.lane(side) * v;
         if (v <= crown) return -c.inner(side) * (crown - v);
         if (v <= lanesOut) return -c.lane(side) * (v - crown);
         return -c.lane(side) * (lanesOut - crown) - c.outer(side) * (v - lanesOut);
@@ -168,6 +203,7 @@ public final class CrossSection {
     public double pavement(double lane, double u) {
         double v = Math.abs(u);
         if (!paved(v)) throw new IllegalArgumentException("NOT_PAVED " + u);
+        if (oneWay) return -lane * v;
         if (v <= crown) return -innerSlope(lane) * (crown - v);
         if (v <= lanesOut) return -lane * (v - crown);
         return -lane * (lanesOut - crown) - outerSlope(lane) * (v - lanesOut);

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
+import com.antaurora.apofirstlight.worldgen.network.town.TownWorks;
 import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.block.TunnelFixtureBlock;
@@ -29,26 +30,39 @@ import javax.annotation.Nullable;
  *   the north-west to south-east diagonal);</li>
  *   <li>road_structure on top of a column (a bridge's parapet and wing walls, a tunnel's walkway, safety barrier, walls and
  *   portals): its collision top, concrete, blocking;</li>
- *   <li>road_surface not under the design's pavement (a deck's edge strip): its collision top, flat.</li>
+ *   <li>road_surface not under the design's pavement (a deck's edge strip): its collision top, flat;</li>
+ *   <li>a framework town's pavement (Town Framework V1, 2026-10-18; TownWorks#spot): its streets' asphalt (crowned),
+ *   curbs, sidewalks and driveway aprons (concrete) at their design height, the normal by differences over the same
+ *   material (a curb's face is no slope); the town's turf (utility strips, lots, yards) as graded turf above.</li>
  * </ul>
  * Read only: no chunk is loaded (an unloaded chunk gives nothing), no state kept; the same network (RoadStructureBlock's
  * bound works) on both sides. Called per wheel point many times a tick: #sample(Level, double, double, double, Out)
- * allocates nothing (per-thread buffers; the curve and pavement lookups through their allocation-free paths, which
- * give the same numbers as RoadDesign#pavementY / RoadCurve#local; RoadSurfaceCheck asserts it).
+ * allocates nothing on the roads (per-thread buffers; the curve and pavement lookups through their allocation-free paths,
+ * which give the same numbers as RoadDesign#pavementY / RoadCurve#local; RoadSurfaceCheck asserts it); in a town the
+ * footprint lookup (TownWorks#spot) allocates a few short-lived objects per point.
  */
 public final class RoadSurfaceQuery {
     private RoadSurfaceQuery() {}
 
     /** How far from yHint a surface may lie to count (a layer farther away is another level: under a bridge), m. */
     public static final double LAYER = 1.5;
+    /** An attached ramp this close to its interstate's pavement is on it (else it passes over it on a deck), m. */
+    static final double SAME_LEVEL = 0.5;
     /**
      * How far the column's top block may lie under the design's pavement (a deck or turf under the asphalt's edge and
      * bevels) and how far over it (the blocks' 1/32 layers, a cell's cross slope) and still be that pavement, m. Higher:
      * something stands on the road (a tunnel portal's barrier on the shoulder), its own surface.
      */
     static final double PAVE_MATCH = 0.6, COVER = 0.1;
+    /**
+     * A town's COVER: its paved column's collision is the highest of the column's nine points (TownWorks#pavedRange), a
+     * curb's top over the gutter where the column straddles the curb (2026-10-18), m.
+     */
+    static final double TOWN_COVER = 0.25;
     /** Step of the pavement's slope differences along and across the road, m. */
     static final double STEP = 0.05;
+    /** How far past a road's end a point still lies on its end (RoadCurve#local's own reach), m. */
+    static final double END = 0.01;
 
     /** The road's surface kinds (the vehicle maps them to its grip: asphalt 1.0, concrete 0.95, turf 0.70). */
     public enum Surface { ASPHALT, CONCRETE, TURF }
@@ -61,6 +75,8 @@ public final class RoadSurfaceQuery {
         public double height, nx, ny = 1, nz;
         public Surface surface = Surface.ASPHALT;
         public boolean blocking;
+        /** Set by #pavement: the pavement found is a town's (its blocks may stand higher over it: TOWN_COVER). */
+        boolean town;
 
         void set(double height, double nx, double ny, double nz, Surface surface, boolean blocking) {
             this.height = height;
@@ -99,7 +115,7 @@ public final class RoadSurfaceQuery {
         LevelChunk chunk = level.getChunk(cx, cz);
         Buffers buf = BUFFERS.get();
         boolean paved = pavement(works, x, z, yHint, out, buf.curve);
-        double pave = out.height;
+        double pave = out.height, cover = out.town ? TOWN_COVER : COVER;
         BlockPos.MutableBlockPos p = buf.pos;
         int top = (int) Math.floor(yHint + LAYER), bottom = (int) Math.floor(yHint - LAYER) - 1;
         Block surface = AflBlocks.ROAD_SURFACE.get(), structure = AflBlocks.ROAD_STRUCTURE.get(), turf = AflBlocks.GRADED_TURF.get();
@@ -112,7 +128,7 @@ public final class RoadSurfaceQuery {
             double t;
             if (b == surface) {
                 t = y + s.getValue(RoadSurfaceBlock.LAYERS) / 32.0;
-                if (paved && pavement(pave, t)) return true;
+                if (paved && pavement(pave, t, cover)) return true;
                 if (!near(t, yHint)) return false;
                 out.set(t, 0, 1, 0, Surface.ASPHALT, false);
                 return true;
@@ -127,7 +143,7 @@ public final class RoadSurfaceQuery {
                 else { gx = se - sw; gz = sw - nw; }
                 t = base + nw + gx * fx + gz * fz;
                 // the turf just under the asphalt's edge and bevels: the wheel is on the pavement
-                if (paved && pavement(pave, t)) return true;
+                if (paved && pavement(pave, t, cover)) return true;
                 if (!near(t, yHint)) return false;
                 double inv = 1 / Math.sqrt(gx * gx + 1 + gz * gz);
                 out.set(t, -gx * inv, inv, -gz * inv, Surface.TURF, false);
@@ -137,7 +153,7 @@ public final class RoadSurfaceQuery {
             if (shape.isEmpty()) continue;   // plants, water: not what a wheel stands on
             if (b != structure) return false; // covered by some other block: the vehicle's blocks decide
             t = y + shape.max(Direction.Axis.Y);
-            if (paved && pavement(pave, t)) return true;
+            if (paved && pavement(pave, t, cover)) return true;
             if (!near(t, yHint)) return false;
             out.set(t, 0, 1, 0, Surface.CONCRETE, true);
             return true;
@@ -147,8 +163,8 @@ public final class RoadSurfaceQuery {
 
     private static boolean near(double t, double yHint) { return Math.abs(t - yHint) <= LAYER; }
 
-    /** Whether a block top t is the design's pavement pave (#PAVE_MATCH, #COVER). */
-    private static boolean pavement(double pave, double t) { return t <= pave + COVER && t >= pave - PAVE_MATCH; }
+    /** Whether a block top t is the design's pavement pave (#PAVE_MATCH, cover: #COVER or #TOWN_COVER). */
+    private static boolean pavement(double pave, double t, double cover) { return t <= pave + cover + 1e-9 && t >= pave - PAVE_MATCH; }
 
     /**
      * The design's pavement under (x, z) nearest to yHint within LAYER over every road whose paved band holds the point
@@ -160,16 +176,25 @@ public final class RoadSurfaceQuery {
     }
 
     private static boolean pavement(RoadWorks works, double x, double z, double yHint, Out out, RoadCurve.Scratch k) {
+        out.town = false;
         RoadDesign[] near = works.roadsNear(x, z);
-        if (near == null) return false;
+        if (near == null) near = NONE;
         RoadDesign best = null;
         double bs = 0, bu = 0, by = 0, bd = Double.POSITIVE_INFINITY;
         for (RoadDesign d : near) {
             CrossSection sec = d.section;
             if (!d.curve.local(x, z, sec.edge + 0.5, 0, k)) continue;
-            double s = k.s, u = k.u;
-            if (s < 0 || s > d.length || !sec.paved(Math.abs(u))) continue;
-            double y = d.pavementYAt(s, u), dist = Math.abs(y - yHint);
+            // RoadCurve#local takes a point up to 1 cm past a road's end onto it: on the end, never a gap (2026-10-18: a road
+            // exactly 2808.00 m long missed its last line of samples by round-off)
+            double s = Math.max(0, Math.min(d.length, k.s)), u = k.u;
+            if (k.s < -END || k.s > d.length + END || !sec.paved(Math.abs(u))) continue;
+            // an attached ramp (C3.3b group 2) on its interstate's paved band: the interstate's pavement (on its level: not
+            // where the ramp passes over it on a deck, C3.3b group 3)
+            double y = d.pavementYAt(s, u);
+            RoadDesign host = d.attach == null ? null : works.attachedHost(d);
+            if (host != null && host.curve.local(x, z, host.section.edge + 0.5, 0, k) && k.s >= 0 && k.s <= host.length
+                    && host.section.paved(Math.abs(k.u)) && Math.abs(host.pavementYAt(k.s, k.u) - y) < SAME_LEVEL) continue;
+            double dist = Math.abs(y - yHint);
             if (dist > LAYER || dist >= bd) continue;
             best = d;
             bs = s;
@@ -177,9 +202,56 @@ public final class RoadSurfaceQuery {
             by = y;
             bd = dist;
         }
+        // a junction pad (C3.3b): its own height and normal
+        Junction pad = works.pad(x, z);
+        if (pad != null) {
+            double y = pad.height(x, z), dist = Math.abs(y - yHint);
+            if (dist <= LAYER && dist < bd) {
+                double[] n = pad.normal(x, z);
+                out.set(y, n[0], n[1], n[2], Surface.ASPHALT, false);
+                return true;
+            }
+        }
+        // a framework town's pavement (its streets; a road's formation through a town is the road's, found above)
+        TownWorks towns = works.towns();
+        if (!towns.isEmpty()) {
+            TownWorks.Spot sp = towns.spot(x, z);
+            if (sp != null && sp.part().paved()) {
+                double dist = Math.abs(sp.h() - yHint);
+                if (dist <= LAYER && dist < bd) {
+                    townNormal(towns, x, z, sp, out);
+                    out.town = true;
+                    return true;
+                }
+            }
+        }
         if (best == null) return false;
         normal(best, bs, bu, by, out, k);
         return true;
+    }
+
+    private static final RoadDesign[] NONE = new RoadDesign[0];
+
+    /**
+     * A town pavement point's unit upward normal into out (with its height and kind: asphalt, or concrete for a curb, a
+     * sidewalk or a driveway's apron): central differences of the spot heights STEP each way, one-sided where the other
+     * point is another material or off the pavement (the curb's face, the pavement's edge), flat where both are.
+     */
+    static void townNormal(TownWorks towns, double x, double z, TownWorks.Spot sp, Out out) {
+        boolean asphalt = sp.part() == TownWorks.Part.ASPHALT;
+        double gx = townSlope(towns, x, z, sp, asphalt, STEP, 0), gz = townSlope(towns, x, z, sp, asphalt, 0, STEP);
+        double inv = 1 / Math.sqrt(gx * gx + 1 + gz * gz);
+        out.set(sp.h(), -gx * inv, inv, -gz * inv, asphalt ? Surface.ASPHALT : Surface.CONCRETE, false);
+    }
+
+    private static double townSlope(TownWorks towns, double x, double z, TownWorks.Spot sp, boolean asphalt, double dx, double dz) {
+        TownWorks.Spot a = towns.spot(x + dx, z + dz), b = towns.spot(x - dx, z - dz);
+        boolean ua = a != null && a.part().paved() && (a.part() == TownWorks.Part.ASPHALT) == asphalt;
+        boolean ub = b != null && b.part().paved() && (b.part() == TownWorks.Part.ASPHALT) == asphalt;
+        if (ua && ub) return (a.h() - b.h()) / (2 * STEP);
+        if (ua) return (a.h() - sp.h()) / STEP;
+        if (ub) return (sp.h() - b.h()) / STEP;
+        return 0;
     }
 
     /**

@@ -93,8 +93,10 @@ public final class RoadNetworkRuntime {
         // error building the network leaves the world without roads (logged), never a crash at world load (2026-10-15)
         String builtJson;
         java.util.List<com.antaurora.apofirstlight.worldgen.network.road.RoadDesign> designs;
+        java.util.List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns = java.util.List.of();
         try {
-            RoadNetworkBuild.Result b = RoadNetworkBuild.build(json);
+            // with the terrain: the framework towns' exits and plans too (Town Framework V1, RoadNetworkBuild#towns)
+            RoadNetworkBuild.Result b = RoadNetworkBuild.build(json, terrain);
             for (String line : b.report()) ApocalypseFirstLight.LOGGER.info("[AFL roads] {}", line);
             if (b.conflicts() > 0) ApocalypseFirstLight.LOGGER.warn("[AFL roads] {} stations where two built roads' works still meet", b.conflicts());
             // group D: the box culverts and the wing walls' reach, decided here from the terrain and carried to the clients
@@ -110,14 +112,17 @@ public final class RoadNetworkRuntime {
                 structured = b.json();
             }
             ApocalypseFirstLight.LOGGER.info("[AFL roads] built network: {} roads in {} ms", b.routes().size(), (System.nanoTime() - t1) / 1_000_000);
-            builtJson = structured;
+            // the towns ride on the same JSON (a "towns" member after the routes), the clients read them back
+            towns = b.towns();
+            builtJson = com.antaurora.apofirstlight.worldgen.network.town.TownPlan.append(structured, towns);
             designs = RoadNetworkJson.designs(builtJson);
         } catch (RuntimeException e) {
             ApocalypseFirstLight.LOGGER.error("[AFL roads] cannot build the road network for seed {}; this world gets no roads", seed, e);
             builtJson = RoadNetworkJson.write(RoadNetworkPlan.VERSION, RoadNetworkBuild.STAGE, java.util.List.of());
             designs = java.util.List.of();
+            towns = java.util.List.of();
         }
-        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water), plan);
+        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(towns)), plan);
         CACHE.put(plan, n);
         return n;
     }

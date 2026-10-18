@@ -609,6 +609,30 @@
       "unit_mass_kg": 12,
       "estimated": true
     },
+    "apocalypse_firstlight:road_stop_sign": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_side_road_sign": {
+      "unit_mass_kg": 15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_curve_sign": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_do_not_enter_sign": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_wrong_way_sign": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_guide_sign": {
+      "unit_mass_kg": 120,
+      "estimated": true
+    },
     "apocalypse_firstlight:modern_office_chair": {
       "unit_mass_kg": 12,
       "estimated": true

@@ -137,7 +137,13 @@ public final class AflCreativeTabs {
             tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.EGRESS_SIGN),
             tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.NAME_PLATE),
             tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.EMERGENCY_CABINET),
-            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.HANDRAIL));
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.HANDRAIL),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.STOP_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.SIDE_ROAD_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.CURVE_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.DO_NOT_ENTER_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.WRONG_WAY_SIGN),
+            tunnelFixture(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.GUIDE_SIGN));
 
     public static final RegistryObject<CreativeModeTab> FURNITURE = tab("furniture", INDUSTRY, AflItems.VENDING_MACHINE,
             AflItems.INDUSTRIAL_LOCKER,

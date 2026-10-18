@@ -2,17 +2,17 @@
 
 日期：2026-10-14。分支 `feature/federal-highways-c3`（C 的 worktree `AFL-federal-worldgen-v1`，从 master `a650e8d6` 切出），未合并 Main，未 Push。
 C3.3a（2026-10-15）：分支 `feature/federal-highways-c3.3`，从 master `09161ebe` 切出；现状提交 `c42f92f2`，B–D 组 `4f6d6be6`、E 组 `939deb51`（都是用户 2026-10-15 实机 PASS）；已由 Main 合并进 master `6bab93f9`（2026-10-15），未 Push。
-隧道（2026-10-16）：分支 `feature/federal-tunnels`，从 master `6bab93f9` 切出，2026-10-16 用户批准后快进到 master `7507bd11`（皮卡物理第 1、2 包、压草、D 的外部网格和坐姿），未提交的改动带过来，冲突（`gradle.properties` 注释、两个 lang 文件的 Jade 条目）两边都保留；同步后编译、`roadSurfaceCheck`、`vehicleCheck`、隧道部件 GameTest 都通过；隧道 V1、部件可拆 V1.1（都是用户实机 PASS）和道路接地查询都未提交、未合并，见 [隧道 V1](federal_tunnels_v1.md)、[道路接地查询 V1](road_surface_query_v1.md)。
+隧道（2026-10-16）：分支 `feature/federal-tunnels`，从 master `6bab93f9` 切出，2026-10-16 用户批准后快进到 master `7507bd11`（皮卡物理第 1、2 包、压草、D 的外部网格和坐姿），未提交的改动带过来，冲突（`gradle.properties` 注释、两个 lang 文件的 Jade 条目）两边都保留；同步后编译、`roadSurfaceCheck`、`vehicleCheck`、隧道部件 GameTest 都通过；隧道 V1、部件可拆 V1.1（都是用户实机 PASS）和道路接地查询提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送），见 [隧道 V1](federal_tunnels_v1.md)、[道路接地查询 V1](road_surface_query_v1.md)。
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | C3.1 | 在 C2 最终地形上重算 C1 路线，消除超限纵坡；按世界的开关（版本锁） | **已实现，离线验证**；全部是**规划数据**，世界里还没有任何道路方块 |
 | C3.2 | 正式 S1→S2 示范段（`interstate_ew:county_seat-valley_town`）：路面、路基、地形适配、碰撞、桥下水流；桥的网格（10.11） | **已实现**（第 10 节）：离线校验和隔离客户端探针通过；桥网格（surface4，墙脚不再有坑，选框按网格）**用户实机 PASS**（2026-10-15，c33br，没有光影）；未提交，等用户和 Main 定提交与合并；车辆行驶没有测（还没有车辆） |
 | C3.3a | 全国主线：州道 R2 断面、全部 20 段路线合并成 15 条路、交叉处截断、单幅 / 双幅桥、桥墩、涵洞（第 11 节） | **已实现，A–E 组用户 2026-10-15 实机全部 PASS，已合并 master `6bab93f9`**：离线校验通过；隔离客户端新世界探针见 11.8；用户 2026-10-15 实机验收发现的问题按 A–E 组修（11.11），A 组已修、用户 2026-10-15 复验 PASS，已单独合入 master `1eed4ac7`（分支 `fix/c3.3a-turf-seams`）；C3.3a 其余部分在 `feature/federal-highways-c3.3` 上（`c42f92f2`，已同步 master）；B 组用户 2026-10-15 实机复验 PASS（surface7，11.12）；C 组用户接受现状（闪烁已修、复验 PASS）；D 组已实现（箱涵、连续翼墙、墙脚、含水的结构方块，surface8 / `road_works#4`，11.13），离线检查和 GameTest 通过，**用户 2026-10-15 实机 PASS**（5 个箱涵、桥头翼墙）；B–D 组已提交（未合并）；E 组已实现（多柱排架，surface9，11.14），离线检查通过，**用户 2026-10-15 实机 PASS**，提交 `939deb51`；C3.3a 由 Main 整体合并进 master `6bab93f9`；之后 C3.3b → 隧道 |
-| C3.3b | 平交（州道 T / 十字路口）、菱形互通（州道–州际）、州际–州际互通 | 未开始；在这之前低等级路在高等级路的路基外断头 |
+| C3.3b | 平交（州道 T / 十字路口）、菱形互通（州道–州际）、州际–州际互通 | **第一组（州道平交）已实现**（2026-10-16，分支 `feature/federal-junctions-c3.3b`，2026-10-17 已提交到分支，未合并 master，[C3.3b 第一组](federal_junctions_c3_3b.md)）：T 字路口（路口面、R 15 转角、落坡 ≤ 2 %、停车线、双黄线、STOP 和侧向路口警告牌、视距三角形、斜交改直），城镇转角 R 80 连通（拉坡；超过 120° 用 T 字加 64 m 延伸段），弯道警告牌；surface15 / `road_works#7`；离线检查（6 个种子）、GameTest、编译通过；用户 2026-10-16 实机看过，道路 PASS，路牌四处细节（车速改 30 MPH、数字 5、立柱远处透出、选框按网格）修完后用户再看，PASS。**第二组（州道–州际菱形立交）A 包已实现**（2026-10-16，同一分支，2026-10-17 已提交到分支，未合并 master，[C3.3b 第二组](federal_interchanges_c3_3b.md)）：州道改线上跨州际（两跨跨线桥、溢流式桥台、净空 ≥ 5.3 m）、四条单向匝道（附着段贴州际外路肩面）、匝道口 T 字路口、两层列、匝道标线（裁切、三角区斜线、州际点线）、出口匝道口 STOP / DO NOT ENTER / WRONG WAY；surface16 / `road_works#8`；6 个种子建成 13 座；离线检查、GameTest、新世界探针 ic1 通过，用户 2026-10-17 实机 PASS；**B 包指路标志 2026-10-17 已实现**（出口预告牌、出口牌、鼻端 EXIT 牌、州道上的入口指示牌；英里、里程桩出口编号、联邦盾徽，牌面全部英文；可拆部件 `road_guide_sign`；surface17），离线检查、GameTest、新世界探针 ic2 通过，用户 2026-10-17 实机 PASS。**第三组（州际–州际）2026-10-17 已实现，2026-10-18 已提交到分支，未合并 master，用户 2026-10-17 实机基本 PASS（sys1）**（[C3.3b 第三组](federal_systems_c3_3b.md)）：A 包规划层（州际在城里折角处接成一条弯、浅角并线改成 70° 进入，规划版本 `c3_v2`），B 包喇叭形系统互通（直接式匝道 R 314、环形匝道 R 85、半定向匝道 R 125、两座跨线桥净空 ≥ 5.3 m、匝道不压被接的州际）和指路标志（1 MILE / 1/2 MILE 预告、出口牌、鼻端牌、到头那条州际上的分流牌）；surface18；6 个种子建成 4 座，离线检查和 GameTest 通过；建不了系统互通的接点和建不了立交的州道接州际处仍是 C3.3a 的截断 |
 | C3.3c | 县道 + 老宅 H 节点的碎石车道 | 未开始 |
-| 隧道 | 州际双孔 / 州道单孔隧道、洞门、洞内设备（[隧道 V1](federal_tunnels_v1.md)） | **V1 用户实机 PASS**（2026-10-16，世界 `tun4c`；分支 `feature/federal-tunnels`，surface12 / `road_works#6`，未合并）：有隧道的路段照建，洞内设备和洞口设施都是不发光的网格，能碰到的部件有碰撞。隧道部件可拆 V1.1（surface14，2026-10-16，用户实机 PASS，世界 `tun5c`）：设备部件和扶手是独立的部件方块，撬棍拆下，小件掉物品可重新放，大件拆成材料；洞内卡等 Vextris 显卡缓存 |
-| 道路接地查询 | 车辆用的连续路面高度、法线、表面种类、挡车（[RoadSurfaceQuery V1](road_surface_query_v1.md)） | **已实现**（2026-10-16，分支 `feature/federal-tunnels`，未提交）：离线逐路回归（每 0.25 m）通过，隔离客户端新世界 `rsq1` 探针（13 个隧道窗口）通过；Main 还没接调用，没有实车测过；不改世界生成，不动版本锁 |
+| 隧道 | 州际双孔 / 州道单孔隧道、洞门、洞内设备（[隧道 V1](federal_tunnels_v1.md)） | **V1 用户实机 PASS**（2026-10-16，世界 `tun4c`；现在 surface14 / `road_works#6`，提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送））：有隧道的路段照建，洞内设备和洞口设施都是不发光的网格，能碰到的部件有碰撞。隧道部件可拆 V1.1（surface14，2026-10-16，用户实机 PASS，世界 `tun5c`）：设备部件和扶手是独立的部件方块，撬棍拆下，小件掉物品可重新放，大件拆成材料；洞内卡等 Vextris 显卡缓存 |
+| 道路接地查询 | 车辆用的连续路面高度、法线、表面种类、挡车（[RoadSurfaceQuery V1](road_surface_query_v1.md)） | **已实现**（2026-10-16，提交 `850205b7`（用户 2026-10-16 批准），Main 把 master 快进到这个提交（未推送））：离线逐路回归（每 0.25 m，5 个种子）通过，隔离客户端新世界 `rsq1` 探针（13 个隧道窗口）通过；Main 已在 `LevelVehicleWorld#ground` 接上调用（Main 目录，未提交），还没有实车测过；不改世界生成，不动版本锁 |
 | C3.3d | 性能 | 未开始 |
 | C3.4 | 接口与锚点（`H` 节点、占地查询、路边锚点） | 未开始；契约见 [Main/C3 接口契约](main_c3_interface_contract_v1.md) |
 
@@ -21,7 +21,8 @@ C3.3a（2026-10-15）：分支 `feature/federal-highways-c3.3`，从 master `091
 ## 1. 生成的与只在规划里的
 
 - **世界里生成的**（C3.3a 起，只在 C3.3a 之后新建的联邦实验世界里）：全部 20 段路线，同一走廊穿过城镇的几段合并后是 15 条路，共 82.8 km（州际 3 条、州道 12 条），13 座桥、5 个涵洞（surface8 起是箱涵，11.13）。见第 11 节。C3.2 的世界只有示范段 `interstate_ew:county_seat-valley_town`（第 10 节），版本锁不同，不会补铺。
-- **只在规划里的**：全部 60 个节点（互通、平交只是点）。路在交叉处断开（11.3），C3.3b 做路口和互通。路线 JSON 和图在 `design/worldgen/federal_c3/`。
+- **只在规划里的**：州际互通的节点（只是点）。C3.3b 第三组（2026-10-17，2026-10-18 已提交到分支，未合并 master，[C3.3b 第三组](federal_systems_c3_3b.md)）在新世界（`c3_v2` / surface18 起）把放得下的接点建成喇叭形系统互通，放不下的仍在交叉处断开（11.3）。州道之间的 T 字路口和城镇转角 C3.3b 第一组已经建（[C3.3b 第一组](federal_junctions_c3_3b.md)，surface15 起的新世界）；州道接州际在州际中段的地方第二组建成菱形立交（[C3.3b 第二组](federal_interchanges_c3_3b.md)，surface16 起的新世界；立交的指路标志 surface17 起），离州际端头太近、占地内有州际结构物等建不了的地方仍是截断。路线 JSON 和图在 `design/worldgen/federal_c3/`。
+- **城镇**：2026-10-17 起（2026-10-18 已提交到分支，未合并 master，surface19 / `road_works#9` 的新世界）Linden（valley_town）有街道框架：F-40 上自己的菱形立交出口，出口横街进镇接街网，街区、地块、城界牌和街名牌，见 [城镇框架 V1](federal_towns_v1.md)。其他 15 座城镇仍只是路网节点。
 - **不在网络里**：C1 的三段岛链（`ISLAND_BRIDGE`）照旧只在 C1 规划里；县道、私人车道、镇区街道在 C3.1 没有路线（县道由 C3.4 的 `H` 节点和老宅接口带出来；车道归 Main）。
 
 ## 2. 道路等级
@@ -162,7 +163,8 @@ C3.2 的验证见 10.8。
 | `worldgen/network/road/CrossSection.java` | 横断面实例 R4 / R2：车道、路肩、分隔带、超高、路边模板（C3.3a 由 C3.2 的 `R4CrossSection` 改名重写） |
 | `worldgen/network/road/RoadDesign.java` | 一条建成路线：线形、纵断面、横断面、桥跨（含墩位）、R2 禁止超车区 |
 | `worldgen/network/road/RoadNetworkJson.java` | 路网 JSON 读回成设计；结构物到桥跨、涵洞到板涵跨（C3.3a）；箱涵和翼墙长度（`culverts`、`wings`，D 组） |
-| `worldgen/network/road/RoadNetworkBuild.java` | C3.3a：规划 JSON 到建成路网（同走廊合并、转角平滑、交叉截断、冲突检查） |
+| `worldgen/network/road/RoadNetworkBuild.java` | C3.3a：规划 JSON 到建成路网（同走廊合并、转角平滑、交叉截断、冲突检查）；C3.3b：城镇转角 R 80、配对、延伸段、拉坡 |
+| `worldgen/network/road/RoadJunctions.java` / `Junction.java` / `JunctionMesh.java` / `RoadSigns.java` | C3.3b 第一组：T 字路口的建网、几何和高度、网格和标线、路牌（[C3.3b 第一组](federal_junctions_c3_3b.md)） |
 | `worldgen/network/road/RoadNetworkStage.java` | 建成路线清单、版本 |
 | `worldgen/network/road/RoadWorks.java` / `RoadWorksRef.java` | 完工面、每列施工内容；挂在 RandomState 上的工程 |
 | `worldgen/network/road/RoadMesh.java` | 按区块裁好的路面网格（纯 Java） |
@@ -460,6 +462,8 @@ gradlew runClient --offline -I src/dev/federal-c2-client.init.gradle
 - **纵断面**：合并路上的采样点离某段中线 3 m 以内（`ON_LEG`）取那段的设计高程，转角处离开原线的部分线性连接，再在节点附近用等级的纵向 sigma 平滑。
 - **截断**：一条路和同级或更高等级的路冲突（它的工程碰到对方路基，或它的路基碰到对方工程）时，如果冲突从路的端头开始（离端头 80 m 以内，`TOUCH`；中间断开不超过 10 m 算连续），这一头就往回退过冲突段再加 `RoadDesign.END` + 4 m；路中间的冲突是另一条路的端头，由那一条退；端头不停在桥或涵洞里（离 10 m）。结果：截断 56–138 m（州际 NS 在 EW 两侧各退 82 m、98 m），剩余冲突 0。第一版按“端头 900 m 内的冲突都截”，把路中间路口的冲突也截了（sh_mountain 退了 919 m），已改。
 - 截断后的端头和 C3.2 一样：路面 30° 安全斜边，路基 1:4 收到地面。这是临时断头，C3.3b 做路口和互通。
+- C3.3b 第一组（2026-10-16，surface15）起：州道在城镇的 45°–120° 转角按 R 80 合并，州道之间的接入做成 T 字路口，不再截断。见 [C3.3b 第一组](federal_junctions_c3_3b.md)。
+- C3.3b 第二组（2026-10-16，surface16）起：州道接州际中段的地方先做菱形立交（`RoadInterchanges`，在截断之前），立交的路之间的冲突不截；建不了的地方和州际之间仍按这里截断。见 [C3.3b 第二组](federal_interchanges_c3_3b.md)。
 
 ### 11.4 桥：单幅 / 双幅、桥墩
 
@@ -520,12 +524,12 @@ Main 报告 master（C3.2）上随机种子 -6623472830840157834 新建世界崩
 
 ### 11.10 已知问题和没做的
 
-- **路口和互通都没有**：路在交叉处断头（11.3），C3.3b 做。
+- **互通不全**：州道接州际中段的地方 C3.3b 第二组已建菱形立交（A 包，用户 2026-10-17 PASS，[C3.3b 第二组](federal_interchanges_c3_3b.md)）；建不了立交的地方、城镇节点处仍在交叉处断头（11.3）；州际之间第三组（2026-10-17，2026-10-18 已提交到分支，未合并 master）建了喇叭形系统互通，放不下的接点仍断头（[C3.3b 第三组](federal_systems_c3_3b.md)）。州道之间的平交 C3.3b 第一组已做（[C3.3b 第一组](federal_junctions_c3_3b.md)）。
 - **大填方**：州际局部填到 22 m（11.7），是 C3.1 的纵断面；要不要改成高架或调线，留到用户看过实地再定。
 - ~~涵洞是板涵~~：surface8 起是箱涵（11.13），板涵只是后备。
 - ~~隧道不建~~：隧道 V1（surface10，现在 surface14）起有隧道的路段照建，见 [隧道 V1](federal_tunnels_v1.md)。
 - 别的种子上合并转角可能达不到等级半径（11.9，302 m 的例子）。
-- 州际没有中央护栏，路边没有护栏、标志、里程桩（路边设施以后做）。
+- 州际没有中央护栏，路边没有护栏、里程桩，标志只有 C3.3b 第一组的路口和弯道警告牌、第二组出口匝道口的 STOP / DO NOT ENTER / WRONG WAY 和立交的指路标志（B 包，2026-10-17，surface17）；单独立着的路线盾牌、里程牌、门架和悬臂标志还没有（路边设施以后做）。
 - 用户实机验收（2026-10-15）发现的问题见 11.11。
 - 没有测：光影包下的外观；多人和专用服务器；高速移动时的区块生成；性能（C3.3d）。
 

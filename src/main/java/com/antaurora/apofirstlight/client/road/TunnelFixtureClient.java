@@ -41,7 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * the roads: per chunk, every part whose first standing cell lies in the chunk (a part's cells may lie in two chunks;
  * each part is drawn once) baked into one vertex array (TunnelParts), uploaded as Vextris GpuGeometry pieces with a
  * per-vertex light stream, one batch per frame; never a block entity renderer (one draw per part, and Embeddium never
- * calls one for a block entity made after its section was built).
+ * calls one for a block entity made after its section was built). The interchange guide signs' legends (C3.3b group 2)
+ * are a second stream drawn as markings (RoadRenderTypes.MARKING), lit with the sign's face from one point.
  * <p>
  * A chunk is looked at again when a fixture cell in it or next to it loads, changes or goes (TunnelFixtureBlockEntity),
  * and round robin besides (a chunk loaded before its neighbour drew a part whose first cell was in the neighbour);
@@ -54,8 +55,12 @@ public final class TunnelFixtureClient {
     /** Render-thread time per frame for chunks coming into view (first light, geometry pieces); at least one step. */
     static final long FIRST_BUDGET_NS = 1_000_000L;
 
-    /** One chunk's parts: their vertices, box (chunk-relative), the set's signature, light and GPU pieces. */
-    record Mesh(int cx, int cz, float[] verts, float[] box, long signature, int parts, RoadClient.Light light) {}
+    /**
+     * One chunk's parts: their vertices and the guide signs' legends (TunnelParts.Baked: drawn as markings), the ranges lit
+     * as one point, box (chunk-relative), the set's signature, light and GPU pieces.
+     */
+    record Mesh(int cx, int cz, float[] verts, float[] overlay, List<TunnelParts.Anchor> anchors, float[] box, long signature, int parts,
+                RoadClient.Light light) {}
 
     /** A part's identity: its kind, variant, origin and axes (the cells of one part all carry it). */
     record Id(TunnelFixtureBlock.Kind kind, String bone, double x, double y, double z, double ex0, double ex1, double ex2, double ez0, double ez1, double ez2) {
@@ -126,9 +131,10 @@ public final class TunnelFixtureClient {
                 PENDING.remove(k);
                 continue;
             }
-            if (uv == null) uv = Map.of("equipment", RoadClient.sprite(TunnelParts.SHEET), "steel", RoadClient.sprite(RoadClient.STEEL));
-            float[] eq = uv.get("equipment"), steel = uv.get("steel");
-            PENDING.put(k, CompletableFuture.supplyAsync(() -> bake(parts, cx, cz, sig, eq, steel)));
+            if (uv == null) uv = Map.of("equipment", RoadClient.sprite(TunnelParts.SHEET), "steel", RoadClient.sprite(RoadClient.STEEL),
+                    "guide", RoadClient.sprite(GuideSignParts.SHEET));
+            float[] eq = uv.get("equipment"), steel = uv.get("steel"), guide = uv.get("guide");
+            PENDING.put(k, CompletableFuture.supplyAsync(() -> bake(parts, cx, cz, sig, eq, steel, guide)));
         }
     }
 
@@ -165,8 +171,9 @@ public final class TunnelFixtureClient {
         return h == 0 ? 1 : h;
     }
 
-    private static Mesh bake(List<TunnelMesh.Placement> parts, int cx, int cz, long sig, float[] eq, float[] steel) {
-        float[] v = TunnelParts.bake(parts, cx, cz, eq, steel);
+    private static Mesh bake(List<TunnelMesh.Placement> parts, int cx, int cz, long sig, float[] eq, float[] steel, float[] guide) {
+        TunnelParts.Baked baked = TunnelParts.bake(parts, cx, cz, eq, steel, guide);
+        float[] v = baked.solid();
         float x0 = Float.POSITIVE_INFINITY, y0 = Float.POSITIVE_INFINITY, z0 = Float.POSITIVE_INFINITY,
                 x1 = Float.NEGATIVE_INFINITY, y1 = Float.NEGATIVE_INFINITY, z1 = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < v.length; i += RoadClient.STRIDE) {
@@ -175,7 +182,7 @@ public final class TunnelFixtureClient {
             z0 = Math.min(z0, v[i + 2]); z1 = Math.max(z1, v[i + 2]);
         }
         float[] box = v.length == 0 ? new float[]{0, 0, 0, 16, 0, 16} : new float[]{x0, y0, z0, x1, y1, z1};
-        return new Mesh(cx, cz, v, box, sig, parts.size(), new RoadClient.Light());
+        return new Mesh(cx, cz, v, baked.overlay(), baked.anchors(), box, sig, parts.size(), new RoadClient.Light());
     }
 
     @SubscribeEvent
@@ -209,7 +216,8 @@ public final class TunnelFixtureClient {
                 if (first && System.nanoTime() > deadline) continue;
                 first = true;
             } else if (now >= l.at && now - l.at < (near ? RoadClient.LIGHT_NEAR : RoadClient.LIGHT_FAR + ((m.cx() * 7 + m.cz() * 13) & 15))) continue;
-            l.values[0] = RoadClient.lights(mc.level, m.cx(), m.cz(), m.verts(), lights, p);
+            l.values[0] = lights(mc.level, m, 0, m.verts(), lights, p);
+            l.values[1] = lights(mc.level, m, 1, m.overlay(), lights, p);
             l.at = now;
             l.uploaded = false;
         }
@@ -217,6 +225,18 @@ public final class TunnelFixtureClient {
         boolean shaded = !com.antaurora.apofirstlight.weapon.client.AflShaderCompat.shaderPackInUse();
         if (RoadClient.GPU) drawCached(visible, pose, camera, shaded, deadline);
         else drawSubmitted(visible, pose, camera, shaded, mc.renderBuffers().bufferSource());
+    }
+
+    /** A stream's per-vertex light: each vertex its own block's, a guide sign's face and legend their anchor's. */
+    private static int[] lights(ClientLevel level, Mesh m, int stream, float[] v, Long2IntOpenHashMap cache, BlockPos.MutableBlockPos p) {
+        List<int[]> ranges = new ArrayList<>();
+        List<double[]> points = new ArrayList<>();
+        for (TunnelParts.Anchor a : m.anchors()) {
+            if (a.stream() != stream) continue;
+            ranges.add(new int[]{a.from(), a.to()});
+            points.add(new double[]{a.x(), a.y(), a.z()});
+        }
+        return ranges.isEmpty() ? RoadClient.lights(level, m.cx(), m.cz(), v, cache, p) : RoadClient.lights(level, m.cx(), m.cz(), v, ranges, points, cache, p);
     }
 
     private static void drawCached(List<Mesh> visible, PoseStack pose, Vec3 camera, boolean shaded, long deadline) {
@@ -227,16 +247,18 @@ public final class TunnelFixtureClient {
                 if (l.values[0] == null) continue;
                 if (l.stale(shaded)) l.close();
                 if (l.ranges == null) {
-                    int n = m.verts().length / RoadClient.STRIDE;
                     List<int[]> rs = new ArrayList<>();
-                    for (int a = 0; a < n; a += RoadClient.PIECE) rs.add(new int[]{0, a, Math.min(n, a + RoadClient.PIECE)});
+                    for (int stream = 0; stream < 2; stream++) {
+                        int n = (stream == 0 ? m.verts() : m.overlay()).length / RoadClient.STRIDE;
+                        for (int a = 0; a < n; a += RoadClient.PIECE) rs.add(new int[]{stream, a, Math.min(n, a + RoadClient.PIECE)});
+                    }
                     l.ranges = rs.toArray(new int[0][]);
                     l.shaded = shaded;
                 }
                 while (!l.complete() && (!built || System.nanoTime() < deadline)) {
                     int[] r = l.ranges[l.pieces.size()];
-                    l.pieces.add(GpuGeometry.build(RoadRenderTypes.ASPHALT, new GpuGeometry.Options().lightStream(),
-                            out -> RoadClient.write(out, m.verts(), r[1], r[2], shaded)));
+                    l.pieces.add(GpuGeometry.build(type(r[0]), new GpuGeometry.Options().lightStream(),
+                            out -> RoadClient.write(out, r[0] == 0 ? m.verts() : m.overlay(), r[1], r[2], shaded)));
                     built = true;
                 }
                 if (!l.complete()) continue;
@@ -247,31 +269,39 @@ public final class TunnelFixtureClient {
                 pose.pushPose();
                 pose.translate(m.cx() * 16 - camera.x, -camera.y, m.cz() * 16 - camera.z);
                 Matrix4f mat = pose.last().pose();
-                for (GpuGeometry g : l.pieces) if (g != null) g.draw(RoadRenderTypes.ASPHALT, mat, 1f, 1f, 1f, 1f, 0, 0);
+                for (int i = 0; i < l.ranges.length; i++) {
+                    GpuGeometry g = l.pieces.get(i);
+                    if (g != null) g.draw(type(l.ranges[i][0]), mat, 1f, 1f, 1f, 1f, 0, 0);
+                }
                 pose.popPose();
             }
         }
     }
 
+    /** The solid stream's render type, the legends' (the markings': their polygon offset over the face). */
+    private static net.minecraft.client.renderer.RenderType type(int stream) { return stream == 0 ? RoadRenderTypes.ASPHALT : RoadRenderTypes.MARKING; }
+
     /** Every vertex submitted each frame (-Dafl.roadGpu=false, as the roads). */
     private static void drawSubmitted(List<Mesh> visible, PoseStack pose, Vec3 camera, boolean shaded, MultiBufferSource.BufferSource buffers) {
-        VertexConsumer out = buffers.getBuffer(RoadRenderTypes.ASPHALT);
-        for (Mesh m : visible) {
-            float[] v = m.verts();
-            int[] light = m.light().values[0];
-            if (light == null) continue;
-            pose.pushPose();
-            pose.translate(m.cx() * 16 - camera.x, -camera.y, m.cz() * 16 - camera.z);
-            Matrix4f mat = pose.last().pose();
-            Matrix3f nor = pose.last().normal();
-            for (int i = 0, j = 0; i < v.length; i += RoadClient.STRIDE, j++) {
-                float sh = shaded ? RoadClient.shade(v[i + 5], v[i + 6], v[i + 7]) : 1f;
-                out.vertex(mat, v[i], v[i + 1], v[i + 2]).color(sh, sh, sh, 1f).uv(v[i + 3], v[i + 4]).uv2(light[j])
-                        .normal(nor, v[i + 5], v[i + 6], v[i + 7]).endVertex();
+        for (int stream = 0; stream < 2; stream++) {
+            VertexConsumer out = buffers.getBuffer(type(stream));
+            for (Mesh m : visible) {
+                float[] v = stream == 0 ? m.verts() : m.overlay();
+                int[] light = m.light().values[stream];
+                if (v.length == 0 || light == null) continue;
+                pose.pushPose();
+                pose.translate(m.cx() * 16 - camera.x, -camera.y, m.cz() * 16 - camera.z);
+                Matrix4f mat = pose.last().pose();
+                Matrix3f nor = pose.last().normal();
+                for (int i = 0, j = 0; i < v.length; i += RoadClient.STRIDE, j++) {
+                    float sh = shaded ? RoadClient.shade(v[i + 5], v[i + 6], v[i + 7]) : 1f;
+                    out.vertex(mat, v[i], v[i + 1], v[i + 2]).color(sh, sh, sh, 1f).uv(v[i + 3], v[i + 4]).uv2(light[j])
+                            .normal(nor, v[i + 5], v[i + 6], v[i + 7]).endVertex();
+                }
+                pose.popPose();
             }
-            pose.popPose();
+            buffers.endBatch(type(stream));
         }
-        buffers.endBatch(RoadRenderTypes.ASPHALT);
     }
 
     /** Chunks with drawn fixtures, their parts and faces, those building, for the dev harness. */
@@ -279,7 +309,7 @@ public final class TunnelFixtureClient {
         int parts = 0, faces = 0, uploaded = 0;
         for (Mesh m : MESHES.values()) {
             parts += m.parts();
-            faces += m.verts().length / RoadClient.STRIDE / 4;
+            faces += (m.verts().length + m.overlay().length) / RoadClient.STRIDE / 4;
             if (m.light().complete()) uploaded++;
         }
         return MESHES.size() + " fixture chunk(s), " + parts + " parts, " + faces + " faces, " + uploaded + " on the GPU, " + PENDING.size() + " building";

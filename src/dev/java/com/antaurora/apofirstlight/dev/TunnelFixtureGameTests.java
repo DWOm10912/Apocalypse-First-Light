@@ -4,8 +4,13 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.TunnelFixtureBlock;
 import com.antaurora.apofirstlight.blockentity.TunnelFixtureBlockEntity;
+import com.antaurora.apofirstlight.meshhit.MeshBlockHitResult;
+import com.antaurora.apofirstlight.meshhit.MeshHitClip;
+import com.antaurora.apofirstlight.meshhit.MeshHitModels;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.worldgen.network.road.GuideSigns;
+import com.antaurora.apofirstlight.worldgen.network.road.RoadSigns;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelFixtures;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelMesh;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -25,9 +30,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -43,7 +50,9 @@ import java.util.Set;
  * Tunnel parts removable V1.1 (block/TunnelFixtureBlock): Survival placement of a handrail from its item, two rail
  * segments sharing a cell, the crowbar gate and time, taking the aimed part down from a shared cell (its item drops, the
  * other part stays), removal some other way (no drops, all its cells), and a large part (the jet fan) stripped for its
- * materials with the road_structure it took over given back.
+ * materials with the road_structure it took over given back. C3.3b: the road signs (road_&lt;mesh&gt;) placed from their
+ * items, a side road sign's post collision, crowbar time and its drop with its variant; their hit meshes (the crosshair on
+ * the drawn faces, passing beside the post, the whole sign's outline from any cell).
  */
 @GameTestHolder("afl_tunnel_fixture_tests")
 @PrefixGameTestTemplate(false)
@@ -191,19 +200,220 @@ public final class TunnelFixtureGameTests {
                 AflItems.INSULATED_COPPER_WIRE.get(), 6, AflItems.POWER_CABLE.get(), 2, AflItems.STEEL_CABLE.get(), 2);
         h.assertTrue(materials.equals(want), "fan materials, was " + materials);
 
+        // C3.3b road signs: a side road warning (bone l) placed on the floor from its item, collides on its post, the crowbar
+        // takes it down in 3 s and it drops itself with its variant; STOP and curve signs place and take their cells
+        clearDrops(h);
+        player.moveTo(h.absoluteVec(new Vec3(4.5, 2, 14.5)).x, h.absoluteVec(new Vec3(4.5, 2, 14.5)).y, h.absoluteVec(new Vec3(4.5, 2, 14.5)).z, 0.0F, 0.0F);
+        Item sideItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.SIDE_ROAD_SIGN).get();
+        ItemStack left = new ItemStack(sideItem);
+        left.getOrCreateTag().putString("Bone", "l");
+        h.assertTrue(place(h, player, left, new Vec3(4.5, 2, 18.5), Direction.UP) == InteractionResult.CONSUME, "side road sign placed");
+        TunnelFixtureBlockEntity.Entry side = entryNear(h, h.absoluteVec(new Vec3(4.5, 2, 18.5)));
+        h.assertTrue(side != null && side.kind == TunnelFixtureBlock.Kind.SIDE_ROAD_SIGN && "l".equals(side.placement.bone()), "side road sign stored with bone l");
+        Set<Long> sideCells = cells(side);
+        h.assertTrue(sideCells.size() >= 3, "the sign reaches its post's and its face's cells, was " + sideCells.size());
+        for (long c : sideCells) h.assertTrue(holds(level, c, side), "the sign in all its cells");
+        BlockPos postCell = BlockPos.containing(h.absoluteVec(new Vec3(4.5, 2.2, 18.5)));
+        h.assertTrue(!level.getBlockState(postCell).getCollisionShape(level, postCell).isEmpty(), "the sign's post collides");
+        // aim at the diamond, 0.4 m under the part's top (above the post)
+        double[] sb = side.part().bounds();
+        Vec3 face = new Vec3((sb[0] + sb[3]) / 2, sb[4] - 0.4, (sb[2] + sb[5]) / 2);
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, face);
+        player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(AflItems.CROWBAR.get()));
+        BlockPos faceCell = BlockPos.containing(face);
+        h.assertTrue(level.getBlockState(faceCell).getBlock() instanceof TunnelFixtureBlock, "the face's cell is a fixture");
+        h.assertTrue(Math.abs(level.getBlockState(faceCell).getDestroyProgress(player, level, faceCell) - 1.0F / 60.0F) < 1e-6, "the crowbar takes a sign down in 3 s");
+        h.assertTrue(level.getBlockState(faceCell).onDestroyedByPlayer(level, faceCell, player, true, level.getFluidState(faceCell)), "sign taken down");
+        for (long c : sideCells) h.assertTrue(!holds(level, c, side), "the sign left every cell");
+        List<ItemEntity> signDrop = h.getLevel().getEntitiesOfClass(ItemEntity.class, area(h));
+        h.assertTrue(signDrop.size() == 1 && signDrop.get(0).getItem().is(sideItem) && signDrop.get(0).getItem().getTag() != null
+                && "l".equals(signDrop.get(0).getItem().getTag().getString("Bone")), "the sign dropped itself with bone l");
+        clearDrops(h);
+        player.moveTo(h.absoluteVec(new Vec3(12.5, 2, 14.5)).x, h.absoluteVec(new Vec3(12.5, 2, 14.5)).y, h.absoluteVec(new Vec3(12.5, 2, 14.5)).z, 0.0F, 0.0F);
+        Item stopItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.STOP_SIGN).get();
+        Item curveItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.CURVE_SIGN).get();
+        h.assertTrue(place(h, player, stopItem, new Vec3(12.5, 2, 18.5), Direction.UP) == InteractionResult.CONSUME, "STOP sign placed");
+        h.assertTrue(place(h, player, curveItem, new Vec3(18.5, 2, 18.5), Direction.UP) == InteractionResult.CONSUME, "curve sign placed");
+        TunnelFixtureBlockEntity.Entry stop = entryNear(h, h.absoluteVec(new Vec3(12.5, 2, 18.5)));
+        TunnelFixtureBlockEntity.Entry curve = entryNear(h, h.absoluteVec(new Vec3(18.5, 2, 18.5)));
+        h.assertTrue(stop != null && stop.kind == TunnelFixtureBlock.Kind.STOP_SIGN, "STOP sign stored");
+        h.assertTrue(curve != null && curve.kind == TunnelFixtureBlock.Kind.CURVE_SIGN && "r".equals(curve.placement.bone()), "curve sign stored with its default bone r");
+        for (long c : cells(stop)) h.assertTrue(holds(level, c, stop), "STOP in all its cells");
+        for (long c : cells(curve)) h.assertTrue(holds(level, c, curve), "curve sign in all its cells");
+        h.assertTrue(AflBlocks.TUNNEL_FIXTURES.get(TunnelFixtureBlock.Kind.STOP_SIGN).getId().getPath().equals("road_stop_sign"), "road sign ids are road_<mesh>");
+        // C3.3b group 2: the ramp terminal signs place from their items and take their cells
+        Item dneItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.DO_NOT_ENTER_SIGN).get();
+        Item wwItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.WRONG_WAY_SIGN).get();
+        h.assertTrue(place(h, player, dneItem, new Vec3(8.5, 2, 21.5), Direction.UP) == InteractionResult.CONSUME, "DO NOT ENTER sign placed");
+        h.assertTrue(place(h, player, wwItem, new Vec3(16.5, 2, 21.5), Direction.UP) == InteractionResult.CONSUME, "WRONG WAY sign placed");
+        TunnelFixtureBlockEntity.Entry dne = entryNear(h, h.absoluteVec(new Vec3(8.5, 2, 21.5)));
+        TunnelFixtureBlockEntity.Entry ww = entryNear(h, h.absoluteVec(new Vec3(16.5, 2, 21.5)));
+        h.assertTrue(dne != null && dne.kind == TunnelFixtureBlock.Kind.DO_NOT_ENTER_SIGN, "DO NOT ENTER sign stored");
+        h.assertTrue(ww != null && ww.kind == TunnelFixtureBlock.Kind.WRONG_WAY_SIGN, "WRONG WAY sign stored");
+        for (long c : cells(dne)) h.assertTrue(holds(level, c, dne), "DO NOT ENTER in all its cells");
+        for (long c : cells(ww)) h.assertTrue(holds(level, c, ww), "WRONG WAY in all its cells");
+        h.assertTrue(AflBlocks.TUNNEL_FIXTURES.get(TunnelFixtureBlock.Kind.WRONG_WAY_SIGN).getId().getPath().equals("road_wrong_way_sign"), "ramp sign ids");
+        // Survival: bare hands do not move them, the crowbar takes each down in 3 s and it drops itself
+        int rampSignCells = 0;
+        for (TunnelFixtureBlockEntity.Entry e : List.of(dne, ww)) {
+            clearDrops(h);
+            Set<Long> ec = cells(e);
+            rampSignCells += ec.size();
+            double[] eb = e.part().bounds();
+            Vec3 ef = new Vec3((eb[0] + eb[3]) / 2, eb[4] - 0.3, (eb[2] + eb[5]) / 2);
+            player.moveTo(ef.x, ef.y - player.getEyeHeight(), ef.z - 2.0, 0.0F, 0.0F);
+            player.lookAt(EntityAnchorArgument.Anchor.EYES, ef);
+            BlockPos efCell = BlockPos.containing(ef);
+            h.assertTrue(level.getBlockState(efCell).getBlock() instanceof TunnelFixtureBlock, e.kind + ": the face's cell is a fixture");
+            player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            h.assertTrue(level.getBlockState(efCell).getDestroyProgress(player, level, efCell) == 0.0F, e.kind + ": bare hands do not move it");
+            player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(AflItems.CROWBAR.get()));
+            h.assertTrue(Math.abs(level.getBlockState(efCell).getDestroyProgress(player, level, efCell) - 1.0F / 60.0F) < 1e-6, e.kind + ": the crowbar takes it down in 3 s");
+            h.assertTrue(level.getBlockState(efCell).onDestroyedByPlayer(level, efCell, player, true, level.getFluidState(efCell)), e.kind + " taken down");
+            for (long c : ec) h.assertTrue(!holds(level, c, e), e.kind + " left every cell");
+            List<ItemEntity> drop = h.getLevel().getEntitiesOfClass(ItemEntity.class, area(h));
+            Item own = AflItems.TUNNEL_FIXTURE_ITEMS.get(e.kind).get();
+            h.assertTrue(drop.size() == 1 && drop.get(0).getItem().is(own) && drop.get(0).getItem().getCount() == 1, e.kind + " dropped itself, was " + drop);
+        }
+        clearDrops(h);
+
+        // C3.3b group 2 package B: a guide sign's item (cut to a slope where it stood) stands level again; it places from its
+        // item facing the player, keeps its legend, collides on its posts; the crowbar takes it down in 8 s, it drops itself
+        Item guideItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.GUIDE_SIGN).get();
+        String sloped = "adv|4|R61|S|Redfield|1|0.00,-0.40";
+        ItemStack guideStack = TunnelFixtureBlock.stack(TunnelFixtureBlock.Kind.GUIDE_SIGN, sloped);
+        String level0 = "adv|4|R61|S|Redfield|1|0.00,0.00";
+        h.assertTrue(guideStack.getTag() != null && level0.equals(guideStack.getTag().getString("Bone")), "a guide sign's item stands level, was " + guideStack.getTag());
+        h.assertTrue("EXIT 4 | RT 61 SOUTH | Redfield | 1 MILE".equals(GuideSigns.describe(sloped)), "the legend reads " + GuideSigns.describe(sloped));
+        // C3.3b group 3: a split sign carries two routes (one row each), its up-left arrow against the panel's left margin
+        String split = "split||F40+F65|E+S|Bellhaven|ul|0,0";
+        h.assertTrue("F-40 EAST | F-65 SOUTH | Bellhaven".equals(GuideSigns.describe(split)), "the split sign reads " + GuideSigns.describe(split));
+        GuideSigns.Layout sl = GuideSigns.layout(split);
+        GuideSigns.Piece splitArrow = null;
+        int shields = 0;
+        for (GuideSigns.Piece q : sl.pieces()) {
+            if ("arrow_ul".equals(q.tile())) splitArrow = q;
+            if ("F40".equals(q.tile()) || "F65".equals(q.tile())) shields++;
+        }
+        h.assertTrue(shields == 2, "the split sign shows both shields, was " + shields);
+        h.assertTrue(splitArrow != null && Math.abs(splitArrow.x0() - sl.panel()[0] - GuideSigns.MARGIN_X) < 1e-6, "the split sign's arrow on its left margin");
+        Vec3 gStand = h.absoluteVec(new Vec3(12.5, 2, 1.0));
+        player.moveTo(gStand.x, gStand.y, gStand.z, 0.0F, 0.0F);
+        h.assertTrue(place(h, player, guideStack, new Vec3(12.5, 2, 5.5), Direction.UP) == InteractionResult.CONSUME, "guide sign placed");
+        TunnelFixtureBlockEntity.Entry guide = entryNear(h, h.absoluteVec(new Vec3(12.5, 2, 5.5)));
+        h.assertTrue(guide != null && guide.kind == TunnelFixtureBlock.Kind.GUIDE_SIGN && level0.equals(guide.placement.bone()), "guide sign stored with its legend");
+        h.assertTrue(guide.placement.ez()[2] < -0.99, "the guide sign faces the player");
+        Set<Long> guideCells = cells(guide);
+        for (long c : guideCells) h.assertTrue(holds(level, c, guide), "the guide sign in all its cells");
+        GuideSigns.Layout gl = GuideSigns.layout(level0);
+        Vec3 gPost = at(guide.placement, gl.posts()[0], 1.0, -0.13);
+        BlockPos gPostCell = BlockPos.containing(gPost);
+        h.assertTrue(!level.getBlockState(gPostCell).getCollisionShape(level, gPostCell).isEmpty(), "the guide sign's post collides");
+        h.assertTrue(AflBlocks.TUNNEL_FIXTURES.get(TunnelFixtureBlock.Kind.GUIDE_SIGN).getId().getPath().equals("road_guide_sign"), "guide sign id");
+        Vec3 gFace = at(guide.placement, 0, (gl.panel()[1] + gl.panel()[3]) / 2, 0);
+        player.moveTo(gFace.x, gFace.y - player.getEyeHeight(), gFace.z - 3.0, 0.0F, 0.0F);
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, gFace);
+        BlockPos gFaceCell = BlockPos.containing(at(guide.placement, 0, (gl.panel()[1] + gl.panel()[3]) / 2, -0.05));
+        h.assertTrue(level.getBlockState(gFaceCell).getBlock() instanceof TunnelFixtureBlock, "the panel's cell is a fixture");
+        player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        h.assertTrue(level.getBlockState(gFaceCell).getDestroyProgress(player, level, gFaceCell) == 0.0F, "bare hands do not move a guide sign");
+        player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(AflItems.CROWBAR.get()));
+        h.assertTrue(Math.abs(level.getBlockState(gFaceCell).getDestroyProgress(player, level, gFaceCell) - 1.0F / 160.0F) < 1e-6, "the crowbar takes a guide sign down in 8 s");
+        clearDrops(h);
+        h.assertTrue(level.getBlockState(gFaceCell).onDestroyedByPlayer(level, gFaceCell, player, true, level.getFluidState(gFaceCell)), "guide sign taken down");
+        for (long c : guideCells) h.assertTrue(!holds(level, c, guide), "the guide sign left every cell");
+        List<ItemEntity> guideDrop = h.getLevel().getEntitiesOfClass(ItemEntity.class, area(h));
+        h.assertTrue(guideDrop.size() == 1 && guideDrop.get(0).getItem().is(guideItem) && guideDrop.get(0).getItem().getTag() != null
+                && level0.equals(guideDrop.get(0).getItem().getTag().getString("Bone")), "the guide sign dropped itself with its legend, was " + guideDrop);
+        clearDrops(h);
+
+        // hit meshes (meshhit/TunnelFixtureHits): a look at the plaque stops on its face; one beside the post, inside the old
+        // 1/8 column boxes, passes; the outline is the sign's whole mesh (its extent in the part's frame), from any cell
+        String meshHits = meshHits(h, player, curve);
+
         ApocalypseFirstLight.LOGGER.info("[AFL TUNNEL FIXTURE TEST] PASS Survival rail placement from the item ({} + {} cells, {} shared), wall face refused, "
                 + "bare hand / pickaxe 0, crowbar 2 s, aimed rail taken down from the shared cell with one rail item, other rail kept, "
-                + "command removal clears all cells without drops, egress sign on a stone wall placed and taken down (stone kept), jet fan ({} cells) 15 s, materials {}, structure layers restored",
-                aCells.size(), bCells.size(), shared.size(), fanCells.length, materials);
+                + "command removal clears all cells without drops, egress sign on a stone wall placed and taken down (stone kept), jet fan ({} cells) 15 s, materials {}, structure layers restored; "
+                + "road signs: side road (bone l, {} cells) placed, post collides, crowbar 3 s, dropped with bone l; STOP ({} cells) and curve ({} cells) placed; "
+                + "DO NOT ENTER and WRONG WAY ({} cells) placed, bare hand 0, crowbar 3 s, each dropped itself; "
+                + "guide sign: item level, placed facing the player ({} cells), legend kept, post collides, bare hand 0, crowbar 8 s, dropped with its legend; {}",
+                aCells.size(), bCells.size(), shared.size(), fanCells.length, materials, sideCells.size(), cells(stop).size(), cells(curve).size(), rampSignCells,
+                guideCells.size(), meshHits);
         h.succeed();
+    }
+
+    /** The curve sign's hit mesh: the plaque hit on its face, a look beside the post passing, the outline's extent. */
+    private static String meshHits(GameTestHelper h, Player player, TunnelFixtureBlockEntity.Entry curve) {
+        ServerLevel level = h.getLevel();
+        TunnelMesh.Placement p = curve.placement;
+        // the plaque's centre on its front (part frame: x right, y up, z out of the face; the face's front 3 mm out)
+        Vec3 plaque = at(p, 0, RoadSigns.BOTTOM + RoadSigns.PLAQUE / 2, 0.003), front = at(p, 0, 0, 2).subtract(at(p, 0, 0, 0));
+        BlockHitResult hit = MeshHitClip.clip(level, new ClipContext(plaque.add(front), plaque.subtract(front), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+        h.assertTrue(hit instanceof MeshBlockHitResult && hit.getLocation().distanceTo(plaque) < 0.005,
+                "a look at the plaque stops on its face, was " + hit.getType() + " at " + hit.getLocation().distanceTo(plaque));
+        // 6.5 cm right of the post's side at 0.8 m, inside its old box (+-0.12 m): passes
+        Vec3 beside = at(p, 0.09, 0.8, -0.04);
+        BlockHitResult past = MeshHitClip.clip(level, new ClipContext(beside.add(front), beside.subtract(front), ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+        h.assertTrue(past.getType() == HitResult.Type.MISS || !(level.getBlockState(past.getBlockPos()).getBlock() instanceof TunnelFixtureBlock),
+                "a look beside the post passes, was " + past.getType() + " " + past.getBlockPos());
+        // the outline from the plaque's cell and from the post's foot cell: the whole sign
+        Vec3 eye = plaque.add(front), dir = front.reverse().normalize();
+        double[][] ext = new double[2][];
+        BlockPos[] from = {hit.getBlockPos(), BlockPos.containing(at(p, 0, 0.2, -0.04))};
+        int edges = 0;
+        for (int k = 0; k < 2; k++) {
+            BlockPos cell = from[k];
+            h.assertTrue(level.getBlockState(cell).getBlock() instanceof TunnelFixtureBlock, "outline cell " + k + " is the sign's");
+            MeshHitModels.Shape shape = MeshHitModels.outline(level, cell, level.getBlockState(cell), eye, dir);
+            h.assertTrue(shape != null, "the sign has a mesh outline from cell " + k);
+            double[] e = {1e9, 1e9, 1e9, -1e9, -1e9, -1e9};
+            int[] n = {0};
+            shape.forEachEdge((x0, y0, z0, x1, y1, z1) -> {
+                n[0]++;
+                for (double[] q : new double[][]{{x0, y0, z0}, {x1, y1, z1}}) {
+                    double[] l = local(p, cell.getX() + q[0], cell.getY() + q[1], cell.getZ() + q[2]);
+                    for (int i = 0; i < 3; i++) {
+                        e[i] = Math.min(e[i], l[i]);
+                        e[i + 3] = Math.max(e[i + 3], l[i]);
+                    }
+                }
+            });
+            ext[k] = e;
+            edges = n[0];
+        }
+        double half = RoadSigns.DIAMOND / 2, top = RoadSigns.CURVE_BOTTOM + RoadSigns.DIAMOND;
+        for (double[] e : ext)
+            h.assertTrue(Math.abs(e[0] + half) < 0.01 && Math.abs(e[3] - half) < 0.01 && Math.abs(e[1] + 0.3) < 0.01 && Math.abs(e[4] - top) < 0.01
+                    && Math.abs(e[2] + 0.065) < 0.005 && Math.abs(e[5] - 0.003) < 0.005, "the outline spans the sign's mesh, was " + java.util.Arrays.toString(e));
+        return String.format(java.util.Locale.ROOT, "hit meshes: plaque hit on its face, beside the post passes, outline %d edges spanning the mesh from 2 cells", edges);
+    }
+
+    /** The world point of part-local (x, y, z). */
+    private static Vec3 at(TunnelMesh.Placement p, double x, double y, double z) {
+        return new Vec3(p.x() + p.ex()[0] * x + p.ey()[0] * y + p.ez()[0] * z, p.y() + p.ex()[1] * x + p.ey()[1] * y + p.ez()[1] * z,
+                p.z() + p.ex()[2] * x + p.ey()[2] * y + p.ez()[2] * z);
+    }
+
+    /** The part-local point of world (x, y, z) (orthonormal axes). */
+    private static double[] local(TunnelMesh.Placement p, double x, double y, double z) {
+        double dx = x - p.x(), dy = y - p.y(), dz = z - p.z();
+        double[][] axes = {p.ex(), p.ey(), p.ez()};
+        double[] out = new double[3];
+        for (int i = 0; i < 3; i++) out[i] = dx * axes[i][0] + dy * axes[i][1] + dz * axes[i][2];
+        return out;
     }
 
     /** Use the item on a floor/wall face at a test-relative hit point. */
     private static InteractionResult place(GameTestHelper h, Player player, Item item, Vec3 rel, Direction face) {
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(item));
+        return place(h, player, new ItemStack(item), rel, face);
+    }
+
+    /** Use the stack (its variant in its tag) on a floor/wall face at a test-relative hit point. */
+    private static InteractionResult place(GameTestHelper h, Player player, ItemStack stack, Vec3 rel, Direction face) {
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
         Vec3 hit = h.absoluteVec(rel);
         BlockPos on = BlockPos.containing(hit.x - face.getStepX() * 0.01, hit.y - face.getStepY() * 0.01, hit.z - face.getStepZ() * 0.01);
-        return item.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, new BlockHitResult(hit, face, on, false)));
+        return stack.getItem().useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, new BlockHitResult(hit, face, on, false)));
     }
 
     private static TunnelFixtureBlockEntity.Entry entryNear(GameTestHelper h, Vec3 at) {

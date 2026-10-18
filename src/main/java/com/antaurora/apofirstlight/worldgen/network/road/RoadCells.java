@@ -38,19 +38,22 @@ public final class RoadCells {
         for (int lz = -1; lz <= 16; lz++) for (int lx = -1; lx <= 16; lx++) {
             int x = cx * 16 + lx, z = cz * 16 + lz;
             RoadWorks.Hit h = works.hit(x + 0.5, z + 0.5, CrossSection.R4.edge + 2);
-            if (h == null) continue;
-            double[] pave = RoadWorks.pavedRange(h.road(), x, z);
+            // near a junction pad (C3.3b) the pad and the roads pave the square together
+            boolean pad = works.padsNear(x + 0.5, z + 0.5) != null;
+            if (h == null && !pad) continue;
+            // the works' own rule: a pad and the roads (C3.3b), an attached ramp and its host, not an overpass's deck
+            double[] pave = works.pavedRange(x, z);
             if (pave == null) continue;
             // a tunnel's works filling the pavement's cell (in a bore beside its pavement): road_structure, not a
             // road_surface the client could find dug (Tunnel V1); works standing on the finish (ON_GROUND: walls,
             // lead-ins, a portal's front) and a bore's pavement keep their road_surface
-            RoadDesign.Tunnel tn = TunnelWorks.near(h);
+            RoadDesign.Tunnel tn = h == null ? null : TunnelWorks.near(h);
             if (tn != null) {
                 RoadWorks.Column t = TunnelWorks.column(h, tn, x, z, pave);
                 if (t != null && t.kind() != RoadWorks.Kind.PAVED && (t.data() & TunnelWorks.ON_GROUND) == 0) continue;
             }
             RoadWorks.Column c = RoadWorks.paved(RoadWorks.Kind.PAVED, pave, 0);
-            out.put(index(lx, lz), new Cell(index(lx, lz), c.y(), c.layers(), c.upper(), roads.indexOf(h.road())));
+            out.put(index(lx, lz), new Cell(index(lx, lz), c.y(), c.layers(), c.upper(), h == null ? -1 : roads.indexOf(h.road())));
         }
         return out;
     }
@@ -60,6 +63,11 @@ public final class RoadCells {
      * that neighbour's collision block bottom (its asphalt top) up to the pavement along the shared edge, facing the hole.
      */
     public static List<RoadMesh.Triangle> walls(List<RoadDesign> roads, Map<Integer, Cell> cells, BitSet dug, int cx, int cz) {
+        return walls(null, roads, cells, dug, cx, cz);
+    }
+
+    /** #walls with the works: the pavement's height there from a junction pad too (RoadWorks#paveTop). */
+    public static List<RoadMesh.Triangle> walls(RoadWorks works, List<RoadDesign> roads, Map<Integer, Cell> cells, BitSet dug, int cx, int cz) {
         List<RoadMesh.Triangle> out = new ArrayList<>();
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         for (int i = dug.nextSetBit(0); i >= 0; i = dug.nextSetBit(i + 1)) {
@@ -73,8 +81,16 @@ public final class RoadCells {
                 double ax, az, bx, bz;
                 if (dir[0] != 0) { ax = bx = dir[0] > 0 ? lx + 1 : lx; az = lz; bz = lz + 1; }
                 else { az = bz = dir[1] > 0 ? lz + 1 : lz; ax = lx; bx = lx + 1; }
-                RoadDesign d = roads.get(nb.road());
-                double ta = top(d, cx * 16 + ax, cz * 16 + az), tb = top(d, cx * 16 + bx, cz * 16 + bz);
+                RoadDesign d = nb.road() < 0 ? null : roads.get(nb.road());
+                double ta, tb;
+                if (works != null) {
+                    ta = works.paveTop(cx * 16 + ax, cz * 16 + az, d);
+                    tb = works.paveTop(cx * 16 + bx, cz * 16 + bz, d);
+                } else if (d == null) continue;
+                else {
+                    ta = top(d, cx * 16 + ax, cz * 16 + az);
+                    tb = top(d, cx * 16 + bx, cz * 16 + bz);
+                }
                 if (Double.isNaN(ta) || Double.isNaN(tb)) continue;
                 double y = nb.y();
                 if (ta <= y && tb <= y) continue;

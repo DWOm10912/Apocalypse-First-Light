@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
+import com.antaurora.apofirstlight.worldgen.network.town.TownWorks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +37,13 @@ import java.util.Map;
  * point on a road's formation belongs to that road; elsewhere the roadside works of all the roads reaching the point
  * combine: the highest fill and the deepest cut over the ground, so the finished surface stays continuous where one road's
  * slopes run into another's.
+ * <p>
+ * Interchanges (C3.3b group 2, docs/worldgen/federal_interchanges_c3_3b.md 6, 7): an attached ramp (RoadDesign.Attach) gives
+ * way on its interstate's paved band (the interstate's pavement is the ramp's there) and beyond its attached end (no end
+ * taper); beside its outer edge the interstate's roadside reaches the point while that edge is still on the interstate's
+ * pavement, the ramp's once it has left it. An overpass's span (RoadDesign.Span#over) holds no ground: the road under it
+ * keeps its own finish and the deck's cells stand over it (Column#deck); under the deck's ends the approach embankment
+ * runs on as a spill-through slope (#SPILL).
  */
 public final class RoadWorks {
     public static final double NATURAL_TOLERANCE = 0.03, MAX_HALF_WIDTH = 48, BLEND = 4, END_SLOPE = 0.25;
@@ -67,6 +75,33 @@ public final class RoadWorks {
     public static final int TUNNEL_OVER = 1 << 22;
     /** CULVERT column data: the square reaches the channel, a wall, the roofed channel; keeps the natural ground (Culvert.Cell). */
     public static final int C_CHANNEL = 1, C_WALL = 2, C_ROOF = 4, C_KEEP = 8;
+    /**
+     * C3.3b junction pads (Junction): how far beyond a pad's outline its roadside reaches, blended into the roads' works
+     * from PAD_KEEP (full) to PAD_SIDE (none), m.
+     */
+    public static final double PAD_SIDE = 12, PAD_KEEP = 2;
+    /**
+     * C3.3b group 2: an overpass's spill-through slope under its span's ends (#spill): 1:2 down along the road from the
+     * deck's depth under the end's formation; beside the deck that drop fades out over SPILL_FADE, m.
+     */
+    public static final double SPILL = 0.5, SPILL_FADE = 4;
+    /**
+     * C3.3b group 2: beside an attached ramp's outer edge the host's roadside turns into the ramp's over this much of the
+     * ramp's stations from where its edge leaves the host's pavement (#Attached sX), m.
+     */
+    public static final double ROADSIDE_TURN = 40;
+    /**
+     * C3.3b group 3: beyond an open end that another road goes on from (Q's end and a system interchange's ramps: their
+     * roadsides differ) the road's roadside (not its formation) runs on fading out over this much, combined with the
+     * other's (the highest fill, the deepest cut), so neither ends in a step at the joint, m. Not between two pieces of one
+     * road (their roadsides are one).
+     */
+    public static final double OPEN_FADE = 40;
+    /**
+     * C3.3b group 2 (#RampMarks): the host's edge line stops where a ramp's edge line leaving it is this far off (centre
+     * to centre: their half widths, RoadMesh.LINE / 2 and RoadMesh.DOT_WIDTH / 2, and a gap), m.
+     */
+    public static final double LINE_CLEAR = 0.3;
 
     /** The natural ground: the planned surface Y at a point (the density's ground before the works). */
     public interface Ground {
@@ -105,13 +140,87 @@ public final class RoadWorks {
 
     private final List<RoadDesign> roads;
     private final Water water;
+    /** The framework towns' works (Town Framework V1): their footprint and slopes join the roads' (#townColumn). */
+    private final TownWorks towns;
     private final Map<Long, RoadDesign[]> byChunk = new HashMap<>();
     private final Map<Long, Culvert[]> culvertsByChunk = new HashMap<>();
     private final List<Culvert> culverts = new ArrayList<>();
+    private final List<Junction> junctions = new ArrayList<>();
+    private final Map<Long, Junction[]> padsByChunk = new HashMap<>(), sightByChunk = new HashMap<>();
 
-    public RoadWorks(List<RoadDesign> roads, Water water) {
+    /**
+     * C3.3b group 2: an interchange ramp attached to its interstate (RoadDesign.Attach): the interstate's design (by id; of
+     * a split one the piece holding the ramp's nose), the ramp's lateral sign away from it, and the ramp's station where its
+     * outer edge leaves the interstate's paved band (between it and the attached end the edge lies on that pavement).
+     */
+    record Attached(RoadDesign host, int outward, double sX) {}
+
+    private final Map<RoadDesign, Attached> attached = new HashMap<>();
+    /** The open ends whose roadside fades out beyond them (#OPEN_FADE): {start, end} by road. */
+    private final Map<RoadDesign, boolean[]> fades = new HashMap<>();
+
+    /**
+     * C3.3b group 2 (docs/worldgen/federal_interchanges_c3_3b.md 8): where an attached ramp meets its host's markings
+     * (RoadMesh), the stations on the host on the side the ramp lies (side; outward: the ramp's lateral sign away from the
+     * host). end: where the ramp's lane edge away from the host meets the host's edge line (an exit's taper start, an
+     * entrance's taper end); paint: the painted nose (the ramp's lane edge toward the host on that line); nose: the
+     * physical nose (the ramp's paved edge on the host's). Along the ramp the host's edge line is dotted over dot0 .. dot1
+     * (an exit's taper once the ramp's own edge line is clear of it, an entrance's acceleration lane) and absent over
+     * gap0 .. gap1 (where the ramp's edge line takes over: an exit's taper start, an entrance's merge taper).
+     */
+    public record RampMarks(RoadDesign ramp, RoadDesign host, int side, int outward, boolean exit, double end, double paint, double nose,
+                            double dot0, double dot1, double gap0, double gap1) {}
+
+    /** The ramps' marks (#RampMarks) by ramp and by host. */
+    private final Map<RoadDesign, List<RampMarks>> marks = new HashMap<>();
+
+    public RoadWorks(List<RoadDesign> roads, Water water) { this(roads, water, TownWorks.EMPTY); }
+
+    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns) {
         this.roads = List.copyOf(roads);
         this.water = water;
+        this.towns = towns;
+        for (RoadDesign d : this.roads) {
+            Attached a = d.attach == null ? null : attach(d);
+            if (a == null) continue;
+            attached.put(d, a);
+            RampMarks m = marks(d, a);
+            if (m == null) continue;
+            marks.computeIfAbsent(d, k -> new ArrayList<>(1)).add(m);
+            marks.computeIfAbsent(a.host(), k -> new ArrayList<>(4)).add(m);
+        }
+        // the open ends another road goes on from (not a piece of the same road)
+        for (RoadDesign d : this.roads)
+            for (int e = 0; e < 2; e++) {
+                if (!(e == 0 ? d.openStart : d.openEnd)) continue;
+                double[] p = d.point(e == 0 ? 0 : d.length, 0);
+                boolean piece = false;
+                for (RoadDesign o : this.roads) {
+                    if (o == d || !RoadJunctions.base(o.id).equals(RoadJunctions.base(d.id))) continue;
+                    for (double t : new double[]{0, o.length}) {
+                        double[] q = o.point(t, 0);
+                        if (Math.hypot(q[0] - p[0], q[1] - p[1]) < 1) piece = true;
+                    }
+                }
+                if (!piece) fades.computeIfAbsent(d, k -> new boolean[2])[e] = true;
+            }
+        // the T junctions (C3.3b): each minor end that names its host; indexed by the chunks its pad and the pad's
+        // roadside reach, and apart by those its sight triangles reach
+        Map<Long, List<Junction>> pIndex = new HashMap<>(), sIndex = new HashMap<>();
+        for (RoadDesign d : this.roads)
+            for (boolean atEnd : new boolean[]{false, true}) {
+                String hid = atEnd ? d.hostEnd : d.hostStart;
+                RoadDesign host = hid == null ? null : road(hid);
+                Junction j = host == null ? null : Junction.of(host, d, atEnd);
+                if (j == null) continue;
+                junctions.add(j);
+                double[] b = j.bounds();
+                double r = PAD_SIDE + 2;
+                index(pIndex, j, new double[]{b[0] - r, b[1] - r, b[2] + r, b[3] + r});
+                index(sIndex, j, j.sightBounds());
+            }
+        pIndex.forEach((k, l) -> padsByChunk.put(k, l.toArray(new Junction[0])));
+        sIndex.forEach((k, l) -> sightByChunk.put(k, l.toArray(new Junction[0])));
         Map<Long, List<RoadDesign>> index = new HashMap<>();
         Map<Long, List<Culvert>> cIndex = new HashMap<>();
         for (RoadDesign d : this.roads)
@@ -125,7 +234,9 @@ public final class RoadWorks {
         cIndex.forEach((k, l) -> culvertsByChunk.put(k, l.toArray(new Culvert[0])));
         int reach = (int) Math.ceil(REACH + CLEAR + 16);
         for (RoadDesign d : this.roads) {
-            for (double s = -RoadDesign.END; s <= d.length + RoadDesign.END; s += 8) {
+            boolean[] fd = fades.get(d);
+            double before = fd != null && fd[0] ? Math.max(RoadDesign.END, OPEN_FADE) : RoadDesign.END, after = fd != null && fd[1] ? Math.max(RoadDesign.END, OPEN_FADE) : RoadDesign.END;
+            for (double s = -before; s <= d.length + after; s += 8) {
                 double[] p = d.point(s, 0);
                 int cx0 = Math.floorDiv((int) Math.floor(p[0]) - reach, 16), cx1 = Math.floorDiv((int) Math.floor(p[0]) + reach, 16);
                 int cz0 = Math.floorDiv((int) Math.floor(p[1]) - reach, 16), cz1 = Math.floorDiv((int) Math.floor(p[1]) + reach, 16);
@@ -140,23 +251,249 @@ public final class RoadWorks {
 
     static long key(int cx, int cz) { return ((long) cx << 32) ^ (cz & 0xffffffffL); }
 
+    /** The attachment of ramp d to its host (#Attached), or null when the host is not in the network. */
+    private Attached attach(RoadDesign d) {
+        RoadDesign.Attach at = d.attach;
+        double sn = Math.max(0, Math.min(d.length, at.nose()));
+        double[] pn = d.point(sn, 0);
+        RoadDesign host = null;
+        for (RoadDesign q : roads) {
+            if (q == d || !(q.id.equals(at.host()) || q.id.startsWith(at.host() + "~"))) continue;
+            double[] l = q.local(pn[0], pn[1], REACH);
+            if (l != null && l[0] >= 0 && l[0] <= q.length) { host = q; break; }
+        }
+        if (host == null) return null;
+        double[] pa = d.point(sn, 1), la = host.local(pn[0], pn[1], REACH), lb = host.local(pa[0], pa[1], REACH);
+        if (la == null || lb == null) return null;
+        int outward = Math.abs(lb[1]) > Math.abs(la[1]) ? 1 : -1;
+        double edge = host.section.edge, sX = sn;
+        for (int i = 0; i <= (int) Math.ceil(sn * 2); i++) {
+            double s = at.atEnd() ? d.length - i * 0.5 : i * 0.5;
+            if (at.atEnd() ? s < sn : s > sn) break;
+            double[] e = d.point(s, outward * d.section.edge), l = host.local(e[0], e[1], REACH);
+            // off the host's pavement already at the attached end (a system interchange's direct ramp beside its left-turn
+            // ramp, C3.3b group 3): its own roadside all along
+            if (l != null && Math.abs(l[1]) >= edge) { sX = i > 0 ? s : at.atEnd() ? d.length + ROADSIDE_TURN : -ROADSIDE_TURN; break; }
+        }
+        return new Attached(host, outward, sX);
+    }
+
+    /**
+     * The marks of an attached ramp on its host (#RampMarks), or null where a point of them is off the host. The host's
+     * line is cleared once the ramp's edge line is LINE_CLEAR beyond it; the merge taper starts where the entrance's lane
+     * edge toward the host leaves the host's edge line.
+     */
+    private static RampMarks marks(RoadDesign d, Attached a) {
+        RoadDesign h = a.host();
+        int out = a.outward();
+        boolean exit = !d.attach.atEnd();
+        double lane = d.section.lanesOut, line = h.section.lanesOut;
+        double[] e = hostAt(h, d, exit ? 0 : d.length, out * lane), pa = hostAt(h, d, d.attach.paint(), -out * lane),
+                no = hostAt(h, d, d.attach.nose(), -out * d.section.edge);
+        if (e == null || pa == null || no == null) return null;
+        int side = no[1] > 0 ? 1 : -1;
+        // on a one-way host (a system interchange's left-turn ramp, C3.3b group 3) its edge line runs on unbroken: the
+        // direct ramp splits off / merges in beside it as a second lane
+        if (h.section.oneWay) return new RampMarks(d, h, side, out, exit, e[0], pa[0], no[0], e[0], e[0], e[0], e[0]);
+        double dot0, dot1, gap0, gap1;
+        if (exit) {
+            // the dotted line from where the ramp's edge line is clear of the host's
+            double c = Double.NaN;
+            for (double s = 0; s <= d.attach.paint(); s += 0.5) {
+                double[] q = hostAt(h, d, s, out * lane);
+                if (q != null && Math.abs(q[1]) >= line + LINE_CLEAR) { c = q[0]; break; }
+            }
+            if (Double.isNaN(c)) return null;
+            gap0 = e[0];
+            gap1 = dot0 = c;
+            dot1 = pa[0];
+        } else {
+            // the dotted line to where the merge taper starts
+            double c = Double.NaN;
+            for (double s = d.attach.paint(); s <= d.length; s += 0.5) {
+                double[] q = hostAt(h, d, s, -out * lane);
+                if (q == null || Math.abs(q[1]) < line - 0.05) break;
+                c = q[0];
+            }
+            if (Double.isNaN(c)) return null;
+            dot0 = pa[0];
+            dot1 = gap0 = c;
+            gap1 = e[0];
+        }
+        return new RampMarks(d, h, side, out, exit, e[0], pa[0], no[0], Math.min(dot0, dot1), Math.max(dot0, dot1), Math.min(gap0, gap1),
+                Math.max(gap0, gap1));
+    }
+
+    /**
+     * Ramp d's point (s, u) in host h's (station, lateral), or null off it (half a metre beyond the host's ends allowed: a direct
+     * ramp's split starts at its left-turn ramp's start, C3.3b group 3).
+     */
+    private static double[] hostAt(RoadDesign h, RoadDesign d, double s, double u) {
+        double[] p = d.point(s, u), l = h.local(p[0], p[1], REACH);
+        return l == null || l[0] < -0.5 || l[0] > h.length + 0.5 ? null : l;
+    }
+
+    /** The ramp marks a road takes part in (C3.3b group 2, #RampMarks): a ramp's own, a host's ramps'; empty: none. */
+    public List<RampMarks> marksOf(RoadDesign d) {
+        List<RampMarks> l = marks.isEmpty() ? null : marks.get(d);
+        return l == null ? List.of() : l;
+    }
+
+    /** The interstate an attached ramp lies on (C3.3b group 2), or null (not a ramp, or its host is not built). */
+    public RoadDesign attachedHost(RoadDesign d) {
+        Attached a = attached.isEmpty() ? null : attached.get(d);
+        return a == null ? null : a.host();
+    }
+
+    /**
+     * Whether a hit gives way: beyond an open end (C3.3b group 3); on an attached ramp (group 2) beyond its attached end
+     * (it goes on as its host's pavement, no end taper) and on its host's paved band (the host's pavement is the ramp's
+     * there).
+     */
+    private boolean yields(Hit h, double x, double z) {
+        RoadDesign d = h.road();
+        // beyond an open end (C3.3b group 3) the road runs on as another
+        if (d.openStart && h.s() < 0 || d.openEnd && h.s() > d.length) return true;
+        Attached a = attached.isEmpty() ? null : attached.get(d);
+        if (a == null) return false;
+        if (d.attach.atEnd() ? h.s() > d.length : h.s() < 0) return true;
+        return onBand(a.host(), x, z);
+    }
+
+    /**
+     * The weight of a hit's roadside beyond a fading open end (#OPEN_FADE): 1 at the end to 0 OPEN_FADE beyond, 0 on its
+     * formation; NaN where the hit is not beyond such an end.
+     */
+    private double fade(Hit h) {
+        boolean[] f = fades.isEmpty() ? null : fades.get(h.road());
+        if (f == null) return Double.NaN;
+        RoadDesign d = h.road();
+        double t = f[0] && h.s() < 0 ? -h.s() : f[1] && h.s() > d.length ? h.s() - d.length : Double.NaN;
+        if (Double.isNaN(t)) return Double.NaN;
+        if (h.v() <= d.section.edge + 0.5) return 0;
+        return 1 - CrossSection.smooth(t / OPEN_FADE);
+    }
+
+    /** Whether (x, z) lies on a road's paved band, on its route. */
+    private static boolean onBand(RoadDesign d, double x, double z) {
+        double[] l = d.local(x, z, d.section.edge + 1);
+        return l != null && l[0] >= 0 && l[0] <= d.length && d.section.paved(Math.abs(l[1]));
+    }
+
+    /** Whether an attached ramp's works can reach the chunk of (x, z). */
+    private boolean rampsNear(double x, double z) {
+        if (attached.isEmpty()) return false;
+        RoadDesign[] near = near(x, z);
+        if (near != null) for (RoadDesign d : near) if (attached.containsKey(d)) return true;
+        return false;
+    }
+
+    /** On an overpass's span (C3.3b group 2, RoadDesign.Span#over): the road is in the air there, the ground is another's. */
+    public static boolean elevated(Hit h) {
+        if (h.beyond() > 0 || h.road().spans.isEmpty()) return false;
+        RoadDesign.Span sp = h.road().span(h.sc());
+        return sp != null && sp.over();
+    }
+
+    /**
+     * The overpass deck over a point (C3.3b group 2): the hit of a road whose OVERPASS span holds the point within its deck
+     * and parapets (the smallest lateral offset), or null.
+     */
+    public Hit overHit(double x, double z) {
+        RoadDesign[] near = near(x, z);
+        if (near == null) return null;
+        Hit best = null;
+        for (RoadDesign d : near) {
+            if (d.spans.isEmpty()) continue;
+            double reach = d.section.edge + BridgeMesh.CELL_OUT;
+            double[] l = d.local(x, z, reach + 1);
+            if (l == null) continue;
+            Hit h = new Hit(d, l[0], l[1]);
+            if (h.v() > reach || !elevated(h)) continue;
+            if (best == null || h.v() < best.v()) best = h;
+        }
+        return best;
+    }
+
     public List<RoadDesign> roads() { return roads; }
 
     private volatile TunnelFixtures.Index parts;
 
-    /** The tunnels' equipment parts as fixtures (TunnelFixtures, by column), built on first use. */
-    public TunnelFixtures.Index parts() {
+    /**
+     * The tunnels' equipment parts and the road signs (C3.3b, RoadSigns) as fixtures (TunnelFixtures, by column), built on
+     * first use; the signs stand on the turf the world's ground draws (one ground per network: its plan's).
+     */
+    public TunnelFixtures.Index parts(Ground ground) {
         TunnelFixtures.Index p = parts;
         if (p == null) synchronized (this) {
-            if ((p = parts) == null) parts = p = TunnelFixtures.Index.of(roads);
+            if ((p = parts) == null) parts = p = TunnelFixtures.Index.of(roads, RoadSigns.all(this, ground));
         }
         return p;
     }
 
+    /**
+     * The graded turf's top as drawn at a point: its column's four fitted corners (#column: quantised, blended toward the
+     * natural surface near the daylight line), on the triangle of the north-west to south-east diagonal the point lies in
+     * (as RoadSurfaceQuery reads the block); NaN where the column is not turf.
+     */
+    public double turfTop(double x, double z, Ground ground) {
+        int bx = (int) Math.floor(x), bz = (int) Math.floor(z);
+        Column c = column(bx, bz, ground);
+        if (c.kind() != Kind.TURF) return Double.NaN;
+        int d = c.data();
+        double fx = x - bx, fz = z - bz, base = c.y() + ((d >> 16 & 1) != 0 ? 0.5 : 0);
+        double nw = (d & 15) / 8.0, ne = (d >> 4 & 15) / 8.0, sw = (d >> 8 & 15) / 8.0, se = (d >> 12 & 15) / 8.0;
+        return fx >= fz ? base + nw + (ne - nw) * fx + (se - ne) * fz : base + nw + (se - sw) * fx + (sw - nw) * fz;
+    }
+
     public boolean isEmpty() { return roads.isEmpty(); }
 
+    /** The T junctions (C3.3b). */
+    public List<Junction> junctions() { return junctions; }
+
+    /** The junctions a road takes part in (as the host or the minor). */
+    public List<Junction> junctionsOf(RoadDesign d) {
+        List<Junction> out = new ArrayList<>(0);
+        for (Junction j : junctions) if (j.host == d || j.minor == d) out.add(j);
+        return out;
+    }
+
+    /** The junctions whose pad or the pad's roadside can reach the chunk of (x, z), or null (shared). */
+    public Junction[] padsNear(double x, double z) {
+        return padsByChunk.isEmpty() ? null : padsByChunk.get(key(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16)));
+    }
+
+    private static void index(Map<Long, List<Junction>> index, Junction j, double[] q) {
+        for (int cx = Math.floorDiv((int) Math.floor(q[0]), 16); cx <= Math.floorDiv((int) Math.floor(q[2]), 16); cx++)
+            for (int cz = Math.floorDiv((int) Math.floor(q[1]), 16); cz <= Math.floorDiv((int) Math.floor(q[3]), 16); cz++)
+                index.computeIfAbsent(key(cx, cz), k -> new ArrayList<>(1)).add(j);
+    }
+
+    /** The pad holding (x, z), or null. */
+    public Junction pad(double x, double z) {
+        Junction[] ps = padsNear(x, z);
+        if (ps != null) for (Junction j : ps) if (j.contains(x, z)) return j;
+        return null;
+    }
+
+    /** Distance from (x, z) to the nearest pad (0 inside one), or +infinity beyond reach. */
+    double padDistance(double x, double z) {
+        Junction[] ps = padsNear(x, z);
+        double best = Double.POSITIVE_INFINITY;
+        if (ps != null)
+            for (Junction j : ps) {
+                if (!j.near(x, z, PAD_SIDE)) continue;
+                if (j.contains(x, z)) return 0;
+                best = Math.min(best, j.nearest(x, z)[0]);
+            }
+        return best;
+    }
+
     /** Whether any road's works or clearance can reach into this chunk (a cheap test before any per-column work). */
-    public boolean touches(int chunkX, int chunkZ) { return byChunk.containsKey(key(chunkX, chunkZ)); }
+    public boolean touches(int chunkX, int chunkZ) { return byChunk.containsKey(key(chunkX, chunkZ)) || towns.touches(chunkX, chunkZ); }
+
+    /** The framework towns' works (TownWorks.EMPTY without towns). */
+    public TownWorks towns() { return towns; }
 
     public RoadDesign road(String id) {
         for (RoadDesign d : roads) if (d.id.equals(id)) return d;
@@ -225,19 +562,21 @@ public final class RoadWorks {
 
     /**
      * The road a point lies on within maxDist of a centreline, or null: a road whose formation holds the point (the
-     * smallest lateral offset of those), else the smallest lateral offset.
+     * smallest lateral offset of those), else the smallest lateral offset; an overpass's span (#elevated) only where no
+     * other road reaches the point, an attached ramp not where it gives way (#yields).
      */
     public Hit hit(double x, double z, double maxDist) {
         RoadDesign[] near = near(x, z);
         if (near == null) return null;
         Hit best = null;
-        boolean bestOn = false;
+        int bestRank = -1;
         for (RoadDesign d : near) {
             double[] l = d.local(x, z, maxDist);
             if (l == null) continue;
             Hit h = new Hit(d, l[0], l[1]);
-            boolean on = onFormation(h);
-            if (best == null || on && !bestOn || on == bestOn && h.v() < best.v()) { best = h; bestOn = on; }
+            if (yields(h, x, z)) continue;
+            int rank = elevated(h) ? 0 : onFormation(h) ? 2 : 1;
+            if (best == null || rank > bestRank || rank == bestRank && h.v() < best.v()) { best = h; bestRank = rank; }
         }
         return best;
     }
@@ -256,33 +595,163 @@ public final class RoadWorks {
     public double densitySurface(double x, double z, double g) { return surface(x, z, g, true); }
 
     private double surface(double x, double z, double g, boolean density) {
+        if (towns.isEmpty()) return roadSurface(x, z, g, density);
+        // a town's footprint is the town's (a road's formation excepted); its slopes combine with the roads' works
+        TownWorks.Spot sp = towns.spot(x, z);
+        if (sp != null) return onRoad(x, z) ? roadSurface(x, z, g, density) : sp.h();
+        double r = roadSurface(x, z, g, density), t = towns.surface(x, z, g);
+        if (Double.isNaN(t) || water.wet(x, z) && !filled(x, z)) return r;
+        if (Double.isNaN(r)) return t;
+        if (onRoad(x, z)) return r;
+        return g + Math.max(0, Math.max(r - g, t - g)) - Math.max(0, Math.max(g - r, g - t));
+    }
+
+    /** Whether a point is on a road's formation on the ground or on a junction pad: there the road decides, not a town. */
+    private boolean onRoad(double x, double z) {
+        if (pad(x, z) != null) return true;
         RoadDesign[] near = near(x, z);
-        if (near == null) return Double.NaN;
-        if (near.length == 1) {
-            double[] l = near[0].local(x, z, REACH);
-            return l == null ? Double.NaN : surface(new Hit(near[0], l[0], l[1]), x, z, g, density);
-        }
-        Hit[] hs = new Hit[near.length];
-        int n = 0;
-        Hit on = null;
+        if (near == null) return false;
         for (RoadDesign d : near) {
             double[] l = d.local(x, z, REACH);
             if (l == null) continue;
-            Hit h = hs[n++] = new Hit(d, l[0], l[1]);
-            if (onFormation(h) && (on == null || h.v() < on.v())) on = h;
+            Hit h = new Hit(d, l[0], l[1]);
+            if (!elevated(h) && onFormation(h)) return true;
         }
-        if (on != null) return surface(on, x, z, g, density);
-        if (n <= 1) return n == 0 ? Double.NaN : surface(hs[0], x, z, g, density);
-        double up = 0, down = 0;
-        boolean any = false;
+        return false;
+    }
+
+    /** The roads' finished surface alone (#surface without the towns). */
+    private double roadSurface(double x, double z, double g, boolean density) {
+        RoadDesign[] near = near(x, z);
+        if (near == null) return Double.NaN;
+        Junction[] pads = padsNear(x, z);
+        if (pads != null) {
+            Junction pj = null;
+            double pd = Double.POSITIVE_INFINITY;
+            double[] pn = null;
+            for (Junction j : pads) {
+                if (!j.near(x, z, PAD_SIDE)) continue;
+                double[] nb = j.nearest(x, z);
+                double d = j.contains(x, z) ? 0 : nb[0];
+                if (d < pd) { pj = j; pd = d; pn = nb; }
+            }
+            if (pj != null && pd < PAD_SIDE) return padSurface(pj, pd, pn, near, x, z, g, density);
+        }
+        if (near.length == 1) {
+            double[] l = near[0].local(x, z, REACH);
+            if (l == null) return Double.NaN;
+            Hit h = new Hit(near[0], l[0], l[1]);
+            double fw = fade(h);
+            if (!Double.isNaN(fw)) {
+                if (fw <= 0) return Double.NaN;
+                double f = surface(h, x, z, g, density);
+                return Double.isNaN(f) || Math.abs(f - g) * fw < NATURAL_TOLERANCE ? Double.NaN : g + (f - g) * fw;
+            }
+            return yields(h, x, z) ? Double.NaN : surface(h, x, z, g, density);
+        }
+        return roads(near, x, z, g, density, null);
+    }
+
+    /**
+     * The roads' finished surface at a point (no pad): the formation holding it (the smallest lateral offset; not an
+     * overpass's span, not where an attached ramp gives way), else the roadside works of the roads reaching it combined, the
+     * highest fill and the deepest cut; an overpass's spill-through slope (#spill) fills over them. on[0] is set when a
+     * formation decided (on may be null).
+     */
+    private double roads(RoadDesign[] near, double x, double z, double g, boolean density, boolean[] on) {
+        Hit[] hs = new Hit[near.length];
+        int n = 0;
+        Hit form = null;
+        double fUp = 0, fDown = 0;
+        boolean faded = false;
+        for (RoadDesign d : near) {
+            double[] l = d.local(x, z, REACH);
+            if (l == null) continue;
+            Hit h = new Hit(d, l[0], l[1]);
+            double fw = fade(h);
+            if (!Double.isNaN(fw)) {
+                // beyond an open end another road goes on from: its roadside fading out
+                double f = fw <= 0 ? Double.NaN : surface(h, x, z, g, density);
+                if (!Double.isNaN(f) && Math.abs(f - g) * fw >= NATURAL_TOLERANCE) {
+                    faded = true;
+                    fUp = Math.max(fUp, (f - g) * fw);
+                    fDown = Math.max(fDown, (g - f) * fw);
+                }
+                continue;
+            }
+            if (yields(h, x, z)) continue;
+            hs[n++] = h;
+            if (!elevated(h) && onFormation(h) && (form == null || h.v() < form.v())) form = h;
+        }
+        if (form != null) {
+            if (on != null) on[0] = true;
+            return surface(form, x, z, g, density);
+        }
+        // beside an attached ramp's outer edge one roadside reaches the point: its host's while that edge is still on the
+        // host's pavement, the ramp's once it has left it (the host's slopes would run under the ramp), turning over
+        // ROADSIDE_TURN of the ramp's stations (the host's slopes end at its reach, the ramp's run on)
+        boolean[] drop = null;
+        double pair = Double.NaN;
+        if (!attached.isEmpty())
+            for (int i = 0; i < n && Double.isNaN(pair); i++) {
+                Attached a = attached.get(hs[i].road());
+                if (a == null || (hs[i].u() < 0 ? -1 : 1) != a.outward()) continue;
+                double into = hs[i].road().attach.atEnd() ? a.sX() - hs[i].s() : hs[i].s() - a.sX();
+                double w = CrossSection.smooth(into / ROADSIDE_TURN), fh = g;
+                if (drop == null) drop = new boolean[n];
+                drop[i] = true;
+                for (int j = 0; j < n; j++)
+                    if (hs[j].road() == a.host()) {
+                        drop[j] = true;
+                        double f = surface(hs[j], x, z, g, density);
+                        if (!Double.isNaN(f)) fh = f;
+                    }
+                double fr = w > 0 ? surface(hs[i], x, z, g, density) : Double.NaN;
+                pair = fh + ((Double.isNaN(fr) ? g : fr) - fh) * w;
+            }
+        double up = fUp, down = fDown, spill = Double.NaN;
+        boolean any = faded;
+        if (!Double.isNaN(pair) && Math.abs(pair - g) >= NATURAL_TOLERANCE) {
+            any = true;
+            up = Math.max(up, pair - g);
+            down = Math.max(down, g - pair);
+        }
         for (int i = 0; i < n; i++) {
+            if (drop != null && drop[i]) continue;
             double f = surface(hs[i], x, z, g, density);
             if (Double.isNaN(f)) continue;
+            if (elevated(hs[i])) {
+                if (!(f <= spill)) spill = f;
+                continue;
+            }
             any = true;
             up = Math.max(up, f - g);
             down = Math.max(down, g - f);
         }
-        return any ? g + up - down : Double.NaN;
+        double f = any ? g + up - down : Double.NaN;
+        return Double.isNaN(spill) ? f : Double.isNaN(f) ? spill : Math.max(f, spill);
+    }
+
+    /**
+     * The finished surface near a junction pad (C3.3b): on the pad its pavement less TURF_DROP; else a road's formation
+     * (the host's and the minor's own paved band and shoulders); beyond its outline (distance pd, nearest point pn) the pad's
+     * own roadside (CrossSection.R2#roadside from the outline's height), fully within PAD_KEEP, blended into the roads'
+     * works out to PAD_SIDE (the host's ditch is filled across the mouth, as over a pipe).
+     */
+    private double padSurface(Junction j, double pd, double[] pn, RoadDesign[] near, double x, double z, double g, boolean density) {
+        if (pd <= 0) return j.height(x, z) - CrossSection.TURF_DROP;
+        boolean[] on = new boolean[1];
+        double others = roads(near, x, z, g, density, on);
+        if (on[0]) return others;
+        // the pad's roadside never enters water (as the roads' own)
+        if (water.wet(x, z) && !filled(x, z)) return others;
+        double h0 = j.height(pn[1], pn[2]) - CrossSection.TURF_DROP;
+        double side = h0 + CrossSection.R2.roadside(pd, g - h0);
+        double base = Double.isNaN(others) ? g : others;
+        double w = pd <= PAD_KEEP ? 1 : CrossSection.smooth(1 - (pd - PAD_KEEP) / (PAD_SIDE - PAD_KEEP));
+        double f = base + (side - base) * w;
+        if (pd > PAD_KEEP && Math.abs(f - g) < NATURAL_TOLERANCE) return Double.NaN;
+        return f;
     }
 
     /** The finished surface of a point already located on a road (h at world x, z). */
@@ -300,7 +769,9 @@ public final class RoadWorks {
         CrossSection sec = d.section;
         double v = h.v(), sc = h.sc(), beyond = h.beyond();
         if (v > MAX_HALF_WIDTH) return Double.NaN;
-        if (beyond == 0 && d.span(sc) != null) return Double.NaN;   // under a bridge: the natural valley
+        // under a bridge: the natural valley; under an overpass the spill-through slopes and the road it spans
+        RoadDesign.Span sp = beyond == 0 ? d.span(sc) : null;
+        if (sp != null) return sp.over() ? spill(h, sp, g) : Double.NaN;
         double design;
         if (v <= sec.edge) design = d.formationY(sc, h.u());
         else {
@@ -316,6 +787,24 @@ public final class RoadWorks {
         if (!formation && Math.abs(design - g) < NATURAL_TOLERANCE) return Double.NaN;
         if (!formation && water.wet(x, z) && !filled(x, z)) return Double.NaN;
         return design;
+    }
+
+    /**
+     * Under an overpass's span (C3.3b group 2) the approach embankment runs on as a spill-through slope: from the end's
+     * cross-section (its formation, beside it the fill template) the span's depth lower at the abutment (beside the deck
+     * that drop fades out over SPILL_FADE), then down at SPILL along the road; fill only (NaN under the ground).
+     */
+    private static double spill(Hit h, RoadDesign.Span sp, double g) {
+        RoadDesign d = h.road();
+        CrossSection sec = d.section;
+        double sc = h.sc(), v = h.v();
+        double sEnd = sc - sp.s0() <= sp.s1() - sc ? sp.s0() : sp.s1(), t = Math.abs(sc - sEnd);
+        double f = v <= sec.edge ? d.formationY(sEnd, h.u())
+                : d.formationY(sEnd, Math.copySign(sec.edge, h.u())) + sec.roadside(v - sec.edge, -1e9);
+        double fp = sec.edge + BridgeMesh.PARAPET_WIDTH;
+        f -= sp.depth() * (v <= fp ? 1 : CrossSection.smooth(1 - (v - fp) / SPILL_FADE)) + t * SPILL;
+        if (v > MAX_HALF_WIDTH - BLEND) f += (g - f) * CrossSection.smooth((v - (MAX_HALF_WIDTH - BLEND)) / BLEND);
+        return f > g + NATURAL_TOLERANCE ? f : Double.NaN;
     }
 
     /** From g, move towards f by no more than the drop allowed so far: the end taper (1:4 longitudinal). */
@@ -411,7 +900,7 @@ public final class RoadWorks {
     static double toNatural(Hit h, double rise) {
         if (h == null) return 0;
         CrossSection sec = h.road().section;
-        double dp = Math.hypot(Math.max(0, h.v() - sec.edge), h.beyond());
+        double dp = elevated(h) ? Double.POSITIVE_INFINITY : Math.hypot(Math.max(0, h.v() - sec.edge), h.beyond());
         return CrossSection.smooth((dp - EDGE_KEEP) / EDGE_RAMP) * CrossSection.smooth(1 - Math.abs(rise) / TO_NATURAL);
     }
 
@@ -423,6 +912,7 @@ public final class RoadWorks {
 
     /** Whether a point is inside a road's clearance (forest roots, spawn): within CLEAR + extra of a centreline, ends included. */
     public boolean clear(double x, double z, double extra) {
+        if (!towns.isEmpty() && towns.clear(x, z, extra)) return true;
         Hit h = hit(x, z, CLEAR + extra);
         return h != null && !TunnelWorks.overBores(h);
     }
@@ -463,14 +953,22 @@ public final class RoadWorks {
      * a BARRIER BridgeMesh.WING when it is a wing wall rather than a parapet; bottom: the lowest deck
      * block (DECK, ABUTMENT, BARRIER) or the natural ground the clearing stops at (OPEN); paveLo / paveHi: the column's
      * pavement height range (PAVED, DECK, ABUTMENT); roof: the highest block the guard keeps (a tunnel's works under the
-     * mountain: the forest above them grows; Integer.MAX_VALUE: up to the sky).
+     * mountain: the forest above them grows; Integer.MAX_VALUE: up to the sky); deck: an overpass's deck cells over this
+     * finish (C3.3b group 2: DECK, ABUTMENT or BARRIER standing on it), or null.
      */
-    public record Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi, int roof) {
+    public record Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi, int roof, Column deck) {
         public static final Column NONE = new Column(Kind.NONE, 0, 0, 0, 0, 0, 0, 0);
 
         public Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi) {
-            this(kind, y, layers, upper, data, bottom, paveLo, paveHi, Integer.MAX_VALUE);
+            this(kind, y, layers, upper, data, bottom, paveLo, paveHi, Integer.MAX_VALUE, null);
         }
+
+        public Column(Kind kind, int y, int layers, int upper, int data, int bottom, double paveLo, double paveHi, int roof) {
+            this(kind, y, layers, upper, data, bottom, paveLo, paveHi, roof, null);
+        }
+
+        /** This finish with an overpass's deck cells over it. */
+        public Column withDeck(Column d) { return new Column(kind, y, layers, upper, data, bottom, paveLo, paveHi, roof, d); }
 
         /** The highest block this column's finish occupies. */
         public int top() { return upper > 0 ? y + 1 : y; }
@@ -490,7 +988,8 @@ public final class RoadWorks {
         }
         Column c = finish(x, z, ground);
         if (cell != null && (c.kind() == Kind.PAVED || c.kind() == Kind.TURF) && (c.data() & (TUNNEL_PAVED | TUNNEL_OVER)) == 0)
-            return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | CULVERT_BODY, cell.culvert().bed - 1, c.paveLo(), c.paveHi());
+            return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | CULVERT_BODY, cell.culvert().bed - 1, c.paveLo(), c.paveHi(),
+                    Integer.MAX_VALUE, c.deck());
         return c;
     }
 
@@ -501,17 +1000,36 @@ public final class RoadWorks {
     private static Column over(Column c, Column works) {
         if (works == null) return c;
         int roof = (works.data() & TunnelWorks.APPROACH_COLUMN) != 0 ? Integer.MAX_VALUE : works.roof();
-        return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | TUNNEL_OVER, c.bottom(), c.paveLo(), c.paveHi(), roof);
+        return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | TUNNEL_OVER, c.bottom(), c.paveLo(), c.paveHi(), roof, c.deck());
     }
 
     /** The column's finish without a box culvert's cells (#column). */
     private Column finish(int x, int z, Ground ground) {
         Hit centre = hit(x + 0.5, z + 0.5, REACH);
+        if (!towns.isEmpty()) {
+            Column t = townColumn(x, z, ground, centre);
+            if (t != null) return t;
+        }
         if (centre == null) return Column.NONE;
+        Column base = finish(centre, x, z, ground);
+        // an overpass's deck over the column (C3.3b group 2): the finish of the ground below, the deck's cells over it
+        Hit over = overHit(x + 0.5, z + 0.5);
+        Column deck = over == null ? null : deck(over, pavedRange(over.road(), x, z), x, z, ground);
+        if (deck == null) return base;
+        return base.kind() == Kind.NONE ? deck : base.withDeck(deck);
+    }
+
+    /** The finish of a column whose centre lies on hit centre (an overpass's span: the ground under it). */
+    private Column finish(Hit centre, int x, int z, Ground ground) {
         RoadDesign d = centre.road();
-        double[] pave = pavedRange(d, x, z);
+        boolean up = elevated(centre);
+        // near a junction pad (C3.3b) or an attached ramp (group 2) a column may be paved by two roads together
+        boolean nearPad = padsNear(x + 0.5, z + 0.5) != null;
+        double[] pave = up ? null : nearPad || rampsNear(x + 0.5, z + 0.5) ? pavedRange(x, z) : pavedRange(d, x, z);
+        // a column paved by a road and a town together (the exit crossroad's end at its mouth)
+        if (pave == null && !up && towns.touches(Math.floorDiv(x, 16), Math.floorDiv(z, 16))) pave = townPave(x, z);
         boolean onRoute = centre.beyond() == 0;
-        RoadDesign.Span span = onRoute ? d.span(centre.sc()) : null;
+        RoadDesign.Span span = onRoute && !up ? d.span(centre.sc()) : null;
         // a tunnel's bores, portals and approaches (Tunnel V1); null: the open road's finish (an approach's pavement and shelf)
         RoadDesign.Tunnel tunnel = TunnelWorks.near(centre);
         // works standing on finished ground (TunnelWorks.ON_GROUND): the open road's finish under them, the works above
@@ -541,6 +1059,8 @@ public final class RoadWorks {
                 // toward the daylight line the turf meets the natural surface as drawn, not the planned ground (group B);
                 // not by a tunnel, whose density keeps rock over the band it clears (its natural tops are not the ground there)
                 double w = tunnel != null ? 0 : natural ? 1 : toNatural(h, f - g);
+                // and not next to a junction pad (C3.3b)
+                if (nearPad && !natural && w > 0) w *= CrossSection.smooth((padDistance(x + a, z + b) - EDGE_KEEP) / EDGE_RAMP);
                 if (tunnel != null && natural) f = g;
                 if (w > 0) {
                     if (tops == null) tops = naturalTops(x, z, ground);
@@ -549,7 +1069,7 @@ public final class RoadWorks {
                 }
                 if (!natural) {
                     any = true;
-                    if (h != null && underPavement(h)) f = Math.floor(f * 8 + 1e-9) / 8;
+                    if (h != null && underPavement(h) || nearPad && padDistance(x + a, z + b) <= CrossSection.BEVEL_RUN) f = Math.floor(f * 8 + 1e-9) / 8;
                 }
                 // under a tunnel's works the ground in front runs on: a corner in or behind the concrete keeps the floor
                 if (over != null) {
@@ -572,8 +1092,14 @@ public final class RoadWorks {
             // no corner over the pavement itself: a corner on a span's deck or past a trimmed end's taper has no finished
             // field of its own (natural there) and would stand on the embankment's or the natural surface (group D check)
             for (int i = 0; i < 4; i++) {
+                Junction pj = nearPad ? pad(x + (i & 1), z + (i >> 1)) : null;
+                if (pj != null) {
+                    double top = pj.height(x + (i & 1), z + (i >> 1));
+                    if (q[i] > top) q[i] = Math.floor(top * 8 + 1e-9) / 8;
+                    continue;
+                }
                 Hit h = hits[i] != null ? hits[i] : hit(x + (i & 1), z + (i >> 1), REACH);
-                if (h == null || h.beyond() > 0 || !h.road().section.paved(h.v()) || !underPavement(h)) continue;
+                if (h == null || h.beyond() > 0 || elevated(h) || !h.road().section.paved(h.v()) || !underPavement(h)) continue;
                 double top = h.road().pavementY(h.sc(), h.u());
                 if (q[i] > top) q[i] = Math.floor(top * 8 + 1e-9) / 8;
             }
@@ -582,7 +1108,18 @@ public final class RoadWorks {
             int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | (bare(x, z) ? BARE : 0);
             return over(new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0), over);
         }
-        // on a bridge span: the collision of the bridge mesh (BridgeMesh; docs 10.11), every column chosen by its centre
+        return deck(centre, pave, x, z, ground);
+    }
+
+    /**
+     * A column on a bridge span (centre: its centre's hit, pave: the deck's pavement range over it, or null): the collision
+     * of the bridge mesh (BridgeMesh; docs 10.11), every column chosen by its centre. Beside the decks: a wing wall, or OPEN
+     * (the natural valley); under an overpass (C3.3b group 2) nothing there (null): the ground is the road's below.
+     */
+    private Column deck(Hit centre, double[] pave, int x, int z, Ground ground) {
+        RoadDesign d = centre.road();
+        RoadDesign.Span span = d.span(centre.sc());
+        if (span == null) return null;
         CrossSection sec = d.section;
         double v = centre.v(), sc = centre.sc(), u = centre.u();
         double deckTop = d.datum(sc);
@@ -640,7 +1177,7 @@ public final class RoadWorks {
                 return new Column(Kind.BARRIER, y, layers, 0, BridgeMesh.WING, Math.min(y, (int) Math.floor(g)), f, f);
             }
         }
-        return new Column(Kind.OPEN, (int) Math.floor(deckTop), 0, 0, 0, (int) Math.floor(g), 0, 0);
+        return span.over() ? null : new Column(Kind.OPEN, (int) Math.floor(deckTop), 0, 0, 0, (int) Math.floor(g), 0, 0);
     }
 
     /**
@@ -713,12 +1250,99 @@ public final class RoadWorks {
      * decide; 5 cm more covers the mesh's chords (2 m stations) against the exact curve.
      */
     public boolean bare(int x, int z) {
+        if (!towns.isEmpty() && towns.bare(x, z, PLANT_CLEAR)) return true;
         double w = 1 + 2 * PLANT_CLEAR;
         for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
             Hit h = hit(x - PLANT_CLEAR + a * w, z - PLANT_CLEAR + b * w, REACH);
             if (h != null && underPavement(h, 0.05)) return true;
         }
+        // a junction's sight triangles (Junction#inSight) keep clear of plants (C3.3b)
+        Junction[] ss = sightByChunk.isEmpty() ? null : sightByChunk.get(key(Math.floorDiv(x, 16), Math.floorDiv(z, 16)));
+        if (ss != null) for (Junction j : ss) if (j.inSight(x + 0.5, z + 0.5)) return true;
+        // and a pad and its bevels
+        Junction[] ps = padsNear(x + 0.5, z + 0.5);
+        if (ps != null)
+            for (Junction j : ps) {
+                if (!j.near(x + 0.5, z + 0.5, 2)) continue;
+                for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+                    double px = x - PLANT_CLEAR + a * w, pz = z - PLANT_CLEAR + b * w;
+                    if (j.contains(px, pz) || j.nearest(px, pz)[0] <= CrossSection.BEVEL_RUN + 0.05) return true;
+                }
+            }
         return false;
+    }
+
+    // ------------------------------------------------------------------ towns (Town Framework V1)
+
+    /**
+     * A column of a town's works (TownWorks), or null where the roads decide: a road's formation or a pad at the column's
+     * centre, or beside the footprint where a road's works reach it (their surface combines the town's slopes, #surface).
+     * On the footprint: PAVED where all nine points are paved (by the town, or a road at the crossroad's mouth), else
+     * graded turf (lots, yards, the utility strips, the edges of the pavement).
+     */
+    private Column townColumn(int x, int z, Ground ground, Hit centre) {
+        if (!towns.touches(Math.floorDiv(x, 16), Math.floorDiv(z, 16))) return null;
+        double cx = x + 0.5, cz = z + 0.5;
+        if (centre != null && !elevated(centre) && onFormation(centre) || pad(cx, cz) != null) return null;
+        TownWorks.Spot sp = towns.spot(cx, cz);
+        if (sp == null) {
+            if (centre != null) return null;
+        } else {
+            double[] pave = townPave(x, z);
+            if (pave != null) return paved(Kind.PAVED, pave, 0);
+        }
+        return townTurf(x, z, ground);
+    }
+
+    /** The pavement range of column (x, z) when each of its nine points is paved by a town or a road, else null. */
+    private double[] townPave(int x, int z) {
+        RoadDesign[] near = near(x + 0.5, z + 0.5);
+        double lo = Double.POSITIVE_INFINITY, hi = Double.NEGATIVE_INFINITY;
+        for (int a = 0; a <= 2; a++) for (int b = 0; b <= 2; b++) {
+            double px = x + a * 0.5, pz = z + b * 0.5;
+            TownWorks.Spot s = towns.spot(px, pz);
+            double y = s != null && s.part().paved() ? s.h() : Double.NaN;
+            if (Double.isNaN(y) && near != null)
+                for (RoadDesign d : near) {
+                    y = pave(d, px, pz);
+                    if (!Double.isNaN(y)) break;
+                }
+            if (Double.isNaN(y)) return null;
+            lo = Math.min(lo, y);
+            hi = Math.max(hi, y);
+        }
+        return new double[]{lo, hi};
+    }
+
+    /**
+     * A town's turf column: corners on the finished field (#surface); off the footprint toward the slope's toe they meet
+     * the natural surface as drawn (as the roads' turf, #toNatural), on the street strips they round down (the turf never
+     * rises through a pavement).
+     */
+    private Column townTurf(int x, int z, Ground ground) {
+        double[] q = new double[4];
+        boolean any = false;
+        int[] tops = null;
+        for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+            double px = x + a, pz = z + b, g = ground.at(px, pz), f = surface(px, pz, g);
+            boolean natural = Double.isNaN(f);
+            TownWorks.Spot sp = natural ? null : towns.spot(px, pz);
+            double w = natural ? 1 : sp != null ? 0 : CrossSection.smooth(1 - Math.abs(f - g) / TO_NATURAL);
+            if (w > 0) {
+                if (tops == null) tops = naturalTops(x, z, ground);
+                double n = naturalSurface(tops, a, b);
+                f = natural ? n : f + (n - g) * w;
+            }
+            if (!natural) {
+                any = true;
+                if (sp != null && sp.part() != TownWorks.Part.LOT && sp.part() != TownWorks.Part.YARD) f = Math.floor(f * 8 + 1e-9) / 8;
+            }
+            q[a + 2 * b] = f;
+        }
+        if (!any) return Column.NONE;
+        int[] fit = fit(q);
+        int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | (bare(x, z) ? BARE : 0);
+        return new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0);
     }
 
     /** Under the pavement or its bevels (the turf there rounds down). */
@@ -729,6 +1353,88 @@ public final class RoadWorks {
         double v = h.v(), s = h.s(), r = CrossSection.BEVEL_RUN + extra;
         CrossSection sec = h.road().section;
         return v >= sec.halfMedian - r && v <= sec.edge + r && s >= -r && s <= h.road().length + r;
+    }
+
+    /**
+     * #pavedRange(RoadDesign, int, int) with the junction pads (C3.3b): where a pad holds one of the square's nine points,
+     * every one paved by a pad or by any road near (the column's own road first); elsewhere exactly that of the column's
+     * road.
+     */
+    public double[] pavedRange(int x, int z) {
+        Junction[] ps = padsNear(x + 0.5, z + 0.5);
+        Hit centre = hit(x + 0.5, z + 0.5, REACH);
+        // the ground's road (an overpass's span paves nothing on the ground)
+        RoadDesign own = centre == null || elevated(centre) ? null : centre.road();
+        // an attached ramp (C3.3b group 2) and its host pave a square together
+        boolean ramps = rampsNear(x + 0.5, z + 0.5);
+        if (ps == null && !ramps) return own == null ? null : pavedRange(own, x, z);
+        boolean onPad = false;
+        if (ps != null)
+            for (int a = 0; a <= 2 && !onPad; a++) for (int b = 0; b <= 2 && !onPad; b++) for (Junction j : ps) if (j.contains(x + a * 0.5, z + b * 0.5)) { onPad = true; break; }
+        if (!onPad && !ramps) return own == null ? null : pavedRange(own, x, z);
+        RoadDesign[] near = near(x + 0.5, z + 0.5);
+        double lo = Double.POSITIVE_INFINITY, hi = Double.NEGATIVE_INFINITY;
+        for (int a = 0; a <= 2; a++) for (int b = 0; b <= 2; b++) {
+            double px = x + a * 0.5, pz = z + b * 0.5, y = Double.NaN;
+            if (ps != null) for (Junction j : ps) if (j.contains(px, pz)) { y = j.height(px, pz); break; }
+            if (Double.isNaN(y) && own != null) y = pave(own, px, pz);
+            if (Double.isNaN(y) && near != null)
+                for (RoadDesign d : near) {
+                    y = pave(d, px, pz);
+                    if (!Double.isNaN(y)) break;
+                }
+            if (Double.isNaN(y)) return null;
+            lo = Math.min(lo, y);
+            hi = Math.max(hi, y);
+        }
+        return new double[]{lo, hi};
+    }
+
+    /**
+     * #paveAt, but NaN where an attached ramp gives way to its host's pavement and on an overpass's span (C3.3b group 2:
+     * the deck is not the ground's pavement).
+     */
+    private double pave(RoadDesign d, double x, double z) {
+        double y = paveAt(d, x, z);
+        if (Double.isNaN(y)) return y;
+        Attached a = attached.isEmpty() ? null : attached.get(d);
+        if (a != null && onBand(a.host(), x, z)) return Double.NaN;
+        if (!d.spans.isEmpty()) {
+            double[] l = d.local(x, z, d.section.edge + 2);
+            RoadDesign.Span sp = l == null ? null : d.span(Math.max(0, Math.min(d.length, l[0])));
+            if (sp != null && sp.over()) return Double.NaN;
+        }
+        return y;
+    }
+
+    /** A road's pavement height at a point of its paved band (on the route), else NaN. */
+    private static double paveAt(RoadDesign d, double x, double z) {
+        CrossSection sec = d.section;
+        double[] l = d.local(x, z, sec.edge + 2);
+        if (l == null) return Double.NaN;
+        double s = l[0], v = Math.abs(l[1]);
+        if (s < 0 || s > d.length || sec.divided && v <= sec.halfMedian || v >= sec.edge) return Double.NaN;
+        return d.pavementY(s, l[1]);
+    }
+
+    /**
+     * The pavement's height at a point for the walls of a dug hole (RoadCells): a pad's, else road d's (its band and a
+     * little beyond), else NaN.
+     */
+    public double paveTop(double x, double z, RoadDesign d) {
+        Junction j = pad(x, z);
+        if (j != null) return j.height(x, z);
+        if (d == null) {
+            RoadDesign[] near = near(x, z);
+            if (near != null)
+                for (RoadDesign q : near) {
+                    double y = paveAt(q, x, z);
+                    if (!Double.isNaN(y)) return y;
+                }
+            return Double.NaN;
+        }
+        double[] l = d.local(x, z, d.section.edge + 4);
+        return l == null ? Double.NaN : d.pavementY(l[0], l[1]);
     }
 
     /**
