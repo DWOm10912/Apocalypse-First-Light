@@ -12,7 +12,7 @@
 | 负重条（182 长，三个档位刻度，数字变化时淡入） | 底部中间，绑定栏上面 | `weight/ClientWeightHud` |
 | 绑定栏（6 格，键 4–9，数量，选中上顶 + 琥珀小条） | 底部中间 | `client/inventory/LoadoutHud`、`client/ui/AflHotbarOverlay` |
 | 武器列表（武器位 1–3 剪影） | 右下，枪械 HUD 上面 | `LoadoutHud.WEAPON_LIST` |
-| 枪械 HUD（剪影、枪名、弹药、射击模式） | 右下 | `weapon/client/NativeGunHud` |
+| 枪械 HUD（射击模式胶囊 + 短枪名，弹匣大数字 / 备弹；2026-10-17 改成 V2 B） | 右下 | `weapon/client/NativeGunHud` |
 | 盖革计数器面板 | 右下 | `client/GeigerHudOverlay` |
 | 按键提示面板 | 右上 | `client/ui/AflKeyHintPanel` |
 | 原版药水效果 | 右上 | 原版 |
@@ -146,12 +146,9 @@ AFL 现有的状态：生命、护甲、饥饿、口渴、耐力、氧气、核�
 
 左下角原来是聊天栏。`StatusBadgeHud.Chat` 在 `CustomizeGuiOverlayEvent.Chat` 里把聊天栏往上推到组件和徽章列上面（随徽章数量变化，0.2 秒过渡）。只在没有打开界面时推；打开聊天框时聊天回到原版位置，点链接不受影响。
 
-### 6.6 枪械 HUD 小改
+### 6.6 枪械 HUD（2026-10-17 改成 V2 B 装备区，没进游戏看过）
 
-枪械 HUD 是布局编辑器 / 配置驱动的，而且枪在重做，所以这次只加两点（`weapon/client/NativeGunHud`）：
-
-- 弹匣里剩 1/4 或更少（且不为 0）时弹药数字变琥珀 `#E0A84A`；空仓仍是原来的红。
-- 空仓而且还有备弹时，弹药行左边出现换弹键帽 + "换弹"（`hud.apocalypse_firstlight.gun.reload`，键取自 `NativeGunInput.reloadKey()`）。
+枪重做合并后，右下装备区按概念图 B 做了（`weapon/client/NativeGunHud`）：射击模式胶囊 + 短枪名一行，弹匣大数字 / 备弹一行；剩 1/4 以下琥珀，空仓红 + 换弹键帽和"换弹"，换弹中"换弹"字下一条琥珀进度条；剪影和竖线去掉；武器列表固定在它上方。细节、字号、配置见 `../native_guns/native_gun_hud_layout_v1.md`。
 
 ### 6.7 删掉的旧代码
 
@@ -165,7 +162,6 @@ AFL 现有的状态：生命、护甲、饥饿、口渴、耐力、氧气、核�
 
 ### 6.9 没做的
 
-- 右下装备区改版（射击模式胶囊、枪名排版、换弹进度条）——等枪重做；
 - 绑定栏改成 17 格大小、用完变淡留位；
 - 交互提示的长按进度圈和"做不了"变暗（`WorldInteractionHint` 现在没有长按的概念）；
 - 盖革计数器面板的位置没动。
@@ -178,6 +174,28 @@ AFL 现有的状态：生命、护甲、饥饿、口渴、耐力、氧气、核�
 - 聊天栏上移的位置；
 - 负重小圆的唤醒 / 隐藏；坐车时的样子；
 - 低弹药琥珀和换弹提示的位置。
+
+### 6.11 HUD 卡顿（2026-10-17）
+
+用户反馈：创造模式 125 fps，切到生存模式后约 80 fps；耐力条一涨一落时掉帧更明显。原因有两个：
+
+1. 仪表动起来的时候，每帧都要在 CPU 上逐像素重画整张贴图再上传（`client/AflGauge`，GUI 缩放 5 时生命环 7.5 ms、耐力 5.7 ms、身体底盘 7.3 ms）；
+2. 体温表盘（`temperature/TemperatureDial`）一直在动（呼吸、趋势箭头），HUD 不动时也每秒在 CPU 上重画 30 次。
+
+改法：两者都改到 GPU，每帧逐像素画，公式不变（`client/AflGaugeProgram` + 着色器 `afl_gauge`；`temperature/TemperatureDialProgram` + 着色器 `afl_temperature_dial`）。仪表的图标画成白色贴图，绘制时着色，只有形状、大小或位置变了才重画。着色器没加载时退回原来的 CPU 画法。截图对比：GPU 和 CPU 画出来的一样。
+
+测量（测试客户端，用户存档副本，2560 × 1440，RTX 3080 Ti，`RainPerfProbe` 的 hud 模式，见 `docs/rendering/rain_v1.md` 3.1；同一次运行的四个阶段之间可以比较，不同次之间场景不同）：
+
+| 情况 | 不开光影 | 开光影（Aureveil） |
+|---|---|---|
+| 生存 HUD，仪表不动（表盘照常动） | 218 fps | 115 fps |
+| 所有仪表每帧都在变（新画法） | 257 fps | 112 fps |
+| 所有仪表每帧都在变（旧 CPU 画法） | 28 fps | 28 fps |
+| F1 隐藏 HUD | 539 fps | 138 fps |
+
+改之前（只改了环带、表盘还在 CPU 上的那次）开光影是 74 fps（HUD 显示）对 118 fps（隐藏）。JFR：开光影、仪表不动时，渲染线程花在 GUI 上的采样从 12%（大头是 `TemperatureDial.fill`）降到 2%。剩下的 HUD 开销约 1.4 ms，主要在 GPU 一侧。
+
+还没做：寒冷徽章的雪花图标光栅化一次约 2.3 ms，徽章滑入滑出时位置的小数部分在变，会连续重画几帧。用户 2026-10-17 实机确认：不卡了。
 
 ## 来源
 

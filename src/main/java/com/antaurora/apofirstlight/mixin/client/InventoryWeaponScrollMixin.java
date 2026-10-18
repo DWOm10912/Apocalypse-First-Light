@@ -27,6 +27,8 @@ public abstract class InventoryWeaponScrollMixin {
     private void afl$weaponPositions(double direction, CallbackInfo ci) {
         if (PlayerStorageCapacity.unrestricted(player)) return;
         ci.cancel();
+        // driving: the wheel does not take up a weapon (Loadout puts one away on the server too)
+        if (com.antaurora.apofirstlight.vehicle.PickupTruckEntity.driving(player)) return;
         int step = (int) Math.signum(direction);
         if (step == 0) return;
         int next = Math.min(selected, HotbarRoles.USED - 1);

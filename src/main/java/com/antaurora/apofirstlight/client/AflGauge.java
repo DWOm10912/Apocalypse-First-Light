@@ -15,9 +15,11 @@ import java.util.Map;
 
 /**
  * Survival HUD gauge: concentric ring bands (full circles or arcs such as the crescents, continuous or split into
- * segments), discs and glyphs, drawn per real pixel with anti-aliased edges (distance fields) into one dynamic texture
- * per gauge and blitted once a frame. The texture is only redrawn when what it shows changes (an animation step, a
- * colour), so a steady gauge costs one blit. Sizes and positions in GUI pixels; angles in degrees clockwise from the top.
+ * segments), discs and glyphs, drawn per real pixel with anti-aliased edges (distance fields). The bands are drawn by the
+ * GPU every frame ({@link AflGaugeProgram}, since 2026-10-17); the glyph is rastered once into a white texture per gauge
+ * and tinted as it is blitted. Without the program the whole gauge is rastered on the CPU into one dynamic texture, redrawn
+ * when what it shows changes (a moving gauge: its whole texture every frame, several ms at GUI scale 5). Sizes and
+ * positions in GUI pixels; angles in degrees clockwise from the top.
  */
 public final class AflGauge {
     /** The empty part of a band: dark, translucent (the HUD's ring backing). */
@@ -70,6 +72,10 @@ public final class AflGauge {
         Sprite(ResourceLocation id) { this.id = id; }
     }
     private static final Map<String, Sprite> SPRITES = new HashMap<>();
+    /** Dev (RainPerfProbe): every gauge redrawn every frame, as while all of them animate. */
+    public static volatile boolean forceRedraw;
+    /** Per gauge: redraws and their time (raster + upload, ns) since the last {@link #status}. */
+    private static final Map<String, long[]> REDRAWS = new java.util.TreeMap<>();
 
     private AflGauge() {}
 
@@ -78,6 +84,30 @@ public final class AflGauge {
                             @Nullable Glyph glyph) {
         int s = (int)Math.max(1, Math.round(Minecraft.getInstance().getWindow().getGuiScale()));
         int size = (int)Math.ceil(2 * reach * s) + 2;
+        int x0 = (int)Math.round(guiCx * s - size / 2.0), y0 = (int)Math.round(guiCy * s - size / 2.0);
+        double cx = guiCx * s - x0, cy = guiCy * s - y0;
+        graphics.pose().pushPose();
+        graphics.pose().scale(1.0f / s, 1.0f / s, 1.0f);
+        if (AflGaugeProgram.ready(bands)) {
+            // the bands on the GPU every frame (AflGaugeProgram); the glyph from a white sprite tinted as it is drawn, so
+            // only a new shape, size or place redraws it
+            AflGaugeProgram.draw(graphics, x0, y0, size, cx, cy, s, bands);
+            if (glyph != null && glyph.alpha() > 0) {
+                Glyph white = new Glyph(glyph.shape(), glyph.size(), 0xFFFFFF, 1, glyph.offsetY());
+                Sprite sprite = sprite(name + "_glyph", size, s, cx, cy, List.of(), white);
+                RenderSystem.setShaderColor((glyph.rgb() >> 16 & 255) / 255F, (glyph.rgb() >> 8 & 255) / 255F, (glyph.rgb() & 255) / 255F,
+                        (float) Math.min(1, glyph.alpha()));
+                blit(graphics, sprite, x0, y0, size);
+                RenderSystem.setShaderColor(1, 1, 1, 1);
+            }
+        } else {
+            blit(graphics, sprite(name, size, s, cx, cy, bands, glyph), x0, y0, size);
+        }
+        graphics.pose().popPose();
+    }
+
+    /** The gauge's texture, rastered again when what it shows changed. */
+    private static Sprite sprite(String name, int size, int s, double cx, double cy, List<Band> bands, @Nullable Glyph glyph) {
         Sprite sprite = SPRITES.computeIfAbsent(name, n -> new Sprite(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/gauge_" + n)));
         if (sprite.texture == null || sprite.size != size) {
             sprite.image = new NativeImage(NativeImage.Format.RGBA, size, size, true);
@@ -86,21 +116,39 @@ public final class AflGauge {
             sprite.size = size;
             sprite.drawn = false;
         }
-        int x0 = (int)Math.round(guiCx * s - size / 2.0), y0 = (int)Math.round(guiCy * s - size / 2.0);
-        double cx = guiCx * s - x0, cy = guiCy * s - y0;
         long key = key(s, cx, cy, bands, glyph);
-        if (!sprite.drawn || key != sprite.key) {
+        // forceRedraw stands in for moving bands: a glyph-only sprite (no bands) still redraws only on a new shape / size / place
+        if (!sprite.drawn || key != sprite.key || forceRedraw && !bands.isEmpty()) {
+            long t0 = System.nanoTime();
             raster(sprite.image, size, s, cx, cy, bands, glyph);
             sprite.texture.upload();
             sprite.key = key;
             sprite.drawn = true;
+            long[] r = REDRAWS.computeIfAbsent(name, n -> new long[3]);
+            r[0]++;
+            r[1] += System.nanoTime() - t0;
+            r[2] = size;
         }
+        return sprite;
+    }
+
+    private static void blit(GuiGraphics graphics, Sprite sprite, int x0, int y0, int size) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        graphics.pose().pushPose();
-        graphics.pose().scale(1.0f / s, 1.0f / s, 1.0f);
         graphics.blit(sprite.id, x0, y0, 0, 0, size, size, size, size);
-        graphics.pose().popPose();
+    }
+
+    /** The redraws since the last call per gauge (count, mean us, texture size px), and the total ms; then cleared. */
+    public static String status() {
+        StringBuilder b = new StringBuilder();
+        long total = 0;
+        for (var e : REDRAWS.entrySet()) {
+            long[] r = e.getValue();
+            total += r[1];
+            b.append(e.getKey()).append(' ').append(r[0]).append(" x ").append(r[1] / Math.max(1, r[0]) / 1000).append(" us (").append(r[2]).append(" px); ");
+        }
+        REDRAWS.clear();
+        return "total " + total / 1_000_000 + " ms; " + b;
     }
 
     /** Quantised picture state: fills to 1/2000 of the span, alphas to 1/255; anything else changing redraws. */
@@ -137,7 +185,15 @@ public final class AflGauge {
     private static void raster(NativeImage image, int size, int s, double cx, double cy, List<Band> bands, @Nullable Glyph glyph) {
         double[] p = new double[4];
         double box = glyph == null ? 0 : glyph.size() * s, gx = cx - box / 2, gy = cy + (glyph == null ? 0 : glyph.offsetY() * s) - box / 2;
-        for (int py = 0; py < size; py++) for (int px = 0; px < size; px++) {
+        int fx0 = 0, fy0 = 0, fx1 = size, fy1 = size;
+        if (bands.isEmpty()) {
+            // a glyph alone (the GPU draws the bands): only its box (glyphs live in their unit box), two pixels round it for the anti-aliasing
+            image.fillRect(0, 0, size, size, 0);
+            if (glyph == null || box <= 0) return;
+            fx0 = Math.max(0, (int)Math.floor(gx) - 2); fx1 = Math.min(size, (int)Math.ceil(gx + box) + 2);
+            fy0 = Math.max(0, (int)Math.floor(gy) - 2); fy1 = Math.min(size, (int)Math.ceil(gy + box) + 2);
+        }
+        for (int py = fy0; py < fy1; py++) for (int px = fx0; px < fx1; px++) {
             double x = px + 0.5 - cx, y = py + 0.5 - cy, r = Math.hypot(x, y);
             double deg = Math.toDegrees(Math.atan2(x, -y));
             if (deg < 0) deg += 360;

@@ -6,7 +6,7 @@
 
 `models/item/{id}.json` 使用 `forge:separate_transforms`：`base` 仍指向既有 `{id}_in_hand` 3D 模型；`perspectives.gui` 使用 `minecraft:item/generated` + `forge:item_layers` 读取 `textures/item/{id}_inventory.png`。因此 GUI 实际显示预渲染 PNG，不使用枪械 Runtime 3D 绘制。
 
-V1 前五张原图各自紧裁边界，画布尺寸分别为 P9 187×142、Blackridge 268×195、BR51 1165×574、HR55 1028×586、Silverwood 1225×606。Blackridge、BR51、HR55、Silverwood 的 GUI 子模型另有各自的非等比 `display.scale`，使图标占格受原图宽高和手动补偿共同影响。BR51 的 1165×574 也不满足 power-of-two。原 PNG 来源分散，没有统一生成器。HUD 使用 `NativeGunHudLayout.silhouette` 按图像宽高在独立区域中居中适配；本轮仅沿用该 `min(width ratio, height ratio)` 数学思路，没有更改 HUD 代码或尺寸。
+V1 前五张原图各自紧裁边界，画布尺寸分别为 P9 187×142、Blackridge 268×195、BR51 1165×574、HR55 1028×586、Silverwood 1225×606。Blackridge、BR51、HR55、Silverwood 的 GUI 子模型另有各自的非等比 `display.scale`，使图标占格受原图宽高和手动补偿共同影响。BR51 的 1165×574 也不满足 power-of-two。原 PNG 来源分散，没有统一生成器。当时的 HUD 使用 `NativeGunHudLayout.silhouette` 按图像宽高在独立区域中居中适配（HUD V2 B 起 HUD 不再画剪影）；本轮仅沿用该 `min(width ratio, height ratio)` 数学思路，没有更改 HUD 代码或尺寸。
 
 ## V1 生成流程
 

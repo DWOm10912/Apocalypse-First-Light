@@ -109,16 +109,17 @@
   - 加载时按 35° 生成平滑法线，和烘焙时 Blender 的硬边 + 加权法线一致。
   - 用 Vextris 0.1.1-alpha.4 的 `MeshLoader` 离线加载过：40 个 part 里 39 个是平滑 part（只有击针指示销是纯平面）。
 - 绘制（`NativeGunContextRenderer#drawCached`）：
-  - format 3 的枪网格在第一、第三人称走 Vextris GPU 缓存（`MeshGpuCache.drawBone`，每根骨骼一次，位姿已在骨骼枢轴）。
+  - 枪网格在第一、第三人称走 Vextris GPU 缓存（`MeshGpuCache.drawBone`，每根骨骼一次，位姿已在骨骼枢轴）。原来只有 format 3；2026-10-17 起所有 format 都走（下雨天拿 BR-51 掉帧，JFR：format 1 / 2 网格每帧逐顶点写入是拿枪时渲染线程最大的 CPU 开销；改后拿枪比空手多出的渲染线程 Java 采样从约 59 个降到约 2 个/12 s）。format 1 / 2 的平面 part 在缓存里是 QUADS，和 CPU 路径画出来一样。**改后其他枪还没进游戏看过。**
   - 原因 1：开光影时 Oculus 会把 GeckoLib 那个 QUADS 缓冲里的法线按面重写，曲面会变成一块一块的，和烘焙的法线贴图对不上；GPU 缓存在开光影时把平滑 part 存成 TRIANGLES，保留顶点法线。
   - 原因 2：网格不用每帧重新提交。
   - 这些情况仍走原来的 CPU 路径（`GeckoMeshRenderer.renderBone`）：
-    - format 1 / 2 的网格（其他枪没有变化）；
     - 物品栏、展示框等其他显示方式；
     - Oculus 手部的半透明阶段；
     - `-Dvextris.gpuCache=false`。
   - GPU 缓存不做第一人称的背面剔除（CPU 路径的优化），对显卡开销影响很小。
 - 绘制（`MaintenanceGunRendering#drawCached`，2026-10-17 加）：维护台检视视图、背着的枪、地上的枪、枪架（非区块路径）这些静止姿态的枪，format 3 网格也走 GPU 缓存，和 T15 皮卡一样即时绘制。原因同上：用户的检视截图在光影下是这条路径，原来是 GeckoLib QUADS。
+  - 2026-10-17 晚：改成所有 format 都走，并去掉“只限 `MultiBufferSource.BufferSource`”这个条件。开光影时 Oculus 给实体图层的是一个包装过的 buffer（给每个实体打标记），不是 `BufferSource`，所以身上背着的枪（背上的 BR-51、枪套里的 P9）一直在 CPU 上逐顶点写，每帧在阴影和主画面里各写一遍。在用户存档里这占了开光影时渲染线程约 70%（见 [雨 V1](../rendering/rain_v1.md) 第 3.4 节）。现在只有两种截取几何的用途留在 CPU 路径：检视截取（`MaintenanceGunRendering.Capture`，`GunInspectionGeometry`）和枪架 / 地上枪的区块截取（`ClosedFaces`）。
+  - 测试客户端截图看过（开 Aureveil 和不开光影，第三人称前后）：背上的枪、枪带、枪套位置和改之前一样。**用户还没在游戏里看过。**
   - 只在真实的 `MultiBufferSource.BufferSource` 上走；检视取景的包围盒捕获（`GunInspectionGeometry`）和枪架的区块捕获（`ClosedFaces`）仍走 CPU。
 - 引用切到 v3 的地方：
   - `AflItems.P9_01` 的 Profile id；

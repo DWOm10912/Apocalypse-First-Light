@@ -26,7 +26,8 @@ import net.minecraft.resources.ResourceLocation;
  *   +40 °C on the right (10 °C straight up), tinted ice blue .. neutral .. orange, with a small light triangle outside it
  *   pointing in at the temperature; the number above it is drawn by ClientTemperatureHud;
  * - while a core reading shows (clinical thermometer), the glyph steps aside for the number (ClientTemperatureHud).
- * Colours blend in OKLab. Drawn per pixel into one texture per GUI scale and blitted once a frame.
+ * Colours blend in OKLab. Drawn per real pixel on the GPU every frame (TemperatureDialProgram, 2026-10-17); without the
+ * program rastered on the CPU into one texture per GUI scale at most 30 times a second, as before.
  */
 final class TemperatureDial {
     /** GUI pixels before SurvivalHudLayout.SCALE: face radius, gauge band, halo reach. */
@@ -46,10 +47,13 @@ final class TemperatureDial {
     private static final double[] FACE = {0x10 / 255.0, 0x10 / 255.0, 0x10 / 255.0};
     private static final double[] COLD_SCALE = mix(oklab(0x5A6670), LAB_ICE, 0.35), HEAT_SCALE = mix(oklab(0x6A5E56), LAB_HEAT, 0.35);
     private static final double[] ICE_RGB = rgb(ICE), HEAT_RGB = rgb(HEAT);
+    /** One frame's look, real pixels and radians, as Look[] in afl_temperature_dial.fsh (vec4 v, component c at v * 4 + c). */
+    private static final float[] LOOK = new float[TemperatureDialProgram.VECS * 4];
+    // the CPU fallback (no program): one texture per GUI scale
     private static DynamicTexture texture;
     private static NativeImage image;
     private static int textureScale = -1, size;
-    /** Redrawn at most this often (the dial's motion is slow: breathing, flowing chevrons, eased values). */
+    /** CPU fallback: redrawn at most this often (the dial's motion is slow: breathing, flowing chevrons, eased values). */
     private static final long REDRAW_NANOS = 1_000_000_000L / 30;
     private static long lastRedraw;
     private static boolean dirty = true;
@@ -72,31 +76,40 @@ final class TemperatureDial {
                        double target, double ambient, boolean hideGlyph, double phase, double seconds) {
         int s = (int)Math.max(1, Math.round(Minecraft.getInstance().getWindow().getGuiScale()));
         double k = s * SurvivalHudLayout.SCALE;   // the cluster's size factor: geometry in real pixels
-        if (texture == null || textureScale != s) {
-            size = (int)Math.ceil(2 * (AMBIENT_BASE + 1.5) * k) + 2;
-            image = new NativeImage(NativeImage.Format.RGBA, size, size, true);
-            texture = new DynamicTexture(image);
-            Minecraft.getInstance().getTextureManager().register(TEXTURE, texture); // closes the previous one
-            textureScale = s;
-            dirty = true;
-        }
-        int x0 = (int)Math.round(guiCx * s - size / 2.0), y0 = (int)Math.round(guiCy * s - size / 2.0);
-        long now = System.nanoTime();
-        if (dirty || now - lastRedraw >= REDRAW_NANOS) {   // capped: the picture changes every frame while anything moves
-            fill(k, guiCx * s - x0, guiCy * s - y0, cold, heat, danger, trend, target, ambient, hideGlyph, phase, seconds);
-            texture.upload();
-            lastRedraw = now;
-            dirty = false;
+        int side = (int)Math.ceil(2 * (AMBIENT_BASE + 1.5) * k) + 2;
+        int x0 = (int)Math.round(guiCx * s - side / 2.0), y0 = (int)Math.round(guiCy * s - side / 2.0);
+        double cx = guiCx * s - x0, cy = guiCy * s - y0;
+        boolean gpu = TemperatureDialProgram.ready();
+        if (gpu) look(k, cx, cy, cold, heat, danger, trend, target, ambient, hideGlyph, phase, seconds);
+        else {
+            if (texture == null || textureScale != s) {
+                size = side;
+                image = new NativeImage(NativeImage.Format.RGBA, size, size, true);
+                texture = new DynamicTexture(image);
+                Minecraft.getInstance().getTextureManager().register(TEXTURE, texture); // closes the previous one
+                textureScale = s;
+                dirty = true;
+            }
+            long now = System.nanoTime();
+            if (dirty || now - lastRedraw >= REDRAW_NANOS) {   // capped: the picture changes every frame while anything moves
+                look(k, cx, cy, cold, heat, danger, trend, target, ambient, hideGlyph, phase, seconds);
+                fill();
+                texture.upload();
+                lastRedraw = now;
+                dirty = false;
+            }
         }
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         graphics.pose().pushPose();
         graphics.pose().scale(1.0f / s, 1.0f / s, 1.0f);
-        graphics.blit(TEXTURE, x0, y0, 0, 0, size, size, size, size);
+        if (gpu) TemperatureDialProgram.draw(graphics, x0, y0, side, LOOK);
+        else graphics.blit(TEXTURE, x0, y0, 0, 0, size, size, size, size);
         graphics.pose().popPose();
     }
 
-    private static void fill(double s, double cx, double cy, double cold, double heat, double danger, double trend, double target,
+    /** The frame's look into LOOK: s real pixels per GUI pixel (the cluster scale included), (cx, cy) the centre in the square. */
+    private static void look(double s, double cx, double cy, double cold, double heat, double danger, double trend, double target,
                              double ambient, boolean hideGlyph, double phase, double seconds) {
         double r0 = RADIUS * s, band = BAND * s, rIn = r0 - band, halo = HALO * s;
         double dev = Math.max(cold, heat), bias = heat - cold;
@@ -116,26 +129,75 @@ final class TemperatureDial {
         double rippleAlpha = 0.42 * danger * Math.pow(1 - ripple, 1.6);
         // target frame: faint, thin, hollow; gone while it sits on the core marker
         double targetBias = Math.max(-1, Math.min(1, target)), targetAngle = targetBias * SPAN;
-        double tx = Math.sin(targetAngle), ty = -Math.cos(targetAngle);
         double targetAlpha = 0.45 * smooth(0.03, 0.10, Math.abs(targetBias - bias));
         double[] targetColour = mix(LAB_NEUTRAL, targetBias < 0 ? LAB_ICE : LAB_HEAT, Math.min(1, Math.abs(targetBias) * 1.3));
         for (int k = 0; k < 3; k++) targetColour[k] = clamp(targetColour[k] * 1.1);
-        double frameLength = band / 2 + 1.1 * s, frameWidth = 0.95 * s, frameStroke = Math.max(0.2 * s, 0.55);
-        double marker = Math.max(-1, Math.min(1, bias)) * SPAN, mx = Math.sin(marker), my = -Math.cos(marker);
-        double lo = Math.min(0, marker), hi = Math.max(0, marker);
+        double marker = Math.max(-1, Math.min(1, bias)) * SPAN;
         // glyph: the dot shrinks away while the snowflake / flame grows in
-        double grow = smooth(0.08, 0.45, dev), glyphScale = 0.6 + 0.4 * grow, box = rIn * 2 * 0.62;
-        double boxX = cx - box / 2, boxY = cy - box / 2 - 0.3 * s;
-        // trend chevrons
-        double trendWeight = smooth(0.05, 0.35, Math.abs(trend));
-        boolean warming = trend > 0;
-        double[] chevronColour = warming ? HEAT_RGB : ICE_RGB;
-        double yA = 5.3 * s, yB = 12.2 * s, hw = 1.45 * s, hh = 0.8 * s, stroke = 0.4 * s;
+        double grow = smooth(0.08, 0.45, dev), box = rIn * 2 * 0.62;
         // air temperature arc and its marker
         boolean showAmbient = !Double.isNaN(ambient);
-        double ar = AMBIENT_RADIUS * s, aband = AMBIENT_BAND * s, aTip = AMBIENT_TIP * s, aBase = AMBIENT_BASE * s;
-        double aAngle = showAmbient ? ambientAngle(ambient) : 0, ax = Math.sin(aAngle), ay = -Math.cos(aAngle);
-        double bezelIn = r0 + 0.15 * s, bezelOut = r0 + BEZEL * s, rim = 0.22 * s, outline = SurvivalHudLayout.OUTLINE_WIDTH * s;
+        double aAngle = showAmbient ? ambientAngle(ambient) : 0;
+        double bezelIn = r0 + 0.15 * s, bezelOut = r0 + BEZEL * s;
+        put(0, s, r0, rIn, band);
+        put(1, haloColour, haloAlpha);
+        put(2, haloReach, rippleR, rippleAlpha, SurvivalHudLayout.OUTLINE_WIDTH * s);
+        put(3, bezelIn, bezelOut, 0.22 * s, SurvivalHudLayout.OUTLINE_ALPHA);
+        put(4, BEZEL_TOP, 0);
+        put(5, BEZEL_BOTTOM, 0);
+        put(6, BEZEL_RIM, 0);
+        put(7, OUTLINE, 0);
+        put(8, showAmbient ? 1 : 0, AMBIENT_RADIUS * s, AMBIENT_BAND * s, AMBIENT_SPAN);
+        put(9, AMBIENT_TIP * s, AMBIENT_BASE * s, Math.sin(aAngle), -Math.cos(aAngle));
+        put(10, LAB_ICE, 0);
+        put(11, LAB_NEUTRAL, 0);
+        put(12, LAB_HEAT, 0);
+        put(13, AMBIENT_MARK, 0);
+        put(14, FACE, 0.56);
+        put(15, COLD_SCALE, 0.85);
+        put(16, HEAT_SCALE, 0.85);
+        put(17, marker, Math.sin(marker), -Math.cos(marker), Math.min(0, marker));
+        put(18, Math.max(0, marker), SPAN, 0, 0);
+        put(19, fillColour, 0);
+        put(20, markerColour, 0);
+        put(21, targetAlpha, Math.sin(targetAngle), -Math.cos(targetAngle), band / 2 + 1.1 * s);
+        put(22, 0.95 * s, Math.max(0.2 * s, 0.55), 0, 0);
+        put(23, targetColour, 0);
+        put(24, hideGlyph ? 0 : 1, grow, coldSide ? 1 : 0, box);
+        put(25, cx - box / 2, cy - box / 2 - 0.3 * s, 0.6 + 0.4 * grow, 0);
+        put(26, glyphColour, 0);
+        // trend chevrons: weight, warming, running phase, stroke; their path and size
+        put(27, smooth(0.05, 0.35, Math.abs(trend)), trend > 0 ? 1 : 0, ((phase % 1) + 1) % 1, 0.4 * s);
+        put(28, 5.3 * s, 12.2 * s, 1.45 * s, 0.8 * s);
+        put(29, trend > 0 ? HEAT_RGB : ICE_RGB, 0);
+        put(30, cx, cy, 0, 0);
+    }
+    private static void put(int v, double a, double b, double c, double d) {
+        LOOK[v * 4] = (float)a; LOOK[v * 4 + 1] = (float)b; LOOK[v * 4 + 2] = (float)c; LOOK[v * 4 + 3] = (float)d;
+    }
+    private static void put(int v, double[] rgb, double w) { put(v, rgb[0], rgb[1], rgb[2], w); }
+    private static double at(int v, int c) { return LOOK[v * 4 + c]; }
+    private static double[] rgbAt(int v) { return new double[]{LOOK[v * 4], LOOK[v * 4 + 1], LOOK[v * 4 + 2]}; }
+
+    /** CPU fallback: LOOK rastered into the texture (afl_temperature_dial.fsh does the same per pixel on the GPU). */
+    private static void fill() {
+        double s = at(0, 0), r0 = at(0, 1), rIn = at(0, 2), band = at(0, 3), cx = at(30, 0), cy = at(30, 1);
+        double[] haloColour = rgbAt(1);
+        double haloAlpha = at(1, 3), haloReach = at(2, 0), rippleR = at(2, 1), rippleAlpha = at(2, 2), outline = at(2, 3);
+        double bezelIn = at(3, 0), bezelOut = at(3, 1), rim = at(3, 2);
+        boolean showAmbient = at(8, 0) > 0;
+        double ar = at(8, 1), aband = at(8, 2), aTip = at(9, 0), aBase = at(9, 1), ax = at(9, 2), ay = at(9, 3);
+        double marker = at(17, 0), mx = at(17, 1), my = at(17, 2), lo = at(17, 3), hi = at(18, 0);
+        double[] fillColour = rgbAt(19), markerColour = rgbAt(20);
+        double targetAlpha = at(21, 0), tx = at(21, 1), ty = at(21, 2), frameLength = at(21, 3), frameWidth = at(22, 0), frameStroke = at(22, 1);
+        double[] targetColour = rgbAt(23);
+        boolean hideGlyph = at(24, 0) <= 0, coldSide = at(24, 2) > 0;
+        double grow = at(24, 1), box = at(24, 3), boxX = at(25, 0), boxY = at(25, 1), glyphScale = at(25, 2);
+        double[] glyphColour = rgbAt(26);
+        double trendWeight = at(27, 0), phase = at(27, 2), stroke = at(27, 3);
+        boolean warming = at(27, 1) > 0;
+        double yA = at(28, 0), yB = at(28, 1), hw = at(28, 2), hh = at(28, 3);
+        double[] chevronColour = rgbAt(29);
         geometry(cx, cy);
         if (!hideGlyph) glyph(s, rIn, grow, glyphScale, coldSide, box, boxX, boxY);
         double[] p = new double[4];
@@ -202,6 +264,7 @@ final class TemperatureDial {
             image.setPixelRGBA(px, py, a << 24 | bb << 16 | gg << 8 | rr); // NativeImage packs ABGR
         }
     }
+
 
     /** -20 °C .. +40 °C over the arc's span, 10 °C at the top (clockwise positive). */
     static double ambientAngle(double celsius) { return Math.max(-1, Math.min(1, (celsius - 10) / 30)) * AMBIENT_SPAN; }

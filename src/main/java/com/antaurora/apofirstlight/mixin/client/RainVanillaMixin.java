@@ -10,7 +10,9 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.biome.Biome;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Rain V1 (client/rain/RainRenderer, docs/rendering/rain_v1.md): while AFL draws the rain (no shader pack), vanilla's rain
@@ -18,6 +20,19 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  */
 @Mixin(LevelRenderer.class)
 public abstract class RainVanillaMixin {
+    /**
+     * renderSnowAndRain left out while AFL (or the shader pack from AFL's data) draws the rain and no column within 10 of
+     * the camera may snow (RainColumns#snowNear): with only rain around it would draw nothing, after a biome lookup per
+     * column every frame.
+     */
+    @Inject(method = "renderSnowAndRain", at = @At("HEAD"), cancellable = true, require = 0)
+    private void afl$skipWithoutSnow(net.minecraft.client.renderer.LightTexture light, float partialTick, double camX, double camY, double camZ,
+                                     CallbackInfo ci) {
+        if ((RainRenderer.active() || RainShaderPack.active())
+                && !RainRenderer.snowNear(net.minecraft.util.Mth.floor(camX), net.minecraft.util.Mth.floor(camZ), 10))
+            ci.cancel();
+    }
+
     /** renderSnowAndRain: a column where it rains counts as dry (no sheet); snow columns as they are. */
     @Redirect(method = "renderSnowAndRain", require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"))

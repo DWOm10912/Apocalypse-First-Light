@@ -71,6 +71,12 @@ public final class GridClient {
         var mc = Minecraft.getInstance();
         if (mc.player == null || PlayerStorageCapacity.unrestricted(mc.player)) return;
         var keys = mc.options.keyHotbarSlots;
+        // driving: keys 1-3 do not take up a weapon (Loadout puts one away on the server too)
+        if (com.antaurora.apofirstlight.vehicle.PickupTruckEntity.driving(mc.player))
+            for (int i = 0; i < HotbarRoles.HAND_SLOT; i++)
+                while (keys[i].consumeClick())
+                    if (!mc.player.getInventory().items.get(i).isEmpty() && i != mc.player.getInventory().selected)
+                        mc.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("hint.apocalypse_firstlight.loadout.driving"), true);
         for (int i = HotbarRoles.HAND_SLOT; i < keys.length; i++)
             while (keys[i].consumeClick())
                 if (mc.screen == null && !mc.player.isSpectator()) GridPackets.sendUseBind(i - HotbarRoles.HAND_SLOT);

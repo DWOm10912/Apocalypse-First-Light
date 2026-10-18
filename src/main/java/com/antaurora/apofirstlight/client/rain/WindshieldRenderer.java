@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client.rain;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.GpuTimer;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.WiperSystem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
@@ -61,7 +62,7 @@ import java.util.WeakHashMap;
  * Both test the copied depth themselves with a small tolerance (the water lies on the glass, which writes depth), so the
  * steering wheel and the pillars hide them and the glass does not. With a shader pack AFL draws nothing (the wipers still
  * move: they are the truck's own model); one that draws the rain itself (RainShaderPack, AFL_RAIN) gets the water kept
- * and baked as cover and normal into dynamic/afl_glass_water before the terrain ({@link #packFrame}, GlassAtlas,
+ * and baked as cover and normal into dynamic/afl_glass_water at the start of the frame ({@link #packFrame}, GlassAtlas,
  * afl_glass_bake_film / afl_glass_bake_drop; docs/rendering/rain_v1.md section 6).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
@@ -84,6 +85,11 @@ public final class WindshieldRenderer {
     /** Diagnostics: the last frame's time (us), drops drawn. */
     public static long lastMicros;
     public static int lastDrops;
+    /** Diagnostics: the last frame's CPU time stepping the water and drawing it (us); GPU means (GpuTimer). */
+    public static long simMicros, drawMicros;
+    public static final GpuTimer GPU_COPY = new GpuTimer(), GPU_FILM = new GpuTimer(), GPU_DROPS = new GpuTimer(), GPU_BAKE = new GpuTimer();
+    /** Diagnostics, with the shader pack: CPU time of the last bake into the glass map (us). */
+    public static long bakeMicros;
 
     private WindshieldRenderer() {
     }
@@ -138,7 +144,8 @@ public final class WindshieldRenderer {
             }
         }
         return (active() ? "on" : packActive() ? "baked for the shader pack" : "off") + "; " + lastMicros + " us last frame; " + n + " trucks kept (" + TruckGlass.PANES.length + " panes each), " + drops + " drops, "
-                + lastDrops + " drawn";
+                + lastDrops + " drawn; cpu sim " + simMicros + " us, draw " + drawMicros + " us; gpu copy " + GPU_COPY.micros() + " us, film "
+                + GPU_FILM.micros() + " us, drops " + GPU_DROPS.micros() + " us; bake cpu " + bakeMicros + " us, gpu " + GPU_BAKE.micros() + " us";
     }
 
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -202,14 +209,12 @@ public final class WindshieldRenderer {
 
     /** Per slot of GlassAtlas and pane: whether packFrame baked water there this frame (RainShaderPack writes t5 for those). */
     static final boolean[][] BAKED = new boolean[GlassAtlas.SLOTS][TruckGlass.PANES.length];
-    private static final int[] VIEWPORT = new int[4];
-    private static final float[] CLEAR = new float[4];
-    private static final java.nio.ByteBuffer MASK = org.lwjgl.system.MemoryUtil.memAlloc(16);
     private static int bakeFbo = -1, bakeFor = -1;
     private static boolean atlasClear;
 
     /**
-     * With the shader pack drawing the water (RainShaderPack, before the terrain): the water stepped as without one, and
+     * With the shader pack drawing the water (RainShaderPack.renderTick, the start of the frame, before the world pass):
+     * the water stepped as without one, and
      * the panes of the trucks in slots (the trucks texture's rows, nearest first) baked into the glass map (atlas, its GL
      * id; GlassAtlas) with its mip levels. Returns BAKED.
      */
@@ -227,7 +232,12 @@ public final class WindshieldRenderer {
         long t0 = System.nanoTime();
         try {
             simulate(level, cam, pt, dt, now);
+            long t1 = System.nanoTime();
+            simMicros = (t1 - t0) / 1000;
+            GPU_BAKE.begin();
             bake(mc, slots, pt, atlas);
+            GPU_BAKE.end();
+            bakeMicros = (System.nanoTime() - t1) / 1000;
         } catch (RuntimeException e) {
             packFailed = true;
             clear();
@@ -250,15 +260,11 @@ public final class WindshieldRenderer {
         }
         boolean fresh = bakeFor != atlas;
         if (!any && atlasClear && !fresh) return;
-        // the state to put back (the shader pack's own framebuffer and viewport)
-        int prevDraw = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING), prevRead = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
-        GL11.glGetIntegerv(GL11.GL_VIEWPORT, VIEWPORT);
-        boolean blend = GL11.glIsEnabled(GL11.GL_BLEND), depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST), cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
-        boolean depthMask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
-        GL11.glGetFloatv(GL11.GL_COLOR_CLEAR_VALUE, CLEAR);
-        GL11.glGetBooleanv(GL11.GL_COLOR_WRITEMASK, MASK);
-        int srcRgb = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB), dstRgb = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB),
-                srcA = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA), dstA = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+        // at the start of the frame (RainShaderPack.renderTick), outside the world pass: Oculus locks colour and depth writes
+        // of every non-Iris ShaderInstance while it renders the world (MixinShaderInstance -> DepthColorStorage), so a bake
+        // there drew nothing (Aureveil A, 2026-10-17). No glGet to save the state either (each one makes the game wait for the
+        // driver thread): the state at that point is known (Minecraft#runTick: main target bound, cull on; the last frame's
+        // blitToScreen left depth test and blend off, depth and colour masks on) and is put back as that
         try {
             if (fresh) {
                 allocateAtlas(atlas);
@@ -266,9 +272,9 @@ public final class WindshieldRenderer {
             }
             GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, bakeFbo);
             RenderSystem.colorMask(true, true, true, true);
-            RenderSystem.clearColor(0.5F, 0.5F, 0, 0);
             GlStateManager._viewport(0, 0, GlassAtlas.W, GlassAtlas.H);
-            GlStateManager._clear(GL11.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
+            // cleared to dry (normal 0.5, 0.5; cover 0) with an explicit value: the clear colour state is left alone
+            GL30.glClearBufferfv(GL11.GL_COLOR, 0, DRY);
             atlasClear = !any;
             if (any) {
                 TEXTURES.ensure(mc);
@@ -294,26 +300,21 @@ public final class WindshieldRenderer {
                     }
                 }
             }
-            GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
             GlStateManager._bindTexture(atlas);
             GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
             GlStateManager._bindTexture(0);
         } finally {
-            GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, prevRead);
-            GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, prevDraw);
-            GlStateManager._viewport(VIEWPORT[0], VIEWPORT[1], VIEWPORT[2], VIEWPORT[3]);
-            RenderSystem.clearColor(CLEAR[0], CLEAR[1], CLEAR[2], CLEAR[3]);
-            RenderSystem.colorMask(MASK.get(0) != 0, MASK.get(1) != 0, MASK.get(2) != 0, MASK.get(3) != 0);
-            if (blend) RenderSystem.enableBlend();
-            else RenderSystem.disableBlend();
-            if (depth) RenderSystem.enableDepthTest();
-            else RenderSystem.disableDepthTest();
-            if (cull) RenderSystem.enableCull();
-            else RenderSystem.disableCull();
-            RenderSystem.depthMask(depthMask);
-            RenderSystem.blendFuncSeparate(srcRgb, dstRgb, srcA, dstA);
+            mc.getMainRenderTarget().bindWrite(true);
+            RenderSystem.colorMask(true, true, true, true);
+            RenderSystem.disableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableCull();
         }
     }
+
+    private static final float[] DRY = {0.5F, 0.5F, 0, 0};
 
     /** The glass map's storage (RGBA8, GlassAtlas.LEVELS mip levels below the base, linear) and the framebuffer onto level 0. */
     private static void allocateAtlas(int atlas) {
@@ -368,12 +369,18 @@ public final class WindshieldRenderer {
     private record Shown(PickupTruckEntity truck, Glass glass, double distance) {}
 
     private static void frame(Minecraft mc, ClientLevel level, Vec3 cam, float pt, double dt, long now) {
+        long t0 = System.nanoTime();
         List<Shown> shown = simulate(level, cam, pt, dt, now);
+        long t1 = System.nanoTime();
+        simMicros = (t1 - t0) / 1000;
         lastDrops = 0;
         if (shown.isEmpty()) return;
         TEXTURES.ensure(mc);
         RenderTarget main = mc.getMainRenderTarget();
-        if (!COPY.copy(main)) return;
+        GPU_COPY.begin();
+        boolean copied = COPY.copy(main);
+        GPU_COPY.end();
+        if (!copied) return;
 
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
@@ -386,27 +393,36 @@ public final class WindshieldRenderer {
         Vec3 skyColor = level.getSkyColor(cam, pt);
         float[] fog = RenderSystem.getShaderFogColor();
         SKY_LIGHT.set(((float) skyColor.x + fog[0]) * 0.5F * k, ((float) skyColor.y + fog[1]) * 0.5F * k, ((float) skyColor.z + fog[2]) * 0.5F * k);
-        for (Shown s : shown) {
-            s.glass.upload();
-            Quaternionf q = s.truck.orientation(pt, new Quaternionf());
-            Vec3 pos = s.truck.getPosition(pt);
-            float ox = (float) (pos.x - cam.x), oy = (float) (pos.y - cam.y), oz = (float) (pos.z - cam.z);
-            float doorL = s.truck.doorAngle(false, pt), doorR = s.truck.doorAngle(true, pt);
-            for (GlassWater water : s.glass.panes) {
-                if (!water.any) continue;
-                TruckGlass.Pane pane = water.pane;
-                place(pane, q, ox, oy, oz, pane.hinge == TruckGlass.Hinge.DOOR_L ? -doorL : pane.hinge == TruckGlass.Hinge.DOOR_R ? doorR : 0);
-                // the pane's axes in the world, and which side of it the camera is on (the cab's or the world's)
-                axis(pane.axisU, AU);
-                axis(pane.axisS, AS);
-                axis(pane.axisN, AN);
-                pane.model(pane.uMid(), pane.sMid(), 0, P, 0);
-                toCamera(P, V);
-                inside = V.x * AN.x + V.y * AN.y + V.z * AN.z > 0;
-                drawFilm(s.glass, water);
-                if (s.distance < DROP_RANGE) drawDrops(water, false);
+        // the glass layers of every pane, then the drops (two passes, so each is timed on its own; the panes do not overlap
+        // in a way the order would show: one behind another is hidden by the copied depth)
+        for (int pass = 0; pass < 2; pass++) {
+            GpuTimer timer = pass == 0 ? GPU_FILM : GPU_DROPS;
+            timer.begin();
+            for (Shown s : shown) {
+                if (pass == 0) s.glass.upload();
+                else if (s.distance >= DROP_RANGE) continue;
+                Quaternionf q = s.truck.orientation(pt, new Quaternionf());
+                Vec3 pos = s.truck.getPosition(pt);
+                float ox = (float) (pos.x - cam.x), oy = (float) (pos.y - cam.y), oz = (float) (pos.z - cam.z);
+                float doorL = s.truck.doorAngle(false, pt), doorR = s.truck.doorAngle(true, pt);
+                for (GlassWater water : s.glass.panes) {
+                    if (!water.any) continue;
+                    TruckGlass.Pane pane = water.pane;
+                    place(pane, q, ox, oy, oz, pane.hinge == TruckGlass.Hinge.DOOR_L ? -doorL : pane.hinge == TruckGlass.Hinge.DOOR_R ? doorR : 0);
+                    // the pane's axes in the world, and which side of it the camera is on (the cab's or the world's)
+                    axis(pane.axisU, AU);
+                    axis(pane.axisS, AS);
+                    axis(pane.axisN, AN);
+                    pane.model(pane.uMid(), pane.sMid(), 0, P, 0);
+                    toCamera(P, V);
+                    inside = V.x * AN.x + V.y * AN.y + V.z * AN.z > 0;
+                    if (pass == 0) drawFilm(s.glass, water);
+                    else drawDrops(water, false);
+                }
             }
+            timer.end();
         }
+        drawMicros = (System.nanoTime() - t1) / 1000;
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
@@ -491,23 +507,51 @@ public final class WindshieldRenderer {
         film(sh, g, water);
         BufferBuilder b = BUILDER;
         b.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        float[] p = new float[3];
-        Vector3f v = new Vector3f();
-        // a mesh over the outline's box, cells about 4 cm (the windshield's curve needs them)
+        float[] mesh = filmMesh(pane);
+        Vector3f v = FILM_V;
+        for (int k = 0; k < mesh.length; k += 5) {
+            QP.transform(v.set(mesh[k] - PIVOT.x, mesh[k + 1] - PIVOT.y, mesh[k + 2] - PIVOT.z)).add(BASE);
+            b.vertex(v.x, v.y, v.z).uv(mesh[k + 3], mesh[k + 4]).endVertex();
+        }
+        BufferUploader.drawWithShader(b.end());
+    }
+
+    /** Each pane's film mesh in the truck's model frame (x, y, z, u, s a corner, four a cell): the outline never changes. */
+    private static final Map<TruckGlass.Pane, float[]> FILM_MESH = new java.util.IdentityHashMap<>();
+    private static final Vector3f FILM_V = new Vector3f();
+
+    /**
+     * A mesh over the outline's box, cells about 4 cm (the windshield's curve needs them); cells wholly off the glass (the
+     * rounded corners, the slanted sides) left out. Worked out once a pane (each cell asks the outline four times; per
+     * frame that was most of the glass water's CPU time, 2026-10-17).
+     */
+    private static float[] filmMesh(TruckGlass.Pane pane) {
+        float[] mesh = FILM_MESH.get(pane);
+        if (mesh != null) return mesh;
         double u0 = pane.uMin - 0.01, u1 = pane.uMax + 0.01, s0 = pane.s0 - 0.004, s1 = pane.s1 + 0.004;
         int nu = Math.max(4, (int) Math.ceil((u1 - u0) / 0.04)), ns = Math.max(4, (int) Math.ceil((s1 - s0) / 0.036));
+        float[] all = new float[nu * ns * 4 * 5];
+        int n = 0;
         for (int j = 0; j < ns; j++)
             for (int i = 0; i < nu; i++) {
                 double ua = u0 + (u1 - u0) * i / nu, ub = u0 + (u1 - u0) * (i + 1) / nu;
                 double sa = s0 + (s1 - s0) * j / ns, sb = s0 + (s1 - s0) * (j + 1) / ns;
-                // cells wholly off the glass (the rounded corners, the slanted sides) are left out
                 if (Math.max(Math.max(pane.inside(ua, sa), pane.inside(ub, sa)), Math.max(pane.inside(ub, sb), pane.inside(ua, sb))) < -0.03) continue;
-                filmVertex(b, pane, ua, sa, p, v);
-                filmVertex(b, pane, ub, sa, p, v);
-                filmVertex(b, pane, ub, sb, p, v);
-                filmVertex(b, pane, ua, sb, p, v);
+                n = filmCorner(all, n, pane, ua, sa);
+                n = filmCorner(all, n, pane, ub, sa);
+                n = filmCorner(all, n, pane, ub, sb);
+                n = filmCorner(all, n, pane, ua, sb);
             }
-        BufferUploader.drawWithShader(b.end());
+        mesh = java.util.Arrays.copyOf(all, n);
+        FILM_MESH.put(pane, mesh);
+        return mesh;
+    }
+
+    private static int filmCorner(float[] mesh, int n, TruckGlass.Pane pane, double u, double s) {
+        pane.model(u, s, WindshieldGlass.OFF * 0.6, mesh, n);
+        mesh[n + 3] = (float) u;
+        mesh[n + 4] = (float) s;
+        return n + 5;
     }
 
     /** The glass layer's inputs (the film and bead maps, wetness, outline, the wipers' sweeps), drawn or baked. */
@@ -530,12 +574,6 @@ public final class WindshieldRenderer {
             sh.safeGetUniform("Blades").set(0F, 0F, 0F, 0F);
             sh.safeGetUniform("Sweeps").set(0F, 0F, 0F, 0F);
         }
-    }
-
-    private static void filmVertex(BufferBuilder b, TruckGlass.Pane pane, double u, double s, float[] p, Vector3f v) {
-        pane.model(u, s, WindshieldGlass.OFF * 0.6, p, 0);
-        toCamera(p, v);
-        b.vertex(v.x, v.y, v.z).uv((float) u, (float) s).endVertex();
     }
 
     private static final float[] P = new float[3];
@@ -612,7 +650,9 @@ public final class WindshieldRenderer {
         }
         lastDrops += n;
         if (n > 0) BufferUploader.drawWithShader(b.end());
-        else b.end();
+        // released even when empty: an unreleased batch keeps the shared builder from ever rewinding, so it grew every
+        // frame until it hit 2 GB and the game went out of memory (user, 2026-10-17)
+        else b.end().release();
     }
 
     /**

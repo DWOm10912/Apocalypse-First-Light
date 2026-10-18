@@ -91,9 +91,72 @@ public final class RainShaderPack {
     /** Client setup (render thread): the textures registered before the shader pack first binds them. */
     public static void register() {
         TextureManager textures = Minecraft.getInstance().getTextureManager();
-        if (textures.getTexture(COLUMNS_ID, null) != COLUMNS_TEX) textures.register(COLUMNS_ID, COLUMNS_TEX);
-        if (textures.getTexture(TRUCKS_ID, null) != TRUCKS_TEX) textures.register(TRUCKS_ID, TRUCKS_TEX);
-        if (textures.getTexture(GLASS_ID, null) != GLASS_TEX) textures.register(GLASS_ID, GLASS_TEX);
+        register(textures, COLUMNS_ID, COLUMNS_TEX);
+        register(textures, TRUCKS_ID, TRUCKS_TEX);
+        register(textures, GLASS_ID, GLASS_TEX);
+    }
+
+    /**
+     * Registered, and its GL name bound once right away: a name only generated is no texture yet for direct state access
+     * (Oculus binds with DSA; it logged GL_INVALID_OPERATION on the first frame, Aureveil A 2026-10-17).
+     */
+    private static void register(TextureManager textures, ResourceLocation id, DataTexture texture) {
+        if (textures.getTexture(id, null) == texture) return;
+        textures.register(id, texture);
+        com.mojang.blaze3d.platform.GlStateManager._bindTexture(texture.getId());
+        com.mojang.blaze3d.platform.GlStateManager._bindTexture(0);
+    }
+
+    /**
+     * Dev check (RainPerfProbe; reads the GPU back, a wait: never per frame): the glass map's mean cover (B, 0-255) and
+     * normal (R, G) over a 16 x 16 block in the middle of slot 0's windshield rectangle, or null without DSA / a map.
+     */
+    public static int[] debugGlassSample() {
+        int id = GLASS_TEX.getId();
+        if (!org.lwjgl.opengl.GL.getCapabilities().OpenGL45 || WindshieldRenderer.BAKED.length == 0) return null;
+        int[] r = GlassAtlas.TEXELS[0][0];
+        int n = 16, x = r[0] + r[2] / 2 - n / 2, y = r[1] + r[3] / 2 - n / 2;
+        java.nio.ByteBuffer b = MemoryUtil.memAlloc(n * n * 4);
+        try {
+            org.lwjgl.opengl.GL45C.glGetTextureSubImage(id, 0, x, y, 0, n, n, 1, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, b);
+            long[] sum = new long[3];
+            for (int i = 0; i < n * n; i++)
+                for (int k = 0; k < 3; k++) sum[k] += b.get(i * 4 + k) & 0xFF;
+            return new int[]{(int) (sum[0] / (n * n)), (int) (sum[1] / (n * n)), (int) (sum[2] / (n * n)), WindshieldRenderer.BAKED[0][0] ? 1 : 0};
+        } finally {
+            MemoryUtil.memFree(b);
+        }
+    }
+
+    /** The trucks (nearest first) the glass map was baked for this frame: the trucks texture's rows. */
+    private static List<RainTrucks.Frame> slots = List.of();
+
+    /**
+     * The start of the frame, before the world pass: the glass water stepped and baked into the glass map
+     * (WindshieldRenderer.packFrame). In the world pass Oculus throws away what a non-Iris ShaderInstance draws, so the
+     * bake drew nothing there (Aureveil A, 2026-10-17). The camera is last frame's (only the nearest trucks are chosen
+     * by it); the trucks' places are this frame's (same partial tick as the world pass).
+     */
+    @SubscribeEvent
+    public static void renderTick(net.minecraftforge.event.TickEvent.RenderTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.START) return;
+        Minecraft mc = Minecraft.getInstance();
+        ClientLevel level = mc.level;
+        if (level == null || !active()) {
+            slots = List.of();
+            return;
+        }
+        try {
+            register();
+            Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
+            float pt = event.renderTickTime;
+            slots = RainTrucks.near(level, cam, RANGE, TRUCKS, pt);
+            WindshieldRenderer.packFrame(mc, level, cam, pt, slots, GLASS_TEX.getId());
+        } catch (RuntimeException e) {
+            failed = true;
+            slots = List.of();
+            LOGGER.error("AFL rain for the shader pack: switched off after an error (vanilla rain is back)", e);
+        }
     }
 
     @SubscribeEvent
@@ -107,10 +170,8 @@ public final class RainShaderPack {
             Vec3 cam = event.getCamera().getPosition();
             frame++;
             RainRenderer.columns().uploadPack(COLUMNS_TEX.getId(), Mth.floor(cam.x), Mth.floor(cam.z), frame);
-            float pt = event.getPartialTick();
-            List<RainTrucks.Frame> near = RainTrucks.near(level, cam, RANGE, TRUCKS, pt);
-            boolean[][] baked = WindshieldRenderer.packFrame(mc, level, cam, pt, near, GLASS_TEX.getId());
-            uploadTrucks(cam, pt, near, baked);
+            // the trucks baked at the start of the frame (renderTick), placed for this camera
+            uploadTrucks(cam, event.getPartialTick(), slots, WindshieldRenderer.BAKED);
         } catch (RuntimeException e) {
             failed = true;
             LOGGER.error("AFL rain for the shader pack: switched off after an error (vanilla rain is back)", e);
@@ -148,15 +209,18 @@ public final class RainShaderPack {
             panes(d, row, f.truck, cam, pt, t, baked[t]);
         }
         int id = TRUCKS_TEX.getId();
-        int prev = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, id);
         GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
         GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
         GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
         GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 4);
         d.position(0).limit(d.capacity());
+        // row 1 + t truck t (texels 0-3 frame, 4-51 boxes, 52-75 panes): a bad value logged with its texel
+        com.antaurora.apofirstlight.client.GlTex.checkFinite("afl_rain_trucks", d, TRUCK_W);
         if (TRUCKS_TEX.allocated != id) {
+            // once: its storage made on a binding (the only glGet here); every frame after that without one (GlTex)
             TRUCKS_TEX.allocated = id;
+            int prev = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, id);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
@@ -164,10 +228,10 @@ public final class RainShaderPack {
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_BASE_LEVEL, 0);
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, 0);
             GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_RGBA32F, TRUCK_W, TRUCK_H, 0, GL11.GL_RGBA, GL11.GL_FLOAT, d);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, prev);
         } else {
-            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, TRUCK_W, TRUCK_H, GL11.GL_RGBA, GL11.GL_FLOAT, d);
+            com.antaurora.apofirstlight.client.GlTex.subImage(id, 0, 0, TRUCK_W, TRUCK_H, GL11.GL_RGBA, GL11.GL_FLOAT, d);
         }
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, prev);
     }
 
     /** A truck's four panes into its row (texels 52-75): as WindshieldRenderer places them, a door window turned with its door. */

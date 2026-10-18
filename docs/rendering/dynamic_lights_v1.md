@@ -81,6 +81,8 @@
 
 - 开发环境命令（只在开发环境注册）：`/afl_render dynamic_lights on | off | status`。`off` 回到方块光，方便对比；`status` 显示开没开（光影包画的时候显示 `on (shader pack)`）、改了几个阶段、这一帧几盏灯、方块格建了多少区块段和上一帧花的时间。
 
+- 光影包用的 `afl_lights` 上传前检查有没有 NaN 或无穷大，有就记 WARN（`client/GlTex#checkFinite`，2026-10-17）。用来查开 Aureveil alpha.49 时的黑屏，见 [雨 V1](rain_v1.md) 第 6 节的已知问题。
+
 ## 6. 检查（2026-10-17）
 
 - 用户实机（2026-10-17，Aureveil alpha.46 出来之后）：PASS，"比较流畅"。按给用户的测试清单测：开 Aureveil 时车灯平滑、有阴影；关掉 `AFL_VEHICLE_LIGHTS` 或换 Sundial 时退回方块光；不开光影时 AFL 自己画。帧数没量具体数字。

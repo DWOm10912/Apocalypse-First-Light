@@ -3,190 +3,193 @@ package com.antaurora.apofirstlight.weapon.client;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.config.NativeGunHudConfig;
 import com.antaurora.apofirstlight.client.config.NativeGunHudConfigManager;
+import com.antaurora.apofirstlight.client.ui.AflKeyHint;
+import com.antaurora.apofirstlight.client.ui.AflUiShapes;
+import com.antaurora.apofirstlight.client.ui.AflUiStyle;
 import com.antaurora.apofirstlight.weapon.NativeGunAmmo;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import software.bernie.geckolib.animatable.GeoItem;
+import software.bernie.geckolib.core.animation.AnimationController;
+
+import java.util.Map;
 
 /**
- * A view of vanilla-synced stack/inventory data; no ammo cache or client writes. HUD V2 (2026-10-16): the round count
- * turns amber at a quarter of the magazine or less (LOW_AMMO) and, empty with rounds in reserve, a reload key cap and
- * "Reload" stand left of the HUD.
+ * The gun in hand, bottom right (HUD V2 B, design/ui/hud_v2/sheets/hud_v2b_3_gear.png; docs/native_guns/
+ * native_gun_hud_layout_v1.md): two right-aligned rows in the frame of gui/layout/native_gun_hud.json (its global block
+ * only: place, scale, size; the weapon list, LoadoutHud, stands above it):
+ * <ul>
+ * <li>the fire mode in a small capsule, then the gun's short name (its model code: the hover name up to the first space,
+ * or all of a name the player gave it);</li>
+ * <li>the rounds in the magazine large, "/ reserve" small after them. A quarter of the magazine or less: amber. Empty:
+ * red, with the reload key cap and "Reload" left of it while there are rounds to load. Reloading: "Reload" in place of
+ * the count with an amber bar under it (the action clip the client plays, reload_*, against the gun's reload ticks).</li>
+ * </ul>
+ * A view of vanilla-synced stack and inventory data; no ammo cache or client writes.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class NativeGunHud {
     private NativeGunHud() {}
     public static final int SHOT_FLASH_TICKS = 5;
-    private static final String LOW_AMMO = "#E0A84A";
-    private static long flashUntil, flashGun;
-    private static int flashSlot;
-    private static net.minecraft.client.multiplayer.ClientLevel flashLevel;
+    /** Text scales (the vanilla font: digits 7 px high at 1): the count, its "/ reserve", the name, the fire mode, the reload word. */
+    private static final float COUNT = 1.5F, RESERVE = 0.75F, NAME = 0.75F, MODE = 0.6F, RELOAD_WORD = 1.0F, PROMPT = 0.65F, CAP = 0.7F;
+    /** Gaps: between the count and its reserve, the capsule and the name, the two rows. */
+    private static final float GAP_RESERVE = 3, GAP_NAME = 4, GAP_ROWS = 4, CAPSULE_H = 7, CAPSULE_PAD = 3;
+    private static final int EMPTY = 0xE8867C;
+
+    /** The crosshair's shot kick (NativeDynamicCrosshair); the HUD itself shows no flash. */
     public static void shot(int slot, long gunId) {
         NativeDynamicCrosshair.shot(slot, gunId);
-        var mc = Minecraft.getInstance();
-        if (mc.level == null) return;
-        flashLevel = mc.level;
-        flashUntil = mc.level.getGameTime() + SHOT_FLASH_TICKS;
-        flashGun = gunId;
-        flashSlot = slot;
     }
+
     public static final IGuiOverlay OVERLAY = (gui, graphics, partialTick, width, height) -> {
         Minecraft mc = Minecraft.getInstance();
         if (FieldAttachmentViewState.isActive() || mc.player == null || mc.options.hideGui || mc.player.isSpectator()
-                || !(mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun)) return;
-        var definition = gun.definition();
-        int current = NativeGunAmmo.read(mc.player.getMainHandItem(), definition);
-        String reserve = NativeGunAmmo.infiniteReserve(mc.player.getInventory())
-                ? "\u221e" : Integer.toString(NativeGunAmmo.reserve(mc.player.getInventory(), definition));
-        boolean empty = current == 0;
-        boolean low = !empty && current * 4 <= NativeGunAmmo.capacity(mc.player.getMainHandItem(), definition);
-        boolean flash = mc.level == flashLevel && mc.level.getGameTime() < flashUntil
-                && mc.player.getInventory().selected == flashSlot
-                && software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem()) == flashGun;
-        renderLayout(graphics,width,height,NativeGunHudConfigManager.get(),mc.player.getMainHandItem(),
-                Integer.toString(current),reserve,empty,low,flash);
-        if (empty && !"0".equals(reserve)) reloadPrompt(graphics, mc, width, height);
+                || !(mc.player.getMainHandItem().getItem() instanceof NativeGunItem)) return;
+        ItemStack stack = mc.player.getMainHandItem();
+        render(graphics, width, height, NativeGunHudConfigManager.get(), stack, reserve(stack), reloadProgress(mc, stack, partialTick));
     };
 
-    /** Empty with rounds to load: the reload key cap and "Reload", right-aligned left of the HUD on the ammo row. */
-    private static void reloadPrompt(GuiGraphics graphics, Minecraft mc, int width, int height) {
-        var layout = NativeGunHudConfigManager.get();
-        var frame = NativeGunHudLayout.frame(layout.global(), width, height);
-        var cap = com.antaurora.apofirstlight.client.ui.AflKeyHint.of(NativeGunInput.reloadKey());
-        var word = Component.translatable("hud.apocalypse_firstlight.gun.reload");
-        float capW = cap.width(mc.font), wordW = mc.font.width(word);
-        float right = frame.x() - 4, y = frame.y() + (layout.ammo().offsetY() + layout.ammo().height() / 2) * frame.scale()
-                - com.antaurora.apofirstlight.client.ui.AflKeyHint.HEIGHT / 2;
-        float x = right - wordW - 3 - capW;
-        cap.draw(graphics, mc.font, x, y, 1, System.nanoTime());
-        graphics.drawString(mc.font, word, (int)(x + capW + 3), (int)(y + 2), 0xFFE8E4DC, true);
+    private static String reserve(ItemStack stack) {
+        var player = Minecraft.getInstance().player;
+        if (player == null) return "0";
+        var definition = ((NativeGunItem) stack.getItem()).definition();
+        return NativeGunAmmo.infiniteReserve(player.getInventory()) ? "∞" : Integer.toString(NativeGunAmmo.reserve(player.getInventory(), definition));
+    }
+
+    // ---- the reload under way, as the client sees it ----
+    private static long reloadGun;
+    private static String reloadClip = "";
+    private static long reloadStart;
+
+    /** 0..1 while the gun's action clip is a reload (from when this client first saw it), else -1. */
+    private static float reloadProgress(Minecraft mc, ItemStack stack, float partialTick) {
+        if (mc.level == null || !(stack.getItem() instanceof NativeGunItem gun)) return -1;
+        long id = GeoItem.getId(stack);
+        var manager = gun.getAnimatableInstanceCache().getManagerForId(id);
+        var controller = manager == null ? null : manager.getAnimationControllers().get(NativeGunItem.ACTION_CONTROLLER);
+        String clip = controller == null || controller.getTriggeredAnimation() == null || controller.getCurrentAnimation() == null
+                || controller.getAnimationState() == AnimationController.State.STOPPED ? "" : controller.getCurrentAnimation().animation().name();
+        if (!clip.equals("reload") && !clip.startsWith("reload_")) {
+            reloadClip = "";
+            return -1;
+        }
+        long now = mc.level.getGameTime();
+        if (id != reloadGun || !clip.equals(reloadClip)) {
+            reloadGun = id;
+            reloadClip = clip;
+            reloadStart = now;
+        }
+        // the empty reload's clip, or one of its variants (_ads, the skill tiers' _1.._4)
+        boolean empty = clip.startsWith(gun.reloadClip(stack, true));
+        int ticks = Math.max(1, gun.reloadTicks(stack, empty));
+        return Math.max(0, Math.min(1, (now - reloadStart + partialTick) / ticks));
     }
 
     /** Same renderer for editor previews; never equips or mutates the sample stack. */
-    public static net.minecraft.world.item.ItemStack editorStack() {
-        var player=Minecraft.getInstance().player;
-        return player!=null && player.getMainHandItem().getItem() instanceof NativeGunItem
-                ?player.getMainHandItem():com.antaurora.apofirstlight.registry.AflItems.P9_01.get().getDefaultInstance();
+    public static ItemStack editorStack() {
+        var player = Minecraft.getInstance().player;
+        return player != null && player.getMainHandItem().getItem() instanceof NativeGunItem
+                ? player.getMainHandItem() : com.antaurora.apofirstlight.registry.AflItems.P9_01.get().getDefaultInstance();
     }
 
-    public static java.util.Map<String,NativeGunHudLayout.Box> preview(GuiGraphics graphics,int width,int height,
-                                                                       NativeGunHudConfig layout) {
-        var stack=editorStack();var definition=((NativeGunItem)stack.getItem()).definition();
-        int current=NativeGunAmmo.read(stack,definition);
-        var player=Minecraft.getInstance().player;
-        String reserve=player==null?"0":NativeGunAmmo.infiniteReserve(player.getInventory())?"∞"
-                :Integer.toString(NativeGunAmmo.reserve(player.getInventory(),definition));
-        return renderLayout(graphics,width,height,layout,stack,Integer.toString(current),reserve,current==0,false,false);
+    public static Map<String, NativeGunHudLayout.Box> preview(GuiGraphics graphics, int width, int height, NativeGunHudConfig layout) {
+        ItemStack stack = editorStack();
+        render(graphics, width, height, layout, stack, reserve(stack), -1);
+        return Map.of();
     }
 
-    /** Null graphics measures the exact fitted text/icon geometry without issuing draw calls. */
-    private static java.util.Map<String,NativeGunHudLayout.Box> renderLayout(GuiGraphics graphics,int width,int height,
-                NativeGunHudConfig layout,net.minecraft.world.item.ItemStack stack,String current,String reserve,
-                boolean empty,boolean low,boolean flash) {
-        var mc=Minecraft.getInstance();var definition=((NativeGunItem)stack.getItem()).definition();
-        var frame=NativeGunHudLayout.frame(layout.global(),width,height);
-        var mode=com.antaurora.apofirstlight.weapon.NativeFireModes.current(stack,definition);
-        var modeText=Component.translatable("hud.apocalypse_firstlight.fire_mode."+mode.key());
-        var icon=NativeGunHudLayout.silhouette(layout,definition.hudWidth(),definition.hudHeight());
-        var divider=NativeGunHudLayout.divider(layout);
-        var name=layout.weaponName();var fm=layout.fireMode();
-        String modeColor=switch(mode){case SEMI->fm.semiColor();case BURST->fm.burstColor();case AUTO->fm.autoColor();};
-        if(graphics==null) {
-            var boxes=new java.util.LinkedHashMap<String,NativeGunHudLayout.Box>();
-            boxes.put("silhouette",icon);boxes.put("divider",divider);
-            boxes.put("weapon_name",textRow(null,mc.font,stack.getHoverName(),layout,
-                    name.offsetX(),name.offsetY(),name.scale(),name.width(),name.height(),name.color()));
-            boxes.put("ammo",ammoRow(null,mc.font,current,reserve,layout,empty,low,flash));
-            boxes.put("fire_mode",textRow(null,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.width(),fm.height(),modeColor));
-            return boxes;
-        }
-        graphics.enableScissor((int)Math.floor(frame.x()),(int)Math.floor(frame.y()),
-                (int)Math.ceil(frame.x()+frame.width()),(int)Math.ceil(frame.y()+frame.height()));
-        graphics.pose().pushPose();
+    /** The gun's short name: its model code (the hover name to the first space), or the whole name the player gave it. */
+    static Component shortName(ItemStack stack) {
+        Component name = stack.getHoverName();
+        if (stack.hasCustomHoverName()) return name;
+        String s = name.getString();
+        int space = s.indexOf(' ');
+        return space > 0 ? Component.literal(s.substring(0, space)) : name;
+    }
+
+    private static void render(GuiGraphics g, int width, int height, NativeGunHudConfig layout, ItemStack stack, String reserve, float reloading) {
+        Minecraft mc = Minecraft.getInstance();
+        Font font = mc.font;
+        var definition = ((NativeGunItem) stack.getItem()).definition();
+        int current = NativeGunAmmo.read(stack, definition);
+        boolean empty = current == 0;
+        boolean low = !empty && current * 4 <= NativeGunAmmo.capacity(stack, definition);
+        var mode = com.antaurora.apofirstlight.weapon.NativeFireModes.current(stack, definition);
+        Component modeText = Component.translatable("hud.apocalypse_firstlight.fire_mode." + mode.key());
+
+        var frame = NativeGunHudLayout.frame(layout.global(), width, height);
+        g.pose().pushPose();
         try {
-            graphics.pose().translate(frame.x(),frame.y(),0);
-            graphics.pose().scale(frame.scale(),frame.scale(),1);
-            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-            int tint=NativeGunHudConfig.argb(empty?layout.silhouette().emptyColor():layout.silhouette().color(),1);
-            graphics.setColor(((tint>>16)&255)/255F,((tint>>8)&255)/255F,(tint&255)/255F,layout.silhouette().alpha());
-            graphics.pose().pushPose();
-            graphics.pose().translate(icon.x(),icon.y(),0);
-            graphics.pose().scale(icon.width(),icon.height(),1);
-            graphics.blit(definition.hudIcon(),0,0,1,1,0,0,1,1,1,1);
-            graphics.pose().popPose();
-            graphics.setColor(1,1,1,1);
-            graphics.pose().pushPose();
-            graphics.pose().translate(divider.x(),divider.y(),0);
-            graphics.pose().scale(divider.width(),divider.height(),1);
-            graphics.fill(0,0,1,1,NativeGunHudConfig.argb(layout.divider().color(),layout.divider().alpha()));
-            graphics.pose().popPose();
-            textRow(graphics,mc.font,stack.getHoverName(),layout,
-                    name.offsetX(),name.offsetY(),name.scale(),name.width(),name.height(),name.color());
-            ammoRow(graphics,mc.font,current,reserve,layout,empty,low,flash);
-            textRow(graphics,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.width(),fm.height(),modeColor);
+            // the frame's bottom-right corner is the origin; everything right-aligned to x = 0, the ammo row on y = 0
+            g.pose().translate(frame.x() + frame.width(), frame.y() + frame.height(), 0);
+            g.pose().scale(frame.scale(), frame.scale(), 1);
+            RenderSystem.enableBlend();
+
+            // ammo row: "/ reserve" at the right, the count (or the reload word) left of it, bottoms on the row's line
+            String tail = "/ " + reserve;
+            float tailW = font.width(tail) * RESERVE;
+            text(g, font, Component.literal(tail), -tailW, -7 * RESERVE, RESERVE, AflUiStyle.TEXT_DIM, 1);
+            float countRight = -tailW - GAP_RESERVE, countH = 7 * COUNT;
+            if (reloading >= 0) {
+                Component word = Component.translatable("hud.apocalypse_firstlight.gun.reload");
+                float w = font.width(word) * RELOAD_WORD, h = 8 * RELOAD_WORD;
+                text(g, font, word, countRight - w, -h - 2.5F, RELOAD_WORD, AflUiStyle.TEXT, 1);
+                AflUiShapes.fill(g, countRight - w, -1.5F, w, 1.5F, 0.75F, AflUiStyle.BACK, 0.6F);
+                AflUiShapes.fill(g, countRight - w, -1.5F, Math.max(1.5F, w * reloading), 1.5F, 0.75F, AflUiStyle.ACCENT, 1);
+            } else {
+                String count = Integer.toString(current);
+                float w = font.width(count) * COUNT;
+                text(g, font, Component.literal(count), countRight - w, -countH, COUNT, empty ? EMPTY : low ? AflUiStyle.ACCENT : AflUiStyle.TEXT, 1);
+                if (empty && !"0".equals(reserve)) {
+                    // the reload key cap and "Reload", centred on the count's height
+                    var cap = AflKeyHint.of(NativeGunInput.reloadKey());
+                    Component word = Component.translatable("hud.apocalypse_firstlight.gun.reload");
+                    float wordW = font.width(word) * PROMPT, capW = cap.width(font) * CAP, mid = -countH / 2;
+                    float x = countRight - w - 5 - wordW;
+                    text(g, font, word, x, mid - 4 * PROMPT, PROMPT, AflUiStyle.TEXT, 1);
+                    g.pose().pushPose();
+                    g.pose().translate(x - 2.5F - capW, mid - AflKeyHint.HEIGHT * CAP / 2, 0);
+                    g.pose().scale(CAP, CAP, 1);
+                    cap.draw(g, font, 0, 0, 1, System.nanoTime());
+                    g.pose().popPose();
+                }
+            }
+
+            // name row: the short name at the right, the fire mode capsule left of it
+            float top = -countH - GAP_ROWS - CAPSULE_H;
+            Component name = shortName(stack);
+            float nameW = Math.min(font.width(name) * NAME, 60);
+            float nameScale = font.width(name) * NAME > 60 ? 60F / font.width(name) : NAME;
+            text(g, font, name, -nameW, top + (CAPSULE_H - 7 * nameScale) / 2, nameScale, AflUiStyle.TEXT_DIM, 1);
+            float modeW = font.width(modeText) * MODE, capsuleW = modeW + 2 * CAPSULE_PAD, capsuleX = -nameW - GAP_NAME - capsuleW;
+            AflUiShapes.box(g, capsuleX, top, capsuleW, CAPSULE_H, 2.5F, AflUiStyle.BACK, 0.6F, AflUiStyle.LINE, AflUiStyle.LINE_ALPHA, 0, 0);
+            text(g, font, modeText, capsuleX + CAPSULE_PAD, top + (CAPSULE_H - 8 * MODE) / 2 + 0.3F, MODE, AflUiStyle.TEXT_DIM, 1);
         } finally {
-            graphics.setColor(1, 1, 1, 1);
-            graphics.pose().popPose();
-            graphics.disableScissor();
+            g.setColor(1, 1, 1, 1);
+            g.pose().popPose();
         }
-        return java.util.Map.of();
     }
 
-    private static NativeGunHudLayout.Box textRow(GuiGraphics g,Font font,Component text,NativeGunHudConfig c,
-                                float left,float y,float scale,float width,float height,String color) {
-        var row=NativeGunHudLayout.row(left,width);
-        // Both box dimensions are limits. Neither a short string nor a wide box may upscale text.
-        scale=NativeGunHudLayout.textScale(scale,row.width(),height,font.width(text),font.lineHeight);
-        if(font.width(text)*scale>row.width()) {
-            int budget=(int)Math.floor(row.width()/scale);
-            text=budget<font.width("…")?Component.empty():Component.literal(
-                    font.plainSubstrByWidth(text.getString(),budget-font.width("…"))+"…");
-        }
-        float x=row.center()-font.width(text)*scale/2;
-        if(g!=null) draw(g,font,text,x,y,scale,NativeGunHudConfig.argb(color,1));
-        return new NativeGunHudLayout.Box(x,y,(font.width(text)+1)*scale,font.lineHeight*scale);
-    }
-
-    private static NativeGunHudLayout.Box ammoRow(GuiGraphics g,Font font,String current,String reserve,NativeGunHudConfig c,
-                                boolean empty,boolean low,boolean flash) {
-        var a=c.ammo();var row=NativeGunHudLayout.row(a.offsetX(),a.width());
-        float currentWidth=font.width(current)*a.currentScale();
-        float separatorWidth=font.width("|")*a.separatorScale();
-        float width=currentWidth+separatorWidth+font.width(reserve)*a.reserveScale()+2*a.gap();
-        float largest=Math.max(a.currentScale(),Math.max(a.reserveScale(),a.separatorScale()));
-        float fit=Math.min(1,row.width()/Math.max(1,width));
-        fit=Math.min(fit,a.height()/(font.lineHeight*largest));
-        float y=a.offsetY();
-        var bounds=new NativeGunHudLayout.Box(row.center()-width*fit/2,y,(width+largest)*fit,font.lineHeight*largest*fit);
-        if(g==null) return bounds;
+    private static void text(GuiGraphics g, Font font, Component text, float x, float y, float scale, int rgb, float alpha) {
         g.pose().pushPose();
-        try {
-            g.pose().translate(row.center()-width*fit/2,y,0);g.pose().scale(fit,fit,1);
-            float baseline=(font.lineHeight-1)*largest;
-            draw(g,font,Component.literal(current),0,baseline-(font.lineHeight-1)*a.currentScale(),a.currentScale(),
-                    NativeGunHudConfig.argb(empty?a.emptyColor():flash?a.flashColor():low?LOW_AMMO:a.currentColor(),1));
-            draw(g,font,Component.literal("|"),currentWidth+a.gap(),baseline-(font.lineHeight-1)*a.separatorScale(),
-                    a.separatorScale(),NativeGunHudConfig.argb(a.separatorColor(),1));
-            draw(g,font,Component.literal(reserve),currentWidth+separatorWidth+2*a.gap(),baseline-(font.lineHeight-1)*a.reserveScale(),
-                    a.reserveScale(),NativeGunHudConfig.argb(a.reserveColor(),1));
-        } finally {g.pose().popPose();}
-        return bounds;
-    }
-
-    private static void draw(GuiGraphics g,Font font,Component text,float x,float y,float scale,int color) {
-        g.pose().pushPose();
-        try {g.pose().translate(x,y,0);g.pose().scale(scale,scale,1);g.drawString(font,text,0,0,color,true);}
-        finally {g.pose().popPose();}
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1);
+        g.drawString(font, text, 0, 0, AflUiStyle.argb(rgb, alpha), true);
+        g.pose().popPose();
     }
 
     @SubscribeEvent public static void setup(FMLClientSetupEvent event) {

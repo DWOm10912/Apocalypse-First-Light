@@ -51,12 +51,19 @@ public final class RainRenderer {
 
     /** A switch for testing (/afl_render rain on|off: off brings back vanilla rain). */
     public static volatile boolean enabled = true;
+    /** A switch for testing (RainPerfProbe): the splashes alone. */
+    public static volatile boolean splashes = true;
 
     private static VertexBuffer drops;
     private static ClientLevel tracked;
     private static boolean failed;
     /** Diagnostics: the last frame's draw time (us). */
     public static long lastMicros;
+    /** Diagnostics: CPU time of the last frame's splash drawing and of the last tick's splash step (us). */
+    public static long splashMicros, tickMicros;
+    /** Diagnostics: GPU means of the drops and the splashes (GpuTimer). */
+    public static final com.antaurora.apofirstlight.client.GpuTimer GPU_DROPS = new com.antaurora.apofirstlight.client.GpuTimer(),
+            GPU_SPLASHES = new com.antaurora.apofirstlight.client.GpuTimer();
     private static Locations locations;
 
     private RainRenderer() {
@@ -72,10 +79,15 @@ public final class RainRenderer {
         return (active() ? "on" : "off") + "; " + lastMicros + " us last frame; splashes live: " + live[0] + " crowns, " + live[1]
                 + " ripples, " + live[2] + " droplets; landed last tick: road " + landed[0] + ", smoothed terrain " + landed[1]
                 + ", blocks " + landed[2] + ", water " + landed[3] + ", vehicles " + landed[4] + "; left out inside a truck last frame "
-                + SPLASHES.culled;
+                + SPLASHES.culled + "; cpu splashes " + splashMicros + " us, splash tick " + tickMicros + " us; gpu drops " + GPU_DROPS.micros() + " us, splashes " + GPU_SPLASHES.micros() + " us";
     }
 
     /** The column map (also uploaded for a shader pack, RainShaderPack). */
+    /** Whether it may snow near (x, z) (RainColumns#snowNear; RainVanillaMixin skips vanilla's precipitation otherwise). */
+    public static boolean snowNear(int x, int z, int r) {
+        return COLUMNS.snowNear(x, z, r);
+    }
+
     static RainColumns columns() {
         return COLUMNS;
     }
@@ -101,14 +113,16 @@ public final class RainRenderer {
         if (level == null || mc.isPaused()) return;
         // the column map also for a shader pack that draws the rain from it (RainShaderPack); the splashes only for AFL's own
         boolean own = active(), pack = !own && RainShaderPack.active();
-        if (!own) SPLASHES.clear();
+        if (!own || !splashes) SPLASHES.clear();
         if (!own && !pack) return;
         float rain = level.getRainLevel(1.0F);
         if (rain <= 0 && SPLASHES.isEmpty()) return;
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
         try {
             if (rain > 0) COLUMNS.update(level, cam.x, cam.z);
-            if (own) SPLASHES.tick(level, COLUMNS, cam, rain);
+            long t0 = System.nanoTime();
+            if (own && splashes) SPLASHES.tick(level, COLUMNS, cam, rain);
+            tickMicros = (System.nanoTime() - t0) / 1000;
         } catch (RuntimeException e) {
             fail(e);
         }
@@ -125,8 +139,18 @@ public final class RainRenderer {
         float pt = event.getPartialTick();
         try {
             float rain = level.getRainLevel(pt);
-            if (rain > 0) drawDrops(mc, level, cam, rain, pt);
-            if (!SPLASHES.isEmpty()) SPLASHES.render(level, event.getCamera(), pt, event.getPoseStack().last().normal());
+            if (rain > 0) {
+                GPU_DROPS.begin();
+                drawDrops(mc, level, cam, rain, pt);
+                GPU_DROPS.end();
+            }
+            if (!SPLASHES.isEmpty()) {
+                long s0 = System.nanoTime();
+                GPU_SPLASHES.begin();
+                SPLASHES.render(level, event.getCamera(), pt, event.getPoseStack().last().normal());
+                GPU_SPLASHES.end();
+                splashMicros = (System.nanoTime() - s0) / 1000;
+            }
         } catch (RuntimeException e) {
             fail(e);
         }

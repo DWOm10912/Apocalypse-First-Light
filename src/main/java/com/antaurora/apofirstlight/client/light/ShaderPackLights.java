@@ -110,6 +110,8 @@ final class ShaderPackLights {
         for (int i = 0; i < count; i++)
             for (int k = 0; k < LIGHT_W * 4; k++) d.put(((1 + DynamicLights.MAX_OCCLUDERS + i) * LIGHT_W) * 4 + k, lights.get(i * LIGHT_W * 4 + k));
         d.position(0).limit(d.capacity());
+        // rows 1-8 occluders, 9-32 lights (DynamicLights.MAX_OCCLUDERS): a bad value logged with its texel
+        com.antaurora.apofirstlight.client.GlTex.checkFinite("afl_lights", d, LIGHT_W);
         int prev = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, id);
         OccupancyGrid.unpackDefaults();

@@ -114,7 +114,7 @@ public final class HeadlightFx {
             }
             if (ground > 0.004F) {
                 if (world == null) world = new LevelVehicleWorld(level, null);
-                tailGlow(out, matrix, normals, cam, truck, pt, world, ground);
+                tailGlow(out, matrix, normals, cam, level, truck, pt, world, ground);
             }
         }
         if (out != null) buffers.endBatch(LiquidRenderTypes.HEADLIGHT_GLOW);
@@ -128,44 +128,91 @@ public final class HeadlightFx {
     }
 
     /**
-     * The red glow on the ground behind the tail lamps: per lamp a grid over its pool's ellipse (from under the bumper
-     * back), each vertex on the ground under it, the glow texture across the ellipse (its soft round pool is the shape);
-     * a vertex with no ground within a metre up or two down is unlit (alpha 0).
+     * One truck's tail-lamp pools laid on the ground (world coordinates, per side, row, column) and the truck pose they
+     * were laid for. The ground queries (LevelVehicleWorld#ground: road curves, smoothed terrain) were the costliest part
+     * of the frame near a parked truck with its lamps on (2026-10-17, JFR: more than the rain splashes), so they are kept
+     * while the truck stands still and laid again when it moves or turns, and once a second (a block changed).
      */
-    private static void tailGlow(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 cam, PickupTruckEntity truck, float pt,
-                                 LevelVehicleWorld world, float strength) {
+    private static final class Pool {
+        final double[][][] x = new double[2][POOL_GRID][POOL_GRID], y = new double[2][POOL_GRID][POOL_GRID], z = new double[2][POOL_GRID][POOL_GRID];
+        final boolean[][][] ground = new boolean[2][POOL_GRID][POOL_GRID];
+        final double[] pose = new double[9];
+        long time = Long.MIN_VALUE;
+    }
+
+    private static final java.util.Map<Integer, Pool> POOLS = new java.util.HashMap<>();
+    private static ClientLevel poolLevel;
+    private static final double[] POSE = new double[9];
+
+    /** The truck's origin and its forward and up points at this partial tick (the pool depends on nothing else). */
+    private static void pose(PickupTruckEntity truck, float pt, double[] out) {
+        Vec3 o = truck.framePoint(0, 0, 0, pt), f = truck.framePoint(1, 0, 0, pt), u = truck.framePoint(0, 0, 1, pt);
+        out[0] = o.x; out[1] = o.y; out[2] = o.z;
+        out[3] = f.x; out[4] = f.y; out[5] = f.z;
+        out[6] = u.x; out[7] = u.y; out[8] = u.z;
+    }
+
+    private static Pool pool(ClientLevel level, PickupTruckEntity truck, float pt, LevelVehicleWorld world) {
+        if (level != poolLevel || POOLS.size() > 32) {
+            POOLS.clear();
+            poolLevel = level;
+        }
+        Pool p = POOLS.computeIfAbsent(truck.getId(), id -> new Pool());
+        pose(truck, pt, POSE);
+        long now = level.getGameTime();
+        boolean same = now - p.time < 20;
+        for (int k = 0; k < 9 && same; k++) same = Math.abs(POSE[k] - p.pose[k]) < 1e-4;
+        if (same) return p;
+        System.arraycopy(POSE, 0, p.pose, 0, 9);
+        p.time = now;
         int n = POOL_GRID;
-        double[][] px = new double[n][n], py = new double[n][n], pz = new double[n][n];
-        float[][] u = new float[n][n], v = new float[n][n];
-        int[][] a = new int[n][n];
         double base = truck.getY();
-        int alpha = Mth.clamp(Math.round(255 * Math.max(strength, ALPHA_MIN)), 0, 255);
-        float shade = Math.min(1, strength / ALPHA_MIN);
-        int[] red = shade >= 1 ? RED : new int[]{Math.round(RED[0] * shade), Math.round(RED[1] * shade), Math.round(RED[2] * shade)};
-        for (int side = -1; side <= 1; side += 2) {
+        for (int s = 0; s < 2; s++) {
+            int side = s == 0 ? -1 : 1;
             for (int i = 0; i < n; i++) {
                 double b = -1 + 2.0 * i / (n - 1), f = TAIL_F - POOL_BACK - b * POOL_ALONG;
                 for (int j = 0; j < n; j++) {
                     double sa = -1 + 2.0 * j / (n - 1), r = side * TAIL_R + sa * POOL_ACROSS;
                     Vec3 at = truck.framePoint(f, r, 0, pt);
                     boolean ground = world.ground(at.x, at.z, at.y, base + 1.0, base - 2.0, GROUND) && GROUND.found;
-                    px[i][j] = at.x - cam.x;
-                    py[i][j] = (ground ? GROUND.height : at.y) + GROUND_LIFT - cam.y;
-                    pz[i][j] = at.z - cam.z;
-                    u[i][j] = (float) (j / (n - 1.0));
-                    v[i][j] = (float) (i / (n - 1.0));
-                    a[i][j] = ground ? alpha : 0;
+                    p.x[s][i][j] = at.x;
+                    p.y[s][i][j] = (ground ? GROUND.height : at.y) + GROUND_LIFT;
+                    p.z[s][i][j] = at.z;
+                    p.ground[s][i][j] = ground;
                 }
             }
+        }
+        return p;
+    }
+
+    /**
+     * The red glow on the ground behind the tail lamps: per lamp a grid over its pool's ellipse (from under the bumper
+     * back), each vertex on the ground under it (Pool), the glow texture across the ellipse (its soft round pool is the
+     * shape); a vertex with no ground within a metre up or two down is unlit (alpha 0).
+     */
+    private static void tailGlow(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 cam, ClientLevel level, PickupTruckEntity truck,
+                                 float pt, LevelVehicleWorld world, float strength) {
+        int n = POOL_GRID;
+        Pool p = pool(level, truck, pt, world);
+        int alpha = Mth.clamp(Math.round(255 * Math.max(strength, ALPHA_MIN)), 0, 255);
+        float shade = Math.min(1, strength / ALPHA_MIN);
+        int[] red = shade >= 1 ? RED : new int[]{Math.round(RED[0] * shade), Math.round(RED[1] * shade), Math.round(RED[2] * shade)};
+        for (int s = 0; s < 2; s++) {
+            boolean[][] g = p.ground[s];
             for (int i = 0; i < n - 1; i++)
                 for (int j = 0; j < n - 1; j++) {
-                    if (a[i][j] + a[i][j + 1] + a[i + 1][j] + a[i + 1][j + 1] == 0) continue;
-                    vertex(out, matrix, normals, px[i][j], py[i][j], pz[i][j], red, a[i][j], u[i][j], v[i][j]);
-                    vertex(out, matrix, normals, px[i][j + 1], py[i][j + 1], pz[i][j + 1], red, a[i][j + 1], u[i][j + 1], v[i][j + 1]);
-                    vertex(out, matrix, normals, px[i + 1][j + 1], py[i + 1][j + 1], pz[i + 1][j + 1], red, a[i + 1][j + 1], u[i + 1][j + 1], v[i + 1][j + 1]);
-                    vertex(out, matrix, normals, px[i + 1][j], py[i + 1][j], pz[i + 1][j], red, a[i + 1][j], u[i + 1][j], v[i + 1][j]);
+                    if (!g[i][j] && !g[i][j + 1] && !g[i + 1][j] && !g[i + 1][j + 1]) continue;
+                    poolVertex(out, matrix, normals, cam, p, s, i, j, red, alpha);
+                    poolVertex(out, matrix, normals, cam, p, s, i, j + 1, red, alpha);
+                    poolVertex(out, matrix, normals, cam, p, s, i + 1, j + 1, red, alpha);
+                    poolVertex(out, matrix, normals, cam, p, s, i + 1, j, red, alpha);
                 }
         }
+    }
+
+    private static void poolVertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 cam, Pool p, int s, int i, int j, int[] red, int alpha) {
+        vertex(out, matrix, normals, p.x[s][i][j] - cam.x, p.y[s][i][j] - cam.y, p.z[s][i][j] - cam.z, red, p.ground[s][i][j] ? alpha : 0,
+                (float) (j / (POOL_GRID - 1.0)), (float) (i / (POOL_GRID - 1.0)));
     }
 
     /**

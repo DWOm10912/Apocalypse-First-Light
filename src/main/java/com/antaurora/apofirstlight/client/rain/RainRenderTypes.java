@@ -10,10 +10,11 @@ import net.minecraft.resources.ResourceLocation;
 final class RainRenderTypes extends RenderType {
     /**
      * Splashes (RainSplashes): the splash sheet (textures/effect/rain_splash), the entity-translucent program (lit by the
-     * world and the dynamic lights), alpha blended, sorted, no depth writes.
+     * world and the dynamic lights), alpha blended, no depth writes. Not sorted: thousands of small faint quads a frame
+     * that hardly ever overlap (sorting them every frame was CPU time for nothing to see, 2026-10-17).
      */
     static final RenderType SPLASH = RenderType.create("apocalypse_firstlight_rain_splash", DefaultVertexFormat.NEW_ENTITY,
-            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+            VertexFormat.Mode.QUADS, 256, false, false, CompositeState.builder()
                     .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
                     .setTextureState(new TextureStateShard(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/effect/rain_splash.png"), false, false))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)

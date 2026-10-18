@@ -29,7 +29,8 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `temperature/TemperaturePackets.java` | 本人体温状态（S2C） |
 | `temperature/ClientTemperature.java` | 客户端：保存本人状态，提供寒战时的持枪晃动倍率 |
 | `temperature/ClientTemperatureHud.java` | 体温表盘（缓动、目标框的快速缓动、趋势箭头的流动、位置、隐藏条件）；2026-10-17 起不自己注册，`OVERLAY` 由 HUD V2 身体组件调用 |
-| `temperature/TemperatureDial.java` | 体温表盘的绘制：逐像素画进一张贴图，最多每秒重画 30 次，每帧贴一次 |
+| `temperature/TemperatureDial.java` | 体温表盘的绘制：每帧算一次参数（`look`），交给 GPU 逐像素画；没有着色器时退回 CPU，逐像素画进一张贴图，最多每秒重画 30 次 |
+| `temperature/TemperatureDialProgram.java` + `assets/apocalypse_firstlight/shaders/core/afl_temperature_dial.{json,fsh}` | 表盘的 GPU 画法（2026-10-17）：一个四边形，片元着色器按和 CPU 版相同的公式算每个像素 |
 | `temperature/ClientTemperatureScreenEffects.java` | 屏幕遮罩：冷暖边缘、冷光 / 强光泛白、冰晶闪光、热浪、脉动和平滑 |
 | `temperature/TemperatureFrost.java` | 像素冰霜：雪花图案、布局和随冷程度生长；记下当前显示的雪花中心，给冰晶闪光用 |
 | `temperature/ClientShiver.java` | 打寒颤：第二个寒冷阶段起，镜头短暂、细小地抖动（只动镜头） |
@@ -250,8 +251,9 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
   - **正常**：图标约 ±5%、5 秒一次的呼吸。**偏离**：表盘外一圈柔和光晕。**极端**（danger > 0）：光晕变强、变宽（伸出 2.5 → 4 GUI 像素），以 0.75 Hz 缓慢脉动；每次脉动有一圈细波纹从表盘边缘向外扩散约 4 像素并淡出；图标轻微脉动，不会发白。
 - 趋势由服务端算：`trend = sign(目标 − 核心) × clamp((|目标 − 核心| − 0.1)/(1.5 − 0.1))`，即目标和当前体温相差 0.1 °C 以内不显示，相差 1.5 °C 以上为满。所以体温本身还没怎么变时（刚下水、刚靠近岩浆），箭头就已经出现了。
 - 客户端对服务端的值做 0.8 秒的缓动，所以每次变化都是柔和的过渡。
-- 画法：逐像素画进一张动态贴图（按 GUI 缩放建一次），每帧贴一次。
-- 性能（2026-10-04，用户在冷状态下不开光影只有 66 FPS、GPU 占用 20%，主线程瓶颈）：
+- 画法（2026-10-17 起）：每帧在 CPU 上把这一帧的参数（颜色、角度、光晕、波纹、箭头位置等，31 个 vec4）算好，GPU 用 `afl_temperature_dial` 着色器在表盘方框上逐像素画，和原来 CPU 的公式一一对应（OKLab 混色、雪花和火焰的距离场都在着色器里）。不再有贴图、上传和每秒 30 次的上限，每帧都是最新的画面。原因：CPU 版不管 HUD 动没动都每秒重画 30 次（呼吸和箭头一直在动），GUI 缩放 5 时一张 175 × 175 的距离场，开光影时是 HUD 卡顿的主要来源（JFR：渲染线程 12% 在 GUI，大头是 `TemperatureDial.fill`；改完 2%）。数字见 `docs/ui/hud_v2_research.md` 6.11。
+- 退路：着色器没加载（或者测试开关 `AflGaugeProgram.enabled` 关掉）时按下面的旧画法：逐像素画进一张动态贴图（按 GUI 缩放建一次），每帧贴一次。
+- 旧画法的性能（2026-10-04，用户在冷状态下不开光影只有 66 FPS、GPU 占用 20%，主线程瓶颈）：
   - 贴图最多每秒重画 30 次，其余帧沿用上一张；呼吸、箭头流动、数值过渡都是慢动画，显示最多滞后约 0.03 秒。
   - 每个像素的坐标、半径、角度和边框明暗只在贴图尺寸或圆心变化时算一次。
   - 中间图标（圆点 / 雪花 / 火焰）的覆盖范围只在形态变化时重算（成长度按 1/64 一档）；雪花的 6 个方向和分叉方向改成预先算好的常量。原来每个像素都要算几十次三角函数。

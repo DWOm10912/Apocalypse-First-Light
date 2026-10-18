@@ -10,7 +10,10 @@ public record NativeGunHudConfig(String anchor, int schemaVersion, Global global
     public static final int SCHEMA_VERSION = 2;
     public record Global(float offsetX, float offsetY, float scale, float width, float height,
                          float rightMargin, float bottomMargin) {}
-    /** Every child offset denotes the top-left corner of its layout box. */
+    /**
+     * HUD V2 B (2026-10-17, NativeGunHud) draws from Global only: the sections below are the V1 layout's, still parsed (old
+     * files load) but no longer drawn. Every child offset denotes the top-left corner of its layout box.
+     */
     public record Silhouette(float offsetX, float offsetY, float width, float height, float scale, float alpha, String color, String emptyColor) {}
     public record Divider(float offsetX, float offsetY, float width, float height, String color, float alpha) {}
     /** Text is centred inside its own box; offsets denote the box top-left. */
@@ -23,7 +26,7 @@ public record NativeGunHudConfig(String anchor, int schemaVersion, Global global
 
     public static NativeGunHudConfig defaults() {
         return new NativeGunHudConfig("bottom_right", SCHEMA_VERSION,
-                new Global(0, 0, 1, 84, 38, 10, 61),
+                new Global(0, 0, 1, 64, 24, 8, 8),
                 new Silhouette(0, 0, 36, 38, .65F, 1, "#FFFFFF", "#FF2626"),
                 new Divider(39, 3, 1, 32, "#FFFFFF", .9F),
                 new Text(45, 2, 38, 8, .75F, 38, "#FFFFFF"),

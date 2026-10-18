@@ -48,7 +48,7 @@
 
 维护槽非空时，`GunMaintenanceScreen` 读取同步真实 ItemStack 的 `getHoverName()`，支持当前语言和自定义重命名；无名称映射表。灰白原生字体锚定维护垫上方木台面中央：NORTH 本地点 `(1.0375,1.03125,0.84)` 经四向旋转、共享维护相机投影转换为 GUI 坐标。名称不再跟随底部 origin placeholder，也不因附件页上移。清空立即隐藏。最长 220 GUI px 且限于屏幕边距，超长原字号省略；无大背景板。
 
-日常持枪名称另由 `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeGunHud.java` 显示在右侧白色枪械剪影上方，与剪影间隔 6 GUI px，水平居中并限制屏幕边距；剪影和弹药数字位置不变。读取主手真实 ItemStack 的 `getHoverName()`，最大 140 GUI px，超长省略。原版换物品时的短暂名称提示保持不变。该处剪影不是维护台底部的取回虚影。
+日常持枪名称另由 `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeGunHud.java` 显示（HUD V2 B 起是右下名字行的短型号名，旁边是射击模式胶囊，没有剪影了；见 `native_gun_hud_layout_v1.md`）。原版换物品时的短暂名称提示保持不变。
 
 位置修正构建日志：`build/gun-name-placement-build.log`；本轮未启动图形客户端，木台面投影位置、不同 GUI 比例及语言的最终视觉效果待实机验收。
 

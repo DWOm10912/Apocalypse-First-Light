@@ -6,7 +6,7 @@
 
 | layout_id | 源 JSON（位于 src/main/resources/assets/apocalypse_firstlight/gui/layout/） | 可编辑元素 |
 | --- | --- | --- |
-| native_gun | native_gun_hud.json | global、silhouette、divider、weapon_name、ammo、fire_mode |
+| native_gun | native_gun_hud.json | global（HUD V2 B 起只有整体框，2026-10-17） |
 | geiger_counter | geiger_hud.json | global（2026-10-15 盖革计数器 V2：一块面板，只能移动和缩放；旧的 symbol、text、rows 已删，见 `../models/geiger_counter_v2_design.md` 第 3 节） |
 
 当前没有额外注册的只读 HUD。下列现有显示属于 `NOT YET LAYOUT-JSON DRIVEN`：命中反馈、ExplosionTinnitusOverlay、RadiationStaticTextures、WorldInteractionHint（原 VendingMachineHint）、GunMaintenanceScreen / MaintenanceAttachmentHud、负重条（`weight/ClientWeightHud`，固定在原版经验条位置，见 `../gameplay/weight_system_v1.md`）、生存 HUD 一排仪表（`client/SurvivalHudLayout`，固定在屏幕中线、负重条上方，圆心在底边上方 48 GUI 像素，按原尺寸 ×1.15；原版红心、饱食、护甲、氧气已隐藏）：嵌套排版，从左到右是耐力半环（外面套氧气弧，`stamina/ClientStaminaHud`）、生命环（顶上护甲弧，`client/SurvivalVitalsHud`）、带金属边框的体温表盘（`temperature/ClientTemperatureHud` + `TemperatureDial`）、饥饿环（`SurvivalVitalsHud`）、水滴半环（`thirst/ClientThirstHud`），见 `survival_hud_v1.md`。原来画在原版红心上的 RadiationHeartOverlay 已删除，辐射病改为给生命环染色。NativeGunCrosshair 的基础动态十字已使用 `gui/layout/native_crosshair.json` 视觉参数，但固定屏幕中心，不注册本编辑器、不提供拖动/保存；见 `../native_guns/native_dynamic_crosshair_v1.md`。上述心形覆盖、全屏效果和上下文界面不强行改造成布局，也不以猜测坐标注册红框。machine_layout/*.json 是机器容器界面，不是 HUD，不纳入本轮。
@@ -24,13 +24,13 @@
 /afl hudlayout reload all
 ```
 
-edit 打开透明 Screen；未持枪时 Native Gun 使用只读 P9 物品样本预览，不给玩家物品、不写 stack。持有 Native Gun 时使用实际物品名称/剪影/弹药/模式。盖革预览可不持有仪器，读取现有 ClientGeigerData，不改变读数或音频。编辑器之外的显隐条件不变。
+edit 打开透明 Screen；未持枪时 Native Gun 使用只读 P9 物品样本预览，不给玩家物品、不写 stack。持有 Native Gun 时使用实际物品的短名/弹药/模式。盖革预览可不持有仪器，读取现有 ClientGeigerData，不改变读数或音频。编辑器之外的显隐条件不变。
 
 - 青色框为当前 HUD 元素；白框为当前选中元素。点击元素内部左键拖动，点击容器空白处选中整体。Native Gun 所选框有可见的边/角控制点：拖左/右边改 width，拖上/下边改 height，拖角同时改宽高；拖中间仍为移动。狭窄元素可用“选择下一个元素”选中。
 - “选择下一个元素”用于选取窄分割线、父级 text/global 等被子元素覆盖的框。
 - 滚轮每格修改主缩放字段 0.05，Shift+滚轮 0.01。Native Gun ammo 同比例修改已有 current_scale/reserve_scale/separator_scale；没有伪造额外 scale 字段。divider 没有缩放字段，滚轮无操作。
 - 所有坐标使用 GUI 缩放坐标。子元素位移除以整体 scale；盖革 global 的偏移方向与其原 schema 相反，因此拖动时适配负号。盖革整数偏移按整次手势累积后取整，不丢失每次小幅移动。
-- Native Gun 的 global、silhouette、divider、weapon_name、ammo、fire_mode 都可独立改宽高；盖革旧 schema 没有宽高字段，保持原有移动/滚轮能力，不写假尺寸。global 基于 bottom_right anchor：拖左/上边固定右/下边；拖右/下边固定左/上边，按实际缩放调整 offset，避免跳位。所有 Native Gun 子元素都以自身框左上角 offset 定位；拖左/上边时补偿 offset 以固定对边。
+- Native Gun 只有 global 一个框（HUD V2 B，2026-10-17；两行右对齐画在框右下，旧的 silhouette、divider、weapon_name、ammo、fire_mode 子框已去掉）；盖革旧 schema 没有宽高字段，保持原有移动/滚轮能力，不写假尺寸。global 基于 bottom_right anchor：拖左/上边固定右/下边；拖右/下边固定左/上边，按实际缩放调整 offset，避免跳位。
 - Native Gun 子元素不再有“只能在 divider 右侧”的隐式栏位限制。编辑框显示布局区域，实际图片/文字在框内 contain/居中；框与绘制使用相同 HUD 本地坐标。整体 HUD scissor 仍保留，元素若移出 global 框外可能被裁剪；框内移动不会因左右栏位裁剪消失。
 - 红框/低透明度填充仅显示其他已注册 HUD 的占用区域及 ID，不拦截碰撞，也不允许选择或修改其他 HUD。即使其他仪器当前未手持，也显示其布局占位。
 
@@ -66,7 +66,7 @@ ESC 有未保存修改时显示“保存并退出 / 放弃并退出 / 返回编�
 - ClientHudLayout / HudLayouts / NativeGunHudLayoutAdapter / GeigerHudLayoutAdapter：客户端注册与原 schema 适配。
 - HudLayoutEditorScreen / HudLayoutCommands：透明界面、命令、仅编辑期间抑制当前 HUD 的重复绘制。
 
-NativeGunHud 共用 preview/measurement 入口；Native Gun 编辑框对应各元素可编辑的 width/height 布局区域，预览绘制仍使用实际 font.width、缩小/省略/基线计算和 frame 裁剪。剪影在其布局框内等比 contain，不再依赖 divider；文字框宽高只限制字体，不非等比拉伸或被 divider 右侧重新定位。global 选框使用完整容器。
+NativeGunHud 的 preview 和游戏里用同一个绘制；Native Gun 编辑框就是 global 容器（HUD V2 B 起不裁剪，空仓提示画在框外左边）。
 GeigerHudOverlay 提供只读 preview 入口和面板左上角 origin；bounds 是 62×24 × hudScale 的面板（2026-10-15 V2；V1 的 128×48 面板、符号和三行文字已删）。
 
 新 HUD 只需实现 ClientHudLayout 并注册到 HudLayouts，即可获得同一编辑会话/界面。通用 Screen/Session/Commands 没有 native_gun 或 geiger_counter 的 ID 特判。

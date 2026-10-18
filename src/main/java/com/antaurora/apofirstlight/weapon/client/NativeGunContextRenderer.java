@@ -110,15 +110,16 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
     }
 
     /**
-     * P9 V3 game model (docs/native_guns/p9_01_v3_game_model_v1.md 5): a gun mesh with shading normals (Vextris format 3,
-     * crease_angle) is drawn from the Vextris GPU cache in first and third person. Under a shader pack the cache keeps its
-     * smooth parts as TRIANGLES, while GeckoLib's QUADS consumer would let Oculus replace their normals per face (the
-     * curved parts would look faceted against their baked normal map); it also stops resubmitting the mesh every frame.
-     * Format 1 / 2 meshes, other display contexts, Oculus' translucent hand phase and -Dvextris.gpuCache=false keep the CPU
-     * path. Returns whether the bone's parts are drawn.
+     * P9 V3 game model (docs/native_guns/p9_01_v3_game_model_v1.md 5): the gun mesh is drawn from the Vextris GPU cache in
+     * first and third person. Under a shader pack the cache keeps a format 3 mesh's smooth parts as TRIANGLES, while
+     * GeckoLib's QUADS consumer would let Oculus replace their normals per face (the curved parts would look faceted against
+     * their baked normal map). It also stops resubmitting the mesh vertex by vertex every frame: since 2026-10-17 every
+     * format (the BR-51's format 1 / 2 mesh in hand cost about 2 ms a frame on the CPU path, JFR: the frame's largest CPU
+     * part in rain). Other display contexts, Oculus' translucent hand phase and -Dvextris.gpuCache=false keep the CPU path.
+     * Returns whether the bone's parts are drawn.
      */
     private boolean drawCached(PoseStack pose, GeoBone bone, int light, int overlay, float red, float green, float blue, float alpha) {
-        if (mesh.formatVersion() < 3 || !MeshGpuCache.enabled() || renderPerspective == null || animatable == null) return false;
+        if (!MeshGpuCache.enabled() || renderPerspective == null || animatable == null) return false;
         boolean firstPerson = renderPerspective.firstPerson();
         boolean thirdPerson = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                 || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;

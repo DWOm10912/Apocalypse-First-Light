@@ -237,6 +237,15 @@ public final class Loadout implements INBTSerializable<CompoundTag> {
             select(player, HotbarRoles.HAND_SLOT);   // put into the hands box: held from now on
             selected = HotbarRoles.HAND_SLOT;
         }
+        // driving: no weapon in hand (a weapon position, or a weapon in the hands box), put back as when switching away
+        if (com.antaurora.apofirstlight.vehicle.PickupTruckEntity.driving(player)
+                && HotbarRoles.weaponRole(inventory.items.get(selected)) != null) {
+            if (selected == HotbarRoles.HAND_SLOT ? stowHand(player) : leave(player, selected)) {
+                select(player, HotbarRoles.HAND_SLOT);
+                selected = HotbarRoles.HAND_SLOT;
+                hint(player, "driving");
+            }
+        }
         prevSelected = selected;
         if (--tidyIn <= 0) {
             tidyIn = TIDY_TICKS;

@@ -1,52 +1,52 @@
-# Native Gun HUD 布局 V1
+# Native Gun HUD 布局（现行：HUD V2 B，2026-10-17）
 
-## 现行布局与资源
+状态：已实现，编译和离线布局检查通过；**还没有进游戏看过**（字号、间距、胶囊、键帽、进度条都等用户实机确认）。
 
-当前源布局将枪械剪影放左侧、白色竖线放中间、三行文字放右侧：本地化名称、当前装弹 `|` 备弹/∞、小字号开火模式。这只是初始排版；五个子元素均可在 HUD 框内独立移动，不存在固定左右分栏。保留空仓红色、开火短闪及模式颜色。适用于所有 Native Gun，无武器 ID 特判。
+## 现行布局（HUD V2 B 右下装备区）
 
-编辑 `src/main/resources/assets/apocalypse_firstlight/gui/layout/native_gun_hud.json`。
-资源 ID 为 `apocalypse_firstlight:gui/layout/native_gun_hud.json`，不是服务端 `data/` 数据，也不生成 `config/` 文件。发布环境从资源管理器读取，资源包可同路径覆盖。确认存在可写项目源目录的开发环境，启动与 F3+T 直接读取源 JSON，不再要求先复制到 build/resources。仅开发环境可用 `/afl hudlayout edit native_gun` 可视化编辑、原子写回源文件，详见 [通用 HUD 编辑器](../ui/hud_layout_editor_v1.md)。
+按 `design/ui/hud_v2/sheets/hud_v2b_3_gear.png`（源 `design/ui/hud_v2/source/hud_v2b_concept.html`）做。拿着任何 Native Gun 时，右下角两行，都右对齐在布局框（`global`）的右边，弹药行贴着框底：
 
-源 JSON 使用 `schema_version: 2`。缺失字段使用内置默认值；非法类型、超范围数值、非有限值、非法颜色逐字段回退并记录警告。资源缺失、JSON 损坏或根节点不是对象则整体回退。读取不覆写文件；HUD 每帧只读配置快照。无版本号的旧 JSON 按中心点坐标解析并一次性换算到新版左上角坐标；编辑器载入旧草稿时也先转换，保存后写 v2，保留未知字段。
+1. **名字行**：射击模式胶囊（高 7，圆角 2.5，底色 `AflUiStyle.BACK` 0.6，描边 `LINE`；模式字 0.6 倍，`TEXT_DIM`；`hud.apocalypse_firstlight.fire_mode.semi/burst/auto`）+ 间隔 4 + 短枪名（0.75 倍，`TEXT_DIM`，最宽 60，超过就缩小）。
+   - 短枪名：显示名第一个空格之前的部分（型号，例如 P9-01、BR-51、HR-55、C.A.T）；玩家用铁砧改过名就显示全名。
+2. **弹药行**：弹匣里的发数大字（1.5 倍）+ 间隔 3 + "/ 备弹"小字（0.75 倍，`TEXT_DIM`；无限备弹显示 ∞）。
+   - 剩 ≤ 弹匣容量 1/4 且不为 0：数字琥珀 `AflUiStyle.ACCENT` `#E0A84A`。
+   - 空仓：数字红 `#E8867C`；还有备弹时，数字左边 5 处是"换弹"（0.65 倍）和它左边的换弹键帽（`AflKeyHint`，0.7 倍，键取自 `NativeGunInput.reloadKey()`）。
+   - 换弹中：数字换成"换弹"（1 倍，`hud.apocalypse_firstlight.gun.reload`），下面一条 1.5 高的进度条（底 `BACK` 0.6，进度 `ACCENT`）。
 
-## 字段与内置回退值
+两行间隔 4。旧版的剪影、白色竖线、居中三行文字、模式颜色、开火短闪都已去掉（开火的反馈留给动态准星，`NativeDynamicCrosshair`）。武器列表（`client/inventory/LoadoutHud`，武器位 1–3）总在布局框上方 4 处，换手不跳；没拿枪时框里空着。
 
-下表列出 loader fallback / 编辑器“重置默认”值。当前作者微调的源 JSON 与之不同，例如 global.scale=1.2、divider.height=30、weapon_name.scale=1.4；实际值以源 JSON 为准。新增元素宽高已写入该源文件；老资源缺字段时仍使用回退值。
+### 换弹进度怎么来
 
-单位都是 Minecraft GUI 缩放后的坐标。`anchor` 仅支持 `bottom_right`，只定位整个 HUD；`global` 偏移正值向右/下。v2 中所有子元素的 `offset_x/offset_y` 都表示其布局框左上角相对于 HUD 左上角的位置，编辑框和运行时共用此坐标。框内文字居中、剪影等比 contain，属于内容对齐，不改变元素位置。
+只在客户端看：主手枪的 GeckoLib `action` 控制器（`NativeGunItem.ACTION_CONTROLLER`）正在放的片段名是 `reload` 或以 `reload_` 开头，就算在换弹。从客户端第一次看到这个片段起计时（游戏刻 + partialTick），除以 `gun.reloadTicks(stack, empty)`；片段名以 `gun.reloadClip(stack, true)` 开头（含 `_ads`、熟练档 `_1.._4`）算空仓换弹。片段停了或换了就回到数字。没有新的网络包、没有改换弹逻辑。
 
-| 区域 | 默认参数 | 含义 |
+已知限制：熟练档换弹如果比 `reloadTicks` 快，进度条可能没走满就回到数字。
+
+## 资源和配置
+
+`src/main/resources/assets/apocalypse_firstlight/gui/layout/native_gun_hud.json`（资源 ID `apocalypse_firstlight:gui/layout/native_gun_hud.json`，客户端资源，资源包可同路径覆盖；不是 `data/`，不生成 `config/` 文件）。`schema_version: 2`。
+
+V2 B 只读 `global`：
+
+| 字段 | 现值 = 内置回退 | 范围 |
 | --- | --- | --- |
-| global | offset_x/y=0；scale=1；width=84；height=38；right_margin=10；bottom_margin=61 | 整体位置、缩放与固定边界 |
-| silhouette | offset_x=0；offset_y=0；width=36；height=38；scale=0.65；alpha=1；color=#FFFFFF；empty_color=#FF2626 | 图片等比 contain 到自己的布局框内，scale 是额外尺寸上限，不拉伸轮廓、不依赖 divider |
-| divider | offset_x=39；offset_y=3；width=1；height=32；color=#FFFFFF；alpha=0.9 | 偏移是竖线左上角 |
-| weapon_name | offset_x=45；offset_y=2；width=38；height=8；scale=0.75；max_width=38；color=#FFFFFF | 宽高约束文字；文字在框内居中，不拉伸字体 |
-| ammo | offset_x=45；offset_y=14；width=38；height=12；current_scale=1.15；reserve_scale=1；separator_scale=0.9；max_width=38；gap=2 | 宽高约束整组文字；保留三段各自字号，gap 是分隔符左右间隔 |
-| ammo 颜色 | current_color=#FFFFFF；reserve_color=#D0D0D0；separator_color=#B8B8B8；empty_color/flash_color=#FF3333 | 只影响展示 |
-| fire_mode | offset_x=45；offset_y=28；width=38；height=9；scale=0.78；max_width=38；semi_color=#9FC7D9；burst_color=#D6A15F；auto_color=#D97878 | 独立的小字号第三行，宽高是区域约束 |
+| offset_x / offset_y | 0 / 0 | [-500, 500] |
+| scale | 1 | [0.25, 2] |
+| width / height | 64 / 24 | [40, 160] / [24, 100] |
+| right_margin / bottom_margin | 8 / 8 | [0, 500] |
 
-颜色使用 `#RRGGBB`。偏移允许[-500,500]；global.scale [0.25,2]，width [40,160]，height [24,100]，margin [0,500]；其余 scale [0.25,3]，文字 width [8,160]、height [1,100]、旧 max_width [8,160]，silhouette width [1,160]、height [1,100]，gap [0,12]；divider.width [0.5,4]、height [1,100]；alpha [0,1]。非法或缺失尺寸逐字段回退，宽高不会为 0。子元素可在 HUD 内自由摆放，不再受 divider 或右侧栏位 clamp；超出整个 HUD 框的部分仍受整体 scissor 裁剪。新 `width` 优先于旧 `max_width`，旧字段保留以兼容旧资源。
+默认框左上在 (屏幕宽 − 72, 屏幕高 − 32)，右边、底边离屏幕边 8（和盖革面板、概念图一致）。`silhouette`、`divider`、`weapon_name`、`ammo`、`fire_mode` 几节仍会被解析（旧文件能读、`NativeGunHudConfig` 记录没变），但不再画，源 JSON 里已删掉。解析规则不变：缺字段用回退值，非法值逐字段回退并警告，JSON 损坏整体回退；无版本号的旧 JSON 照旧一次性迁移。
 
-名称和模式按真实 font.width 居中，字号从不超过配置 scale，也受区域 height 限制；长文字按 width 缩小（常规最小0.55，若配置更小则尊重配置），仍不足时添加省略号。原源文件的名称 scale=1.4，短 C.A.T 曾直接保留此大字号、长枪名却因宽度自动缩小，造成视觉反差；现在源 JSON 的 weapon_name.height=6 形成通用字号上限，没有武器 ID 特判。弹药整行按 width/height 等比缩小，不放大、不截断数字；不同字号用 font.lineHeight-1 补偿基线。剪影保持原 hudWidth/hudHeight 比例，不改贴图。模块有裁剪边界及屏幕4单位安全边距。
+开发环境 `/afl hudlayout edit native_gun` 现在只有 `global` 一个框（移动、滚轮缩放、改宽高），见 [通用 HUD 编辑器](../ui/hud_layout_editor_v1.md)。两行是右对齐画在框右下的，框宽只决定编辑器红框和左边界，不裁剪文字（V1 的 scissor 已去掉，空仓提示本来就在框外左边）。
 
-## 位置与盖革 HUD
+## 和盖革 HUD
 
-默认模块左上为 `(屏幕宽-94, 屏幕高-99)`，保留此前右侧10单位与纵向参考线。内置回退 84×38；作者调过的源 JSON 当前约 106.93×39.39。开发编辑器可修改整体宽高，不自动随长名称/备弹扩张。默认底边为屏幕高-61；作者源 JSON 的实际位置还受 global.offset 影响。
+盖革面板（`client/GeigerHudOverlay`，62×24，离右下边 8）只在主手拿着盖革计数器时出现，副手已经取消，所以不会和枪械 HUD 同时出现；它正好占没拿枪时空着的弹药位置，武器列表在它上方。概念图里盖革面板画在武器列表上方，这里没照做（那样要移动盖革面板），等用户看了再定。
 
-当前盖革 HUD 高48、scale=0.85、底边距8，其顶边为屏幕高-48.8，二者默认有12.2 GUI单位间隔；盖革默认回退scale=1时仍有5单位间隔。编辑器提供红框避让提示，没有自动碰撞系统；用户自定义双方偏移或缩放后仍需自行避免重叠。
+## 实现
 
-## 弹少、空仓提示（2026-10-17，HUD V2，没有实机验证）
-
-- 弹匣里剩的 ≤ 容量的 1/4 且不为 0 时，当前装弹数字变琥珀 `#E0A84A`（`NativeGunHud.LOW_AMMO`）；空仓仍是原来的红。
-- 空仓且备弹不是 "0" 时，弹药行左边、HUD 框外画一个换弹键帽（`client/ui/AflKeyHint`，键取自 `NativeGunInput.reloadKey()`）+ "换弹"（`hud.apocalypse_firstlight.gun.reload`）。
-- HUD V2 概念里的射击模式胶囊、枪名排版、换弹进度条没做，等枪重做。见 `docs/ui/hud_v2_research.md` 第 6 节。
-
-## 实现与验证边界
-
-- NativeGunHud：绘制和客户端事件注册。
-- NativeGunHudLayout：仅 HUD 几何计算。
-- client/config/NativeGunHudConfig：默认值、字段解析与验证。
-- client/config/NativeGunHudConfigManager：客户端资源 prepare/apply 快照重载，沿用盖革模式。
-- src/dev/tests/NativeGunHudLayoutTest.java：独立 Java/Gson 轻量检查，覆盖源资源、旧坐标迁移、非法字段回退、左/中/右位置、剪影比例与独立放置、文字尺寸、GUI 边界和默认盖革间隔；不代表客户端目视验证。
-
-本任务仅允许 compileJava、processResources 及上述轻量检查。不启动客户端；字体、∞、不同语言/GUI Scale、F3+T 实际显示由用户测试。无战斗、弹药逻辑、网络、开火模式、ADS、音效、动画及其他HUD行为改动。
+- `weapon/client/NativeGunHud`：绘制（`render`）、换弹进度（`reloadProgress`）、短名（`shortName`）、编辑器预览（`preview`，没拿枪时用 P9 样本，不写物品）、客户端事件注册。
+- `weapon/client/NativeGunHudLayout`：框的几何（`frame`）；V1 子元素的几何方法还在（只给旧检查用）。
+- `client/config/NativeGunHudConfig` / `NativeGunHudConfigManager`：回退值、解析、资源重载。
+- `client/hudlayout/NativeGunHudLayoutAdapter`：编辑器只出 `global`。
+- `client/inventory/LoadoutHud`：武器列表固定在框上方。
+- `src/dev/tests/NativeGunHudLayoutTest.java`：独立 Java/Gson 检查（源资源有效且等于回退框、默认位置和边距、旧坐标迁移、非法字段回退、屏幕边界等），2026-10-17 跑过 93 项通过；不代表游戏里目视验证。

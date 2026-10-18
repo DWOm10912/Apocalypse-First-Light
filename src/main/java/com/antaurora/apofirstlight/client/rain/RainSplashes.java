@@ -341,7 +341,8 @@ final class RainSplashes {
     /** The world's up in view space this frame (render). */
     private static float nx, ny = 1, nz;
 
+    /** m is the identity (positions are camera-relative already): the whole-vertex call, BufferBuilder's fast path for NEW_ENTITY. */
     private static void vertex(VertexConsumer out, Matrix4f m, float x, float y, float z, float u, float v, float alpha, int light) {
-        out.vertex(m, x, y, z).color(0.86F, 0.89F, 0.94F, alpha).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(nx, ny, nz).endVertex();
+        out.vertex(x, y, z, 0.86F, 0.89F, 0.94F, alpha, u, v, OverlayTexture.NO_OVERLAY, light, nx, ny, nz);
     }
 }

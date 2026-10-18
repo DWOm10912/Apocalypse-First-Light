@@ -1,0 +1,32 @@
+// Rain frame time probe client (dev only; src/dev/java/.../dev/RainPerfProbe.java, docs/rendering/rain_v1.md).
+// gradlew runClient --offline -PaflWithoutShaders -I src/dev/rain-perf-client.init.gradle -Prainperf=WORLD
+// With the shader pack: leave out -PaflWithoutShaders and add -Prainperfshaders=true (build/rain-perf needs the pack in
+// shaderpacks/ and config/oculus.properties with enableShaders=true).
+// On foot with a BR-51, 80 m from the truck: add -Prainperfwalk=true; a JFR CPU profile: -Prainperfjfr=true.
+// Where the save left the player (a copy of the player's world): -Prainperfhere=true; window: -Prainperfsize=2560x1440.
+// Its own run directory build/rain-perf (copy the save into its saves/ first); never the main run/ folder.
+allprojects {
+    afterEvaluate {
+        // Oculus's shaders as asked (-Prainperfshaders): a run without -PaflWithoutShaders and shaders off is the player's
+        // usual set-up (Embeddium on, which the per-pixel dynamic lights need)
+        def oculus = project.file('build/rain-perf/config/oculus.properties')
+        if (oculus.exists())
+            oculus.text = oculus.text.replaceAll(/enableShaders=\w+/, 'enableShaders=' + ((project.findProperty('rainperfshaders') ?: 'false') == 'true'))
+        minecraft.runs.client {
+            workingDirectory project.file('build/rain-perf')
+            property 'afl.rainperf', (project.findProperty('rainperf') ?: '')
+            property 'afl.rainperf.shaders', (project.findProperty('rainperfshaders') ?: 'false')
+            property 'afl.rainperf.walk', (project.findProperty('rainperfwalk') ?: 'false')
+            // -Prainperfhere=true: where the save left the player, as it is (a copy of the player's world)
+            property 'afl.rainperf.here', (project.findProperty('rainperfhere') ?: 'false')
+            // -Prainperfhud=true (with here): survival; the HUD gauges steady / redrawn every frame / hidden
+            property 'afl.rainperf.hud', (project.findProperty('rainperfhud') ?: 'false')
+            // -Prainperfjfr=true: a JFR CPU profile of the whole run (build/rain-perf/afl_rain_perf.jfr; the report has each phase's wall ms)
+            if (project.findProperty('rainperfjfr') == 'true')
+                jvmArgs '-XX:FlightRecorderOptions=stackdepth=256', '-XX:StartFlightRecording=filename=afl_rain_perf.jfr,settings=profile'
+            // -Prainperfsize=2560x1440: the window (default 1920 x 1080)
+            def size = ((project.findProperty('rainperfsize') ?: '1920x1080') as String).split('x')
+            args '--width', size[0], '--height', size[1]
+        }
+    }
+}

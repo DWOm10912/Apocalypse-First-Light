@@ -2,66 +2,12 @@
   "anchor": "bottom_right",
   "schema_version": 2,
   "global": {
-    "offset_x": 2.6687486,
-    "offset_y": -7.3592114,
-    "scale": 1.1999998,
-    "width": 114.99642,
-    "height": 39.951305,
-    "right_margin": 10,
-    "bottom_margin": 61
-  },
-  "silhouette": {
-    "offset_x": 2.9672914,
-    "offset_y": 13.665203,
-    "width": 56.571617,
-    "height": 21.4139,
-    "scale": 0.6499999,
-    "alpha": 1,
-    "color": "#FFFFFF",
-    "empty_color": "#FF2626"
-  },
-  "divider": {
-    "offset_x": 62.68928,
-    "offset_y": 13.083766,
-    "width": 0.5,
-    "height": 22.334156,
-    "color": "#FFFFFF",
-    "alpha": 0.9
-  },
-  "weapon_name": {
-    "offset_x": 5.588791,
-    "offset_y": 3.5842876,
-    "width": 102.7728,
-    "height": 5.860621,
-    "scale": 1.3999999,
-    "max_width": 38,
-    "color": "#FFFFFF"
-  },
-  "ammo": {
-    "offset_x": 65.65019,
-    "offset_y": 13.449649,
-    "width": 43.4209,
-    "height": 10.884969,
-    "current_scale": 1.0400003,
-    "reserve_scale": 0.90434813,
-    "separator_scale": 0.81391317,
-    "max_width": 38,
-    "gap": 2,
-    "current_color": "#FFFFFF",
-    "reserve_color": "#D0D0D0",
-    "separator_color": "#B8B8B8",
-    "empty_color": "#FF3333",
-    "flash_color": "#FF3333"
-  },
-  "fire_mode": {
-    "offset_x": 68.369705,
-    "offset_y": 28.636292,
-    "width": 38.0,
-    "height": 6.073041,
-    "scale": 0.59999996,
-    "max_width": 38,
-    "semi_color": "#9FC7D9",
-    "burst_color": "#D6A15F",
-    "auto_color": "#D97878"
+    "offset_x": 0,
+    "offset_y": 0,
+    "scale": 1,
+    "width": 64,
+    "height": 24,
+    "right_margin": 8,
+    "bottom_margin": 8
   }
 }

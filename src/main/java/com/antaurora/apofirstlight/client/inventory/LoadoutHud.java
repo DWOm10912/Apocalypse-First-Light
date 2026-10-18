@@ -9,7 +9,6 @@ import com.antaurora.apofirstlight.inventory.HotbarRoles;
 import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.inventory.grid.Loadout;
 import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
-import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
 import com.antaurora.apofirstlight.weapon.client.NativeGunHudLayout;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -121,9 +120,10 @@ public final class LoadoutHud {
         if (rows == 0) return;
         gui.setupOverlayRenderState(true, false);
         var frame = NativeGunHudLayout.frame(NativeGunHudConfigManager.get().global(), width, height);
-        boolean gunHud = player.getMainHandItem().getItem() instanceof NativeGunItem;
+        // always above the gun HUD's frame (HUD V2 B): it does not jump when the hand changes; without a gun the corner
+        // under it stays free (the Geiger counter's panel, 24 high, 8 from the edges, takes it while in hand)
         float right = Math.min(width - 4, frame.x() + frame.width());
-        float bottom = gunHud ? frame.y() - 4 : Math.min(height - 4, frame.y() + frame.height());
+        float bottom = frame.y() - 4;
         float y = bottom - total;
         RenderSystem.enableBlend();
         for (int i = 0; i < HotbarRoles.HAND_SLOT; i++) {

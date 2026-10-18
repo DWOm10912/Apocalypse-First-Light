@@ -298,6 +298,7 @@
   "hint.apocalypse_firstlight.loadout.no_sling": "没有背带",
   "hint.apocalypse_firstlight.loadout.no_holster": "没有枪套",
   "hint.apocalypse_firstlight.loadout.none_left": "没有了",
+  "hint.apocalypse_firstlight.loadout.driving": "开车时腾不出手",
   "hint.apocalypse_firstlight.ground_item.pick_up": "拾取",
   "hint.apocalypse_firstlight.ground_item.wear": "穿上",
   "hint.apocalypse_firstlight.ground_item.equip": "装备",

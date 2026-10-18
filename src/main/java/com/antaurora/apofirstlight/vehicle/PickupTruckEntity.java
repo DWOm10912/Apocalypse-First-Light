@@ -1119,6 +1119,14 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     /** Whether someone sits on this seat (synced). */
     public boolean seated(int seat) { return entityData.get(SEAT[seat]) >= 0; }
 
+    /**
+     * Whether the player drives a T15 (its driver's seat): hands on the wheel and the gear lever, so no weapon in hand
+     * (Loadout puts one away, client.inventory.GridClient and the weapon wheel mixin block switching to one; 2026-10-17).
+     */
+    public static boolean driving(Entity player) {
+        return player.getVehicle() instanceof PickupTruckEntity truck && truck.getControllingPassenger() == player;
+    }
+
     /** The seat this entity rides on, or -1. */
     public int seatOf(Entity passenger) {
         for (int i = 0; i < SEAT.length; i++) if (entityData.get(SEAT[i]) == passenger.getId()) return i;

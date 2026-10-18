@@ -18,9 +18,8 @@ public final class NativeGunHudLayoutTest {
         var d=NativeGunHudConfig.defaults();
         var resource=Path.of("src/main/resources/assets/apocalypse_firstlight/gui/layout/native_gun_hud.json");
         var tuned=NativeGunHudConfig.parse(Files.readString(resource),warnings::add);
-        check(warnings.isEmpty(),"artist-tuned packaged layout is valid (need not equal fallback)");
-        check(NativeGunHudLayout.textScale(tuned.weaponName().scale(),tuned.weaponName().width(),
-                tuned.weaponName().height(),18,9)<=.667F,"source layout caps short names without weapon-specific logic");
+        check(warnings.isEmpty(),"packaged layout is valid");
+        check(tuned.global().equals(d.global()),"HUD V2 B: the packaged frame is the fallback one (only global is drawn)");
         check(d.equals(NativeGunHudConfig.parse("{}",warnings::add)),"missing fields");
         var legacy=NativeGunHudConfig.parse("{\"weapon_name\":{\"max_width\":70},\"silhouette\":{\"scale\":0.6}}",warnings::add);
         check(close(legacy.weaponName().width(),70) && close(legacy.weaponName().height(),d.weaponName().height()),"legacy max_width fallback");
@@ -57,10 +56,9 @@ public final class NativeGunHudLayoutTest {
         check(d.equals(NativeGunHudConfig.parse("{broken",warnings::add)),"broken JSON fallback");
         for(int[] size:new int[][]{{320,180},{427,240},{640,360},{960,540}}) {
             var f=NativeGunHudLayout.frame(d.global(),size[0],size[1]);
-            check(close(f.x(),size[0]-94) && close(f.y(),size[1]-99),"default anchor");
-            check(close(f.x()+f.width(),size[0]-10),"right margin");
-            check(f.y()+f.height()<size[1]-48*.85F-8,"bundled Geiger separation");
-            check(f.y()+f.height()<size[1]-48-8,"fallback Geiger separation");
+            // HUD V2 B: the corner 8 from the edges; the Geiger panel takes the same corner, but only in hand, never with a gun
+            check(close(f.x(),size[0]-72) && close(f.y(),size[1]-32),"default anchor");
+            check(close(f.x()+f.width(),size[0]-8) && close(f.y()+f.height(),size[1]-8),"right and bottom margins");
         }
         for(int[] size:new int[][]{{36,22},{60,12},{59,23},{60,20}}) {
             var icon=NativeGunHudLayout.silhouette(d,size[0],size[1]);

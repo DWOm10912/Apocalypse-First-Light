@@ -40,7 +40,7 @@ record GunInspectionGeometry(Vec3 pivot, AABB bounds) {
         var attachments = new Capture(null);
         RenderType gunType = MaintenanceGunRendering.renderType(stack);
         MaintenanceGunRendering.render(stack, capturePose,
-                type -> type == gunType ? gun : attachments, 0);
+                (MaintenanceGunRendering.Capture) type -> type == gunType ? gun : attachments, 0);
         if (!gun.valid()) return null;
         AABB all = attachments.valid() ? gun.box().minmax(attachments.box()) : gun.box();
         // Field keeps the existing live idle pose; reserve margin for its small root/follower deltas.

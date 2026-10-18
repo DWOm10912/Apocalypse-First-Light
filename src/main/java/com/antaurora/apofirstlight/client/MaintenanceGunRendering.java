@@ -215,12 +215,16 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         p.popPose();
     }
     /**
-     * Format 3 meshes (smooth normals) from the Vextris GPU cache, like the held gun and the pickup: with a shader pack the
-     * QUADS path gets per-face normals from Oculus and the curved parts turn faceted. Only for a real buffer source (the
-     * bench, rack, carried and ground renderers); the inspection capture and the gun rack's chunk capture stay on the CPU.
+     * Gun meshes from the Vextris GPU cache, like the held gun and the pickup: with a shader pack the QUADS path gets
+     * per-face normals from Oculus and a format 3 mesh's curved parts turn faceted. Every format since 2026-10-17: the
+     * guns carried on the body (back and holster) went vertex by vertex on the CPU every frame, with a shader pack in the
+     * shadow pass and the main pass, about 70 % of the render thread in the player's world (JFR, docs/rendering/rain_v1.md
+     * 3.4). Every buffer source but a geometry capture: the inspection capture ({@link Capture}) and the chunk captures of
+     * the gun rack and the ground guns ({@link ClosedFaces}) stay on the CPU. Not "a BufferSource only": with a shader
+     * pack Oculus hands entity layers a wrapper (it tags each entity's buffers), so the carried guns never got the cache.
      */
     private static boolean drawCached(MeshModel mesh,GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,int light){
-        if(mesh.formatVersion()<3 || !MeshGpuCache.enabled() || !(buffers instanceof MultiBufferSource.BufferSource) || buffers instanceof ClosedFaces)return false;
+        if(!MeshGpuCache.enabled() || buffers instanceof Capture || buffers instanceof ClosedFaces)return false;
         if(b.isHidden() || mesh.parts(b.getName(),com.antaurora.vextris.mesh.MeshLayer.CUTOUT).isEmpty())return true;
         p.pushPose();
         try{
@@ -231,6 +235,8 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     }
     /** A buffer source told which mesh faces close a solid (their back sides are never seen): the gun rack's chunk capture (WoodGunRackChunking). */
     public interface ClosedFaces { void closedFaces(boolean closed); }
+    /** A buffer source that only collects the geometry (GunInspectionGeometry): the CPU path, no GPU cache. */
+    public interface Capture extends MultiBufferSource {}
     /** GeckoMeshRenderer#renderBone one part at a time, so the capture knows each part's closure. */
     private static void meshParts(MeshModel mesh,GeoBone b,PoseStack p,VertexConsumer out,int light,ClosedFaces faces){
         if(b.isHidden())return;
