@@ -31,9 +31,11 @@ public final class RoadNetworkStage {
      * lots and slopes, TownWorks, RoadWorks#townColumn; 10: County road G3, 2026-10-18: the forest home's county road
      * (C2, RoadCounty) and its works, its mouth into a town's outer intersection, the home's gravel driveway, Driveway /
      * RoadWorks.Kind.DRIVE; 11: County road G3 side join, 2026-10-19: the county road runs past the home, the driveway
-     * joins its paved edge from the side through a filleted apron, Driveway#near / RoadCounty#mouth).
+     * joins its paved edge from the side through a filleted apron, Driveway#near / RoadCounty#mouth; 12: the farm gate's
+     * and the mailbox's pads, 2026-10-19: level turf at their whole Y, the driveway level there, Driveway#padY /
+     * RoadWorks#padded).
      */
-    public static final int WORKS_VERSION = 11;
+    public static final int WORKS_VERSION = 12;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -57,9 +59,10 @@ public final class RoadNetworkStage {
      * Framework V1: the framework towns' street asphalt, curbs and sidewalks, TownMesh, their paved columns, 2026-10-17;
      * 20: County road G3: the county road's C2 pavement and markings, its town mouth, its limit sign, its T junction's pad
      * and signs, 2026-10-18; 21: County road G3 side join: the county road past the home, the driveway's apron mesh onto
-     * its paved edge, DriveMesh, 2026-10-19).
+     * its paved edge, DriveMesh, 2026-10-19; 22: the gravel level and crownless at the gate's pad, PAD_LIFT over its whole
+     * Y, 2026-10-19).
      */
-    public static final int SURFACE_VERSION = 21;
+    public static final int SURFACE_VERSION = 22;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {

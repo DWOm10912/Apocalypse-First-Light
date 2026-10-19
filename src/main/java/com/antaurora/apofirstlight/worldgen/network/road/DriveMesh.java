@@ -25,11 +25,14 @@ public final class DriveMesh {
     static final double TILE_ORIGIN = -2;
     private static final double TINY = 1e-5;
 
-    /** A station: position, unit left normal, datum, half width, distance from the road end, distance from the home end. */
-    private record Station(double x, double z, double nx, double nz, double y, double w, double toEnd, double along) {
+    /**
+     * A station: position, unit left normal, datum, half width, distance from the road end, distance from the home end,
+     * its crown and lift (Driveway#crown, #lift: level at the gate's pad).
+     */
+    private record Station(double x, double z, double nx, double nz, double y, double w, double toEnd, double along, double crown, double lift) {
         double[] at(double u) { return new double[]{x + nx * u, z + nz * u}; }
 
-        double y(double u) { return y - Driveway.CROWN * Math.abs(u); }
+        double y(double u) { return y + lift - crown * Math.abs(u); }
     }
 
     /** The driveway's triangles inside chunk (cx, cz), relative to (cx * 16, 0, cz * 16). */
@@ -85,6 +88,11 @@ public final class DriveMesh {
             // the texture's tile lines along
             for (double t = Math.ceil(a0 / RoadMesh.TEXTURE) * RoadMesh.TEXTURE; t < a1 - 1e-6; t += RoadMesh.TEXTURE)
                 if (t > a0 + 1e-6) ts.add((t - a0) / len);
+            // the gate pad's level stretch and its blends end on a station
+            for (double b : dw.padBreaks()) {
+                double t = total - b;
+                if (t > a0 + 1e-6 && t < a1 - 1e-6) ts.add((t - a0) / len);
+            }
             for (double t : ts) out.add(station(dw, pn, i, t, a0 + len * t));
         }
         out.add(station(dw, pn, n - 2, 1, total - dw.toEnd(n - 1)));
@@ -95,7 +103,7 @@ public final class DriveMesh {
         double x = dw.x(i) + (dw.x(i + 1) - dw.x(i)) * t, z = dw.z(i) + (dw.z(i + 1) - dw.z(i)) * t;
         double y = dw.y(i) + (dw.y(i + 1) - dw.y(i)) * t, toEnd = dw.toEnd(i) + (dw.toEnd(i + 1) - dw.toEnd(i)) * t;
         double[] nv = unit(pn[i][0] + (pn[i + 1][0] - pn[i][0]) * t, pn[i][1] + (pn[i + 1][1] - pn[i][1]) * t);
-        return new Station(x, z, nv[0], nv[1], y, Driveway.HALF, toEnd, along);
+        return new Station(x, z, nv[0], nv[1], y, Driveway.HALF, toEnd, along, dw.crown(toEnd), dw.lift(toEnd));
     }
 
     private static double[] unit(double x, double z) {

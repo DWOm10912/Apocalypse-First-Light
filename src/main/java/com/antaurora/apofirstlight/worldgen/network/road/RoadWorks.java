@@ -1001,6 +1001,43 @@ public final class RoadWorks {
      * turf never rises through the asphalt.
      */
     public Column column(int x, int z, Ground ground) {
+        Column c = unpadded(x, z, ground);
+        return drive.isEmpty() || !drive.nearPad(x, z) ? c : padded(c, x, z, ground);
+    }
+
+    /**
+     * Column (x, z) by the driveway's pads (Driveway#padY; Main 2026-10-19: the farm gate and the mailbox stand on whole
+     * blocks): a turf column, or a natural one (its corners then the natural surface as drawn), with a corner a pad's
+     * gets that corner at the pad's whole Y, so a pad's own column is level turf (a full block at Y - 1, Y clear, no
+     * plants) and its neighbours share its corners; pavement, gravel and the rest are left as they are.
+     */
+    private Column padded(Column c, int x, int z, Ground ground) {
+        boolean turf = c.kind() == Kind.TURF && (c.data() & (TUNNEL_OVER | CULVERT_BODY)) == 0;
+        if (!turf && !(c.kind() == Kind.NONE && ground != null)) return c;
+        int[] py = new int[4];
+        boolean any = false;
+        for (int k = 0; k < 4; k++) {
+            py[k] = drive.padY(x + (k & 1), z + (k >> 1));
+            any |= py[k] != Integer.MIN_VALUE;
+        }
+        if (!any) return c;
+        double[] q = new double[4];
+        if (turf) {
+            int base = c.y() * 8 + ((c.data() >> 16 & 1) != 0 ? 4 : 0);
+            for (int k = 0; k < 4; k++) q[k] = (base + (c.data() >> 4 * k & 15)) / 8.0;
+        } else {
+            int[] tops = naturalTops(x, z, ground);
+            for (int k = 0; k < 4; k++) q[k] = naturalSurface(tops, k & 1, k >> 1);
+        }
+        for (int k = 0; k < 4; k++) if (py[k] != Integer.MIN_VALUE) q[k] = py[k];
+        int[] fit = fit(q);
+        int keep = turf ? c.data() & ~0x1ffff : 0;
+        int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | keep | (drive.padCell(x, z) != Integer.MIN_VALUE ? BARE : 0);
+        return new Column(Kind.TURF, fit[0], 0, 0, data, turf ? c.bottom() : 0, 0, 0, c.roof(), c.deck());
+    }
+
+    /** #column without the driveway's pads. */
+    private Column unpadded(int x, int z, Ground ground) {
         // a box culvert's own cell (its mouths may reach beyond the works' reach); a cell of its body keeps the finish
         Culvert.Cell cell = culvertCell(x, z);
         if (cell != null && cell.own()) {

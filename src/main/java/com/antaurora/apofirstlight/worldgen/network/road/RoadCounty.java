@@ -68,7 +68,7 @@ public final class RoadCounty {
      * The rules' version: part of the memo's key (bump it with any change to the zones, the search, the choice or the
      * design, or a remembered site outlives the rules that chose it).
      */
-    public static final String RULES = "g3.3";
+    public static final String RULES = "g3.4";
 
     /** Where the chosen site is remembered between builds (#plan); NONE: nowhere. */
     public interface Memo {
@@ -139,10 +139,22 @@ public final class RoadCounty {
     static final double DEAD_END_RUN = 300;
     static final double[][] STUB = {{288, 352}, {160, 224}};
     /**
-     * The farm gate across the driveway GATE_IN from the paved edge; the mailbox MAILBOX_OFF beyond the paved edge,
-     * MAILBOX_ALONG along the road on the right seen from the driveway; a dead end's barrier BARRIER_IN from the road's start, m.
+     * The farm gate across the driveway, its centre GATE_MIN .. GATE_MAX from the paved edge (the first in GATE_STEP steps
+     * whose whole Y the profile can reach); the mailbox MAILBOX_OFF beyond the paved edge, MAILBOX_ALONG along the road on
+     * the right seen from the driveway; a dead end's barrier BARRIER_IN from the road's start, m.
      */
-    static final double GATE_IN = APRON, MAILBOX_OFF = 1.2, MAILBOX_ALONG = DRIVE_HALF + APRON_R + 2, BARRIER_IN = 1;
+    static final double GATE_MIN = 13, GATE_MAX = 17, GATE_STEP = 0.5, MAILBOX_OFF = 1.2, MAILBOX_ALONG = DRIVE_HALF + APRON_R + 2, BARRIER_IN = 1;
+    /**
+     * The pads (Main 2026-10-19: the gate and the mailbox stand on whole blocks, Driveway#padY), m: the driveway's datum
+     * level at the gate's whole Y over +- GATE_FLAT (and the next datum point beyond, so the line between them stays
+     * level), its crown fading back in over GATE_BLEND; the gate's box GATE_ALONG along and GATE_ACROSS across its centre
+     * (its posts); the mailbox's Y the paved edge's plus MAILBOX_ROUND, rounded down (the pad never stands proud of the
+     * asphalt by more); its neighbours within MAILBOX_KEEP of the paved edge keep the road's turf. GATE_MIN - GATE_FLAT -
+     * GATE_BLEND >= APRON: the level stretch never reaches the apron.
+     */
+    public static final double GATE_FLAT = 3, GATE_BLEND = 2, GATE_ALONG = 1.5, GATE_ACROSS = 2.2, MAILBOX_ROUND = 0.3, MAILBOX_KEEP = 0.3;
+    /** The gate's level stretch blends into the profile over this much toward the house (toward the road: an even grade to the edge), m. */
+    static final double GATE_PIN = 30;
     /** The county road keeps this clear of every other road's formation (its hosts' mouths excepted), m. */
     static final double CLEAR = 6;
 
@@ -1029,23 +1041,61 @@ public final class RoadCounty {
         }
         y[0] = yh;
         y[n] = ye;
-        for (int i = 1; i < n; i++) y[i] = clampGrade(y[i], y[i - 1], limit(along[i], total) * step);
-        for (int i = n - 1; i >= 1; i--) y[i] = clampGrade(y[i], y[i + 1], limit(along[i + 1], total) * step);
-        for (int i = 1; i <= n; i++)
-            if (Math.abs(y[i] - y[i - 1]) > limit(along[i], total) * step + 1e-6) {
-                why[0] = String.format(Locale.ROOT, "%.1f %% at %.0f m (yard Y%.1f, road edge Y%.1f over %.0f m)", 100 * Math.abs(y[i] - y[i - 1]) / step, along[i], yh, ye, total);
-                return null;
+        // the gate's pad: the datum level at a whole Y round the gate; of the gate distances and the two whole Ys nearest
+        // the profile there, the one whose steepest grade is the least (the level stretch pushes the ground's rise beside
+        // it; the first in order on a tie)
+        double[] base = y.clone();
+        double gIn = Double.NaN, gBest = Double.POSITIVE_INFINITY;
+        int gY = 0;
+        String fail = null;
+        for (double g = GATE_MIN; g <= GATE_MAX + 1e-9; g += GATE_STEP) {
+            int k = Math.max(0, Math.min(n, (int) Math.round((total - g) / step)));
+            int y0 = (int) Math.round(base[k]), y1 = base[k] >= y0 ? y0 + 1 : y0 - 1;
+            for (int yy : new int[]{y0, y1}) {
+                double[] c = base.clone();
+                boolean[] fix = new boolean[n + 1];
+                fix[0] = fix[n] = true;
+                double lev = GATE_FLAT + step + 1e-6, dyg = yy - base[k];
+                for (int i = 1; i < n; i++) {
+                    double te = total - along[i], e = Math.abs(te - g) - lev;
+                    if (e <= 0) {
+                        c[i] = yy;
+                        fix[i] = true;
+                    } else if (te > g) c[i] += dyg * (1 - CrossSection.smooth(Math.min(1, e / GATE_PIN)));
+                    else c[i] = ye + (yy - ye) * te / (g - lev);
+                }
+                for (int i = 1; i < n; i++) if (!fix[i]) c[i] = clampGrade(c[i], c[i - 1], limit(along[i], total) * step);
+                for (int i = n - 1; i >= 1; i--) if (!fix[i]) c[i] = clampGrade(c[i], c[i + 1], limit(along[i + 1], total) * step);
+                String bad = null;
+                double steep = 0;
+                for (int i = 1; i <= n && bad == null; i++) {
+                    steep = Math.max(steep, Math.abs(c[i] - c[i - 1]) / step);
+                    if (Math.abs(c[i] - c[i - 1]) > limit(along[i], total) * step + 1e-6)
+                        bad = String.format(Locale.ROOT, "%.1f %% at %.0f m (yard Y%.1f, road edge Y%.1f, gate Y%d %.1f m in, over %.0f m)", 100 * Math.abs(c[i] - c[i - 1]) / step,
+                                along[i], yh, ye, yy, g, total);
+                }
+                if (bad == null && steep < gBest - 1e-4) {
+                    y = c;
+                    gIn = g;
+                    gY = yy;
+                    gBest = steep;
+                }
+                if (bad != null && fail == null) fail = bad;
             }
+        }
+        if (Double.isNaN(gIn)) {
+            why[0] = fail;
+            return null;
+        }
         double[] pts = new double[3 * (n + 1)];
         for (int i = 0; i <= n; i++) {
             pts[3 * i] = RoadNetworkJson.round2(xs[i]);
             pts[3 * i + 1] = RoadNetworkJson.round2(zs[i]);
             pts[3 * i + 2] = RoadNetworkJson.round2(y[i]);
         }
-        // the gate across the driveway GATE_IN from the paved edge, spanning the straight
-        double[] gp = {ep[0] - ix * GATE_IN, ep[1] - iz * GATE_IN};
-        double gy = y[n] + (y[Math.max(0, n - (int) Math.round(GATE_IN / step))] - y[n]);
-        double[] gate = {RoadNetworkJson.round2(gp[0]), RoadNetworkJson.round2(gy), RoadNetworkJson.round2(gp[1]), ix, iz};
+        // the gate across the driveway gIn from the paved edge, spanning the straight, on its pad's whole Y
+        double[] gp = {ep[0] - ix * gIn, ep[1] - iz * gIn};
+        double[] gate = {RoadNetworkJson.round2(gp[0]), gY, RoadNetworkJson.round2(gp[1]), ix, iz};
         // the mailbox on the right seen from the driveway (facing the road), MAILBOX_OFF beyond the paved edge, facing the road
         double[] f = new double[5];
         d.curve.frame(s, f);
@@ -1053,7 +1103,7 @@ public final class RoadCounty {
         sm = Math.max(0, Math.min(d.length, sm));
         double[] mp = d.point(sm, side * (edge + MAILBOX_OFF)), mr = d.point(sm, 0);
         double ml = Math.hypot(mr[0] - mp[0], mr[1] - mp[1]);
-        double[] mailbox = {RoadNetworkJson.round2(mp[0]), RoadNetworkJson.round2(d.pavementY(sm, side * edge)), RoadNetworkJson.round2(mp[1]), (mr[0] - mp[0]) / ml,
+        double[] mailbox = {RoadNetworkJson.round2(mp[0]), Math.floor(d.pavementY(sm, side * edge) + MAILBOX_ROUND), RoadNetworkJson.round2(mp[1]), (mr[0] - mp[0]) / ml,
                 (mr[1] - mp[1]) / ml};
         return new Drive(pts, total, gate, mailbox, s);
     }
