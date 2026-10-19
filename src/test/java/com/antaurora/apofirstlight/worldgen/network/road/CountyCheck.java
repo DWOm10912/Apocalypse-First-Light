@@ -114,7 +114,7 @@ public final class CountyCheck {
             return w == RouteTerrain.RIVER || w == RouteTerrain.LAKE || w == RouteTerrain.SEA;
         };
         List<RoadDesign> ds = RoadNetworkJson.designs(r.json());
-        RoadWorks w = new RoadWorks(ds, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(r.towns()), new Driveway(h.drive()));
+        RoadWorks w = new RoadWorks(ds, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(r.towns()), Driveway.of(h));
         RoadWorks.Ground g = RoadWorks.Ground.of(s);
         double[] dr = h.drive();
         Driveway dw = w.drive();
@@ -207,6 +207,43 @@ public final class CountyCheck {
                 if (miss > 0 && System.getenv("COUNTY_DUMP") != null) System.out.printf(Locale.ROOT, "  bare %s (%d, %d): %d of 121%n", kind, x, z, miss);
             }
         if (bareCols > 0) bad.add(bareCols + " collision columns by the driveway partly outside the gravel and the pavement (see-through), first " + firstBare);
+        // the pads (Main 2026-10-19): every column the gate's box covers and the mailbox's column and its neighbours (not
+        // those by the pavement) a level top at the anchor's whole Y: full turf or full collision at Y - 1, Y clear; the
+        // gravel on the gate's pad PAD_LIFT over Y; the turf round them in the shared-corner test below
+        double[] gate = h.gate(), mb = h.mailbox();
+        int padCols = 0, padBad = 0, byRoad = 0;
+        String firstPad = null;
+        double gateIn = Double.NaN;
+        if (gate == null || mb == null || gate[1] != Math.rint(gate[1]) || mb[1] != Math.rint(mb[1])) bad.add("the gate's or the mailbox's Y is not whole");
+        else {
+            gateIn = Math.hypot(gate[0] - dr[3 * n - 3], gate[2] - dr[3 * n - 2]);
+            double gh = dw.height(gate[0], gate[2]);
+            if (Math.abs(gh - Driveway.PAD_LIFT - gate[1]) > 0.002) bad.add(String.format(Locale.ROOT, "the gravel at the gate %.3f, its Y %d", gh, (int) gate[1]));
+            java.util.Map<Long, Integer> want = new java.util.LinkedHashMap<>();
+            for (double a = -RoadCounty.GATE_ALONG; a <= RoadCounty.GATE_ALONG + 1e-9; a += 0.1)
+                for (double v = -RoadCounty.GATE_ACROSS; v <= RoadCounty.GATE_ACROSS + 1e-9; v += 0.1) {
+                    double px = gate[0] + gate[3] * a - gate[4] * v, pz = gate[2] + gate[4] * a + gate[3] * v;
+                    want.put(((long) (int) Math.floor(px) << 32) ^ ((int) Math.floor(pz) & 0xffffffffL), (int) gate[1]);
+                }
+            int mx = (int) Math.floor(mb[0]), mz = (int) Math.floor(mb[2]);
+            for (int[] o : new int[][]{{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                int x = mx + o[0], z = mz + o[1];
+                if (dw.padCell(x, z) == Integer.MIN_VALUE && (o[0] != 0 || o[1] != 0)) { byRoad++; continue; }
+                want.put(((long) x << 32) ^ (z & 0xffffffffL), (int) mb[1]);
+            }
+            for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++) cols.add(((long) (mx + dx) << 32) ^ ((mz + dz) & 0xffffffffL));
+            for (java.util.Map.Entry<Long, Integer> e : want.entrySet()) {
+                int x = (int) (e.getKey() >> 32), z = (int) (long) e.getKey(), y = e.getValue();
+                RoadWorks.Column c = w.column(x, z, g);
+                boolean level = c.kind() == RoadWorks.Kind.TURF && c.y() == y - 1 && (c.data() & 0x1ffff) == 0x8888
+                        || c.kind() == RoadWorks.Kind.DRIVE && c.y() == y - 1 && c.layers() == 32 && c.upper() == 0;
+                padCols++;
+                if (!level && padBad++ == 0)
+                    firstPad = String.format(Locale.ROOT, "(%d, %d) %s y %d layers %d data %x, want top %d", x, z, c.kind(), c.y(), c.layers(), c.data() & 0x1ffff, y);
+            }
+            if (padBad > 0) bad.add(padBad + " of " + padCols + " pad columns not level at their Y, first " + firstPad);
+            if (byRoad > 2) bad.add(byRoad + " of the mailbox's neighbours by the pavement");
+        }
         // two graded turf blocks side by side cull the faces between them (FLOOR occlusion): by the driveway every pair of
         // turf columns must give the corners they share the same height, else the sky shows through the wedge between
         // them (the driveway's verge and the county road's earthworks once met that way, 2026-10-19); a turf whose low
@@ -366,8 +403,8 @@ public final class CountyCheck {
             }
             for (int i = n - 6; i < n; i++) System.out.printf(Locale.ROOT, "  drive %d (%.1f, %.1f) datum %.2f ground %.2f%n", i, dr[3 * i], dr[3 * i + 1], dr[3 * i + 2], g.at(dr[3 * i], dr[3 * i + 1]));
         }
-        return String.format(Locale.ROOT, "; works: %d driveway columns gravel, %d the road's; mesh %d triangles, %.3f m off, joint %.3f m",
-                gravel, road, tris, worst, seam);
+        return String.format(Locale.ROOT, "; works: %d driveway columns gravel, %d the road's; mesh %d triangles, %.3f m off, joint %.3f m; gate %.1f m in, %d pad columns level (%d mailbox neighbours by the road)",
+                gravel, road, tris, worst, seam, gateIn, padCols - padBad, byRoad);
     }
 
     /** Whether (x, z) lies in triangle t seen from above (chunk-relative). */
@@ -440,6 +477,8 @@ public final class CountyCheck {
                 double g = Math.abs(dr[3 * i + 2] - dr[3 * i - 1]) / Math.max(1e-6, along[i] - along[i - 1]);
                 if (total - along[i] < RoadCounty.DRIVE_STRAIGHT - 1e-6) gEnd = Math.max(gEnd, g);
                 else gDrive = Math.max(gDrive, g);
+                if (System.getenv("COUNTY_GRADE") != null && g > 0.08)
+                    System.out.printf(Locale.ROOT, "  grade %.1f %% at %.1f m from the edge (Y %.2f -> %.2f)%n", g * 100, total - along[i], dr[3 * i - 1], dr[3 * i + 2]);
             }
             for (int k = 0; k < 9; k++) {
                 double x = dr[3 * i] + (k % 3 - 1) * 4, z = dr[3 * i + 1] + (k / 3 - 1) * 4;
@@ -469,7 +508,8 @@ public final class CountyCheck {
         if (!RoadCounty.sight(d, Math.rint(sm / 2) * 2, side)) bad.add("no sight from the mouth");
         // the gate on the driveway, the mailbox beside the road
         double[] gate = h.gate(), mb = h.mailbox();
-        if (gate == null || Math.abs(Math.hypot(gate[0] - ex, gate[2] - ez) - RoadCounty.GATE_IN) > 0.1) bad.add("the gate is not on the driveway " + RoadCounty.GATE_IN + " m from the edge");
+        double gIn = gate == null ? Double.NaN : Math.hypot(gate[0] - ex, gate[2] - ez);
+        if (!(gIn >= RoadCounty.GATE_MIN - 0.1 && gIn <= RoadCounty.GATE_MAX + 0.1)) bad.add(String.format(Locale.ROOT, "the gate %.1f m from the edge", gIn));
         double[] lm = mb == null ? null : d.local(mb[0], mb[2], edge + 10);
         if (lm == null || Math.abs(Math.abs(lm[1]) - edge - RoadCounty.MAILBOX_OFF) > 0.05 || lm[1] * side < 0) bad.add("the mailbox is not beside the road by the mouth");
         // crossings: no other road's paved band within the county road's own paved width (its hosts' mouths excepted)

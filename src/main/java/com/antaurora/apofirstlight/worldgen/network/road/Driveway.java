@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -19,7 +21,13 @@ import java.util.Set;
  *   D(v)) the way still to the edge: HALF, widening in a fillet of radius FILLET onto the edge (HALF + FILLET there,
  *   tangent to it); its height blends from the driveway's datum and crown at F into the pavement's edge height (its cross
  *   slope carried on beyond the edge) at the edge, smooth in t, so the gravel meets the asphalt without a step; beyond the
- *   edge the road's (the mesh tucks the gravel UNDER under the asphalt, UNDER_DROP down).</li>
+ *   edge the road's (the mesh tucks the gravel UNDER under the asphalt, UNDER_DROP down);</li>
+ *   <li>the pads (Main 2026-10-19: the farm gate and the mailbox stand on whole blocks): the datum runs level at the
+ *   gate's whole Y over +- RoadCounty.GATE_FLAT (RoadCounty#drive), where the crown fades out (over GATE_BLEND beyond)
+ *   and the gravel rides PAD_LIFT over Y (over the pads' turf tops, never coplanar with them); the block columns the
+ *   gate's box (GATE_ALONG along, GATE_ACROSS across its centre) overlaps, the mailbox's column and its four neighbours
+ *   (not those reaching within MAILBOX_KEEP of the paved edge) are pads: RoadWorks#column levels their turf at Y
+ *   (#padY).</li>
  * </ul>
  */
 public final class Driveway {
@@ -35,6 +43,8 @@ public final class Driveway {
      * table and the road's own test differ by micrometres, a sliver neither would claim), m.
      */
     public static final double JOIN = 0.02;
+    /** The gravel rides this far over a pad's whole Y, m. */
+    public static final double PAD_LIFT = 0.01;
 
     /** All datum points {x, z, y} along the centreline to the paved edge, and their distance from it. */
     private final double[] all;
@@ -50,18 +60,23 @@ public final class Driveway {
     /** D(v), the paved edge's height and its outward slope there, v = -APRON_REACH .. APRON_REACH every APRON_STEP. */
     private final double[] reach, edgeY, edgeSlope;
     private final Set<Long> chunks = new HashSet<>();
+    /** The gate {x, y, z, way x, way z} and the mailbox {x, y, z, ...} (null: none), the gate's distance from the paved edge (NaN: none). */
+    private final double[] gate, mailbox;
+    private final double padTo;
+    /** The pads' block columns (#key) and their whole Y. */
+    private final Map<Long, Integer> pads = new HashMap<>();
 
-    public Driveway(double[] points) { this(points, null); }
+    public Driveway(double[] points) { this(points, null, null, null); }
 
     /**
      * The driveway of a road network JSON's home (RoadCounty#read), EMPTY without one: the server's works and the
      * client's copy (RoadClient#receive: the mesh, the surface query) build it the same way.
      */
     public static Driveway of(RoadCounty.Home home) {
-        return home == null || home.drive() == null || home.drive().length < 6 ? EMPTY : new Driveway(home.drive());
+        return home == null || home.drive() == null || home.drive().length < 6 ? EMPTY : new Driveway(home.drive(), null, home.gate(), home.mailbox());
     }
 
-    private Driveway(double[] points, RoadDesign d) {
+    private Driveway(double[] points, RoadDesign d, double[] gate, double[] mailbox) {
         this.all = points.clone();
         int na = all.length / 3;
         this.allToEnd = new double[na];
@@ -135,6 +150,84 @@ public final class Driveway {
             for (int cz = (int) Math.floor((z - r) / 16); cz <= (int) Math.floor((z + r) / 16); cz++)
                 for (int cx = (int) Math.floor((x - r) / 16); cx <= (int) Math.floor((x + r) / 16); cx++) chunks.add(key(cx, cz));
         }
+        this.gate = gate;
+        this.mailbox = mailbox;
+        this.padTo = gate == null || na < 2 ? Double.NaN : Math.hypot(gate[0] - all[3 * na - 3], gate[2] - all[3 * na - 2]);
+        if (gate != null) {
+            int gy = (int) Math.round(gate[1]);
+            double ha = RoadCounty.GATE_ALONG, hv = RoadCounty.GATE_ACROSS, ux = gate[3], uz = gate[4], rr = ha + hv + 2;
+            for (int cz = (int) Math.floor(gate[2] - rr); cz <= (int) Math.floor(gate[2] + rr); cz++)
+                for (int cx = (int) Math.floor(gate[0] - rr); cx <= (int) Math.floor(gate[0] + rr); cx++)
+                    if (overlaps(cx, cz, gate[0], gate[2], ux, uz, ha, hv)) pads.put(key(cx, cz), gy);
+        }
+        // the mailbox's pad beside the road (only joined: its neighbours by the pavement keep the road's turf)
+        if (mailbox != null && d != null) {
+            int mx = (int) Math.floor(mailbox[0]), mz = (int) Math.floor(mailbox[2]), my = (int) Math.round(mailbox[1]);
+            int[][] around = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            for (int[] o : around) {
+                int cx = mx + o[0], cz = mz + o[1];
+                boolean byRoad = false;
+                for (int k = 0; k < 4 && !byRoad; k++) {
+                    double[] q = d.local(cx + (k & 1), cz + (k >> 1), d.section.edge + 10);
+                    byRoad = q != null && Math.abs(q[1]) <= d.section.edge + RoadCounty.MAILBOX_KEEP;
+                }
+                if (!byRoad || o[0] == 0 && o[1] == 0) pads.putIfAbsent(key(cx, cz), my);
+            }
+        }
+    }
+
+    /**
+     * Whether block column (cx, cz) overlaps the box centred on (gx, gz), ha along the unit way (ux, uz) and hv across it
+     * (separating axes; touching does not count).
+     */
+    private static boolean overlaps(int cx, int cz, double gx, double gz, double ux, double uz, double ha, double hv) {
+        double ex = Math.abs(ux) * ha + Math.abs(uz) * hv, ez = Math.abs(uz) * ha + Math.abs(ux) * hv;
+        if (gx + ex <= cx || gx - ex >= cx + 1 || gz + ez <= cz || gz - ez >= cz + 1) return false;
+        double dx = cx + 0.5 - gx, dz = cz + 0.5 - gz, hs = 0.5 * (Math.abs(ux) + Math.abs(uz));
+        return Math.abs(dx * ux + dz * uz) < ha + hs && Math.abs(-dx * uz + dz * ux) < hv + hs;
+    }
+
+    /** The whole Y of a pad block column (cx, cz), or Integer.MIN_VALUE. */
+    public int padCell(int cx, int cz) {
+        Integer y = pads.get(key(cx, cz));
+        return y == null ? Integer.MIN_VALUE : y;
+    }
+
+    /** The whole Y of corner (x, z) when one of the four columns sharing it is a pad, else Integer.MIN_VALUE. */
+    public int padY(int x, int z) {
+        if (pads.isEmpty()) return Integer.MIN_VALUE;
+        for (int k = 0; k < 4; k++) {
+            int y = padCell(x - 1 + (k & 1), z - 1 + (k >> 1));
+            if (y != Integer.MIN_VALUE) return y;
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    /** Whether any column within one of (cx, cz) is a pad (its corners may be pads' corners). */
+    public boolean nearPad(int cx, int cz) {
+        if (pads.isEmpty()) return false;
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) if (pads.containsKey(key(cx + dx, cz + dz))) return true;
+        return false;
+    }
+
+    /** How much of the gate's level stretch holds at toEnd from the paved edge: 1 within GATE_FLAT, fading over GATE_BLEND. */
+    double padWeight(double toEnd) {
+        if (Double.isNaN(padTo)) return 0;
+        double e = Math.abs(toEnd - padTo) - RoadCounty.GATE_FLAT;
+        return e <= 0 ? 1 : e >= RoadCounty.GATE_BLEND ? 0 : 1 - CrossSection.smooth(e / RoadCounty.GATE_BLEND);
+    }
+
+    /** The crown at toEnd (none on the gate's level stretch). */
+    double crown(double toEnd) { return CROWN * (1 - padWeight(toEnd)); }
+
+    /** The gravel's lift over the datum at toEnd (PAD_LIFT on the gate's level stretch). */
+    double lift(double toEnd) { return PAD_LIFT * padWeight(toEnd); }
+
+    /** The distances from the paved edge where the gate's level stretch and its blends end (none without a gate). */
+    double[] padBreaks() {
+        if (Double.isNaN(padTo)) return new double[0];
+        double f = RoadCounty.GATE_FLAT, b = f + RoadCounty.GATE_BLEND;
+        return new double[]{padTo - b, padTo - f, padTo + f, padTo + b};
     }
 
     /** The point {x, z, datum} this far from the paved edge on the full centreline. */
@@ -156,7 +249,7 @@ public final class Driveway {
      */
     public Driveway joined(RoadDesign d) {
         if (isEmpty() || d == null) return this;
-        return new Driveway(all, d);
+        return new Driveway(all, d, gate, mailbox);
     }
 
     /** The way in at F (toward the road, the ribbon's end normal), or null when not joined. */
@@ -214,7 +307,8 @@ public final class Driveway {
             }
         }
         if (best == Double.POSITIVE_INFINITY) return null;
-        return new double[]{best, h, HALF, side * best, along, h - CROWN * HALF, h - CROWN * best};
+        double cr = crown(along), lift = lift(along);
+        return new double[]{best, h, HALF, side * best, along, h + lift - cr * HALF, h + lift - cr * best};
     }
 
     /** #near on the apron at a along the way in from F, v across (null past the paved edge). */
