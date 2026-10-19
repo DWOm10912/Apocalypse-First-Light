@@ -3,7 +3,7 @@
   "default": 3,
   "start_min": 1,
   "start_max": 5,
-  "max": 7,
+  "max": 10,
   "levels": {
     "apocalypse_firstlight:max_stamina": {
       "op": "add",
@@ -14,7 +14,10 @@
         8,
         15,
         20,
-        25
+        25,
+        29,
+        33,
+        36
       ]
     },
     "apocalypse_firstlight:stamina_regen": {
@@ -26,7 +29,10 @@
         1.08,
         1.15,
         1.2,
-        1.25
+        1.25,
+        1.29,
+        1.33,
+        1.36
       ]
     },
     "apocalypse_firstlight:move_stamina_cost": {
@@ -38,8 +44,29 @@
         0.95,
         0.9,
         0.87,
-        0.85
+        0.85,
+        0.83,
+        0.81,
+        0.8
       ]
+    }
+  },
+  "training": {
+    "to_next": {
+      "1": 60,
+      "2": 90,
+      "3": 120,
+      "4": 180,
+      "5": 240,
+      "6": 330,
+      "7": 450,
+      "8": 600,
+      "9": 800
+    },
+    "xp": {
+      "sprint_10m": 1,
+      "swim_10m": 2,
+      "recover": 6
     }
   }
 }

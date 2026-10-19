@@ -141,8 +141,10 @@ public final class NativeGunShot {
             var type = shooter.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(BULLET);
             for (var entry : damageByEntity.entrySet()) {
                 boolean damaged = entry.getKey().hurt(new DamageSource(type, shooter), (float)entry.getValue().amount);
-                if (damaged && entry.getKey() instanceof net.minecraft.world.entity.LivingEntity)
+                if (damaged && entry.getKey() instanceof net.minecraft.world.entity.LivingEntity living) {
                     com.antaurora.apofirstlight.network.AflNetwork.sendNativeHit(shooter, entry.getValue().head);
+                    com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunHit(shooter, d.weaponClass(), living, living.isDeadOrDying());
+                }
             }
         }
         var noise=NativeGunNoise.resolve(shooter.getMainHandItem(),d);

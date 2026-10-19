@@ -75,8 +75,8 @@ public final class SurvivorSetupGameTests {
 
         // data
         log.check(c.body().size() == 2, "2 body stats: " + c.body().keySet());
-        log.check(c.growth().size() == 3, "3 growth items: " + c.growth().keySet());
-        log.check(c.traits().size() == 31, "31 traits: " + c.traits().size());
+        log.check(c.growth().size() == 5, "5 growth items (3 guns, cold, heat): " + c.growth().keySet());
+        log.check(c.traits().size() == 30, "30 traits (hunter gone): " + c.traits().size());
         log.check(c.backgrounds().size() == 4, "4 backgrounds: " + c.backgrounds().keySet());
         log.check("afl:ordinary".equals(c.backgrounds().keySet().iterator().next()), "ordinary listed first");
         var coldHardy = c.traits().get("afl:cold_hardy");
@@ -112,25 +112,83 @@ public final class SurvivorSetupGameTests {
         log.check(SurvivorSetup.DONE.equals(big.setup), "confirm marks done");
         log.check(big.body.get("afl:strength").level == 6, "big frame: strength 5 + 1 = 6");
         log.check(big.body.get("afl:fitness").level == 3, "fitness default 3");
-        log.check(big.growth.get("afl:firearms_pistol").level == 3, "firearms training: pistol 3");
+        log.check(big.growth.get("afl:firearms_pistol").level == 4, "firearms training: pistol 4 (experienced)");
         var trucker = record(SurvivorRecord.State.ALIVE);
-        SurvivorSetup.confirm(trucker, c, choice("trucker", Map.of(), "hunter"));
-        log.check(trucker.traits.equals(List.of("afl:mechanic", "afl:smoker", "afl:hunter")), "traits = background's + chosen: " + trucker.traits);
-        log.check(trucker.growth.get("afl:firearms_long").level == 3 && trucker.growth.get("afl:firearms_pistol").level == 1,
-                "hunter: long gun 3, pistol 1");
+        SurvivorSetup.confirm(trucker, c, choice("trucker", Map.of(), "cold_hardy"));
+        log.check(trucker.traits.equals(List.of("afl:mechanic", "afl:smoker", "afl:cold_hardy")), "traits = background's + chosen: " + trucker.traits);
+        log.check(trucker.growth.get("afl:firearms_long").level == 0 && trucker.growth.get(SurvivorGrowth.COLD).level == 3
+                && trucker.growth.get(SurvivorGrowth.HEAT).level == 0, "ordinary guns 0; cold hardy: cold tolerance 3, heat 0");
+        log.check(!c.traits().containsKey("afl:hunter"), "hunter removed (2026-10-18)");
 
         // the character page's sheet (P2c): the View part a multiplayer client reads instead of the catalog
         var sheet = SurvivorSetupFlow.sheet(trucker);
         var view = sheet.getCompound("View");
         var viewBody = view.getList("Body", net.minecraft.nbt.Tag.TAG_COMPOUND);
         log.check(viewBody.size() == 2 && "afl:strength".equals(viewBody.getCompound(0).getString("Id"))
-                && viewBody.getCompound(0).getInt("Max") == 7, "sheet view: body in order with its top level");
+                && viewBody.getCompound(0).getInt("Max") == 10, "sheet view: body in order with its top level");
+        log.check(viewBody.getCompound(0).getList("Curves", net.minecraft.nbt.Tag.TAG_COMPOUND).size() == 2,
+                "sheet view: strength's two curves for the growth page");
         var viewTraits = view.getList("Traits", net.minecraft.nbt.Tag.TAG_COMPOUND);
         log.check(viewTraits.size() == 3 && viewTraits.getCompound(0).getBoolean("Fixed") && viewTraits.getCompound(1).getBoolean("Fixed")
                 && !viewTraits.getCompound(2).getBoolean("Fixed"), "sheet view: background traits marked fixed");
-        log.check(viewTraits.getCompound(1).getInt("Cost") < 0 && viewTraits.getCompound(2).getBoolean("GunStart"),
-                "sheet view: smoker gives points, hunter has gun experience");
+        log.check(viewTraits.getCompound(1).getInt("Cost") < 0 && viewTraits.getCompound(2).getCompound("GrowthStart").getInt(SurvivorGrowth.COLD) == 3,
+                "sheet view: smoker gives points, cold hardy starts cold tolerance at 3");
         log.check(view.getCompound("Bases").contains("apocalypse_firstlight:carry_capacity"), "sheet view: base readouts");
+
+        // growth by use (P3): experience, level-ups, no daily cap, learning speed, fractions, tops, the sheet's growth part
+        String pistol = SurvivorGrowth.PISTOL;
+        var frac = new java.util.HashMap<String, Double>();
+        var g1 = SurvivorGrowth.add(trucker, c, pistol, "hit", 5, 1, frac);
+        log.check(g1.added() == 15 && !g1.levelled() && trucker.growth.get(pistol).level == 0 && trucker.growth.get(pistol).xp == 15,
+                "5 hits: 15 experience, pistol still 0, " + g1);
+        var g2 = SurvivorGrowth.add(trucker, c, pistol, "hit", 20, 1, frac);
+        log.check(g2.added() == 60 && g2.levelled() && g2.level() == 2 && trucker.growth.get(pistol).xp == 0,
+                "20 more hits: 0 -> 1 (30) -> 2 (45), " + g2);
+        var g3 = SurvivorGrowth.add(trucker, c, pistol, "hit", 100, 1.5, frac);
+        log.check(g3.added() == 450 && g3.level() == 6 && trucker.growth.get(pistol).xp == 15,
+                "no daily cap: 100 hits x1.5 = 450, up to 6 with 15 over, " + g3);
+        var grownSheet = SurvivorSetupFlow.sheet(trucker).getCompound("View").getList("Growth", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        var pistolView = grownSheet.getCompound(0);
+        log.check(grownSheet.size() == 5 && pistol.equals(pistolView.getString("Id")) && pistolView.getInt("Lv") == 6
+                && pistolView.getInt("Next") == 225 && pistolView.getInt("Xp") == 15 && pistolView.getInt("Cap") == 10
+                && pistolView.getInt("XpTotal") == 525 && pistolView.getInt("XpFull") == 1955
+                && "firearms".equals(pistolView.getString("Group")) && !pistolView.contains("Full"),
+                "sheet growth: pistol 6, 15 of 225, top 10, firearms: " + pistolView);
+        log.check("reload_novice".equals(pistolView.getCompound("Perks").getString("0"))
+                && "reload_trained".equals(pistolView.getCompound("Perks").getString("4"))
+                && "reload_practised".equals(pistolView.getCompound("Perks").getString("7")), "sheet growth: the gun nodes at 0, 4, 7");
+        var coldView = grownSheet.getCompound(3);
+        log.check(SurvivorGrowth.COLD.equals(coldView.getString("Id")) && "climate".equals(coldView.getString("Group"))
+                && coldView.getInt("Lv") == 3 && coldView.getList("Curves", net.minecraft.nbt.Tag.TAG_COMPOUND).size() == 1,
+                "sheet growth: cold tolerance 3 in climate, with its curve: " + coldView);
+        log.check(SurvivorGrowth.add(trucker, c, SurvivorGrowth.COLD, "exposed_minute", 1, 1, frac).added() == 2,
+                "a minute in the cold: 2 experience");
+        log.check(SurvivorGrowth.add(trucker, c, pistol, "no_such_source", 5, 1, frac).added() == 0, "unknown source: nothing");
+        var walker = record(SurvivorRecord.State.ALIVE);
+        SurvivorSetup.confirm(walker, c, choice("ordinary", Map.of()));
+        for (int i = 0; i < 3; i++) SurvivorGrowth.add(walker, c, SurvivorGrowth.STRENGTH, "loaded_walk_10m", 1, 1, frac);
+        log.check(walker.body.get(SurvivorGrowth.STRENGTH).xp == 1, "0.4 x 3 loaded walks: 1 whole point, the rest waits");
+        var top = record(SurvivorRecord.State.ALIVE);
+        SurvivorSetup.confirm(top, c, choice("ordinary", Map.of("afl:strength", 5), "big_frame"));
+        top.body.get(SurvivorGrowth.STRENGTH).level = 10;
+        log.check(SurvivorGrowth.add(top, c, SurvivorGrowth.STRENGTH, "chop", 5, 1, frac).added() == 0, "strength 10 is the top");
+        var shy = record(SurvivorRecord.State.ALIVE);
+        SurvivorSetup.confirm(shy, c, choice("ordinary", Map.of(), "gun_shy"));
+        shy.growth.get(SurvivorGrowth.LONG).level = 5;
+        shy.growth.get(SurvivorGrowth.LONG).xp = 150;
+        var shyUp = SurvivorGrowth.add(shy, c, SurvivorGrowth.LONG, "hit", 40, 1, frac);
+        shy.growth.get(SurvivorGrowth.LONG).xp = 1000;
+        var shyMore = SurvivorGrowth.add(shy, c, SurvivorGrowth.LONG, "hit", 1, 1, frac);
+        log.check(SurvivorSetup.growthCap(shy, c, c.growth().get(SurvivorGrowth.LONG)) == 6 && shyUp.level() == 6
+                && shyMore.added() == 0, "gun shy: long gun stops at 6, " + shyUp);
+        log.check(SurvivorGrowth.tier(3) == 0 && SurvivorGrowth.tier(4) == 1 && SurvivorGrowth.tier(6) == 1 && SurvivorGrowth.tier(7) == 2
+                && SurvivorGrowth.tier(10) == 2, "gun tiers: 0-3, 4-6, 7-10");
+        log.check(Math.abs(SurvivorGrowth.adsSway(0) - 1.25F) < 1e-5 && Math.abs(SurvivorGrowth.adsSway(5) - 1F) < 1e-5
+                && Math.abs(SurvivorGrowth.recoilRecovery(0) - 0.8F) < 1e-5 && Math.abs(SurvivorGrowth.recoilRecovery(10) - 1.2F) < 1e-5,
+                "gun levels: aiming sway x1.25 -> x0.75, recoil recovery x0.8 -> x1.2");
+        var grownBack = SurvivorRecord.load(trucker.save());
+        log.check(grownBack != null && grownBack.growth.get(pistol).level == 6 && grownBack.growth.get(SurvivorGrowth.COLD).level == 3,
+                "growth survives save and load");
 
         // modifiers
         var player = new ServerPlayer(h.getLevel().getServer(), h.getLevel(), new GameProfile(UUID.randomUUID(), "afl-setup"));
@@ -159,12 +217,22 @@ public final class SurvivorSetupGameTests {
         SurvivorModifiers.apply(player, forest, c);
         SurvivorModifiers.apply(player, null, c);
         log.close("no survivor: cold threshold 0", value(player, AflAttributes.COLD_THRESHOLD), 0);
+        SurvivorModifiers.apply(player, trucker, c);
+        log.close("cold tolerance 3: cold threshold -1 (growth curve, not the trait)", value(player, AflAttributes.COLD_THRESHOLD), -1);
+        log.close("cold tolerance 3: heat threshold untouched", value(player, AflAttributes.HEAT_THRESHOLD), 0);
+        SurvivorModifiers.apply(player, null, c);
+
+        // growth repeats: the same reload / pull / breath inside 60 s counts 1, 0.5, 0.25, then nothing
+        double rep1 = SurvivorGrowth.repeat(player, "test"), rep2 = SurvivorGrowth.repeat(player, "test");
+        double rep3 = SurvivorGrowth.repeat(player, "test"), rep4 = SurvivorGrowth.repeat(player, "test");
+        log.check(rep1 == 1 && rep2 == 0.5 && rep3 == 0.25 && rep4 == 0, "repeats: " + rep1 + " " + rep2 + " " + rep3 + " " + rep4);
+        log.check(SurvivorGrowth.repeat(player, "other") == 1, "repeats are counted per kind");
 
         // save and load
         SurvivorRecord back = SurvivorRecord.load(big.save());
         log.check(back != null && SurvivorSetup.DONE.equals(back.setup) && "afl:ordinary".equals(back.background)
                 && back.traits.equals(big.traits) && back.body.get("afl:strength").level == 6
-                && back.growth.get("afl:firearms_long").level == 3, "save and load keep setup, traits, body, growth");
+                && back.growth.get("afl:firearms_long").level == 4, "save and load keep setup, traits, body, growth");
         CompoundTag v0 = record(SurvivorRecord.State.ALIVE).save();
         v0.putString("Body", "reserved");
         SurvivorRecord old = SurvivorRecord.load(v0);
@@ -234,6 +302,10 @@ public final class SurvivorSetupGameTests {
         log.check(hostedBack.hostSetup != null && hostedBack.hostSetup.equals(tag), "host setup survives save and load");
         log.check(SurvivorScenes.byId("afl:forest_home").maxPlayers() == 3 && SurvivorScenes.byId(SurvivorScenes.WILDERNESS).maxPlayers() == 0,
                 "forest home takes up to 3");
+        log.check(SurvivorScenes.SHOWN.get(0).id().equals(SurvivorScenes.DEFAULT) && SurvivorScenes.DEFAULT.equals("afl:forest_home"),
+                "V1 test: the forest home is the default, first on the page");
+        log.check(SurvivorScenes.SHOWN.stream().noneMatch(s -> s.id().equals("afl:bunker")) && SurvivorScenes.byId("afl:bunker").id().equals("afl:bunker"),
+                "V1 test: the bunker is hidden but old worlds keep it");
 
         String result = log.fails.isEmpty() ? "PASS" : "FAIL " + log.fails;
         ApocalypseFirstLight.LOGGER.info("[AFL SURVIVOR SETUP TEST] {}\n{}", result, log.text);

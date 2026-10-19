@@ -26,7 +26,10 @@ public final class NativeWeaponSway {
         if(mc.player!=null&&mc.player.isAlive()&&mc.player.getMainHandItem().getItem() instanceof NativeGunItem
                 &&mc.screen==null&&mc.options.getCameraType().isFirstPerson()){
             var p=WeaponSwayProfile.DEFAULT;
-            target=Mth.lerp(NativeGunAds.progress(1),1,mc.player.isCrouching()?p.crouchAds():p.ads());
+            // gun growth (2026-10-18): each level of the gun class steadies the aim a little (x1.25 at 0 ... x0.75 at 10); hip sway unchanged
+            float adsLevel=mc.player.getMainHandItem().getItem() instanceof NativeGunItem held&&!mc.player.isCreative()
+                    ?com.antaurora.apofirstlight.client.survivor.SurvivorSheetClient.gunAdsSway(held.definition().weaponClass()):1;
+            target=Mth.lerp(NativeGunAds.progress(1),1,(mc.player.isCrouching()?p.crouchAds():p.ads())*adsLevel);
             if(mc.player.getDeltaMovement().horizontalDistanceSqr()>.0001)target*=.4f;
             String blocked=NativeGunAds.swayBlockReason();
             if(blocked.contains("reload"))target*=.1f;
@@ -36,7 +39,7 @@ public final class NativeWeaponSway {
             target*=com.antaurora.apofirstlight.stamina.ClientStamina.swayScale();
             // Temperature V1: shivering adds to it.
             target*=com.antaurora.apofirstlight.temperature.ClientTemperature.swayScale();
-            // Survivor attribute weapon_sway (later: gun proficiency, traits).
+            // Survivor attribute weapon_sway.
             target*=(float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(mc.player, com.antaurora.apofirstlight.registry.AflAttributes.WEAPON_SWAY, 0);
         }
         // Exponential 150 ms time constant, followed by render partial-tick interpolation.

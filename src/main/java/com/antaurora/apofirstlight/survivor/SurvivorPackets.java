@@ -87,6 +87,10 @@ public final class SurvivorPackets {
     public record Sheet(net.minecraft.nbt.CompoundTag record) {
     }
 
+    /** Server, to the player alone: a body stat or growth item reached a level (SurvivorGrowth), for the corner notice. */
+    public record LevelUp(String id, int level, boolean body) {
+    }
+
     /** A pose as a count and floats (0: none). */
     public static void writePose(net.minecraft.network.FriendlyByteBuf b, @org.jetbrains.annotations.Nullable float[] pose) {
         if (pose == null) {
@@ -169,6 +173,13 @@ public final class SurvivorPackets {
                 (p, s) -> client(s, () -> SurvivorClient.setupResult(p)), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Sheet.class, (p, b) -> b.writeNbt(p.record()), b -> new Sheet(b.readNbt()),
                 (p, s) -> client(s, () -> SurvivorSheetClient.set(p.record())), Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, LevelUp.class, (p, b) -> {
+                    b.writeUtf(p.id(), 128);
+                    b.writeVarInt(p.level());
+                    b.writeBoolean(p.body());
+                }, b -> new LevelUp(b.readUtf(128), b.readVarInt(), b.readBoolean()),
+                (p, s) -> client(s, () -> com.antaurora.apofirstlight.client.survivor.SurvivorGrowthClient.levelUp(p.id(), p.level(), p.body())),
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
 

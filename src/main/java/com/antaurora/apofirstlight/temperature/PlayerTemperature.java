@@ -131,6 +131,20 @@ public final class PlayerTemperature {
         return coldStage(s, c).noNaturalRegen || heatStage(s, c).noNaturalRegen;
     }
 
+    /**
+     * SurvivorGrowth (cold / heat tolerance): −1 while the weather is cooling the body (its target below normal) but it is
+     * not hypothermic yet (cold stage 1 at most), +1 the same for heat, else 0. Off in Creative / Spectator.
+     */
+    public static int exposure(ServerPlayer player) {
+        if (!enabled(player)) return 0;
+        State s = STATES.get(player);
+        if (s == null || Double.isNaN(s.target)) return 0;
+        var c = TemperatureConfig.get();
+        if (s.target < c.normal - 0.05 && s.coldStage <= 1) return -1;
+        if (s.target > c.normal + 0.05 && s.heatStage <= 1) return 1;
+        return 0;
+    }
+
     @SubscribeEvent public static void tick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         var s = state(player);

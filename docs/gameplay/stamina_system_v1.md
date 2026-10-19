@@ -167,6 +167,6 @@ HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节�
 
 ## 幸存者属性（2026-10-17）
 
-体力上限 = 配置的 `max` + `apocalypse_firstlight:max_stamina`（默认 0，最少 10）；恢复 × `stamina_regen`；走、跑、潜行、跳、游泳、攀爬和推办公椅的消耗 × `move_stamina_cost`；其余所有消耗（近战、挖掘、劈柴、拉绳、摇把、开枪、换弹）× `work_stamina_cost`。同步给客户端的上限也是这个值。
+耐力上限 = 配置的 `max` + `apocalypse_firstlight:max_stamina`（默认 0，最少 10）；恢复 × `stamina_regen`；走、跑、潜行、跳、游泳、攀爬和推办公椅的消耗 × `move_stamina_cost`；其余所有消耗（近战、挖掘、劈柴、拉绳、摇把、开枪、换弹）× `work_stamina_cost`。同步给客户端的上限也是这个值。
 
 属性层 P1，见 [幸存者背景、机能、特质与成长 V1](survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

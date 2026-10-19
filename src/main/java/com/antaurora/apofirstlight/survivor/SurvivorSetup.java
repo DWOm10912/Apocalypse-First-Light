@@ -117,14 +117,12 @@ public final class SurvivorSetup {
         record.growth.clear();
         for (GrowthDef def : catalog.growth().values()) {
             int level = def.defaultLevel();
-            int cap = def.max();
             for (String id : all) {
                 TraitDef trait = catalog.traits().get(id);
                 if (trait == null) continue;
                 level = Math.max(level, trait.growthStart().getOrDefault(def.id(), level));
-                cap = Math.min(cap, trait.growthCap().getOrDefault(def.id(), cap));
             }
-            record.growth.put(def.id(), new SurvivorRecord.Progress(Math.max(0, Math.min(cap, level)), 0));
+            record.growth.put(def.id(), new SurvivorRecord.Progress(Math.max(0, Math.min(growthCap(record, catalog, def), level)), 0));
         }
         record.setup = DONE;
     }
@@ -168,6 +166,22 @@ public final class SurvivorSetup {
         Choice choice = new Choice(background.id(), body, List.of());
         if (!check(catalog, choice).ok()) choice = new Choice(background.id(), Map.of(), List.of());
         confirm(record, catalog, choice);
+    }
+
+    /** How far a growth item can go for this survivor: its max, or lower when a trait caps it ("gun shy"). */
+    public static int growthCap(SurvivorRecord record, Snapshot catalog, GrowthDef def) {
+        int cap = def.max();
+        for (String id : record.traits) {
+            TraitDef trait = catalog.traits().get(id);
+            if (trait != null) cap = Math.min(cap, trait.growthCap().getOrDefault(def.id(), cap));
+        }
+        return cap;
+    }
+
+    /** A growth item's level for this survivor: the stored one, else the item's default, never past its cap. */
+    public static int growthLevel(SurvivorRecord record, Snapshot catalog, GrowthDef def) {
+        SurvivorRecord.Progress p = record.growth.get(def.id());
+        return Math.max(0, Math.min(growthCap(record, catalog, def), p == null ? def.defaultLevel() : p.level));
     }
 
     /** A body stat's level for this survivor: the stored one, else the stat's default. */

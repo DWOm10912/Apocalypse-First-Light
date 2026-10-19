@@ -112,12 +112,37 @@ public final class SurvivorCatalog {
         }
     }
 
-    /** A body stat (section 4): start range, the growth maximum, and what each level does. */
-    public record BodyDef(String id, int order, int defaultLevel, int startMin, int startMax, int max, List<Curve> curves) {
+    /** A body stat (section 4): start range, the growth maximum, what each level does, and how it is trained. */
+    public record BodyDef(String id, int order, int defaultLevel, int startMin, int startMax, int max, List<Curve> curves,
+                          Training training) {
     }
 
-    /** A growth item (section 7) other than the body stats: its level for a survivor with no trait about it, and its top. */
-    public record GrowthDef(String id, int order, int defaultLevel, int max) {
+    /**
+     * A growth item (section 7) other than the body stats: its level for a survivor with no trait about it, its top, its
+     * training, its group (the growth page's section, "firearms" for the guns; default "general"), what each level does to
+     * attributes ({@code values[level - 1]}, level 0 changes nothing; optional) and its nodes ({@code perks}: level -> perk id,
+     * a thing learned at that level; level 0 = what the survivor does before learning anything; optional).
+     */
+    public record GrowthDef(String id, int order, int defaultLevel, int max, Training training, String group, List<Curve> curves,
+                            Map<Integer, String> perks) {
+    }
+
+    /**
+     * How a body stat or growth item grows by use (section 7, the "training" object of its file): {@code toNext[L]} is the
+     * experience from level L to L + 1 (missing = cannot grow past L), {@code xp} what each source gives (SurvivorGrowth
+     * names the sources; a missing one gives nothing).
+     */
+    public record Training(int[] toNext, Map<String, Double> xp) {
+        static final Training NONE = new Training(new int[0], Map.of());
+
+        /** Experience from {@code level} to the next, or 0 when this level is as far as training goes. */
+        public int toNext(int level) {
+            return level >= 0 && level < toNext.length ? toNext[level] : 0;
+        }
+
+        public double xp(String source) {
+            return xp.getOrDefault(source, 0.0);
+        }
     }
 
     /**
@@ -224,10 +249,9 @@ public final class SurvivorCatalog {
         return java.util.Collections.unmodifiableMap(out);
     }
 
-    private static BodyDef body(String id, JsonObject json) {
-        int max = GsonHelper.getAsInt(json, "max");
+    /** The "levels" object: {"<attribute>": {"op": add|multiply, "values": [level 1 ... max]}}. */
+    private static List<Curve> curves(JsonObject levels, int max) {
         List<Curve> curves = new ArrayList<>();
-        JsonObject levels = GsonHelper.getAsJsonObject(json, "levels");
         for (Map.Entry<String, JsonElement> e : levels.entrySet()) {
             JsonObject curve = GsonHelper.convertToJsonObject(e.getValue(), "level curve");
             var values = GsonHelper.getAsJsonArray(curve, "values");
@@ -236,20 +260,52 @@ public final class SurvivorCatalog {
             for (int i = 0; i < max; i++) v[i] = values.get(i).getAsDouble();
             curves.add(new Curve(attribute(e.getKey()), multiply(curve), v));
         }
+        return List.copyOf(curves);
+    }
+
+    private static BodyDef body(String id, JsonObject json) {
+        int max = GsonHelper.getAsInt(json, "max");
+        List<Curve> curves = curves(GsonHelper.getAsJsonObject(json, "levels"), max);
         int startMin = GsonHelper.getAsInt(json, "start_min");
         int startMax = GsonHelper.getAsInt(json, "start_max");
         int def = GsonHelper.getAsInt(json, "default");
         if (startMin < 1 || startMin > def || def > startMax || startMax > max) {
             throw new IllegalArgumentException("levels must be 1 <= start_min <= default <= start_max <= max");
         }
-        return new BodyDef(id, GsonHelper.getAsInt(json, "order", 0), def, startMin, startMax, max, List.copyOf(curves));
+        return new BodyDef(id, GsonHelper.getAsInt(json, "order", 0), def, startMin, startMax, max, List.copyOf(curves),
+                training(json, max));
     }
 
     private static GrowthDef growth(String id, JsonObject json) {
         int def = GsonHelper.getAsInt(json, "default");
         int max = GsonHelper.getAsInt(json, "max");
         if (def < 0 || def > max) throw new IllegalArgumentException("levels must be 0 <= default <= max");
-        return new GrowthDef(id, GsonHelper.getAsInt(json, "order", 0), def, max);
+        Map<Integer, String> perks = new TreeMap<>();
+        for (Map.Entry<String, JsonElement> e : GsonHelper.getAsJsonObject(json, "perks", new JsonObject()).entrySet()) {
+            int level = Integer.parseInt(e.getKey());
+            if (level < 0 || level > max) throw new IllegalArgumentException("perks: level " + level + " outside 0.." + max);
+            perks.put(level, e.getValue().getAsString());
+        }
+        return new GrowthDef(id, GsonHelper.getAsInt(json, "order", 0), def, max, training(json, max),
+                GsonHelper.getAsString(json, "group", "general"), curves(GsonHelper.getAsJsonObject(json, "levels", new JsonObject()), max),
+                java.util.Collections.unmodifiableMap(perks));
+    }
+
+    /** The optional "training" object: {"to_next": {"<level>": xp, ...}, "xp": {"<source>": n, ...}} (no daily cap since 2026-10-18). */
+    private static Training training(JsonObject json, int max) {
+        if (!json.has("training")) return Training.NONE;
+        JsonObject t = GsonHelper.getAsJsonObject(json, "training");
+        int[] toNext = new int[max];
+        for (Map.Entry<String, JsonElement> e : GsonHelper.getAsJsonObject(t, "to_next").entrySet()) {
+            int level = Integer.parseInt(e.getKey());
+            if (level < 0 || level >= max) throw new IllegalArgumentException("to_next: level " + level + " outside 0.." + (max - 1));
+            toNext[level] = Math.max(0, e.getValue().getAsInt());
+        }
+        Map<String, Double> xp = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonElement> e : GsonHelper.getAsJsonObject(t, "xp", new JsonObject()).entrySet()) {
+            xp.put(e.getKey(), e.getValue().getAsDouble());
+        }
+        return new Training(toNext, Map.copyOf(xp));
     }
 
     private static TraitDef trait(String id, JsonObject json) {

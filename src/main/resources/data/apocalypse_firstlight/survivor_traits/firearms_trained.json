@@ -2,8 +2,8 @@
   "group": "growth",
   "cost": 2,
   "growth_start": {
-    "firearms_pistol": 3,
-    "firearms_long": 3,
-    "firearms_shotgun": 3
+    "firearms_pistol": 4,
+    "firearms_long": 4,
+    "firearms_shotgun": 4
   }
 }

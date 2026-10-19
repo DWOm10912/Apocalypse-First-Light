@@ -36,6 +36,7 @@ import java.util.Map;
  * <trait> ...]} checks a choice by the screen's rules and, if it passes, writes it to your living survivor (also when its
  * setup is already done: a dev override) and applies it; {@code /afl survivor setup reset} puts it back to choosing,
  * which holds the player and opens the setup screen again (to test the screen).
+ * {@code /afl survivor growth <item> <level> [xp]} (P3, testing) sets a body stat or growth item of your living survivor.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class SurvivorCommands {
@@ -56,6 +57,7 @@ public final class SurvivorCommands {
                                 .executes(c -> sheet(c.getSource(), EntityArgument.getPlayer(c, "target")))))
                 .then(Commands.literal("catalog").executes(c -> catalog(c.getSource())))
                 .then(setup())
+                .then(growth())
                 .then(ragdoll())));
     }
 
@@ -78,6 +80,34 @@ public final class SurvivorCommands {
                                     return SharedSuggestionProvider.suggest(options, last);
                                 })
                                 .executes(c -> setup(c.getSource(), background(c), StringArgumentType.getString(c, "picks")))));
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> growth() {
+        return Commands.literal("growth").then(Commands.argument("item", StringArgumentType.word())
+                .suggests((c, b) -> {
+                    List<String> ids = new ArrayList<>();
+                    SurvivorCatalog.get().body().keySet().forEach(id -> ids.add(shortId(id)));
+                    SurvivorCatalog.get().growth().keySet().forEach(id -> ids.add(shortId(id)));
+                    return SharedSuggestionProvider.suggest(ids, b);
+                })
+                .then(Commands.argument("level", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 99))
+                        .executes(c -> growth(c.getSource(), StringArgumentType.getString(c, "item"),
+                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "level"), 0))
+                        .then(Commands.argument("xp", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                                .executes(c -> growth(c.getSource(), StringArgumentType.getString(c, "item"),
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "level"),
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "xp"))))));
+    }
+
+    private static int growth(CommandSourceStack source, String item, int level, int xp) throws CommandSyntaxException {
+        String id = SurvivorCatalog.normalize(item);
+        int set = SurvivorGrowth.set(source.getPlayerOrException(), id, level, xp);
+        if (set < 0) {
+            source.sendFailure(Component.literal("no such item, or no set-up living survivor: " + id));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(id + " -> Lv " + set), false);
+        return 1;
     }
 
     private static String background(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c) {

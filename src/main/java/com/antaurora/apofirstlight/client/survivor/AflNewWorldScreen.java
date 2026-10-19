@@ -43,7 +43,7 @@ public final class AflNewWorldScreen extends Screen {
     @Nullable
     private EditBox focused;
     private SurvivorMode mode = SurvivorMode.NORMAL;
-    private String scene = SurvivorScenes.WILDERNESS;
+    private String scene = SurvivorScenes.DEFAULT;
     private boolean cheats;
     /** 0..1: how far the Hard look has faded in (the red cast over the page, the card's beat). */
     private float hardBlend;
@@ -152,12 +152,12 @@ public final class AflNewWorldScreen extends Screen {
         // start scene
         SetupCanvas.text(g, font, SetupCanvas.tr("newworld.scene"), x, LIST_Y - 9, AflUiStyle.TEXT_DIM, 1, 0.7F);
         smallButton(g, right - 28, LIST_Y - 13, 28, SetupCanvas.tr("newworld.random"), mx, my);
-        AflUiShapes.box(g, x, LIST_Y, innerW, ROW_H * SurvivorScenes.ALL.size(), AflUiStyle.RADIUS_TILE, AflUiStyle.BACK, 0.35F,
+        AflUiShapes.box(g, x, LIST_Y, innerW, ROW_H * SurvivorScenes.SHOWN.size(), AflUiStyle.RADIUS_TILE, AflUiStyle.BACK, 0.35F,
                 AflUiStyle.LINE, 0.16F, 0, 0);
-        for (int i = 0; i < SurvivorScenes.ALL.size(); i++) sceneRow(g, SurvivorScenes.ALL.get(i), x, LIST_Y + i * ROW_H, innerW, mx, my);
+        for (int i = 0; i < SurvivorScenes.SHOWN.size(); i++) sceneRow(g, SurvivorScenes.SHOWN.get(i), x, LIST_Y + i * ROW_H, innerW, mx, my);
         SurvivorScenes.Scene picked = SurvivorScenes.byId(scene);
         if (!picked.connected()) {
-            SetupCanvas.text(g, font, SetupCanvas.tr("newworld.scene_pending"), x, LIST_Y + ROW_H * 4 + 3, AflUiStyle.ACCENT, 0.85F, 0.6F);
+            SetupCanvas.text(g, font, SetupCanvas.tr("newworld.scene_pending"), x, LIST_Y + ROW_H * SurvivorScenes.SHOWN.size() + 3, AflUiStyle.ACCENT, 0.85F, 0.6F);
         }
 
         // footer
@@ -282,13 +282,13 @@ public final class AflNewWorldScreen extends Screen {
         if (!vanilla.getUiState().isHardcore() && SetupCanvas.in(mx, my, x, MODE_Y, half, MODE_H)) return pick(SurvivorMode.NORMAL);
         if (SetupCanvas.in(mx, my, x + half + 4, MODE_Y, half, MODE_H)) return pick(SurvivorMode.HARD);
         if (SetupCanvas.in(mx, my, right - 28, LIST_Y - 13, 28, 10)) {
-            scene = SurvivorScenes.ALL.get((int) (Math.random() * SurvivorScenes.ALL.size())).id();
+            scene = SurvivorScenes.SHOWN.get((int) (Math.random() * SurvivorScenes.SHOWN.size())).id();
             click();
             return true;
         }
-        for (int i = 0; i < SurvivorScenes.ALL.size(); i++) {
+        for (int i = 0; i < SurvivorScenes.SHOWN.size(); i++) {
             if (SetupCanvas.in(mx, my, x, LIST_Y + i * ROW_H, innerW, ROW_H)) {
-                scene = SurvivorScenes.ALL.get(i).id();
+                scene = SurvivorScenes.SHOWN.get(i).id();
                 click();
                 return true;
             }

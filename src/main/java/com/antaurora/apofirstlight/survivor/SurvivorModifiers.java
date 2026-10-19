@@ -14,8 +14,9 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 /**
- * Turns a survivor's body levels and traits into attribute modifiers (docs/gameplay/survivor_background_skills_v1_plan.md
- * 10): one modifier per (source, attribute), named {@code afl.survivor:body/<id>} or {@code afl.survivor:trait/<id>}, with
+ * Turns a survivor's body levels, growth levels (items with a "levels" curve: cold / heat tolerance) and traits into
+ * attribute modifiers (docs/gameplay/survivor_background_skills_v1_plan.md 10): one modifier per (source, attribute), named
+ * {@code afl.survivor:body/<id>}, {@code afl.survivor:growth/<id>} or {@code afl.survivor:trait/<id>}, with
  * a UUID derived from that name. An added value is ADDITION; a factor f is MULTIPLY_TOTAL f − 1, so several factors on
  * one attribute multiply. Permanent, so max health is already raised when the player file's health is read back; every
  * apply first removes all {@code afl.survivor:} modifiers, so a login, respawn or confirm always ends with exactly the
@@ -42,6 +43,11 @@ public final class SurvivorModifiers {
             for (SurvivorCatalog.BodyDef def : catalog.body().values()) {
                 int level = SurvivorSetup.bodyLevel(record, def);
                 for (SurvivorCatalog.Curve curve : def.curves()) add(player, "body/" + def.id(), curve.at(level));
+            }
+            for (SurvivorCatalog.GrowthDef def : catalog.growth().values()) {
+                int level = SurvivorSetup.growthLevel(record, catalog, def);
+                if (level < 1) continue;   // level 0 changes nothing
+                for (SurvivorCatalog.Curve curve : def.curves()) add(player, "growth/" + def.id(), curve.at(level));
             }
             for (String id : record.traits) {
                 SurvivorCatalog.TraitDef trait = catalog.traits().get(id);

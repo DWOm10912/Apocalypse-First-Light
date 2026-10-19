@@ -28,9 +28,10 @@ import java.util.Set;
 /**
  * The inventory's character page (docs/gameplay/survivor_background_skills_v1_plan.md section 9, P2c): who the survivor
  * is (background, start scene), the body levels, the traits, and every survivor attribute that is not an ordinary
- * person's right now. View only; growth is shown elsewhere later. Reads the sheet the server sends (SurvivorSheetClient,
- * its View part carries what a multiplayer client has no catalog for) and the player's live attribute values. Opened
- * from the inventory's title row; Esc or the inventory key goes back to the inventory.
+ * person's right now. View only; growth has its own page (AflGrowthScreen, the "Growth" button top right or its key).
+ * Reads the sheet the server sends (SurvivorSheetClient, its View part carries what a multiplayer client has no catalog
+ * for) and the player's live attribute values. Opened from the inventory's title row; Esc or the inventory key goes back
+ * to the inventory.
  */
 public final class AflCharacterScreen extends Screen {
     private static final float TOP = 38, BOTTOM = 255;
@@ -42,10 +43,12 @@ public final class AflCharacterScreen extends Screen {
     /** Shown as their own rows with the base added (the setup page's start readouts). */
     private static final Set<String> BASE_ROWS = Set.of("carry_capacity", "max_stamina", "cold_threshold", "heat_threshold");
     private static final int RED = 0xE06A5A;
+    private static final float GROWTH_Y = 9, GROWTH_H = 12, GROWTH_RIGHT = 465;
 
     private final SetupCanvas canvas = new SetupCanvas();
     private final SurvivorDoll doll = new SurvivorDoll();
     private float traitScroll, traitMax, attrScroll, attrMax;
+    private float growthX, growthW;
 
     public AflCharacterScreen() {
         super(SetupCanvas.tr("character.title"));
@@ -74,7 +77,21 @@ public final class AflCharacterScreen extends Screen {
             onClose();
             return true;
         }
+        if (SurvivorGrowthClient.GROWTH.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
+            minecraft.setScreen(new AflGrowthScreen(true));
+            return true;
+        }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && growthW > 0 && SetupCanvas.in(canvas.vx(mouseX), canvas.vy(mouseY), growthX, GROWTH_Y, growthW, GROWTH_H)) {
+            minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            minecraft.setScreen(new AflGrowthScreen(true));
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
@@ -96,6 +113,7 @@ public final class AflCharacterScreen extends Screen {
         CompoundTag view = sheet.getCompound("View");
         canvas.push(g);
         SetupCanvas.keyHint(g, font, "Esc", SetupCanvas.tr("newworld.back"), 15, 12, 0.75F);
+        growthW = 0;
         if (!sheet.contains("First", Tag.TAG_STRING)) {
             SetupCanvas.centred(g, font, SetupCanvas.tr("character.none"), 240, 130, AflUiStyle.TEXT_DIM, 1, 0.9F);
             canvas.pop(g);
@@ -105,12 +123,26 @@ public final class AflCharacterScreen extends Screen {
         Component name = Component.literal(last.isEmpty() ? sheet.getString("First") : sheet.getString("First") + " " + last);
         SetupCanvas.centred(g, font, name, 240, 9, AflUiStyle.TEXT, 1, 1.3F);
         SetupCanvas.centred(g, font, SetupCanvas.tr("character.life", Math.max(1, sheet.getInt("Life"))), 240, 23, AflUiStyle.TEXT_DIM, 1, 0.62F);
+        growthButton(g, mx, my);
         preview(g, mouseX, mouseY);
         background(g, sheet);
         float traitY = body(g, sheet, view);
         traits(g, view, traitY, mx, my);
         attributes(g, view);
         canvas.pop(g);
+    }
+
+    /** Top right: "Growth" with its key, to the growth page. */
+    private void growthButton(GuiGraphics g, float mx, float my) {
+        Component label = SetupCanvas.tr("growth_page.open");
+        Component key = SurvivorGrowthClient.GROWTH.getTranslatedKeyMessage();
+        float keyW = SetupCanvas.width(font, key, 0.55F);
+        growthW = SetupCanvas.width(font, label, 0.7F) + keyW + 16;
+        growthX = GROWTH_RIGHT - growthW;
+        boolean hover = SetupCanvas.in(mx, my, growthX, GROWTH_Y, growthW, GROWTH_H);
+        AflUiDraw.button(g, growthX, GROWTH_Y, growthW, GROWTH_H, hover, false, true, 1);
+        SetupCanvas.text(g, font, label, growthX + 5, GROWTH_Y + 3.4F, AflUiStyle.TEXT, 1, 0.7F);
+        SetupCanvas.right(g, font, key, growthX + growthW - 5, GROWTH_Y + 4, AflUiStyle.TEXT_DIM, 1, 0.55F);
     }
 
     private void preview(GuiGraphics g, int mouseX, int mouseY) {
@@ -234,7 +266,7 @@ public final class AflCharacterScreen extends Screen {
     }
 
     /** What a trait does, worded as on the setup page (effects, body bonus, the gun flags). */
-    private static Component describe(CompoundTag t) {
+    static Component describe(CompoundTag t) {
         List<Component> parts = new ArrayList<>();
         for (Tag e : t.getList("Effects", Tag.TAG_COMPOUND)) {
             CompoundTag ef = (CompoundTag) e;
@@ -245,8 +277,7 @@ public final class AflCharacterScreen extends Screen {
         for (String body : bonus.getAllKeys()) {
             parts.add(SetupCanvas.tr("setup.effect.body_bonus", AflSurvivorSetupScreen.label("body", body), AflSurvivorSetupScreen.signed(bonus.getInt(body))));
         }
-        if (t.getBoolean("GunStart")) parts.add(SetupCanvas.tr("setup.effect.gun_experience"));
-        if (t.getBoolean("GunCap")) parts.add(SetupCanvas.tr("setup.effect.gun_capped"));
+        parts.addAll(AflSurvivorSetupScreen.growthNotes(t.getCompound("GrowthStart").getAllKeys(), t.getCompound("GrowthCap").getAllKeys()));
         return parts.isEmpty() ? SetupCanvas.tr("setup.no_change") : AflSurvivorSetupScreen.join(parts);
     }
 

@@ -149,7 +149,9 @@ public final class SurvivorSetupFlow {
     /**
      * What the inventory's character page needs besides the record, from the server's catalog (a multiplayer client has
      * none): the base readouts, the body items in order with their default and top level, and per trait its points, whether
-     * the background brings it, and what it does (effects, body bonus, the gun flags). Display only.
+     * the background brings it, and what it does (effects, body bonus, growth starts and caps). For the growth page, per body
+     * stat and growth item: level, experience, experience to the next level (0 = at the top), top, what each level does
+     * (Curves) and, for growth items, the nodes (Perks: level -> perk id). Display only.
      */
     private static CompoundTag view(SurvivorRecord record) {
         SurvivorCatalog.Snapshot catalog = SurvivorCatalog.get();
@@ -161,9 +163,30 @@ public final class SurvivorSetupFlow {
             b.putString("Id", def.id());
             b.putInt("Default", def.defaultLevel());
             b.putInt("Max", def.max());
+            SurvivorRecord.Progress p = record.body.get(def.id());
+            int level = SurvivorSetup.bodyLevel(record, def);
+            training(b, def.training(), level, p == null ? 0 : p.xp, def.max());
+            b.put("Curves", curves(def.curves()));
             body.add(b);
         }
         view.put("Body", body);
+        ListTag growth = new ListTag();
+        for (SurvivorCatalog.GrowthDef def : catalog.growth().values()) {
+            CompoundTag g = new CompoundTag();
+            g.putString("Id", def.id());
+            g.putString("Group", def.group());
+            g.putInt("Default", def.defaultLevel());
+            g.putInt("Max", def.max());
+            SurvivorRecord.Progress p = record.growth.get(def.id());
+            int cap = SurvivorSetup.growthCap(record, catalog, def);
+            training(g, def.training(), SurvivorSetup.growthLevel(record, catalog, def), p == null ? 0 : p.xp, cap);
+            g.put("Curves", curves(def.curves()));
+            CompoundTag perks = new CompoundTag();
+            def.perks().forEach((level, perk) -> perks.putString(Integer.toString(level), perk));
+            g.put("Perks", perks);
+            growth.add(g);
+        }
+        view.put("Growth", growth);
         SurvivorCatalog.BackgroundDef background = record.background == null ? null : catalog.backgrounds().get(record.background);
         ListTag traits = new ListTag();
         for (String id : record.traits) {
@@ -187,13 +210,50 @@ public final class SurvivorSetupFlow {
                 CompoundTag bonus = new CompoundTag();
                 def.bodyBonus().forEach(bonus::putInt);
                 t.put("BodyBonus", bonus);
-                t.putBoolean("GunStart", !def.growthStart().isEmpty());
-                t.putBoolean("GunCap", !def.growthCap().isEmpty());
+                CompoundTag starts = new CompoundTag(), caps = new CompoundTag();
+                def.growthStart().forEach(starts::putInt);
+                def.growthCap().forEach(caps::putInt);
+                t.put("GrowthStart", starts);
+                t.put("GrowthCap", caps);
             }
             traits.add(t);
         }
         view.put("Traits", traits);
         return view;
+    }
+
+    private static void training(CompoundTag out, SurvivorCatalog.Training training, int level, int xp, int cap) {
+        int next = level < cap ? training.toNext(level) : 0;
+        int held = next > 0 ? Math.min(xp, next) : 0;
+        out.putInt("Lv", level);
+        out.putInt("Cap", cap);
+        out.putInt("Xp", held);
+        out.putInt("Next", next);
+        // the whole way: experience counted from the bottom level, and what reaching this survivor's top takes
+        int total = held, full = 0;
+        for (int l = 0; l < cap; l++) {
+            full += training.toNext(l);
+            if (l < level) total += training.toNext(l);
+        }
+        out.putInt("XpTotal", total);
+        out.putInt("XpFull", full);
+    }
+
+    /** {A: attribute, M: multiply, V: [level 1 ... max]} per curve. */
+    private static ListTag curves(List<SurvivorCatalog.Curve> list) {
+        ListTag curves = new ListTag();
+        for (SurvivorCatalog.Curve curve : list) {
+            var key = ForgeRegistries.ATTRIBUTES.getKey(curve.attribute());
+            if (key == null) continue;
+            CompoundTag c = new CompoundTag();
+            c.putString("A", key.toString());
+            c.putBoolean("M", curve.multiply());
+            ListTag values = new ListTag();
+            for (double v : curve.values()) values.add(net.minecraft.nbt.DoubleTag.valueOf(v));
+            c.put("V", values);
+            curves.add(c);
+        }
+        return curves;
     }
 
     /** The screen's confirm (packet): checked, then written, or refused with the reasons (the screen stays open). */

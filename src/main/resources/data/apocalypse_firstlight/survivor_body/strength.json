@@ -3,7 +3,7 @@
   "default": 3,
   "start_min": 1,
   "start_max": 5,
-  "max": 7,
+  "max": 10,
   "levels": {
     "apocalypse_firstlight:carry_capacity": {
       "op": "add",
@@ -14,7 +14,10 @@
         3,
         6,
         9,
-        12
+        12,
+        14,
+        16,
+        18
       ]
     },
     "apocalypse_firstlight:work_stamina_cost": {
@@ -26,8 +29,30 @@
         0.9,
         0.8,
         0.75,
-        0.7
+        0.7,
+        0.67,
+        0.64,
+        0.6
       ]
+    }
+  },
+  "training": {
+    "to_next": {
+      "1": 60,
+      "2": 90,
+      "3": 120,
+      "4": 180,
+      "5": 240,
+      "6": 330,
+      "7": 450,
+      "8": 600,
+      "9": 800
+    },
+    "xp": {
+      "loaded_walk_10m": 0.4,
+      "chop": 1,
+      "dig": 0.25,
+      "recoil_pull": 3
     }
   }
 }

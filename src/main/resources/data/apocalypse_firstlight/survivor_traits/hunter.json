@@ -1,8 +1,0 @@
-{
-  "group": "growth",
-  "cost": 1,
-  "growth_start": {
-    "firearms_long": 3,
-    "firearms_shotgun": 3
-  }
-}

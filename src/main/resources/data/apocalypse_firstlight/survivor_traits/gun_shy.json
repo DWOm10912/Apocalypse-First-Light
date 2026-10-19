@@ -2,13 +2,12 @@
   "group": "growth",
   "cost": -2,
   "growth_cap": {
-    "firearms_pistol": 3,
-    "firearms_long": 3,
-    "firearms_shotgun": 3
+    "firearms_pistol": 6,
+    "firearms_long": 6,
+    "firearms_shotgun": 6
   },
   "exclusive": [
     "firearms_trained",
-    "hunter",
     "veteran"
   ]
 }

@@ -51,6 +51,7 @@ import java.util.Set;
  */
 public final class AflSurvivorSetupScreen extends Screen {
     private static final float TOP = 38, BOTTOM = 255;
+    private static final String[] TIERS = {"novice", "experienced", "trained"};
     private static final float LEFT_X = 15, LEFT_W = 110;
     private static final float MID_X = 130, MID_W = 205;
     private static final float RIGHT_X = 340, RIGHT_W = 125;
@@ -59,7 +60,6 @@ public final class AflSurvivorSetupScreen extends Screen {
     private static final float CHIP_H = 12, CHIP_GAP = 3, GROUP_H = 11;
     private static final float PREVIEW_H = 70, NAME_Y = TOP + PREVIEW_H + 4, NAME_H = 36, START_Y = NAME_Y + NAME_H + 4;
     private static final float BUTTON_Y = 238, BUTTON_H = 16;
-    private static final int PIPS = 7;
 
     private final SurvivorCatalog.Snapshot catalog;
     /** The New World page this was opened from (before the world), or null in the world. */
@@ -311,15 +311,16 @@ public final class AflSurvivorSetupScreen extends Screen {
             SetupCanvas.text(g, font, label("body", def.id()), x, y + 1, AflUiStyle.TEXT, 1, 0.8F);
             float px = x + 34;
             stepButton(g, px, y, false, chosen > def.startMin(), mx, my);
-            for (int i = 1; i <= PIPS; i++) {
+            int pips = def.max();
+            for (int i = 1; i <= pips; i++) {
                 float cx = px + 11 + (i - 1) * 8;
                 boolean filled = i <= start, bonus = i > chosen && i <= start, reachable = i >= def.startMin() && i <= def.startMax();
                 int rgb = bonus ? AflUiStyle.ACCENT : AflUiStyle.TEXT;
                 if (filled) AflUiShapes.fill(g, cx, y + 1.5F, 6, 5, 1.2F, rgb, 0.9F);
                 else AflUiShapes.box(g, cx, y + 1.5F, 6, 5, 1.2F, AflUiStyle.BACK, 0.4F, AflUiStyle.LINE, reachable ? 0.45F : 0.15F, 0, 0);
             }
-            stepButton(g, px + 11 + PIPS * 8 + 2, y, true, chosen < def.startMax(), mx, my);
-            float lx = px + 11 + PIPS * 8 + 14;
+            stepButton(g, px + 11 + pips * 8 + 2, y, true, chosen < def.startMax(), mx, my);
+            float lx = px + 11 + pips * 8 + 14;
             SetupCanvas.text(g, font, SetupCanvas.tr("setup.level", start), lx, y + 1.6F, AflUiStyle.TEXT_DIM, 1, 0.62F);
             List<Component> parts = new ArrayList<>();
             for (SurvivorCatalog.Curve curve : def.curves()) {
@@ -481,16 +482,34 @@ public final class AflSurvivorSetupScreen extends Screen {
     }
 
     /**
-     * What a trait does: its attribute effects and body bonuses; growth only as "has gun experience" / "slow to get
-     * good with guns" (the levels are for finding out in play). Exclusions are not listed: a clashing trait turns red.
+     * What a trait does: its attribute effects and body bonuses; growth only in words ("has gun experience", "used to the
+     * cold", "slow to get good with guns"; the levels are for finding out in play). Exclusions are not listed: a clashing
+     * trait turns red.
      */
     private Component describe(SurvivorCatalog.TraitDef def) {
         List<Component> parts = new ArrayList<>();
         for (SurvivorCatalog.Effect e : def.effects()) parts.add(effect(e.attribute(), e.multiply(), e.value()));
         def.bodyBonus().forEach((body, n) -> parts.add(SetupCanvas.tr("setup.effect.body_bonus", label("body", body), signed(n))));
-        if (!def.growthStart().isEmpty()) parts.add(SetupCanvas.tr("setup.effect.gun_experience"));
-        if (!def.growthCap().isEmpty()) parts.add(SetupCanvas.tr("setup.effect.gun_capped"));
+        parts.addAll(growthNotes(def.growthStart().keySet(), def.growthCap().keySet()));
         return parts.isEmpty() ? SetupCanvas.tr("setup.no_change") : join(parts);
+    }
+
+    /**
+     * A trait's growth starts and caps in words, one note per kind: setup.effect.start.<item> / setup.effect.cap.<item>,
+     * the three gun classes sharing "firearms".
+     */
+    static List<Component> growthNotes(java.util.Collection<String> starts, java.util.Collection<String> caps) {
+        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+        for (String id : starts) keys.add("setup.effect.start." + growthKind(id));
+        for (String id : caps) keys.add("setup.effect.cap." + growthKind(id));
+        List<Component> out = new ArrayList<>();
+        for (String key : keys) out.add(SetupCanvas.tr(key));
+        return out;
+    }
+
+    private static String growthKind(String id) {
+        String path = id.substring(id.indexOf(':') + 1);
+        return path.startsWith("firearms_") ? "firearms" : path;
     }
 
     // ---- right: survivor, name, start
@@ -583,8 +602,9 @@ public final class AflSurvivorSetupScreen extends Screen {
         List<Component> guns = new ArrayList<>();
         java.util.Set<String> tiers = new java.util.HashSet<>();
         for (SurvivorCatalog.GrowthDef def : catalog.growth().values()) {
+            if (!"firearms".equals(def.group())) continue;
             int level = growthLevel(def);
-            String tier = level >= 4 ? "trained" : level >= 2 ? "basic" : "novice";
+            String tier = TIERS[com.antaurora.apofirstlight.survivor.SurvivorGrowth.tier(level)];
             tiers.add(tier);
             guns.add(SetupCanvas.tr("setup.gun", label("growth", def.id()), SetupCanvas.tr("setup.tier." + tier)));
         }
@@ -630,6 +650,14 @@ public final class AflSurvivorSetupScreen extends Screen {
         Map<String, double[]> totals = new LinkedHashMap<>();
         for (SurvivorCatalog.BodyDef def : catalog.body().values()) {
             int level = startLevel(def);
+            for (SurvivorCatalog.Curve curve : def.curves()) {
+                add(totals, curve.attribute(), curve.multiply(), curve.values()[Mth.clamp(level, 1, curve.values().length) - 1]);
+            }
+        }
+        // growth items with a curve (cold / heat tolerance) at their start level: a trait may start them higher
+        for (SurvivorCatalog.GrowthDef def : catalog.growth().values()) {
+            int level = growthLevel(def);
+            if (level < 1) continue;
             for (SurvivorCatalog.Curve curve : def.curves()) {
                 add(totals, curve.attribute(), curve.multiply(), curve.values()[Mth.clamp(level, 1, curve.values().length) - 1]);
             }
@@ -745,7 +773,7 @@ public final class AflSurvivorSetupScreen extends Screen {
                 click();
                 return true;
             }
-            if (SetupCanvas.in(mx, my, px + 11 + PIPS * 8 + 2, y, 8, 8) && level < def.startMax()) {
+            if (SetupCanvas.in(mx, my, px + 11 + def.max() * 8 + 2, y, 8, 8) && level < def.startMax()) {
                 body.put(def.id(), level + 1);
                 refusal = List.of();
                 click();

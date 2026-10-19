@@ -156,6 +156,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
         pullGood = good;
         gripTick = pullStart;
         com.antaurora.apofirstlight.stamina.PlayerStamina.spend(player, com.antaurora.apofirstlight.stamina.StaminaConfig.get().costs.recoilPull, false);
+        com.antaurora.apofirstlight.survivor.SurvivorGrowth.recoilPull(player);
         // decided now, so the sound is the right one: a catching pull leads into the start sound (one recording), a failing
         // one turns the engine over and lets it stop (two recordings, at random)
         float chance = pullStart < warmUntil ? (good ? WARM_GOOD : WARM_POOR) : (good ? COLD_GOOD : COLD_POOR);
