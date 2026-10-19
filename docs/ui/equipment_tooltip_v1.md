@@ -2,7 +2,7 @@
 
 ## 当前布局
 
-所有调用 `AflEquipmentTooltip.gun` 的 Native Gun 共用冻结顺序：原版枪械名称 → 原始本地化 Subtitle → 真实 16×16 弹药 ItemStack 与弹药类型 → 枪械伤害 → 开火方式 → 有效射程 → 声音半径。介绍和弹药行之间、弹药行和属性之间由少量纵向留白区分；枪械不插入横向分割线。保留 Vanilla ItemStack hover name / rarity，不重复追加名称。
+所有调用 `AflEquipmentTooltip.gun` 的 Native Gun 共用冻结顺序：原版枪械名称 → 原始本地化 Subtitle → 真实 16×16 弹药 ItemStack 与弹药类型 → 伤害 → 开火模式 → 有效射程 → 声音半径。介绍和弹药行之间、弹药行和属性之间由少量纵向留白区分；枪械不插入横向分割线。保留 Vanilla ItemStack hover name / rarity，不重复追加名称。
 
 普通枪械 Tooltip 只显示上述四个文字属性；不显示武器类型、文字“弹药类型”属性行、弹匣容量、最大射程、伤害衰减起点、最低伤害倍率、ADS、后坐力、散布或爆头倍率。更详细数据留给枪械维护台，不再继续给普通悬停增加字段。声音半径显示影响感染者感知的真实 Noise Radius；底层数据、HUD、维护台、兼容和战斗逻辑未改。
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | DAMAGE | `#D97878` | Gun Definition baseDamage |
 | AMMUNITION | `#D6B46A` | 正式 ammoType 对应弹药的 caliber 本地化；无 caliber 键回退弹药物品名称 |
-| FIRE_MODE | `#D79A68` | NativeFireModes.current(stack, definition)，只读当前/默认合法模式，标签“开火方式” |
+| FIRE_MODE | `#D79A68` | NativeFireModes.current(stack, definition)，只读当前/默认合法模式，标签“开火模式”（2026-10-18 本地化批次 2 前是“开火方式”，伤害标签前是“枪械伤害”） |
 | RANGE | `#8FB58A` | 标签“有效射程”，读取 `NativeGunDefinition.effectiveRange()`；数值浅灰白 |
 | RECOIL | `#C49567` | 仅保留类别，不编造单值评分 |
 | SOUND_RADIUS | `#A395B8` | 标签“声音半径”，附件修正后的真实声音半径，`声音半径：N格`；数值浅灰白 |
@@ -48,7 +48,7 @@
 
 本地化：枪械仍使用所需的 `tooltip.apocalypse_firstlight.stat.*`、`value.noise_radius`、`gun_ammo_row`、`unknown_ammunition` 与弹药物品 `.caliber`；配件保留各自的 description，已移除仅供配件额外属性使用的 `stat.magazine`、`stat.noise`、`stat.ads`、`value.red_dot` 中英文键。旧 spec/type/技术属性文案键保留不代表现行枪械布局。介绍和枪械属性均非斜体；不修改自定义名称、原版高级提示或第三方追加信息。
 
-普通枪械 Tooltip V2.3 正式冻结为名称、Subtitle、弹药 Item + 弹药类型、枪械伤害、开火方式、有效射程、声音半径。固定低饱和颜色规范：Damage `#D97878`、Ammo `#D6B46A`、Fire Mode `#D79A68`、Effective Range `#8FB58A`、Sound Radius `#A395B8`；颜色统一由 `AflTooltipStatType` 定义，数值/内容沿用 `AflEquipmentTooltip.VALUE_COLOR` `#E0E0E0`。不按射程或半径大小切换颜色。更完整技术参数归枪械维护台职责，Native Gun HUD 负责当前战斗状态。本轮未新增维护台参数面板，也未改变 HUD 显示内容。没有改伤害、容量、噪声倍率、实际射程、射速、后坐力、ADS、兼容、换弹、维护台、弹药消耗或声音。装拆仍仅限维护台。
+普通枪械 Tooltip V2.3 正式冻结为名称、Subtitle、弹药 Item + 弹药类型、伤害、开火模式、有效射程、声音半径。固定低饱和颜色规范：Damage `#D97878`、Ammo `#D6B46A`、Fire Mode `#D79A68`、Effective Range `#8FB58A`、Sound Radius `#A395B8`；颜色统一由 `AflTooltipStatType` 定义，数值/内容沿用 `AflEquipmentTooltip.VALUE_COLOR` `#E0E0E0`。不按射程或半径大小切换颜色。更完整技术参数归枪械维护台职责，Native Gun HUD 负责当前战斗状态。本轮未新增维护台参数面板，也未改变 HUD 显示内容。没有改伤害、容量、噪声倍率、实际射程、射速、后坐力、ADS、兼容、换弹、维护台、弹药消耗或声音。装拆仍仅限维护台。
 
 ## 验证
 

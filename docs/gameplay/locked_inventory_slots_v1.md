@@ -77,10 +77,12 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 
 | 状态 | 中文 | English |
 |---|---|---|
-| locked | 未解锁的背包栏位 | Locked inventory slot |
-| locked.hint | 物品放进口袋、胸挂和背包的格子（2026-10-14 前：装备背包可增加储物空间） | Items go into the pocket, rig and backpack grids |
+| locked | 这一格不能用（2026-10-18 前：未解锁的背包栏位） | Unused slot（2026-10-18 前：Locked inventory slot） |
+| locked.hint | 请将物品放入口袋、胸挂或背包（2026-10-18 前：物品放进口袋、胸挂和背包的格子；2026-10-14 前：装备背包可增加储物空间） | Items go into the pocket, rig and backpack grids |
 | overflow | 超出当前储物容量 | Exceeds current storage capacity |
-| overflow.hint | 可以取出物品，但无法放入新的物品 | Items can be removed, but new items cannot be inserted |
+| overflow.hint | 只能取出，不能放入（2026-10-18 前：可以取出物品，但无法放入新的物品） | Items can be removed, but new items cannot be inserted |
+
+2026-10-18 本地化批次 2（[zh_cn_polish_batch2_v1.md](../localization/zh_cn_polish_batch2_v1.md) #34–#36）改了提示文字：生存模式里这些格子永远不用，原来的"未解锁 / Locked"会让人以为以后能解锁。机制没变。
 
 背包提示为已约定的后续玩法文案；**Backpack、Stamina、扩容物品及 Custom Inventory 均未实现**。[Weight Core V1](weight_system_v1.md) 已实现独立质量计算/同步/debug，实机待验证，尚无负重惩罚或正式HUD。后续 18/27/36 容量只应扩展同一策略入口。
 

@@ -46,6 +46,21 @@ The player wiki lives in `wiki/` (VitePress, see `docs/wiki/afl_wiki_v1_plan.md`
 - Run `npm --prefix wiki run check` before finishing; it fails on missing values, missing translations, missing gun prose and unbuilt images.
 - The user's Obsidian overview under `docs/项目内容/` (for example `02 - 制作清单.md`) should be kept in step with the same change.
 
+# Chinese Localization
+
+All Simplified Chinese text (`lang/zh_cn.json`, UI, hints, docs meant for players) follows `docs/localization/zh_cn_style_guide_v1.md` (user-approved 2026-10-18).
+
+Core rule for localization and narrative writing (user, 2026-10-18): every text reads like the real kind of text it is (guide section 2.0). Before writing, settle what kind of text it is, who wrote it, and who it is for.
+
+- Write en_us and zh_cn in the same task, in the same section and line.
+- Never change keys, placeholders (`%s`, `%1$s`, `%%`), mechanics or numeric meaning while rewording.
+- Check the glossary (section 5) first. Stamina is 耐力. Sprint is 疾跑. Cross-fed is 线路互连.
+- World signs, roads, tunnels and place names are English in every language. Chinese UI, item names and hints are Chinese.
+- Store signs, road signs, logos, vehicle badges and poster brand lettering stay English. Documents the player opens (newspapers, notes, diaries, manuals, notices, texts, emails, radio subtitles) follow the game language, with confirmed Chinese company names (guide section 2.6).
+- Tone is restrained and realistic, but humour is not banned. Characters, pre-war ads and the document's source decide how much. No narrator-wide satire, and no forced joke in every lore text (guide section 2.11).
+- Companies and brands use their Chinese names in Chinese text (glossary 5.9, `docs/world/federation_companies_v1.md` section 6). Product names and model codes (P9-01, Tamarack T15, Silverwood 12) stay English.
+- Narrative text (death screen, backgrounds, radio, story) gets its own review pass, separate from UI copy.
+
 # Blockbench Source Models
 
 - All editable Blockbench source models belong under `src/main/blockbench/`.

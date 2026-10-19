@@ -70,7 +70,7 @@ python -I tools/build-afl-sans-sc.py --src <NotoSansSC[wght].ttf> --weight 400 -
 
 ## 4. 渲染修补
 
-原版 TTF 渲染（`TrueTypeGlyphProvider`）有三个问题，直接用会发糊或笔画粗细不均。AFL 用自己的 provider（`client/font/AflSmoothFontProvider`）替代（第 1–3 项）。第 4、5 项是用户实机发现放大文字的问题之后补的：
+原版 TTF 渲染（`TrueTypeGlyphProvider`）有三个问题，直接用会发糊或笔画粗细不均。AFL 用自己的 provider（`client/font/AflSmoothFontProvider`）替代（第 1–3 项）。第 4、5 项是用户实机发现放大文字的问题之后补的；第 6 项是自动换行，和字体文件无关，所有字体都生效：
 
 1. **分辨率跟随界面缩放。** 原版按 JSON 里固定的 `oversample` 栅格化，再按界面缩放最近邻放大，缩放一不对就粗细不均。另外原版把 `shift` 和左侧距各算了两次。AFL：
    - 每个字形按 `em × 界面缩放` 像素栅格化，画回屏幕时一个字形像素对一个屏幕像素；
@@ -92,6 +92,15 @@ python -I tools/build-afl-sans-sc.py --src <NotoSansSC[wght].ttf> --weight 400 -
 5. **字形周围留空、新图集页清零（2026-10-14 修复）。** 用户在放大的标题和副标题里看到每个字外面有一圈细框。
    - 原因：原版图集在字形之间留 1 像素空隙，但新建图集页时只分配显存、不清零，空隙里是驱动留下的旧数据（界面缩放变化、图集重建后尤其明显）。原版最近邻采样读不到这些空隙；AFL 线性采样时，放大字形的边缘会把它混进来。
    - 修复：每个 AFL 字形四周多留 1 像素透明边（`AflSmoothFontProvider.PAD`）；新的灰度图集页创建后先上传一张全零图（`mixin/client/AflFontTextureMixin`）。彩色图集页不动。
+6. **中文自动换行（2026-10-18 修复，没进游戏看）。** 用户实机看到枪的中文说明断得很怪：第一行只有"紧凑可靠的 9mm"或"7.62×51mm"，后面的字挤到下一行；有时最后一行只剩一个"色"。英文正常。
+   - 原因：原版拆行（`StringSplitter.LineBreakFinder`）只把空格当断点，一行超宽时退回到这一行的最后一个空格。中文本身没有空格；本地化规范（`docs/localization/zh_cn_style_guide_v1.md` 第 2.4 节）要求中文和数字、英文之间加空格，本地化批次 2 把"9毫米"改成"9mm"后，说明里唯一的空格就在口径后面，于是总在那里断开。没有空格时才逐字断，这时逗号也可能跑到行首。不是 AFL 以前的换行代码：项目里只有配件说明把最宽设成 300（`tooltip/AflEquipmentTooltipLayout`），换行全是原版 / Forge 的。
+   - 修复：`mixin/client/AflCjkLineBreakMixin` 在 `LineBreakFinder.accept` 开头，把中文字后面的位置也记成断点（规则在 `client/font/CjkLineBreak`），一行超宽时退回到最近的合法断点：
+     - 只在中日韩字符**后面**断，所以"12 号""48 格""3 秒"这种数字加单位不会拆开，英文单词照原版只在空格处断；
+     - 逗号、句号、顿号、冒号、分号、问号、叹号、右括号、右引号、省略号、破折号、`%` 不放在行首；左括号、左引号不放在行尾；
+     - 一行第一个可见字符之前不记断点，不会出现空行；
+     - 没有中日韩字符的文字，断法和原版完全一样。
+   - 对所有自动换行的文字生效：物品说明等 tooltip、AFL 自己的界面（死亡页等用 `font.split`）、书。
+   - 检查：规则类单独编译，用和原版相同的拆行流程模拟了 6 条中文、1 条英文，两种宽度：中文不再只断在空格处，标点不在行首，没有丢字、没有空行；英文结果和原版相同。`compileJava` 通过，refmap 里有 `accept` 的映射。**没进游戏看。**
 
 ## 5. 已知问题与限制
 
@@ -107,6 +116,7 @@ python -I tools/build-afl-sans-sc.py --src <NotoSansSC[wght].ttf> --weight 400 -
 - 字体集里只要有 AFL 字体，就会在界面缩放变化时清空整个字体集的缓存；第一次画各个字时会有一次栅格化开销。
 - 字形图集仍是原版的 256×256 页，缩放越大一页放的字越少：缩放 4 时一页约 49 个汉字，缩放 6 时约 20 个。中文多的界面会用到更多页。
 - 粗体仍是错开重画，不是真粗体字重。
+- 中文换行（第 4 节第 6 项）只决定**在哪里断**，不管断出来好不好看：宽度刚好时最后一行仍可能只剩一两个字（比如"出 / 色"）。要避免只能改文案长度，或者以后再加"末行太短就提前断"的规则。
 - 没有关闭开关：想用原版字体的玩家只能用资源包覆盖 AFL 的字体文件。
 - 字重：jar 里是 400（Regular）。开发客户端的 `run/resourcepacks/AFL Sans Medium (font test)` 是 500（Medium）的对比包，不在仓库里，启用后替换同名字体文件。用户没有要求换字重，保留 400。
 
@@ -123,6 +133,8 @@ python -I tools/build-afl-sans-sc.py --src <NotoSansSC[wght].ttf> --weight 400 -
 | `mixin/client/AflWindowGuiScaleMixin.java` | 界面缩放变化时通知 |
 | `mixin/client/AflFontStringOutputMixin.java` | 放大的界面文字改用按实际尺寸栅格化的字形 |
 | `mixin/client/AflFontTextureMixin.java` | 新的灰度图集页清零 |
+| `client/font/CjkLineBreak.java` | 中文断行规则：哪些位置可以断、哪些标点不放行首 / 行尾 |
+| `mixin/client/AflCjkLineBreakMixin.java` | 原版拆行加上中文断点 |
 | `assets/minecraft/font/default.json`、`uniform.json` | 把 AFL 字体放到原版字体前面 |
 | `assets/apocalypse_firstlight/font/afl_sans_sc.ttf`、`afl_sans_sc_OFL.txt` | 字体与授权 |
 | `tools/build-afl-sans-sc.py` | 生成字体 |
