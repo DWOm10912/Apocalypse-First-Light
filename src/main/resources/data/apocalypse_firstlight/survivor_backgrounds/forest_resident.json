@@ -1,0 +1,9 @@
+{
+  "order": 1,
+  "budget": 3,
+  "traits": [
+    "cold_hardy",
+    "manual_labor"
+  ],
+  "successor_pool": true
+}

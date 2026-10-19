@@ -1,0 +1,7 @@
+{
+  "group": "climate",
+  "cost": 1,
+  "growth_start": {
+    "heat_tolerance": 3
+  }
+}

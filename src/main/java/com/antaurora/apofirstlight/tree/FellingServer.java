@@ -186,6 +186,7 @@ public final class FellingServer {
         journal.setDirty();
         CHOPS.increment();
         PlayerStamina.spend(player, StaminaConfig.get().costs.chop, false);
+        com.antaurora.apofirstlight.survivor.SurvivorGrowth.chop(player);
         double cx = r.x + 0.5, cy = r.y + cut, cz = r.z + 0.5;
         // the notch faces the first chopper; its stage follows the work
         int side = c.stageBefore() == 0 && rootState.getValue(TreeBlocks.CHOP) == 0

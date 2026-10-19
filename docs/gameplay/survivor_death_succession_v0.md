@@ -35,7 +35,7 @@
 
 “新世界”由 `LevelEvent.CreateSpawnPosition` 判定（只在创建世界时触发；Terrain V2 会取消这个事件，所以监听时 `receiveCanceled = true`），写入 `freshWorld`。
 
-创建世界界面（`client/survivor/SurvivorCreateWorldClient`，原版风格按钮，现代化 UI 以后统一做）：
+创建世界界面（`client/survivor/SurvivorCreateWorldClient`，原版风格按钮）：2026-10-17 起（背景设定 P2b）原版界面每次都换成 AFL 的新的世界页 `AflNewWorldScreen`，模式在那一页的两张卡上选（卡下写死亡和物品规则、"创建后不能再改"）；下面的原版按钮只在点"原版设置…"打开原版界面时看得到。
 
 - “游戏”页原来的“难度”按钮隐藏，原位置换成“幸存者模式：普通 / 困难”按钮，大小相同，只在“游戏”页显示。
 - 按钮的悬停提示写明这个模式的死亡规则、物品规则（“死亡后随身物品全部留在遗体上……”）和“选定后不可更改。”
@@ -99,7 +99,8 @@
 | `Corpse` | 尸体 ID |
 | `PlanX` / `PlanZ` | 继任者出生规划点（死亡时决定，不加载区块） |
 | `SpawnDim` / `SpawnPos` / `SpawnSource` | 实际出生点与来源（提供者 ID、`fallback` 或 `initial`） |
-| `OriginState` / `Background` / `Profession` / `Traits` / `Body` | 预留字段，V0 一律为空，没有任何系统读取 |
+| `Setup` / `Background` / `Traits` / `Body` / `Growth` | 背景设定（2026-10-17 P2a，[幸存者背景、机能、特质与成长 V1](survivor_background_skills_v1_plan.md) 第 11 节）：选择状态、背景、全部特质、机能和成长的等级。没有 `Setup` 的旧记录按普通人 |
+| `OriginState` / `Profession` | 预留字段，一律为空，没有任何系统读取 |
 
 玩家自身持久数据根下写入 `apocalypse_firstlight:survivor_id`（该玩家存档属于哪位幸存者），用于识别崩溃后过期的玩家存档。
 
@@ -130,7 +131,7 @@
   - 现任幸存者的名字和名册里的人重名时（首位幸存者的昵称可以是任何名字），跳过这个人。
   - 种子 = 世界种子 × 账号 UUID × 生涯序号，确定性；选中的人随记录写盘（姓名、皮肤 ID、手臂类型）。
   - 以前的随机名字池（女名、男名、中性名、姓）已经删除。
-- 玩家不能选择姓名、性别、外貌、职业、州、地点或能力。V0 **只随机性别、姓名、外貌和出生点**；职业、特质、身体、出身州、背景只是预留字段，没有实现对应系统，随机姓名不等于职业 / 能力系统。
+- 玩家不能选择姓名、性别、外貌、职业、州、地点或能力。V0 只随机性别、姓名、外貌和出生点。2026-10-17 起（背景设定 P2a）还从同一个种子抽背景（带它的固定特质）和力量、体能等级（把背景的预算随机花掉，每项 2–5），不抽特质。旧存档里已经掷好的继任者在接手时补抽。职业、出身州仍是预留。
 - 出身州与背景以后由开局模板池决定（`survivor_start_template_pool.md`，未实现）：首次开局可以选州、背景模板或随机，继任时从合法并允许继任的模板里随机抽。州尚未完成，代码里不写任何州或建筑的名字。
 
 出生点（`SurvivorSpawns`，总在主世界）：
@@ -215,7 +216,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 9. 命令
 
-只读审计，权限 2：`/afl survivor`、`/afl survivor player <玩家>`、`/afl survivor list`、`/afl survivor corpses`（正在倒下的尸体数 `falling=`、布娃娃服务端耗时 `ragdoll_ms_per_tick`；每具尸体的位置、姿势 `pose=ragdoll|lying`、物品堆数、搜索状态）。测试用（布娃娃 V1）：`/afl survivor ragdoll [hit|shot|blast|drop|collapse|clear]` 在面前放一具不属于任何传承的替身尸体并让它倒下，`clear` 全部删掉（`docs/dev/ragdoll_v1_plan.md` 第 3 节第 8 条）。传承列表每一位显示 `look=<皮肤>/<手臂>`，有性别的继任者再加 `sex=female|male`；接手日志行末尾也带性别（首位和旧记录是 `null`）。替身命令只加删替身尸体；没有任何命令能改模式、重抽继任者或复活。
+只读审计，权限 2：`/afl survivor`、`/afl survivor player <玩家>`、`/afl survivor list`、`/afl survivor corpses`（正在倒下的尸体数 `falling=`、布娃娃服务端耗时 `ragdoll_ms_per_tick`；每具尸体的位置、姿势 `pose=ragdoll|lying`、物品堆数、搜索状态）。测试用（布娃娃 V1）：`/afl survivor ragdoll [hit|shot|blast|drop|collapse|clear]` 在面前放一具不属于任何传承的替身尸体并让它倒下，`clear` 全部删掉（`docs/dev/ragdoll_v1_plan.md` 第 3 节第 8 条）。传承列表每一位显示 `look=<皮肤>/<手臂>`，有性别的继任者再加 `sex=female|male`；接手日志行末尾也带性别（首位和旧记录是 `null`）。替身命令只加删替身尸体；没有任何命令能改模式、重抽继任者或复活。背景设定（P2a）的开发指令 `/afl survivor catalog`、`sheet [玩家]`、`setup <背景> [strength=… fitness=… <特质>…]`、`setup reset` 会改自己现任幸存者的背景、机能、特质，见背景设定文档第 11 节。
 
 ## 10. 困难模式
 
@@ -228,7 +229,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 11. 死亡结算界面与模式选择（客户端）
 
-客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。之后的版本号随 master 走；布娃娃 V1 R-B 新增 `CorpsePose`，D 分支先从 50 升到 51；master 的 T15 车灯也用了 51，所以 D 分支改为 52（2026-10-16）。2026-10-17 合并 master（协议 55：HUD V2 53、4L 54、雨刷 55）后取 **56**。
+客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。之后的版本号随 master 走；布娃娃 V1 R-B 新增 `CorpsePose`，D 分支先从 50 升到 51；master 的 T15 车灯也用了 51，所以 D 分支改为 52（2026-10-16）。2026-10-17 合并 master（协议 55：HUD V2 53、4L 54、雨刷 55）后取 **56**；同日背景设定 P2b 新增 `SetupPrompt`、`SetupChoice`、`SetupResult`、`Sheet`，D 分支取 **57**（[背景设定](survivor_background_skills_v1_plan.md) 第 9 节）。2026-10-18 背景设定 P3 新增 `LevelUp`（成长升级提示），D 分支取 **58**。
 
 | 包 | 方向 | 内容 |
 |---|---|---|
@@ -238,6 +239,8 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 | `Identity` | 服务器 → 客户端 | 某个账号 UUID 当前幸存者的姓名、皮肤 ID 与手臂类型（第 13 节） |
 | `NamePrompt` | 服务器 → 客户端 | 打开 / 关闭首位幸存者的姓名界面，或拒绝原因（`invalid` / `taken`） |
 | `NameChoice` | 客户端 → 服务器 | 首位幸存者选的姓名；服务器重新检查字符、长度和重名 |
+| `SetupPrompt` / `SetupChoice` / `SetupResult` / `Sheet` | 双向 | 首位幸存者的设置界面（背景设定 P2b）：打开 / 关闭和数据、玩家的选择（含名字）、拒绝原因、本人的幸存者记录 |
+| `LevelUp` | 服务器 → 本人 | 机能或成长升了一级（背景设定 P3）：ID、等级、是否机能，客户端左上角提示 |
 | `CorpsePose` | 服务器 → 跟踪该尸体的客户端 | 布娃娃 V1：倒下时每 tick 一次刚体位置和朝向；停下时再发一次（`last`），带落点；空姿势表示仰面躺平 |
 
 死亡结算 `AflDeathScreen`（替换原版死亡界面）：
@@ -245,7 +248,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 - 发送时机：死亡事件里（早于原版的死亡包）、死亡状态下登录、重生被拒或被撤回时。
 - 布娃娃 V1：第一人称死亡、自己的尸体会倒下时，先由死亡镜头跟着尸体的头倒下，身体停下 1 秒后（从死亡起最多 6 秒）才出这个界面（`client/survivor/DeathCamera`，`docs/dev/ragdoll_v1_plan.md` 第 4 节）。第三人称和旁观时照旧立刻出现。
 - 内容：姓名（放大）、存活天数（“存活不足一天” / “存活 1 天” / “存活 n 天”，2026-10-14 起不显示“第 n 位幸存者”；`Summary` 包仍带生涯序号，界面不用）、死因、地点（维度 + 坐标）、结束语。
-- NORMAL：“开始另一段人生”（就是原版重生请求，服务器把身体交给已决定的继任者）和“返回标题画面”。
+- NORMAL：“开始另一段人生”（就是原版重生请求，服务器把身体交给已决定的继任者）和“返回标题屏幕”。
 - HARD：只有“结束旅程”（断开并回到标题画面）。界面不能用 Esc 关；原版死亡界面每次想出现都被换成 AFL 界面；重新进入世界仍回到这个界面。任何菜单都不能复活，服务器本身就拒绝。
 - 按钮出现 1 秒后才能点（同原版，防止战斗中的点击误触），界面 12 tick 渐入。
 - 样式：现代浮层样式（暗色半透明面板、暖色细线、强调色只用于结束语），见 `docs/ui/afl_overlay_ui_style_v1.md` 10.5。
@@ -460,6 +463,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 首位幸存者姓名（`client/survivor/AflSurvivorNameScreen`）：
 
+- 2026-10-17 起（背景设定 P2b）新的首位幸存者在幸存者设置界面里起名（账号名或自定义，规则和下面一样，确认时一起检查），不再单独弹姓名界面。下面的姓名界面只在没起名、又不在选择中的旧记录上出现。
 - 首位幸存者生成时 `Named` = false，房主进入后弹出一次姓名界面（在模式界面之后、没有别的界面时）。
 - 输入框预填账号名；“使用账号名”或输入昵称后“确定”（回车也可）。确定后不可更改。
 - 昵称规则（`SurvivorNames.nickname`）：

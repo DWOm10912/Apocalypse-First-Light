@@ -285,3 +285,9 @@
 ## 导出的建筑里（2026-10-09）
 
 导出建筑时油换成灌油标记（`AflFuelFill`，规则 `portable_generator`），并且停机：不在运行、没有拉绳和握把、没有预热、没有欠油、断路器复位，运行小时数保留。放下后第一次在服务端加载时掷一次，50% 空、否则 1–8 L 柴油。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。
+
+## 幸存者属性（2026-10-17）
+
+拉绳 QTE 的绿区宽度 = 0.18 × `apocalypse_firstlight:qte_window` × `mech_qte_window`（默认都是 1），最多 0.36，保证绿区不出条（`PortableGeneratorPull.zoneWidth`）。判定和画的绿区用同一个宽度。
+
+属性层 P1，见 [幸存者背景、机能、特质与成长 V1](../gameplay/survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

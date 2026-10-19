@@ -88,7 +88,10 @@ public final class NativeGunRecoil {
         if (!valid(mc)) { STATE.clear(); owner = null; return; }
         if (mc.isPaused()) return;
         double v = STATE.vertical(), h = STATE.horizontal();
-        STATE.advance(dt);
+        // gun growth (2026-10-18): each level of the gun class brings the aim back a little faster
+        double recovery = owner.isCreative() || !(owner.getMainHandItem().getItem() instanceof NativeGunItem held) ? 1
+                : com.antaurora.apofirstlight.client.survivor.SurvivorSheetClient.gunRecoilRecovery(held.definition().weaponClass());
+        STATE.advance(dt, recovery);
         applyAim(STATE.vertical() - v, STATE.horizontal() - h);
     }
 

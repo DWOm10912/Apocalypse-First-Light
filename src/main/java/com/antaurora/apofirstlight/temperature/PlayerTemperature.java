@@ -134,6 +134,20 @@ public final class PlayerTemperature {
         return coldStage(s, c).noNaturalRegen || heatStage(s, c).noNaturalRegen;
     }
 
+    /**
+     * SurvivorGrowth (cold / heat tolerance): −1 while the weather is cooling the body (its target below normal) but it is
+     * not hypothermic yet (cold stage 1 at most), +1 the same for heat, else 0. Off in Creative / Spectator.
+     */
+    public static int exposure(ServerPlayer player) {
+        if (!enabled(player)) return 0;
+        State s = STATES.get(player);
+        if (s == null || Double.isNaN(s.target)) return 0;
+        var c = TemperatureConfig.get();
+        if (s.target < c.normal - 0.05 && s.coldStage <= 1) return -1;
+        if (s.target > c.normal + 0.05 && s.heatStage <= 1) return 1;
+        return 0;
+    }
+
     @SubscribeEvent public static void tick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player) || !player.isAlive()) return;
         var s = state(player);
@@ -234,16 +248,20 @@ public final class PlayerTemperature {
         double exertionHeat = Math.min(c.exertion.cap, c.exertion.perStamina * s.exertion) * Mth.lerp(submersion, 1, w.immersedExertion);
         double insulation = ThermalInsulation.total(player) * (1 - submersion) * (1 - w.insulationLoss * s.wet);
         double felt = env - w.chill * s.wet - w.immersionChill * submersion + exertionHeat;
-        double target = c.normal - c.coldSlope * Math.max(0, c.comfortLow - insulation - felt) + c.heatSlope * Math.max(0, felt - c.comfortHigh);
+        // survivor attributes: the comfort band moves by cold_threshold / heat_threshold (°C)
+        double comfortLow = c.comfortLow + com.antaurora.apofirstlight.survivor.SurvivorStats.get(player, com.antaurora.apofirstlight.registry.AflAttributes.COLD_THRESHOLD);
+        double comfortHigh = Math.max(comfortLow + 1, c.comfortHigh + com.antaurora.apofirstlight.survivor.SurvivorStats.get(player, com.antaurora.apofirstlight.registry.AflAttributes.HEAT_THRESHOLD));
+        double target = c.normal - c.coldSlope * Math.max(0, comfortLow - insulation - felt) + c.heatSlope * Math.max(0, felt - comfortHigh);
         if (player.hasEffect(MobEffects.FIRE_RESISTANCE)) target = Math.min(target, c.fireResistanceTargetCap);
         target = Mth.clamp(target, c.targetMin, c.targetMax);
 
         boolean recovering = s.core != c.normal && Math.signum(target - s.core) == Math.signum(c.normal - s.core);
-        double tau = recovering ? c.tauRecover : Mth.lerp(submersion, c.tauWorsen, c.tauWorsenImmersed);
+        double tau = recovering ? c.tauRecover : Mth.lerp(submersion, c.tauWorsen, c.tauWorsenImmersed)
+                / com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.BODY_TEMP_RATE, 0.1); // survivor attribute: worsening only
         s.core = Mth.clamp(s.core + (target - s.core) * (1 - Math.exp(-dt / tau)), c.coreMin, c.coreMax);
         s.ambient = shown;
         s.target = target;
-        s.comfortMin = c.comfortLow - insulation;
+        s.comfortMin = comfortLow - insulation;
         s.reading = new Reading(climate, a.mean(), a.amp(), a.water(), a.precipitation(), a.day(), outdoor, sheltered, cover, heat + cold, env, shown,
                 submersion, exertionHeat, insulation, felt, target);
     }

@@ -1,0 +1,30 @@
+{
+  "group": "firearms",
+  "order": 1,
+  "default": 0,
+  "max": 10,
+  "training": {
+    "to_next": {
+      "0": 30,
+      "1": 45,
+      "2": 60,
+      "3": 90,
+      "4": 120,
+      "5": 165,
+      "6": 225,
+      "7": 300,
+      "8": 400,
+      "9": 520
+    },
+    "xp": {
+      "hit": 3,
+      "kill": 3,
+      "reload": 2
+    }
+  },
+  "perks": {
+    "0": "reload_novice",
+    "4": "reload_trained",
+    "7": "reload_practised"
+  }
+}

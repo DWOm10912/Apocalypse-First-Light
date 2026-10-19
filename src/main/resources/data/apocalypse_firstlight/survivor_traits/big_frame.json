@@ -1,0 +1,14 @@
+{
+  "group": "body",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:move_stamina_cost",
+      "op": "multiply",
+      "value": 1.1
+    }
+  ],
+  "body_bonus": {
+    "strength": 1
+  }
+}

@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.client.inventory;
 
+import com.antaurora.apofirstlight.client.survivor.AflCharacterScreen;
 import com.antaurora.apofirstlight.client.ui.AflKeyHint;
+import com.antaurora.apofirstlight.client.ui.AflUiDraw;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
@@ -19,7 +21,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
@@ -91,6 +95,11 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     /** A drop waiting for the dragged stack to arrive on the cursor. */
     private long pendingUntil;
     private double pendingX, pendingY;
+    /** The character page button after the name in the title row (survivor plan section 9, P2c). */
+    private static final float CHAR_Y = 4.5F, CHAR_H = 12;
+    private float charX, charW;
+    /** Set when leaving for the character page: the menu stays open (no removed(), which clears the craft result). */
+    private boolean toCharacter;
 
     public AflInventoryScreen(Player player) {
         super(player.inventoryMenu, player.getInventory(), Component.translatable("container.crafting"));
@@ -137,7 +146,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         pose.translate(originX, originY, 0);
         pose.scale(scale, scale, 1);
 
-        title(g);
+        title(g, mx, my);
         gearColumn(g, mx, my);
         gridColumn(g, view, mx, my);
         bindPanel(g);
@@ -158,8 +167,19 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     @Override
     protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {}
 
-    private void title(GuiGraphics g) {
+    @Override
+    public void removed() {
+        if (!toCharacter) super.removed();
+    }
+
+    private void title(GuiGraphics g, float mx, float my) {
         text(g, player.getDisplayName(), A_X, 6.5F, 9, AflUiStyle.TEXT, 1);
+        Component character = Component.translatable("survivor.apocalypse_firstlight.character.open");
+        charX = A_X + width(player.getDisplayName(), 9) + 6;
+        charW = width(character, 7) + 10;
+        boolean hover = menu.getCarried().isEmpty() && in(mx, my, charX, CHAR_Y, charW, CHAR_H);
+        AflUiDraw.button(g, charX, CHAR_Y, charW, CHAR_H, hover, false, menu.getCarried().isEmpty(), 1);
+        text(g, character, charX + 5, CHAR_Y + 2.8F, 7, menu.getCarried().isEmpty() ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         long now = System.nanoTime();
         float right = 470;
         right = keyCap(g, AflKeyHint.of(minecraft.options.keyInventory), Component.translatable("screen.apocalypse_firstlight.inventory.close"), right, now);
@@ -542,6 +562,9 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     private void tooltip(GuiGraphics g, @Nullable Hit hover, int mouseX, int mouseY) {
         if (hover instanceof SlotHit s && s.slot().hasItem()) {
             g.renderTooltip(font, s.slot().getItem(), mouseX, mouseY);
+        } else if (hover instanceof SlotHit s) {
+            List<Component> lines = emptyHint(s.slot().index);
+            if (lines != null) hint(g, lines, mouseX, mouseY);
         } else if (hover instanceof OverflowHit o) {
             g.renderTooltip(font, o.stack(), mouseX, mouseY);
         } else if (hover instanceof GroundHit ground) {
@@ -551,17 +574,65 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
             if (entry != null) g.renderTooltip(font, entry.stack(), mouseX, mouseY);
         } else if (hover instanceof BindHit b) {
             var kind = Loadout.client().binds()[b.index()];
-            if (kind == null) g.renderTooltip(font, Component.translatable("screen.apocalypse_firstlight.inventory.bind_empty"), mouseX, mouseY);
-            else g.renderComponentTooltip(font, List.of(new ItemStack(kind).getHoverName(),
-                    Component.translatable("screen.apocalypse_firstlight.inventory.bind_unbind").withStyle(net.minecraft.ChatFormatting.GRAY)),
-                    mouseX, mouseY);
+            if (kind == null) hint(g, List.of(Component.translatable("screen.apocalypse_firstlight.inventory.bind_empty")), mouseX, mouseY);
+            else hint(g, List.of(new ItemStack(kind).getHoverName(),
+                    Component.translatable("screen.apocalypse_firstlight.inventory.bind_unbind")), mouseX, mouseY);
         } else if (hover instanceof SlingHit) {
-            g.renderTooltip(font, Component.translatable("screen.apocalypse_firstlight.inventory.sling_off"), mouseX, mouseY);
+            hint(g, List.of(Component.translatable("screen.apocalypse_firstlight.inventory.sling_off")), mouseX, mouseY);
         } else if (hover instanceof PlaceholderHit p) {
-            g.renderComponentTooltip(font, List.of(p.label(),
-                    Component.translatable("screen.apocalypse_firstlight.inventory.placeholder").withStyle(net.minecraft.ChatFormatting.GRAY)),
-                    mouseX, mouseY);
+            hint(g, List.of(p.label(), Component.translatable("screen.apocalypse_firstlight.inventory.wear_hint")), mouseX, mouseY);
         }
+    }
+
+    /**
+     * An empty gear, weapon or hand box: its name and what goes in it. Crafting cells and grid cells say nothing (they are
+     * plainly cells).
+     */
+    @Nullable
+    private static List<Component> emptyHint(int menuIndex) {
+        String name, line;
+        switch (menuIndex) {
+            case HEAD -> { name = "slot.head"; line = "wear_hint"; }
+            case EARS_SLOT -> { name = "slot.ears"; line = "wear_hint"; }
+            case WRIST_SLOT -> { name = "slot.watch"; line = "wear_hint"; }
+            case LEGS -> { name = "slot.legs"; line = "wear_hint"; }
+            case CHEST -> { name = "slot.armor"; line = "wear_hint"; }
+            case FEET -> { name = "slot.feet"; line = "wear_hint"; }
+            case RIG_SLOT -> { name = "rig"; line = "wear_hint"; }
+            case BACK_SLOT -> { name = "backpack"; line = "wear_hint"; }
+            case HOLSTER_SLOT -> { name = "holster"; line = "wear_hint"; }
+            case PRIMARY_MENU -> { name = "primary"; line = "weapon_hint"; }
+            case PISTOL_MENU -> { name = "pistol"; line = "weapon_hint"; }
+            case MELEE_MENU -> { name = "melee"; line = "weapon_hint"; }
+            case HAND_MENU -> { name = "hands"; line = "hands_hint"; }
+            default -> { return null; }
+        }
+        return List.of(Component.translatable("screen.apocalypse_firstlight.inventory." + name),
+                Component.translatable("screen.apocalypse_firstlight.inventory." + line));
+    }
+
+    /**
+     * A text hint in the page's own style (panel colours, round corners) at the vanilla tooltip's size and place, so it
+     * reads like the item tooltips next to it (those keep vanilla's layout; GridClient#tooltipColour gives them the same
+     * colours). First line bright, the rest dim.
+     */
+    private void hint(GuiGraphics g, List<Component> lines, int mouseX, int mouseY) {
+        int w = 0;
+        for (Component line : lines) w = Math.max(w, font.width(line));
+        int h = lines.size() * 10 - 2, pad = 4;
+        int x = mouseX + 12, y = mouseY - 12;
+        if (x + w + pad > width) x = Math.max(pad, mouseX - 16 - w);
+        if (y + h + pad > height) y = height - h - pad;
+        y = Math.max(pad, y);
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(0, 0, 400);
+        AflUiShapes.box(g, x - pad, y - pad, w + 2 * pad, h + 2 * pad, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK, 0.94F,
+                AflUiStyle.LINE, AflUiStyle.LINE_ALPHA, AflUiStyle.SHADOW_ALPHA, 0);
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), x, y + i * 10, AflUiStyle.argb(i == 0 ? AflUiStyle.TEXT : AflUiStyle.TEXT_DIM, 1), false);
+        }
+        pose.popPose();
     }
 
     // ---------------------------------------------------------------- small drawing helpers
@@ -634,6 +705,12 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         float mx = vx(mouseX), my = vy(mouseY);
         Hit hit = hitAt(mx, my);
         var carried = menu.getCarried();
+        if (button == 0 && carried.isEmpty() && in(mx, my, charX, CHAR_Y, charW, CHAR_H)) {
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            toCharacter = true;
+            minecraft.setScreen(new AflCharacterScreen());
+            return true;
+        }
         boolean shift = hasShiftDown();
         pendingUntil = 0;
         pressX = mouseX;

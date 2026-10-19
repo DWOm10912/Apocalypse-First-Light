@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>New World V1</title>
+<style>
+@font-face { font-family: 'AFL Sans'; src: url('/assets/font/afl_sans_sc.ttf'); }
+:root {
+  --back: rgba(16,16,16,.62); --back-hover: rgba(30,33,36,.72); --back-down: rgba(8,9,10,.8);
+  --line: rgba(232,228,220,.28); --line-hi: rgba(232,228,220,.55);
+  --text: #E8E4DC; --dim: #A8A49C; --off: #6C6A66; --acc: #E0A84A;
+  --good: #5FA67E; --bad: #A86A3A; --cold: #4F7FB8; --danger: #B8443C;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #141516; color: var(--text); font-family: 'AFL Sans', 'Microsoft YaHei', sans-serif; }
+.sheet { width: 1920px; }
+.screen { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+.bg { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(9px) brightness(.5) saturate(.85); }
+.shade { position: absolute; inset: 0; }
+.caption { background: #18191a; padding: 30px 40px 34px; min-height: 230px; }
+.caption h1 { margin: 0 0 14px; font-size: 34px; font-weight: normal; }
+.caption p { margin: 6px 0; font-size: 21px; color: #CFCBC3; line-height: 1.5; }
+.abs { position: absolute; }
+.panel { background: var(--back); border: 1.5px solid var(--line); border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,.22); }
+.h { font-size: 22px; color: var(--dim); letter-spacing: 1px; }
+.t { font-size: 26px; }
+.d { color: var(--dim); }
+.o { color: var(--off); }
+.key { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 32px; padding: 0 9px; border-radius: 7px;
+  background: rgba(232,228,220,.92); color: #16181A; font-size: 19px; margin-right: 10px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 64px; padding: 0 34px; border-radius: 10px; font-size: 26px;
+  background: var(--back); border: 1.5px solid var(--line); color: var(--text); }
+.btn.main { background: rgba(232,228,220,.92); color: #16181A; border-color: transparent; }
+.btn.small { height: 46px; padding: 0 20px; font-size: 21px; }
+.field { height: 60px; border-radius: 10px; background: rgba(8,9,10,.55); border: 1.5px solid var(--line); display: flex; align-items: center; padding: 0 20px; font-size: 25px; }
+.field.focus { border-color: var(--line-hi); }
+.caret { display: inline-block; width: 2px; height: 28px; background: var(--text); margin-left: 2px; }
+.pips { display: inline-flex; gap: 6px; }
+.pip { width: 26px; height: 14px; border-radius: 4px; background: rgba(232,228,220,.12); border: 1px solid rgba(232,228,220,.18); }
+.pip.on { background: #D8D4CC; border-color: transparent; }
+.pip.add { background: var(--acc); border-color: transparent; }
+.pm { width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text); background: rgba(8,9,10,.4); }
+.pm.off { color: var(--off); border-color: rgba(232,228,220,.12); }
+.badge { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.28); flex: none; }
+.badge svg { width: 24px; height: 24px; }
+.tag { display: inline-block; font-size: 17px; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line); color: var(--dim); margin-left: 8px; }
+.seg { display: flex; gap: 12px; }
+.check { width: 26px; height: 26px; border-radius: 7px; border: 1.5px solid var(--line); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.check.on { background: rgba(232,228,220,.92); border-color: transparent; }
+.check.on::after { content: ''; width: 12px; height: 7px; border-left: 3px solid #16181A; border-bottom: 3px solid #16181A; transform: rotate(-45deg) translate(1px,-1px); }
+.radio { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--line-hi); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.radio.on::after { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--text); }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>
+// Concepts for the AFL New World screen and the first-join survivor setup (background, body, traits; growth shown read-only), two directions.
+// docs/gameplay/survivor_background_skills_v1_plan.md. Open with ?s=A1 / A2 / B1 / B2; 1920x1080 at GUI scale 3.
+const S = new URLSearchParams(location.search).get('s') || 'A1';
+const COL = {good: '#5FA67E', bad: '#A86A3A', cold: '#4F7FB8', danger: '#B8443C'};
+
+// ---------- icons (24 x 24, white) ----------
+const ICON = {
+  tree: '<path d="M12 2 4 13h4l-3 5h6v4h2v-4h6l-3-5h4z"/>',
+  truck: '<path d="M2 6h11v9H2zM13 9h4.5l3.5 4v2h-8z"/><circle cx="6" cy="17" r="2.2"/><circle cx="17" cy="17" r="2.2"/>',
+  shop: '<path d="M3 4h18l1 5c0 1.5-1.2 2.5-2.6 2.5S17 10.5 17 9c0 1.5-1.3 2.5-2.6 2.5S12 10.5 12 9c0 1.5-1.2 2.5-2.5 2.5S7 10.5 7 9c0 1.5-1.2 2.5-2.6 2.5S2 10.5 2 9zM4 13h16v8h-6v-5h-4v5H4z"/>',
+  bolt: '<path d="M13 2 5 13h6l-1 9 8-11h-6z"/>',
+  wrench: '<path d="M21 6.5a5 5 0 0 1-6.6 4.7L6 19.6a2 2 0 0 1-2.8-2.8l8.4-8.4A5 5 0 0 1 17.5 3l-3 3 .8 2.7 2.7.8z"/>',
+  tag: '<path d="M7 2h10a2 2 0 0 1 2 2v13a5 5 0 0 1-5 5h-4a5 5 0 0 1-5-5V4a2 2 0 0 1 2-2zm5 3a1.6 1.6 0 1 0 0 3.2A1.6 1.6 0 0 0 12 5z"/>',
+  scope: '<path d="M11 2h2v4.1a6 6 0 0 1 4.9 4.9H22v2h-4.1a6 6 0 0 1-4.9 4.9V22h-2v-4.1A6 6 0 0 1 6.1 13H2v-2h4.1A6 6 0 0 1 11 6.1zm1 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>',
+  cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+  pistol: '<path d="M3 6h17v4h-8l-1 2h-2l-1 2.5L9.5 20H5l2-8-4-2z"/>',
+  rifle: '<path d="M1 9h14l1-2h2v2h5v2.5h-8l-1 2h-3l-1 3H7l1.2-3H3l-2 2z"/>',
+  shotgun: '<path d="M1 9.5h17v2h5v2H11l-1 1.5H7.5l.8-1.5H4l-3 2.5z"/>',
+  gear: '<path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/>',
+  saw: '<path d="M3 5h11l8 8-3 3-8-8H3zM5 16h7v5H5z"/>',
+  snow: '<path d="M11 2h2v4.3l2.6-1.5 1 1.7L13 8.6v2.7l2.3-1.4 2.6-4.4 1.7 1-1.7 2.9 3-.1v2l-4.4.1-2.3 1.3 2.3 1.4 4.4.1v2l-3-.1 1.7 2.9-1.7 1-2.6-4.4L13 15.1v2.3l3.6 2.1-1 1.7-2.6-1.5V22h-2v-2.3l-2.6 1.5-1-1.7 3.6-2.1v-2.3l-2.3 1.4-2.6 4.4-1.7-1 1.7-2.9-3 .1v-2l4.4-.1 2.3-1.3-2.3-1.4L2.8 12v-2l3 .1-1.7-2.9 1.7-1 2.6 4.4 2.3 1.4V8.6L7.1 6.5l1-1.7L11 6.3z"/>',
+  sun: '<circle cx="12" cy="12" r="4.5"/><path d="M11 1h2v4h-2zM11 19h2v4h-2zM1 11h4v2H1zM19 11h4v2h-4zM4.2 5.6l1.4-1.4 2.8 2.8-1.4 1.4zM15.6 17l1.4-1.4 2.8 2.8-1.4 1.4zM4.2 18.4l2.8-2.8 1.4 1.4-2.8 2.8zM15.6 7l2.8-2.8 1.4 1.4-2.8 2.8z"/>',
+  weight: '<path d="M9 4a3 3 0 0 1 6 0 3 3 0 0 1-.6 1.8H18l3 15H3l3-15h3.6A3 3 0 0 1 9 4zm3-1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>',
+  hand: '<path d="M8 3h2v8h1V2h2v9h1V3h2v8h1V5h2v10c0 4-3 7-7 7s-6-2.5-7.5-6L3 11l1.7-1L8 14z"/>',
+  ear: '<path d="M12 2a7 7 0 0 1 7 7c0 3-2 4.3-3 5.5-1 1.2-.8 2.8-1.8 4.5A4 4 0 0 1 7 18h2a2 2 0 0 0 3.5 1c.8-1.4.5-3 1.8-4.6 1.2-1.5 2.7-2.4 2.7-5.4A5 5 0 0 0 7 9H5a7 7 0 0 1 7-7zm0 4a3 3 0 0 1 3 3h-2a1 1 0 0 0-2 0v1H9V9a3 3 0 0 1 3-3z"/>',
+  dice: '<path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm3 3.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM12 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-4 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>',
+  home: '<path d="M12 3 2 11h3v10h5v-6h4v6h5V11h3z"/>',
+  road: '<path d="M8 2h2l-1 20H4zM14 2h2l4 20h-5zM11 3h2v3h-2zM11 9h2v4h-2zM11 16h2v5h-2z"/>',
+  pump: '<path d="M4 3h9v18H4zM6 5v5h5V5zM14 7h2l3 3v8a2 2 0 0 1-4 0v-5h-1v-2h3v7h1v-7.2L15.6 9H14z"/>',
+  pine: '<path d="M12 1 6 9h3l-4 6h4l-3 4h5v4h2v-4h5l-3-4h4l-4-6h3z"/>',
+};
+const svg = (k, fill = '#fff') => `<svg viewBox="0 0 24 24" fill="${fill}">${ICON[k]}</svg>`;
+
+// ---------- data (docs/gameplay/survivor_background_skills_v1_plan.md 4-8, 2026-10-17 structure: no skills; numbers are drafts) ----------
+Object.assign(ICON, {
+  person: '<circle cx="12" cy="6.5" r="4"/><path d="M4 22c0-5 3.6-8.5 8-8.5s8 3.5 8 8.5z"/>',
+  heart: '<path d="M12 21 3.5 12.6A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 8.5 6.6z"/>',
+  run: '<circle cx="14.5" cy="4" r="2.3"/><path d="M9 8.5 13 7l3 3.5 3.5 1-.6 2-4.4-1.2-1.6-1.8-1.3 3.5 3 2.6V22h-2v-4.5l-3-2.4-1.5 3.6L3.5 17l.8-1.8 3 1.3 2.3-6-1.6.6-1.5 3-1.8-.9 1.9-3.8z"/>',
+  down: '<path d="M11 2h2v13.2l4.6-4.6 1.4 1.4-7 7-7-7 1.4-1.4 4.6 4.6zM4 20h16v2H4z"/>',
+  bowl: '<path d="M2 10h20c0 5.5-4 9.5-10 9.5S2 15.5 2 10zM8 3c1 1.2 1 2.3 0 3.5S7 8.8 8 9H6.5C5.5 7.8 5.5 6.7 6.5 5.5S7.5 3.5 6.5 3zM13 3c1 1.2 1 2.3 0 3.5s-1 2.3 0 2.5h-1.5c-1-1.2-1-2.3 0-3.5s1-2.3 0-2.5z"/>',
+  drop: '<path d="M12 2.5s7 8 7 12.5a7 7 0 0 1-14 0C5 10.5 12 2.5 12 2.5z"/>',
+  cig: '<path d="M2 14h15v4H2zM18 14h1.5v4H18zM20.5 14H22v4h-1.5zM17 4c2 1.5 2 3.5 0 5s-2 3 0 4h-1.6c-1.8-1.3-1.8-3 0-4.5s1.8-3.2 0-4.5z"/>',
+  foot: '<path d="M8 6c2 0 3 2.5 3 6s-1 7.5-3.5 7.5S5 17 5 13.5 6 6 8 6zM16 2.5c2 0 3 2.3 3 5.5s-1 6.5-3.5 6.5S13 12.5 13 9s1-6.5 3-6.5zM6 20.5h3.5V22H6zM14 15.5h3.5V17H14z"/>',
+  eye: '<path d="M12 5c5 0 8.5 3.8 10 7-1.5 3.2-5 7-10 7S3.5 15.2 2 12c1.5-3.2 5-7 10-7zm0 3.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/>',
+  book: '<path d="M3 4c3-1 6-1 8.2.6V21C9 19.5 6 19.5 3 20.5zM12.8 4.6C15 3 18 3 21 4v16.5c-3-1-6-1-8.2.5z"/>',
+});
+const GROUPS = ['身体', '代谢', '冷热', '动静', '手上', '成长'];
+// cost > 0 = spends points, cost < 0 = gives points; only: background-only
+const TRAITS = {
+  big: {g: '身体', name: '大块头', cost: 1, icon: 'weight', what: '力量 +1（开局可到 6），移动耗体力 ×1.1'},
+  athlete: {g: '身体', name: '运动员', cost: 2, icon: 'run', what: '体力上限 +10，移动耗体力 ×0.9'},
+  sturdy: {g: '身体', name: '体质好', cost: 2, icon: 'heart', what: '最大生命 +2，自然回血 ×1.2'},
+  lands: {g: '身体', name: '落地稳', cost: 1, icon: 'down', what: '摔落伤害 ×0.8'},
+  frail: {g: '身体', name: '体弱', cost: -2, icon: 'heart', what: '最大生命 −2，体力恢复 ×0.9'},
+  smoker: {g: '身体', name: '烟瘾', cost: -1, icon: 'cig', what: '体力上限 −10'},
+  iron_gut: {g: '代谢', name: '铁胃', cost: 1, icon: 'bowl', what: '喝生水生病 ×0.5，饥饿 ×0.95'},
+  weak_gut: {g: '代谢', name: '肠胃弱', cost: -1, icon: 'bowl', what: '喝生水生病 ×1.5'},
+  thirsty: {g: '代谢', name: '容易渴', cost: -1, icon: 'drop', what: '口渴 ×1.2'},
+  hungry: {g: '代谢', name: '饭量大', cost: -1, icon: 'bowl', what: '饥饿 ×1.2'},
+  cold_hardy: {g: '冷热', name: '耐寒', cost: 1, icon: 'snow', what: '冷阈值低 1 °C'},
+  heat_hardy: {g: '冷热', name: '耐热', cost: 1, icon: 'sun', what: '热阈值高 1 °C'},
+  cold_weak: {g: '冷热', name: '怕冷', cost: -1, icon: 'snow', what: '冷阈值高 1 °C'},
+  heat_weak: {g: '冷热', name: '怕热', cost: -1, icon: 'sun', what: '热阈值低 1 °C'},
+  quiet: {g: '动静', name: '轻手轻脚', cost: 1, icon: 'foot', what: '脚步声 ×0.7'},
+  unseen: {g: '动静', name: '不显眼', cost: 1, icon: 'eye', what: '被感染者发现 ×0.8'},
+  keen_ear: {g: '动静', name: '耳朵灵', cost: 1, icon: 'ear', what: '听力 ×1.2'},
+  heavy: {g: '动静', name: '脚步重', cost: -1, icon: 'foot', what: '脚步声 ×1.3'},
+  obvious: {g: '动静', name: '显眼', cost: -1, icon: 'eye', what: '被感染者发现 ×1.2'},
+  deaf: {g: '动静', name: '耳背', cost: -1, icon: 'ear', what: '耳鸣 ×0.7，听力 ×0.8'},
+  nimble: {g: '手上', name: '手脚麻利', cost: 1, icon: 'hand', what: '逐格搜索 40 → 32 tick'},
+  mech: {g: '手上', name: '会修机器', cost: 1, icon: 'gear', what: '拉绳、摇把绿区 ×1.25'},
+  rough: {g: '手上', name: '干惯粗活', cost: 1, icon: 'saw', what: '劈柴、挖掘耗体力 ×0.85'},
+  clumsy: {g: '手上', name: '手笨', cost: -1, icon: 'hand', what: '所有 QTE 绿区 ×0.8'},
+  fast: {g: '成长', name: '学得快', cost: 2, icon: 'book', what: '成长经验 ×1.3'},
+  sporty: {g: '成长', name: '爱运动', cost: 1, icon: 'run', what: '力量、体能成长 ×1.3'},
+  trained: {g: '成长', name: '受过枪械训练', cost: 2, icon: 'pistol', what: '枪械三项开局 3 级（有基础换弹）'},
+  hunted: {g: '成长', name: '打过猎', cost: 1, icon: 'rifle', what: '长枪、霰弹枪开局 3 级'},
+  slow: {g: '成长', name: '学得慢', cost: -1, icon: 'book', what: '成长经验 ×0.8'},
+  gunshy: {g: '成长', name: '怕开枪', cost: -2, icon: 'pistol', what: '枪械最高 3 级'},
+  served: {g: '成长', name: '服过役', cost: 0, only: true, icon: 'tag', what: '枪械三项开局 4 级（熟练换弹）'},
+};
+for (const t of Object.values(TRAITS)) t.pol = t.cost < 0 ? 'bad' : 'good';
+const PAIRS = [['cold_hardy', 'cold_weak'], ['heat_hardy', 'heat_weak'], ['nimble', 'clumsy'], ['quiet', 'heavy'], ['unseen', 'obvious'], ['iron_gut', 'weak_gut'],
+  ['sturdy', 'frail'], ['athlete', 'frail'], ['big', 'frail'], ['keen_ear', 'deaf'], ['fast', 'slow'], ['trained', 'gunshy'], ['hunted', 'gunshy'], ['served', 'gunshy']];
+const excl = (a, b) => PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+const BACKGROUNDS = [
+  {id: 'plain', name: '普通人', icon: 'person', line: '没什么特别的，点数最多。', traits: [], budget: 6},
+  {id: 'forest', name: '林区住户', icon: 'tree', line: '住在林边，劈柴修房都自己来。', traits: ['cold_hardy', 'rough'], budget: 3},
+  {id: 'trucker', name: '卡车司机', icon: 'truck', line: '跑了二十年州道，车坏了自己修。', traits: ['mech', 'smoker'], budget: 4},
+  {id: 'clerk', name: '便利店店员', icon: 'shop', line: '加油站夜班，手脚快。', traits: ['nimble'], budget: 4},
+  {id: 'veteran', name: '退伍军人', icon: 'tag', line: '服过两期役，回来在县里当保安。', traits: ['served', 'deaf'], budget: 2},
+  {id: 'hunter', name: '猎人', icon: 'scope', line: '每年秋天进山，长枪用得比手枪熟。', traits: ['hunted', 'quiet'], budget: 3},
+  {id: 'nurse', name: '护士', icon: 'cross', line: '县医院急诊科，夜班多。', traits: ['iron_gut'], budget: 4},
+  {id: 'mechanic', name: '汽修工', icon: 'wrench', line: '镇上修车铺的老师傅。', traits: ['mech'], budget: 4},
+];
+const SCENES = [
+  {id: 'home', name: '溪谷老宅', icon: 'home', line: '林子里的老宅，从前廊醒来。', note: '推荐：林区住户', solo: true},
+  {id: 'road', name: '公路路肩', icon: 'road', line: '州道外侧，车坏在路边。', note: '推荐：卡车司机'},
+  {id: 'station', name: '加油站 / 便利店', icon: 'pump', line: '路口的加油站，夜班刚结束。', note: '推荐：便利店店员'},
+  {id: 'wild', name: '野外', icon: 'pine', line: '随机的荒野。', note: ''},
+];
+
+// the state shown: Forest dweller (budget 3, cold-hardy + rough work locked); Strength 3 -> 4 (1 point), Quiet (1 point), Heat-weak (+1): 2 of 4 left
+const PICK = {bg: 'forest', body: [4, 3], traits: ['heat_weak', 'quiet'], scene: 'home', hover: 'unseen'};
+const bgOf = id => BACKGROUNDS.find(b => b.id === id);
+const LOAD = s => 24 + (s - 1) * 3, STAM = [85, 92, 100, 108, 115, 120, 125], REGEN = [0.85, 0.92, 1, 1.08, 1.15, 1.2, 1.25];
+const has = (bg, k) => bg.traits.includes(k) || PICK.traits.includes(k);
+const blocked = (bg, k) => !has(bg, k) && [...bg.traits, ...PICK.traits].some(p => excl(p, k));
+const points = bg => {
+  const got = PICK.traits.reduce((n, k) => n + Math.max(0, -TRAITS[k].cost), 0);
+  const spent = PICK.traits.reduce((n, k) => n + Math.max(0, TRAITS[k].cost), 0) + (PICK.body[0] - 3) + (PICK.body[1] - 3);
+  return {total: bg.budget + got, got, left: bg.budget + got - spent};
+};
+const tempRange = bg => `${14 - (has(bg, 'cold_hardy') ? 1 : 0) + (has(bg, 'cold_weak') ? 1 : 0)}–${24 + (has(bg, 'heat_hardy') ? 1 : 0) - (has(bg, 'heat_weak') ? 1 : 0)} °C`;
+const gunStart = bg => has(bg, 'served') ? 4 : has(bg, 'trained') ? 3 : 1;
+const tier = lv => lv <= 1 ? '新手' : lv <= 3 ? '有基础' : '熟练';
+const costText = (t, fromBg) => fromBg ? '背景' : t.cost > 0 ? `花 ${t.cost}` : `给 ${-t.cost}`;
+
+// ---------- pieces ----------
+const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
+// body levels 1..7: white up to the default 3, amber above it; 6 and 7 (growth only) dashed
+function bodyPips(lv, w = 24) {
+  let h = '<span class="pips">';
+  for (let i = 0; i < 7; i++) {
+    const cls = i < Math.min(lv, 3) ? 'on' : i < lv ? 'add' : '';
+    h += `<span class="pip ${cls}" style="width:${w}px;${i >= 5 && !cls ? 'border-style:dashed;background:transparent' : ''}"></span>`;
+  }
+  return h + '</span>';
+}
+// growth levels 0..5, read-only
+function growPips(lv, w = 18) {
+  let h = '<span class="pips" style="gap:4px">';
+  for (let i = 0; i < 5; i++) h += `<span class="pip ${i < lv ? 'on' : ''}" style="width:${w}px;height:10px"></span>`;
+  return h + '</span>';
+}
+function badge(k, size = 40, dim = false) {
+  const t = TRAITS[k];
+  return `<span class="badge" style="width:${size}px;height:${size}px;background:${COL[t.pol]};opacity:${dim ? .35 : 1}">${svg(t.icon)}</span>`;
+}
+const bgTraitText = (bg, sep = ' · ') => bg.traits.length ? bg.traits.map(k => TRAITS[k].name).join(sep) : '无固定特质';
+// the traits a list shows: every pickable one, plus background-only ones the background gives
+const listed = (bg, g) => Object.keys(TRAITS).filter(k => TRAITS[k].g === g && (!TRAITS[k].only || bg.traits.includes(k)))
+  .sort((a, b) => (TRAITS[a].cost < 0) - (TRAITS[b].cost < 0));
+const lock = '<svg viewBox="0 0 24 24" fill="#A8A49C" style="width:15px;height:15px;vertical-align:-2px;margin-right:3px"><path d="M7 10V7a5 5 0 0 1 10 0v3h2v12H5V10zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>';
+function backdrop(screen, img, shade) {
+  screen.appendChild(el(`<div class="bg" style="background-image:url('${img}')"></div>`));
+  screen.appendChild(el(`<div class="shade" style="background:${shade}"></div>`));
+}
+function sheet(title, lines) {
+  const s = el('<div class="sheet"><div class="screen"></div><div class="caption"></div></div>');
+  s.querySelector('.caption').innerHTML = `<h1>${title}</h1>` + lines.map(l => `<p>${l}</p>`).join('');
+  document.getElementById('out').appendChild(s);
+  return s.querySelector('.screen');
+}
+function add(screen, x, y, w, h, cls, html, style = '') {
+  const d = el(`<div class="abs ${cls}" style="left:${x}px;top:${y}px;width:${w}px;${h ? `height:${h}px;` : ''}${style}">${html}</div>`);
+  screen.appendChild(d);
+  return d;
+}
+
+// ---------- the survivor drawn from a pool skin (front + right side, oblique) ----------
+async function character(canvas, skinUrl, px) {
+  const img = new Image(); img.src = skinUrl; await img.decode();
+  const c = canvas.getContext('2d'); c.imageSmoothingEnabled = false;
+  // oblique view: one texel of depth goes (DX, DY) texels on screen, so the model's right side and the tops show
+  const DX = -0.55, DY = -0.32;
+  // the model spans x -4..12 and y 0..32 (texels), depth 8 at the head; centre it on the canvas
+  const ox = canvas.width / px / 2 - (-4 + 8 * DX + 12) / 2, oy = canvas.height / px / 2 - (8 * DY + 32) / 2;
+  // a box: front face at (x, y) w x h texels, d deep; uv corners of its front, right-side and top faces
+  function box(x, y, w, h, d, front, side, top, inflate = 0) {
+    const s = px, X = (ox + x - inflate) * s, Y = (oy + y - inflate) * s;
+    const fw = (w + 2 * inflate) / w, fh = (h + 2 * inflate) / h, fd = (d + 2 * inflate) / d;
+    if (side) {   // u: 0 at the back, d at the front edge
+      c.save();
+      c.setTransform(-DX * s * fd, -DY * s * fd, 0, s * fh, X, Y);
+      c.translate(-d, 0);
+      c.drawImage(img, side[0], side[1], d, h, 0, 0, d, h);
+      c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(0, 0, d, h);
+      c.restore();
+    }
+    if (top) {    // v: 0 at the back, d at the front edge
+      c.save();
+      c.setTransform(s * fw, 0, -DX * s * fd, -DY * s * fd, X, Y);
+      c.translate(0, -d);
+      c.drawImage(img, top[0], top[1], w, d, 0, 0, w, d);
+      c.fillStyle = 'rgba(255,255,255,0.07)'; c.fillRect(0, 0, w, d);
+      c.restore();
+    }
+    c.drawImage(img, front[0], front[1], w, h, X, Y, w * s * fw, h * s * fh);
+  }
+  // back to front: left leg, right leg, body, left arm, right arm, head; the outer layer slightly inflated
+  box(4, 20, 4, 12, 4, [20, 52], null, null); box(4, 20, 4, 12, 4, [4, 52], null, null, 0.25);
+  box(0, 20, 4, 12, 4, [4, 20], [0, 20], null); box(0, 20, 4, 12, 4, [4, 36], [0, 36], null, 0.25);
+  box(0, 8, 8, 12, 4, [20, 20], null, [20, 16]); box(0, 8, 8, 12, 4, [20, 36], null, [20, 32], 0.25);
+  box(8, 8, 4, 12, 4, [36, 52], null, [36, 48]); box(8, 8, 4, 12, 4, [52, 52], null, [52, 48], 0.25);
+  box(-4, 8, 4, 12, 4, [44, 20], [40, 20], [44, 16]); box(-4, 8, 4, 12, 4, [44, 36], [40, 36], [44, 32], 0.25);
+  box(0, 0, 8, 8, 8, [8, 8], [0, 8], [8, 0]); box(0, 0, 8, 8, 8, [40, 8], [32, 8], [40, 0], 0.5);
+}
+
+// ---------- A1: New World, one centred card ----------
+function newWorldA() {
+  const s = sheet('方案 A · 新的世界：居中一张卡片', [
+    '点"新建世界"进这一页，代替原版的建世界界面。AFL 只有一种世界（联邦六州），所以没有世界类型、预设、数据包这些选项。',
+    '一页里：世界名称、种子（空着就随机）、幸存者模式（普通 / 困难，选后不能改）、开局场景（单人选这里；联机时所有人都在这里出生）。',
+    '"更多"里只放允许命令（开发和录视频用）。点"创建世界"生成世界，进去后先出"幸存者"界面（下一张），选完才开始。',
+  ]);
+  backdrop(s, '/design/ui/hud_corner_v1/source/bg_cabin.png', 'radial-gradient(ellipse at 50% 45%, rgba(10,10,10,.15), rgba(10,10,10,.6))');
+  add(s, 60, 46, 600, 0, '', `<span class="key">Esc</span><span class="t d">返回</span>`, 'display:flex;align-items:center');
+  add(s, 0, 46, 1920, 0, '', `<div style="text-align:center;font-size:20px;letter-spacing:8px" class="d">APOCALYPSE · FIRST LIGHT</div>`);
+  const card = add(s, 560, 96, 800, 944, 'panel', '', 'padding:30px 44px');
+  card.innerHTML = `
+    <div style="font-size:40px;margin-bottom:6px">新的世界</div>
+    <div class="d" style="font-size:21px;margin-bottom:18px">世界：联邦六州（AFL 只有这一种世界）</div>
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;margin-bottom:20px">
+      <div><div class="h" style="margin-bottom:10px">世界名称</div><div class="field focus">新的世界<span class="caret"></span></div></div>
+      <div><div class="h" style="margin-bottom:10px">种子</div><div class="field"><span class="o">空着就随机</span></div></div>
+    </div>
+    <div class="h" style="margin-bottom:10px">幸存者模式</div>
+    <div class="seg" style="margin-bottom:8px">
+      <div style="flex:1;padding:16px 20px;border-radius:10px;border:1.5px solid var(--line-hi);background:rgba(232,228,220,.07);position:relative">
+        <div style="display:flex;align-items:center;gap:12px" class="t"><span class="radio on"></span>普通</div>
+        <div class="d" style="font-size:20px;margin-top:6px;padding-left:38px">死了由另一位幸存者接着活。</div>
+        <div style="position:absolute;left:18px;right:18px;bottom:-1.5px;height:3px;border-radius:2px;background:var(--acc)"></div></div>
+      <div style="flex:1;padding:16px 20px;border-radius:10px;border:1.5px solid var(--line)">
+        <div style="display:flex;align-items:center;gap:12px" class="t"><span class="radio"></span>困难</div>
+        <div class="d" style="font-size:20px;margin-top:6px;padding-left:38px">死了，这个世界就结束了。</div></div>
+    </div>
+    <div class="o" style="font-size:19px;margin-bottom:16px">死后随身物品都留在遗体上。选了就不能改。</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="h">开局场景</span>
+      <span class="btn small" style="height:40px">${svg('dice', '#E8E4DC').replace('<svg', '<svg style="width:18px;height:18px;margin-right:8px"')}随机</span></div>
+    <div style="border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:20px">
+      ${SCENES.map((sc, i) => `<div style="display:flex;align-items:center;gap:16px;padding:9px 18px;${i ? 'border-top:1px solid rgba(232,228,220,.12);' : ''}${sc.id === PICK.scene ? 'background:rgba(232,228,220,.07)' : ''}">
+        <span class="radio ${sc.id === PICK.scene ? 'on' : ''}"></span>
+        <span class="badge" style="width:36px;height:36px;background:rgba(232,228,220,.14)">${svg(sc.icon)}</span>
+        <div style="flex:1"><div style="font-size:24px">${sc.name}${sc.solo ? '<span class="tag">只能单人</span>' : ''}</div>
+        <div class="d" style="font-size:19px">${sc.line}</div></div>
+        <div class="o" style="font-size:18px">${sc.note}</div></div>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px" class="d"><span style="font-size:22px">▸ 更多</span><span class="o" style="font-size:19px">允许命令：关</span></div>
+      <div style="display:flex;gap:16px"><span class="btn">取消</span><span class="btn main">创建世界</span></div></div>`;
+}
+
+// ---------- A2: Survivor, three columns ----------
+function survivorA() {
+  const bg = bgOf(PICK.bg), P = points(bg), [str, fit] = PICK.body;
+  const s = sheet('方案 A · 幸存者：三栏（背景 · 机能和特质 · 人）', [
+    '进世界后先出这一页（首位幸存者；人冻在原地，选完才按场景出生）。左边选背景：背景只给固定特质（锁着）和点数预算，背景越强点越少。',
+    '中间：身体机能两项（力量、体能，从 3 起，加一级花 1 点、减一级给 1 点，开局最高 5，虚线的 6、7 级只能进游戏后靠成长涨）；下面是按组分的特质列表，可以滚动，鼠标停在哪个特质上，标题行就写它改了什么。',
+    '特质用 HUD 效果徽章的样子：绿 = 正面（花点），棕 = 负面（给点，最多换 4 点）；互斥的变淡。枪械这类成长开局不能买，右栏只显示起点。确认后不能改。',
+  ]);
+  backdrop(s, '/design/ui/hud_corner_v1/source/bg_cabin.png', 'rgba(10,10,10,.45)');
+  add(s, 60, 40, 900, 0, '', `<div style="display:flex;align-items:center"><span class="key">Esc</span><span class="t d">退出到标题</span>
+    <span style="margin-left:40px;font-size:34px">幸存者</span><span class="d" style="font-size:22px;margin-left:18px">选一个背景，调机能，选特质。</span></div>`);
+  add(s, 1160, 26, 700, 0, '', `<div style="text-align:right"><span class="o" style="font-size:18px;margin-right:18px">背景 ${bg.budget} · 负面特质 +${P.got}</span><span class="d" style="font-size:22px">剩余点数</span>
+    <span style="font-size:52px;margin-left:14px">${P.left}</span><span class="d" style="font-size:26px"> / ${P.total}</span></div>`);
+
+  // backgrounds
+  const list = add(s, 60, 112, 440, 900, 'panel', '', 'padding:18px 0');
+  list.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;padding:0 22px 12px"><span class="h">背景</span>
+    <span class="btn small">${svg('dice', '#E8E4DC').replace('<svg', '<svg style="width:20px;height:20px;margin-right:8px"')}随机</span></div>` +
+    BACKGROUNDS.map(b => {
+      const on = b.id === PICK.bg;
+      return `<div style="position:relative;display:flex;gap:16px;padding:${on ? 15 : 11}px 22px;${on ? 'background:rgba(232,228,220,.08);' : ''}">
+        ${on ? '<div style="position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:2px;background:var(--acc)"></div>' : ''}
+        <span class="badge" style="width:44px;height:44px;background:rgba(232,228,220,${on ? .22 : .12})">${svg(b.icon)}</span>
+        <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:25px">${b.name}</span>
+          <span class="${on ? '' : 'd'}" style="font-size:20px">${b.budget} 点</span></div>
+        ${on ? `<div class="d" style="font-size:19px;margin-top:3px">${b.line}</div>
+          <div style="display:flex;gap:14px;margin-top:8px">${b.traits.map(k => `<span style="display:flex;align-items:center;gap:7px;font-size:19px">${badge(k, 28)}${TRAITS[k].name}</span>`).join('')}</div>`
+        : `<div class="o" style="font-size:18px;margin-top:2px;white-space:nowrap">${bgTraitText(b)}</div>`}</div></div>`;
+    }).join('') +
+    `<div class="o" style="font-size:17px;padding:10px 22px 0">背景的特质锁着，不花点也不给点。</div>`;
+
+  // body
+  const body = add(s, 520, 112, 820, 196, 'panel', '', 'padding:16px 26px');
+  const rowB = (icon, name, lv, read) => `<div style="display:grid;grid-template-columns:28px 64px 34px 216px 34px 1fr;align-items:center;gap:12px;height:56px">
+    <span style="opacity:.75">${svg(icon, '#E8E4DC').replace('<svg', '<svg style="width:26px;height:26px"')}</span>
+    <span style="font-size:24px">${name}</span><span class="pm ${lv <= 1 ? 'off' : ''}">−</span>${bodyPips(lv)}<span class="pm ${lv >= 5 ? 'off' : ''}">+</span>
+    <span class="d" style="font-size:20px;text-align:right;white-space:nowrap">${read}</span></div>`;
+  body.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="h">身体机能</span>
+      <span class="o" style="font-size:18px">从 3 起 · 加一级花 1 点 · 开局最高 5 · 6、7 靠成长</span></div>` +
+    rowB('weight', '力量', str, `舒适负重 ${LOAD(str)} kg · 干活体力 ×${[1.2, 1.1, 1, 0.9, 0.8, 0.75, 0.7][str - 1]}`) +
+    rowB('run', '体能', fit, `体力 ${STAM[fit - 1]} · 恢复 ×${REGEN[fit - 1].toFixed(2)}`);
+
+  // traits, grouped and scrolling
+  const tr = add(s, 520, 324, 820, 688, 'panel', '', 'padding:14px 26px;overflow:hidden');
+  const H = TRAITS[PICK.hover];
+  const cell = k => {
+    const t = TRAITS[k], fromBg = bg.traits.includes(k), picked = has(bg, k), off = blocked(bg, k), hover = k === PICK.hover;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:5px 10px;border-radius:9px;${picked ? 'background:rgba(232,228,220,.08);border:1.5px solid var(--line-hi)' : hover ? 'background:rgba(232,228,220,.045);border:1.5px solid transparent' : 'border:1.5px solid transparent'}">
+      ${badge(k, 32, off)}<div style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:baseline;opacity:${off ? .4 : 1};white-space:nowrap">
+      <span style="font-size:21px">${t.name}</span><span class="d" style="font-size:17px">${fromBg ? lock : ''}${costText(t, fromBg)}</span></div></div>`;
+  };
+  tr.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline"><span class="h">特质</span>
+      <span style="font-size:19px">${H.name} <span class="d">· ${costText(H)} 点 · ${H.what}</span></span></div>
+    <div style="position:absolute;right:8px;top:62px;bottom:14px;width:5px;border-radius:3px;background:rgba(232,228,220,.08)">
+      <div style="height:72%;border-radius:3px;background:rgba(232,228,220,.35)"></div></div>
+    <div style="margin-right:6px">${GROUPS.map(g => `<div style="display:flex;align-items:center;gap:12px;margin:10px 0 4px"><span class="d" style="font-size:18px">${g}</span>
+      <span style="flex:1;height:1px;background:rgba(232,228,220,.12)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px">${listed(bg, g).map(cell).join('')}</div>`).join('')}</div>`;
+
+  // person
+  const pr = add(s, 1360, 112, 500, 900, 'panel', '', 'padding:20px 26px');
+  const g0 = gunStart(bg);
+  pr.innerHTML = `<div style="height:290px;position:relative;border-radius:10px;background:radial-gradient(ellipse at 50% 70%, rgba(232,228,220,.10), rgba(0,0,0,0) 70%)">
+      <canvas id="ch" width="448" height="290"></canvas>
+      <div class="d" style="position:absolute;right:10px;bottom:8px;font-size:18px">拖动转身</div></div>
+    <div class="h" style="margin:10px 0 8px">名字</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px"><span class="btn small" style="border-color:var(--line-hi);background:rgba(232,228,220,.1)">账号名</span><span class="btn small">自定义</span></div>
+    <div class="field">Dev</div>
+    <div class="h" style="margin:14px 0 2px">开局</div>
+    ${[['出生地', SCENES[0].name], ['舒适负重', `${LOAD(str)} kg`], ['体力', `${STAM[fit - 1]}`], ['舒适温度', tempRange(bg)], ['脚步声', '×0.7'], ['枪械', `${tier(g0)}（${g0} 级）`]].map(([k, v]) =>
+      `<div style="display:flex;justify-content:space-between;font-size:21px;padding:1px 0"><span class="d">${k}</span><span>${v}</span></div>`).join('')}
+    <div class="o" style="font-size:17px;margin-top:6px">成长：进游戏后做什么练什么，开局不能买。</div>
+    <div style="position:absolute;left:26px;right:26px;bottom:20px"><div style="display:flex;gap:14px"><span class="btn" style="flex:1">随机</span><span class="btn main" style="flex:2">开始</span></div>
+    <div class="o" style="font-size:17px;text-align:center;margin-top:8px">开始以后不能再改</div></div>`;
+  return () => character(document.getElementById('ch'), '/assets/textures/entity/survivor/m03.png', 8.4);
+}
+
+// ---------- B1: New World, a tall sidebar over the world ----------
+function newWorldB() {
+  const s = sheet('方案 B · 新的世界：左侧竖栏，右边留给画面', [
+    '竖栏贴左边，右边是大背景（以后可以换成老宅、公路的实景或动态镜头），和标题界面同一个布局。',
+    '这一页只有世界本身：名称、种子、幸存者模式。开局场景放到下一页和背景一起选（僵尸毁灭工程的顺序：先选地方，再选人）；联机时由房主在下一页选场景，别人只选人。',
+    '"创建世界"在竖栏底部，旁边写一句"下一步：幸存者"，让玩家知道后面还有一页。',
+  ]);
+  s.appendChild(el(`<div class="bg" style="background-image:url('/design/ui/hud_corner_v1/source/bg_cabin.png');filter:blur(2.5px) brightness(.72) saturate(.8);background-size:140% auto;background-position:30% 0%;inset:-10px"></div>`));
+  s.appendChild(el(`<div class="shade" style="background:linear-gradient(90deg, rgba(8,9,10,.85) 0%, rgba(8,9,10,.6) 34%, rgba(8,9,10,.05) 62%, rgba(8,9,10,.25) 100%)"></div>`));
+  const bar = add(s, 0, 0, 720, 1080, '', '', 'padding:70px 80px;background:linear-gradient(90deg, rgba(16,16,16,.55), rgba(16,16,16,.35));border-right:1.5px solid var(--line)');
+  bar.innerHTML = `
+    <div class="d" style="font-size:19px;letter-spacing:7px;margin-bottom:60px">APOCALYPSE · FIRST LIGHT</div>
+    <div style="font-size:54px;margin-bottom:8px">新的世界</div>
+    <div class="d" style="font-size:22px;margin-bottom:54px">联邦六州 · 1.20.1</div>
+    <div class="h" style="margin-bottom:10px">世界名称</div><div class="field focus" style="margin-bottom:30px">新的世界<span class="caret"></span></div>
+    <div class="h" style="margin-bottom:10px">种子</div><div class="field" style="margin-bottom:8px"><span class="o">空着就随机</span></div>
+    <div class="o" style="font-size:18px;margin-bottom:34px">同一个种子，地形、公路和城镇都一样。</div>
+    <div class="h" style="margin-bottom:12px">幸存者模式</div>
+    <div style="display:flex;background:rgba(8,9,10,.5);border:1.5px solid var(--line);border-radius:12px;padding:5px;margin-bottom:14px">
+      <div style="flex:1;height:54px;border-radius:9px;background:rgba(232,228,220,.92);color:#16181A;display:flex;align-items:center;justify-content:center;font-size:25px">普通</div>
+      <div style="flex:1;height:54px;display:flex;align-items:center;justify-content:center;font-size:25px" class="d">困难</div></div>
+    <div style="font-size:21px;margin-bottom:4px">死了由另一位幸存者接着活。</div>
+    <div class="o" style="font-size:18px;margin-bottom:30px">死后随身物品都留在遗体上。选了就不能改。</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:0"><span class="check"></span><span style="font-size:22px">允许命令</span><span class="o" style="font-size:18px">开发、录视频用</span></div>`;
+  add(s, 80, 900, 560, 0, '', `<div style="display:flex;gap:16px"><span class="btn">取消</span><span class="btn main" style="flex:1">创建世界</span></div>
+    <div class="d" style="font-size:19px;margin-top:14px;text-align:right">下一步：幸存者 ›</div>`);
+  add(s, 1300, 990, 560, 0, '', `<div class="d" style="text-align:right;font-size:19px">背景：以后换成开局场景的实景</div>`);
+}
+
+// ---------- B2: Survivor, the person in the middle, backgrounds as cards ----------
+function survivorB() {
+  const bg = bgOf(PICK.bg), P = points(bg), [str, fit] = PICK.body;
+  const s = sheet('方案 B · 幸存者：人站中间，背景是底部一排卡片', [
+    '像选角色的界面：人站在正中，底下一排背景卡片（图标、名字、一句话、固定特质、点数预算），点一张人就换装、数值跟着变。顶上一行选出生地（联机时房主定）。',
+    '左栏：身体机能两项（加减号、点条、读数；虚线的 6、7 级只能靠成长涨），下面只读地列出成长的起点（枪械三项的等级和换弹档位）和开局汇总。',
+    '右栏：按组分的特质列表，可以滚动（底部渐隐 + 滚动条）；鼠标停在哪个特质上，标题下面写它改了什么。比方案 A 人更大、更有仪式感，但特质列表窄，一屏看到的少。',
+  ]);
+  backdrop(s, '/design/ui/new_world_v1/source/bg_forest.png', 'radial-gradient(ellipse at 50% 40%, rgba(8,9,10,.0), rgba(8,9,10,.62) 70%)');
+  add(s, 60, 40, 700, 0, '', `<div style="display:flex;align-items:center"><span class="key">Esc</span><span class="t d">退出到标题</span></div>`);
+  add(s, 0, 30, 1920, 0, '', `<div style="text-align:center"><div style="font-size:40px">幸存者</div></div>`);
+  add(s, 1160, 26, 700, 0, '', `<div style="text-align:right"><span class="o" style="font-size:18px;margin-right:18px">背景 ${bg.budget} · 负面特质 +${P.got}</span><span class="d" style="font-size:22px">剩余点数</span>
+    <span style="font-size:52px;margin-left:14px">${P.left}</span><span class="d" style="font-size:26px"> / ${P.total}</span></div>`);
+  add(s, 460, 94, 1000, 0, '', `<div style="display:flex;justify-content:center;gap:10px;white-space:nowrap">${SCENES.map(sc =>
+    `<span style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:22px;font-size:20px;border:1.5px solid ${sc.id === PICK.scene ? 'var(--line-hi)' : 'var(--line)'};background:${sc.id === PICK.scene ? 'rgba(232,228,220,.14)' : 'var(--back)'};color:${sc.id === PICK.scene ? 'var(--text)' : 'var(--dim)'}">
+     ${svg(sc.icon, sc.id === PICK.scene ? '#E8E4DC' : '#A8A49C').replace('<svg', '<svg style="width:20px;height:20px"')}${sc.name}</span>`).join('')}</div>
+     <div class="o" style="text-align:center;font-size:18px;margin-top:8px">出生地 · 联机时由房主定</div>`);
+
+  // person
+  s.appendChild(el(`<canvas id="ch" class="abs" width="560" height="580" style="left:680px;top:176px"></canvas>`));
+  add(s, 760, 740, 400, 0, '', `<div style="text-align:center"><div style="font-size:30px">Dev</div><div class="d" style="font-size:19px;margin-top:4px">账号名 · <u>改名</u></div></div>`);
+
+  // body, growth start, summary: left
+  const left = add(s, 60, 180, 560, 0, 'panel', '', 'padding:16px 24px 18px');
+  const row = (icon, name, lv, read) => `<div style="display:grid;grid-template-columns:24px 48px 30px 192px 30px 1fr;align-items:center;gap:9px;height:46px">
+    <span style="opacity:.7">${svg(icon, '#E8E4DC').replace('<svg', '<svg style="width:22px;height:22px"')}</span>
+    <span style="font-size:21px">${name}</span><span class="pm" style="width:30px;height:30px;font-size:20px">−</span>${bodyPips(lv, 22)}<span class="pm ${lv >= 5 ? 'off' : ''}" style="width:30px;height:30px;font-size:20px">+</span>
+    <span class="d" style="font-size:17px;text-align:right;white-space:nowrap">${read}</span></div>`;
+  const g0 = gunStart(bg);
+  const grow = (icon, name, lv) => `<div style="display:grid;grid-template-columns:24px 72px 1fr auto;align-items:center;gap:10px;height:34px">
+    <span style="opacity:.6">${svg(icon, '#E8E4DC').replace('<svg', '<svg style="width:20px;height:20px"')}</span>
+    <span style="font-size:19px">${name}</span>${growPips(lv)}<span class="d" style="font-size:17px">${lv} 级 · ${tier(lv)}换弹</span></div>`;
+  left.innerHTML = `<div class="h" style="font-size:20px">身体机能</div>` +
+    row('weight', '力量', str, `${LOAD(str)} kg`) + row('run', '体能', fit, `体力 ${STAM[fit - 1]}`) +
+    `<div class="o" style="font-size:16px;margin:2px 0 10px">从 3 起，加一级花 1 点；虚线的 6、7 级靠成长</div>
+    <div style="border-top:1px solid rgba(232,228,220,.14);padding-top:10px;display:flex;justify-content:space-between;align-items:baseline">
+      <span class="h" style="font-size:20px">成长 · 起点</span><span class="o" style="font-size:16px">进游戏后做什么练什么</span></div>` +
+    grow('pistol', '手枪', g0) + grow('rifle', '长枪', has(bg, 'hunted') ? Math.max(g0, 3) : g0) + grow('shotgun', '霰弹枪', has(bg, 'hunted') ? Math.max(g0, 3) : g0) +
+    `<div style="border-top:1px solid rgba(232,228,220,.14);margin-top:10px;padding-top:8px">` +
+    [['舒适负重', `${LOAD(str)} kg`], ['体力', `${STAM[fit - 1]} · 恢复 ×${REGEN[fit - 1].toFixed(2)}`], ['舒适温度', tempRange(bg)], ['脚步声', '×0.7']].map(([k, v]) =>
+      `<div style="display:flex;justify-content:space-between;font-size:20px;padding:2px 0"><span class="d">${k}</span><span>${v}</span></div>`).join('') + '</div>';
+
+  // traits: right, grouped, scrolling
+  const right = add(s, 1300, 180, 560, 620, 'panel', '', 'padding:16px 24px 0;overflow:hidden');
+  const H = TRAITS[PICK.hover];
+  const chip = k => {
+    const t = TRAITS[k], fromBg = bg.traits.includes(k), picked = has(bg, k), off = blocked(bg, k), hover = k === PICK.hover;
+    return `<div style="display:flex;align-items:center;gap:8px;height:38px;padding:0 8px;border-radius:8px;${picked ? 'background:rgba(232,228,220,.09);border:1.5px solid var(--line-hi)' : hover ? 'background:rgba(232,228,220,.045);border:1.5px solid transparent' : 'border:1.5px solid transparent'}">
+      ${badge(k, 28, off)}<div style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:baseline;white-space:nowrap;opacity:${off ? .4 : 1}">
+      <span style="font-size:19px">${t.name}</span><span class="d" style="font-size:15px">${fromBg ? lock : ''}${costText(t, fromBg)}</span></div></div>`;
+  };
+  right.innerHTML = `<div class="h" style="font-size:20px">特质</div>
+    <div style="font-size:17px;margin:4px 0 2px;white-space:nowrap;overflow:hidden">${H.name} <span class="d">· ${costText(H)} 点 · ${H.what}</span></div>
+    <div style="position:absolute;right:7px;top:84px;bottom:12px;width:5px;border-radius:3px;background:rgba(232,228,220,.08)">
+      <div style="height:58%;border-radius:3px;background:rgba(232,228,220,.35)"></div></div>
+    <div style="margin-right:8px">${GROUPS.map(g => `<div style="display:flex;align-items:center;gap:10px;margin:8px 0 3px"><span class="d" style="font-size:16px">${g}</span>
+      <span style="flex:1;height:1px;background:rgba(232,228,220,.12)"></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 8px">${listed(bg, g).map(chip).join('')}</div>`).join('')}</div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:70px;border-radius:0 0 12px 12px;background:linear-gradient(rgba(16,16,16,0),rgba(16,16,16,.9))"></div>`;
+
+  // background cards
+  const W = 176, G = 12, X0 = 60;
+  BACKGROUNDS.forEach((b, i) => {
+    const on = b.id === PICK.bg;
+    add(s, X0 + i * (W + G), on ? 818 : 830, W, on ? 212 : 200, 'panel', `
+      <div style="display:flex;align-items:center;gap:10px"><span class="badge" style="width:40px;height:40px;background:rgba(232,228,220,${on ? .24 : .12})">${svg(b.icon)}</span>
+      <span style="font-size:${b.name.length > 4 ? 19 : 22}px;line-height:1.1;white-space:nowrap">${b.name}</span></div>
+      <div class="d" style="font-size:16px;margin-top:10px;line-height:1.4;height:46px;overflow:hidden">${b.line}</div>
+      <div class="${on ? '' : 'd'}" style="font-size:16px;margin-top:6px;line-height:1.45;height:46px">${b.traits.length ? b.traits.map(k => `<span style="white-space:nowrap;margin-right:10px">${TRAITS[k].name}</span>`).join(' ') : '<span class="o">无固定特质</span>'}</div>
+      <div class="${on ? '' : 'd'}" style="font-size:16px;margin-top:2px">${b.budget} 点</div>
+      ${on ? '<div style="position:absolute;left:20px;right:20px;bottom:-1.5px;height:4px;border-radius:2px;background:var(--acc)"></div>' : ''}`,
+      `padding:14px 14px;${on ? 'border-color:var(--line-hi);background:rgba(30,33,36,.8)' : ''}`);
+  });
+  add(s, X0 + 8 * (W + G) + 8, 830, 1860 - (X0 + 8 * (W + G) + 8), 200, '', `
+    <span class="btn small" style="width:100%;margin-bottom:12px">${svg('dice', '#E8E4DC').replace('<svg', '<svg style="width:20px;height:20px;margin-right:8px"')}随机</span>
+    <span class="btn main" style="width:100%;height:84px;font-size:30px">开始</span>
+    <div class="o" style="font-size:16px;text-align:center;margin-top:10px">开始以后不能再改</div>`);
+  return () => character(document.getElementById('ch'), '/assets/textures/entity/survivor/m03.png', 15.5);
+}
+
+(async () => {
+  await document.fonts.load("26px 'AFL Sans'");
+  const after = ({A1: newWorldA, A2: survivorA, B1: newWorldB, B2: survivorB})[S]();
+  if (after) await after();
+  document.body.dataset.ready = '1';
+})();
+</script>
+</body>
+</html>

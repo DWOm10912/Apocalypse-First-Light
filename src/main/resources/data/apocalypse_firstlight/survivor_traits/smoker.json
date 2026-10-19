@@ -1,0 +1,11 @@
+{
+  "group": "body",
+  "cost": -1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:max_stamina",
+      "op": "add",
+      "value": -10
+    }
+  ]
+}

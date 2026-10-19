@@ -77,7 +77,8 @@ public final class GunshotExposureTracker {
             double distance = listener == shooter
                     ? 0.0
                     : listener.getEyePosition().distanceTo(sourcePosition);
-            double shotExposure = GunshotTinnitusProfile.shotExposure(acousticRadius, distance);
+            double shotExposure = GunshotTinnitusProfile.shotExposure(acousticRadius, distance)
+                    * com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(listener, com.antaurora.apofirstlight.registry.AflAttributes.TINNITUS, 0); // survivor attribute
             if (shotExposure <= 0.0) {
                 continue;
             }

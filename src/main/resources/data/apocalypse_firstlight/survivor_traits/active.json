@@ -1,0 +1,11 @@
+{
+  "group": "growth",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:body_growth_xp",
+      "op": "multiply",
+      "value": 1.3
+    }
+  ]
+}

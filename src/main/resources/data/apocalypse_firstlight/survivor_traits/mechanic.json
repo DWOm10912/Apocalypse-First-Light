@@ -1,0 +1,11 @@
+{
+  "group": "hands",
+  "cost": 1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:mech_qte_window",
+      "op": "multiply",
+      "value": 1.25
+    }
+  ]
+}

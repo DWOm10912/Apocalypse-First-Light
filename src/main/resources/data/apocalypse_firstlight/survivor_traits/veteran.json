@@ -1,0 +1,10 @@
+{
+  "group": "growth",
+  "cost": 0,
+  "background_only": true,
+  "growth_start": {
+    "firearms_pistol": 7,
+    "firearms_long": 7,
+    "firearms_shotgun": 7
+  }
+}

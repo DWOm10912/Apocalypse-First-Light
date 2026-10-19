@@ -159,8 +159,10 @@ public final class NativeGunActions {
         state.clip = reload ? item.reloadClip(held, state.reloadStartedEmpty)
                 : item.fireClip(state.lastShot);
         // started while aiming: the clip's ADS variant (<clip>_ads, same length and beats; docs/dev/p9_reload_inspect_v1.md
-        // 2.7) when the gun has one, and the client keeps the aim through it (NativeGunAds)
+        // 2.7) when the gun has one, and the client keeps the aim through it (NativeGunAds); only at the practised tier
+        // (growth Lv 7+, gun proficiency plan section 2 D): below it the plain clip plays and the aim drops for it
         if (reload && com.antaurora.apofirstlight.skeleton.SkeletonPackets.aiming(player) && item.animationAsset() != null
+                && com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunTier(player, definition.weaponClass()) >= 2
                 && NativeGunAnimations.hasClip(item.animationAsset(), state.clip + ADS_SUFFIX))
             state.clip += ADS_SUFFIX;
         if (reload && item.animationAsset() != null) state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
@@ -245,7 +247,8 @@ public final class NativeGunActions {
             // The authored magazine-in time is part of each gun's presentation definition (or the magazine's override).
             long ammoCommitTick = state.start + state.magInTick;
             if (!state.inPlayed && now >= ammoCommitTick) {
-                NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition());
+                if (NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition()) > 0)
+                    com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunReload(player, state.item.definition().weaponClass());
                 syncInventory(player);
                 state.inPlayed = true;
             }
@@ -255,7 +258,8 @@ public final class NativeGunActions {
                 state.outPlayed = true;
             }
             if (!state.inPlayed && now >= state.start + state.item.definition().magInTick()) {
-                NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition());
+                if (NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition()) > 0)
+                    com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunReload(player, state.item.definition().weaponClass());
                 syncInventory(player);
                 sound(player, AflSounds.NATIVE_GUN_MAGAZINE_IN.get());
                 state.inPlayed = true;

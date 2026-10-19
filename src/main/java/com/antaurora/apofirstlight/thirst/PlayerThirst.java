@@ -111,7 +111,9 @@ public final class PlayerThirst {
         var c = ThirstConfig.get();
         var s = state(player);
         s.value = Math.min(c.max, s.value + amount);
-        if (raw && player.getRandom().nextDouble() < (sip ? c.sickness.chanceSip : c.sickness.chanceBottle)) infect(player, s, c);
+        double chance = (sip ? c.sickness.chanceSip : c.sickness.chanceBottle)
+                * com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.RAW_WATER_SICKNESS, 0); // survivor attribute
+        if (raw && player.getRandom().nextDouble() < chance) infect(player, s, c);
         double dose = c.dose(contamination, sip);
         if (dose > 0) player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> exposure.addDose(dose));
         s.forceSync = true;
@@ -196,6 +198,7 @@ public final class PlayerThirst {
                 double drain = c.basePerHour / 72000.0 + spent * c.exertionPer100Stamina / 100.0;
                 if (sick) drain *= c.sickness.thirstMultiplier;
                 drain *= com.antaurora.apofirstlight.temperature.PlayerTemperature.thirstMultiplier(player); // heat stages
+                drain *= com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.THIRST_RATE, 0); // survivor attribute
                 s.value = Math.max(0, s.value - drain);
             }
             if (sick) {

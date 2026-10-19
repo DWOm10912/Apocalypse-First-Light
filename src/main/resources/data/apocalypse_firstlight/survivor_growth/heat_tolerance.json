@@ -1,0 +1,40 @@
+{
+  "group": "climate",
+  "order": 11,
+  "default": 0,
+  "max": 10,
+  "levels": {
+    "apocalypse_firstlight:heat_threshold": {
+      "op": "add",
+      "values": [
+        0.3,
+        0.6,
+        1,
+        1.3,
+        1.6,
+        2,
+        2.3,
+        2.6,
+        3,
+        3.3
+      ]
+    }
+  },
+  "training": {
+    "to_next": {
+      "0": 30,
+      "1": 45,
+      "2": 60,
+      "3": 90,
+      "4": 120,
+      "5": 165,
+      "6": 225,
+      "7": 300,
+      "8": 400,
+      "9": 520
+    },
+    "xp": {
+      "exposed_minute": 2
+    }
+  }
+}

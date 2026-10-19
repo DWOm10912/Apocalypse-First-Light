@@ -93,11 +93,40 @@ public final class Survivors {
         createScreenChoice = mode;
     }
 
+    /** The start scene picked on the AFL Create World page (client), waiting like the mode; null clears it. */
+    @Nullable
+    private static volatile String createScreenScene;
+
+    public static void setCreateScreenScene(@Nullable String scene) {
+        createScreenScene = scene;
+    }
+
+    /** The host's survivor setup made before the world exists (SurvivorSetupFlow.encode), waiting like the mode; null clears it. */
+    @Nullable
+    private static volatile net.minecraft.nbt.CompoundTag createScreenSetup;
+
+    public static void setCreateScreenSetup(@Nullable net.minecraft.nbt.CompoundTag setup) {
+        createScreenSetup = setup;
+    }
+
     /**
      * World creation (LevelEvent.CreateSpawnPosition): a fresh single-player world takes the mode picked on the Create
      * World screen, if any (vanilla hardcore stays HARD). The pick is used once.
      */
     static void applyCreateScreenChoice(MinecraftServer server, SurvivorWorldData data) {
+        String scene = createScreenScene;
+        createScreenScene = null;
+        net.minecraft.nbt.CompoundTag setup = createScreenSetup;
+        createScreenSetup = null;
+        if (setup != null && !server.isDedicatedServer() && data.hostSetup == null) {
+            data.hostSetup = setup;
+            ApocalypseFirstLight.LOGGER.info("[AFL Survivor] host setup {} waits for the first login (made before the world)",
+                    setup.getString("Background"));
+        }
+        if (scene != null && !server.isDedicatedServer() && data.scene == null) {
+            data.scene = SurvivorScenes.byId(scene).id();
+            ApocalypseFirstLight.LOGGER.info("[AFL Survivor] start scene {} (chosen on the Create World page)", data.scene);
+        }
         SurvivorMode chosen = createScreenChoice;
         createScreenChoice = null;
         if (chosen == null || chosen == SurvivorMode.UNSET || server.isDedicatedServer() || data.mode != SurvivorMode.UNSET) {
@@ -148,12 +177,14 @@ public final class Survivors {
         SurvivorRecord record = new SurvivorRecord(UUID.nameUUIDFromBytes(longBytes(seed, lineage.playerId)), index,
                 player.getGameProfile().getName(), "", seed, SurvivorRecord.State.PENDING);
         record.named = false;
+        // the setup screen confirms it (SurvivorSetupFlow); until then an ordinary person, held
+        record.setup = SurvivorSetup.CHOOSING;
         return record;
     }
 
     /**
      * A new successor for the next career index: a person from the roster (SurvivorRoster) not yet seen in this world,
-     * with that person's name, sex and skin; reserved fields stay empty.
+     * with that person's name, sex and skin, and a background and body levels from the same seed (SurvivorSetup).
      */
     static SurvivorRecord roll(MinecraftServer server, SurvivorLineage lineage) {
         int index = lineage.nextLifeIndex();
@@ -163,6 +194,7 @@ public final class Survivors {
                 person.first(), person.last(), seed, SurvivorRecord.State.PENDING);
         record.sex = person.sex();
         record.setAppearance(SurvivorSkins.of(person));
+        SurvivorSetup.rollSuccessor(record, SurvivorCatalog.get(), seed);
         return record;
     }
 
@@ -286,6 +318,8 @@ public final class Survivors {
             next = lineage.pending();
             if (next == null) return;
         }
+        // a successor rolled before setups existed gets its background and body from its own seed now
+        if (next.setup == null) SurvivorSetup.rollSuccessor(next, SurvivorCatalog.get(), next.rollSeed);
         SurvivorSpawns.Start start = SurvivorSpawns.resolve(server, lineage, current, next);
         float yaw = (float) ((SurvivorNames.stream(next.rollSeed, 999) >>> 40) % 360L);
         if (start != null) {
@@ -315,6 +349,7 @@ public final class Survivors {
         flushPending = true;
         announce(player, next);
         SurvivorIdentity.changed(player);
+        SurvivorSetupFlow.sendSheet(player);
         ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} continues as survivor #{} {} at {} {} ({}), look {}/{} ({})",
                 player.getGameProfile().getName(), next.lifeIndex, next.fullName(), next.spawnDimension,
                 next.spawnPos.toShortString(), next.spawnSource, next.skin, next.arms.id(), next.sex);

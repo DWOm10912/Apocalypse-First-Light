@@ -59,7 +59,9 @@ public final class InfectedVisionSystem {
             }
             state.wasVisible = true;
             updateLastVisiblePosition(state, state.candidate, now);
-            state.detectionProgress = Math.min(1.0F, state.detectionProgress + DETECTION_PER_TICK);
+            // survivor attribute visibility: how fast this player is confirmed
+            float perTick = DETECTION_PER_TICK * (float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(state.candidate, com.antaurora.apofirstlight.registry.AflAttributes.VISIBILITY, 0);
+            state.detectionProgress = Math.min(1.0F, state.detectionProgress + perTick);
             logProgressTier(zombie, state);
             if (state.detectionProgress >= 1.0F) {
                 state.confirmedPlayer = state.candidate;

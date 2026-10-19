@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Growth V1</title>
+<style>
+@font-face { font-family: 'AFL Sans'; src: url('/assets/font/afl_sans_sc.ttf'); }
+:root {
+  --back: rgba(16,16,16,.62); --back-hover: rgba(30,33,36,.72); --back-deep: rgba(8,9,10,.55);
+  --line: rgba(232,228,220,.28); --line-hi: rgba(232,228,220,.55);
+  --text: #E8E4DC; --dim: #A8A49C; --off: #6C6A66; --acc: #E0A84A; --red: #D0705E; --green: #8FB98A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #141516; color: var(--text); font-family: 'AFL Sans', 'Microsoft YaHei', sans-serif; }
+.sheet { width: 1920px; }
+.screen { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+.bg { position: absolute; inset: -40px; background: url('/design/ui/new_world_v1/source/bg_forest.png') center/cover; filter: blur(9px) brightness(.42) saturate(.85); }
+.caption { background: #18191a; padding: 28px 40px 30px; min-height: 250px; }
+.caption h1 { margin: 0 0 12px; font-size: 34px; font-weight: normal; }
+.caption p { margin: 6px 0; font-size: 21px; color: #CFCBC3; line-height: 1.5; }
+.abs { position: absolute; }
+.panel { background: var(--back); border: 1.5px solid var(--line); border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,.22); }
+.h { font-size: 26px; color: var(--dim); letter-spacing: 1px; }
+.d { color: var(--dim); } .o { color: var(--off); } .a { color: var(--acc); } .r { color: var(--red); }
+.key { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 36px; padding: 0 10px; border-radius: 7px;
+  background: rgba(232,228,220,.92); color: #16181A; font-size: 21px; margin-right: 12px; }
+.icon { display: inline-block; background: var(--text); -webkit-mask: center/contain no-repeat; mask: center/contain no-repeat; }
+.pill { position: relative; width: 66px; height: 30px; border-radius: 8px; flex: none; border: 1.5px solid rgba(232,228,220,.28); background: rgba(16,16,16,.45); }
+.pill.on { background: #DAD6CE; border-color: transparent; }
+.pill.go { border-color: var(--acc); background: rgba(16,16,16,.5); }
+.pill.go i { position: absolute; left: 3px; top: 3px; bottom: 3px; border-radius: 5px; background: var(--acc); opacity: .8; }
+.pill.full { border-color: var(--dim); } .pill.full i { background: var(--dim); }
+.pill.lock { border-color: rgba(208,112,94,.4); background: rgba(208,112,94,.08); }
+.pill.hover { outline: 2px solid var(--line-hi); outline-offset: 3px; }
+.pill svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 26px; height: 26px; }
+.chip { display: flex; align-items: center; height: 48px; padding: 0 16px; border-radius: 10px; background: var(--back); border: 1.5px solid rgba(232,228,220,.16); font-size: 23px; margin-bottom: 12px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 14px; flex: none; }
+.tip { background: rgba(16,16,16,.95); border: 1.5px solid var(--line); border-radius: 12px; padding: 16px 20px; font-size: 22px; line-height: 1.5;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.scroll { position: absolute; width: 6px; border-radius: 3px; background: rgba(232,228,220,.35); }
+.card { position: absolute; width: 344px; height: 156px; border-radius: 12px; background: var(--back); border: 1.5px solid rgba(232,228,220,.18); padding: 18px 20px; }
+.card.sel { border-color: var(--acc); background: rgba(30,33,36,.78); }
+.seg { display: flex; gap: 5px; } .seg b { flex: 1; height: 10px; border-radius: 3px; background: rgba(232,228,220,.14); }
+.seg b.on { background: #DAD6CE; } .seg b.go { background: linear-gradient(90deg, var(--acc) var(--p), rgba(232,228,220,.14) var(--p)); }
+.seg b.full { background: linear-gradient(90deg, var(--dim) var(--p), rgba(232,228,220,.14) var(--p)); }
+.seg b.lock { background: rgba(208,112,94,.22); }
+.ladder { display: flex; align-items: center; height: 54px; border-radius: 9px; padding: 0 16px; font-size: 22px; margin-bottom: 6px; }
+.ladder.now { background: rgba(224,168,74,.12); border: 1.5px solid rgba(224,168,74,.5); }
+.ladder.past { color: var(--dim); }
+.ladder.ahead { color: var(--text); background: rgba(16,16,16,.35); }
+.ladder .lv { width: 74px; flex: none; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>
+// Growth page concepts after Abiotic Factor's skill page (user 2026-10-18), two directions, 10 levels per item.
+// docs/gameplay/survivor_background_skills_v1_plan.md 9 / 16. Open with ?s=A or ?s=B; 1920 x 1080 = the 480 x 270 canvas x 4.
+const S = new URLSearchParams(location.search).get('s') || 'A';
+const SVG = {
+  dumbbell: '<rect x="3" y="11" width="18" height="2" rx="1"/><rect x="4.6" y="5.5" width="3.2" height="13" rx=".9"/><rect x="16.2" y="5.5" width="3.2" height="13" rx=".9"/><rect x="1.4" y="8.5" width="2.2" height="7" rx=".7"/><rect x="20.4" y="8.5" width="2.2" height="7" rx=".7"/>',
+  lungs: '<path d="M11 2h2v7.6l2.6 1.7c.2-2.6 1.4-4.3 3-4.3 2.2 0 3.4 4.1 3.4 9.2 0 3.6-1.3 5.3-3.6 5.3-2.6 0-4.2-1.7-4.6-4.6l-.2-3.7L12 11.4l-1.6 1.8-.2 3.7C9.8 19.8 8.2 21.5 5.6 21.5 3.3 21.5 2 19.8 2 16.2 2 11.1 3.2 7 5.4 7c1.6 0 2.8 1.7 3 4.3L11 9.6z"/>',
+  chev: '<path d="M5 15.5 12 8.5l7 7-2 2-5-5-5 5z"/>',
+  chev2: '<path d="M5 11.5 12 4.5l7 7-2 2-5-5-5 5zM5 19 12 12l7 7-2 2-5-5-5 5z"/>',
+  lock: '<path d="M7 10V7.5a5 5 0 0 1 10 0V10h1.5v11h-13V10zm2.4 0h5.2V7.5a2.6 2.6 0 0 0-5.2 0z"/>',
+};
+const svg = (k, c) => `<svg viewBox="0 0 24 24" fill="${c}">${SVG[k]}</svg>`;
+const GUN = { pistol: ['p9_01', 512/317], long: ['br51_01', 1183/248], shotgun: ['silverwood_12', 1263/240] };
+function itemIcon(it, w, h, colour) {
+  if (it.gun) {
+    const [n, asp] = GUN[it.gun]; const dw = Math.min(w, h * asp), dh = dw / asp;
+    return `<span class="icon" style="width:${dw}px;height:${dh}px;background:${colour || 'var(--text)'};-webkit-mask-image:url('/assets/textures/gui/gun/${n}_hud.png');mask-image:url('/assets/textures/gui/gun/${n}_hud.png');margin:${(h - dh) / 2}px ${(w - dw) / 2}px"></span>`;
+  }
+  const s = Math.min(w, h) * 1.2;
+  return `<span style="display:inline-block;width:${w}px;height:${h}px;position:relative"><svg viewBox="0 0 24 24" fill="${colour || '#E8E4DC'}" style="position:absolute;width:${s}px;height:${s}px;left:${(w - s) / 2}px;top:${(h - s) / 2}px">${SVG[it.glyph]}</svg></span>`;
+}
+const TIER = ['新手', '有基础', '熟练'];
+const tier = lv => lv <= 3 ? 0 : lv <= 6 ? 1 : 2;
+// a survivor: hunter + fast learner; strength 4 working, fitness 3 done for today, pistol 1, long gun and shotgun 5 (hunter start)
+const ITEMS = {
+  body: [
+    { id: 'strength', name: '力量', glyph: 'dumbbell', lv: 4, p: .42, how: '背着重东西走、砍树、挖石头、拉启动绳', feel: '越壮背得越多，干活越不累' },
+    { id: 'fitness', name: '体能', glyph: 'lungs', lv: 3, p: .7, full: true, how: '跑、游泳、累了以后缓过来', feel: '跑得更久，缓得更快' },
+  ],
+  guns: [
+    { id: 'pistol', name: '手枪', gun: 'pistol', lv: 1, p: .2, how: '打中目标、换弹' },
+    { id: 'long', name: '长枪', gun: 'long', lv: 5, p: .55, how: '打中目标、换弹' },
+    { id: 'shotgun', name: '霰弹枪', gun: 'shotgun', lv: 5, p: .1, how: '打中目标、换弹' },
+  ],
+};
+const STR_LEVELS = ['舒适负重 −6 kg · 干活更累', '舒适负重 −3 kg', '普通人', '舒适负重 +3 kg · 干活省力 10%', '舒适负重 +6 kg · 省力 20%',
+  '舒适负重 +9 kg · 省力 25%', '舒适负重 +12 kg · 省力 30%', '舒适负重 +14 kg · 省力 33%', '舒适负重 +16 kg · 省力 36%', '舒适负重 +18 kg · 省力 40%'];
+
+function header() {
+  return `<div class="abs" style="left:60px;top:46px;font-size:24px"><span class="key">Esc</span><span class="d">返回</span></div>
+  <div class="abs" style="left:0;right:0;top:30px;text-align:center;font-size:48px">成长</div>
+  <div class="abs" style="left:0;right:0;top:92px;text-align:center;font-size:22px" class="d"><span class="d">Tom Ramirez</span></div>`;
+}
+
+function pills(it, opt = {}) {
+  let h = '';
+  const cap = it.cap || 10;
+  for (let i = 1; i <= 10; i++) {
+    let cls = 'pill', inner = '';
+    if (i <= it.lv) cls += ' on';
+    else if (i > cap) { cls += ' lock'; inner = svg('lock', 'rgba(208,112,94,.75)'); }
+    else if (i === it.lv + 1) { cls += it.full ? ' go full' : ' go'; inner = `<i style="width:${Math.max(4, 58 * it.p)}px"></i>`; }
+    if (it.gun && (i === 4 || i === 7) && i <= cap) inner += svg(i === 7 ? 'chev2' : 'chev', i <= it.lv ? '#1A1B1C' : 'rgba(168,164,156,.85)');
+    if (opt.hover === i) cls += ' hover';
+    h += `<div class="${cls}">${inner}</div>`;
+  }
+  return `<div style="display:flex;gap:10px">${h}</div>`;
+}
+
+function status(it) {
+  if (it.full) return `<span class="a">今天练够了，明天再练</span>`;
+  return `<span class="d">${it.how}</span>`;
+}
+
+function left() {
+  return `<div class="abs panel" style="left:60px;top:152px;width:472px;height:868px;padding:24px 28px">
+    <div class="h">学习</div>
+    <div style="display:flex;justify-content:space-between;font-size:24px;margin-top:22px"><span class="d">学东西</span><span>快</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:24px;margin-top:12px"><span class="d">练身体</span><span>快</span></div>
+    <div style="height:1.5px;background:rgba(232,228,220,.16);margin:26px -4px 22px"></div>
+    <div class="h" style="margin-bottom:18px">相关特质</div>
+    <div class="chip"><span class="dot" style="background:var(--green)"></span>打过猎</div>
+    <div class="chip"><span class="dot" style="background:var(--green)"></span>学得快</div>
+    <div class="abs o" style="left:28px;right:28px;bottom:24px;font-size:21px;line-height:1.45">做什么练什么，每天能练的有限</div>
+  </div>`;
+}
+
+function conceptA() {
+  const row = (it, hover) => `<div style="display:flex;align-items:flex-start;height:96px">
+      <div style="width:104px;height:44px">${itemIcon(it, 104, 44)}</div>
+      <div style="width:192px;padding-left:18px;font-size:30px;line-height:44px">${it.name}</div>
+      <div>${pills(it, { hover })}<div style="font-size:21px;margin-top:12px">${status(it)}</div></div>
+      <div style="flex:1;text-align:right;font-size:26px;line-height:44px">${it.gun ? TIER[tier(it.lv)] : 'Lv ' + it.lv}</div>
+    </div>`;
+  const section = (title, items, hoverId, hover) => `<div class="h" style="margin:4px 0 0">${title}</div>
+    <div style="height:2px;background:rgba(224,168,74,.3);margin:14px 0 22px"></div>
+    ${items.map(it => row(it, it.id === hoverId ? hover : 0)).join('')}`;
+  return `${header()}${left()}
+  <div class="abs panel" style="left:556px;top:152px;width:1304px;height:868px;padding:22px 52px 0 36px;overflow:hidden">
+    ${section('身体', ITEMS.body, 'strength', 6)}
+    <div style="height:16px"></div>
+    ${section('枪械', ITEMS.guns)}
+    <div style="height:16px"></div>
+    <div class="h" style="opacity:.55">以后的成长项…</div>
+    <div style="height:2px;background:rgba(224,168,74,.18);margin:14px 0 0"></div>
+  </div>
+  <div class="scroll" style="left:1838px;top:172px;height:560px"></div>
+  <div class="abs tip" style="left:1452px;top:298px;width:400px">
+    <div>力量 Lv 6</div><div class="d">舒适负重 +9 kg</div><div class="d">干活耗体力 −25%</div><div class="o">还没练到</div>
+  </div>`;
+}
+
+function conceptB() {
+  const card = (it, x, y, sel) => {
+    const segs = Array.from({ length: 10 }, (_, k) => {
+      const i = k + 1;
+      if (i <= it.lv) return '<b class="on"></b>';
+      if (i === it.lv + 1) return `<b class="${it.full ? 'full' : 'go'}" style="--p:${it.p * 100}%"></b>`;
+      return '<b></b>';
+    }).join('');
+    return `<div class="card${sel ? ' sel' : ''}" style="left:${x}px;top:${y}px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center">${itemIcon(it, 90, 40)}<span style="font-size:28px;margin-left:18px">${it.name}</span></div>
+        <span style="font-size:${it.gun ? 24 : 34}px">${it.gun ? TIER[tier(it.lv)] : it.lv}</span>
+      </div>
+      <div class="seg" style="margin-top:22px">${segs}</div>
+      <div style="font-size:20px;margin-top:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${status(it)}</div>
+    </div>`;
+  };
+  const ladder = STR_LEVELS.map((t, k) => {
+    const i = k + 1, cls = i <= 4 ? 'past' : i === 5 ? 'now' : 'ahead';
+    const mark = i <= 4 ? '<span style="margin-left:auto;font-size:20px" class="o">已经练到了</span>'
+      : i === 5 ? '<span style="margin-left:auto;font-size:20px" class="a">正在练</span>' : '';
+    return `<div class="ladder ${cls}"><span class="lv">Lv ${i}</span><span>${t}</span>${mark}</div>`;
+  }).join('');
+  return `${header()}
+  <div class="abs panel" style="left:60px;top:152px;width:1132px;height:868px"></div>
+  <div class="abs h" style="left:92px;top:176px">身体</div>
+  <div class="abs" style="left:92px;top:214px;width:1068px;height:2px;background:rgba(224,168,74,.3)"></div>
+  ${card(ITEMS.body[0], 92, 236, true)}${card(ITEMS.body[1], 452, 236)}
+  <div class="abs h" style="left:92px;top:424px">枪械</div>
+  <div class="abs" style="left:92px;top:462px;width:1068px;height:2px;background:rgba(224,168,74,.3)"></div>
+  ${card(ITEMS.guns[0], 92, 484)}${card(ITEMS.guns[1], 452, 484)}${card(ITEMS.guns[2], 812, 484)}
+  <div class="abs h" style="left:92px;top:672px;opacity:.55">以后的成长项…</div>
+  <div class="abs" style="left:92px;top:710px;width:1068px;height:2px;background:rgba(224,168,74,.18)"></div>
+  <div class="abs" style="left:92px;top:732px;width:1068px;height:200px;opacity:.25">
+    <div class="card" style="left:0;top:0"></div><div class="card" style="left:360px;top:0"></div><div class="card" style="left:720px;top:0"></div></div>
+  <div class="scroll" style="left:1170px;top:172px;height:500px"></div>
+  <div class="abs panel" style="left:1216px;top:152px;width:644px;height:868px;padding:26px 28px">
+    <div style="display:flex;align-items:center">${itemIcon(ITEMS.body[0], 64, 64)}<span style="font-size:38px;margin-left:20px">力量</span>
+      <span style="margin-left:auto;font-size:38px">Lv 4</span></div>
+    <div class="d" style="font-size:21px;margin-top:14px">越壮背得越多，干活越不累</div>
+    <div class="seg" style="margin-top:20px"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b class="go" style="--p:42%"></b><b></b><b></b><b></b><b></b><b></b></div>
+    <div style="font-size:21px;margin-top:18px"><span class="d">怎么练：</span>背着重东西走、砍树、挖石头、拉启动绳</div>
+    <div style="font-size:21px;margin-top:8px"><span class="d">今天：</span>还能练</div>
+    <div style="height:1.5px;background:rgba(232,228,220,.16);margin:22px -4px 16px"></div>
+    ${ladder}
+  </div>`;
+}
+
+
+// ---------- many items (A2 / B2): what the two layouts do with dozens of growth items. Groups below "枪械" are made-up examples.
+Object.assign(SVG, {
+  hammer: '<path d="M3 5h9l2-2h3v7h-3l-2-2h-1.5v14h-3V8H3z"/>',
+  knife: '<path d="M3 19.5 13.5 9l2.2 2.2L5.2 21.7zM14 8.5l6-6c1.3 3.4.3 6.6-3.2 8.6z"/>',
+  axe: '<path d="M5.5 21 16.5 6.3l1.6 1.2L7.1 22.2zM11.5 4.5c3.2-2.4 7.4-1.6 9.6 1.6l-5.2 5.2c-1-3-2.3-5.1-4.4-6.8z"/>',
+  cross: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+  pot: '<path d="M2 10h20v2h-2v6a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-6H2zM8 6h8v2.5H8zM11 3h2v3h-2z"/>',
+  sprout: '<path d="M11 22v-9C7 13 4 10 4 5c4 0 7 2 7.6 6C12 7 15 4 20 4c0 5-3 8-7 8v10z"/>',
+  fish: '<path d="M2 12c3-4 7-6 11-6 4 0 6 3 7 4l2.5-3v10L20 14c-1 1-3 4-7 4-4 0-8-2-11-6zm13-2.2a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/>',
+  paw: '<circle cx="6.5" cy="9.5" r="2.3"/><circle cx="12" cy="6" r="2.3"/><circle cx="17.5" cy="9.5" r="2.3"/><path d="M12 11c3 0 6.5 4 6.5 7 0 2.2-2.2 3.2-4.4 2.6a8 8 0 0 0-4.2 0C7.7 21.2 5.5 20.2 5.5 18c0-3 3.5-7 6.5-7z"/>',
+  flame: '<path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3-1-6 1-9z"/>',
+  box: '<path d="M3 7l9-4 9 4v10.5L12 21.5 3 17.5zm9-1.8L6.6 7.6 12 10l5.4-2.4z"/>',
+  saw: '<path d="M2 6h12l8 8-3.5 3.5-8-8H2zM4 15h7v6H4z"/>',
+  brick: '<path d="M2 4h9v4.5H2zM13 4h9v4.5h-9zM2 10.5h4v4.5H2zM8 10.5h8v4.5H8zM18 10.5h4v4.5h-4zM2 17h9v4H2zM13 17h9v4h-9z"/>',
+  gear: '<path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/>',
+  bolt: '<path d="M13 2 5 13h6l-1 9 8-11h-6z"/>',
+  needle: '<path d="M18.5 2.5 21.5 5.5 7 20l-4.5 1.5L4 17z"/>',
+  anvil: '<path d="M2 6h14c2.5 0 5 1 6 3h-6v2.5c0 2-1.6 3.2-3 4h3V19H6v-3.5h3c-1.4-.8-3-2-3-4V9H2z"/>',
+  flask: '<path d="M8.5 2h7v2.2h-1.2v5L20 19a2 2 0 0 1-1.7 3H5.7A2 2 0 0 1 4 19l5.7-9.8v-5H8.5z"/>',
+  radio: '<path d="M3 8.5h18V21H3zM5.5 3 17 8h-2.8L5 4.3zM15.5 12a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM6 12h5v1.5H6zm0 3h5v1.5H6z"/>',
+  wheel: '<path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 3a7 7 0 0 0-6.9 6h4.3a2.8 2.8 0 0 1 5.2 0h4.3A7 7 0 0 0 12 5zm-6.9 8a7 7 0 0 0 5.4 5.8v-4a2.8 2.8 0 0 1-1.5-1.8zm8.4 1.8v4a7 7 0 0 0 5.4-5.8h-3.9a2.8 2.8 0 0 1-1.5 1.8z"/>',
+  wrench: '<path d="M21 6.5a5 5 0 0 1-6.6 4.7L6 19.6a2 2 0 0 1-2.8-2.8l8.4-8.4A5 5 0 0 1 17.5 3l-3 3 .8 2.7 2.7.8z"/>',
+  eye: '<path d="M1 12c3-5 7-7.5 11-7.5S20 7 23 12c-3 5-7 7.5-11 7.5S4 17 1 12zm11-4a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>',
+  ladder: '<path d="M6 2h2.2v3h7.6V2H18v20h-2.2v-3H8.2v3H6zm2.2 5.2v3h7.6v-3zm0 5.2v3h7.6v-3z"/>',
+  ball: '<circle cx="12" cy="14" r="7"/><path d="M10 3h4v4h-4z"/>',
+  wave: '<path d="M2 15c2 0 3-2 5-2s3 2 5 2 3-2 5-2 3 2 5 2v3c-2 0-3-2-5-2s-3 2-5 2-3-2-5-2-3 2-5 2zM2 8.5c2 0 3-2 5-2s3 2 5 2 3-2 5-2 3 2 5 2v3c-2 0-3-2-5-2s-3 2-5 2-3-2-5-2-3 2-5 2z"/>',
+});
+const G = (name, items) => ({ name, items: items.map(([n, glyph, lv, p, extra]) => Object.assign({ id: n, name: n, glyph, lv, p }, extra || {})) });
+const MANY = [
+  { name: '身体', items: ITEMS.body },
+  { name: '枪械', items: ITEMS.guns },
+  G('近战', [['钝器', 'hammer', 2, .3], ['刀具', 'knife', 3, .6], ['斧头', 'axe', 4, .15]]),
+  G('生存', [['急救', 'cross', 4, .65], ['烹饪', 'pot', 3, .2], ['种植', 'sprout', 1, .4], ['钓鱼', 'fish', 0, 0], ['打猎', 'paw', 5, .3, { full: true }],
+    ['生火', 'flame', 6, .8], ['搜刮', 'box', 2, .5]]),
+  G('手艺', [['木工', 'saw', 3, .1], ['建造', 'brick', 2, .7], ['机械', 'gear', 1, .2], ['电工', 'bolt', 0, 0], ['缝纫', 'needle', 1, .9],
+    ['金工', 'anvil', 0, 0], ['化学', 'flask', 0, 0], ['无线电', 'radio', 1, .1]]),
+  G('驾驶', [['开车', 'wheel', 4, .5], ['修车', 'wrench', 2, .3]]),
+  G('行动', [['潜行', 'eye', 3, .45], ['攀爬', 'ladder', 2, .2], ['投掷', 'ball', 1, .6], ['游泳', 'wave', 3, .3]]),
+];
+
+function conceptA2() {
+  const pills2 = (it, hover) => {
+    let h = '';
+    for (let i = 1; i <= 10; i++) {
+      let cls = 'pill', inner = '';
+      if (i <= it.lv) cls += ' on';
+      else if (i === it.lv + 1 && it.p > 0) { cls += it.full ? ' go full' : ' go'; inner = '<i style="width:' + Math.max(4, 46 * it.p) + 'px"></i>'; }
+      if (it.gun && (i === 4 || i === 7)) inner += svg(i === 7 ? 'chev2' : 'chev', i <= it.lv ? '#1A1B1C' : 'rgba(168,164,156,.85)');
+      if (it.mark && it.mark.includes(i)) inner += svg('chev', i <= it.lv ? '#1A1B1C' : 'rgba(168,164,156,.85)');
+      if (hover === i) cls += ' hover';
+      h += '<div class="' + cls + '" style="width:54px;height:24px">' + inner + '</div>';
+    }
+    return '<div style="display:flex;gap:9px">' + h + '</div>';
+  };
+  const row = (it, hover) => '<div style="display:flex;align-items:center;height:60px">'
+      + '<div style="width:80px;height:34px">' + itemIcon(it, 80, 34) + '</div>'
+      + '<div style="width:170px;padding-left:18px;font-size:26px">' + it.name + '</div>'
+      + pills2(it, hover)
+      + '<div style="flex:1;text-align:right;font-size:23px">' + (it.gun ? TIER[tier(it.lv)] : 'Lv ' + it.lv) + '</div></div>';
+  const surv = MANY[3], craft = MANY[4];
+  surv.items[0].mark = [5];
+  const head = (g, sticky) => '<div style="display:flex;align-items:center;height:52px;border-bottom:2px solid rgba(224,168,74,.3);'
+      + (sticky ? 'background:rgba(22,23,24,.96);margin:0 -52px 0 -36px;padding:0 52px 0 36px' : 'margin-bottom:6px') + '">'
+      + '<span class="h">' + g.name + '</span><span class="o" style="font-size:20px;margin-left:14px">' + g.items.length + ' 项</span></div>';
+  const groups = MANY.map((g, k) => '<div style="display:flex;align-items:center;height:50px;padding:0 16px;border-radius:9px;font-size:24px;'
+      + (k === 3 ? 'background:rgba(224,168,74,.12);border:1.5px solid rgba(224,168,74,.5)' : '') + '">'
+      + '<span>' + g.name + '</span><span class="o" style="margin-left:auto;font-size:21px">' + g.items.length + '</span></div>').join('');
+  return header()
+    + '<div class="abs panel" style="left:60px;top:152px;width:472px;height:868px;padding:24px 28px">'
+    + '<div class="h">学习</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:23px;margin-top:16px"><span class="d">学东西</span><span>快</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:23px;margin-top:8px"><span class="d">练身体</span><span>快</span></div>'
+    + '<div style="height:1.5px;background:rgba(232,228,220,.16);margin:20px -4px 16px"></div>'
+    + '<div class="h" style="margin-bottom:12px">分组 <span class="o" style="font-size:20px">点一下跳过去</span></div>'
+    + groups
+    + '<div style="height:1.5px;background:rgba(232,228,220,.16);margin:16px -4px 16px"></div>'
+    + '<div style="display:flex;align-items:center;font-size:22px"><span style="width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line);margin-right:14px"></span>只看练过的</div>'
+    + '</div>'
+    + '<div class="abs panel" style="left:556px;top:152px;width:1304px;height:868px;padding:0 52px 0 36px;overflow:hidden">'
+    + head(surv, true)
+    + '<div style="padding-top:8px">' + surv.items.map((it, k) => row(it, k === 0 ? 5 : 0)).join('') + '</div>'
+    + '<div style="height:14px"></div>'
+    + head(craft)
+    + craft.items.map(it => row(it)).join('')
+    + '</div>'
+    + '<div class="scroll" style="left:1838px;top:330px;height:240px"></div>'
+    + '<div class="abs tip" style="left:1250px;top:262px;width:470px">'
+    + '<div>急救 Lv 5</div><div class="a">会缝合伤口</div><div class="d">包扎快很多</div><div class="o">正在练</div></div>';
+}
+
+function conceptB2() {
+  const card2 = (it, x, y, sel) => {
+    const segs = Array.from({ length: 10 }, (_, k) => {
+      const i = k + 1;
+      if (i <= it.lv) return '<b class="on"></b>';
+      if (i === it.lv + 1 && it.p > 0) return '<b class="' + (it.full ? 'full' : 'go') + '" style="--p:' + (it.p * 100) + '%"></b>';
+      return '<b></b>';
+    }).join('');
+    const state = it.full ? '<span class="a">今天练够了</span>' : (it.lv + it.p === 0 ? '<span class="o">还没练过</span>' : '<span class="d">在练</span>');
+    return '<div class="card' + (sel ? ' sel' : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:252px;height:116px;padding:12px 16px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between">'
+      + '<div style="display:flex;align-items:center">' + itemIcon(it, it.gun ? 66 : 40, 32) + '<span style="font-size:24px;margin-left:12px">' + it.name + '</span></div>'
+      + '<span style="font-size:' + (it.gun ? 21 : 28) + 'px">' + (it.gun ? TIER[tier(it.lv)] : it.lv) + '</span></div>'
+      + '<div class="seg" style="margin-top:12px;gap:4px">' + segs + '</div>'
+      + '<div style="font-size:18px;margin-top:8px;line-height:1.2">' + state + '</div></div>';
+  };
+  const tabs = ['全部'].concat(MANY.map(g => g.name)).map((n, k) => '<span style="display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:9px;font-size:22px;margin-right:8px;'
+      + (k === 0 ? 'background:rgba(232,228,220,.92);color:#16181A' : 'border:1.5px solid rgba(232,228,220,.18)') + '">' + n + '</span>').join('');
+  let h = '', y = 250;
+  for (const g of [MANY[3], MANY[4], MANY[5]]) {
+    h += '<div class="abs h" style="left:92px;top:' + y + 'px">' + g.name + '<span class="o" style="font-size:20px;margin-left:14px">' + g.items.length + ' 项</span></div>'
+      + '<div class="abs" style="left:92px;top:' + (y + 38) + 'px;width:1068px;height:2px;background:rgba(224,168,74,.3)"></div>';
+    y += 56;
+    g.items.forEach((it, k) => { h += card2(it, 92 + (k % 4) * 272, y + Math.floor(k / 4) * 126, g === MANY[3] && k === 0); });
+    y += Math.ceil(g.items.length / 4) * 126 + 18;
+  }
+  const LAD = ['会包扎止血', '包扎快一点', '能看出伤得多重', '包扎快很多', '会缝合伤口', '用药更省', '能处理骨折', '包扎几乎不耽误', '能自己给自己缝', '能做简单的手术'];
+  const ladder = LAD.map((t, k) => {
+    const i = k + 1, cls = i <= 4 ? 'past' : i === 5 ? 'now' : 'ahead', big = [1, 5, 7, 10].includes(i);
+    const mark = i <= 4 ? '<span style="margin-left:auto;font-size:20px" class="o">已经练到了</span>'
+      : i === 5 ? '<span style="margin-left:auto;font-size:20px" class="a">正在练</span>' : '';
+    const icon = big ? svg('chev', i <= 4 ? '#A8A49C' : '#E0A84A').replace('<svg', '<svg style="width:22px;height:22px;margin-right:10px;flex:none"') : '<span style="width:32px;flex:none"></span>';
+    return '<div class="ladder ' + cls + '" style="height:52px"><span class="lv">Lv ' + i + '</span>' + icon + '<span>' + t + '</span>' + mark + '</div>';
+  }).join('');
+  return header()
+    + '<div class="abs panel" style="left:60px;top:152px;width:1132px;height:868px"></div>'
+    + '<div class="abs" style="left:92px;top:174px">' + tabs + '</div>'
+    + '<div class="abs" style="left:61px;top:236px;width:1130px;height:2px;background:rgba(232,228,220,.12)"></div>'
+    + '<div class="abs" style="left:61px;top:238px;width:1130px;height:780px;overflow:hidden;border-radius:0 0 12px 12px"><div class="abs" style="left:-61px;top:-238px;width:1920px;height:1300px">' + h + '</div></div>'
+    + '<div class="scroll" style="left:1170px;top:420px;height:200px"></div>'
+    + '<div class="abs panel" style="left:1216px;top:152px;width:644px;height:868px;padding:26px 28px">'
+    + '<div style="display:flex;align-items:center">' + itemIcon(MANY[3].items[0], 56, 56) + '<span style="font-size:38px;margin-left:20px">急救</span>'
+    + '<span style="margin-left:auto;font-size:38px">Lv 4</span></div>'
+    + '<div class="seg" style="margin-top:22px"><b class="on"></b><b class="on"></b><b class="on"></b><b class="on"></b><b class="go" style="--p:65%"></b><b></b><b></b><b></b><b></b><b></b></div>'
+    + '<div style="font-size:21px;margin-top:18px"><span class="d">怎么练：</span>给自己或别人包扎、用药</div>'
+    + '<div style="font-size:21px;margin-top:8px"><span class="d">今天：</span>还能练</div>'
+    + '<div style="height:1.5px;background:rgba(232,228,220,.16);margin:20px -4px 14px"></div>'
+    + ladder + '</div>';
+}
+
+const CAPTION = {
+  A: ['A. 技能表（照《非生物因素》）', [
+    '一项一行：图标、名字、10 个格子、等级（枪械写档位）。白 = 练到了，琥珀 = 正在练（格子里按进度填），灰 = 今天练够了，红框带锁 = 这个人练不到（例如"怕开枪"的 7 级以上）。枪械在 4、7 级的格子里画一个 / 两个箭头：从这里起"有基础""熟练"。',
+    '鼠标停在格子上写那一级是什么（右边的提示框）。左栏是学习速度和跟成长有关的特质。右边按组分区，以后加的成长项往下排，整块用滚轮滑。',
+    '好处：一眼看完所有项，和《非生物因素》一样密；以后项多了也只是行多。坏处：每一级具体给什么要一格一格地停鼠标看。'
+  ]],
+  A2: ['A2. 技能表，项很多的时候（29 项，举例）', [
+    '近战、生存、手艺、驾驶、行动这些组和里面的项都是随手编的，只用来看界面撑不撑得住，不是计划。',
+    '为了放得下：每行压矮（"怎么练"那一行放进鼠标提示），一屏大约 12 行；滚到哪组，组名就顶在上面不走；左栏多一个分组目录（点一下跳过去）和"只看练过的"。会了新本事的那一级（例如急救 5 级会缝合）在格子里画记号，鼠标停上去看。',
+    '好处：几十项也只是一张长表，扫一眼就知道哪些练得高，和《非生物因素》一样。坏处：一行越压越挤，每级给什么全靠鼠标提示。'
+  ]],
+  B2: ['B2. 卡片 + 详情，项很多的时候（29 项，举例）', [
+    '同样是随手编的 29 项。为了放得下：卡片缩小成四列（"怎么练"放进详情），上面一排分组页签（"全部"按组往下排，点一组只看那一组），左边整块用滚轮滑。',
+    '右边详情还是列出这一项的全部 10 级：哪几级会了新本事（带箭头的行，例如"会缝合伤口"），哪几级只是更快、更省。项越多，这种"升级路线"越有用。',
+    '好处：分组页签好找，详情能把每级写清楚。坏处：一屏大约 16 张卡，比 A2 少；要点卡片才看到细节。'
+  ]],
+  B: ['B. 卡片 + 详情', [
+    '左边每项一张卡片：图标、名字、等级、10 段进度、一行状态；按组分区，以后加的项往下排，用滚轮滑（卡片三列，项多时比 A 更占地方）。',
+    '点一张卡片，右边详情列出这一项的全部 10 级：每级给什么（"舒适负重 +9 kg · 省力 25%"），练到哪了、正在练哪一级；还有怎么练、今天还能不能练。',
+    '好处：每一级的好处一次看全，像一张升级路线图；以后有"到某级解锁能力"也放得下。坏处：要点一下才看到细节，一屏能看到的项比 A 少。'
+  ]],
+};
+
+const [title, lines] = CAPTION[S];
+document.getElementById('out').innerHTML = `<div class="sheet"><div class="screen"><div class="bg"></div>${({A: conceptA, B: conceptB, A2: conceptA2, B2: conceptB2})[S]()}</div>
+  <div class="caption"><h1>${title}</h1>${lines.map(l => `<p>${l}</p>`).join('')}</div></div>`;
+</script>
+</body>
+</html>

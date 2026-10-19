@@ -167,3 +167,9 @@ HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节�
 9. 切创造：口渴不变，喝水没效果，水滴环不显示。
 10. 死亡后口渴为 100，退出重进保留。
 11. 物品提示：三种水瓶、西瓜片、汤等在名字下面一行显示水滴图标和补水量（例如 +20），没有“生水 / 已煮沸”的文字。
+
+## 幸存者属性（2026-10-17）
+
+口渴（基础 + 出力）× `apocalypse_firstlight:thirst_rate`；喝生水生病的几率 × `raw_water_sickness`。另外饥饿：玩家所有的消耗度 × `hunger_rate`（`PlayerHungerRateMixin`），吃饭回血 × `natural_regen`（`FoodDataSurvivorStatsMixin`，两种回血都算）。
+
+属性层 P1，见 [幸存者背景、机能、特质与成长 V1](survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

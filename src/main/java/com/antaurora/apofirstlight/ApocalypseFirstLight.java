@@ -74,6 +74,7 @@ public class ApocalypseFirstLight {
         AflEntities.ENTITY_TYPES.register(modEventBus);
         AflMenus.MENUS.register(modEventBus);
         AflMobEffects.MOB_EFFECTS.register(modEventBus);
+        com.antaurora.apofirstlight.registry.AflAttributes.ATTRIBUTES.register(modEventBus);
         AflRecipes.RECIPE_TYPES.register(modEventBus);
         AflRecipes.RECIPE_SERIALIZERS.register(modEventBus);
         AflParticles.PARTICLE_TYPES.register(modEventBus);

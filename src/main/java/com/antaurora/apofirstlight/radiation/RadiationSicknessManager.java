@@ -48,6 +48,11 @@ public final class RadiationSicknessManager {
         return 4;
     }
 
+    /** The stage for this player: the dose x radiation_sensitivity (survivor attribute; the dose and the meter are unchanged). */
+    public static int getStage(ServerPlayer player, double dose) {
+        return getStage(dose * com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.RADIATION_SENSITIVITY, 0));
+    }
+
     public static double movementModifier(int stage) {
         return switch (stage) {
             case 1 -> -0.05D;
@@ -181,7 +186,7 @@ public final class RadiationSicknessManager {
 
     private static int currentStage(ServerPlayer player) {
         return player.getCapability(RadiationExposureProvider.CAPABILITY)
-                .map(exposure -> getStage(exposure.getDose()))
+                .map(exposure -> getStage(player, exposure.getDose()))
                 .orElse(0);
     }
 

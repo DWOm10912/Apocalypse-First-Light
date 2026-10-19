@@ -32,8 +32,13 @@ public final class NativeRecoilState {
     }
 
     public void advance(double seconds) {
+        advance(seconds, 1);
+    }
+
+    /** {@code recovery}: how fast the aim comes back (gun growth, SurvivorGrowth#recoilRecovery); the model kick is not changed. */
+    public void advance(double seconds, double recovery) {
         if (profile == null || !Double.isFinite(seconds) || seconds <= 0) return;
-        double recovering = Math.max(0, seconds - delay);
+        double recovering = Math.max(0, seconds - delay) * Math.max(0.1, recovery);
         delay = Math.max(0, delay - seconds);
         double camera = Math.exp(-recovering / profile.cameraRecoveryTime());
         vertical *= camera;

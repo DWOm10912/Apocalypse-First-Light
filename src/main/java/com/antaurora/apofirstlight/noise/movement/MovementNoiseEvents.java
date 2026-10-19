@@ -89,10 +89,11 @@ public final class MovementNoiseEvents {
             return;
         }
         state.accumulatedHorizontalDistance -= mode.stepDistance();
+        double radius = mode.radius() * noiseMultiplier(player);
         NoiseSystem.emit(new NoiseEvent(player, player.position(), NoiseType.FOOTSTEP,
-                player.level().getGameTime(), null, mode.radius()));
+                player.level().getGameTime(), null, radius));
         ApocalypseFirstLight.LOGGER.debug("[AFL MOVEMENT NOISE] Type=FOOTSTEP Mode={} Radius={} Player={}",
-                mode, mode.radius(), player.getGameProfile().getName());
+                mode, radius, player.getGameProfile().getName());
     }
 
     private static void emitLanding(ServerPlayer player, float fallDistance) {
@@ -103,6 +104,7 @@ public final class MovementNoiseEvents {
         if (radius == 0.0) {
             return;
         }
+        radius *= noiseMultiplier(player);
         NoiseSystem.emit(new NoiseEvent(player, player.position(), NoiseType.LANDING,
                 player.level().getGameTime(), null, radius));
         ApocalypseFirstLight.LOGGER.debug("[AFL MOVEMENT NOISE] Type=LANDING FallDistance={} Radius={} Player={}",
@@ -111,7 +113,12 @@ public final class MovementNoiseEvents {
 
     /** A step's radius for this player's gait (sneak, walk, sprint); also how far the step sound is heard (client/NoiseSoundRanges). */
     public static double footstepRadius(net.minecraft.world.entity.player.Player player) {
-        return player.isCrouching() ? SNEAK_RADIUS : player.isSprinting() ? SPRINT_RADIUS : WALK_RADIUS;
+        return (player.isCrouching() ? SNEAK_RADIUS : player.isSprinting() ? SPRINT_RADIUS : WALK_RADIUS) * noiseMultiplier(player);
+    }
+
+    /** Survivor attribute footstep_noise. */
+    private static double noiseMultiplier(net.minecraft.world.entity.player.Player player) {
+        return com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.FOOTSTEP_NOISE, 0);
     }
 
     private static MovementMode movementMode(ServerPlayer player) {

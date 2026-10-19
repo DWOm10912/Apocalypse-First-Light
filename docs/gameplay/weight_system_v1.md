@@ -171,8 +171,10 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 
 21 种新材料：steel_billet 1；lead_brick 0.75（第一版 2，2026-10-03 改）；tungsten_filament 0.05；silver_scrap、cemented_carbide_blank、steel_scrap 各 0.25；plastic_scrap、plastic_pellets 各 0.1；bauxite、alumina、galena、sphalerite、cassiterite、pentlandite、electrolytic_nickel、wolframite、tungsten_oxide、tungsten_powder、spodumene_concentrate、lithium_carbonate、tungsten_carbide_powder 各 0.5。
 
-其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。
-
+其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。
+
+
+
 隧道部件物品（[隧道 V1](../worldgen/federal_tunnels_v1.md) 第 7 节"可拆部件"，2026-10-16，写在 `afl_content_v1.json`）：tunnel_luminaire 14、tunnel_cctv 4、tunnel_lane_signal 22、tunnel_headlight_sign 45、tunnel_clearance_plate 8、tunnel_egress_sign 3、tunnel_name_plate 30、tunnel_emergency_cabinet 40、tunnel_handrail 12（一段 2.4 m 的方管连两个支架）。按实物估：隧道 LED 灯具连支架、监控球机、车道控制灯箱、开灯牌连两根立柱、铝牌、紧急柜（灭火器另算）。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
 
 以上是 core_v1.json：6 组 gun 定义 + 46 个普通 item override（42 AFL、4 Vanilla）。其余 87 个 AFL 物品见下文“携带质量 V1”（2026-10-03 之前它们没有规则，全部是 250 g fallback）。完整 live Registry 的来源与缺失数量通过 coverage 查看，不把静态列表宣称为运行时覆盖结果。
@@ -540,3 +542,9 @@ coverage 每页20个AFL物品，报告来源：
 2026-10-14 网格背包 V0（分支 `feature/inventory-grid-v0`，用户 2026-10-14 实机 PASS）：口袋（玩家能力 `apocalypse_firstlight:pockets`）里的物品计入携带质量，来源 `equipment:apocalypse_firstlight:pockets`，负担系数 1.0（`inventory/grid/Pockets.java` 启动时注册）。胸挂、背包里的东西存在物品 NBT 的 `Items` 列表里，跟着胸挂 / 背包一起按 Curios 来源计重（通用容器读取本来就读 `Items`）。三件测试装备的质量：野战胸挂 0.9 kg、帆布背包 1.0 kg、登山背包 1.8 kg（`item_mass/core_v1.json`，估计值）。
 
 2026-10-14 武器位（同一分支，代码完成，未经游戏内验证）：新物品质量 枪背带 0.15 kg、手枪枪套 0.25 kg（`item_mass/core_v1.json`，估计值）。装在枪上的背带只是一个 NBT 标记，不另算质量。“手上”拿着的东西在原版快捷栏第 3 格，照旧按 36 格计重；它原来在网格里的位置只是留空，不重复计算。
+
+## 幸存者属性（2026-10-17）
+
+舒适负重 = `item_mass` 的 `comfort_capacity_kg` + `apocalypse_firstlight:carry_capacity`（kg，默认 0，最少 1 kg；`PlayerWeightRuntime.comfortGrams`）。分档按这个值算；属性变了，下一次校验（10 tick 内）生效。
+
+属性层 P1，见 [幸存者背景、机能、特质与成长 V1](survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

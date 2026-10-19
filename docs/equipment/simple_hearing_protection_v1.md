@@ -95,3 +95,9 @@ I = `minecraft:iron_ingot`，L = `minecraft:leather`，W = `minecraft:wool` item
 
 静态核对通过：126 个元素及全部 UV/display 与源 JSON 数据相等；PNG SHA-256 为 `A8F923B47CC56E4564F106A7B7FBA27E521DFB20887F1AB568D8D95F872C9247`，与验收 PNG 一致；源 bbmodel SHA-256 为 `8FFD908704E4BF78FCC3C072A82ABDE6D2036301C31FC89FAFA99A7EB8893626`，本轮未改。en_us/zh_cn JSON 可解析，diff whitespace 检查通过。common Item/manager 无 client 引用，模型注册及 Mixin 均仅客户端。
 本轮不执行 runClient、clean、GameTest、截图、展示渲染、commit/push；新增耳鸣播放音量倍率仍需用户实机听感验收。
+
+## 幸存者属性（2026-10-17）
+
+世界声音的音量 × 本人的 `apocalypse_firstlight:hearing`（和耳罩的系数相乘，结果不超过 1；默认 1）。枪声耳鸣：每一发对这个人的暴露量 × `tinnitus`（默认 1）。
+
+属性层 P1，见 [幸存者背景、机能、特质与成长 V1](../gameplay/survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

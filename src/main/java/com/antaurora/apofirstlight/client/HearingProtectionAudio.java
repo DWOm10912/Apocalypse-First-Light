@@ -14,8 +14,11 @@ public final class HearingProtectionAudio {
 
     private HearingProtectionAudio() {}
 
+    /** Hearing protection x the survivor attribute hearing. */
     public static float listenerMultiplier() {
-        return HearingProtectionManager.getWorldSoundMultiplier(Minecraft.getInstance().player);
+        var player = Minecraft.getInstance().player;
+        return HearingProtectionManager.getWorldSoundMultiplier(player)
+                * (float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.HEARING, 0);
     }
 
     public static float tinnitusVolumeMultiplier() {
@@ -41,6 +44,6 @@ public final class HearingProtectionAudio {
     }
 
     public static float attenuate(SoundInstance sound, float finalVolume) {
-        return isWorldSound(sound) ? finalVolume * listenerMultiplier() : finalVolume;
+        return isWorldSound(sound) ? Math.min(1.0F, finalVolume * listenerMultiplier()) : finalVolume;
     }
 }

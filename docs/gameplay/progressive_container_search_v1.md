@@ -406,3 +406,9 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 - `compileJava --offline` 一次，PASS。
 - 2026-09-29 用户实机测试 V1，确认全部 PASS。代理自己没有进行实机、GameTest、多人或抓包验证。
 - 之后的图标与 40 ticks 调整：`compileJava --offline` 一次 PASS，未实机复测。
+
+## 幸存者属性（2026-10-17）
+
+`AflContainerSearchSpeed.playerMultiplier` = `apocalypse_firstlight:search_speed`（越大越快，最少 0.1，默认 1）。几个人一起搜照旧取最快的那个。
+
+属性层 P1，见 [幸存者背景、机能、特质与成长 V1](survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

@@ -1,0 +1,11 @@
+{
+  "group": "metabolism",
+  "cost": -1,
+  "effects": [
+    {
+      "attribute": "apocalypse_firstlight:hunger_rate",
+      "op": "multiply",
+      "value": 1.2
+    }
+  ]
+}
