@@ -1,0 +1,1 @@
+strokes: 0 ms x1.00 (branches) hold 36 ms; 66 ms x0.56 hold 18 ms

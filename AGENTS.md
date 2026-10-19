@@ -37,6 +37,8 @@ WIKI UPDATED = YES/NO/NOT NEEDED
 
 The player wiki lives in `wiki/` (VitePress, see `docs/wiki/afl_wiki_v1_plan.md`). It is part of the Definition of Done for player-visible changes.
 
+**Paused (user, 2026-10-18):** until shortly before the V1 test release, no session updates the wiki, local `wiki/` included; one session will then bring it up to date in one pass. Until then the rules below do not apply; report `WIKI UPDATED = NOT NEEDED (paused until V1 test release)`.
+
 - When a task changes something a player can see or feel (values, controls, items, names, recipes, how a system behaves, whether something is in the game), update the matching `wiki/` page in both languages (`wiki/<page>.md` and `wiki/en/<page>.md`) in the same task.
 - Never hand-copy numbers: use `<V d="folder/file#key.path" />` for datapack JSON and `<V j="Class.CONSTANT" />` for Java numeric constants. Gun, ammo, attachment and biome tables come from the data automatically.
 - New guns need `wiki/content/guns/<id>.zh.md` and `<id>.en.md`.

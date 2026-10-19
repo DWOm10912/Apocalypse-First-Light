@@ -1,0 +1,15 @@
+// Lightning V1 probe client (dev only; src/dev/java/.../dev/LightningProbe.java, docs/rendering/lightning_v1.md).
+// gradlew runClient --offline -I src/dev/lightning-probe-client.init.gradle -Plightningprobe=WORLD [-Plightningshaders=true]
+// Runs in build/rain-perf (the rain probe's directory: its saves, shader packs and Oculus config), never the main run/.
+allprojects {
+    afterEvaluate {
+        def oculus = project.file('build/rain-perf/config/oculus.properties')
+        if (oculus.exists())
+            oculus.text = oculus.text.replaceAll(/enableShaders=\w+/, 'enableShaders=' + ((project.findProperty('lightningshaders') ?: 'false') == 'true'))
+        minecraft.runs.client {
+            workingDirectory project.file('build/rain-perf')
+            property 'afl.lightningprobe', (project.findProperty('lightningprobe') ?: '')
+            args '--width', '1920', '--height', '1080'
+        }
+    }
+}
