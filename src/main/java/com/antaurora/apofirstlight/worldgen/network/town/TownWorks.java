@@ -344,17 +344,23 @@ public final class TownWorks {
                     w[i][6] = Math.max(w[i][6], sec.sidewalk());
                 }
             }
-            // the exit crossroad's mouth: an arm of its Front St corner toward the interstate, the crossroad's paved width
-            double[] mouthV = new double[n];
-            java.util.Arrays.fill(mouthV, Double.NaN);
+            // the mouths: the exit crossroad's (an arm of its Front St corner toward the interstate, the crossroad's paved
+            // width) and the county roads' (G3: an arm of an outer intersection out of the town, the county road's paved
+            // width); each {node, arm direction, the road's end along the arm, half asphalt}
+            List<double[]> mouths = new ArrayList<>();
             for (double[] e : p.exitEnds) {
                 int i = (int) e[0];
                 if (i < 0 || i >= n || p.exitHalf <= 0) continue;
-                TownPlan.Node q = p.nodes.get(i);
-                int dir = e[1] > q.v() ? 2 : 3;
-                arm[i][dir] = Math.max(arm[i][dir], p.exitHalf);
-                w[i][1] = Math.max(w[i][1], p.exitHalf);
-                mouthV[i] = e[1];
+                mouths.add(new double[]{i, e[1] > p.nodes.get(i).v() ? TownPlan.DIR_V_UP : TownPlan.DIR_V_DOWN, e[1], p.exitHalf});
+            }
+            for (TownPlan.Entry e : p.entries)
+                if (e.node() >= 0 && e.node() < n && e.half() > 0) mouths.add(new double[]{e.node(), e.dir(), e.end(), e.half()});
+            for (double[] mo : mouths) {
+                int i = (int) mo[0], dir = (int) mo[1];
+                arm[i][dir] = Math.max(arm[i][dir], mo[3]);
+                // an arm along s is a parallel street's band (its half asphalt across, in v), one along v a cross street's
+                if (dir <= TownPlan.DIR_S_DOWN) w[i][0] = Math.max(w[i][0], mo[3]);
+                else w[i][1] = Math.max(w[i][1], mo[3]);
             }
             nodes = new NodeX[n];
             for (int i = 0; i < n; i++) {
@@ -366,17 +372,17 @@ public final class TownWorks {
                 add(q.s() - extS, q.s() + extS, q.v() - extV, q.v() + extV, nodes[i]);
             }
             List<Seg> sl = new ArrayList<>();
-            for (int i = 0; i < n; i++) {
-                if (Double.isNaN(mouthV[i])) continue;
-                // between the box's edge and the crossroad's end (the 2 m lattice leaves up to 2 m): flat at the corner
-                NodeX x = nodes[i];
-                TownStreets.Section sec = new TownStreets.Section("mouth", 2 * p.exitHalf, x.curb(), x.utility(), x.sidewalk());
-                boolean up = mouthV[i] > x.v();
-                Seg sg = up ? new Seg(false, x.s(), x.v(), mouthV[i], x.h(), x.h(), x.extV(), 0, sec)
-                        : new Seg(false, x.s(), mouthV[i], x.v(), x.h(), x.h(), 0, x.extV(), sec);
-                if (sg.a1() - sg.a0() <= x.extV()) continue;
+            for (double[] mo : mouths) {
+                // between the box's edge and the road's end (the 2 m lattice leaves up to 2 m): flat at the corner
+                NodeX x = nodes[(int) mo[0]];
+                boolean par = (int) mo[1] <= TownPlan.DIR_S_DOWN;
+                double c = par ? x.s() : x.v(), ext = par ? x.extS() : x.extV(), end = mo[2], line = par ? x.v() : x.s();
+                TownStreets.Section sec = new TownStreets.Section("mouth", 2 * mo[3], x.curb(), x.utility(), x.sidewalk());
+                Seg sg = end > c ? new Seg(par, line, c, end, x.h(), x.h(), ext, 0, sec) : new Seg(par, line, end, c, x.h(), x.h(), 0, ext, sec);
+                if (sg.a1() - sg.a0() <= ext) continue;
                 sl.add(sg);
-                add(x.s() - sec.halfRow(), x.s() + sec.halfRow(), sg.a0(), sg.a1(), sg);
+                if (par) add(sg.a0(), sg.a1(), line - sec.halfRow(), line + sec.halfRow(), sg);
+                else add(line - sec.halfRow(), line + sec.halfRow(), sg.a0(), sg.a1(), sg);
             }
             for (int k = 0; k < p.streets.size(); k++) {
                 TownPlan.Street st = p.streets.get(k);

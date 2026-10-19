@@ -28,9 +28,12 @@ public final class RoadNetworkStage {
      * 8: C3.3b group 2 interchanges: attached ramps give way on the interstate's band, RoadWorks#yields, the ramps' roadside
      * turned into the interstate's, the overpass's spill-through slopes, two-level columns under a deck, Column#deck; 9: Town
      * Framework V1: the framework towns' exits built (RoadNetworkBuild with the terrain), their streets, intersections,
-     * lots and slopes, TownWorks, RoadWorks#townColumn).
+     * lots and slopes, TownWorks, RoadWorks#townColumn; 10: County road G3, 2026-10-18: the forest home's county road
+     * (C2, RoadCounty) and its works, its mouth into a town's outer intersection, the home's gravel driveway, Driveway /
+     * RoadWorks.Kind.DRIVE; 11: County road G3 side join, 2026-10-19: the county road runs past the home, the driveway
+     * joins its paved edge from the side through a filleted apron, Driveway#near / RoadCounty#mouth).
      */
-    public static final int WORKS_VERSION = 9;
+    public static final int WORKS_VERSION = 11;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -51,9 +54,12 @@ public final class RoadNetworkStage {
      * ENTER / WRONG WAY at an exit's terminal, an overpass's deck over the road under it, RoadWorks.RampMarks; 17: the
      * interchanges' guide signs, RoadGuides / GuideSigns, 2026-10-17; 18: C3.3b group 3 system interchanges (trumpets,
      * RoadSystems): open ends without end bevels, the direct ramps' marks on their left-turn ramps, 2026-10-17; 19: Town
-     * Framework V1: the framework towns' street asphalt, curbs and sidewalks, TownMesh, their paved columns, 2026-10-17).
+     * Framework V1: the framework towns' street asphalt, curbs and sidewalks, TownMesh, their paved columns, 2026-10-17;
+     * 20: County road G3: the county road's C2 pavement and markings, its town mouth, its limit sign, its T junction's pad
+     * and signs, 2026-10-18; 21: County road G3 side join: the county road past the home, the driveway's apron mesh onto
+     * its paved edge, DriveMesh, 2026-10-19).
      */
-    public static final int SURFACE_VERSION = 19;
+    public static final int SURFACE_VERSION = 21;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {

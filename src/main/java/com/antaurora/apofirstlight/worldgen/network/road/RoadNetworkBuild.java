@@ -78,8 +78,9 @@ public final class RoadNetworkBuild {
      * The built network: its JSON (routes only), the routes, the report lines, the conflicts left, and the framework towns
      * laid out on it (Town Framework V1: appended to the JSON after RoadStructures, TownPlan.append).
      */
-    public record Result(String json, List<RouteData> routes, List<String> report, int conflicts, List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns) {
-        public Result(String json, List<RouteData> routes, List<String> report, int conflicts) { this(json, routes, report, conflicts, List.of()); }
+    public record Result(String json, List<RouteData> routes, List<String> report, int conflicts, List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns,
+                         RoadCounty.Home home) {
+        public Result(String json, List<RouteData> routes, List<String> report, int conflicts) { this(json, routes, report, conflicts, List.of(), null); }
     }
 
     public static Result build(String planJson) { return build(planJson, null); }
@@ -90,6 +91,11 @@ public final class RoadNetworkBuild {
      * Without terrain no town is laid out (the offline highway checks).
      */
     public static Result build(String planJson, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain) {
+        return build(planJson, terrain, RoadCounty.Memo.NONE);
+    }
+
+    /** The built network (#build); memo: where the county road's search remembers the home's site (RoadCounty#plan). */
+    public static Result build(String planJson, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain, RoadCounty.Memo memo) {
         List<RouteData> legs = new ArrayList<>();
         List<Node> nodes = RoadNetworkJson.nodes(planJson);
         String version = planVersion(planJson);
@@ -124,7 +130,15 @@ public final class RoadNetworkBuild {
         // Town Framework V1: each town with an exit gets its grid; its crossroad stops at the Front St corners
         List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns = new ArrayList<>();
         if (terrain != null) trimmed = towns(trimmed, terrain, towns, report);
-        return new Result(RoadNetworkJson.write(version, STAGE, trimmed), trimmed, report, conflicts, towns);
+        // County road G3: the forest home's site and its county road, to a town's street grid or a state road
+        RoadCounty.Home home = null;
+        if (terrain != null) {
+            RoadCounty.Result cr = RoadCounty.plan(trimmed, towns, terrain, report, memo);
+            trimmed = cr.roads();
+            towns = new ArrayList<>(cr.towns());
+            home = cr.home();
+        }
+        return new Result(RoadNetworkJson.write(version, STAGE, trimmed), trimmed, report, conflicts, towns, home);
     }
 
     /**
@@ -583,7 +597,7 @@ public final class RoadNetworkBuild {
         return new RouteData(r.id(), r.roadClass(), r.corridor(), r.from(), r.to(), xs, zs, e, r.structures(), null);
     }
 
-    private static RoadClassSpec spec(String roadClass) {
+    static RoadClassSpec spec(String roadClass) {
         for (RoadClassSpec k : RoadClassSpec.values()) if (k.id.equals(roadClass)) return k;
         throw new IllegalArgumentException("unknown road class " + roadClass);
     }

@@ -63,11 +63,12 @@ public final class RoadMesh {
     private static double wEdge(CrossSection sec) { return sec.edge - sec.halfMedian; }
 
     /**
-     * Drawn materials: the solid pass (asphalt, concrete, a tunnel's wall panels, its arch, steel) and the marking pass
-     * (lines, a tunnel's slot drains); PART: an equipment part's own texture (TunnelParts: atlas UVs already).
+     * Drawn materials: the solid pass (asphalt, concrete, a tunnel's wall panels, its arch, steel, the forest home's
+     * driveway gravel: DriveMesh) and the marking pass (lines, a tunnel's slot drains); PART: an equipment part's own
+     * texture (TunnelParts: atlas UVs already).
      */
     public enum Material {
-        ASPHALT, WHITE, YELLOW, CONCRETE, TUNNEL_PANEL, TUNNEL_ARCH, STEEL, DRAIN, PART;
+        ASPHALT, WHITE, YELLOW, CONCRETE, TUNNEL_PANEL, TUNNEL_ARCH, STEEL, DRAIN, PART, GRAVEL;
 
         /** Drawn in the solid pass (and hit by rays, meshhit/RoadStructureHits); the others are paint on it. */
         public boolean solid() { return this != WHITE && this != YELLOW && this != DRAIN; }

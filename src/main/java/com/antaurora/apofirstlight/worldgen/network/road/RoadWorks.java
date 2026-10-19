@@ -142,6 +142,10 @@ public final class RoadWorks {
     private final Water water;
     /** The framework towns' works (Town Framework V1): their footprint and slopes join the roads' (#townColumn). */
     private final TownWorks towns;
+    /** The forest home's driveway (County road G3): its columns where no road or town decides (#column). */
+    private final Driveway drive;
+    /** The county road the driveway joins (RoadCounty.ID), or null. */
+    private final RoadDesign driveRoad;
     private final Map<Long, RoadDesign[]> byChunk = new HashMap<>();
     private final Map<Long, Culvert[]> culvertsByChunk = new HashMap<>();
     private final List<Culvert> culverts = new ArrayList<>();
@@ -176,10 +180,15 @@ public final class RoadWorks {
 
     public RoadWorks(List<RoadDesign> roads, Water water) { this(roads, water, TownWorks.EMPTY); }
 
-    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns) {
+    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns) { this(roads, water, towns, Driveway.EMPTY); }
+
+    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns, Driveway drive) {
         this.roads = List.copyOf(roads);
         this.water = water;
         this.towns = towns;
+        // the driveway lies across its joint as the county road's pavement at its start (Driveway#joined)
+        this.driveRoad = drive.isEmpty() ? null : road(RoadCounty.ID);
+        this.drive = drive.joined(driveRoad);
         for (RoadDesign d : this.roads) {
             Attached a = d.attach == null ? null : attach(d);
             if (a == null) continue;
@@ -490,10 +499,15 @@ public final class RoadWorks {
     }
 
     /** Whether any road's works or clearance can reach into this chunk (a cheap test before any per-column work). */
-    public boolean touches(int chunkX, int chunkZ) { return byChunk.containsKey(key(chunkX, chunkZ)) || towns.touches(chunkX, chunkZ); }
+    public boolean touches(int chunkX, int chunkZ) {
+        return byChunk.containsKey(key(chunkX, chunkZ)) || towns.touches(chunkX, chunkZ) || drive.touches(chunkX, chunkZ);
+    }
 
     /** The framework towns' works (TownWorks.EMPTY without towns). */
     public TownWorks towns() { return towns; }
+
+    /** The forest home's driveway (Driveway.EMPTY without one). */
+    public Driveway drive() { return drive; }
 
     public RoadDesign road(String id) {
         for (RoadDesign d : roads) if (d.id.equals(id)) return d;
@@ -913,6 +927,7 @@ public final class RoadWorks {
     /** Whether a point is inside a road's clearance (forest roots, spawn): within CLEAR + extra of a centreline, ends included. */
     public boolean clear(double x, double z, double extra) {
         if (!towns.isEmpty() && towns.clear(x, z, extra)) return true;
+        if (drive.clear(x, z, extra)) return true;
         Hit h = hit(x, z, CLEAR + extra);
         return h != null && !TunnelWorks.overBores(h);
     }
@@ -944,7 +959,13 @@ public final class RoadWorks {
          * a tunnel's works (Tunnel V1, TunnelWorks): cells from bottom up to y by TunnelWorks#cells (road_structure, the
          * carved bore, the mountain); data TunnelWorks.APPROACH_COLUMN: on an approach, cleared above y to the sky
          */
-        TUNNEL
+        TUNNEL,
+        /**
+         * the forest home's driveway (County road G3, Driveway), a column wholly on its gravel: the collision as a PAVED
+         * column's (road_surface at y, layers, upper), gravel under it, dirt to the ground, cleared above; drawn by the
+         * client's mesh (DriveMesh). Its edges and verge are TURF (#driveColumn).
+         */
+        DRIVE
     }
 
     /**
@@ -987,6 +1008,15 @@ public final class RoadWorks {
             return new Column(Kind.CULVERT, cell.top(), cell.layers(), 0, data, cell.culvert().bed - 1, 0, 0);
         }
         Column c = finish(x, z, ground);
+        // the driveway where no road and no town holds the column; over a road's turf too (the county road's end
+        // earthworks reach back over the driveway's last metres: under the gravel they would rise through it,
+        // county_road_g3 section 6): every turf column with a corner on the gravel or its verge follows the driveway's
+        // rule, whose base off the gravel is the road's turf, so the two rules never meet at a corner (2026-10-19)
+        if ((c.kind() == Kind.NONE || c.kind() == Kind.TURF && (c.data() & TUNNEL_OVER) == 0) && cell == null) {
+            Column dc = driveColumn(x, z, ground);
+            if (dc != null) return dc.kind() == Kind.TURF && c.kind() == Kind.TURF
+                    ? new Column(Kind.TURF, dc.y(), 0, 0, dc.data() | c.data() & BARE, 0, 0, 0) : dc;
+        }
         if (cell != null && (c.kind() == Kind.PAVED || c.kind() == Kind.TURF) && (c.data() & (TUNNEL_PAVED | TUNNEL_OVER)) == 0)
             return new Column(c.kind(), c.y(), c.layers(), c.upper(), c.data() | CULVERT_BODY, cell.culvert().bed - 1, c.paveLo(), c.paveHi(),
                     Integer.MAX_VALUE, c.deck());
@@ -1272,6 +1302,154 @@ public final class RoadWorks {
         return false;
     }
 
+    // ------------------------------------------------------------------ the driveway (County road G3)
+
+    /**
+     * The driveway's column (Driveway), or null off it and its verge: DRIVE (its collision: #paved over the nine points)
+     * where each of the column's nine points lies on the gravel or on the county road's pavement (the joint); else graded
+     * turf whose corners on the gravel round down under it (the mesh's skirt hides the step), on the verge blending from
+     * the gravel's edge into the base, beyond it the base (the roads' own turf where a road turf column shares the corner,
+     * #roadCorner, else the natural surface as drawn); BARE where its square grown by PLANT_CLEAR reaches the gravel.
+     */
+    private Column driveColumn(int x, int z, Ground ground) {
+        if (drive.isEmpty() || !drive.touches(Math.floorDiv(x, 16), Math.floorDiv(z, 16))) return null;
+        // near it: its centre or a corner (at the joint the centre may lie past the road's start line, the road's)
+        boolean reach = false;
+        for (int k = 0; k < 5 && !reach; k++) {
+            double[] c = k == 4 ? drive.near(x + 0.5, z + 0.5) : drive.near(x + (k & 1), z + (k >> 1));
+            reach = c != null && c[0] <= c[2] + Driveway.VERGE + 1;
+        }
+        if (!reach) return null;
+        double lo = Double.POSITIVE_INFINITY, hi = Double.NEGATIVE_INFINITY;
+        boolean all = true;
+        for (int a = 0; a <= 2 && all; a++) for (int b = 0; b <= 2 && all; b++) {
+            double px = x + a * 0.5, pz = z + b * 0.5, y = drive.height(px, pz);
+            if (Double.isNaN(y) && driveRoad != null) y = pave(driveRoad, px, pz);
+            if (Double.isNaN(y)) all = false;
+            else {
+                lo = Math.min(lo, y);
+                hi = Math.max(hi, y);
+            }
+        }
+        // and nowhere between them uncovered (at the joint the gravel's end and the pavement's edge cross a column at a
+        // slant: a sliver between the nine points showed the sky through the invisible collision, 2026-10-18; the apron
+        // runs Driveway.JOIN past the paved edge, so the two always overlap)
+        for (int a = 0; a <= 20 && all; a++) for (int b = 0; b <= 20 && all; b++) {
+            if (a % 10 == 0 && b % 10 == 0) continue;
+            double px = x + a * 0.05, pz = z + b * 0.05;
+            all = !Double.isNaN(drive.height(px, pz)) || driveRoad != null && !Double.isNaN(pave(driveRoad, px, pz));
+        }
+        if (all) return paved(Kind.DRIVE, new double[]{lo, hi}, 0);
+        if (ground == null) return null;
+        double[] q = new double[4];
+        boolean any = false;
+        int[] tops = null;
+        Column[] around = new Column[9];
+        for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+            double px = x + a, pz = z + b, f = drive.height(px, pz);
+            if (!Double.isNaN(f)) {
+                f = Math.floor(f * 8 + 1e-9) / 8;
+                any = true;
+                q[a + 2 * b] = f;
+                continue;
+            }
+            // off the gravel the base is the road's earthworks turf where a road turf column shares the corner, else the
+            // natural surface: turf sides between two turf blocks are culled, so a corner shared with the road's own turf
+            // must be the same height or the sky shows through the wedge between them (2026-10-19)
+            double r = roadCorner(around, x, z, a, b, ground);
+            double pv = driveRoad == null ? Double.NaN : pave(driveRoad, px, pz);
+            if (!Double.isNaN(pv)) {
+                // on the county road's pavement at the joint: under the pavement too (natural ground poked up through it)
+                f = Double.isNaN(r) ? Math.floor(pv * 8 + 1e-9) / 8 : r;
+                any = true;
+            } else {
+                double nat = r;
+                if (Double.isNaN(nat)) {
+                    if (tops == null) tops = naturalTops(x, z, ground);
+                    nat = naturalSurface(tops, a, b);
+                }
+                double[] k = drive.near(px, pz);
+                if (k != null && k[0] <= k[2] + Driveway.VERGE) {
+                    double e = drive.edge(k), w = CrossSection.smooth((k[0] - k[2]) / Driveway.VERGE);
+                    f = e + (nat - e) * w;
+                    // next to the gravel the turf keeps under its edge
+                    if (k[0] - k[2] < 1) f = Math.floor(f * 8 + 1e-9) / 8;
+                    any = true;
+                } else f = nat;
+            }
+            q[a + 2 * b] = f;
+        }
+        if (!any) return null;
+        int[] fit = fit(q);
+        int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | (driveBare(x, z) ? BARE : 0);
+        return new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0);
+    }
+
+    /**
+     * The height the roads' and towns' own finish (#finish, without the driveway) gives corner (x + a, z + b): that of the
+     * first turf column of the four sharing it (in an order fixed by the corner, so every column asking gets the same),
+     * or NaN where none is turf. around caches the finishes of the 3 x 3 columns around (x, z).
+     */
+    private double roadCorner(Column[] around, int x, int z, int a, int b, Ground ground) {
+        // the turf columns that keep the roads' rule (the ones this corner must meet), those the driveway takes over only
+        // when none does; the lowest of them: two may disagree only by a corner lifted to its block's base (#fit: low
+        // corners graded_turf cannot hold are lifted), and the lifted one then stands a layer over this corner, its side
+        // facing air (drawn, a step of earth), while a lifted height here would stand over a turf in the same layer
+        double keep = Double.NaN, other = Double.NaN;
+        for (int db = -1; db <= 0; db++) for (int da = -1; da <= 0; da++) {
+            int i = a + da + 1 + 3 * (b + db + 1), cx = x + a + da, cz = z + b + db;
+            if (around[i] == null) around[i] = finish(cx, cz, ground);
+            Column c = around[i];
+            if (c.kind() != Kind.TURF) continue;
+            // the corner is (-da, -db) of that column: nw, ne, sw, se
+            int nib = c.data() >> 4 * (-da - 2 * db) & 15;
+            double h = c.y() + (c.data() >> 16 & 1) * 0.5 + nib / 8.0;
+            if ((c.data() & TUNNEL_OVER) != 0 || !driveHolds(cx, cz)) keep = Double.isNaN(keep) ? h : Math.min(keep, h);
+            else other = Double.isNaN(other) ? h : Math.min(other, h);
+        }
+        return Double.isNaN(keep) ? other : keep;
+    }
+
+    /**
+     * Whether #driveColumn gives column (x, z) (it is near the driveway and a corner lies on the gravel, on the county
+     * road's pavement or on the verge), without the terrain plan.
+     */
+    private boolean driveHolds(int x, int z) {
+        if (drive.isEmpty() || !drive.touches(Math.floorDiv(x, 16), Math.floorDiv(z, 16))) return false;
+        boolean reach = false;
+        for (int k = 0; k < 5 && !reach; k++) {
+            double[] c = k == 4 ? drive.near(x + 0.5, z + 0.5) : drive.near(x + (k & 1), z + (k >> 1));
+            reach = c != null && c[0] <= c[2] + Driveway.VERGE + 1;
+        }
+        if (!reach) return false;
+        for (int k = 0; k < 4; k++) {
+            double px = x + (k & 1), pz = z + (k >> 1);
+            if (!Double.isNaN(drive.height(px, pz)) || driveRoad != null && !Double.isNaN(pave(driveRoad, px, pz))) return true;
+            double[] c = drive.near(px, pz);
+            if (c != null && c[0] <= c[2] + Driveway.VERGE) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Column (x, z)'s driveway collision (Kind.DRIVE, as #column has it there), or null: the client's paved cells
+     * (RoadCells#of) without the terrain plan.
+     */
+    public Column driveCell(int x, int z) {
+        Column c = driveColumn(x, z, null);
+        return c != null && c.kind() == Kind.DRIVE ? c : null;
+    }
+
+    /** Whether column (x, z)'s square grown by PLANT_CLEAR reaches the driveway's gravel (no plants through the mesh). */
+    private boolean driveBare(int x, int z) {
+        double w = 1 + 2 * PLANT_CLEAR;
+        for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+            double[] k = drive.near(x - PLANT_CLEAR + a * w, z - PLANT_CLEAR + b * w);
+            if (k != null && k[0] <= k[2] + 0.05) return true;
+        }
+        return false;
+    }
+
     // ------------------------------------------------------------------ towns (Town Framework V1)
 
     /**
@@ -1408,7 +1586,7 @@ public final class RoadWorks {
     }
 
     /** A road's pavement height at a point of its paved band (on the route), else NaN. */
-    private static double paveAt(RoadDesign d, double x, double z) {
+    static double paveAt(RoadDesign d, double x, double z) {
         CrossSection sec = d.section;
         double[] l = d.local(x, z, sec.edge + 2);
         if (l == null) return Double.NaN;
@@ -1419,7 +1597,7 @@ public final class RoadWorks {
 
     /**
      * The pavement's height at a point for the walls of a dug hole (RoadCells): a pad's, else road d's (its band and a
-     * little beyond), else NaN.
+     * little beyond); without d any road's pavement there, else the driveway's gravel; else NaN.
      */
     public double paveTop(double x, double z, RoadDesign d) {
         Junction j = pad(x, z);
@@ -1431,7 +1609,8 @@ public final class RoadWorks {
                     double y = paveAt(q, x, z);
                     if (!Double.isNaN(y)) return y;
                 }
-            return Double.NaN;
+            // the forest home's driveway (County road G3): its gravel's height
+            return drive.isEmpty() ? Double.NaN : drive.height(x, z);
         }
         double[] l = d.local(x, z, d.section.edge + 4);
         return l == null ? Double.NaN : d.pavementY(l[0], l[1]);

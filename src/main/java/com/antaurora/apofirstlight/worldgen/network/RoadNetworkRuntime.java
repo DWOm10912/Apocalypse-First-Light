@@ -42,7 +42,8 @@ public final class RoadNetworkRuntime {
     private RoadNetworkRuntime() {}
 
     /** The network of one plan: the whole plan JSON, its digest, the built routes' JSON (client packet) and their works. */
-    public record Network(String json, String digest, String builtJson, RoadWorks works, TerrainPlanSurface plan) {}
+    public record Network(String json, String digest, String builtJson, RoadWorks works, TerrainPlanSurface plan,
+                          com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.Home home) {}
 
     private static final Map<TerrainPlanSurface, Network> CACHE = new WeakHashMap<>();
     /** Works of the worlds with roads, by seed: the mesh forest keeps its roots off them (ForestPlan exclusion). */
@@ -94,9 +95,32 @@ public final class RoadNetworkRuntime {
         String builtJson;
         java.util.List<com.antaurora.apofirstlight.worldgen.network.road.RoadDesign> designs;
         java.util.List<com.antaurora.apofirstlight.worldgen.network.town.TownPlan> towns = java.util.List.of();
+        com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.Home home = null;
         try {
             // with the terrain: the framework towns' exits and plans too (Town Framework V1, RoadNetworkBuild#towns)
-            RoadNetworkBuild.Result b = RoadNetworkBuild.build(json, terrain);
+            // County road G3: the home's site remembered beside the plan (G2 takes seconds; the network is built on every load)
+            Path homeFile = file.resolveSibling(String.format(Locale.ROOT, "home_%s_%s_%s.txt", com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.RULES,
+                    Long.toUnsignedString(seed), digest(json)));
+            com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.Memo memo = new com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.Memo() {
+                @Override public String load() {
+                    try {
+                        return Files.isRegularFile(homeFile) ? Files.readString(homeFile, StandardCharsets.UTF_8) : null;
+                    } catch (Exception e) {
+                        ApocalypseFirstLight.LOGGER.warn("[AFL roads] cannot read the home site cache {}", homeFile, e);
+                        return null;
+                    }
+                }
+
+                @Override public void store(String site) {
+                    try {
+                        Files.createDirectories(homeFile.getParent());
+                        Files.writeString(homeFile, site, StandardCharsets.UTF_8);
+                    } catch (Exception e) {
+                        ApocalypseFirstLight.LOGGER.warn("[AFL roads] cannot write the home site cache {}", homeFile, e);
+                    }
+                }
+            };
+            RoadNetworkBuild.Result b = RoadNetworkBuild.build(json, terrain, memo);
             for (String line : b.report()) ApocalypseFirstLight.LOGGER.info("[AFL roads] {}", line);
             if (b.conflicts() > 0) ApocalypseFirstLight.LOGGER.warn("[AFL roads] {} stations where two built roads' works still meet", b.conflicts());
             // group D: the box culverts and the wing walls' reach, decided here from the terrain and carried to the clients
@@ -115,14 +139,20 @@ public final class RoadNetworkRuntime {
             // the towns ride on the same JSON (a "towns" member after the routes), the clients read them back
             towns = b.towns();
             builtJson = com.antaurora.apofirstlight.worldgen.network.town.TownPlan.append(structured, towns);
+            // County road G3: the forest home's site, driveway and anchors (a "home" member after the towns)
+            home = b.home();
+            builtJson = com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.append(builtJson, home);
             designs = RoadNetworkJson.designs(builtJson);
         } catch (RuntimeException e) {
             ApocalypseFirstLight.LOGGER.error("[AFL roads] cannot build the road network for seed {}; this world gets no roads", seed, e);
             builtJson = RoadNetworkJson.write(RoadNetworkPlan.VERSION, RoadNetworkBuild.STAGE, java.util.List.of());
             designs = java.util.List.of();
             towns = java.util.List.of();
+            home = null;
         }
-        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(towns)), plan);
+        com.antaurora.apofirstlight.worldgen.network.road.Driveway drive = com.antaurora.apofirstlight.worldgen.network.road.Driveway.of(home);
+        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(towns), drive),
+                plan, home);
         CACHE.put(plan, n);
         return n;
     }

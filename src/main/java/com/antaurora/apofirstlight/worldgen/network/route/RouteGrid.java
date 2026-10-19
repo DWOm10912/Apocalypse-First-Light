@@ -57,13 +57,31 @@ public final class RouteGrid {
     /** earlier routes' hard corridors through the cell: bit 1 interstate, 2 state, 4 county */
     final byte[] taken;
 
-    public RouteGrid(RouteTerrain terrain) {
+    public RouteGrid(RouteTerrain terrain) { this(terrain, Double.NaN, 0, 0); }
+
+    /**
+     * The grid over the cells within reach (a square) of (wx, wz) only (G3's county road, RoadCounty: the whole country takes
+     * about 3 s), on the whole grid's lattice; NaN wx: the whole grid. Cells on the window's edge see their slope from one
+     * side only.
+     */
+    public RouteGrid(RouteTerrain terrain, double wx, double wz, double reach) {
         this.terrain = terrain;
         FederalMap.Bounds b = terrain.map.landBounds();
-        ox = Math.floor((b.minX() - 512) / CELL) * CELL;
-        oz = Math.floor((b.minZ() - 512) / CELL) * CELL;
-        nx = (int) Math.ceil((b.maxX() + 512 - ox) / CELL);
-        nz = (int) Math.ceil((b.maxZ() + 512 - oz) / CELL);
+        double fx = Math.floor((b.minX() - 512) / CELL) * CELL, fz = Math.floor((b.minZ() - 512) / CELL) * CELL;
+        int fnx = (int) Math.ceil((b.maxX() + 512 - fx) / CELL), fnz = (int) Math.ceil((b.maxZ() + 512 - fz) / CELL);
+        if (Double.isNaN(wx)) {
+            ox = fx;
+            oz = fz;
+            nx = fnx;
+            nz = fnz;
+        } else {
+            int c0 = Math.max(0, (int) Math.floor((wx - reach - fx) / CELL)), r0 = Math.max(0, (int) Math.floor((wz - reach - fz) / CELL));
+            int c1 = Math.min(fnx - 1, (int) Math.ceil((wx + reach - fx) / CELL)), r1 = Math.min(fnz - 1, (int) Math.ceil((wz + reach - fz) / CELL));
+            ox = fx + c0 * CELL;
+            oz = fz + r0 * CELL;
+            nx = Math.max(1, c1 - c0 + 1);
+            nz = Math.max(1, r1 - r0 + 1);
+        }
         int n = nx * nz;
         hs = new float[n];
         slope = new float[n];
@@ -126,6 +144,9 @@ public final class RouteGrid {
         for (int line = 0; line < rivers.lines(); line++) {
             for (int i = rivers.lineStart(line); i < rivers.lineEnd(line) - 1; i++) {
                 double ax = rivers.vertexX(i), az = rivers.vertexZ(i), bx = rivers.vertexX(i + 1), bz = rivers.vertexZ(i + 1);
+                // a segment wholly outside the grid (a window, RoadCounty) touches none of its cells
+                if (Math.max(ax, bx) < ox - CELL || Math.min(ax, bx) > ox + (nx + 1) * CELL || Math.max(az, bz) < oz - CELL
+                        || Math.min(az, bz) > oz + (nz + 1) * CELL) continue;
                 double len = Math.hypot(bx - ax, bz - az);
                 int steps = Math.max(1, (int) Math.ceil(len / 4));
                 for (int k = 0; k <= steps; k++) {
@@ -193,6 +214,9 @@ public final class RouteGrid {
 
     public int cells() { return nx * nz; }
 
+    /** Cells per row (a cell's column is c % nx, its row c / nx). */
+    public int nx() { return nx; }
+
     static final int[] DC = {1, -1, 0, 0, 1, 1, -1, -1, 2, 2, -2, -2, 1, -1, 1, -1};
     static final int[] DR = {0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 2, 2, -2, -2};
 
@@ -247,6 +271,14 @@ public final class RouteGrid {
      * admissible (no step costs less than its length), so the path is the cheapest.
      */
     public int[] route(int[] from, boolean[] goal, double gx, double gz, double gr, RoadClassSpec k, boolean[] avoid, float[] penalty) {
+        return route(from, null, goal, gx, gz, gr, k, avoid, penalty);
+    }
+
+    /**
+     * #route with a starting cost per source cell (fromCost[i] for from[i]; null: all 0): the cheapest path over the
+     * sources' costs and the steps (County road G3 side join: the driveway's cost to each mouth, RoadCounty).
+     */
+    public int[] route(int[] from, double[] fromCost, boolean[] goal, double gx, double gz, double gr, RoadClassSpec k, boolean[] avoid, float[] penalty) {
         int n = nx * nz;
         double[] gScore = new double[n];
         Arrays.fill(gScore, Double.POSITIVE_INFINITY);
@@ -254,10 +286,12 @@ public final class RouteGrid {
         Arrays.fill(prev, -1);
         boolean[] done = new boolean[n];
         Heap open = new Heap();
-        for (int s : from) {
-            if (gScore[s] == 0) continue;
-            gScore[s] = 0;
-            open.push(h(s, gx, gz, gr), s);
+        for (int q = 0; q < from.length; q++) {
+            int s = from[q];
+            double c0 = fromCost == null ? 0 : fromCost[q];
+            if (gScore[s] <= c0) continue;
+            gScore[s] = c0;
+            open.push(c0 + h(s, gx, gz, gr), s);
         }
         int to = -1;
         while (open.size > 0) {

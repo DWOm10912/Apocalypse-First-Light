@@ -14,6 +14,8 @@ import java.util.List;
  *   <li>the limit sign (the town's name over CITY LIMIT) on the exit crossroad, for the traffic toward the town,
  *   LIMIT_IN before the crossroad's end at its Front St corner (moved back from the town in LIMIT_STEP steps while the
  *   place is not clear, RoadGuides#beside);</li>
+ *   <li>the limit sign on a county road into the town (G3, TownPlan.Entry), for its traffic toward the town (the county
+ *   road runs +s into it), where it crosses the limit (moved back likewise);</li>
  *   <li>at every intersection a pair of street name blades on one post: the lower names the parallel street (its faces
  *   toward the cross street), the upper the cross street, turned a quarter; the post on the sidewalk CORNER_IN inside
  *   the corner of the intersection's box away from the interstate (+s first; another corner where that one is not
@@ -53,12 +55,36 @@ final class TownSigns {
             double[] a = x.point(Math.max(0, sAt - 1), 0), b = x.point(Math.min(x.length, sAt + 1), 0);
             double va = p.local(a[0], a[1])[1], vb = p.local(b[0], b[1])[1];
             int k = Math.abs(vb) > Math.abs(va) ? 1 : -1;
-            for (double d = 0; d <= LIMIT_SHIFT + 1e-9; d += LIMIT_STEP) {
-                TunnelMesh.Placement q = RoadGuides.beside(works, ground, x, sAt - k * d, k, RoadGuides.SIDE_X, spec);
-                if (q != null) {
-                    out.add(q);
-                    break;
-                }
+            beside(works, ground, x, sAt, k, spec, out);
+        }
+        // the county roads into the town (G3): at the limit, for the traffic toward the town (+s)
+        for (TownPlan.Entry e : p.entries) {
+            RoadDesign c = works.road(e.road());
+            if (c == null) continue;
+            boolean par = e.dir() <= TownPlan.DIR_S_DOWN;
+            double edge = switch (e.dir()) {
+                case TownPlan.DIR_S_UP -> p.limit[1];
+                case TownPlan.DIR_S_DOWN -> p.limit[0];
+                default -> p.limit[3];
+            };
+            double best = Double.POSITIVE_INFINITY, sAt = Double.NaN;
+            for (double s = 0; s <= c.length; s += 1) {
+                double[] w = c.point(s, 0), l = p.local(w[0], w[1]);
+                double d = Math.abs((par ? l[0] : l[1]) - edge);
+                if (d < best) { best = d; sAt = s; }
+            }
+            if (Double.isNaN(sAt) || best > 2) continue;
+            beside(works, ground, c, sAt, 1, spec, out);
+        }
+    }
+
+    /** The limit sign beside road x at station s for its traffic travelling k, moved back from the town until clear. */
+    private static void beside(RoadWorks works, RoadWorks.Ground ground, RoadDesign x, double s, int k, GuideSigns.Spec spec, List<TunnelMesh.Placement> out) {
+        for (double d = 0; d <= LIMIT_SHIFT + 1e-9; d += LIMIT_STEP) {
+            TunnelMesh.Placement q = RoadGuides.beside(works, ground, x, s - k * d, k, RoadGuides.SIDE_X, spec);
+            if (q != null) {
+                out.add(q);
+                return;
             }
         }
     }

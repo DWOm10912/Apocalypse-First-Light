@@ -8,7 +8,9 @@ package com.antaurora.apofirstlight.worldgen.network.road;
  *   section B; dev class R4Section), same numbers and the same functions;</li>
  *   <li>{@link #R2}: the two-lane state highway (C3.3a): 3.65 m lanes, 2.4 m paved shoulders, undivided, crowned on the
  *   centreline; its roadside is the R4 template at the state's scale;</li>
- *   <li>{@link #RAMP}: an interchange ramp (C3.3b group 2): one lane one way, the whole section one plane.</li>
+ *   <li>{@link #RAMP}: an interchange ramp (C3.3b group 2): one lane one way, the whole section one plane;</li>
+ *   <li>{@link #C2}: the two-lane county road (G3, 2026-10-18): 3.3 m lanes, 0.6 m paved edges, undivided, crowned on
+ *   the centreline like R2 (its markings and roadside the R2 rules at the county's scale).</li>
  * </ul>
  * Lateral offset u: 0 on the centreline, positive to the right of the direction of travel of the station (Minecraft XZ,
  * the same convention as RoadCurve). v = |u|. The design datum E(s) is the height of the crown line (R4: the yellow
@@ -56,6 +58,12 @@ public final class CrossSection {
      * 60 km/h), the lane edge 2.1 m from the axis rising by at most 1:167 (0.60 %); clear zone 4 m, ditch 0.8 m deep.
      */
     public static final CrossSection RAMP = new CrossSection("RAMP", 2.1, 0, 1.8, 0, 1, 0.06, 135, 0.0060 / 2.1, 4.0, 0.8, 1.0, true);
+    /**
+     * C2, the county road (G3, docs/worldgen/county_road_g3.md): 70 km/h, two 3.3 m lanes, 0.6 m paved edges (RoadClassSpec
+     * COUNTY: edge 3.9); superelevation emax 6 % (AASHTO Rmin 195 m at 70 km/h), one lane rotated about the centreline,
+     * its edge rising by at most 1:182 (0.55 %); clear zone 3 m, ditch 0.6 m deep, 0.8 m bottom.
+     */
+    public static final CrossSection C2 = new CrossSection("C2", 3.3, 0, 0.6, 0, 1, 0.06, 195, 0.0055 / 3.3, 3.0, 0.6, 0.8);
 
     public final String name;
     public final double lane, inner, outer, median;
@@ -100,14 +108,15 @@ public final class CrossSection {
     }
 
     /**
-     * The section of a route class (RoadClassSpec id): interstate R4, state R2, the interchange ramps (C3.3b group 2, not
-     * a planner class: RoadInterchanges builds them) RAMP; others are not built yet.
+     * The section of a route class (RoadClassSpec id): interstate R4, state R2, county C2 (G3, RoadCounty), the
+     * interchange ramps (C3.3b group 2, not a planner class: RoadInterchanges builds them) RAMP.
      */
     public static CrossSection of(String roadClass) {
         return switch (roadClass) {
             case "interstate" -> R4;
             case "state" -> R2;
             case "ramp" -> RAMP;
+            case "county" -> C2;
             default -> throw new IllegalArgumentException("no built cross-section for class " + roadClass);
         };
     }

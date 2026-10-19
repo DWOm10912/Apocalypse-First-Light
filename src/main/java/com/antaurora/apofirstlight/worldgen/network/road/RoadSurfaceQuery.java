@@ -33,7 +33,9 @@ import javax.annotation.Nullable;
  *   <li>road_surface not under the design's pavement (a deck's edge strip): its collision top, flat;</li>
  *   <li>a framework town's pavement (Town Framework V1, 2026-10-18; TownWorks#spot): its streets' asphalt (crowned),
  *   curbs, sidewalks and driveway aprons (concrete) at their design height, the normal by differences over the same
- *   material (a curb's face is no slope); the town's turf (utility strips, lots, yards) as graded turf above.</li>
+ *   material (a curb's face is no slope); the town's turf (utility strips, lots, yards) as graded turf above;</li>
+ *   <li>the forest home's gravel driveway (County road G3, Driveway#height, 2026-10-18): its height, the normal by
+ *   differences; kind TURF (grip 0.70) until the vehicle's grip table has gravel (Main), its turf edges as above.</li>
  * </ul>
  * Read only: no chunk is loaded (an unloaded chunk gives nothing), no state kept; the same network (RoadStructureBlock's
  * bound works) on both sides. Called per wheel point many times a tick: #sample(Level, double, double, double, Out)
@@ -225,9 +227,35 @@ public final class RoadSurfaceQuery {
                 }
             }
         }
+        // the forest home's gravel driveway (a road's own pavement is found above)
+        Driveway dw = works.drive();
+        if (!dw.isEmpty() && dw.touches(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16))) {
+            double y = dw.height(x, z), dist = Math.abs(y - yHint);
+            if (!Double.isNaN(y) && dist <= LAYER && dist < bd) {
+                driveNormal(dw, x, z, y, out);
+                // its collision is the nine points' mean (RoadWorks#paved): a town's cover
+                out.town = true;
+                return true;
+            }
+        }
         if (best == null) return false;
         normal(best, bs, bu, by, out, k);
         return true;
+    }
+
+    /** A driveway point's unit upward normal into out (height y, kind TURF): differences STEP each way, one-sided at its edge. */
+    static void driveNormal(Driveway dw, double x, double z, double y, Out out) {
+        double gx = driveSlope(dw, x, z, y, STEP, 0), gz = driveSlope(dw, x, z, y, 0, STEP);
+        double inv = 1 / Math.sqrt(gx * gx + 1 + gz * gz);
+        out.set(y, -gx * inv, inv, -gz * inv, Surface.TURF, false);
+    }
+
+    private static double driveSlope(Driveway dw, double x, double z, double y, double dx, double dz) {
+        double a = dw.height(x + dx, z + dz), b = dw.height(x - dx, z - dz);
+        if (!Double.isNaN(a) && !Double.isNaN(b)) return (a - b) / (2 * STEP);
+        if (!Double.isNaN(a)) return (a - y) / STEP;
+        if (!Double.isNaN(b)) return (y - b) / STEP;
+        return 0;
     }
 
     private static final RoadDesign[] NONE = new RoadDesign[0];
