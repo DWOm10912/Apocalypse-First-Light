@@ -11,7 +11,8 @@ import java.util.Locale;
 /**
  * The T junctions of the built network (C3.3b group 1; docs/worldgen/federal_junctions_c3_3b.md 3), at build time
  * (RoadNetworkBuild): a state road whose end lies on another state road's centreline (the planner's join) away from that
- * road's ends becomes the minor road of a T junction on it (the host).
+ * road's ends becomes the minor road of a T junction on it (the host). A county road (G3, RoadCounty) joins a state road
+ * the same way, as the minor; it is never a host.
  * <ul>
  *   <li>skipped (the C3.3a trim stays): a host structure within HOST_CLEAR of the mouth, a minor structure within
  *   MINOR_CLEAR of its end (realigned: within the realigned stretch and REALIGN_CLEAR before it);</li>
@@ -65,7 +66,7 @@ final class RoadJunctions {
         for (int i = 0; i < out.size(); i++) {
             for (boolean atEnd : new boolean[]{false, true}) {
                 RouteData r = out.get(i);
-                if (!r.roadClass().equals("state")) continue;
+                if (!r.roadClass().equals("state") && !r.roadClass().equals("county")) continue;
                 int n = r.xs().length;
                 double px = atEnd ? r.xs()[n - 1] : r.xs()[0], pz = atEnd ? r.zs()[n - 1] : r.zs()[0];
                 int host = -1;
@@ -220,7 +221,7 @@ final class RoadJunctions {
             else for (int q2 = i; q2 < j; q2++) e[q2] = e[i - 1] + (e[j] - e[i - 1]) * (q2 - i + 1) / (j - i + 1);
             i = j;
         }
-        double[] sm = RoadProfile.smooth(e, RoadClassSpec.STATE.vSigma() / RoadProfile.DS);
+        double[] sm = RoadProfile.smooth(e, RoadNetworkBuild.spec(r.roadClass()).vSigma() / RoadProfile.DS);
         double from = bestB + 80;
         for (int i = 0; i < ms; i++) {
             double t = atEnd ? nc.length - i * RoadProfile.DS : i * RoadProfile.DS;   // distance from the junction's end
@@ -318,7 +319,7 @@ final class RoadJunctions {
         double gOld = (op.at(sEdge - dir * Junction.LANDING) - op.at(sEdge)) / Junction.LANDING;
         double gl = Math.max(-Junction.LANDING_GRADE, Math.min(Junction.LANDING_GRADE, gOld));
         double delta = op.at(sEdge - dir * Junction.LANDING) - (ec + gl * Junction.LANDING);
-        RoadClassSpec k = RoadClassSpec.STATE;
+        RoadClassSpec k = RoadNetworkBuild.spec(m.roadClass());
         double limit = Math.min(k.gradeMountain, Math.max(k.grade, op.maxGrade()));
         // structures stop the blend
         double free = Double.POSITIVE_INFINITY;

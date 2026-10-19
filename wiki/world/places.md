@@ -6,6 +6,8 @@
 
 <Shot k="hero_building" zh="溪谷老宅（开发中）" en="Creek valley farmhouse (in development)" />
 
+- <StatusTag s="test" /> 老宅离县道至少 <V j="RoadCounty.PLOT_HARD" u="m" />，从路上看不到房子。一条碎石车道沿溪接到县道，见 [道路](./roads#县道和老宅车道)
+
 ## 加油站
 
 <StatusTag s="test" /> 北美式的公路加油站：加油机、雨棚、地下油罐。设备已经能用（见 [燃料与加油](../vehicles/fuel)），但世界里还不会自然生成

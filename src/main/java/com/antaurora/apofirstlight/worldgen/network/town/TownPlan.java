@@ -39,6 +39,16 @@ public final class TownPlan {
     public static final int FACE_V0 = 0, FACE_V1 = 1;
 
     /**
+     * A county road's entry (G3, docs/worldgen/county_road_g3.md): the outer intersection it runs into, the arm it comes
+     * in on (DIR_*: the way out of the town from the node), the road's end on that arm (s for DIR_S*, v for DIR_V*: just
+     * beyond the node's box, TownWorks' mouth reaches out to it), its paved half width and its route id.
+     */
+    public record Entry(int node, int dir, double end, double half, String road) {}
+
+    /** Arm directions out of a node: +s, -s, +v (away from the interstate), -v. */
+    public static final int DIR_S_UP = 0, DIR_S_DOWN = 1, DIR_V_UP = 2, DIR_V_DOWN = 3;
+
+    /**
      * Driveway widths at the curb, m (2026-10-18): a house's (12 ft), a mobile home's, a two-way commercial or civic
      * entrance (24 ft), a highway lot's (trucks), an industry lot's (semi-trailers).
      */
@@ -110,9 +120,17 @@ public final class TownPlan {
     public final List<Street> streets;
     public final List<Block> blocks;
     public final List<Lot> lots;
+    /** The county roads that run into the town (G3, RoadCounty), none before they are planned. */
+    public final List<Entry> entries;
 
     public TownPlan(String town, String name, String state, double ox, double oz, double ax, double az, double bx, double bz, String exit,
                     double[] limit, double exitHalf, List<double[]> exitEnds, List<Node> nodes, List<Street> streets, List<Block> blocks, List<Lot> lots) {
+        this(town, name, state, ox, oz, ax, az, bx, bz, exit, limit, exitHalf, exitEnds, nodes, streets, blocks, lots, List.of());
+    }
+
+    public TownPlan(String town, String name, String state, double ox, double oz, double ax, double az, double bx, double bz, String exit,
+                    double[] limit, double exitHalf, List<double[]> exitEnds, List<Node> nodes, List<Street> streets, List<Block> blocks, List<Lot> lots,
+                    List<Entry> entries) {
         this.town = town;
         this.name = name;
         this.state = state;
@@ -132,6 +150,22 @@ public final class TownPlan {
         this.streets = List.copyOf(streets);
         this.blocks = List.copyOf(blocks);
         this.lots = List.copyOf(lots);
+        this.entries = List.copyOf(entries);
+    }
+
+    /** This plan with these county road entries (G3). */
+    public TownPlan withEntries(List<Entry> e) {
+        return new TownPlan(town, name, state, ox, oz, ax, az, bx, bz, exit, limit, exitHalf, exitEnds, nodes, streets, blocks, lots, e);
+    }
+
+    /** The unit vector of an arm direction (DIR_*) in town coordinates {ds, dv}. */
+    public static double[] arm(int dir) {
+        return switch (dir) {
+            case DIR_S_UP -> new double[]{1, 0};
+            case DIR_S_DOWN -> new double[]{-1, 0};
+            case DIR_V_UP -> new double[]{0, 1};
+            default -> new double[]{0, -1};
+        };
     }
 
     /** World (x, z) of town coordinates. */
@@ -193,7 +227,18 @@ public final class TownPlan {
                 b.append('[').append(f(l.s0())).append(',').append(f(l.s1())).append(',').append(f(l.v0())).append(',').append(f(l.v1())).append(',')
                         .append(str(l.zone())).append(',').append(l.face()).append(',').append(f(l.pad())).append(']');
             }
-            b.append("]}");
+            b.append(']');
+            if (!p.entries.isEmpty()) {
+                b.append(",\"entries\":[");
+                for (int i = 0; i < p.entries.size(); i++) {
+                    Entry e = p.entries.get(i);
+                    if (i > 0) b.append(',');
+                    b.append('[').append(e.node()).append(',').append(e.dir()).append(',').append(f(e.end())).append(',').append(f(e.half())).append(',')
+                            .append(str(e.road())).append(']');
+                }
+                b.append(']');
+            }
+            b.append('}');
         }
         return b.append(']').toString();
     }
@@ -242,8 +287,15 @@ public final class TownPlan {
                 List<Object> a = (List<Object>) n;
                 lots.add(new Lot(d(a.get(0)), d(a.get(1)), d(a.get(2)), d(a.get(3)), (String) a.get(4), (int) d(a.get(5)), d(a.get(6))));
             }
+            List<Entry> entries = new ArrayList<>();
+            if (m.get("entries") instanceof List<?> es)
+                for (Object n : es) {
+                    List<Object> a = (List<Object>) n;
+                    entries.add(new Entry((int) d(a.get(0)), (int) d(a.get(1)), d(a.get(2)), d(a.get(3)), (String) a.get(4)));
+                }
             out.add(new TownPlan((String) m.get("town"), (String) m.get("name"), (String) m.get("state"), d(og.get(0)), d(og.get(1)), d(ax.get(0)), d(ax.get(1)),
-                    d(ac.get(0)), d(ac.get(1)), (String) m.get("exit"), new double[]{d(li.get(0)), d(li.get(1)), d(li.get(2)), d(li.get(3))}, exitHalf, ends, nodes, streets, blocks, lots));
+                    d(ac.get(0)), d(ac.get(1)), (String) m.get("exit"), new double[]{d(li.get(0)), d(li.get(1)), d(li.get(2)), d(li.get(3))}, exitHalf, ends, nodes, streets, blocks, lots,
+                    entries));
         }
         return out;
     }

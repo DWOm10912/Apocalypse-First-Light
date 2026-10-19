@@ -37,6 +37,8 @@ public final class JunctionMesh {
         if (pads != null) for (Junction j : pads) out.addAll(chunk(j, cx, cz));
         // the framework towns' streets (Town Framework V1)
         out.addAll(TownMesh.chunk(works.towns(), cx, cz));
+        // the forest home's gravel driveway (County road G3)
+        out.addAll(DriveMesh.chunk(works.drive(), cx, cz));
         return out;
     }
 

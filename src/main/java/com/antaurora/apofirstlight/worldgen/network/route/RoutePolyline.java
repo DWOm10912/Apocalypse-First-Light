@@ -33,10 +33,16 @@ public final class RoutePolyline {
     }
 
     /** Spreads every bend tighter than rmin over more vertices (local Laplacian moves, end points fixed). */
-    static void relax(double[] xs, double[] zs, double rmin) {
+    static void relax(double[] xs, double[] zs, double rmin) { relax(xs, zs, 0, xs.length - 1, rmin); }
+
+    /**
+     * #relax over the vertices i0 .. i1 alone (those two fixed): County road G3's mouth, held to a larger radius than the
+     * rest of the road (RoadCounty).
+     */
+    public static void relax(double[] xs, double[] zs, int i0, int i1, double rmin) {
         for (int it = 0; it < 6000; it++) {
             boolean moved = false;
-            for (int i = 1; i < xs.length - 1; i++) {
+            for (int i = Math.max(1, i0 + 1); i < Math.min(xs.length - 1, i1); i++) {
                 if (radius(xs, zs, i) >= rmin) continue;
                 xs[i] += 0.5 * (0.5 * (xs[i - 1] + xs[i + 1]) - xs[i]);
                 zs[i] += 0.5 * (0.5 * (zs[i - 1] + zs[i + 1]) - zs[i]);

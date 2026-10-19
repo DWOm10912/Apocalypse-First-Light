@@ -56,6 +56,9 @@ import java.util.Set;
  *   (RoadWorks.TUNNEL_PAVED) has its pavement as usual and the bore carved above it instead of the sky cleared; a PAVED
  *   or TURF column under a tunnel's works (RoadWorks.TUNNEL_OVER: walls, lead-ins, a portal's front) has its finish as
  *   usual and the works' cells above it, so the ground runs on under the concrete.</li>
+ *   <li>DRIVE (County road G3, Driveway): a column wholly on the forest home's gravel driveway, its collision blocks
+ *   (road_surface, as a PAVED column's) over two blocks of gravel, dirt to the ground; the client draws its surface
+ *   (DriveMesh); its edges and verge are TURF;</li>
  *   <li>a tunnel's equipment and handrail segments (TunnelFixtures, V1.1: gates, signs, signals, gantries, fans,
  *   cabinets, fire doors, luminaires, cameras, plates, rails), last in any column: the part's fixture block
  *   (TunnelFixtureBlock, its block entity holding the placement) in the cells its boxes reach above the finish, where the
@@ -113,6 +116,7 @@ public final class RoadChunkPass {
             case TURF -> (c.data() & RoadWorks.CULVERT_BODY) != 0 ? Math.min(c.y(), c.bottom()) : c.y();
             case DECK, ABUTMENT, BARRIER, CULVERT, TUNNEL -> c.bottom();
             case OPEN -> c.y() - 3;
+            case DRIVE -> c.y() - 2;
         };
     }
 
@@ -183,6 +187,15 @@ public final class RoadChunkPass {
                     boolean approach = (c.data() & TunnelWorks.APPROACH_COLUMN) != 0;
                     tunnel(chunk, p, n.works(), x, z, c.bottom(), c.y(), structure);
                     if (approach) clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
+                }
+                case DRIVE -> {
+                    // the forest home's driveway (County road G3): its collision over two blocks of gravel (the client draws
+                    // the gravel surface: DriveMesh); nothing grows on it
+                    collision(chunk, p, x, z, c);
+                    set(chunk, p, x, c.y() - 1, z, gravel);
+                    set(chunk, p, x, c.y() - 2, z, gravel);
+                    fill(chunk, p, x, c.y() - 3, z, dirt, lowest);
+                    clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
                 }
                 case CULVERT -> {
                     Culvert.Cell cell = n.works().culvertCell(x, z);

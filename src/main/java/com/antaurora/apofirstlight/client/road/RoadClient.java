@@ -99,7 +99,8 @@ public final class RoadClient {
             TUNNEL_PANEL = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/panel"),
             TUNNEL_ARCH = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/arch"),
             STEEL = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/steel"),
-            DRAIN = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/drain");
+            DRAIN = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/tunnel/drain"),
+            GRAVEL = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/gravel");
     /** Floats per vertex: x, y, z (chunk-relative, absolute y), u, v (atlas), nx, ny, nz. */
     static final int STRIDE = 8;
     /** Ticks a mesh's per-vertex light is kept: near the player (two chunks) and farther away. */
@@ -185,8 +186,11 @@ public final class RoadClient {
         if (json == null || json.isEmpty()) { roads = List.of(); index = null; return; }
         try {
             roads = RoadNetworkJson.designs(json);
+            // with the forest home's driveway (county_road_g3 section 6): its gravel mesh and its surface for the vehicles
             index = new RoadWorks(roads, RoadWorks.Water.NONE, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(
-                    com.antaurora.apofirstlight.worldgen.network.town.TownPlan.read(json)));
+                    com.antaurora.apofirstlight.worldgen.network.town.TownPlan.read(json)),
+                    com.antaurora.apofirstlight.worldgen.network.road.Driveway.of(
+                            com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.read(json)));
             // road_structure's collision follows the bridge mesh (a dedicated server's client has only this copy)
             com.antaurora.apofirstlight.block.RoadStructureBlock.works(index);
         } catch (RuntimeException e) {
@@ -278,7 +282,8 @@ public final class RoadClient {
 
     private static Map<String, float[]> atlas() {
         return Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW), "concrete", sprite(CONCRETE),
-                "panel", sprite(TUNNEL_PANEL), "arch", sprite(TUNNEL_ARCH), "steel", sprite(STEEL), "drain", sprite(DRAIN), "equipment", sprite(TunnelParts.SHEET));
+                "panel", sprite(TUNNEL_PANEL), "arch", sprite(TUNNEL_ARCH), "steel", sprite(STEEL), "drain", sprite(DRAIN), "equipment", sprite(TunnelParts.SHEET),
+                "gravel", sprite(GRAVEL));
     }
 
     /** Compare a mesh's paved and structure cells with the world; rebuild it when the dug or the found cells changed. */
@@ -302,8 +307,10 @@ public final class RoadClient {
     }
 
     /**
-     * The paved cells (chunk and ring) whose collision blocks are not the ones the chunk pass put there; empty when no
-     * cell of the chunk itself is dug (the ring only shapes the walls of a hole in this chunk).
+     * The paved cells (chunk and ring) whose collision blocks are not the ones the chunk pass put there, and at
+     * RoadCells.OPEN + index the cell-less neighbours of the chunk's standing cells that lie open at the cell's collision
+     * block (the turf beside it gone: through the invisible block the sky showed under the mesh, 2026-10-18); empty when
+     * no cell of the chunk itself is dug and none of its cells has an open side (the ring only shapes the walls).
      */
     static BitSet dug(ClientLevel level, ChunkMesh m) {
         BitSet out = new BitSet();
@@ -318,7 +325,28 @@ public final class RoadClient {
                 inner |= RoadCells.inner(c.index());
             }
         }
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (RoadCells.Cell c : m.cells().values()) {
+            if (!RoadCells.inner(c.index()) || out.get(c.index())) continue;
+            int lx = RoadCells.lx(c.index()), lz = RoadCells.lz(c.index());
+            for (int[] d : dirs) {
+                int n = RoadCells.index(lx + d[0], lz + d[1]);
+                if (m.cells().containsKey(n)) continue;
+                int x = m.cx() * 16 + lx + d[0], z = m.cz() * 16 + lz + d[1];
+                // a neighbour chunk not loaded yet reads as air: no wall until it is there
+                if (!level.getChunkSource().hasChunk(x >> 4, z >> 4)) continue;
+                if (open(level.getBlockState(p.set(x, c.y(), z)))) {
+                    out.set(RoadCells.OPEN + n);
+                    inner = true;
+                }
+            }
+        }
         return inner ? out : new BitSet();
+    }
+
+    /** A neighbour block that leaves a collision block's side open: air, a plant, a fluid. */
+    private static boolean open(BlockState s) {
+        return s.isAir() || s.canBeReplaced() || !s.getFluidState().isEmpty();
     }
 
     private static boolean surface(BlockState s, int layers) {
@@ -348,6 +376,7 @@ public final class RoadClient {
             float[] r = uv.get(switch (t.material()) {
                 case ASPHALT -> "asphalt"; case WHITE -> "white"; case YELLOW -> "yellow"; case CONCRETE -> "concrete";
                 case TUNNEL_PANEL -> "panel"; case TUNNEL_ARCH -> "arch"; case STEEL -> "steel"; case DRAIN -> "drain"; case PART -> "equipment";
+                case GRAVEL -> "gravel";
             });
             float[] out = asphalt ? a : m;
             int i = asphalt ? ia : im;
