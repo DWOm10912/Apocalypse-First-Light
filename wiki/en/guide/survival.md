@@ -4,6 +4,21 @@ AFL's survival HUD replaces vanilla hearts, hunger and the experience bar: a rou
 
 <StatusTag s="integrated" /> These values are starting values and will be tuned
 
+## Status badges
+
+<StatusTag s="test" /> How the status badges announce themselves (on a branch, not merged)
+
+A column of round badges above the survival module shows what affects you right now; nothing shows when nothing does. The colour is the kind: red dangerous, brown bad, blue cold or wet, green good. The most urgent sit closest to the module
+
+- **What stays still**: the coloured disc, the highlight at the top left, the thin rim and the white icon do not move
+- **A ring spreading out**: when you gain a state, or the same state gets worse (thirst turning into dehydration, cold going up a stage), a ring spreads out once (about 0.7 seconds) and the name and effect slide out to the right for 4 seconds
+- **An updated line**: when only the effect line changes (a wound cleaned or bandaged, recovery switching from awake to resting), the name and effect slide out again for 4 seconds, without the ring
+- **The outer arc**: a timed state (a stomach bug, petrol or diesel on you) shows the time left round the badge, with the time beside it; a cleaned infection or festering wound shows how far it has healed, and when the arc runs out it eases a stage or heals. A scratch has no arc
+- **Pressing Left Alt**: every badge slides its name and effect out together for 4 seconds; once every 6 seconds at most (the key is "Show status labels" in the controls and can be changed)
+- **Going away**: when a state ends its badge simply goes and the ones above slide down. If the same state comes back within 10 seconds, no worse than before, it is not announced again
+
+For example, a scratch you clean and then bandage slides its line out once for each step ("Cleaned: less likely to become infected" → "Cleaned and bandaged") and the badge stays until the scratch heals. Warming up by a fire shows a green "Warming up" while you are still cold and your temperature is clearly rising; it goes once you are no longer cold, or once you are close to as warm as the fire gets you and the rise slows
+
 ## Health
 
 - <StatusTag s="test" /> Health V1a is still on its branch: not merged, not checked in game

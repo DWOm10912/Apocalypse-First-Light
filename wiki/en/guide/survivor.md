@@ -4,6 +4,7 @@ A new world starts with picking a survivor: a past life (background), two body l
 
 - <StatusTag s="verified" d="2026-10-17" /> Background, body and trait setup screen
 - <StatusTag s="verified" d="2026-10-18" /> Character page in the inventory (name, background, traits, body and growth levels)
+- <StatusTag s="test" /> The character page's Status panel: every state affecting you now, each with its name, effect and time left; point at one to see where it comes from and how it goes. Many states or traits scroll with the mouse wheel
 
 ## Survivor mode
 

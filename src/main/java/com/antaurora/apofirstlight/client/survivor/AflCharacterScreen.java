@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.survivor;
 
+import com.antaurora.apofirstlight.client.StatusBadgeHud;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
@@ -27,8 +28,9 @@ import java.util.Set;
 
 /**
  * The inventory's character page (docs/gameplay/survivor_background_skills_v1_plan.md section 9, P2c): who the survivor
- * is (background, start scene), the body levels, the traits, and every survivor attribute that is not an ordinary
- * person's right now. View only; growth has its own page (AflGrowthScreen, the "Growth" button top right or its key).
+ * is (background, start scene), the body levels, the traits, the states affecting them now (the HUD badges, each with
+ * its effect and, on hover, where it comes from and how it goes; user 2026-10-20, design/ui/character_status_panel/), and
+ * every survivor attribute that is not an ordinary person's right now. The trait and status lists scroll. View only; growth has its own page (AflGrowthScreen, the "Growth" button top right or its key).
  * Reads the sheet the server sends (SurvivorSheetClient, its View part carries what a multiplayer client has no catalog
  * for) and the player's live attribute values. Opened from the inventory's title row; Esc or the inventory key goes back
  * to the inventory.
@@ -44,10 +46,15 @@ public final class AflCharacterScreen extends Screen {
     private static final Set<String> BASE_ROWS = Set.of("carry_capacity", "max_stamina", "cold_threshold", "heat_threshold");
     private static final int RED = 0xE06A5A;
     private static final float GROWTH_Y = 9, GROWTH_H = 12, GROWTH_RIGHT = 465;
+    /** Trait chip rows shown before the list scrolls; the status panel's header (three lines of detail), rows. */
+    private static final int TRAIT_ROWS = 2;
+    private static final float STATUS_HEAD_H = 34, STATUS_ROW = 13.2F, STATUS_H = 11.4F, STATUS_R = 4.2F;
 
     private final SetupCanvas canvas = new SetupCanvas();
     private final SurvivorDoll doll = new SurvivorDoll();
-    private float traitScroll, traitMax, attrScroll, attrMax;
+    private float traitScroll, traitMax, attrScroll, attrMax, statusScroll, statusMax;
+    /** Where the status panel starts this frame (below the trait panel, which is as tall as its chips). */
+    private float statusPanelY = BOTTOM;
     private float growthX, growthW;
 
     public AflCharacterScreen() {
@@ -98,7 +105,8 @@ public final class AflCharacterScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         float mx = canvas.vx(mouseX), my = canvas.vy(mouseY);
         if (SetupCanvas.in(mx, my, RIGHT_X, TOP, RIGHT_W, BOTTOM - TOP)) attrScroll = Mth.clamp(attrScroll - (float) delta * 12, 0, attrMax);
-        else if (SetupCanvas.in(mx, my, MID_X, TOP, MID_W, BOTTOM - TOP)) traitScroll = Mth.clamp(traitScroll - (float) delta * 12, 0, traitMax);
+        else if (SetupCanvas.in(mx, my, MID_X, statusPanelY, MID_W, BOTTOM - statusPanelY)) statusScroll = Mth.clamp(statusScroll - (float) delta * 12, 0, statusMax);
+        else if (SetupCanvas.in(mx, my, MID_X, TOP, MID_W, statusPanelY - TOP)) traitScroll = Mth.clamp(traitScroll - (float) delta * 12, 0, traitMax);
         return true;
     }
 
@@ -127,7 +135,8 @@ public final class AflCharacterScreen extends Screen {
         preview(g, mouseX, mouseY);
         background(g, sheet);
         float traitY = body(g, sheet, view);
-        traits(g, view, traitY, mx, my);
+        statusPanelY = traits(g, view, traitY, mx, my);
+        statuses(g, statusPanelY, mx, my);
         attributes(g, view);
         canvas.pop(g);
     }
@@ -206,14 +215,18 @@ public final class AflCharacterScreen extends Screen {
         return TOP + h + 4;
     }
 
-    /** The traits as chips (two columns, background ones first and marked); the hovered one says what it does on top. */
-    private void traits(GuiGraphics g, CompoundTag view, float panelY, float mx, float my) {
-        AflUiDraw.panel(g, MID_X, panelY, MID_W, BOTTOM - panelY, 1);
+    /**
+     * The traits as chips (two columns, background ones first and marked); the hovered one says what it does on top. The
+     * panel is as tall as {@link #TRAIT_ROWS} rows at most (more scroll). Returns where the status panel starts.
+     */
+    private float traits(GuiGraphics g, CompoundTag view, float panelY, float mx, float my) {
         List<CompoundTag> traits = new ArrayList<>();
         for (Tag t : view.getList("Traits", Tag.TAG_COMPOUND)) traits.add((CompoundTag) t);
-        float top = panelY + TRAIT_HEAD_H + 4, bottom = BOTTOM - 5;
-        float chipW = (MID_W - 16 - CHIP_GAP) / 2;
         int rows = (traits.size() + 1) / 2;
+        float panelH = TRAIT_HEAD_H + 4 + Mth.clamp(rows, 1, TRAIT_ROWS) * (CHIP_H + CHIP_GAP) - CHIP_GAP + 5;
+        AflUiDraw.panel(g, MID_X, panelY, MID_W, panelH, 1);
+        float top = panelY + TRAIT_HEAD_H + 4, bottom = panelY + panelH - 5;
+        float chipW = (MID_W - 16 - CHIP_GAP) / 2;
         float content = rows * (CHIP_H + CHIP_GAP);
         traitMax = Math.max(0, content - (bottom - top));
         traitScroll = Mth.clamp(traitScroll, 0, traitMax);
@@ -240,6 +253,86 @@ public final class AflCharacterScreen extends Screen {
             AflUiShapes.fill(g, MID_X + MID_W - 4, ty, 1.6F, thumb, 0.8F, AflUiStyle.LINE, 0.35F);
         }
         traitSummary(g, panelY, traits.isEmpty(), shown);
+        return panelY + panelH + 4;
+    }
+
+    /**
+     * Every state affecting the survivor now, most urgent first, as the HUD's badge column has them: badge (with its
+     * time-left / recovery arc), name, effect, time left. The hovered one says on top where it comes from and how it goes
+     * (StatusBadgeHud.Status#detail). Scrolls when there are more than fit.
+     */
+    private void statuses(GuiGraphics g, float panelY, float mx, float my) {
+        AflUiDraw.panel(g, MID_X, panelY, MID_W, BOTTOM - panelY, 1);
+        List<StatusBadgeHud.Status> states = minecraft.player == null ? List.of() : StatusBadgeHud.current(minecraft.player);
+        float top = panelY + STATUS_HEAD_H + 3, bottom = BOTTOM - 4;
+        float content = states.size() * STATUS_ROW;
+        statusMax = Math.max(0, content - (bottom - top));
+        statusScroll = Mth.clamp(statusScroll, 0, statusMax);
+        boolean inList = SetupCanvas.in(mx, my, MID_X, top, MID_W, bottom - top);
+        StatusBadgeHud.Status shown = null;
+        canvas.scissor(g, MID_X, top, MID_W, bottom - top);
+        for (int i = 0; i < states.size(); i++) {
+            StatusBadgeHud.Status s = states.get(i);
+            float y = top + i * STATUS_ROW - statusScroll;
+            if (y + STATUS_H < top || y > bottom) continue;
+            boolean hover = inList && SetupCanvas.in(mx, my, MID_X + 5, y, MID_W - 10, STATUS_H);
+            if (hover) {
+                shown = s;
+                AflUiShapes.box(g, MID_X + 5, y, MID_W - 10, STATUS_H, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.9F, AflUiStyle.LINE, 0.18F, 0, 0);
+            }
+            badge(g, s, MID_X + 13, y + STATUS_H / 2);
+            float nx = MID_X + 22, right = MID_X + MID_W - 9;
+            boolean danger = s.kind() == StatusBadgeHud.Kind.DANGER;
+            SetupCanvas.text(g, font, s.name(), nx, y + 2.6F, danger ? StatusBadgeHud.DANGER_RGB : AflUiStyle.TEXT, 1, 0.64F);
+            float ex = nx + SetupCanvas.width(font, s.name(), 0.64F) + 4;
+            if (s.aside() != null) {
+                Component aside = Component.literal(s.aside());
+                SetupCanvas.right(g, font, aside, right, y + 3.1F, AflUiStyle.TEXT_DIM, 1, 0.56F);
+                right -= SetupCanvas.width(font, aside, 0.56F) + 5;
+            }
+            String effect = s.effect().getString();
+            if (SetupCanvas.width(font, Component.literal(effect), 0.56F) > right - ex)
+                effect = font.plainSubstrByWidth(effect, Math.max(0, (int) ((right - ex) / 0.56F) - font.width("…"))) + "…";
+            SetupCanvas.text(g, font, Component.literal(effect), ex, y + 3.1F, AflUiStyle.TEXT_DIM, 1, 0.56F);
+        }
+        g.disableScissor();
+        if (statusMax > 0) {
+            float track = bottom - top, thumb = Math.max(12, track * track / content);
+            float ty = top + (track - thumb) * (statusScroll / statusMax);
+            AflUiShapes.fill(g, MID_X + MID_W - 4, ty, 1.6F, thumb, 0.8F, AflUiStyle.LINE, 0.35F);
+        }
+        statusSummary(g, panelY, states.isEmpty(), shown);
+    }
+
+    /** The status panel's header: its title and hint, or the hovered state's name, effect and what to know about it. */
+    private void statusSummary(GuiGraphics g, float panelY, boolean none, @Nullable StatusBadgeHud.Status s) {
+        float x = MID_X + 8, y = panelY + 6, w = MID_W - 16;
+        AflUiShapes.fill(g, MID_X + 6, panelY + STATUS_HEAD_H, MID_W - 12, 0.4F, 0, AflUiStyle.LINE, 0.16F);
+        if (s == null) {
+            SetupCanvas.text(g, font, SetupCanvas.tr("character.statuses"), x, y, AflUiStyle.TEXT_DIM, 1, 0.7F);
+            SetupCanvas.text(g, font, SetupCanvas.tr(none ? "character.no_statuses" : "character.status_hint"), x, y + 10, AflUiStyle.TEXT_DISABLED, 1, 0.55F);
+            return;
+        }
+        SetupCanvas.text(g, font, s.name(), x, y, s.kind() == StatusBadgeHud.Kind.DANGER ? StatusBadgeHud.DANGER_RGB : AflUiStyle.TEXT, 1, 0.75F);
+        float nameW = SetupCanvas.width(font, s.name(), 0.75F) + 5;
+        List<FormattedCharSequence> effect = wrap(s.effect(), w - nameW, 0.58F);
+        if (!effect.isEmpty()) textSeq(g, effect.get(0), x + nameW, y + 0.8F, AflUiStyle.ACCENT, 0.58F);
+        float ty = y + 9;
+        for (FormattedCharSequence line : wrap(s.detail(), w, 0.52F)) {
+            if (ty > panelY + STATUS_HEAD_H - 5) break;
+            textSeq(g, line, x, ty, AflUiStyle.TEXT_DIM, 0.52F);
+            ty += 6;
+        }
+    }
+
+    /** A status badge at GUI coordinates (its texture is rastered for the GUI scale, so not under the canvas scale). */
+    private void badge(GuiGraphics g, StatusBadgeHud.Status s, float x, float y) {
+        g.pose().pushPose();
+        g.pose().scale(1 / canvas.scale, 1 / canvas.scale, 1);
+        g.pose().translate(-canvas.originX, -canvas.originY, 0);
+        StatusBadgeHud.drawBadge(g, "character_" + s.key(), s, canvas.originX + x * canvas.scale, canvas.originY + y * canvas.scale,
+                STATUS_R * canvas.scale, 1);
+        g.pose().popPose();
     }
 
     private void traitSummary(GuiGraphics g, float panelY, boolean none, @Nullable CompoundTag t) {

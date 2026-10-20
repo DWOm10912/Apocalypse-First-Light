@@ -24,6 +24,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
@@ -52,9 +53,14 @@ import java.util.Map;
  * kind's colour (green good, brown bad, blue cold / wet, red dangerous), a white pictogram, a light rim. Most urgent
  * nearest the module (danger, bad, cold / wet, good). A timed one (a stomach bug, fuel on the body) shows the time left
  * as a light arc round it and as a number beside it; dehydration counts down to the point where it starts to hurt.</li>
- * <li>Gaining a state (or a worse stage of it): its rim flashes and its name and effect slide out beside it for 4 s.</li>
- * <li>Holding the status key (Left Alt, rebindable): a card above the module with the body's numbers and every state with
- * its effect and time left; the slide-out labels step aside meanwhile. Off for now ({@link #DETAILS_CARD}).</li>
+ * <li>Gaining a state (or a worse stage of it): its rim flashes and its name and effect slide out beside it for 4 s. When
+ * only its effect line changes (a wound cleaned or bandaged, resting), the label slides out again without the flash
+ * (user 2026-10-20: treating a wound showed nothing). A state back within 10 s of going, at no worse a stage, comes back
+ * quietly; warming shows from a trend over 0.25 and goes under 0.1, so standing by a fire does not blink it.</li>
+ * <li>Pressing the status key (Left Alt, rebindable; user 2026-10-20): every badge's label slides out together for 4 s,
+ * no flash; once per {@link #RECALL_COOLDOWN} s, so a stray Alt does little.</li>
+ * <li>Holding the status key, once the vital signs monitor exists: a card above the module with the body's numbers and
+ * every state with its effect and time left; the slide-out labels step aside meanwhile. Off for now ({@link #DETAILS_CARD}).</li>
  * <li>The chat moves up above the column (not while a screen is open, so clicking chat links still works).</li>
  * </ul>
  * AFL's effects (radiation sickness, the stomach bug, fuel-soaked) are hidden from vanilla's effect icons (their
@@ -66,16 +72,19 @@ public final class StatusBadgeHud {
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, "key.categories.apocalypse_firstlight");
     /**
      * The status key's detail card is off (user 2026-10-17: Left Alt is pressed by mistake too easily) until a vital
-     * signs monitor (an advanced wrist watch) carries those readings; its key is not registered meanwhile.
+     * signs monitor (an advanced wrist watch) carries those readings; meanwhile the key only slides the labels out.
      */
     private static final boolean DETAILS_CARD = false;
+    /** The status key slides the labels out at most once per this many seconds (labels 4 s out, 2 s in). */
+    private static final double RECALL_COOLDOWN = 6;
+    private static double recallAt = -1e9;
     private static final String LANG = "hud.apocalypse_firstlight.status.";
     /** How long a gained state's label stays out, its slide, the rim flash (s). */
     private static final double LABEL_SECONDS = 4, SLIDE = 0.22, FLASH = 0.7, CARD_FADE = 0.12, MOVE = 0.18, CHAT_EASE = 0.2;
     private static final int WHITE = 0xF6F2EA, DANGER_TEXT = 0xE8867C;
 
     /** A badge's kind: its colour and its rank (most urgent first, nearest the module). */
-    enum Kind {
+    public enum Kind {
         DANGER(0xB8443C), BAD(0xA86A3A), COLD(0x4F7FB8), GOOD(0x5FA67E);
         final int rgb;
         Kind(int rgb) { this.rgb = rgb; }
@@ -83,13 +92,39 @@ public final class StatusBadgeHud {
 
     /** One state as shown: key (stable), stage (a higher stage of the same key re-announces it), kind, icon, name, effect;
      *  fraction of a timed state left (NaN: untimed) and the text beside the badge (time left, a countdown), or null. */
-    record Status(String key, int stage, Kind kind, AflRingIcon.Glyph icon, Component name, Component effect, double left, String aside) {}
+    public record Status(String key, int stage, Kind kind, AflRingIcon.Glyph icon, Component name, Component effect, double left, String aside) {
+        /** Where it comes from and how it goes (the character page's status panel, on hover). */
+        public Component detail() { return t(key + ".detail"); }
+    }
+    public static final int DANGER_RGB = DANGER_TEXT;
+
+    /** The local player's states, most urgent first (the character page's status panel; also in Creative). */
+    public static List<Status> current(LocalPlayer player) {
+        List<Status> states = new ArrayList<>(collect(player, System.nanoTime() / 1e9));
+        states.sort(Comparator.comparingInt(s -> s.kind().ordinal()));
+        return states;
+    }
+
+    /** A status badge at GUI coordinates, as in the column (no flash); `id` names its texture. */
+    public static void drawBadge(GuiGraphics graphics, String id, Status s, double x, double y, double r, double alpha) {
+        badge(graphics, id, s, x, y, r, 0, alpha);
+    }
 
     private static final class Seen {
         int stage;
-        double labelUntil, flashUntil, slot = Double.NaN, maxTicks;
+        /** The label's slide-out start and end, the rim flash's end (s). */
+        double labelFrom, labelUntil, flashUntil, slot = Double.NaN, maxTicks;
+        /** The effect line's translation key last frame: a new one (a wound cleaned or bandaged) slides the label out again. */
+        String effectKey;
     }
     private static final Map<String, Seen> SEEN = new HashMap<>();
+    /** A state that went away: when, and at which stage. Back within {@link #QUIET} s at no worse a stage: no flash, no label. */
+    private record Gone(double at, int stage) {}
+    private static final Map<String, Gone> GONE = new HashMap<>();
+    private static final double QUIET = 10;
+    /** Warming shows from a trend over {@link #WARMING_ON} and goes under {@link #WARMING_OFF} (no blinking at one edge). */
+    private static final double WARMING_ON = 0.25, WARMING_OFF = 0.1;
+    private static boolean warmingShown;
     private static double card, chatLift, thirstRate, thirstValue = Double.NaN, thirstAt;
     private static int shownBadges;
     private static boolean drawn;
@@ -103,7 +138,7 @@ public final class StatusBadgeHud {
     }
 
     @SubscribeEvent
-    public static void keys(RegisterKeyMappingsEvent event) { if (DETAILS_CARD) event.register(DETAILS); }
+    public static void keys(RegisterKeyMappingsEvent event) { event.register(DETAILS); }
 
     // ---- glyphs (unit box, y down) ----
     private static final double[] ARM_X = new double[6], ARM_Y = new double[6];
@@ -243,7 +278,8 @@ public final class StatusBadgeHud {
         if (regen == PlayerHealth.Regen.AWAKE || regen == PlayerHealth.Regen.REST)
             list.add(new Status("recovering", 1, Kind.GOOD, SurvivalVitalsHud.HEART, t("recovering"),
                     t(regen == PlayerHealth.Regen.REST ? "recovering.rest" : "recovering.awake"), Double.NaN, null));
-        if (ClientTemperature.coldness() > 0.02 && ClientTemperature.trend() > 0.25)
+        warmingShown = ClientTemperature.coldness() > 0.02 && ClientTemperature.trend() > (warmingShown ? WARMING_OFF : WARMING_ON);
+        if (warmingShown)
             list.add(new Status("warming", 1, Kind.GOOD, FLAME, t("warming"), t("warming.effect"), Double.NaN, null));
         return list;
     }
@@ -321,31 +357,53 @@ public final class StatusBadgeHud {
         lastNanos = nanos;
         drawn = false;
         LocalPlayer player = mc.player;
-        if (player == null) { SEEN.clear(); thirstValue = Double.NaN; return; }
+        boolean pressed = false;
+        while (DETAILS.consumeClick()) pressed = true;   // drained every frame, so a press while hidden does not fire later
+        if (player == null) { SEEN.clear(); GONE.clear(); warmingShown = false; thirstValue = Double.NaN; return; }
         if (mc.options.hideGui || !gui.shouldDrawSurvivalElements() || FieldAttachmentViewState.isActive()) return;
         drawn = true;
         List<Status> states = new ArrayList<>(collect(player, now));
         states.sort(Comparator.comparingInt(s -> s.kind().ordinal()));
-        SEEN.keySet().retainAll(states.stream().map(Status::key).toList());
+        var keys = states.stream().map(Status::key).toList();
+        for (var e : SEEN.entrySet()) if (!keys.contains(e.getKey())) GONE.put(e.getKey(), new Gone(now, e.getValue().stage));
+        SEEN.keySet().retainAll(keys);
+        GONE.values().removeIf(g -> now - g.at() > QUIET);
         boolean open = DETAILS_CARD && mc.screen == null && DETAILS.isDown();
         card += ((open ? 1 : 0) - card) * (1 - Math.exp(-dt / CARD_FADE));
         if (Math.abs(card - (open ? 1 : 0)) < 0.01) card = open ? 1 : 0;
         shownBadges = states.size();
+        boolean recall = pressed && !DETAILS_CARD && !states.isEmpty() && now - recallAt >= RECALL_COOLDOWN;
+        if (recall) recallAt = now;
         Font font = mc.font;
         for (int i = 0; i < states.size(); i++) {
             var s = states.get(i);
-            Seen seen = SEEN.computeIfAbsent(s.key(), k -> new Seen());
-            if (s.stage() > seen.stage) { seen.labelUntil = now + LABEL_SECONDS; seen.flashUntil = now + FLASH; }
+            Seen seen = SEEN.get(s.key());
+            if (seen == null) {
+                seen = new Seen();
+                Gone gone = GONE.remove(s.key());
+                if (gone != null && s.stage() <= gone.stage()) seen.stage = s.stage();   // back soon, no worse: quietly
+                SEEN.put(s.key(), seen);
+            }
+            String effectKey = s.effect().getContents() instanceof TranslatableContents tc ? tc.getKey() : s.effect().getString();
+            if (s.stage() > seen.stage) { label(seen, now); seen.flashUntil = now + FLASH; }
+            else if (recall || seen.effectKey != null && !seen.effectKey.equals(effectKey)) label(seen, now);   // the status key; cleaned, bandaged, resting: the label again, no flash
             seen.stage = s.stage();
+            seen.effectKey = effectKey;
             seen.slot = Double.isNaN(seen.slot) ? i : seen.slot + (i - seen.slot) * (1 - Math.exp(-dt / MOVE));
             double y = SurvivalHudLayout.badgeY(screenHeight, 0) - seen.slot * SurvivalHudLayout.BADGE_STEP;
             if (card < 0.99) badge(graphics, "badge_" + s.key(), s, SurvivalHudLayout.BADGE_X, y, SurvivalHudLayout.BADGE_R,
                     Math.max(0, seen.flashUntil - now) / FLASH, 1 - card);
-            double slide = smooth(Math.min((now - (seen.labelUntil - LABEL_SECONDS)) / SLIDE, (seen.labelUntil - now) / SLIDE)) * (1 - card);
+            double slide = smooth(Math.min((now - seen.labelFrom) / SLIDE, (seen.labelUntil - now) / SLIDE)) * (1 - card);
             aside(graphics, font, s, SurvivalHudLayout.BADGE_X + SurvivalHudLayout.BADGE_R + 2, y, slide, 1 - card);
         }
         if (card > 0.01) card(graphics, font, player, states, screenHeight, card);
     };
+
+    /** Slides the label out for {@link #LABEL_SECONDS} s; already out, it stays out that much longer. */
+    private static void label(Seen seen, double now) {
+        if (now >= seen.labelUntil) seen.labelFrom = now;
+        seen.labelUntil = now + LABEL_SECONDS;
+    }
 
     /** A badge: shadow, the kind's disc, a light sheen and rim, the time-left arc, the white pictogram, the gained flash. */
     private static void badge(GuiGraphics graphics, String id, Status s, double x, double y, double r, double flash, double alpha) {

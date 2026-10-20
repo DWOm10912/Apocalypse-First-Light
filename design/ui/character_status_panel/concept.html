@@ -1,0 +1,131 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head><body>
+<canvas id="c" width="2000" height="1125"></canvas>
+<script>
+// Character page concept (user 2026-10-20): the trait panel shrinks to its chips, the freed middle column lists every
+// current status. Drawn over the in-game screenshot; layout in the screen's own virtual units (AflCharacterScreen).
+const S = 3.9, OX = 63.5, OY = 47;
+const X = u => OX + u * 3.902, Y = v => OY + v * 3.894;
+const TOP = 38, BOTTOM = 255, MID_X = 145, MID_W = 190;
+const TEXT = '#E8E4DC', DIM = '#A8A49C', DISABLED = '#6C6A66', ACCENT = '#E0A84A', DANGER_TEXT = '#E8867C';
+const FONT = '"Microsoft YaHei UI Light","Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+const KIND = {DANGER: 0xB8443C, BAD: 0xA86A3A, COLD: 0x4F7FB8, GOOD: 0x5FA67E};
+
+// ---- glyphs (AflRingIcon / StatusBadgeHud, unit box, y down) ----
+const seg = (px, py, ax, ay, bx, by) => { const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy))); return Math.hypot(px - ax - t * dx, py - ay - t * dy); };
+const convex = (px, py, ...xy) => { let d = -1e9; for (let i = 0; i < xy.length; i += 2) { const ax = xy[i], ay = xy[i + 1], bx = xy[(i + 2) % xy.length], by = xy[(i + 3) % xy.length], ex = bx - ax, ey = by - ay, len = Math.hypot(ex, ey); d = Math.max(d, ((px - ax) * ey - (py - ay) * ex) / len); } return d; };
+const taper = (x, y, ax, ay, bx, by, w0, w1) => { const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); return Math.hypot(x - ax - dx * t, y - ay - dy * t) - (w0 + (w1 - w0) * (1 - Math.abs(2 * t - 1))); };
+const swollen = (x, y, cx, cy, k) => { const u = ((x - cx) * 0.819 - (y - cy) * 0.574) / k, v = ((x - cx) * 0.574 + (y - cy) * 0.819) / k; const lens = Math.max(Math.hypot(u, v - 0.2753) - 0.4453, Math.hypot(u, v + 0.2753) - 0.4453); const cut = seg(u, v, -0.24, 0, 0.24, 0) - 0.04; return Math.max(lens, -cut) * k; };
+const CLAW = (x, y) => Math.min(taper(x, y, 0.42, 0.16, 0.18, 0.80, 0.02, 0.065), taper(x, y, 0.62, 0.10, 0.38, 0.88, 0.02, 0.07), taper(x, y, 0.82, 0.18, 0.58, 0.80, 0.02, 0.065));
+const SWOLLEN = (x, y) => swollen(x, y, 0.5, 0.5, 1.0);
+const DROP = (x, y) => Math.min(Math.hypot(x - 0.5, y - 0.62) - 0.27, convex(x, y, 0.5, 0.10, 0.731, 0.48, 0.269, 0.48));
+const GERM = (x, y) => { let d = Math.hypot(x - 0.5, y - 0.5) - 0.2; for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + Math.PI / 8, c = Math.cos(a), s = Math.sin(a); d = Math.min(d, seg(x, y, 0.5 + c * 0.2, 0.5 + s * 0.2, 0.5 + c * 0.36, 0.5 + s * 0.36) - 0.04, Math.hypot(x - 0.5 - c * 0.38, y - 0.5 - s * 0.38) - 0.065); } return d; };
+const SNOW = (x, y) => { let d = 1e9; for (let k = 0; k < 6; k++) { const a0 = k * Math.PI / 3 - Math.PI / 2, ux = Math.cos(a0), uy = Math.sin(a0), bx = 0.5 + ux * 0.27, by = 0.5 + uy * 0.27; d = Math.min(d, seg(x, y, 0.5, 0.5, 0.5 + ux * 0.42, 0.5 + uy * 0.42) - 0.055); for (const side of [-1, 1]) { const a = Math.atan2(uy, ux) + side * Math.PI / 4; d = Math.min(d, seg(x, y, bx, by, bx + Math.cos(a) * 0.13, by + Math.sin(a) * 0.13) - 0.045); } } return d; };
+const FLAME = (x, y) => { const outer = Math.min(Math.hypot(x - 0.5, y - 0.66) - 0.24, convex(x, y, 0.58, 0.08, 0.735, 0.60, 0.265, 0.60), Math.hypot(x - 0.36, y - 0.62) - 0.13, convex(x, y, 0.30, 0.30, 0.47, 0.62, 0.24, 0.62)); const inner = Math.min(Math.hypot(x - 0.5, y - 0.74) - 0.095, convex(x, y, 0.52, 0.47, 0.595, 0.73, 0.405, 0.73)); return Math.max(outer, -inner); };
+
+const c = document.getElementById('c'), g = c.getContext('2d');
+const img = new Image();
+img.onload = () => { g.drawImage(img, 0, 0, 2000, 1125); clearMiddle(); draw(); document.title = 'done'; };
+img.src = 'character_page_ingame.webp';
+
+/** Paints the old trait panel out: each row blends the background seen in the gaps either side of the middle column. */
+function clearMiddle() {
+  const x0 = Math.floor(X(MID_X) - 4), x1 = Math.ceil(X(MID_X + MID_W) + 4), y0 = Math.floor(Y(88)), y1 = Math.ceil(Y(BOTTOM) + 6);
+  const L = g.getImageData(x0 - 12, y0, 10, y1 - y0).data, R = g.getImageData(x1 + 2, y0, 10, y1 - y0).data;
+  const out = g.createImageData(x1 - x0, y1 - y0);
+  for (let y = 0; y < y1 - y0; y++) {
+    const l = [0, 0, 0], r = [0, 0, 0];
+    for (let i = 0; i < 10; i++) for (let k = 0; k < 3; k++) { l[k] += L[(y * 10 + i) * 4 + k] / 10; r[k] += R[(y * 10 + i) * 4 + k] / 10; }
+    for (let x = 0; x < x1 - x0; x++) {
+      const t = x / (x1 - x0 - 1), o = (y * (x1 - x0) + x) * 4;
+      for (let k = 0; k < 3; k++) out.data[o + k] = l[k] + (r[k] - l[k]) * t;
+      out.data[o + 3] = 255;
+    }
+  }
+  g.putImageData(out, x0, y0);
+}
+
+const rgba = (rgb, a) => `rgba(${rgb >> 16 & 255},${rgb >> 8 & 255},${rgb & 255},${a})`;
+function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(X(x), Y(y), w * S, h * S, r * S); }
+function panel(x, y, w, h) {
+  rr(x, y, w, h, 2.2); g.fillStyle = 'rgba(10,11,12,0.42)'; g.fill();
+  g.lineWidth = 1.6; g.strokeStyle = 'rgba(232,228,220,0.26)'; g.stroke();
+}
+function text(s, x, y, color, size, align) {
+  g.font = `${9 * size * S}px ${FONT}`; g.fillStyle = color; g.textBaseline = 'top'; g.textAlign = align || 'left';
+  g.fillText(s, X(x), Y(y) - 0.08 * 9 * size * S);
+  return g.measureText(s).width / S;
+}
+const width = (s, size) => { g.font = `${9 * size * S}px ${FONT}`; return g.measureText(s).width / S; };
+function rule(x, y, w) { g.fillStyle = 'rgba(232,228,220,0.16)'; g.fillRect(X(x), Y(y), w * S, 1.4); }
+
+/** A badge as StatusBadgeHud#badge draws it: shadow, disc, sheen, rim, the time-left / recovery arc, the pictogram. */
+function badge(cx, cy, r, kind, glyph, left) {
+  const px = X(cx), py = Y(cy), R = (r + 2.6) * S, size = r * 1.18 * S;
+  const x0 = Math.floor(px - R), y0 = Math.floor(py - R), n = Math.ceil(2 * R) + 1;
+  const im = g.getImageData(x0, y0, n, n), d = im.data;
+  const over = (o, rgb, a) => { if (a <= 0) return; for (let k = 0; k < 3; k++) d[o + k] = d[o + k] * (1 - a) + (rgb >> (16 - 8 * k) & 255) * a; };
+  const cov = dist => Math.max(0, Math.min(1, 0.5 - dist));
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const x = x0 + i + 0.5 - px, y = y0 + j + 0.5 - py, dist = Math.hypot(x, y), o = (j * n + i) * 4;
+    const ang = ((Math.atan2(x, -y) * 180 / Math.PI) + 360) % 360;   // 0 at the top, clockwise
+    over(o, 0x000000, 0.22 * cov(dist - (r + 0.7) * S));
+    over(o, KIND[kind], 0.95 * cov(dist - r * S));
+    if (ang >= 300 || ang <= 60) over(o, 0xFFFFFF, 0.14 * cov(Math.abs(dist - (r - 0.6) * S) - 0.25 * S));
+    over(o, 0xE8E4DC, 0.4 * cov(Math.abs(dist - (r + 0.2) * S) - 0.25 * S));
+    if (left != null) {
+      const band = cov(Math.abs(dist - (r + 1.6) * S) - 0.4 * S);
+      over(o, ang / 360 <= left ? 0xF0ECE4 : 0x1A1A1A, (ang / 360 <= left ? 0.9 : 0.4) * band);
+    }
+    const gx = (x + size / 2) / size, gy = (y + size / 2) / size;
+    if (gx > -0.1 && gx < 1.1 && gy > -0.1 && gy < 1.1) over(o, 0xF6F2EA, cov(glyph(gx, gy) * size));
+  }
+  g.putImageData(im, x0, y0);
+}
+
+function draw() {
+  // the trait panel, now only as tall as its chips
+  const tY = 90, tH = 50;
+  panel(MID_X, tY, MID_W, tH);
+  text('特质', MID_X + 8, tY + 6, DIM, 0.7);
+  text('将鼠标悬停在特质上查看效果', MID_X + 8, tY + 16, DISABLED, 0.55);
+  rule(MID_X + 6, tY + 27, MID_W - 12);
+  const chipW = (MID_W - 16 - 3) / 2;
+  ['耐寒体质', '惯于体力劳动'].forEach((name, i) => {
+    const x = MID_X + 8 + i * (chipW + 3), y = tY + 30;
+    rr(x, y, chipW, 12, 2.4); g.fillStyle = 'rgba(16,16,16,0.85)'; g.fill(); g.lineWidth = 1.6; g.strokeStyle = rgba(0xE0A84A, 0.4); g.stroke();
+    g.beginPath(); g.arc(X(x + 5.2), Y(y + 6), 1.2 * S, 0, 2 * Math.PI); g.fillStyle = '#8FB98A'; g.fill();
+    text(name, x + 9, y + 3.2, TEXT, 0.6);
+    text('背景', x + chipW - 3.5, y + 3.8, ACCENT, 0.5, 'right');
+  });
+
+  // the new status panel below it
+  const sY = tY + tH + 4, sH = BOTTOM - sY;
+  panel(MID_X, sY, MID_W, sH);
+  // header: the hovered status (as the trait panel's header does for a trait)
+  const nw = text('伤口感染', MID_X + 8, sY + 6, TEXT, 0.75);
+  text('已清洁并包扎', MID_X + 8 + nw + 5, sY + 6.8, ACCENT, 0.58);
+  text('正在好转，外圈走完后伤口愈合；只包扎、不清洁不会好转', MID_X + 8, sY + 16, DIM, 0.55);
+  rule(MID_X + 6, sY + 27, MID_W - 12);
+  const rows = [
+    ['BAD', SWOLLEN, '伤口感染', '已清洁并包扎，正在好转', '好转 62%', 0.38, true],
+    ['BAD', CLAW, '抓伤 ×2', '已清洁并包扎', null, null],
+    ['BAD', GERM, '肠胃感染', '水分消耗翻倍，饥饿加快，耐力恢复减缓', '2:41', 0.55],
+    ['BAD', DROP, '口渴', '耐力恢复速度降至 75%', null, null],
+    ['COLD', SNOW, '寒冷', '耐力恢复减缓', null, null],
+    ['GOOD', FLAME, '回暖', '体温逐渐回升', null, null],
+  ];
+  let y = sY + 30;
+  for (const [kind, glyph, name, effect, aside, left, hover] of rows) {
+    if (hover) { rr(MID_X + 5, y, MID_W - 10, 11.4, 2.2); g.fillStyle = 'rgba(30,33,36,0.9)'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = 'rgba(232,228,220,0.18)'; g.stroke(); }
+    badge(MID_X + 13, y + 5.7, 4.2, kind, glyph, left);
+    const w = text(name, MID_X + 22, y + 2.6, kind === 'DANGER' ? DANGER_TEXT : TEXT, 0.64);
+    text(effect, MID_X + 22 + w + 4, y + 3.1, DIM, 0.56);
+    if (aside) text(aside, MID_X + MID_W - 9, y + 3.1, DIM, 0.56, 'right');
+    y += 13.2;
+  }
+}
+</script>
+</body></html>

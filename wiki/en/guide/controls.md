@@ -15,6 +15,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | R (inventory) | Rotate the item you drag |
 | Q (inventory) | Drop the item under the cursor |
 | F | Does nothing: AFL has no off hand |
+| Left Alt | Every status badge slides its name and effect out for 4 seconds; once every 6 seconds at most |
 
 ## Camera
 
