@@ -1,6 +1,7 @@
 # 中文润色 · 第一批：HUD、状态效果、交互提示
 
 - **状态：** 已改进 `zh_cn.json`，**等用户实机验收**（2026-10-18）。实机通过后再做下一类。
+- **2026-10-19：** 其中 17 条（HUD 状态 10 条、驾驶提示 2 条、交互提示 5 条）按用户决定 20 换成了 GPT 审校的写法，见 [合并报告](zh_cn_gpt_review_merge_report_v1.md)。下面的表是当时的记录。
 - **依据：** [zh_cn_style_guide_v1.md](zh_cn_style_guide_v1.md)。
 - **改动范围：** 只改了 `src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json` 里的 31 条中文。键名、行号、占位符、en_us 和代码都没动，游戏机制和数值也没变。
 

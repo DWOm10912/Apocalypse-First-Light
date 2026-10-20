@@ -50,6 +50,8 @@ The player wiki lives in `wiki/` (VitePress, see `docs/wiki/afl_wiki_v1_plan.md`
 
 All Simplified Chinese text (`lang/zh_cn.json`, UI, hints, docs meant for players) follows `docs/localization/zh_cn_style_guide_v1.md` (user-approved 2026-10-18).
 
+Since 2026-10-19 (user, guide decisions 19–21) the independent GPT review in `docs/localization/gpt_review_2026-10-19/` is the reference baseline for zh_cn and wiki writing. Mechanics text (HUD status, attributes, Jade, errors, settings) uses precise written Chinese (移动速度降低, 无法自然恢复生命值). Spoken Chinese is for felt messages, backgrounds, characters and readable documents. Lore, people, companies and gun backgrounds keep their own voice and never read like HUD copy. Do not apply its phrasing mechanically. Acceptance is independent review plus how it reads in game.
+
 Core rule for localization and narrative writing (user, 2026-10-18): every text reads like the real kind of text it is (guide section 2.0). Before writing, settle what kind of text it is, who wrote it, and who it is for.
 
 - Write en_us and zh_cn in the same task, in the same section and line.

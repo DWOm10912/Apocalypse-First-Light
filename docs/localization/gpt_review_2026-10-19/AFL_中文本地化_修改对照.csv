@@ -1,0 +1,390 @@
+﻿Key,原中文,审校后,类别,英文对照
+hud.apocalypse_firstlight.status.cold.1.effect,耐力恢复变慢,耐力恢复减缓,HUD 与状态：语气及机制表达,Stamina recovers slower
+hud.apocalypse_firstlight.status.cold.2.effect,耐力恢复更慢，走路慢，不会自己回血,耐力恢复减缓，移动速度降低，无法自然恢复生命值,HUD 与状态：语气及机制表达,"Stamina recovers slower, slower walking, no natural healing"
+hud.apocalypse_firstlight.status.cold.3.effect,走路慢，不会自己回血，一直掉血,移动速度降低，无法自然恢复生命值，并持续失去生命值,HUD 与状态：语气及机制表达,"Slower walking, no natural healing, losing health"
+hud.apocalypse_firstlight.status.hot.1.effect,渴得更快，更耗耐力,水分消耗加快，耐力消耗增加,HUD 与状态：语气及机制表达,"Thirst rises faster, stamina costs more"
+hud.apocalypse_firstlight.status.hot.2.effect,渴得快一倍，走路慢，不会自己回血,水分消耗翻倍，移动速度降低，无法自然恢复生命值,HUD 与状态：语气及机制表达,"Thirst doubled, slower walking, no natural healing"
+hud.apocalypse_firstlight.status.hot.3.effect,渴得快一倍，不会自己回血，一直掉血,水分消耗翻倍，无法自然恢复生命值，并持续失去生命值,HUD 与状态：语气及机制表达,"Thirst doubled, no natural healing, losing health"
+hud.apocalypse_firstlight.status.wet.effect,体温掉得更快,体温下降加快,HUD 与状态：语气及机制表达,Body heat drains faster
+hud.apocalypse_firstlight.status.radiation.1.effect,走路慢 5%%,移动速度降低 5%%,HUD 与状态：语气及机制表达,5%% slower walking
+hud.apocalypse_firstlight.status.radiation.2.effect,走路慢 10%%，回血慢,移动速度降低 10%%，生命恢复减缓,HUD 与状态：语气及机制表达,"10%% slower walking, slower healing"
+hud.apocalypse_firstlight.status.radiation.3.effect,走路慢 15%%，回血减半，阵阵恶心,移动速度降低 15%%，生命恢复速度减半，伴有间歇性恶心,HUD 与状态：语气及机制表达,"15%% slower walking, half healing, bouts of nausea"
+hud.apocalypse_firstlight.status.radiation.4.effect,走路慢 20%%，几乎不回血，恶心，每 5 秒掉血,移动速度降低 20%%，生命恢复极慢，伴有恶心，每 5 秒失去生命值,HUD 与状态：语气及机制表达,"20%% slower walking, barely heals, nausea, losing health every 5 s"
+hud.apocalypse_firstlight.status.gastro.effect,渴得快一倍，饿得更快，耐力恢复变慢,水分消耗翻倍，饥饿加快，耐力恢复减缓,HUD 与状态：语气及机制表达,"Thirst doubled, hungry sooner, stamina recovers slower"
+hud.apocalypse_firstlight.status.gasoline,沾汽油,沾染汽油,HUD 与状态：语气及机制表达,Gasoline-soaked
+hud.apocalypse_firstlight.status.gasoline.effect,身上在滴油,衣物沾有汽油，燃油持续滴落,HUD 与状态：语气及机制表达,Dripping fuel
+hud.apocalypse_firstlight.status.diesel,沾柴油,沾染柴油,HUD 与状态：语气及机制表达,Diesel-soaked
+hud.apocalypse_firstlight.status.diesel.effect,身上在滴油,衣物沾有柴油，燃油持续滴落,HUD 与状态：语气及机制表达,Dripping fuel
+hud.apocalypse_firstlight.status.load.heavy,很重,负重过高,HUD 与状态：语气及机制表达,Heavy load
+hud.apocalypse_firstlight.status.load.extreme,极限超载,严重超载,HUD 与状态：语气及机制表达,Crushing load
+hud.apocalypse_firstlight.status.load.effect,走路慢 %s%%,移动速度降低 %s%%,HUD 与状态：语气及机制表达,%s%% slower
+hud.apocalypse_firstlight.status.load.effect_no_sprint,走路慢 %s%%，不能疾跑,移动速度降低 %s%%，无法疾跑,HUD 与状态：语气及机制表达,"%s%% slower, no sprinting"
+hud.apocalypse_firstlight.status.thirst.1.effect,耐力恢复只有 %s%%,耐力恢复速度降至 %s%%,HUD 与状态：语气及机制表达,Stamina recovers at %s%%
+hud.apocalypse_firstlight.status.thirst.2.effect,耐力恢复只有 %s%%，不会自己回血,耐力恢复速度降至 %s%%，无法自然恢复生命值,HUD 与状态：语气及机制表达,"Stamina recovers at %s%%, no natural healing"
+hud.apocalypse_firstlight.status.thirst.3.effect,每 %s 秒掉 1 点血,每 %s 秒失去 1 点生命值,HUD 与状态：语气及机制表达,Losing 1 health every %s s
+hud.apocalypse_firstlight.status.hunger.2,饿坏了,极度饥饿,HUD 与状态：语气及机制表达,Starving
+hud.apocalypse_firstlight.status.hunger.2.effect,饿得掉血,持续失去生命值,HUD 与状态：语气及机制表达,Losing health
+hud.apocalypse_firstlight.status.fed,吃饱了,饱腹,HUD 与状态：语气及机制表达,Well fed
+hud.apocalypse_firstlight.status.fed.effect,慢慢回血,生命值缓慢恢复,HUD 与状态：语气及机制表达,Slowly healing
+hud.apocalypse_firstlight.status.warming,取暖,回暖,HUD 与状态：语气及机制表达,Warming up
+hud.apocalypse_firstlight.status.warming.effect,体温在回升,体温逐渐回升,HUD 与状态：语气及机制表达,Body heat coming back
+hud.apocalypse_firstlight.status.card.load.light,轻松,负重轻,HUD 与状态：语气及机制表达,light
+hud.apocalypse_firstlight.status.card.load.burdened,有点重,略感吃力,HUD 与状态：语气及机制表达,burdened
+hud.apocalypse_firstlight.status.card.load.heavy,很重,负重过高,HUD 与状态：语气及机制表达,heavy
+hud.apocalypse_firstlight.status.card.load.extreme,极限,严重超载,HUD 与状态：语气及机制表达,crushing
+hud.apocalypse_firstlight.status.card.wet,湿 %s%%,潮湿度 %s%%,HUD 与状态：语气及机制表达,Wet %s%%
+hud.apocalypse_firstlight.drive.start,按住启动,按住点火,HUD 与状态：语气及机制表达,Start (hold)
+hud.apocalypse_firstlight.drive.lights,车灯，长按开远光,车灯（长按切换远光）,HUD 与状态：语气及机制表达,Lights (hold: high beam)
+hud.apocalypse_firstlight.drive.climate,暖风 / 冷气,暖风 / 空调,HUD 与状态：语气及机制表达,Heat / A/C
+block.apocalypse_firstlight.steel_brace,钢桁架,钢支撑架,物品与方块：术语及命名,Steel Brace
+block.apocalypse_firstlight.bauxite_ore,铝土矿,铝土矿石,物品与方块：术语及命名,Bauxite Ore
+block.apocalypse_firstlight.galena_ore,方铅矿矿石,方铅矿石,物品与方块：术语及命名,Galena Ore
+block.apocalypse_firstlight.sphalerite_ore,闪锌矿矿石,闪锌矿石,物品与方块：术语及命名,Sphalerite Ore
+block.apocalypse_firstlight.pentlandite_ore,镍黄铁矿矿石,镍黄铁矿石,物品与方块：术语及命名,Pentlandite Ore
+block.apocalypse_firstlight.wolframite_ore,黑钨矿矿石,黑钨矿石,物品与方块：术语及命名,Wolframite Ore
+block.apocalypse_firstlight.steel_plate,钢制板材,钢板,物品与方块：术语及命名,Steel Plate
+block.apocalypse_firstlight.retail_shelf_single,零售货架,单组零售货架,物品与方块：术语及命名,Retail Shelf
+block.apocalypse_firstlight.checkout_counter_display,收银柜台（带货架）,带陈列架的收银柜台,物品与方块：术语及命名,Checkout Counter (Display)
+block.apocalypse_firstlight.back_bar_shelf,收银背柜,收银台后货架,物品与方块：术语及命名,Back Bar Shelf
+block.apocalypse_firstlight.commercial_wood_door,商业木门,商用木门,物品与方块：术语及命名,Commercial Wood Door
+block.apocalypse_firstlight.ground_face_block,磨面砌块,劈裂面砌块,物品与方块：术语及命名,Ground Face Block
+block.apocalypse_firstlight.commercial_dumpster,垃圾箱（绿色）,大型垃圾箱（绿色）,物品与方块：术语及命名,Commercial Dumpster (Green)
+block.apocalypse_firstlight.underground_fuel_tank_gasoline,汽油地下储罐,地下汽油罐,物品与方块：术语及命名,Underground Gasoline Tank
+block.apocalypse_firstlight.underground_fuel_tank_diesel,柴油地下储罐,地下柴油罐,物品与方块：术语及命名,Underground Diesel Tank
+block.apocalypse_firstlight.restroom_partition,厕所隔板,卫生间隔板,物品与方块：术语及命名,Restroom Partition
+block.apocalypse_firstlight.restroom_stall_door,厕所隔间门,卫生间隔间门,物品与方块：术语及命名,Restroom Stall Door
+block.apocalypse_firstlight.commercial_flushometer_toilet,马桶,冲洗阀式马桶,物品与方块：术语及命名,Flushometer Toilet
+block.apocalypse_firstlight.wall_mirror,壁挂镜子,壁挂镜,物品与方块：术语及命名,Wall Mirror
+block.apocalypse_firstlight.wooden_storage_chest,木储物箱,木制储物箱,物品与方块：术语及命名,Wooden Storage Chest
+block.apocalypse_firstlight.tree_wood,树干与枝,树干和树枝,物品与方块：术语及命名,Tree Trunk and Branches
+block.apocalypse_firstlight.flattened_plant,被压倒的草,倒伏的植物,物品与方块：术语及命名,Flattened Plants
+block.apocalypse_firstlight.curb_sidewalk,人行道路牙,人行道路缘石,物品与方块：术语及命名,Sidewalk Curb
+block.apocalypse_firstlight.curb_grass,草地路牙,草地路缘石,物品与方块：术语及命名,Grass Curb
+block.apocalypse_firstlight.road_stop_sign,停车让行标志,停车标志,物品与方块：术语及命名,Stop Sign
+block.apocalypse_firstlight.road_wrong_way_sign,逆行警告标志,逆行标志,物品与方块：术语及命名,Wrong Way Sign
+block.apocalypse_firstlight.tunnel_cms_gantry,情报板门架,可变情报板门架,物品与方块：术语及命名,Message Sign Gantry
+item.apocalypse_firstlight.bauxite,铝土,铝土矿,物品与方块：术语及命名,Bauxite
+item.apocalypse_firstlight.steel_scrap,钢废料,废钢,物品与方块：术语及命名,Steel Scrap
+item.apocalypse_firstlight.silver_scrap,银废料,废银,物品与方块：术语及命名,Silver Scrap
+item.apocalypse_firstlight.dirty_water_bottle,脏水瓶,瓶装脏水,物品与方块：术语及命名,Dirty Water Bottle
+item.apocalypse_firstlight.boiled_water_bottle,煮沸水瓶,瓶装煮沸水,物品与方块：术语及命名,Boiled Water Bottle
+item.apocalypse_firstlight.purified_water_bottle,纯净水瓶,瓶装净水,物品与方块：术语及命名,Purified Water Bottle
+item.apocalypse_firstlight.simple_hearing_protection,简易隔音耳罩,简易护耳罩,物品与方块：术语及命名,Simple Hearing Protection
+item.apocalypse_firstlight.silverwood_12,Silverwood 12 双管霰弹枪,Silverwood 12 并排双管霰弹枪,物品与方块：术语及命名,Silverwood 12
+item.apocalypse_firstlight.creative_gasoline_barrel,汽油桶（创造模式，5000 L）,"汽油桶（创造模式，5,000 L）",物品与方块：术语及命名,"Creative Gasoline Barrel (5,000 L)"
+item.apocalypse_firstlight.creative_diesel_barrel,柴油桶（创造模式，5000 L）,"柴油桶（创造模式，5,000 L）",物品与方块：术语及命名,"Creative Diesel Barrel (5,000 L)"
+tooltip.apocalypse_firstlight.simple_hearing_protection.description,用简易材料制成的临时耳罩，能够显著缓解耳鸣，并降低外界声音,简易材料拼制的护耳罩。能减轻枪声引起的耳鸣，但也会削弱对周围声音的感知,物品说明：准确、自然、有节奏,Temporary earmuffs made of simple materials can significantly relieve tinnitus and reduce external sounds.
+tooltip.apocalypse_firstlight.pistol_micro_red_dot.description,一款紧凑型手枪瞄具，提供清晰瞄准点，便于快速捕捉近距离目标,紧凑型手枪红点瞄具，瞄点清晰，便于快速瞄准近距离目标,物品说明：准确、自然、有节奏,A compact pistol sight that provides a clear aiming point for faster close-range target acquisition.
+tooltip.apocalypse_firstlight.br51_extended_magazine_35.description,BR-51 专用 35 发扩容弹匣，增加弹匣容量，提升持续射击能力,BR-51 专用的 35 发扩容弹匣，可减少持续射击时的换弹次数,物品说明：准确、自然、有节奏,"A 35-round extended magazine designed for the BR-51, significantly increasing sustained fire capability."
+tooltip.apocalypse_firstlight.br51_drum_magazine_50.description,BR-51 专用 50 发双弹鼓，增加弹匣容量，提升持续射击能力，但空仓换弹更慢,BR-51 专用的 50 发双弹鼓。弹药储备充足，但空仓换弹更慢,物品说明：准确、自然、有节奏,"A 50-round twin-drum magazine designed for the BR-51, greatly extending sustained fire at the cost of a slower empty reload."
+tooltip.apocalypse_firstlight.p9_01_extended_magazine.description,P9-01 专用 28 发扩容弹匣，钢制加长弹匣带握把延长套和加固底板，增加弹匣容量，提升持续射击能力,P9-01 专用的 28 发扩容弹匣，采用加长钢制弹匣体，配有握把延长套和加固底板,物品说明：准确、自然、有节奏,"A 28-round extended magazine built for the P9-01: a lengthened steel magazine with a grip-extension sleeve and a reinforced floorplate, greatly improving sustained fire."
+tooltip.apocalypse_firstlight.rifle_red_dot_01.description,通用步枪红点瞄具，瞄点清晰，便于快速瞄准目标,通用步枪红点瞄具，提供清晰的瞄准点，便于快速瞄准目标,物品说明：准确、自然、有节奏,A universal rifle red dot sight that provides a clear aiming point for faster target acquisition.
+tooltip.apocalypse_firstlight.pistol_red_dot.description,紧凑型手枪红点瞄具，镜片带淡色镀膜,紧凑型手枪红点瞄具，镜片采用浅色镀膜,物品说明：准确、自然、有节奏,A compact pistol optic with a lightly tinted lens.
+tooltip.apocalypse_firstlight.rifle_suppressor_01.description,7.62×51mm 快拆步枪消音器，套在兼容的消焰器上。枪声传播范围明显缩小，枪口焰减弱,7.62×51mm 快拆步枪消音器，可安装在兼容的消焰器上。降低枪声传播范围，并减弱枪口焰,物品说明：准确、自然、有节奏,"A quick-detach 7.62×51mm rifle suppressor that mounts over a compatible flash hider, greatly reducing gunshot noise propagation and muzzle flash."
+tooltip.apocalypse_firstlight.heavy_suppressor_01.description,12.7×55mm 大型快拆消音器，套在兼容的枪口制退器上，向后包住枪管。枪声传播范围明显缩小，枪口焰减弱,12.7×55mm 大型快拆消音器，安装在兼容的枪口制退器上，向后包覆部分枪管。降低枪声传播范围，并减弱枪口焰,物品说明：准确、自然、有节奏,"A large quick-detach 12.7×55mm suppressor that mounts over a compatible muzzle brake and sleeves back over the barrel, greatly reducing gunshot noise propagation and muzzle flash."
+tooltip.apocalypse_firstlight.pistol_suppressor_01.description,9mm 手枪消音器。枪声传播范围明显缩小，枪口焰减弱,9mm 手枪消音器，能够缩小枪声传播范围，并减弱枪口焰,物品说明：准确、自然、有节奏,A 9mm pistol suppressor that greatly reduces gunshot noise propagation and muzzle flash.
+tooltip.apocalypse_firstlight.br51_01.description,7.62×51mm 战斗步枪，可切换半自动和全自动，威力强劲，射程出色，但后坐力较大，全自动时很难控制,发射 7.62×51mm 弹药的战斗步枪，支持半自动与全自动射击。威力和射程出色，但后坐力较大，持续自动射击时尤其难以控制,物品说明：准确、自然、有节奏,"A select-fire battle rifle chambered in 7.62×51mm, offering strong power and range at the cost of heavy recoil that is hard to control on full auto."
+tooltip.apocalypse_firstlight.hr55.description,12.7×55mm 重型战斗步枪，可切换半自动和全自动，近中距离制止力出色,发射 12.7×55mm 弹药的重型战斗步枪，支持半自动与全自动射击，近中距离制止力出色,物品说明：准确、自然、有节奏,"A heavy select-fire battle rifle chambered in 12.7×55mm, with formidable stopping power at close and medium range."
+tooltip.apocalypse_firstlight.silverwood_12.description,民用并排双管运动霰弹枪，折开枪管装弹，发射 12 号鹿弹,民用并排双管运动霰弹枪，采用折开式装填结构，发射 12 号鹿弹,物品说明：准确、自然、有节奏,"A modern side-by-side sporting shotgun with a break action, firing 12 Gauge buckshot."
+tooltip.apocalypse_firstlight.p9_01.description,紧凑可靠的 9mm 制式手枪，可切换半自动和全自动，操控灵活，适合近距离交战,紧凑可靠的 9mm 制式手枪，支持半自动与全自动射击，操控灵活，适合近距离交战,物品说明：准确、自然、有节奏,"A compact and reliable select-fire 9mm service pistol, easy to handle and well suited for close-range combat."
+tooltip.apocalypse_firstlight.weight.fallback,没有质量数据，按默认值计算,缺少重量数据，已按默认值计算,物品说明：准确、自然、有节奏,No mass data; default value used
+tooltip.apocalypse_firstlight.weight.pending,重量：等待服务器数据,正在获取服务器提供的重量数据,物品说明：准确、自然、有节奏,Weight: awaiting server data
+tooltip.apocalypse_firstlight.grid_gear.contents,装着 %s 组物品,已存放 %s 组物品,物品说明：准确、自然、有节奏,Holds %s stacks
+tooltip.apocalypse_firstlight.gun_sling,点长枪装上,点击长枪安装背带,物品说明：准确、自然、有节奏,Click a long gun to fit
+tooltip.apocalypse_firstlight.sling_fitted,已装背带,已安装背带,物品说明：准确、自然、有节奏,Sling fitted
+tooltip.apocalypse_firstlight.creative_fuel_barrel.use,创造模式专用。对着储罐、打开的卸油口或加油口按右键：一次倒进能装下的量；不能往里装,仅限创造模式。对储罐或已打开的卸油口、加油口使用，可一次注入容器剩余容量允许的燃油；此油桶无法重新灌装,物品说明：准确、自然、有节奏,"Creative only. Use on a tank, an open fill cover or filler: pours as much as fits at once; it cannot be filled"
+tooltip.apocalypse_firstlight.fuel_can.use,对准打开的卸油口或加油口按右键：蹲下倒油，倒完自动停（再按右键停止）；潜行 + 右键放在地上,对准已打开的卸油口或加油口按右键，蹲下倒油；倒空后自动停止，也可再次按右键停止。潜行时按右键可将油壶放在地上,物品说明：准确、自然、有节奏,"Use on an open fill cover or filler: crouch and pour, stopping when it is empty (use again to stop); sneak + use to set it down"
+tooltip.apocalypse_firstlight.wrist_thermometer.description,戴在手腕上，持续显示环境温度,佩戴在手腕上，可持续查看环境温度,物品说明：准确、自然、有节奏,Worn on the wrist; shows the air temperature
+tooltip.apocalypse_firstlight.stat.sound_radius,声音半径,枪声传播范围,物品说明：准确、自然、有节奏,Sound Radius
+screen.apocalypse_firstlight.maintenance_select,选择要放上维护台的枪,选择要放置在维护台上的枪械,界面与按键：简短、准确、避免口语碎片,Pick a gun to put on the bench
+screen.apocalypse_firstlight.maintenance_no_guns,身上没有枪,身上没有可用的枪械,界面与按键：简短、准确、避免口语碎片,You carry no gun
+screen.apocalypse_firstlight.inventory.hands_hint,拖入拿着,拖到此处拿在手中,界面与按键：简短、准确、避免口语碎片,Drop to hold
+screen.apocalypse_firstlight.inventory.wear_hint,拖入穿上,拖到此处穿戴,界面与按键：简短、准确、避免口语碎片,Drop to wear
+screen.apocalypse_firstlight.inventory.weapon_hint,拖入放好,拖到此处装备,界面与按键：简短、准确、避免口语碎片,Drop a weapon here
+screen.apocalypse_firstlight.inventory.bind_unbind,右键 解除,右键取消绑定,界面与按键：简短、准确、避免口语碎片,Right-click: unbind
+screen.apocalypse_firstlight.distribution_panel.status_duplicate,重复配电盘,检测到重复配电盘,界面与按键：简短、准确、避免口语碎片,Duplicate panel
+screen.apocalypse_firstlight.distribution_panel.status_no_supply,无进线,未接入电源,界面与按键：简短、准确、避免口语碎片,No supply
+screen.apocalypse_firstlight.distribution_panel.status_no_building,未识别建筑,未关联建筑,界面与按键：简短、准确、避免口语碎片,No building
+screen.apocalypse_firstlight.distribution_panel.status_partial,线路未加载,部分线路尚未加载,界面与按键：简短、准确、避免口语碎片,Wiring unloaded
+screen.apocalypse_firstlight.distribution_panel.storage,储能 %s%%,储能：%s%%,界面与按键：简短、准确、避免口语碎片,Storage %s%%
+screen.apocalypse_firstlight.distribution_panel.capacity,容量 %s FE/t,额定容量：%s FE/t,界面与按键：简短、准确、避免口语碎片,Capacity %s FE/t
+screen.apocalypse_firstlight.wiring_group.title,选组,选择控制组,界面与按键：简短、准确、避免口语碎片,Group
+screen.apocalypse_firstlight.wiring_group.new_group,新组 %s,新建组 %s,界面与按键：简短、准确、避免口语碎片,New group %s
+screen.apocalypse_firstlight.settings.dash_style.band,速度带,条形速度表,界面与按键：简短、准确、避免口语碎片,Speed band
+gui.apocalypse_firstlight.hud_layout.back,返回编辑,返回布局编辑,界面与按键：简短、准确、避免口语碎片,Return to editing
+gui.apocalypse_firstlight.hud_layout.dev_only,HUD Layout 编辑器仅支持开发环境（需要可写的源目录）。,HUD 布局编辑器仅供开发环境使用，需要具有写入权限的源码目录,界面与按键：简短、准确、避免口语碎片,The HUD Layout editor only supports development environments (writable source directory required).
+gui.apocalypse_firstlight.hud_layout.help,左键拖动 | 滚轮缩放 0.05 / Shift 精调 0.01,左键拖动｜滚轮缩放 0.05，按住 Shift 精调 0.01,界面与按键：简短、准确、避免口语碎片,Drag: left mouse | Scale: wheel 0.05 / Shift 0.01
+gui.apocalypse_firstlight.hud_layout.occupied,红色：其他 HUD 占用区域（只读）,红色表示其他 HUD 占用的区域（只读）,界面与按键：简短、准确、避免口语碎片,Red: other HUD occupied areas (read-only)
+gui.apocalypse_firstlight.gun_maintenance.processing,处理中...,正在处理…,界面与按键：简短、准确、避免口语碎片,Working...
+gui.apocalypse_firstlight.gun_maintenance.none,当前：无,当前未安装,界面与按键：简短、准确、避免口语碎片,Current: None
+gui.apocalypse_firstlight.gun_maintenance.no_compatible_attachment,没有可用配件,没有兼容的配件,界面与按键：简短、准确、避免口语碎片,No compatible attachments
+gui.apocalypse_firstlight.gun_maintenance.state_changed,配件状态已变化，请重试,配件状态已改变，请重试,界面与按键：简短、准确、避免口语碎片,Attachment state changed. Try again
+gui.apocalypse_firstlight.industrial_furnace.auto_balance.description,将相同原料自动均分到三个处理通道,将同种原料平均分配到三个加工通道,界面与按键：简短、准确、避免口语碎片,Evenly distributes identical inputs across the three processing lanes.
+gui.apocalypse_firstlight.key_hint.place_gun,放上 / 取回枪械,放置 / 取回枪械,界面与按键：简短、准确、避免口语碎片,Place / take back gun
+key.apocalypse_firstlight.growth,成长页,成长界面,界面与按键：简短、准确、避免口语碎片,Growth page
+key.apocalypse_firstlight.driving_hints,驾驶按键提示：收起 / 显示（驾驶）,显示 / 隐藏驾驶提示,界面与按键：简短、准确、避免口语碎片,Driving key hints: hide / show (Driving)
+key.apocalypse_firstlight.status_details,状态详情（按住）,查看状态详情（按住）,界面与按键：简短、准确、避免口语碎片,Status details (hold)
+key.apocalypse_firstlight.transfer_case,分动箱：两驱 / 四驱 / 低速四驱（2H / 4H / 4L，驾驶）,切换分动箱挡位（2H / 4H / 4L，驾驶）,界面与按键：简短、准确、避免口语碎片,"Transfer Case: 2WD / 4WD / 4WD Low (2H / 4H / 4L, Driving)"
+key.apocalypse_firstlight.headlights,车灯：点按开关 / 长按远光（驾驶）,切换车灯（长按远光，驾驶）,界面与按键：简短、准确、避免口语碎片,Lights: Tap / Hold High Beam (Driving)
+key.apocalypse_firstlight.ignition,点火（驾驶，按住）,点火（长按，驾驶）,界面与按键：简短、准确、避免口语碎片,"Ignition (Driving, hold)"
+key.apocalypse_firstlight.climate,空调：关 / 暖风 / 冷气（驾驶）,空调模式（关 / 暖风 / 冷气，驾驶）,界面与按键：简短、准确、避免口语碎片,Climate: Off / Heat / A/C (Driving)
+key.apocalypse_firstlight.wipers,雨刷：关 / 间歇 / 慢 / 快（驾驶）,雨刷挡位（关 / 间歇 / 低速 / 高速，驾驶）,界面与按键：简短、准确、避免口语碎片,Wipers: Off / Intermittent / Low / High (Driving)
+gui.apocalypse_firstlight.hud_layout.unknown,未知 HUD 布局：%s,未找到 HUD 布局：%s,界面与按键：简短、准确、避免口语碎片,Unknown HUD layout: %s
+subtitles.apocalypse_firstlight.chest_freezer_slide,冷冻冰柜滑盖移动,冰柜：滑盖移动,音效字幕：声音来源与动作,Freezer lid slides
+subtitles.apocalypse_firstlight.industrial_locker_open,储物柜门打开,储物柜：开门,音效字幕：声音来源与动作,Locker opens
+subtitles.apocalypse_firstlight.industrial_locker_close,储物柜门关上,储物柜：关门,音效字幕：声音来源与动作,Locker closes
+subtitles.apocalypse_firstlight.container_search_rummage,翻找,翻找物品,音效字幕：声音来源与动作,Rummaging
+subtitles.apocalypse_firstlight.office_chair_roll,办公椅滚动,办公椅：滚动,音效字幕：声音来源与动作,Office chair rolls
+subtitles.apocalypse_firstlight.stamina_breath_heavy,喘气,急促的喘息声,音效字幕：声音来源与动作,Heavy breathing
+subtitles.apocalypse_firstlight.metal_trash_can_open,垃圾桶盖打开,垃圾桶：打开桶盖,音效字幕：声音来源与动作,Trash can lid opens
+subtitles.apocalypse_firstlight.metal_trash_can_close,垃圾桶盖盖上,垃圾桶：盖上桶盖,音效字幕：声音来源与动作,Trash can lid shuts
+subtitles.apocalypse_firstlight.commercial_dumpster_open,垃圾箱盖打开,大型垃圾箱：打开箱盖,音效字幕：声音来源与动作,Dumpster lid opens
+subtitles.apocalypse_firstlight.commercial_dumpster_close,垃圾箱盖盖上,大型垃圾箱：盖上箱盖,音效字幕：声音来源与动作,Dumpster lid slams
+subtitles.apocalypse_firstlight.checkout_counter_gate_open,柜台通道门打开,柜台门：打开,音效字幕：声音来源与动作,Counter gate opens
+subtitles.apocalypse_firstlight.checkout_counter_gate_close,柜台通道门关上,柜台门：关闭,音效字幕：声音来源与动作,Counter gate closes
+subtitles.apocalypse_firstlight.fuel_nozzle_take,油枪拿起,加油枪：拿起,音效字幕：声音来源与动作,Fuel nozzle lifted
+subtitles.apocalypse_firstlight.fuel_nozzle_hang,油枪挂回,加油枪：挂回,音效字幕：声音来源与动作,Fuel nozzle hung up
+subtitles.apocalypse_firstlight.fuel_nozzle_breakaway,油管拉断阀脱开,油管：拉断接头脱开,音效字幕：声音来源与动作,Hose breakaway snaps
+subtitles.apocalypse_firstlight.fuel_nozzle_spray,喷油,燃油喷出,音效字幕：声音来源与动作,Fuel sprays
+subtitles.apocalypse_firstlight.fuel_nozzle_insert,油枪插入,加油枪：插入加油口,音效字幕：声音来源与动作,Nozzle goes in
+subtitles.apocalypse_firstlight.fuel_nozzle_fill,加油,燃油流动,音效字幕：声音来源与动作,Fuel fills
+subtitles.apocalypse_firstlight.fuel_nozzle_shut_off,油枪跳枪,加油枪：自动跳枪,音效字幕：声音来源与动作,Nozzle shuts off
+subtitles.apocalypse_firstlight.fuel_nozzle_pull,油枪拔出,加油枪：拔出,音效字幕：声音来源与动作,Nozzle comes out
+subtitles.apocalypse_firstlight.breaker_trip,断路器跳闸,断路器：跳闸,音效字幕：声音来源与动作,Breaker trips
+subtitles.apocalypse_firstlight.fuel_ignite,燃油：轰燃,燃油起火,音效字幕：声音来源与动作,Fuel ignites
+subtitles.apocalypse_firstlight.fuel_fire_loop,燃油：燃烧,燃油燃烧,音效字幕：声音来源与动作,Fuel burns
+subtitles.apocalypse_firstlight.jerry_can_pour,倒油,燃油倾倒,音效字幕：声音来源与动作,Fuel pours
+subtitles.apocalypse_firstlight.fuel_explode,油罐：爆炸,油罐爆炸,音效字幕：声音来源与动作,Fuel tank explodes
+subtitles.apocalypse_firstlight.distribution_panel_latch,配电盘门锁咔哒一响,配电盘：门锁咔哒作响,音效字幕：声音来源与动作,Panel latch clicks
+subtitles.apocalypse_firstlight.distribution_panel_open,配电盘门打开,配电盘：开门,音效字幕：声音来源与动作,Panel door opens
+subtitles.apocalypse_firstlight.distribution_panel_close,配电盘门关上,配电盘：关门,音效字幕：声音来源与动作,Panel door closes
+subtitles.apocalypse_firstlight.cash_register_open,收银机钱箱弹开,收银机：钱箱弹开,音效字幕：声音来源与动作,Cash drawer opens
+subtitles.apocalypse_firstlight.cash_register_close,收银机钱箱关上,收银机：钱箱关闭,音效字幕：声音来源与动作,Cash drawer closes
+subtitles.apocalypse_firstlight.beverage_cooler_door_open,饮料冷柜门打开,饮料冷柜：开门,音效字幕：声音来源与动作,Cooler door opens
+subtitles.apocalypse_firstlight.beverage_cooler_door_close,饮料冷柜门关上,饮料冷柜：关门,音效字幕：声音来源与动作,Cooler door closes
+subtitles.apocalypse_firstlight.intake_pump_switch,取液泵开关,取液泵：开关咔哒作响,音效字幕：声音来源与动作,Pump switch clicks
+subtitles.apocalypse_firstlight.intake_pump_start,取液泵启动,取液泵：启动,音效字幕：声音来源与动作,Pump starts
+subtitles.apocalypse_firstlight.intake_pump_stop,取液泵停机,取液泵：停机,音效字幕：声音来源与动作,Pump winds down
+subtitles.apocalypse_firstlight.intake_pump_loop,取液泵运转,取液泵：运转,音效字幕：声音来源与动作,Pump runs
+subtitles.apocalypse_firstlight.beverage_cooler_compressor_start,冷柜压缩机启动,冷柜压缩机：启动,音效字幕：声音来源与动作,Cooler compressor starts
+subtitles.apocalypse_firstlight.beverage_cooler_compressor_stop,冷柜压缩机停止,冷柜压缩机：停机,音效字幕：声音来源与动作,Cooler compressor stops
+subtitles.apocalypse_firstlight.beverage_cooler_compressor_loop,冷柜压缩机运转,冷柜压缩机：嗡嗡运转,音效字幕：声音来源与动作,Cooler compressor hums
+subtitles.apocalypse_firstlight.charging_station_start,充电站开始充电,充电站：开始充电,音效字幕：声音来源与动作,Charging starts
+subtitles.apocalypse_firstlight.charging_station_hum,充电站嗡嗡作响,充电站：嗡嗡作响,音效字幕：声音来源与动作,Charging station hums
+subtitles.apocalypse_firstlight.diesel_generator_crank,柴油机盘车,柴油机：起动机带动曲轴转动,音效字幕：声音来源与动作,Diesel engine cranks
+subtitles.apocalypse_firstlight.portable_generator_pull,拉起动绳,便携式发电机：拉动起动绳,音效字幕：声音来源与动作,Recoil starter pulled
+subtitles.apocalypse_firstlight.portable_generator_start,小柴油机启动,便携式柴油机：启动,音效字幕：声音来源与动作,Small diesel starts
+subtitles.apocalypse_firstlight.portable_generator_run,小柴油机运转,便携式柴油机：运转,音效字幕：声音来源与动作,Small diesel runs
+subtitles.apocalypse_firstlight.portable_generator_stop,小柴油机停机,便携式柴油机：停机,音效字幕：声音来源与动作,Small diesel stops
+subtitles.apocalypse_firstlight.truck_engine,皮卡发动机运转,皮卡：发动机运转,音效字幕：声音来源与动作,Truck engine runs
+subtitles.apocalypse_firstlight.truck_crank,起动机转动,皮卡：起动机转动,音效字幕：声音来源与动作,Starter cranks
+subtitles.apocalypse_firstlight.truck_catch,皮卡发动机着车,皮卡：发动机启动,音效字幕：声音来源与动作,Truck engine starts
+subtitles.apocalypse_firstlight.truck_stop,皮卡发动机熄火,皮卡：发动机熄火,音效字幕：声音来源与动作,Truck engine stops
+subtitles.apocalypse_firstlight.truck_relay,继电器咔哒,皮卡：继电器轻响,音效字幕：声音来源与动作,Relay clicks
+subtitles.apocalypse_firstlight.truck_key,钥匙转动,皮卡：转动钥匙,音效字幕：声音来源与动作,Key turns
+subtitles.apocalypse_firstlight.truck_tyres,轮胎滚动,轮胎：滚动,音效字幕：声音来源与动作,Tyres roll
+subtitles.apocalypse_firstlight.truck_skid,轮胎尖叫,轮胎：尖锐摩擦声,音效字幕：声音来源与动作,Tyres squeal
+subtitles.apocalypse_firstlight.truck_bottom_out,悬挂撞底,悬挂：撞击限位,音效字幕：声音来源与动作,Suspension thuds
+subtitles.apocalypse_firstlight.truck_crash,皮卡撞击,皮卡：撞击,音效字幕：声音来源与动作,Truck crashes
+subtitles.apocalypse_firstlight.truck_scrape,车身刮蹭,车身：刮擦,音效字幕：声音来源与动作,Metal scrapes
+subtitles.apocalypse_firstlight.truck_door_open,车门打开,皮卡：开门,音效字幕：声音来源与动作,Truck door opens
+subtitles.apocalypse_firstlight.truck_door_close,车门关上,皮卡：关门,音效字幕：声音来源与动作,Truck door shuts
+subtitles.apocalypse_firstlight.truck_tailgate,尾门哐当,皮卡：货斗尾门撞响,音效字幕：声音来源与动作,Tailgate clangs
+subtitles.apocalypse_firstlight.truck_fuel_cap,油箱盖拧动,皮卡：转动油箱盖,音效字幕：声音来源与动作,Fuel cap turns
+subtitles.apocalypse_firstlight.truck_shift,挂挡,变速杆：换挡,音效字幕：声音来源与动作,Gear lever clunks
+subtitles.apocalypse_firstlight.truck_transfer,分动杆咔哒,分动箱操纵杆：拨动,音效字幕：声音来源与动作,Transfer lever clicks
+subtitles.apocalypse_firstlight.truck_handbrake,手刹棘轮,手刹：棘轮声,音效字幕：声音来源与动作,Handbrake ratchets
+subtitles.apocalypse_firstlight.truck_horn,皮卡喇叭,皮卡：鸣笛,音效字幕：声音来源与动作,Truck horn
+subtitles.apocalypse_firstlight.truck_signal_switch,转向灯拨杆,转向灯拨杆：咔哒声,音效字幕：声音来源与动作,Turn signal stalk clicks
+subtitles.apocalypse_firstlight.truck_signal,转向灯嗒嗒,转向灯：滴答声,音效字幕：声音来源与动作,Turn signal ticks
+subtitles.apocalypse_firstlight.truck_wiper,雨刷刮动,雨刷：刮擦玻璃,音效字幕：声音来源与动作,Wipers swish
+subtitles.apocalypse_firstlight.box_stove_boil_loop,水开了,水沸腾,音效字幕：声音来源与动作,Water boils
+subtitles.apocalypse_firstlight.box_stove_fry_loop,煎锅滋滋响,煎锅：滋滋作响,音效字幕：声音来源与动作,Pan sizzles
+subtitles.apocalypse_firstlight.emergency_radio_switch_on,收音机：打开,收音机：开机,音效字幕：声音来源与动作,Radio switched on
+subtitles.apocalypse_firstlight.emergency_radio_switch_off,收音机：关掉,收音机：关机,音效字幕：声音来源与动作,Radio switched off
+subtitles.apocalypse_firstlight.emergency_radio_crank,摇收音机,收音机：摇动发电手柄,音效字幕：声音来源与动作,Radio cranked
+subtitles.apocalypse_firstlight.emergency_radio_static_loop,收音机沙沙声,收音机：沙沙杂音,音效字幕：声音来源与动作,Radio static
+subtitles.apocalypse_firstlight.wood_cabinet_open,柜门打开,柜门：打开,音效字幕：声音来源与动作,Cabinet opens
+subtitles.apocalypse_firstlight.wood_cabinet_close,柜门关上,柜门：关闭,音效字幕：声音来源与动作,Cabinet closes
+subtitles.apocalypse_firstlight.lamp_pull_chain,拉线开关,拉绳开关：咔哒声,音效字幕：声音来源与动作,Pull chain clicks
+subtitles.apocalypse_firstlight.wall_switch_click,墙面开关,墙壁开关：咔哒声,音效字幕：声音来源与动作,Light switch clicks
+subtitles.apocalypse_firstlight.power_plug_in,插头插上,插头：插入插座,音效字幕：声音来源与动作,Plug pushed in
+subtitles.apocalypse_firstlight.power_plug_out,插头拔出,插头：拔出插座,音效字幕：声音来源与动作,Plug pulled out
+subtitles.apocalypse_firstlight.rural_mailbox_flag_up,信箱红旗竖起,信箱：竖起信号旗,音效字幕：声音来源与动作,Mailbox flag raised
+subtitles.apocalypse_firstlight.rural_mailbox_flag_down,信箱红旗放下,信箱：放下信号旗,音效字幕：声音来源与动作,Mailbox flag lowered
+subtitles.apocalypse_firstlight.tube_farm_gate_open,农场大门打开,农场大门：打开,音效字幕：声音来源与动作,Farm gate opens
+subtitles.apocalypse_firstlight.tube_farm_gate_close,农场大门关上,农场大门：关闭,音效字幕：声音来源与动作,Farm gate shuts
+subtitles.apocalypse_firstlight.tree_chop,斧头砍树,斧头劈砍树木,音效字幕：声音来源与动作,Axe chops
+subtitles.apocalypse_firstlight.tree_crack,树干断裂,树干：断裂,音效字幕：声音来源与动作,Tree cracks
+subtitles.apocalypse_firstlight.tree_crash,大树倒地,大树：轰然倒下,音效字幕：声音来源与动作,Tree crashes down
+subtitles.apocalypse_firstlight.p9_01.magazine_out,弹匣退出,弹匣：取出,音效字幕：声音来源与动作,Magazine removed
+subtitles.apocalypse_firstlight.p9_01.magazine_in,弹匣插入,弹匣：插入,音效字幕：声音来源与动作,Magazine seated
+message.apocalypse_firstlight.cat.maintenance_refused,这只猫貌似不喜欢你这么干,它似乎不太愿意配合,人物与叙事：克制自然，分清界面语域,This cat doesn't seem to like you doing that.
+message.apocalypse_firstlight.temperature.hot3,你快中暑倒下了,热得眼前发黑，快要站不稳了,人物与叙事：克制自然，分清界面语域,You are about to collapse from the heat
+message.apocalypse_firstlight.fuel_can.aim_fill_cover,对准打开的卸油口或加油口按右键倒油,对准已打开的卸油口或加油口，按右键倒油,人物与叙事：克制自然，分清界面语域,Use it on an open fill cover or filler to pour
+message.apocalypse_firstlight.fuel_can.too_far,离加油口太远，停止倒油,离加油口太远，已停止倒油,人物与叙事：克制自然，分清界面语域,Too far from the filler: stopped pouring
+message.apocalypse_firstlight.fuel_can.other_fuel,里面是另一种油,容器里装着另一种燃油,人物与叙事：克制自然，分清界面语域,It holds the other fuel
+message.apocalypse_firstlight.fuel_nozzle.other_fuel,容器里是另一种油,容器里装着另一种燃油,人物与叙事：克制自然，分清界面语域,The container holds the other fuel
+message.apocalypse_firstlight.hand_fuel_pump.other_fuel,容器里是另一种油,容器里装着另一种燃油,人物与叙事：克制自然，分清界面语域,The container holds the other fuel
+message.apocalypse_firstlight.fuel_can.wont_take,这里倒不进燃油,这里无法注入燃油,人物与叙事：克制自然，分清界面语域,Fuel will not go in here
+message.apocalypse_firstlight.felling.no_fall,这棵树在这里倒不下来,这里没有足够的空间让树倒下,人物与叙事：克制自然，分清界面语域,The tree cannot fall here
+message.apocalypse_firstlight.wiring.route_changed,路线变了,布线路径已改变,人物与叙事：克制自然，分清界面语域,Route changed
+message.apocalypse_firstlight.wiring.no_route,找不到路线,无法找到可用的布线路径,人物与叙事：克制自然，分清界面语域,No route
+survivor.apocalypse_firstlight.death.life_over,%s 的人生到此结束。,%s 没能活下来,人物与叙事：克制自然，分清界面语域,The life of %s has ended.
+survivor.apocalypse_firstlight.death.run_over,旅程随 %s 一同结束。,%s 的旅程到此结束,人物与叙事：克制自然，分清界面语域,The journey ends with %s.
+survivor.apocalypse_firstlight.death.next_life,开始另一段人生,以另一位幸存者继续,人物与叙事：克制自然，分清界面语域,Start another life
+survivor.apocalypse_firstlight.mode.normal.line,死了不能复活，换一个幸存者接着来,死亡后无法复活，但可以换一位幸存者继续,人物与叙事：克制自然，分清界面语域,Death is permanent. Another survivor carries on.
+survivor.apocalypse_firstlight.mode.hard.line,死了不能复活，这一局就结束了,死亡后无法复活，本次旅程随之结束,人物与叙事：克制自然，分清界面语域,Death is permanent. The run ends there.
+survivor.apocalypse_firstlight.mode.rule_items,死后身上的东西都留在遗体上，保留物品栏也没用,死亡后，随身物品全部留在遗体上，不受保留物品栏规则影响,人物与叙事：克制自然，分清界面语域,"Everything you carry stays on the body, whatever keepInventory says."
+survivor.apocalypse_firstlight.mode.locked,选了就不能改,选择后无法更改,人物与叙事：克制自然，分清界面语域,Cannot be changed later.
+survivor.apocalypse_firstlight.mode.hardcore,极限模式只能选困难,极限模式固定使用困难规则,人物与叙事：克制自然，分清界面语域,Hardcore always plays as Hard.
+survivor.apocalypse_firstlight.difficulty.fixed,AFL 的难度固定为%s，不能更改。,AFL 的难度固定为 %s，无法更改,人物与叙事：克制自然，分清界面语域,Difficulty is fixed to %s in AFL.
+survivor.apocalypse_firstlight.name.locked,确定以后不能改,确定后无法更改,人物与叙事：克制自然，分清界面语域,Cannot be changed later.
+survivor.apocalypse_firstlight.trait_group.climate,冷热,环境适应,人物与叙事：克制自然，分清界面语域,Cold and Heat
+survivor.apocalypse_firstlight.trait_group.noise,动静,潜行与感知,人物与叙事：克制自然，分清界面语域,Noise
+survivor.apocalypse_firstlight.trait_group.hands,手上,操作能力,人物与叙事：克制自然，分清界面语域,Hands
+survivor.apocalypse_firstlight.background.ordinary.desc,没什么特别的，点数最多,没有特别突出的经历，拥有最多的可分配点数,人物与叙事：克制自然，分清界面语域,Nothing special. The most points.
+survivor.apocalypse_firstlight.background.forest_resident.desc,住林子里，劈柴、过冬都习惯了,常年住在林区，砍柴、生火、熬过寒冬都是家常便饭,人物与叙事：克制自然，分清界面语域,Lives in the woods. Chopping wood and winters are nothing new.
+survivor.apocalypse_firstlight.background.trucker.desc,以前跑长途，车坏了自己修，烟戒不掉,过去常年跑长途，修车的本事没丢，烟却一直没戒掉,人物与叙事：克制自然，分清界面语域,"Used to drive long hauls. Fixes the truck, can't quit smoking"
+survivor.apocalypse_firstlight.background.store_clerk.desc,以前在便利店上夜班，理货手快,以前在便利店上夜班，理货、盘点早已驾轻就熟,人物与叙事：克制自然，分清界面语域,Used to work night shifts at a convenience store. Quick hands
+survivor.apocalypse_firstlight.trait.sturdy,体质好,强健体魄,人物与叙事：克制自然，分清界面语域,Sturdy
+survivor.apocalypse_firstlight.trait.sure_footed,落地稳,脚步稳健,人物与叙事：克制自然，分清界面语域,Sure-Footed
+survivor.apocalypse_firstlight.trait.cold_hardy,耐寒,耐寒体质,人物与叙事：克制自然，分清界面语域,Cold-Hardy
+survivor.apocalypse_firstlight.trait.heat_hardy,耐热,耐热体质,人物与叙事：克制自然，分清界面语域,Heat-Hardy
+survivor.apocalypse_firstlight.trait.inconspicuous,不显眼,不引人注意,人物与叙事：克制自然，分清界面语域,Inconspicuous
+survivor.apocalypse_firstlight.trait.keen_hearing,耳朵灵,听觉敏锐,人物与叙事：克制自然，分清界面语域,Keen Hearing
+survivor.apocalypse_firstlight.trait.nimble_hands,手脚麻利,手法灵巧,人物与叙事：克制自然，分清界面语域,Nimble Hands
+survivor.apocalypse_firstlight.trait.mechanic,会修机器,机械维修经验,人物与叙事：克制自然，分清界面语域,Mechanic
+survivor.apocalypse_firstlight.trait.manual_labor,干惯粗活,惯于体力劳动,人物与叙事：克制自然，分清界面语域,Used to Hard Work
+survivor.apocalypse_firstlight.trait.active,爱运动,好动,人物与叙事：克制自然，分清界面语域,Active
+survivor.apocalypse_firstlight.trait.firearms_trained,受过枪械训练,枪械训练,人物与叙事：克制自然，分清界面语域,Firearms Training
+survivor.apocalypse_firstlight.trait.smoker,烟瘾,烟瘾难戒,人物与叙事：克制自然，分清界面语域,Smoker
+survivor.apocalypse_firstlight.trait.weak_stomach,肠胃弱,肠胃敏感,人物与叙事：克制自然，分清界面语域,Weak Stomach
+survivor.apocalypse_firstlight.trait.thirsty,容易渴,容易口渴,人物与叙事：克制自然，分清界面语域,Gets Thirsty
+survivor.apocalypse_firstlight.trait.big_appetite,饭量大,食量大,人物与叙事：克制自然，分清界面语域,Big Appetite
+survivor.apocalypse_firstlight.trait.cold_sensitive,怕冷,不耐寒,人物与叙事：克制自然，分清界面语域,Feels the Cold
+survivor.apocalypse_firstlight.trait.heat_sensitive,怕热,不耐热,人物与叙事：克制自然，分清界面语域,Feels the Heat
+survivor.apocalypse_firstlight.trait.heavy_footed,脚步重,脚步沉重,人物与叙事：克制自然，分清界面语域,Heavy-Footed
+survivor.apocalypse_firstlight.trait.conspicuous,显眼,容易暴露,人物与叙事：克制自然，分清界面语域,Conspicuous
+survivor.apocalypse_firstlight.trait.hard_of_hearing,耳背,听力不佳,人物与叙事：克制自然，分清界面语域,Hard of Hearing
+survivor.apocalypse_firstlight.trait.clumsy,手笨,笨手笨脚,人物与叙事：克制自然，分清界面语域,Clumsy
+survivor.apocalypse_firstlight.trait.slow_learner,学得慢,学习缓慢,人物与叙事：克制自然，分清界面语域,Slow Learner
+survivor.apocalypse_firstlight.trait.gun_shy,怕开枪,不敢轻易开枪,人物与叙事：克制自然，分清界面语域,Gun-Shy
+survivor.apocalypse_firstlight.trait.veteran,服过役,退伍军人,人物与叙事：克制自然，分清界面语域,Veteran
+survivor.apocalypse_firstlight.scene.forest_home.desc,林子里，自己家的老房子,林区深处，那栋曾经属于你的老房子,人物与叙事：克制自然，分清界面语域,Your own old house in the woods
+survivor.apocalypse_firstlight.scene.roadside.desc,高速上，车抛锚了,车辆抛锚，你被困在公路边,人物与叙事：克制自然，分清界面语域,"On the highway, the truck broke down"
+survivor.apocalypse_firstlight.scene.bunker.desc,在地堡里躲了很久，刚出来,在地堡里躲了许久，如今终于踏出大门,人物与叙事：克制自然，分清界面语域,Out of the bunker after a long time hiding
+survivor.apocalypse_firstlight.scene.wilderness.desc,在野外流浪,远离人烟，在荒野中独自求生,人物与叙事：克制自然，分清界面语域,Drifting through the wild
+survivor.apocalypse_firstlight.newworld.seed_hint,空着就随机,留空则随机生成,人物与叙事：克制自然，分清界面语域,Empty = random
+survivor.apocalypse_firstlight.newworld.mode.normal,换一个幸存者接着来,死亡后由另一位幸存者继续,人物与叙事：克制自然，分清界面语域,Another survivor carries on
+survivor.apocalypse_firstlight.newworld.mode.hard,死了就结束,仅此一命,人物与叙事：克制自然，分清界面语域,"One life, then it's over"
+survivor.apocalypse_firstlight.newworld.mode_rule,死了不能复活，身上的东西都留在遗体上，建好后不能改,死亡不可逆，物品留在遗体上；世界创建后无法修改此规则,人物与叙事：克制自然，分清界面语域,No coming back. What you carry stays on the body. Fixed once created
+survivor.apocalypse_firstlight.newworld.mode_rule_hard,只有一条命，死了这个世界就结束了，建好后不能改,只有一次生命。角色死亡后，本次旅程结束；世界创建后无法修改此规则,人物与叙事：克制自然，分清界面语域,"One life. When you die, this world is over. Fixed once created"
+survivor.apocalypse_firstlight.newworld.mode_hardcore,原版设置里开了极限，只能选困难,已启用原版极限模式，只能使用困难规则,人物与叙事：克制自然，分清界面语域,Hardcore is on in the vanilla settings: Hard only
+survivor.apocalypse_firstlight.newworld.scene_pending,这个地点还没做好，先从出生点开始,此开局场景尚未完成，暂时从世界出生点开始,人物与叙事：克制自然，分清界面语域,Not built yet: you start at the world spawn for now
+survivor.apocalypse_firstlight.setup.subtitle,选一个过去的身份，剩下的点数不保留,选择幸存者的过往经历；未使用的点数不会保留,人物与叙事：克制自然，分清界面语域,Pick who you were. Points left over are lost
+survivor.apocalypse_firstlight.setup.negative,缺点给的点 %s / %s,负面特质所得点数：%s / %s,人物与叙事：克制自然，分清界面语域,From drawbacks %s / %s
+survivor.apocalypse_firstlight.setup.comes_with,自带：,自带特质：,人物与叙事：克制自然，分清界面语域,Comes with:
+survivor.apocalypse_firstlight.setup.background_note,背景带的特质不花点，也去不掉,背景自带的特质无需消耗点数，也无法移除,人物与叙事：克制自然，分清界面语域,A background's own traits are free and can't be removed
+survivor.apocalypse_firstlight.setup.body_rule,每级 1 点 · 用得多会长,每级消耗 1 点 · 可通过活动提升,人物与叙事：克制自然，分清界面语域,1 point per level · grows with use
+survivor.apocalypse_firstlight.setup.trait_hint,鼠标移到特质上看效果，缺点会给点数,将鼠标悬停在特质上查看效果；选择负面特质可获得点数,人物与叙事：克制自然，分清界面语域,Point at a trait to see what it does. Drawbacks give points
+survivor.apocalypse_firstlight.setup.locked_long,背景自带,背景自带特质,人物与叙事：克制自然，分清界面语域,From the background
+survivor.apocalypse_firstlight.setup.conflict,和%s冲突，不能同时选,与 %s 冲突，无法同时选择,人物与叙事：克制自然，分清界面语域,Can't go with %s
+survivor.apocalypse_firstlight.setup.effect.start.cold_tolerance,习惯了冷,已有一定耐寒经验,人物与叙事：克制自然，分清界面语域,used to the cold
+survivor.apocalypse_firstlight.setup.effect.start.heat_tolerance,习惯了热,已有一定耐热经验,人物与叙事：克制自然，分清界面语域,used to the heat
+survivor.apocalypse_firstlight.setup.effect.cap.firearms,枪很难练好,枪械熟练度成长较慢,人物与叙事：克制自然，分清界面语域,slow to get good with guns
+survivor.apocalypse_firstlight.setup.no_change,没有变化,无变化,人物与叙事：克制自然，分清界面语域,No change
+survivor.apocalypse_firstlight.setup.over_budget,超了 %s 点,超出可用点数 %s 点,人物与叙事：克制自然，分清界面语域,%s points over
+survivor.apocalypse_firstlight.setup.negative_cap,缺点最多给 %s 点,负面特质最多提供 %s 点,人物与叙事：克制自然，分清界面语域,Drawbacks give at most %s points
+survivor.apocalypse_firstlight.setup.final,开始以后就不能改了,开始游戏后无法更改,人物与叙事：克制自然，分清界面语域,Can't be changed after you start
+survivor.apocalypse_firstlight.setup.refused,服务器拒绝：%s,服务器未接受此设置：%s,人物与叙事：克制自然，分清界面语域,Refused by the server: %s
+survivor.apocalypse_firstlight.character.none,还没有幸存者,尚未创建幸存者,人物与叙事：克制自然，分清界面语域,No survivor yet
+survivor.apocalypse_firstlight.character.trait_hint,鼠标移到特质上看效果,将鼠标悬停在特质上查看效果,人物与叙事：克制自然，分清界面语域,Point at a trait to see what it does
+survivor.apocalypse_firstlight.character.no_traits,没有特质,尚无特质,人物与叙事：克制自然，分清界面语域,No traits
+survivor.apocalypse_firstlight.character.ordinary_numbers,和普通人一样,各项属性处于普通水平,人物与叙事：克制自然，分清界面语域,Nothing out of the ordinary
+survivor.apocalypse_firstlight.growth_page.footer,做什么练什么,熟能生巧,人物与叙事：克制自然，分清界面语域,You get better at what you do
+survivor.apocalypse_firstlight.growth_page.creative,创造模式下不练,创造模式下不会积累成长经验,人物与叙事：克制自然，分清界面语域,Nothing trains in Creative
+survivor.apocalypse_firstlight.growth_page.speed.learn,学东西,学习速度,人物与叙事：克制自然，分清界面语域,Picking things up
+survivor.apocalypse_firstlight.growth_page.speed.body,练身体,体能成长速度,人物与叙事：克制自然，分清界面语域,Building up
+survivor.apocalypse_firstlight.growth_page.pace.normal,普通,正常,人物与叙事：克制自然，分清界面语域,Ordinary
+survivor.apocalypse_firstlight.growth_page.group.climate,冷热,环境适应,人物与叙事：克制自然，分清界面语域,Cold and heat
+survivor.apocalypse_firstlight.growth_page.groups_hint,点一下跳过去,点击跳转,人物与叙事：克制自然，分清界面语域,click to jump
+survivor.apocalypse_firstlight.growth_page.only_trained,只看练过的,仅显示已训练项目,人物与叙事：克制自然，分清界面语域,Only trained ones
+survivor.apocalypse_firstlight.growth_page.none_trained,还没练过什么,尚未开始训练,人物与叙事：克制自然，分清界面语域,Nothing trained yet
+survivor.apocalypse_firstlight.growth_page.tip_start,%s起点,%s 的初始等级,人物与叙事：克制自然，分清界面语域,%s: where you start
+survivor.apocalypse_firstlight.growth_page.perk,学会：%s,已习得：%s,人物与叙事：克制自然，分清界面语域,Learned: %s
+survivor.apocalypse_firstlight.growth_page.gun_recoil,后坐力回复 ×%s,后坐力恢复 ×%s,人物与叙事：克制自然，分清界面语域,Recoil recovery ×%s
+survivor.apocalypse_firstlight.growth_page.how.strength,背着重东西走、砍树、挖石头、拉启动绳,负重行走、砍树、挖掘石头、拉动发动机起动绳,人物与叙事：克制自然，分清界面语域,"Walk under a heavy load, chop trees, dig stone, pull starter cords"
+survivor.apocalypse_firstlight.growth_page.how.fitness,跑、游泳、累了以后缓过来,奔跑、游泳，以及高强度活动后的耐力恢复,人物与叙事：克制自然，分清界面语域,"Run, swim, get your breath back after a hard push"
+survivor.apocalypse_firstlight.growth_page.how.firearms_pistol,打中目标、换弹,命中目标、完成换弹,人物与叙事：克制自然，分清界面语域,"Hit what you shoot at, reload"
+survivor.apocalypse_firstlight.growth_page.how.firearms_long,打中目标、换弹,命中目标、完成换弹,人物与叙事：克制自然，分清界面语域,"Hit what you shoot at, reload"
+survivor.apocalypse_firstlight.growth_page.how.firearms_shotgun,打中目标、换弹,命中目标、完成换弹,人物与叙事：克制自然，分清界面语域,"Hit what you shoot at, reload"
+survivor.apocalypse_firstlight.growth_page.how.cold_tolerance,在冷的地方待着，别冻坏了,在寒冷环境中活动，避免严重失温,人物与叙事：克制自然，分清界面语域,Spend time in the cold without freezing
+survivor.apocalypse_firstlight.growth_page.how.heat_tolerance,在热的地方待着，别中暑,在炎热环境中活动，避免中暑,人物与叙事：克制自然，分清界面语域,Spend time in the heat without overheating
+survivor.apocalypse_firstlight.growth_page.top,到顶了,已达到最高等级,人物与叙事：克制自然，分清界面语域,As good as it gets
+survivor.apocalypse_firstlight.growth_page.capped,到你的上限了,已达到当前成长上限,人物与叙事：克制自然，分清界面语域,As far as you can go
+survivor.apocalypse_firstlight.growth_page.toast_level,升到 Lv %s,等级提升至 Lv %s,人物与叙事：克制自然，分清界面语域,up to Lv %s
+survivor.apocalypse_firstlight.growth_page.toast_perk,学会了%s,习得：%s,人物与叙事：克制自然，分清界面语域,learned %s
+survivor.apocalypse_firstlight.perk.reload_novice.desc,低头看着换，比较慢（动画还在做，现在和熟练一样）,换弹时需要低头确认操作，速度较慢（专属动画尚未完成）,人物与叙事：克制自然，分清界面语域,"Eyes on the gun, slower (animation not made yet: reloads as practised for now)"
+survivor.apocalypse_firstlight.perk.reload_trained.desc,不用一直低头看（动画还在做，现在和熟练一样）,换弹时无需始终盯着武器（专属动画尚未完成）,人物与叙事：克制自然，分清界面语域,No need to watch the gun the whole time (animation not made yet: reloads as practised for now)
+survivor.apocalypse_firstlight.perk.reload_practised.desc,战术换弹，瞄准时也能换,掌握战术换弹技巧，瞄准时也能完成换弹,人物与叙事：克制自然，分清界面语域,"Tactical reloads, also while aiming"
+hint.apocalypse_firstlight.break_glass,砸碎玻璃,打碎玻璃,交互提示：动词明确且贴合对象,Break glass
+hint.apocalypse_firstlight.emergency_radio.crank,摇发电,摇动发电手柄,交互提示：动词明确且贴合对象,Crank
+hint.apocalypse_firstlight.portable_diesel_generator.pull,拉绳,拉动起动绳,交互提示：动词明确且贴合对象,Pull
+hint.apocalypse_firstlight.portable_diesel_generator.qte,%s 拉    %s 松手,%s 拉动    %s 松开,交互提示：动词明确且贴合对象,%s Pull    %s Let go
+hint.apocalypse_firstlight.storefront_glazing.mullion,移动竖梃,调整竖梃位置,交互提示：动词明确且贴合对象,Move mullion
+hint.apocalypse_firstlight.storefront_glazing.transom,切换横梃,切换横向窗梃,交互提示：动词明确且贴合对象,Toggle transom
+hint.apocalypse_firstlight.plug.full,插孔都占了,没有空余插孔,交互提示：动词明确且贴合对象,No free socket
+hint.apocalypse_firstlight.plug.wrong_plug,插头不匹配,插头规格不匹配,交互提示：动词明确且贴合对象,The plug does not fit
+hint.apocalypse_firstlight.plug.wrong_socket,插线板要插在墙上插座或发电机上,插线板只能接入墙上插座或发电机,交互提示：动词明确且贴合对象,Plug the strip into a wall outlet or a generator
+hint.apocalypse_firstlight.power_strip.switch_on,打开开关,打开电源,交互提示：动词明确且贴合对象,Switch on
+hint.apocalypse_firstlight.power_strip.switch_off,关上开关,关闭电源,交互提示：动词明确且贴合对象,Switch off
+hint.apocalypse_firstlight.wiring.start,设起点,设置起点,交互提示：动词明确且贴合对象,Start
+hint.apocalypse_firstlight.wiring.waypoint,加途经点,添加途经点,交互提示：动词明确且贴合对象,Waypoint
+hint.apocalypse_firstlight.charging_station.place,放上充电,放置电池并充电,交互提示：动词明确且贴合对象,Place to charge
+hint.apocalypse_firstlight.charging_station.cannot_charge,充不了电,无法为该物品充电,交互提示：动词明确且贴合对象,Cannot be charged
+hint.apocalypse_firstlight.pump_manhole_cover.open,撬开泵井盖,撬开检修井盖,交互提示：动词明确且贴合对象,Pry the manhole cover open
+hint.apocalypse_firstlight.pump_manhole_cover.close,盖上泵井盖,盖好检修井盖,交互提示：动词明确且贴合对象,Put the manhole cover back
+hint.apocalypse_firstlight.fuel_container.needs_container,在泵旁边放一个油壶或油桶接油,在油泵旁放置油壶或油桶接油,交互提示：动词明确且贴合对象,Set a can or drum next to the pump
+hint.apocalypse_firstlight.generator_inlet_box.close,盖上盖子,合上防护盖,交互提示：动词明确且贴合对象,Close the cover
+hint.apocalypse_firstlight.tube_farm_gate.sign.front,挂牌,挂上告示牌,交互提示：动词明确且贴合对象,Hang Sign
+hint.apocalypse_firstlight.tube_farm_gate.sign.back,翻面,翻转告示牌,交互提示：动词明确且贴合对象,Turn Sign
+hint.apocalypse_firstlight.tube_farm_gate.sign.none,摘牌,取下告示牌,交互提示：动词明确且贴合对象,Take Down Sign
+jade.apocalypse_firstlight.intake_pump.status.no_power,无电力,电力不足,Jade：设备状态清楚、专业,No power
+jade.apocalypse_firstlight.intake_pump.status.no_liquid,下方没有液体源,下方没有可抽取的液体源,Jade：设备状态清楚、专业,No liquid source below
+jade.apocalypse_firstlight.intake_pump.status.too_hot,液体温度过高：开泵会烧毁普通泵,液体温度过高，启动普通泵会导致设备烧毁,Jade：设备状态清楚、专业,Liquid too hot: switching on melts an ordinary pump
+jade.apocalypse_firstlight.intake_pump.status.pool_too_small,液池太小（至少 3×3 格同种液体源）,液池面积不足，至少需要 3×3 格同种液体源,Jade：设备状态清楚、专业,Pool too small (needs at least 3 × 3 sources)
+jade.apocalypse_firstlight.intake_pump.status.blocked,出口未接管道或已满,出口未连接管道，或下游储量已满,Jade：设备状态清楚、专业,Outlet not piped or full
+jade.apocalypse_firstlight.submersible_fuel_pump.status.no_power,无电力,电力不足,Jade：设备状态清楚、专业,No power
+jade.apocalypse_firstlight.submersible_fuel_pump.status.no_tank,下方没有储罐接口,下方没有储罐连接口,Jade：设备状态清楚、专业,No tank port below
+jade.apocalypse_firstlight.submersible_fuel_pump.status.blocked,出口未接管道或已满,出口未连接管道，或下游储量已满,Jade：设备状态清楚、专业,Outlet not piped or full
+jade.apocalypse_firstlight.fuel_dispenser_sump.none,上方没有加油机,上方未安装加油机,Jade：设备状态清楚、专业,No dispenser above
+jade.apocalypse_firstlight.fuel_hazard.holes,弹孔：%s 个（%s 个在漏油）,弹孔：%s 处，其中 %s 处正在漏油,Jade：设备状态清楚、专业,Bullet holes: %s (%s leaking)
+jade.apocalypse_firstlight.fuel_can.pump,装着手摇油泵,已安装手摇油泵,Jade：设备状态清楚、专业,Hand pump fitted
+jade.apocalypse_firstlight.hand_fuel_pump.from.none,抽：下面没有油,抽取：下方无可用燃油,Jade：设备状态清楚、专业,Draws: nothing below
+jade.apocalypse_firstlight.hand_fuel_pump.to.none,灌：泵旁边没有容器,注入：油泵旁没有接油容器,Jade：设备状态清楚、专业,Fills: no container next to the pump
+jade.apocalypse_firstlight.generator_inlet_box.coiled,电线挂在钩上,电缆盘挂在钩上,Jade：设备状态清楚、专业,Cord on the hook
+jade.apocalypse_firstlight.generator_inlet_box.carried,插头在手上,插头已拿在手中,Jade：设备状态清楚、专业,Plug in hand
+jade.apocalypse_firstlight.generator_inlet_box.plugged,插在发电机上,已连接发电机,Jade：设备状态清楚、专业,Plugged into the generator
+jade.apocalypse_firstlight.generator_inlet_box.no_panel,没接配电盘,未连接配电盘,Jade：设备状态清楚、专业,No panel connected
+jade.apocalypse_firstlight.distribution_panel.partial,线路未加载,部分线路尚未加载,Jade：设备状态清楚、专业,Wiring unloaded
+jade.apocalypse_firstlight.distribution_panel.packed,线路待展开,线路配置待展开,Jade：设备状态清楚、专业,Wiring pending
+jade.apocalypse_firstlight.box_stove.fuel,柴 %s 小时,柴火预计还能燃烧 %s 小时,Jade：设备状态清楚、专业,Firewood %s h
+jade.apocalypse_firstlight.emergency_radio.empty,没电,电量耗尽,Jade：设备状态清楚、专业,Flat
+jade.apocalypse_firstlight.intake_pump.source,取液：%s,正在抽取：%s,Jade：设备状态清楚、专业,Drawing: %s
+jade.apocalypse_firstlight.tunnel_fixture.item,撬棍拆下，约 %s 秒,使用撬棍拆下，约需 %s 秒,Jade：设备状态清楚、专业,"Crowbar: take down, about %s s"
+jade.apocalypse_firstlight.tunnel_fixture.materials,撬棍拆成材料，约 %s 秒,使用撬棍拆解获取材料，约需 %s 秒,Jade：设备状态清楚、专业,"Crowbar: strip for materials, about %s s"
+attribute.name.apocalypse_firstlight.move_stamina_cost,移动耗耐力,移动耐力消耗,属性面板：名词明确、减少俚语,Movement Stamina Cost
+attribute.name.apocalypse_firstlight.work_stamina_cost,干活耗耐力,劳动耐力消耗,属性面板：名词明确、减少俚语,Work Stamina Cost
+attribute.name.apocalypse_firstlight.natural_regen,自然回血,自然生命恢复,属性面板：名词明确、减少俚语,Natural Healing
+attribute.name.apocalypse_firstlight.raw_water_sickness,喝生水生病几率,饮用生水的致病概率,属性面板：名词明确、减少俚语,Raw Water Sickness
+attribute.name.apocalypse_firstlight.radiation_sensitivity,辐射病进展,辐射敏感度,属性面板：名词明确、减少俚语,Radiation Sensitivity
+attribute.name.apocalypse_firstlight.cold_threshold,冷阈值,耐寒阈值,属性面板：名词明确、减少俚语,Cold Threshold
+attribute.name.apocalypse_firstlight.heat_threshold,热阈值,耐热阈值,属性面板：名词明确、减少俚语,Heat Threshold
+attribute.name.apocalypse_firstlight.body_temp_rate,体温变化快慢,体温变化速度,属性面板：名词明确、减少俚语,Body Temperature Change
+attribute.name.apocalypse_firstlight.footstep_noise,脚步声,脚步噪声,属性面板：名词明确、减少俚语,Footstep Noise
+attribute.name.apocalypse_firstlight.tinnitus,枪声耳鸣,耳鸣强度,属性面板：名词明确、减少俚语,Tinnitus
+attribute.name.apocalypse_firstlight.qte_window,QTE 绿区,操作时机判定窗口,属性面板：名词明确、减少俚语,Timing Window
+attribute.name.apocalypse_firstlight.mech_qte_window,机械 QTE 绿区,机械操作判定窗口,属性面板：名词明确、减少俚语,Machine Timing Window
+attribute.name.apocalypse_firstlight.growth_xp,成长经验,技能成长经验增益,属性面板：名词明确、减少俚语,Growth Rate
+attribute.name.apocalypse_firstlight.body_growth_xp,力量体能成长,身体属性成长经验增益,属性面板：名词明确、减少俚语,Body Growth Rate
