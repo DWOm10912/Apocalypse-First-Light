@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.weapon.NativeBreakActionChambers;
 import com.antaurora.apofirstlight.weapon.NativeGunAmmo;
 import com.antaurora.apofirstlight.weapon.NativeGunDefinition;
 import com.antaurora.apofirstlight.weapon.NativeGunActions;
@@ -58,6 +59,7 @@ public final class NativeGunAmmoGameTests {
     public static void authoritativeFireAndRejectedReload(GameTestHelper h) {
         var player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "ammo_fire"));
         ItemStack gun = new ItemStack(AflItems.P9_01.get());
+        NativeGunAmmo.set(gun, D, 17);   // a new gun is empty; this fixture starts with a full magazine
         player.getInventory().selected = 0;
         player.getInventory().setItem(0, gun);
         player.getInventory().setItem(1, new ItemStack(AflItems.ROUND_9MM.get(), 20));
@@ -92,7 +94,16 @@ public final class NativeGunAmmoGameTests {
     @GameTest(template = "network_empty", timeoutTicks = 100)
     public static void stackPersistenceAndBounds(GameTestHelper h) {
         ItemStack gun = new ItemStack(AflItems.P9_01.get());
-        h.assertTrue(NativeGunAmmo.read(gun, D) == 17 && !gun.hasTag(), "New gun/read-only default");
+        // user 2026-10-19: every new gun starts empty (docs/native_guns/p9_first_draw_chamber_v1.md 1)
+        h.assertTrue(NativeGunAmmo.read(gun, D) == 0 && !gun.hasTag(), "New gun is empty, read-only default");
+        h.assertTrue(!NativeGunAmmo.consumeOne(gun, D) && NativeGunAmmo.read(gun, D) == 0, "New gun cannot fire");
+        ItemStack fresh = new ItemStack(AflItems.P9_01.get()), untouched = fresh.copy();
+        NativeGunAmmo.initialize(fresh, D);
+        h.assertTrue(fresh.hasTag() && NativeGunAmmo.read(fresh, D) == 0 && !NativeGunAmmo.chambered(fresh),
+                "First inventory tick writes an empty, unchambered magazine");
+        h.assertTrue(!AflItems.P9_01.get().shouldCauseReequipAnimation(untouched, fresh, false),
+                "Writing the first ammo data must not re-equip");
+        NativeGunAmmo.set(gun, D, 17);
         for (int i = 0; i < 5; i++) h.assertTrue(NativeGunAmmo.consumeOne(gun, D), "Consume");
         h.assertTrue(NativeGunAmmo.read(gun, D) == 12, "Five shots");
         ItemStack copied = gun.copy();
@@ -123,6 +134,29 @@ public final class NativeGunAmmoGameTests {
         before = gun.copy();
         gun.getOrCreateTag().putLong(software.bernie.geckolib.animatable.GeoItem.ID_NBT_KEY, 101L);
         h.assertTrue(item.shouldCauseReequipAnimation(before, gun, false), "Different gun identity must re-equip");
+        h.succeed();
+    }
+
+    @GameTest(template = "network_empty")
+    public static void newBreakActionHoldsNoShells(GameTestHelper h) {
+        var item = AflItems.SILVERWOOD_12.get();
+        var definition = ((com.antaurora.apofirstlight.weapon.NativeGunItem) item).definition();
+        ItemStack gun = new ItemStack(item);
+        NativeGunAmmo.initialize(gun, definition);
+        var chambers = NativeBreakActionChambers.read(gun, definition);
+        h.assertTrue(chambers.right() == NativeBreakActionChambers.State.EMPTY
+                && chambers.left() == NativeBreakActionChambers.State.EMPTY, "New gun: no shells, not spent cases");
+        NativeGunAmmo.set(gun, definition, 2);
+        NativeGunAmmo.setChambered(gun, definition, true);   // as a completed empty reload
+        NativeGunAmmo.consumeOne(gun, definition);
+        chambers = NativeBreakActionChambers.read(gun, definition);
+        h.assertTrue(chambers.right() == NativeBreakActionChambers.State.SPENT
+                && chambers.left() == NativeBreakActionChambers.State.LIVE, "Right barrel fired first");
+        NativeGunAmmo.consumeOne(gun, definition);
+        NativeGunAmmo.setChambered(gun, definition, false);  // as the last shot
+        chambers = NativeBreakActionChambers.read(gun, definition);
+        h.assertTrue(chambers.right() == NativeBreakActionChambers.State.SPENT
+                && chambers.left() == NativeBreakActionChambers.State.SPENT, "Fired empty: two spent cases");
         h.succeed();
     }
 

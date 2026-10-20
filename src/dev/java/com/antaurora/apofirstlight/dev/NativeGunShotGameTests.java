@@ -53,6 +53,7 @@ public final class NativeGunShotGameTests {
         var origin = h.absoluteVec(new Vec3(3.5, 2, 3.5));
         p.setPos(origin); p.setYRot(0); p.setXRot(0);
         var gun = new ItemStack(AflItems.P9_01.get());
+        NativeGunAmmo.set(gun, D, 17);   // a new gun is empty; this fixture starts with a full magazine
         p.getInventory().selected=0; p.getInventory().setItem(0,gun);
         var near=h.spawn(EntityType.IRON_GOLEM, new BlockPos(3,2,8)); near.setNoAi(true);
         var far=h.spawn(EntityType.IRON_GOLEM, new BlockPos(3,2,12)); far.setNoAi(true);

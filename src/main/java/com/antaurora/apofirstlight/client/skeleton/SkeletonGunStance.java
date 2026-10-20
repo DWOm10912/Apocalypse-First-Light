@@ -69,7 +69,8 @@ import java.util.Map;
  * (docs/dev/gun_handling_reference_v1.md 2, 4).</li>
  * <li>The own first person (user 2026-10-17, docs/dev/first_person_gun_view_v1_design.md): a held gun is its old view
  * model's (its hip and ADS hold, rigid arms, clips; PlayerSkeleton#firstPersonHands). The own body is posed as others see
- * it, its arms and the gun hidden; it draws the gun only while its own hands carry it back to the mount.</li>
+ * it, its arms and the gun hidden; it draws the gun while its own hands carry it back to the mount, and, looking down
+ * with the gun at its ready ({@link #atReady}, user 2026-10-19), in place of the view model (client/FirstPersonBody#gunOnBody).</li>
  * </ul>
  * Limits (docs 13): the right hand only, the off hand empty; no gun in the shadow pass.
  */
@@ -143,6 +144,23 @@ public final class SkeletonGunStance {
         Track t = TRACKS.get(p.getId());
         if (t != null && !t.ghost.isEmpty()) return t.ghost;
         return holds(p) ? p.getMainHandItem() : ItemStack.EMPTY;
+    }
+
+    /**
+     * The own first person may hand the held gun from its view model to the body's arms looking down
+     * (client/FirstPersonBody#gunOnBody): a gun with a stance idle loop (the P9: its chest ready,
+     * docs/dev/p9_stance_loops_v1.md), on the feet, at that ready or lowered for a sprint, and nothing else going on: not
+     * aimed, not raised (a shot's {@link #RAISED_AFTER_SHOT}, a reload, an inspect), no clip of its own playing (draw,
+     * first draw, shot, reload, inspect), not being drawn or put away. Other guns (the BR51: its stance follows the view)
+     * keep their view model.
+     */
+    public static boolean atReady(Player p, float partial) {
+        if (!PlayerSkeleton.supportedPose(p) || !holds(p) || loops(p.getMainHandItem()).idle() == null) return false;
+        Track t = TRACKS.get(p.getId());
+        // t.clip is the action clip the last body solve saw (#hold): "" when the gun's action controller is stopped
+        if (t == null || t.fresh || !t.ghost.isEmpty() || !t.clip.isEmpty() || !sameGun(t.held, p.getMainHandItem())) return false;
+        if (t.drawStart >= 0 && now(partial) < t.drawStart + t.drawLength) return false;
+        return raise(t, partial) < 0.02F && aim(p, partial) < 0.02F;
     }
 
     /** CarriedWeaponsLayer: this carried gun is on its way between the hand and its mount, so not on the mount. */
@@ -759,7 +777,8 @@ public final class SkeletonGunStance {
     /**
      * Draws the gun at its model-space frame (blocks; rigid times uniform scale) under the model's pose, in its third-person
      * context with its clips playing ({@link NativeGunContextRenderer#skeletonDraw}). The own first person shows a held gun
-     * through its old view model instead (PlayerSkeleton#firstPersonHands): the body draws one only on its way to the mount.
+     * through its old view model instead (PlayerSkeleton#firstPersonHands): the body draws one on its way to the mount, or
+     * held at its ready looking down (client/FirstPersonBody#gunOnBody).
      */
     static void render(Hold hold, PoseStack modelPose, MultiBufferSource buffers, int light) {
         if (!hold.parked().isEmpty()) CarriedWeaponsLayer.draw(modelPose, buffers, light, hold.parked(), hold.parkedAt());

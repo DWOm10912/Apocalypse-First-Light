@@ -4,11 +4,15 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.skeleton.PlayerSkeleton;
 import com.antaurora.apofirstlight.client.skeleton.SeatedRiders;
 import com.antaurora.apofirstlight.client.skeleton.SkeletonActions;
+import com.antaurora.apofirstlight.client.skeleton.SkeletonGunStance;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
+import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
+import com.antaurora.apofirstlight.weapon.client.NativeGunInput;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
@@ -56,6 +60,9 @@ import net.minecraftforge.fml.common.Mod;
  * </ul>
  * Not drawn: spectator, invisible, sleeping (vanilla already draws that), lying poses (swimming, crawling, elytra, riptide,
  * dying), and while the camera is away from the eye (gun bench view, generator pull, anything later that moves it).
+ * <p>
+ * With the player skeleton the arms follow PlayerSkeleton#firstPersonHands instead, and a held gun at its ready is handed
+ * from its view model to the body's arms looking down ({@link #gunHandOver}, user 2026-10-19).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class FirstPersonBody {
@@ -72,6 +79,13 @@ public final class FirstPersonBody {
     private static final float HAND_FROM = 25F, HAND_TO = 45F, HAND_DROP = 0.7F;
     /** The body's arms swing forward at most this far (rad, 20 deg) while the arms are shown: then first on screen at 45.6 deg down. */
     private static final float ARM_FORWARD = 0.35F;
+    /**
+     * A held gun handed to the body looking down ({@link #gunHandOver}): how long the view model takes to come back up for
+     * something the gun does, and to go again after it (s).
+     */
+    private static final float GUN_BACK = 0.12F, GUN_FREE = 0.25F;
+    /** Once the body holds the gun it keeps it until this many degrees above {@link #HAND_TO}: no flicker at the edge. */
+    private static final float GUN_KEEP = 3F;
 
     private enum Draw { NONE, MAIN, SHADOW }
 
@@ -80,6 +94,12 @@ public final class FirstPersonBody {
     private static boolean arms;
     private static final boolean[] SAVED = new boolean[6];
     private static boolean saved;
+    /** Render frames (RenderTickEvent START) and the one the gun hand-over was last worked out for, at what time (ns). */
+    private static long frames, gunFrame = -1, gunNanos;
+    /** How far the gun is free to go to the body (0..1, eased in time), the view model's slide this frame (0..1). */
+    private static float gunFree, gunSlide;
+    /** The body holds the gun this frame: its arms and the gun drawn, the view model out of view. */
+    private static boolean gunBody;
 
     private FirstPersonBody() {
     }
@@ -116,8 +136,9 @@ public final class FirstPersonBody {
      * where the arms would point into the view and the first-person hands stay.
      */
     public static boolean bodyArms(LocalPlayer player) {
-        // player skeleton V1 prototype: its own hands (empty, the BR51) replace the first-person hand pass
-        if (PlayerSkeleton.enabled()) return PlayerSkeleton.firstPersonHands(player);
+        // player skeleton: its own hands (both empty, a put-away to the mount) replace the first-person hand pass; a held
+        // gun at its ready goes to the body's hands looking down (#gunOnBody)
+        if (PlayerSkeleton.enabled()) return PlayerSkeleton.firstPersonHands(player) || gunOnBody();
         ItemStack main = player.getMainHandItem(), off = player.getOffhandItem();
         if (main.getItem() instanceof NativeGunItem || main.is(AflItems.CROWBAR.get()) || JerryCanFirstPerson.isCan(main)) return false;
         if (player.isUsingItem()) return false;
@@ -133,8 +154,61 @@ public final class FirstPersonBody {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null || PlayerSkeleton.enabled() || !shown(minecraft.gameRenderer.getMainCamera()) || !bodyArms(player)) return 0F;
-        float t = Mth.clamp((player.getViewXRot(partialTick) - HAND_FROM) / (HAND_TO - HAND_FROM), 0F, 1F);
-        return HAND_DROP * t * t * (3F - 2F * t);
+        return HAND_DROP * smooth((player.getViewXRot(partialTick) - HAND_FROM) / (HAND_TO - HAND_FROM));
+    }
+
+    /**
+     * weapon/client/ConfiguredGunFirstPerson, first in the gun's view-model pose: how far the view model goes down this
+     * frame (camera space, blocks; {@link #gunHandOver}).
+     */
+    public static float gunDrop() {
+        gunHandOver();
+        return HAND_DROP * gunSlide;
+    }
+
+    /** The body holds the held gun this frame ({@link #gunHandOver}): its arms and the gun are drawn, the view model is out of view. */
+    public static boolean gunOnBody() {
+        gunHandOver();
+        return gunBody;
+    }
+
+    /**
+     * Guns handed over to the body looking down (user 2026-10-19), with the player skeleton: a held gun at its ready
+     * (SkeletonGunStance#atReady: one with stance loops, the P9) keeps its old view model looking ahead; looking down its
+     * view model slides out as an empty hand does without the skeleton ({@link #HAND_FROM} to {@link #HAND_TO} deg,
+     * {@link #HAND_DROP}), and once it is out of view the body's arms hold the gun in its stance (idle, walk, sprint), as the
+     * others see it. Anything the gun does (aiming, a shot and the 1.5 s raise after it, reload, inspect, draw, put-away; the
+     * fire, aim or reload key held) brings the view model back in {@link #GUN_BACK} s, the body's arms and gun hidden at
+     * once; it goes again {@link #GUN_FREE} s after. Worked out once per frame, so the body's draws (main and shadow pass)
+     * and the hand pass agree; the shadow pass and the other players do not use it.
+     */
+    private static void gunHandOver() {
+        if (gunFrame == frames) return;
+        gunFrame = frames;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        long now = Util.getNanos();
+        float dt = gunNanos == 0L ? 0F : Mth.clamp((now - gunNanos) / 1.0E9F, 0F, 0.1F);
+        gunNanos = now;
+        float partial = minecraft.getFrameTime();
+        boolean free = player != null && PlayerSkeleton.enabled() && shown(minecraft.gameRenderer.getMainCamera())
+                && !player.isScoping() && !FieldAttachmentViewState.isActive() && SkeletonGunStance.atReady(player, partial)
+                && !minecraft.options.keyAttack.isDown() && !minecraft.options.keyUse.isDown() && !NativeGunInput.reloadKey().isDown();
+        gunFree = free ? Math.min(1F, gunFree + dt / GUN_FREE) : Math.max(0F, gunFree - dt / GUN_BACK);
+        if (player == null) {
+            gunBody = false;
+            gunSlide = 0F;
+            return;
+        }
+        float pitch = player.getViewXRot(partial);
+        gunBody = free && gunFree >= 1F && (pitch >= HAND_TO || gunBody && pitch >= HAND_TO - GUN_KEEP);
+        gunSlide = gunBody ? 1F : smooth((pitch - HAND_FROM) / (HAND_TO - HAND_FROM)) * smooth(gunFree);
+    }
+
+    /** The smooth step of {@code t} clamped to 0..1. */
+    private static float smooth(float t) {
+        t = Mth.clamp(t, 0F, 1F);
+        return t * t * (3F - 2F * t);
     }
 
     /** LevelRenderer#renderEntity RETURN. */
@@ -145,6 +219,11 @@ public final class FirstPersonBody {
     /** The own body's main-pass draw is running: head, arms and what goes on them are left out. */
     public static boolean hidingParts() {
         return drawing == Draw.MAIN;
+    }
+
+    /** The own body's main-pass draw is running and shows its arms ({@link #bodyArms}), with what they hold. */
+    public static boolean armsShown() {
+        return drawing == Draw.MAIN && arms;
     }
 
     /** LivingEntityRenderer's layer loop: the layers left out of the own body's main-pass draw. */
@@ -213,6 +292,7 @@ public final class FirstPersonBody {
 
     @SubscribeEvent
     public static void frame(TickEvent.RenderTickEvent event) {
+        if (event.phase == TickEvent.Phase.START) frames++;
         // a canceled draw has no Post: setModelProperties shows every part again before the next draw anyway
         saved = false;
         drawing = Draw.NONE;

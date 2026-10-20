@@ -19,6 +19,8 @@ allprojects {
             property 'afl.rainperf.walk', (project.findProperty('rainperfwalk') ?: 'false')
             // -Prainperfhere=true: where the save left the player, as it is (a copy of the player's world)
             property 'afl.rainperf.here', (project.findProperty('rainperfhere') ?: 'false')
+            // -Prainperfground=true: where the save left the player; a P9 and piles of 9 mm dropped ahead, the ground chunk path off / on
+            property 'afl.rainperf.ground', (project.findProperty('rainperfground') ?: 'false')
             // -Prainperfhud=true (with here): survival; the HUD gauges steady / redrawn every frame / hidden
             property 'afl.rainperf.hud', (project.findProperty('rainperfhud') ?: 'false')
             // -Prainperfdrive=true: midnight rain, the probe drives the nearest T15 (orbit camera, survival HUD), with the slow-frame tail

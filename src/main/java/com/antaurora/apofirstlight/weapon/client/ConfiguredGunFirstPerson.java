@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.FirstPersonBody;
 import com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
@@ -21,6 +22,10 @@ public final class ConfiguredGunFirstPerson {
         if (e.getHand() != InteractionHand.MAIN_HAND || p.isSpectator() || p.isScoping()) return;
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
         var pose = NativeRenderMatrices.detachedCopy(e.getPoseStack());
+        // looking down at the ready the view model slides out of view and the body's arms take the gun
+        // (client/FirstPersonBody#gunDrop, docs/rendering/first_person_body_v1.md 3.5.1); still drawn for the shot snapshot
+        float drop = FirstPersonBody.gunDrop();
+        if (drop > 0F) pose.translate(0F, -drop, 0F);
         if(!FieldAttachmentViewState.isActive()){
             NativeWeaponSway.apply(pose,e.getPartialTick());
             NativeGunRecoil.applyViewmodel(pose);

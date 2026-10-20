@@ -11,7 +11,7 @@ Current status (2026-09-27): P9-01, BR51-01, HR55 and C.A.T use the public frame
 - Class defaults are supplied by `NativeGunPresentation` and `NativeAdsCalibration`. A definition may override HUD dimensions, `mag_in_tick`, trail preset, and ADS profile in JSON.
 - `fire_sound` and `dry_fire_sound` are required definition fields. Generic no-animation reload fallbacks use `native_gun_*` sound events backed by the established P9 audio files, preserving current audible behavior without making P9 the public fallback API.
 - Camera-bone consumption accepts any animated `NativeGunItem`; it no longer whitelists P9/BR51 IDs.
-- Configured Native Guns use `baseline` for the ready pose and `action` for one-shot draw/shoot/reload/inspect clips. When P9 V2 has zero ammo, its generic `baseline` selects `empty_idle`; the separate optional `empty_state` controller applies to `static_bolt_caught` profiles such as BR51. P9's V2 profile enables nine clips; the exported `first_draw` clip has no runtime trigger. See `p9_01_v2_native_rig_v1.md`.
+- Configured Native Guns use `baseline` for the ready pose and `action` for one-shot draw/shoot/reload/inspect clips. When P9 V2 has zero ammo, its generic `baseline` selects `empty_idle`; the separate optional `empty_state` controller applies to `static_bolt_caught` profiles such as BR51. P9's V2 profile enables nine clips; the exported `first_draw` clip has no runtime trigger (since 2026-10-19 the P9 v3 profile plays it when the gun is not chambered: `p9_first_draw_chamber_v1.md`). See `p9_01_v2_native_rig_v1.md`.
 
 ## First-Person-Only Animation V1
 

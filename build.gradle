@@ -235,6 +235,9 @@ dependencies {
                 "curse.maven:oculus-581495:${oculus_file_id}"
         )
     }
+    // Embeddium's chunk mesh API (ChunkMeshEvent) for the guns lying on the ground (client/GroundGunEmbeddium, loaded only
+    // when Embeddium is); compile only, so -PaflWithoutShaders and a pure Forge install still run without it.
+    compileOnly fg.deobf("curse.maven:embeddium-908741:${embeddium_file_id}")
 
     // Optional comparison mod only.
     // Use -PaflWithTacz to opt in;

@@ -99,11 +99,15 @@ public final class NativeGunHud {
         return Math.max(0, Math.min(1, (now - reloadStart + partialTick) / ticks));
     }
 
-    /** Same renderer for editor previews; never equips or mutates the sample stack. */
+    /** Same renderer for editor previews; never equips or mutates the held gun. */
     public static ItemStack editorStack() {
         var player = Minecraft.getInstance().player;
-        return player != null && player.getMainHandItem().getItem() instanceof NativeGunItem
-                ? player.getMainHandItem() : com.antaurora.apofirstlight.registry.AflItems.P9_01.get().getDefaultInstance();
+        if (player != null && player.getMainHandItem().getItem() instanceof NativeGunItem) return player.getMainHandItem();
+        // a new gun is empty (NativeGunAmmo#read); the layout preview's own throwaway sample shows a loaded magazine
+        ItemStack sample = com.antaurora.apofirstlight.registry.AflItems.P9_01.get().getDefaultInstance();
+        var definition = ((NativeGunItem) sample.getItem()).definition();
+        NativeGunAmmo.set(sample, definition, NativeGunAmmo.capacity(sample, definition));
+        return sample;
     }
 
     public static Map<String, NativeGunHudLayout.Box> preview(GuiGraphics graphics, int width, int height, NativeGunHudConfig layout) {

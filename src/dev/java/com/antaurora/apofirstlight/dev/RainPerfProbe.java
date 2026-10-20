@@ -49,7 +49,16 @@ public final class RainPerfProbe {
      * own world: the frame rate there, not at the truck), first person; looking as saved, then turned round; then third
      * person from behind and in front (the guns carried on the body in the captures).
      */
-    private static final boolean HERE = Boolean.getBoolean("afl.rainperf.here");
+    private static final boolean HERE = Boolean.getBoolean("afl.rainperf.here") || Boolean.getBoolean("afl.rainperf.ground");
+    /**
+     * -Dafl.rainperf.ground=true (2026-10-19; user: a P9 on the ground takes 117 fps to 65 with the shader pack): where the
+     * save left the player, first person looking down ahead; a P9 dropped 2.5 m ahead, then eight piles of 9 mm rounds,
+     * with the chunk path for ground items (GroundItemChunking) off and on. The report adds the ground item counts.
+     */
+    private static final boolean GROUND = Boolean.getBoolean("afl.rainperf.ground");
+    private static final List<java.util.UUID> DROPPED = new ArrayList<>();
+    @org.jetbrains.annotations.Nullable private static Vec3 groundAt;
+    private static float groundYaw;
     /** -Dafl.rainperf.hud=true (with here): survival; the HUD gauges steady / all redrawn every frame / the HUD hidden. */
     private static final boolean HUD = Boolean.getBoolean("afl.rainperf.hud");
     /**
@@ -65,6 +74,9 @@ public final class RainPerfProbe {
             ? new String[]{"drive: parked, rain all on (orbit)", "drive: accelerating, rain all on (orbit)", "drive: cruising, rain all on (orbit)",
                     "drive: splashes + tyre water off", "drive: AFL rain off (vanilla rain)", "drive: clear weather", "drive: clear weather, HUD hidden (F1)",
                     "drive: rain all on, first person (cab)"}
+            : GROUND
+            ? new String[]{"ground: nothing (baseline)", "ground: a used P9 thrown (Q), chunk path on", "ground: another P9 thrown, chunk path off (as before)",
+                    "ground: a new P9 dropped + 8 piles of 9 mm, chunk path on", "ground: all removed (baseline)"}
             : HERE && HUD
             ? new String[]{"hud: survival, gauges steady", "hud: every gauge moving (GPU bands)", "hud: every gauge moving (CPU raster, as before)", "hud: hidden (F1)"}
             : HERE
@@ -132,6 +144,17 @@ public final class RainPerfProbe {
         if (HERE && seatedAt < 0 && ticks == 100) {
             seatedAt = ticks;
             mc.options.setCameraType(CameraType.FIRST_PERSON);
+            if (GROUND) {
+                mc.player.setXRot(35);
+                groundAt = mc.player.position();
+                groundYaw = mc.player.getYRot();
+                // the hand empty (the gun is thrown from it in the save this copies): no first-person gun over the ground
+                var server = mc.getSingleplayerServer();
+                if (server != null) server.execute(() -> {
+                    var p = server.getPlayerList().getPlayers().get(0);
+                    p.getInventory().setItem(p.getInventory().selected, net.minecraft.world.item.ItemStack.EMPTY);
+                });
+            }
             if (HUD) {
                 var server = mc.getSingleplayerServer();
                 if (server != null) server.execute(() -> server.getPlayerList().getPlayers().get(0).setGameMode(net.minecraft.world.level.GameType.SURVIVAL));
@@ -166,7 +189,50 @@ public final class RainPerfProbe {
         }
         if (seatedAt < 0) return;
         int t = ticks - seatedAt - WARM;
-        if (t >= 0 && phase >= 0 && t % PHASE == SETTLE) { FRAMES.clear(); phaseStart = System.currentTimeMillis(); }   // weather and camera settled: measure from here
+        if (GROUND && groundAt != null) {
+            // the same view every phase: first person, at the spot and turn of the start (the orbit camera and drifting off)
+            if (mc.options.getCameraType() != CameraType.FIRST_PERSON) mc.options.setCameraType(CameraType.FIRST_PERSON);
+            if (mc.player.position().distanceToSqr(groundAt) > 0.01 && ticks % 20 == 0) {
+                var server = mc.getSingleplayerServer();
+                Vec3 at = groundAt;
+                float yaw = groundYaw;
+                if (server != null) server.execute(() -> server.getPlayerList().getPlayers().get(0).teleportTo(server.overworld(), at.x, at.y, at.z, yaw, 35));
+            }
+            mc.player.setYRot(groundYaw);
+            mc.player.setYHeadRot(groundYaw);
+            mc.player.setXRot(35);
+        }
+        if (GROUND && phase >= 0 && t >= 0 && t % PHASE < SETTLE && t % 5 == 0) {
+            // the items as the client sees them while they land: position, on the ground, motion; the chunk path's counts
+            for (var e : mc.level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, mc.player.getBoundingBox().inflate(8)))
+                log(String.format("t %d %s at %.4f %.4f %.4f ground %s motion %.4f %.4f %.4f", t % PHASE, e.getItem(), e.getX(), e.getY(), e.getZ(),
+                        e.onGround(), e.getDeltaMovement().x, e.getDeltaMovement().y, e.getDeltaMovement().z));
+            log("t " + t % PHASE + " " + com.antaurora.apofirstlight.client.GroundItemChunking.status());
+        }
+        // ground mode's capture inside the settle window (its PNG write stalls a frame), not at the phase's switch
+        if (GROUND && t >= 0 && phase >= 0 && t % PHASE == SETTLE - 10) frame(mc, phase);
+        if (GROUND && t >= 0 && phase >= 0 && t % PHASE == 30) {
+            // the first 1.5 s after the switch: a throw's flight, landing and slide
+            long[] f = FRAMES.stream().mapToLong(Long::longValue).toArray();
+            OUT.append(String.format("   (%s) first 1.5 s: %d frames, mean %.2f ms, worst %.2f ms, frames over 12 ms %d%n", PHASES[phase], f.length,
+                    java.util.Arrays.stream(f).average().orElse(0) / 1e6, java.util.Arrays.stream(f).max().orElse(0) / 1e6,
+                    java.util.Arrays.stream(f).filter(x -> x > 12_000_000L).count()));
+            log("frames (ms) " + PHASES[phase] + ": " + java.util.Arrays.stream(f).mapToObj(x -> String.format("%.1f", x / 1e6))
+                    .collect(java.util.stream.Collectors.joining(" ")));
+        }
+        if (t >= 0 && phase >= 0 && t % PHASE == SETTLE) {
+            if (GROUND) {
+                // the first seconds after the phase's switch (a throw: in the air, landing, into the chunk)
+                long[] f = FRAMES.stream().mapToLong(Long::longValue).toArray();
+                Arrays.sort(f);
+                OUT.append(String.format("   (%s) first %d s: %d frames, mean %.2f ms, p95 %.2f ms, worst %.2f ms%n", PHASES[phase], SETTLE / 20, f.length,
+                        Arrays.stream(f).average().orElse(0) / 1e6, f.length == 0 ? 0 : f[Math.min(f.length - 1, (int) (f.length * 0.95))] / 1e6,
+                        f.length == 0 ? 0 : f[f.length - 1] / 1e6));
+            }
+            FRAMES.clear();
+            phaseStart = System.currentTimeMillis();
+            if (GROUND) { com.antaurora.apofirstlight.client.GroundItemChunking.status(); com.antaurora.apofirstlight.client.GroundItemRenderer.status(); }   // counts from here
+        }   // weather and camera settled: measure from here
         if (t < 0 || t % PHASE != 0) return;
         if (phase >= 0) report(PHASES[phase]);
         phase++;
@@ -183,6 +249,12 @@ public final class RainPerfProbe {
             weather(mc, phase != 5 && phase != 6);
             mc.options.hideGui = phase == 6;
             speedSum = 0; speedTicks = 0; roadTicks = 0;
+        } else if (GROUND) {
+            com.antaurora.apofirstlight.client.GroundItemChunking.enabled = phase != 2;
+            com.antaurora.apofirstlight.client.GroundItemRenderer.traceCallers = true;
+            if (phase >= 2) drop(mc, 0);
+            if (phase == 1 || phase == 2) drop(mc, -1);
+            if (phase == 3) { drop(mc, 1); drop(mc, 8); }
         } else if (HERE && HUD) {
             // "moving": every gauge's texture redrawn every frame (with the GPU bands only the glyph textures remain)
             com.antaurora.apofirstlight.client.AflGauge.forceRedraw = phase == 1 || phase == 2;
@@ -352,6 +424,61 @@ public final class RainPerfProbe {
         });
     }
 
+    /**
+     * Ground mode: -1 throws a used P9 as the drop key does, 1 drops a new P9 2.5 m ahead of the player, 8 drops eight piles of
+     * 30 rounds of 9 mm around that spot, 0 removes everything dropped. Dropped from half a block up with no motion; never
+     * picked up, never despawning.
+     */
+    private static void drop(Minecraft mc, int what) {
+        var server = mc.getSingleplayerServer();
+        if (server == null) return;
+        server.execute(() -> {
+            ServerLevel level = server.overworld();
+            if (what == 0) {
+                for (var id : DROPPED) { var e = level.getEntity(id); if (e != null) e.discard(); }
+                log("removed " + DROPPED.size() + " dropped items");
+                DROPPED.clear();
+                return;
+            }
+            ServerPlayer player = server.getPlayerList().getPlayers().get(0);
+            if (what < 0) {
+                // a used gun (the user's P9 of 2026-10-19: 17 rounds, chambered, a GeckoLib id) thrown as the drop key does
+                var gun = new net.minecraft.world.item.ItemStack(com.antaurora.apofirstlight.registry.AflItems.P9_01.get());
+                gun.getOrCreateTag().put("AflGunAmmo", new net.minecraft.nbt.CompoundTag());
+                gun.getTag().getCompound("AflGunAmmo").putInt("ammoInMagazine", 17);
+                gun.getTag().getCompound("AflGunAmmo").putBoolean("chambered", true);
+                gun.getTag().putLong("GeckoLibID", 8);
+                var thrown = player.drop(gun, false, true);
+                if (thrown != null) {
+                    thrown.setNeverPickUp();
+                    thrown.setUnlimitedLifetime();
+                    DROPPED.add(thrown.getUUID());
+                    log("threw " + gun + " " + gun.getTag() + " from " + thrown.position() + " motion " + thrown.getDeltaMovement());
+                }
+                return;
+            }
+            double yaw = Math.toRadians(player.getYRot());
+            double cx = player.getX() - Math.sin(yaw) * 2.5, cz = player.getZ() + Math.cos(yaw) * 2.5;
+            for (int i = 0; i < what; i++) {
+                double x = cx, z = cz;
+                net.minecraft.world.item.ItemStack stack;
+                if (what == 1) stack = new net.minecraft.world.item.ItemStack(com.antaurora.apofirstlight.registry.AflItems.P9_01.get());
+                else {
+                    double a = i * Math.PI * 2 / what;
+                    x += Math.cos(a) * 1.2; z += Math.sin(a) * 1.2;
+                    stack = new net.minecraft.world.item.ItemStack(com.antaurora.apofirstlight.registry.AflItems.ROUND_9MM.get(), 30);
+                }
+                var item = new net.minecraft.world.entity.item.ItemEntity(level, x, player.getY() + 0.5, z, stack);
+                item.setDeltaMovement(Vec3.ZERO);
+                item.setNeverPickUp();
+                item.setUnlimitedLifetime();
+                level.addFreshEntity(item);
+                DROPPED.add(item.getUUID());
+                log("dropped " + stack + " at " + item.position());
+            }
+        });
+    }
+
     /** Minecraft yaw and pitch (degrees) from an eye towards a point. */
     private static float[] look(Vec3 eye, Vec3 at) {
         double dx = at.x - eye.x, dy = at.y - eye.y, dz = at.z - eye.z;
@@ -379,8 +506,12 @@ public final class RainPerfProbe {
         }
         OUT.append("   rain: ").append(RainRenderer.status()).append('\n');
         OUT.append("   glass: ").append(WindshieldRenderer.status()).append('\n');
+        if (GROUND) {
+            OUT.append("   ground chunking: ").append(com.antaurora.apofirstlight.client.GroundItemChunking.status()).append('\n');
+            OUT.append("   ground renderer: ").append(com.antaurora.apofirstlight.client.GroundItemRenderer.status()).append('\n');
+        }
         if (HUD) OUT.append("   gauges (whole phase): ").append(com.antaurora.apofirstlight.client.AflGauge.status()).append('\n');
-        if (SHADERS || WALK || HERE) frame(Minecraft.getInstance(), phase);
+        if ((SHADERS || WALK || HERE) && !GROUND) frame(Minecraft.getInstance(), phase);
         if (SHADERS && !HERE) {
             int[] g =com.antaurora.apofirstlight.client.rain.RainShaderPack.debugGlassSample();
             OUT.append("   glass map, windshield middle (slot 0): ").append(g == null ? "not read"

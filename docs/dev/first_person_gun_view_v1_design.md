@@ -214,6 +214,7 @@
 - **第一人称**：手里拿着枪时（任何 `NativeGunItem`：P9、BR51 和其他枪都一样），第一人称手的那一遍交回旧视图模型。枪自己的第一人称动画（`draw`、待机、开火、换弹、检视）、腰射和 ADS 位置（`data/apocalypse_firstlight/native_guns/<gun>.json` 的 `ads.profile`）、旧的刚性手臂（`weapon/client/NativePlayerArmRenderer`）都和加骨骼之前一样。
   - 代码：`client/skeleton/PlayerSkeleton#firstPersonHands` 只在两手都空，或者正在播身体在第一人称里画的动作（P9 收枪 `gun/p9_01_holster`）时返回 true；拿着枪返回 false。
 - **自己的身体**（第一人称低头看到的）：按别人看到的姿势摆（`SkeletonGunStance#hold`、`#stanceClips` 的 `firstPerson` 参数现在总是 false）。拿着枪时，身体的手臂和枪不画，由旧视图模型画；只有收枪时手把枪送回枪套，身体才画枪（`PlayerSkeleton#draw`）。
+  - 2026-10-19 起的例外（用户："第一人称镜头往下时没交接过去"）：P9 在预备姿势上（待机、走路、冲刺，没在瞄准、开火、换弹、检视、掏枪）低头时，旧视图模型低头 25° 开始滑出画面，45° 起身体的手臂拿着枪，姿势就是别人看到的。平视时旧视图模型完全不变。见 [first_person_body_v1.md](../rendering/first_person_body_v1.md) 3.5.1。没编译、没进游戏看过。
 - **第三人称**：P9 待机 `gun/p9_01_idle` 改成胸前预备（第 4.5 节）：
   - 挂在 `chest` 坐标系，跟胸口转、弯，不跟视线。
   - 握把点 `grip_r` 在 (−1.3, 6.6, −7.4) px（胸骨坐标：x 左、y 下、z 后），枪口朝前、向下 23°、向左 6°。

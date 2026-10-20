@@ -147,7 +147,7 @@
 
 ## 4. 声音
 
-- 现有的声音够用，不用新录：`magazine_release`、`magazine_out`、`magazine_in`、`magazine_seat`、`slide_release`。
+- 现有的声音够用，不用新录：`magazine_release`、`magazine_out`、`magazine_in`、`magazine_seat`、`slide_release`（2026-10-19 换成拉套筒录音里的回位撞击，撞击在文件 0.02 s，见 `docs/native_guns/p9_01_fire_sound_v2.md` 第 5 节）。
 - 熟练档空仓换弹不再用 `slide_back`；检视不再拉套筒，也不用 `slide_back`。
 - 以后要的（不在这次）：
   - 掏枪、收枪的枪套声（Kydex / 尼龙摩擦 + 卡扣）；

@@ -7,11 +7,43 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
-/** Stack persistence. Mutators are called only by server gameplay; reads never create NBT. */
+/**
+ * Stack persistence. Mutators are called by server gameplay (and on throwaway client preview stacks); reads never create
+ * NBT. A gun without ammo data is empty: every new gun (creative tab, /give, crafting) starts with no rounds (user
+ * 2026-10-19, docs/native_guns/p9_first_draw_chamber_v1.md 1). A gun meant to come loaded sets its count explicitly.
+ */
 public final class NativeGunAmmo {
     private static final String ROOT = "AflGunAmmo";
     private static final String COUNT = "ammoInMagazine";
+    /** A round in the chamber (docs/native_guns/p9_first_draw_chamber_v1.md); not a round of its own, the count holds it. */
+    private static final String CHAMBERED = "chambered";
     private NativeGunAmmo() {}
+
+    /**
+     * Whether a round is chambered. Missing means no. A new gun is empty and unchambered; its first empty reload chambers
+     * a round. A gun with rounds but none chambered (an empty reload cut short after the magazine went in, a gun from
+     * before this flag, one spawned with a loaded magazine) is chambered on its next draw (first_draw). The last shot
+     * empties the chamber, a completed empty reload fills it.
+     */
+    public static boolean chambered(ItemStack gun) {
+        CompoundTag tag = gun.getTag();
+        return tag != null && tag.getCompound(ROOT).getBoolean(CHAMBERED);
+    }
+
+    /**
+     * Whether the gun was ever loaded: the chamber flag is written by the last shot (false) and by a completed empty
+     * reload or first draw (true). A new gun has neither, so at 0 rounds its chambers hold nothing rather than spent
+     * cases (NativeBreakActionChambers).
+     */
+    public static boolean everLoaded(ItemStack gun) {
+        CompoundTag tag = gun.getTag();
+        return tag != null && tag.getCompound(ROOT).contains(CHAMBERED);
+    }
+
+    public static void setChambered(ItemStack gun, NativeGunDefinition definition, boolean chambered) {
+        initialize(gun, definition);   // the count first, so the ammo data always holds it
+        gun.getOrCreateTag().getCompound(ROOT).putBoolean(CHAMBERED, chambered);
+    }
     public static int capacity(ItemStack gun,NativeGunDefinition definition){
         var attachment=NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE);
         return attachment.getItem() instanceof NativeMagazineItem m?m.capacity():definition.magazineCapacity();
@@ -24,15 +56,17 @@ public final class NativeGunAmmo {
         return copy;
     }
 
+    /** Rounds in the magazine; 0 for a gun without ammo data (a new gun is empty). */
     public static int read(ItemStack gun, NativeGunDefinition definition) {
         CompoundTag tag = gun.getTag();
-        if (tag == null || !tag.contains(ROOT)) return capacity(gun,definition);
+        if (tag == null || !tag.contains(ROOT)) return 0;
         return Math.max(0, Math.min(capacity(gun,definition), tag.getCompound(ROOT).getInt(COUNT)));
     }
 
     public static void initialize(ItemStack gun, NativeGunDefinition definition) {
         NativeFireModes.sanitize(gun,definition);
-        // Preserve zero and existing states; sanitize corrupt/out-of-range data rather than refill it.
+        // A new gun is written as empty (read gives 0 without data). Preserve zero and existing states; sanitize
+        // corrupt/out-of-range data rather than refill it.
         int count = read(gun, definition);
         CompoundTag tag = gun.getTag();
         if (tag == null || !tag.contains(ROOT, net.minecraft.nbt.Tag.TAG_COMPOUND)

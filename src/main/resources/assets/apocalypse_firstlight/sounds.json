@@ -36,6 +36,14 @@
       "apocalypse_firstlight:weapons/p9_01/p9_01_slide_action"
     ]
   },
+  "p9_01_fire_near": {
+    "subtitle": "subtitles.apocalypse_firstlight.p9_01.fire",
+    "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_fire_near"]
+  },
+  "p9_01_suppressed_near": {
+    "subtitle": "subtitles.apocalypse_firstlight.p9_01.suppressed",
+    "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_suppressed_near"]
+  },
   "p9_01_suppressed": {
     "subtitle": "subtitles.apocalypse_firstlight.p9_01.suppressed",
     "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_suppressed"]

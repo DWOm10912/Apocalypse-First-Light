@@ -25,11 +25,23 @@ public final class RangedSound {
     }
 
     public static void play(ServerLevel level, Vec3 at, SoundEvent sound, SoundSource source, double radius, float volume, float pitch) {
+        play(level, at, sound, source, radius, volume, pitch, null);
+    }
+
+    /**
+     * As above; {@code maker} (a gun's shooter) hears it at the ear instead (client/RangedSoundInstance: not placed, not
+     * faded, the event's {@code _near} variant if there is one): a sound placed at the eyes swings from ear to ear as the
+     * camera moves (view bob, the orbit camera 4 blocks back) and a mono one comes out 3 dB lower in each ear.
+     */
+    public static void play(ServerLevel level, Vec3 at, SoundEvent sound, SoundSource source, double radius, float volume, float pitch,
+                            @org.jetbrains.annotations.Nullable ServerPlayer maker) {
         float r = (float) Math.max(1.0, radius);
-        RangedSoundS2CPacket packet = new RangedSoundS2CPacket(sound.getLocation(), source, at.x, at.y, at.z, r, volume, pitch,
-                level.getRandom().nextLong());
+        long seed = level.getRandom().nextLong();
+        RangedSoundS2CPacket packet = new RangedSoundS2CPacket(sound.getLocation(), source, at.x, at.y, at.z, r, volume, pitch, seed, false);
         for (ServerPlayer player : level.players()) {
-            if (player.distanceToSqr(at) <= (double) r * r) AflNetwork.rangedSound(player, packet);
+            if (player == maker) AflNetwork.rangedSound(player, new RangedSoundS2CPacket(sound.getLocation(), source, at.x, at.y, at.z, r,
+                    volume, pitch, seed, true));
+            else if (player.distanceToSqr(at) <= (double) r * r) AflNetwork.rangedSound(player, packet);
         }
     }
 

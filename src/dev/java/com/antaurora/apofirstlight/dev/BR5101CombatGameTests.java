@@ -26,6 +26,7 @@ public class BR5101CombatGameTests {
                 && D.ammoType().getPath().equals("762x51mm_round"), "Formal rifle ammunition, unchanged balance");
         p.getInventory().setItem(1,new ItemStack(AflItems.ROUND_9MM.get(),32));
         h.assertTrue(NativeGunAmmo.reserve(p.getInventory(),D)==0, "Rifle rejects pistol rounds");
+        NativeGunAmmo.set(gun,D,20); // a new gun is empty; this fixture starts with a full magazine
         NativeGunActions.request(p,false,0);
         for(int i=0;i<20;i++) NativeGunActions.request(p,false,0);
         h.assertTrue(NativeGunAmmo.read(gun,D)==19,"One accepted debit under spam");

@@ -12,9 +12,10 @@ import java.util.function.Supplier;
 /**
  * Server -> each player within {@code radius} of a sound (noise/RangedSound): play it there, fading to silence at the
  * radius (client/RangedSoundInstance). The seed picks the same variant on every client, as vanilla's sound packets do.
+ * {@code relative}: the player who made it (a gun's shooter) hears it at the ear, not placed in the world.
  */
 public record RangedSoundS2CPacket(ResourceLocation sound, SoundSource source, double x, double y, double z, float radius,
-                                   float volume, float pitch, long seed) {
+                                   float volume, float pitch, long seed, boolean relative) {
     static void encode(RangedSoundS2CPacket packet, FriendlyByteBuf buffer) {
         buffer.writeResourceLocation(packet.sound);
         buffer.writeEnum(packet.source);
@@ -25,11 +26,13 @@ public record RangedSoundS2CPacket(ResourceLocation sound, SoundSource source, d
         buffer.writeFloat(packet.volume);
         buffer.writeFloat(packet.pitch);
         buffer.writeLong(packet.seed);
+        buffer.writeBoolean(packet.relative);
     }
 
     static RangedSoundS2CPacket decode(FriendlyByteBuf buffer) {
         return new RangedSoundS2CPacket(buffer.readResourceLocation(), buffer.readEnum(SoundSource.class), buffer.readDouble(),
-                buffer.readDouble(), buffer.readDouble(), buffer.readFloat(), buffer.readFloat(), buffer.readFloat(), buffer.readLong());
+                buffer.readDouble(), buffer.readDouble(), buffer.readFloat(), buffer.readFloat(), buffer.readFloat(), buffer.readLong(),
+                buffer.readBoolean());
     }
 
     static void handle(RangedSoundS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {

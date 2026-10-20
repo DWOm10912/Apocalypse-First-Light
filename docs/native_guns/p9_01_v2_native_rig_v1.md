@@ -4,7 +4,7 @@
 
 > 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
 
-状态（2026-09-27）：正式 Registry ID 仍为 `apocalypse_firstlight:p9_01`，Java 物品已切换到 `ConfiguredNativeGunItem`，运行时 Profile 指向 `p9_01_v2_native` Geo、动画、贴图、Display 与 Pure Mesh sidecar；玩家手臂走 `NativePlayerArmRenderer`。旧 P9 专用类及旧 Geo/动画/贴图/手持 Display 运行时资源已删除，旧 `.bbmodel` 只作历史源保留。V2 源有 10 条 clip，其中 9 条在 Profile 中启用；`first_draw` 仅作为资源存在，没有运行时触发。静态/离线结果不能代替客户端验证；尚未执行 `runClient` 或游戏内手部、ADS、附件、维护台、声音验收。
+状态（2026-09-27）：正式 Registry ID 仍为 `apocalypse_firstlight:p9_01`，Java 物品已切换到 `ConfiguredNativeGunItem`，运行时 Profile 指向 `p9_01_v2_native` Geo、动画、贴图、Display 与 Pure Mesh sidecar；玩家手臂走 `NativePlayerArmRenderer`。旧 P9 专用类及旧 Geo/动画/贴图/手持 Display 运行时资源已删除，旧 `.bbmodel` 只作历史源保留。V2 源有 10 条 clip，其中 9 条在 Profile 中启用；`first_draw` 仅作为资源存在，没有运行时触发（2026-10-19 起由 v3 Profile 在枪没上膛时触发，见 [p9_first_draw_chamber_v1.md](p9_first_draw_chamber_v1.md)）。静态/离线结果不能代替客户端验证；尚未执行 `runClient` 或游戏内手部、ADS、附件、维护台、声音验收。
 
 ## 文件
 
@@ -382,7 +382,7 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 | shoot | 0.3 | once | 是 | 套筒 0→1.7→0，轻型 9 mm 短促上跳；camera 由运行时后坐控制 | – |
 | draw | 0.5 | once | 是 | 画面外右下方带内倾升起，0.22 s 到位后小幅过冲；左手 0.12–0.3 s 搭上 | 0.0 draw |
 | put_away | 0.5 | once | 是 | 左手 0.2 s 内先离开，枪内倾落出画面 | 0.0 put_away |
-| first_draw | 1.2 | once | 是 | 首次装备 / 空膛：升到胸前偏左、绕前臂内翻 44°，左手从左侧反手上膛（0.46–0.62 s），再回双手待机。**需 Java 触发** | 0.0 draw，0.45 slide_back，0.615 slide_release |
+| first_draw | 1.2 | once | 是 | 首次装备 / 空膛：升到胸前偏左、绕前臂内翻 44°，左手从左侧反手上膛（0.46–0.62 s），再回双手待机。**需 Java 触发**（2026-10-19 起由 v3 Profile 在枪没上膛时触发，见 [p9_first_draw_chamber_v1.md](p9_first_draw_chamber_v1.md)） | 0.0 draw，0.45 slide_back，0.615 slide_release |
 | reload_tactical | 1.7 | once | 是 | 左手立即离开；枪抬到中央、枪口左上；拇指退匣，旧匣靠重力掉落；新匣从左下方送入并推入大半，左手让开后 0.86 s 掌根拍到位；1.0–1.28 s 回正 | 0.23 magazine_release，0.26 magazine_out，0.585 magazine_in，0.855 magazine_seat |
 | reload_empty | 2.0 | once | 是 | 同样抬枪后手腕猛地上甩（约 0.3 s），空匣在上甩途中沿弹匣轴脱出、带着枪的速度向前左方甩飞并翻滚落下；新匣 0.9 s 拍到位；左手从左侧反手拉滑套（1.12–1.26 s 拉离挂机后松开复进）；回正 | 0.25 magazine_release，0.32 magazine_out，0.625 magazine_in，0.895 magazine_seat，1.11 slide_back，1.255 slide_release |
 | inspect | 5.4 | once | 是 | CoD 式：手腕内翻，左手捏套筒前部两下短拉（0.35，各 0.16 s 拉开、停 0.08 s、0.1 s 手控送回）加一下深拉（0.75，0.22 s 拉开、停约 0.45 s 观察、0.12 s 送回）；转到左侧，弹匣滑入左手，翻转展示供弹唇和顶弹，两段式插回（4.2 s 拍到位）；左手让开后 4.56 s 补拍弹匣底板收尾；回正 | 0.51 / 0.93 / 1.35 slide_back，0.845 / 1.265 / 2.135 slide_release（对准回到位），2.61 magazine_release，2.65 magazine_out，3.925 magazine_in，4.195 magazine_seat，4.555 magazine_seat（补拍） |
@@ -449,7 +449,7 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 | refit / idle_view / iron_view / refit_* / thirdperson_hand / ground / fixed | 删除（TACZ 残留） |
 | — | maintenance_anchor、chamber_round_anchor、follower（新增） |
 
-**clip 名**：动画资源共 10 条：static_idle、empty_idle、shoot、draw、put_away、first_draw、reload_tactical、reload_empty、inspect、inspect_empty。Profile 当前启用除 `first_draw` 外的九条；`first_draw` 没有触发条件。P9 0 发时由通用 `baseline` 选择 `empty_idle`，BR51 等 `static_bolt_caught` 由可选 `empty_state` 处理。
+**clip 名**：动画资源共 10 条：static_idle、empty_idle、shoot、draw、put_away、first_draw、reload_tactical、reload_empty、inspect、inspect_empty。Profile 当前启用除 `first_draw` 外的九条；`first_draw` 没有触发条件（2026-10-19 起由 v3 Profile 在枪没上膛时触发，见 [p9_first_draw_chamber_v1.md](p9_first_draw_chamber_v1.md)）。P9 0 发时由通用 `baseline` 选择 `empty_idle`，BR51 等 `static_bolt_caught` 由可选 `empty_state` 处理。
 
 **当前配置与待验收**：
 - 换弹时长：tactical 1.7 s / 34 tick，empty 2.0 s / 40 tick（旧版 2.38 / 3.12）；`presentation.mag_in_tick=18`、`empty_mag_in_tick=18`。动画的 `magazine_seat` cue 在约 0.855 / 0.895 秒，实际音画及弹数结算仍待客户端验收。

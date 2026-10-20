@@ -6,6 +6,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.client.sounds.WeighedSoundEvents;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 
 /**
@@ -13,14 +14,24 @@ import net.minecraft.util.RandomSource;
  * at), not at the sounds.json attenuation. The engine's range is max(volume, 1) x the resolved Sound's attenuation
  * distance (SoundEngine.play), so the resolved Sound is swapped for a copy with the radius as its attenuation distance and
  * the volume kept at most 1.
+ * <p>
+ * A relative one (the sound's maker, e.g. a gun's shooter) plays at the ear: not placed, not faded, and from the event's
+ * {@code <id>_near} variant when sounds.json has one (a two-channel copy at full level in both ears; a mono sound at the
+ * ear comes out 3 dB lower in each).
  */
 public final class RangedSoundInstance extends SimpleSoundInstance {
     private final int radius;
 
     private RangedSoundInstance(RangedSoundS2CPacket packet) {
-        super(packet.sound(), packet.source(), Math.min(packet.volume(), 1.0F), packet.pitch(), RandomSource.create(packet.seed()),
-                false, 0, Attenuation.LINEAR, packet.x(), packet.y(), packet.z(), false);
+        super(packet.relative() ? near(packet.sound()) : packet.sound(), packet.source(), Math.min(packet.volume(), 1.0F), packet.pitch(),
+                RandomSource.create(packet.seed()), false, 0, packet.relative() ? Attenuation.NONE : Attenuation.LINEAR,
+                packet.relative() ? 0 : packet.x(), packet.relative() ? 0 : packet.y(), packet.relative() ? 0 : packet.z(), packet.relative());
         this.radius = Math.max(1, Math.round(packet.radius()));
+    }
+
+    private static ResourceLocation near(ResourceLocation sound) {
+        ResourceLocation near = new ResourceLocation(sound.getNamespace(), sound.getPath() + "_near");
+        return Minecraft.getInstance().getSoundManager().getSoundEvent(near) != null ? near : sound;
     }
 
     public static void play(RangedSoundS2CPacket packet) {

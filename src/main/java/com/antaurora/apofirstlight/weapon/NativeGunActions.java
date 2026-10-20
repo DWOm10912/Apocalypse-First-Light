@@ -60,6 +60,17 @@ public final class NativeGunActions {
 
     /** A reload clip's variant played while aiming down the sights. */
     public static final String ADS_SUFFIX = "_ads";
+    /**
+     * The draw that chambers a round (docs/native_guns/p9_first_draw_chamber_v1.md): played instead of draw when the gun
+     * has the clip, rounds in the magazine and none chambered ({@link NativeGunAmmo#chambered}).
+     */
+    public static final String FIRST_DRAW = "first_draw";
+
+    /** The draw clip for the held gun: first_draw when it chambers a round, else draw. */
+    static String drawClip(ItemStack held, NativeGunItem item) {
+        return item.supportsClip(FIRST_DRAW) && !NativeGunAmmo.chambered(held)
+                && NativeGunAmmo.read(held, item.definition()) > 0 ? FIRST_DRAW : "draw";
+    }
 
     public static String animationName(boolean reload) { return reload ? "reload_tactical" : "shoot"; }
 
@@ -73,6 +84,7 @@ public final class NativeGunActions {
                 || (clip.equals("inspect") && player.containerMenu != player.inventoryMenu)
                 || !(player.getMainHandItem().getItem() instanceof NativeGunItem item)
                 || !(clip.equals("inspect") ? item.inspectClip() != null
+                    : clip.equals(FIRST_DRAW) ? item.supportsClip(FIRST_DRAW)
                     : clip.equals("draw") && item.animationAsset() != null)) return false;
         Session state = new Session();
         NativeFireControl.cancel(player);
@@ -139,6 +151,7 @@ public final class NativeGunActions {
             interval = definition.fireIntervalTicks(NativeFireModes.current(held, definition));
             if (!NativeGunAmmo.consumeOne(held, definition)) return;
             int ammoAfter = NativeGunAmmo.read(held, definition);
+            if (ammoAfter == 0) NativeGunAmmo.setChambered(held, definition, false);   // the last round leaves the chamber empty
             NEXT_FIRE.put(player, now + interval);
             // This transition is authoritative because it is observed immediately around consumeOne.
             // Store it on the accepted shot session; clients never infer the last round themselves.
@@ -178,10 +191,11 @@ public final class NativeGunActions {
         }
         item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         if (!reload) {
-            // heard exactly as far as the shot's noise (NativeGunShot emits the same radius); a suppressed one 16 blocks
+            // heard exactly as far as the shot's noise (NativeGunShot emits the same radius); a suppressed one 16 blocks; the
+            // shooter hears it at the ear
             var shotNoise = NativeGunNoise.resolve(player.getMainHandItem(), definition);
             com.antaurora.apofirstlight.noise.RangedSound.play(player.serverLevel(), player.getEyePosition(), shotNoise.fireSound(item),
-                    SoundSource.PLAYERS, shotNoise.soundRadius(), 1.0F, 1.0F);
+                    SoundSource.PLAYERS, shotNoise.soundRadius(), 1.0F, 1.0F, player);
             var shot = NativeGunShot.executeWithTrajectories(player, definition,
                     aiming && !player.isSprinting() && !player.isUsingItem());
             var hit = shot.representative();
@@ -213,7 +227,7 @@ public final class NativeGunActions {
                     if (cue.tick() <= 1) sound(player, java.util.Objects.requireNonNull(
                             net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(cue.sound())));
             }
-            operation(player, "draw");
+            if (held.getItem() instanceof NativeGunItem gun) operation(player, drawClip(held, gun));
         }
         Session state = SESSIONS.get(player);
         if (state == null) return;
@@ -269,7 +283,15 @@ public final class NativeGunActions {
                 state.rackPlayed = true;
             }
         }
-        if (now >= state.end) SESSIONS.remove(player);
+        if (now >= state.end) {
+            SESSIONS.remove(player);
+            // completed only: a first draw or an empty reload cut short leaves the slide where it was, unchambered
+            if (state.clip.equals(FIRST_DRAW) || state.reload && state.reloadStartedEmpty
+                    && NativeGunAmmo.read(state.stack, state.item.definition()) > 0) {
+                NativeGunAmmo.setChambered(state.stack, state.item.definition(), true);
+                syncInventory(player);
+            }
+        }
         } finally { NativeFireControl.tick(player); }
     }
 

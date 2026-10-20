@@ -235,6 +235,10 @@ public final class WoodGunRackChunking {
     static Replay record(java.util.function.BiConsumer<PoseStack, MultiBufferSource> drawing) {
         var recorder = new Recorder();
         drawing.accept(new PoseStack(), recorder);
+        return replay(recorder);
+    }
+
+    private static Replay replay(Recorder recorder) {
         var parts = new ArrayList<Leftover>();
         for (var e : recorder.streams.entrySet()) {
             Stream st = e.getValue();
@@ -245,6 +249,35 @@ public final class WoodGunRackChunking {
                     java.util.Arrays.copyOf(st.color, count), java.util.Arrays.copyOf(st.light, count)));
         }
         return new Replay(parts.toArray(Leftover[]::new), VextrisMeshes.generation());
+    }
+
+    /**
+     * A ground item's recording ({@link GroundItemRenderer}, {@link GroundItemChunking}): the whole drawing as a replay, and
+     * the same split as a rack slot's into chunk quads (DefaultVertexFormat.BLOCK data at the drawing's own coordinates,
+     * ABGR colour, light 0 where the drawing left it unset; back sides added for open parts) and the replay the renderer
+     * keeps (translucent, glint). Quads are not held to a cell: the caller places the whole gun in one section.
+     */
+    static final class Split {
+        final Replay all, rest;
+        final int[][] quads;
+        final TextureAtlasSprite[] sprites;
+
+        private Split(Replay all, Replay rest, List<int[]> quads, List<TextureAtlasSprite> sprites) {
+            this.all = all;
+            this.rest = rest;
+            this.quads = quads.toArray(int[][]::new);
+            this.sprites = sprites.toArray(TextureAtlasSprite[]::new);
+        }
+    }
+
+    static Split split(java.util.function.BiConsumer<PoseStack, MultiBufferSource> drawing) {
+        var recorder = new Recorder();
+        drawing.accept(new PoseStack(), recorder);
+        var quads = new ArrayList<int[]>();
+        var sprites = new ArrayList<TextureAtlasSprite>();
+        var kept = new ArrayList<Leftover>();
+        for (var e : recorder.streams.entrySet()) split(e.getKey(), e.getValue(), quads, sprites, kept, false);
+        return new Split(replay(recorder), new Replay(kept.toArray(Leftover[]::new), VextrisMeshes.generation()), quads, sprites);
     }
 
     // ------------------------------------------------------------------------------------------ bookkeeping
@@ -325,7 +358,7 @@ public final class WoodGunRackChunking {
     }
 
     /** 0: a shader pack lights it; 1: overworld entity lights; 2: nether entity lights (AflMeshChunking#shading). */
-    private static int shading() {
+    static int shading() {
         if (AflShaderCompat.shaderPackInUse()) return 0;
         var level = Minecraft.getInstance().level;
         return level != null && level.effects().constantAmbientLight() ? 2 : 1;
@@ -346,7 +379,7 @@ public final class WoodGunRackChunking {
                 var recorder = new Recorder();
                 // light 0: whatever light a vertex carries afterwards was set by the drawing itself (full bright parts)
                 WoodGunRackRenderer.slot(k, s, state, new PoseStack(), recorder, 0, rack.getBlockPos().hashCode() + k);
-                for (var e : recorder.streams.entrySet()) split(e.getKey(), e.getValue(), quads, sprites, kept);
+                for (var e : recorder.streams.entrySet()) split(e.getKey(), e.getValue(), quads, sprites, kept, true);
             }
             leftovers[k] = kept.toArray(Leftover[]::new);
         }
@@ -378,15 +411,16 @@ public final class WoodGunRackChunking {
         return new Kind(true, false, sprite, true);
     }
 
-    /** One recorded draw type into chunk quads and renderer leftovers. */
-    private static void split(RenderType type, Stream s, List<int[]> quads, List<TextureAtlasSprite> sprites, List<Leftover> kept) {
+    /** One recorded draw type into chunk quads and renderer leftovers; in a cell: quads must stay near it (a rack's). */
+    private static void split(RenderType type, Stream s, List<int[]> quads, List<TextureAtlasSprite> sprites, List<Leftover> kept,
+                              boolean cell) {
         Kind kind = kind(type);
         var leftV = new ArrayList<float[]>();
         var leftC = new ArrayList<int[]>();
         var leftL = new ArrayList<int[]>();
         TextureAtlasSprite missing = null;
         for (int q = 0; q + 4 <= s.count; q += 4) {
-            boolean chunk = kind.chunk() && fits(s, q, kind);
+            boolean chunk = kind.chunk() && fits(s, q, kind, cell);
             if (!chunk) {
                 leftV.add(java.util.Arrays.copyOfRange(s.v, q * 8, q * 8 + 32));
                 leftC.add(java.util.Arrays.copyOfRange(s.color, q, q + 4));
@@ -418,13 +452,13 @@ public final class WoodGunRackChunking {
         kept.add(new Leftover(type, kind.shadow(), v, c, l));
     }
 
-    /** The quad starting at vertex q stays near the cell and inside its texture. */
-    private static boolean fits(Stream s, int q, Kind kind) {
+    /** The quad starting at vertex q stays near the cell (if held to one) and inside its texture. */
+    private static boolean fits(Stream s, int q, Kind kind, boolean cell) {
         for (int i = q; i < q + 4; i++) {
             int o = i * 8;
             for (int a = 0; a < 3; a++) {
                 float p = s.v[o + a];
-                if (!Float.isFinite(p) || p < -REACH || p > 1 + REACH) return false;
+                if (!Float.isFinite(p) || cell && (p < -REACH || p > 1 + REACH)) return false;
             }
             if (kind.atlasUvs()) continue;
             float u = s.v[o + 3], v = s.v[o + 4];

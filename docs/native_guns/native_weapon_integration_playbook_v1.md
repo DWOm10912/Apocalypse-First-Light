@@ -384,7 +384,7 @@ Pistol
 
 TEMPLATE：p9_01。
 
-REQUIRED DIFFERENCES：P9 V2 Profile 的循环包含 `static_idle` 与 `empty_idle`，动作集包含有弹/空仓 inspect 分支。数据 JSON 对应 34 / 40 tick 的换弹，`mag_in_tick=18`、`empty_mag_in_tick=18`；V2 Display、ADS、手臂和非第一人称尺寸按新几何设置。`first_draw` 虽在动画资产中，但当前没有运行时触发条件。新手枪应根据自己的骨骼与动画定义这些值。
+REQUIRED DIFFERENCES：P9 V2 Profile 的循环包含 `static_idle` 与 `empty_idle`，动作集包含有弹/空仓 inspect 分支。数据 JSON 对应 34 / 40 tick 的换弹，`mag_in_tick=18`、`empty_mag_in_tick=18`；V2 Display、ADS、手臂和非第一人称尺寸按新几何设置。`first_draw` 虽在动画资产中，但当前没有运行时触发条件（2026-10-19 起由 v3 Profile 在枪没上膛时触发，见 [p9_first_draw_chamber_v1.md](p9_first_draw_chamber_v1.md)）。新手枪应根据自己的骨骼与动画定义这些值。
 
 OPTIONAL DIFFERENCES：手枪红点、手枪消音器、扩容匣。
 

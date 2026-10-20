@@ -34,7 +34,8 @@ public final class ExtendedMagazineTests {
         h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.BR51_01.get()),new ItemStack(magItem)),"BR51 incompatible");
         for(int count:new int[]{0,5,17,19,28}){
             bench.clearContent();clearAll(p);clearAll(q);
-            p.getInventory().setItem(4,new ItemStack(AflItems.P9_01.get()));
+            var p9=new ItemStack(AflItems.P9_01.get());NativeGunAmmo.set(p9,d,17); // a new gun is empty; start full
+            p.getInventory().setItem(4,p9);
             h.assertTrue(menu.clickMenuButton(p,4),"Place P9");
             h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),d)==17,"Standard17");
             p.getInventory().setItem(12,new ItemStack(magItem));q.getInventory().setItem(12,new ItemStack(magItem));

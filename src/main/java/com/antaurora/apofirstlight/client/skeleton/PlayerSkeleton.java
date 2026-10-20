@@ -71,7 +71,8 @@ import java.util.WeakHashMap;
  * </ul>
  * First person: when the hands are supported (empty, the BR51 with the off hand empty, or a player action) the vanilla
  * hand pass is cancelled, so looking ahead shows no hands; otherwise the old first-person view model stays and the body's
- * arms are hidden, as in the first-person body V1.
+ * arms are hidden, as in the first-person body V1. A held gun at its ready (stance loops: the P9) goes from its view model
+ * to the body's arms looking down (client/FirstPersonBody#gunOnBody, user 2026-10-19).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class PlayerSkeleton {
@@ -317,9 +318,10 @@ public final class PlayerSkeleton {
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
-        // the own first-person body draws a gun only on its own hands (#firstPersonHands); a held one is the view model's
+        // the own first-person body draws a gun only while its arms are shown (#firstPersonHands, or the gun handed to
+        // the body looking down: FirstPersonBody#gunOnBody); otherwise a held one is the view model's
         boolean ownView = d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts();
-        if (d.solved.hold != null && !AflShaderCompat.activeShadowPass() && (!ownView || firstPersonHands(d.player)))
+        if (d.solved.hold != null && !AflShaderCompat.activeShadowPass() && (!ownView || FirstPersonBody.armsShown()))
             SkeletonGunStance.render(d.solved.hold, pose, d.buffers, light);
         for (Solved.Extra e : d.solved.extras) {
             ItemStack stack = extraStack(e.prop());
@@ -494,7 +496,7 @@ public final class PlayerSkeleton {
         if (action != null && d.world) SkeletonActions.stepped(p, in.rootOffset, toModel);
         // a gun's stance loops (idle, sprint) on the body under its draw or put-away (docs/dev/p9_stance_loops_v1.md)
         // the gun's stance as others see it, the own first-person body too: there a held gun is its old view model's
-        // (#firstPersonHands), the body's hands carry one only back to its mount
+        // (#firstPersonHands) but for looking down at its ready (FirstPersonBody#gunOnBody), and back to its mount
         if (gun && seated == null) SkeletonGunStance.stanceClips(p, in, poser().rig(), partial);
         HumanoidPoser.Report report = poser().solveBody(in, out.pose);
         if (seated != null && d.world && seated.move() == SeatPose.Move.NONE) SeatedRiders.solvedTorso(p, report.torso);
@@ -612,7 +614,8 @@ public final class PlayerSkeleton {
      * The own first-person body's hands are the skeleton's: both hands empty, or an action the body draws in first person
      * (a gun's put-away to its mount). Otherwise the old first-person view model: a held gun keeps its own (its hip and
      * ADS hold, rigid arms and clips; user 2026-10-17, docs/dev/first_person_gun_view_v1_design.md), the body's arms and
-     * the gun on them hidden.
+     * the gun on them hidden; looking down at its ready the gun goes to the body's arms with the view model still drawn,
+     * out of view (client/FirstPersonBody#gunOnBody), so this stays false and the hand pass runs.
      */
     public static boolean firstPersonHands(Player p) {
         if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
