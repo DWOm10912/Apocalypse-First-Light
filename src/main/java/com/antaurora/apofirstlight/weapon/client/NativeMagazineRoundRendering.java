@@ -30,7 +30,21 @@ final class NativeMagazineRoundRendering {
         for (GeoBone parent = bone.getParent(); parent != null; parent = parent.getParent())
             if (parent.isHidingChildren() || parent.isHidden()) return;
         int ammo = NativeGunAmmo.read(stack, definition);
-        if (main >= 0) {
+        if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition)) {
+            // magazines keep their rounds (NativeMagazines): the fitted one its own (not the chambered round), a reload's
+            // new and old ones theirs; inspect and unload pull out the fitted one
+            int fitted = com.antaurora.apofirstlight.weapon.NativeMagazines.magazineRounds(stack, definition);
+            String clip = main >= 0 ? null : actionClip.get();
+            boolean reloading = clip != null && clip.startsWith("reload_");
+            int shown;
+            if (main >= 0) shown = fitted > main ? 1 : 0;
+            else if (loadedAuxiliary >= 0) shown = reloading ? com.antaurora.apofirstlight.weapon.NativeMagazines.shown(stack, definition,
+                    com.antaurora.apofirstlight.weapon.NativeMagazines.Role.INCOMING).rounds() > loadedAuxiliary ? 1 : 0
+                    : clip != null && (clip.startsWith("inspect") || clip.startsWith("unload")) && fitted > loadedAuxiliary ? 1 : 0;
+            else shown = reloading && com.antaurora.apofirstlight.weapon.NativeMagazines.shown(stack, definition,
+                    com.antaurora.apofirstlight.weapon.NativeMagazines.Role.OUTGOING).rounds() > oldMagazine ? 1 : 0;
+            if (shown == 0) return;
+        } else if (main >= 0) {
             if (ammo <= main) return;
         } else {
             String clip = actionClip.get();

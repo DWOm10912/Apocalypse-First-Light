@@ -211,6 +211,42 @@ public final class Loadout implements INBTSerializable<CompoundTag> {
         select(player, HotbarRoles.HAND_SLOT);
     }
 
+    /**
+     * Server: a stack into the hand, held from now on (a magazine taken out of the gun, weapon/NativeMagazines#eject).
+     * The selected position is left as when switching away (a weapon position keeps its weapon), the hand's stack put
+     * back. Creative / Spectator: the first empty hotbar slot, selected. False when there is no room (nothing changed
+     * but what leaving put away; the caller puts the stack elsewhere).
+     */
+    public static boolean toHand(ServerPlayer player, ItemStack stack) {
+        var inventory = player.getInventory();
+        if (PlayerStorageCapacity.unrestricted(player)) {
+            for (int i = 0; i < Inventory.getSelectionSize(); i++) {
+                if (!inventory.items.get(i).isEmpty()) continue;
+                inventory.items.set(i, stack);
+                inventory.setChanged();
+                select(player, i);
+                return true;
+            }
+            return false;
+        }
+        var loadout = of(player);
+        if (loadout == null) return false;
+        loadout.reconcileHand(player);
+        if (inventory.selected != HotbarRoles.HAND_SLOT && !loadout.leave(player, inventory.selected)) return false;
+        if (!inventory.items.get(HotbarRoles.HAND_SLOT).isEmpty() && !loadout.stowHand(player)) {
+            hint(player, "no_room");
+            return false;
+        }
+        inventory.items.set(HotbarRoles.HAND_SLOT, stack);
+        inventory.setChanged();
+        loadout.handBind = HANDS;
+        loadout.handItem = stack.getItem();
+        loadout.origin = null;
+        sync(player);
+        select(player, HotbarRoles.HAND_SLOT);
+        return true;
+    }
+
     /** Server: one tick of the rules now (GameTests; fake players do not tick). */
     public static void tickNow(ServerPlayer player) {
         var loadout = of(player);

@@ -29,48 +29,47 @@ public final class ExtendedMagazineTests {
         p.setPos(root.getCenter());q.setPos(root.getCenter());
         var menu=new GunMaintenanceMenu(61,p.getInventory(),bench);p.containerMenu=menu;q.containerMenu=new GunMaintenanceMenu(62,q.getInventory(),bench);
         var d=NativeGunDefinition.P9_01;
-        var magItem=AflItems.P9_01_EXTENDED_MAGAZINE.get();
+        var magItem=AflItems.P9_01_EXTENDED_MAGAZINE.get();var standard=AflItems.P9_01_MAGAZINE.get();
         var ammo=net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(d.ammoType());
         h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.BR51_01.get()),new ItemStack(magItem)),"BR51 incompatible");
+        // magazines keep their rounds (docs/native_guns/magazine_system_v1.md): a change at the bench swaps magazines with theirs
         for(int count:new int[]{0,5,17,19,28}){
             bench.clearContent();clearAll(p);clearAll(q);
-            var p9=new ItemStack(AflItems.P9_01.get());NativeGunAmmo.set(p9,d,17); // a new gun is empty; start full
+            var p9=new ItemStack(AflItems.P9_01.get());NativeGunAmmo.set(p9,d,17); // a new gun is empty; 17 in the standard magazine
             p.getInventory().setItem(4,p9);
             h.assertTrue(menu.clickMenuButton(p,4),"Place P9");
-            h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),d)==17,"Standard17");
+            h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),d)==18,"Standard 17 + 1");
             p.getInventory().setItem(12,new ItemStack(magItem));q.getInventory().setItem(12,new ItemStack(magItem));
             var first=request(p,bench,12);var stale=request(q,bench,12);
             h.assertTrue(MaintenanceAttachmentTransaction.commit(p,first),"Install");
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(q,stale),"Concurrent stale install rejected");
             var gun=bench.getItem(0);
-            h.assertTrue(NativeGunAmmo.capacity(gun,d)==28&&NativeGunAmmo.read(gun,d)==17,"Install raises limit without free rounds");
+            h.assertTrue(NativeGunAmmo.capacity(gun,d)==29&&NativeGunAmmo.read(gun,d)==0,"Install: the empty extended magazine, 28 + 1");
+            h.assertTrue(rounds(p,standard)==17,"The standard magazine came off with its 17 rounds");
             NativeGunAmmo.set(gun,d,count);
             var saved=ItemStack.of(gun.save(new net.minecraft.nbt.CompoundTag()));
-            h.assertTrue(NativeGunAmmo.capacity(saved,d)==28&&NativeGunAmmo.read(saved,d)==count,"Stack persistence");
+            h.assertTrue(NativeGunAmmo.capacity(saved,d)==29&&NativeGunAmmo.read(saved,d)==count,"Stack persistence");
             var remove=request(p,bench,-1);
             h.assertTrue(MaintenanceAttachmentTransaction.commit(p,remove),"Remove");
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(p,remove),"Repeated remove rejected");
-            h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),d)==17&&NativeGunAmmo.read(bench.getItem(0),d)==Math.min(17,count),"Truncated limit");
-            h.assertTrue(count(p,ammo)==Math.max(0,count-17)&&count(p,magItem)==1&&count(q,magItem)==1,"Rounds and accessories conserved");
+            h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),d)==1&&NativeGunAmmo.read(bench.getItem(0),d)==0,"No magazine, nothing chambered");
+            h.assertTrue(count(p,ammo)==0&&count(p,magItem)==1&&rounds(p,magItem)==count&&count(q,magItem)==1,"Rounds stay in their magazine");
         }
         p.getInventory().setItem(12,new ItemStack(magItem));
         h.assertTrue(MaintenanceAttachmentTransaction.commit(p,request(p,bench,12)),"Reinstall");
-        NativeGunAmmo.set(bench.getItem(0),d,17);
-        for(int i=0;i<36;i++)if(p.getInventory().getItem(i).is(ammo))p.getInventory().setItem(i,ItemStack.EMPTY);
-        p.getInventory().setItem(13,new ItemStack(ammo,14));
-        h.assertTrue(NativeGunAmmo.transfer(p.getInventory(),bench.getItem(0),d)==11&&NativeGunAmmo.read(bench.getItem(0),d)==28&&p.getInventory().getItem(13).getCount()==3,"Reload fills28 consumes11");
-        for(int i=0;i<28;i++)h.assertTrue(NativeGunAmmo.consumeOne(bench.getItem(0),d),"28 rounds can fire");
-        h.assertTrue(!NativeGunAmmo.consumeOne(bench.getItem(0),d),"29th cannot fire");
+        NativeGunAmmo.set(bench.getItem(0),d,29);
+        for(int i=0;i<29;i++)h.assertTrue(NativeGunAmmo.consumeOne(bench.getItem(0),d),"28 + 1 rounds can fire");
+        h.assertTrue(!NativeGunAmmo.consumeOne(bench.getItem(0),d),"30th cannot fire");
         NativeGunAmmo.set(bench.getItem(0),d,28);
-        // nothing takes the rounds: no backpack, every pocket and vanilla slot full
+        // nothing takes the magazine: no backpack, every pocket and vanilla slot full
         clearAll(p);com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(p,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK).ifPresent(s->s.setStackInSlot(0,ItemStack.EMPTY));
         for(int k=0;k<4;k++)p.getInventory().add(new ItemStack(Items.STONE,64));
         for(int i=0;i<36;i++)p.getInventory().setItem(i,new ItemStack(Items.STONE,64));
         level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(root).inflate(5)).forEach(net.minecraft.world.entity.Entity::discard);
         h.assertTrue(MaintenanceAttachmentTransaction.commit(p,request(p,bench,-1)),"Full inventory detach");
         var drops=level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(root).inflate(5));
-        h.assertTrue(drops.stream().filter(e->e.getItem().is(ammo)).mapToInt(e->e.getItem().getCount()).sum()==11,"Eleven overflow rounds dropped");
-        h.assertTrue(drops.stream().filter(e->e.getItem().is(magItem)).mapToInt(e->e.getItem().getCount()).sum()==1,"One magazine dropped");
+        h.assertTrue(drops.stream().noneMatch(e->e.getItem().is(ammo)),"No loose rounds dropped");
+        h.assertTrue(drops.stream().filter(e->e.getItem().is(magItem)).mapToInt(e->com.antaurora.apofirstlight.weapon.NativeMagazines.rounds(e.getItem())).sum()==28,"The magazine dropped with its 28 rounds");
         drops.forEach(net.minecraft.world.entity.Entity::discard);bench.clearContent();p.containerMenu=p.inventoryMenu;q.containerMenu=q.inventoryMenu;
         h.succeed();
     }
@@ -81,6 +80,10 @@ public final class ExtendedMagazineTests {
     private static void clearAll(ServerPlayer p){p.getInventory().clearContent();var pk=com.antaurora.apofirstlight.inventory.grid.Pockets.of(p);if(pk!=null)pk.set(new net.minecraft.nbt.ListTag());
         com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(p,com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK)
                 .ifPresent(s->s.setStackInSlot(0,new ItemStack(AflItems.CANVAS_BACKPACK.get())));}
+    /** Rounds in the magazines of this item the player carries (vanilla slots and grids). */
+    private static int rounds(ServerPlayer p,Item item){return java.util.stream.Stream.concat(p.getInventory().items.stream(),
+            com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(p).stream()).filter(s->s.is(item))
+            .mapToInt(com.antaurora.apofirstlight.weapon.NativeMagazines::rounds).sum();}
     /** Vanilla slots and grids: what comes off a gun goes in by the pickup order (plan 13). */
     private static int count(ServerPlayer p,Item item){return p.getInventory().items.stream().filter(s->s.is(item)).mapToInt(ItemStack::getCount).sum()
             +com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(p).stream().filter(s->s.is(item)).mapToInt(ItemStack::getCount).sum();}

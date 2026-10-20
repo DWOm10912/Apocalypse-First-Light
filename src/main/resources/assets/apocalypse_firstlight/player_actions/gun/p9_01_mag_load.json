@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "about": "Loading a P9-01 magazine by hand (weapon/NativeMagazineLoading; client/skeleton/SkeletonActions plays it from the loading tag on the held magazine, docs/native_guns/magazine_system_v1.md 4): a 1 s loop, one round each. The left hand holds the magazine before the upper chest, lips up and tipped back, its front turned left (chest frame); the right hand takes a round from the right front of the hips (hidden until 0.30 s), brings it over the lips tip up and presses it in, base down and back, at 0.65 s (NativeMagazineLoading PRESS_TICK 13: the round goes into the magazine then, so the prop hides and the magazine draws it), the thumb resting on the lips until the next. Upper body only, so the player walks while loading. Keyed in the AFL Rig Blockbench plugin (src/main/blockbench/player_actions/p9_01_mag_load.bbmodel).",
+  "afl_rig": {"plugin": "0.1.0", "animation": "gun.p9_01_mag_load"},
+  "layer": "action",
+  "mask": "upper",
+  "priority": 45,
+  "first_person": "body",
+  "first_person_pitch": 55,
+  "blend": {"in": 0.25, "out": 0.25},
+  "loop": "time",
+  "length": 1,
+  "props": [
+    {
+      "id": "p9_01_magazine",
+      "keys": [
+        {"at": 0, "frame": "chest", "point": "grip", "pos": [1.5, 3.5, -6.5], "rot": [156.0432, 32.6146, -166.5322], "blend": 0},
+        {"at": 0, "frame": "chest", "point": "grip", "pos": [1.5, 3.5, -6.5], "rot": [156.0432, 32.6146, -166.5322], "blend": 0.58},
+        {"at": 0.58, "frame": "chest", "point": "grip", "pos": [1.5, 3.85, -6.5], "rot": [152.6073, 31.8691, -164.6987], "blend": 0.08},
+        {"at": 0.66, "frame": "chest", "point": "grip", "pos": [1.5, 3.5, -6.5], "rot": [156.0432, 32.6146, -166.5322], "blend": 0.19},
+        {"at": 0.85, "frame": "chest", "point": "grip", "pos": [1.5, 3.5, -6.5], "rot": [156.0432, 32.6146, -166.5322], "blend": 0.15}
+      ]
+    },
+    {
+      "id": "9x19mm_round",
+      "keys": [
+        {"at": 0, "frame": "prop:p9_01_magazine", "point": "pinch", "pos": [3.9574, -6.5603, -6.3096], "rot": [-90, 0, 0], "blend": 0, "hidden": true},
+        {"at": 0, "frame": "prop:p9_01_magazine", "point": "pinch", "pos": [3.9574, -6.8199, -6.9268], "rot": [-75, 0, 0], "blend": 0.08, "hidden": true},
+        {"at": 0.08, "frame": "bone:pelvis", "point": "pinch", "pos": [-4.2, 9.1, -3.7], "rot": [-80, 0, 180], "blend": 0.22, "hidden": true},
+        {"at": 0.3, "frame": "bone:pelvis", "point": "pinch", "pos": [-4.2, 9.1, -3.7], "rot": [-80, 0, 180], "blend": 0.06},
+        {"at": 0.36, "frame": "prop:p9_01_magazine", "point": "pinch", "pos": [3.9574, -6.2675, -7.3304], "rot": [-60, 0, 0], "blend": 0.19},
+        {"at": 0.55, "frame": "prop:p9_01_magazine", "point": "pinch", "pos": [3.9574, -6.5603, -6.3096], "rot": [-90, 0, 0], "blend": 0.1},
+        {"at": 0.65, "frame": "prop:p9_01_magazine", "point": "pinch", "pos": [3.9574, -6.5603, -6.3096], "rot": [-90, 0, 0], "blend": 0.15, "hidden": true},
+        {"at": 0.8, "frame": "prop:p9_01_magazine", "point": "pinch", "pos": [3.9574, -6.5603, -6.3096], "rot": [-90, 0, 0], "blend": 0.2, "hidden": true}
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {"at": 0, "target": "prop:9x19mm_round:pinch", "blend": 0, "roll": 0}
+    ],
+    "left": [
+      {"at": 0, "target": "prop:hold_l", "blend": 0, "roll": 0}
+    ]
+  },
+  "events": []
+}

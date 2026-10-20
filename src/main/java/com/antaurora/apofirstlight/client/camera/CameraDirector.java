@@ -145,10 +145,15 @@ public final class CameraDirector {
 
     // ---------------------------------------------------------------- requests
 
-    /** Opens a request (one of the same id is replaced) and starts its fade in. */
+    /**
+     * Opens a request (one of the same id is replaced) and starts its fade in; replacing one that is easing out, the fade
+     * goes on from that one's weight (no jump back to the shot's start).
+     */
     public static void open(Request request) {
+        double from = 0;
+        for (Request r : REQUESTS) if (r.id.equals(request.id)) from = r.fade.weight(r.clock.now(0F));
         REQUESTS.removeIf(r -> r.id.equals(request.id));
-        request.fade.open(request.clock.now(0F));
+        request.fade.open(request.clock.now(0F), from);
         int at = 0;
         while (at < REQUESTS.size() && REQUESTS.get(at).priority <= request.priority) at++;
         REQUESTS.add(at, request);

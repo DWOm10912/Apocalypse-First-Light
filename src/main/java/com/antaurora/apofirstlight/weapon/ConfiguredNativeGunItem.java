@@ -47,7 +47,12 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     }
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
     @Override public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
-        if (!level.isClientSide) NativeGunAmmo.initialize(stack, definition());
+        if (!level.isClientSide) {
+            NativeGunAmmo.initialize(stack, definition());
+            // a reload's magazine swap left behind (logout, a lost session): its bones show the fitted magazine again
+            if (NativeMagazines.swapping(stack) && !(entity instanceof net.minecraft.server.level.ServerPlayer p
+                    && NativeGunActions.reloading(p, stack))) NativeMagazines.endSwap(stack);
+        }
     }
     @Override public boolean shouldCauseReequipAnimation(ItemStack a, ItemStack b, boolean changed) {
         if (changed || a.getItem() != b.getItem() || a.getCount() != b.getCount()) return true;

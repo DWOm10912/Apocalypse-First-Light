@@ -76,7 +76,11 @@ public final class StackMassCalculator {
                     boolean active = !NativeAttachments.active(stack, slot).isEmpty();
                     if (slot == NativeAttachment.Slot.MAGAZINE) {
                         if (active) out.add("magazine", calculate(stored, data, depth + 1, elements));
-                        else {
+                        // a gun that loads from magazine items without one fitted: no magazine
+                        else if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition)
+                                && com.antaurora.apofirstlight.weapon.NativeMagazines.fitted(stack, definition).isEmpty()) {
+                            if (!stored.isEmpty()) out.add("inactive_magazine", calculate(stored, data, depth + 1, elements));
+                        } else {
                             unit(out, "magazine", configured == null ? fallback : configured.magazine(), 1);
                             if (!stored.isEmpty()) out.add("inactive_magazine", calculate(stored, data, depth + 1, elements));
                         }

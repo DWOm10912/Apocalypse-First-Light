@@ -30,7 +30,8 @@ public final class AflItems {
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "p9_01"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("p9_01_v3_native", "static_idle",
                             java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty",
-                                    "reload_tactical_ads", "reload_empty_ads", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty"),
+                                    "reload_tactical_ads", "reload_empty_ads", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty",
+                                    "unload", "unload_empty"),
                             java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
@@ -72,6 +73,11 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
+    // P9-01 standard 17-round magazine (docs/native_guns/magazine_system_v1.md): the gun's own magazine bone as an item, cut
+    // from the v3 mesh (tools/build-p9-01-magazine.mjs) and drawn with the gun's texture; replaces no bone (the gun's own
+    // magazine is it); the mount's 22 deg tilt taken out for the item.
+    public static final RegistryObject<Item> P9_01_MAGAZINE = ITEMS.register("p9_01_magazine",
+            () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("p9_01",17,java.util.Set.of(),false,2.16f,22f,"p9_01_v3_native"));
     public static final RegistryObject<Item> P9_01_EXTENDED_MAGAZINE = ITEMS.register("p9_01_extended_magazine",
             com.antaurora.apofirstlight.weapon.NativeMagazineItem::new);
     public static final RegistryObject<Item> BR51_EXTENDED_MAGAZINE_35 = ITEMS.register("br51_extended_magazine_35",

@@ -257,7 +257,7 @@ public final class SkeletonGunStance {
         t.onAnchorO = t.onAnchor;
         boolean aiming = aim(p, 1F) > 0.05F;
         // an ADS reload keeps the aim's raise and grips: its action (shorter than the clip) eases out into the aim (2.7)
-        boolean acting = (t.clip.startsWith("reload") || t.clip.startsWith("inspect"))
+        boolean acting = (t.clip.startsWith("reload") || t.clip.startsWith("inspect") || t.clip.startsWith("unload"))
                 && !t.clip.endsWith(com.antaurora.apofirstlight.weapon.NativeGunActions.ADS_SUFFIX);
         // a hip-fire idle loop (docs/dev/p9_stance_loops_v1.md) is already held out on the crosshair: a shot leaves it there
         PlayerAction idle = loops(hand).idle();
@@ -291,9 +291,9 @@ public final class SkeletonGunStance {
             double window = t.drawStart + t.drawLength - t.drawBegin;
             return id == null ? null : new GunAction(id, t.drawBegin, (float) (t.drawLength / Math.max(0.05, window)));
         }
-        // a reload or an inspect (docs/dev/p9_reload_inspect_v1.md 3): gun/<id path>_<clip>, from the clip's start at its
+        // a reload, an inspect or an unload (docs/dev/p9_reload_inspect_v1.md 3): gun/<id path>_<clip>, from the clip's start at its
         // speed (the action is as long as the clip), while the clip runs
-        if (holds(p) && (t.clip.startsWith("reload") || t.clip.startsWith("inspect"))) {
+        if (holds(p) && (t.clip.startsWith("reload") || t.clip.startsWith("inspect") || t.clip.startsWith("unload"))) {
             String id = actionId(p.getMainHandItem(), "_" + t.clip);
             if (id == null) return null;
             // an action may end before its clip (an ADS reload is back on the sights early, 2.7): it then eases out into the aim

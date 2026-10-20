@@ -95,6 +95,7 @@
   - 渲染脚本拍完会检查模型有没有碰到画面边缘，碰到就缩小重拍，避免裁边。
   - R2 上第一版那 7 张背面朝前的大图没有删（上传工具只新建、不删除），页面已经不再引用它们。
   - 不该出现的部件用 `hide`（正则）隐藏：配电箱隐藏上下接线口和穿线管，充电站隐藏亮灯。
+  - P9-01 17 发弹匣（2026-10-19）没有自己的 bbmodel：用 `p9_01_v3_native.bbmodel`，`hide` 掉枪身、滑套、换弹用的两份弹匣，只留 `magazine` 组的三个部件。`rot` [170.257, 40.967, -159.464] = 物品栏角度 [20, 135, 0] 再乘上物品渲染器把弹匣扳正的 +22°（绕 x）。还没渲染，方向没看过；Blockbench 里开着别的工程时不要跑渲染脚本（它会先关掉所有工程）。
 - 流程（在 `wiki/` 里）：
   1. `node scripts/icons.mjs jobs`：给缺图或过期的 ID 写 `design/wiki/icons/jobs.json`。
   2. 在 Blockbench 里跑 `tools/blockbench/wiki_icons.js`：需要先用 Blockbench MCP 建一个 1024×1024 的离屏视图 `icon`，再 `eval` 这个文件并执行 `__aflWikiIcons.run()`。脚本逐个打开模型，用正交相机按物品的展示旋转拍一张透明底 PNG，存到 `design/wiki/icons/raw/<id>.png`，并在 `raw/manifest.json` 里记下源文件签名。

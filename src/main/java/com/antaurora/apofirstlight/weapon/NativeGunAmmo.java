@@ -44,7 +44,12 @@ public final class NativeGunAmmo {
         initialize(gun, definition);   // the count first, so the ammo data always holds it
         gun.getOrCreateTag().getCompound(ROOT).putBoolean(CHAMBERED, chambered);
     }
+    /**
+     * The most rounds the gun holds. A gun that loads from magazine items (NativeMagazines): the fitted magazine and the
+     * chamber (P9-01 standard: 17 + 1), the chamber alone without a magazine.
+     */
     public static int capacity(ItemStack gun,NativeGunDefinition definition){
+        if(NativeMagazines.system(definition))return NativeMagazines.capacity(gun,definition);
         var attachment=NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE);
         return attachment.getItem() instanceof NativeMagazineItem m?m.capacity():definition.magazineCapacity();
     }
@@ -53,6 +58,11 @@ public final class NativeGunAmmo {
         CompoundTag copy = stack.hasTag() ? stack.getTag().copy() : new CompoundTag();
         copy.remove(ROOT);
         copy.remove(NativeFireModes.TAG);
+        // the fitted magazine of a gun that loads from magazine items changes with every reload
+        if (NativeMagazines.system(stack) && copy.contains("AflAttachments", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            copy.getCompound("AflAttachments").remove(NativeAttachment.Slot.MAGAZINE.name());
+            if (copy.getCompound("AflAttachments").isEmpty()) copy.remove("AflAttachments");
+        }
         return copy;
     }
 
@@ -65,6 +75,7 @@ public final class NativeGunAmmo {
 
     public static void initialize(ItemStack gun, NativeGunDefinition definition) {
         NativeFireModes.sanitize(gun,definition);
+        NativeMagazines.normalize(gun, definition);
         // A new gun is written as empty (read gives 0 without data). Preserve zero and existing states; sanitize
         // corrupt/out-of-range data rather than refill it.
         int count = read(gun, definition);
@@ -111,7 +122,10 @@ public final class NativeGunAmmo {
         return result;
     }
 
-    /** Recompute at mag-in on the server thread; no ammo is reserved or removed at reload start. */
+    /**
+     * Recompute at mag-in on the server thread; no ammo is reserved or removed at reload start. Loose rounds into the
+     * gun: only for guns that do not load from magazine items (NativeMagazines#swap does theirs).
+     */
     public static int transfer(Inventory inventory, ItemStack gun, NativeGunDefinition definition) {
         int current = read(gun, definition), remaining = capacity(gun,definition) - current;
         if (infiniteReserve(inventory)) {

@@ -77,6 +77,12 @@
   },
   "p9_01_magazine_release": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_release"]},
   "p9_01_magazine_seat": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_seat"]},
+  "p9_01_mag_load": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.mag_load", "sounds": [
+    {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_1", "attenuation_distance": 8},
+    {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_2", "attenuation_distance": 8},
+    {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_3", "attenuation_distance": 8}]},
+  "p9_01_mag_load_last": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.mag_load", "sounds": [
+    {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_last", "attenuation_distance": 8}]},
   "p9_01_slide_back": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_slide_back"]},
   "p9_01_slide_release": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_slide_release"]},
   "p9_01_foley_raise": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_foley_raise"]},

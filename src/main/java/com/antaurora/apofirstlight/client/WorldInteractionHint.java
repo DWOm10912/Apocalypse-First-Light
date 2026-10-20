@@ -115,12 +115,24 @@ public final class WorldInteractionHint {
         else if(!mc.player.isSpectator() && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
                 && hit.getEntity() instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse)
             target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
+        // a magazine in the hand (weapon/NativeMagazineLoading): a click starts loading it from the loose rounds carried, or stops
+        if(target==null&&!mc.player.isSpectator()) target=heldMagazine(mc);
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;
         int w=event.getWindow().getGuiScaledWidth(),h=event.getWindow().getGuiScaledHeight();
         float[] at=anchor==null?null:project(anchor,w,h);
         AttachmentHintStyle.draw(event.getGuiGraphics(),keys,label,at==null?w/2:Math.round(at[0]),at==null?h/2:Math.round(at[1]),w,fade);
+    }
+
+    private static Target heldMagazine(Minecraft mc) {
+        var stack=mc.player.getMainHandItem();
+        if(!(stack.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeMagazineItem m)||m.roundGun()==null) return null;
+        if(com.antaurora.apofirstlight.weapon.NativeMagazines.loadingSince(stack)>=0)
+            return new Target(Component.translatable("hint.apocalypse_firstlight.magazine.stop"),null);
+        if(com.antaurora.apofirstlight.weapon.NativeMagazines.rounds(stack)>=m.capacity()
+                ||com.antaurora.apofirstlight.weapon.NativeGunAmmo.reserve(mc.player.getInventory(),m.roundGun())<=0) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.magazine.load"),null);
     }
 
     private static com.antaurora.apofirstlight.vehicle.PickupTruckEntity truckOf(net.minecraft.world.entity.Entity entity) {

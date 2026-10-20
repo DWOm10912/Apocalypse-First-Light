@@ -43,7 +43,14 @@ public final class AttachmentInteractionCore {
         NativeAttachments.writeStored(updated,target,next);
         var returns=new java.util.ArrayList<ItemStack>();
         if(!old.isEmpty())returns.add(old.copy());
-        if(target==NativeAttachment.Slot.MAGAZINE){
+        if(target==NativeAttachment.Slot.MAGAZINE&&NativeMagazines.system(definition)){
+            // magazines keep their rounds (NativeMagazines): the fitted one comes off with what is left in it, the new one
+            // goes in with its own; the chambered round stays
+            returns.clear();
+            var out=NativeMagazines.takenOut(gun,definition);
+            if(!out.isEmpty())returns.add(out);
+            NativeMagazines.fit(updated,definition,remove?ItemStack.EMPTY:next,remove?0:NativeMagazines.rounds(source));
+        }else if(target==NativeAttachment.Slot.MAGAZINE){
             int excess=Math.max(0,loaded-NativeGunAmmo.capacity(updated,definition));
             NativeGunAmmo.set(updated,definition,loaded);
             if(excess>0)returns.add(new ItemStack(java.util.Objects.requireNonNull(

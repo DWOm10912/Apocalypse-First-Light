@@ -427,7 +427,11 @@ public final class PlayerSkeleton {
         out.slim = in.slim;
         float body = bodyYaw(p, partial);
         float head = Mth.rotLerp(partial, p.yHeadRotO, p.yHeadRot);
-        float pitch = Mth.lerp(partial, p.xRotO, p.getXRot());
+        Minecraft mc = Minecraft.getInstance();
+        Camera camera = mc.gameRenderer.getMainCamera();
+        boolean firstPerson = d.world && p == mc.player && !camera.isDetached();
+        // the own first person while an action's look turns the camera alone (FirstPersonActionView): posed to the camera's pitch
+        float pitch = firstPerson && FirstPersonActionView.looking() ? camera.getXRot() : Mth.lerp(partial, p.xRotO, p.getXRot());
         boolean crouching = p.isCrouching();
         float crouch = s != null ? Mth.lerp(partial, s.crouchO, s.crouch) : crouching ? 1 : 0;
         float speed = Math.min(1F, p.walkAnimation.speed(partial));
@@ -448,9 +452,6 @@ public final class PlayerSkeleton {
         in.chestPitch = HumanoidPoser.chestPitch(pitch, SkeletonGunStance.gunUp(p, partial));
         // the eye: the camera's own position for the own first-person body, the entity's eye height otherwise
         Vec3 eye;
-        Minecraft mc = Minecraft.getInstance();
-        Camera camera = mc.gameRenderer.getMainCamera();
-        boolean firstPerson = d.world && p == mc.player && !camera.isDetached();
         Vec3 offset = mc.getEntityRenderDispatcher().getRenderer(p).getRenderOffset(p, partial);
         Vec3 origin = new Vec3(Mth.lerp(partial, p.xOld, p.getX()), Mth.lerp(partial, p.yOld, p.getY()),
                 Mth.lerp(partial, p.zOld, p.getZ())).add(offset);
@@ -488,7 +489,8 @@ public final class PlayerSkeleton {
         // a player action: its clips, step and facing before the body. With a gun up only the gun's own draw and put-away
         // (the gun has both hands), and those only with it (docs/dev/p9_draw_holster_actions_v1.md 2.4)
         ActionPose.Moment action = seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
-        if (action != null && gun != action.action.id.startsWith("gun/")) action = null;
+        // (by its source, not its id: the magazine loading gun/<gun>_mag_load is no gun's own, user 2026-10-20 "左手从来就没有出现过")
+        if (action != null && gun != SkeletonActions.gunAction(p)) action = null;
         if (action != null) action.view = ActionPose.viewFrame(eyeModel, in.viewYaw, in.viewPitch);   // a gun's own: its stance's
         // the own first-person body leaves an action that keeps its view model alone (the view model is the hands)
         if (action != null && firstPerson && action.action.firstPerson == PlayerAction.FirstPerson.VIEW_MODEL) action = null;
@@ -619,7 +621,8 @@ public final class PlayerSkeleton {
      */
     public static boolean firstPersonHands(Player p) {
         if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
-        if (SkeletonActions.drawsFirstPerson(p)) return true;
+        // the own one once the held item's view model has slid out of view (FirstPersonActionView), the two never at once
+        if (SkeletonActions.drawsFirstPerson(p) && (p != Minecraft.getInstance().player || FirstPersonActionView.bodyHands())) return true;
         if (p.isUsingItem()) return false;
         return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty();
     }
@@ -628,7 +631,8 @@ public final class PlayerSkeleton {
     public static void hand(RenderHandEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !enabled() || !FirstPersonBody.shown(mc.gameRenderer.getMainCamera())) return;
-        if (firstPersonHands(mc.player)) event.setCanceled(true);
+        // an ordinary held item handed over to the body looking down (FirstPersonBody#itemOnBody): the body's hand holds it
+        if (firstPersonHands(mc.player) || FirstPersonBody.itemOnBody()) event.setCanceled(true);
     }
 
     // ---------------------------------------------------------------- vanilla parts

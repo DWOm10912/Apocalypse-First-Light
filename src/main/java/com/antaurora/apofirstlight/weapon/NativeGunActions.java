@@ -28,6 +28,14 @@ public final class NativeGunActions {
     private static final Map<ServerPlayer, Long> NEXT_DRY_FIRE = new WeakHashMap<>();
     private static final Map<ServerPlayer, ItemStack> EQUIPPED = new WeakHashMap<>();
     public static final int DRY_FIRE_COOLDOWN = 6;
+    /**
+     * The unload's swap (docs/native_guns/magazine_system_v1.md 3.1): this many ticks into the unload clip the magazine,
+     * caught in the support hand, becomes the held item (tools/author-p9-01-v3-native-animations.mjs UNLOAD.swap, 1.05 s;
+     * the gun is off screen by then). Cut short before it, the magazine stays in the gun.
+     */
+    public static final int UNLOAD_SWAP_TICK = 21;
+    /** Guns just unloaded into the hand: their clip already put them away, the switch plays no put_away of its own. */
+    private static final java.util.Set<ItemStack> UNLOADED = java.util.Collections.newSetFromMap(new WeakHashMap<>());
 
     private static final class Session {
         ItemStack stack;
@@ -45,6 +53,7 @@ public final class NativeGunActions {
         boolean inPlayed;
         boolean lastShot;
         boolean lockHandoffPlayed;
+        boolean unload;
         int magInTick;
         int slot;
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
@@ -54,7 +63,7 @@ public final class NativeGunActions {
 
     public static void clearForDataReload() {
         NativeFireControl.clear();
-        SESSIONS.forEach((p,s)->s.item.stopTriggeredAnim(p,s.id,NativeGunItem.ACTION_CONTROLLER,s.clip));
+        SESSIONS.forEach((p,s)->{s.item.stopTriggeredAnim(p,s.id,NativeGunItem.ACTION_CONTROLLER,s.clip);if(s.reload)NativeMagazines.endSwap(s.stack);});
         SESSIONS.clear(); NEXT_FIRE.clear(); NEXT_DRY_FIRE.clear();
     }
 
@@ -73,6 +82,12 @@ public final class NativeGunActions {
     }
 
     public static String animationName(boolean reload) { return reload ? "reload_tactical" : "shoot"; }
+
+    /** A reload of this stack is under way for the player (its going-out and coming-in magazines stay shown). */
+    public static boolean reloading(ServerPlayer player, ItemStack stack) {
+        Session s = SESSIONS.get(player);
+        return s != null && s.reload && s.stack == stack;
+    }
 
     /** Read-only guard for atomic attachment changes, sharing the existing action lock. */
     public static boolean busy(ServerPlayer player) { return SESSIONS.containsKey(player); }
@@ -95,7 +110,7 @@ public final class NativeGunActions {
         state.end = state.start + NativeGunAnimations.ticks(item.animationAsset(), state.clip);
         state.operation = true; state.slot = player.getInventory().selected;
         state.dimension = player.level().dimension();
-        state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
+        state.cues.addAll(magazineCues(NativeGunAnimations.cues(item.animationAsset(), state.clip), state.stack, item, state.clip));
         SESSIONS.put(player, state); syncInventory(player);
         item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         return true;
@@ -136,7 +151,14 @@ public final class NativeGunActions {
         // Shot cadence follows the stack's current fire mode (fire.mode_overrides.<mode>.interval_ticks).
         int interval = definition.fireIntervalTicks();
         if (reload) {
-            if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)
+            // a gun that loads from magazine items: a fuller magazine in the rig or the pockets (NativeMagazines),
+            // else the fitted one out into the hand, to be loaded there
+            if (NativeMagazines.system(definition)) {
+                if (!NativeMagazines.canReload(player, held, definition)) {
+                    if (NativeMagazines.ejectable(player, held, definition)) unload(player, held, item, slot);
+                    return;
+                }
+            } else if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)
                     || NativeGunAmmo.reserve(player.getInventory(), definition) == 0) return;
         } else {
             if (now < NEXT_FIRE.getOrDefault(player, 0L)) return;
@@ -152,6 +174,8 @@ public final class NativeGunActions {
             if (!NativeGunAmmo.consumeOne(held, definition)) return;
             int ammoAfter = NativeGunAmmo.read(held, definition);
             if (ammoAfter == 0) NativeGunAmmo.setChambered(held, definition, false);   // the last round leaves the chamber empty
+            // the slide feeds the next round from the magazine: chambered while any are left (NativeMagazines: 16+1)
+            else if (NativeMagazines.system(definition) && !NativeGunAmmo.chambered(held)) NativeGunAmmo.setChambered(held, definition, true);
             NEXT_FIRE.put(player, now + interval);
             // This transition is authoritative because it is observed immediately around consumeOne.
             // Store it on the accepted shot session; clients never infer the last round themselves.
@@ -178,9 +202,11 @@ public final class NativeGunActions {
                 && com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunTier(player, definition.weaponClass()) >= 2
                 && NativeGunAnimations.hasClip(item.animationAsset(), state.clip + ADS_SUFFIX))
             state.clip += ADS_SUFFIX;
-        if (reload && item.animationAsset() != null) state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
+        if (reload && item.animationAsset() != null)
+            state.cues.addAll(magazineCues(NativeGunAnimations.cues(item.animationAsset(), state.clip), held, item, state.clip));
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);
+        if (reload && NativeMagazines.system(definition)) NativeMagazines.beginSwap(player, held, definition);
         if (reload) com.antaurora.apofirstlight.stamina.PlayerStamina.reload(player, definition.id());
         // Deliver the per-stack render identity before its animation trigger.
         syncInventory(player);
@@ -216,10 +242,11 @@ public final class NativeGunActions {
             Session interrupted = SESSIONS.get(player);
             if (interrupted != null && interrupted.stack != held) {
                 SESSIONS.remove(player);
+                if (interrupted.reload) NativeMagazines.endSwap(interrupted.stack);
                 interrupted.item.stopTriggeredAnim(player, interrupted.id, NativeGunItem.ACTION_CONTROLLER, interrupted.clip);
             }
             if (old != null && old.getItem() instanceof NativeGunItem outgoing
-                    && outgoing.animationAsset() != null) {
+                    && outgoing.animationAsset() != null && !UNLOADED.remove(old)) {
                 // Vanilla may stop rendering the old stack before the complete clip is visible.
                 long id = GeoItem.getOrAssignId(old, player.serverLevel());
                 outgoing.triggerAnim(player, id, NativeGunItem.ACTION_CONTROLLER, "put_away");
@@ -238,6 +265,7 @@ public final class NativeGunActions {
             state.item.stopTriggeredAnim(player, state.id,
                     NativeGunItem.ACTION_CONTROLLER, state.clip);
             SESSIONS.remove(player);
+            if (state.reload) NativeMagazines.endSwap(state.stack);
             NativeFireControl.cancel(player);
             return;
         }
@@ -261,7 +289,7 @@ public final class NativeGunActions {
             // The authored magazine-in time is part of each gun's presentation definition (or the magazine's override).
             long ammoCommitTick = state.start + state.magInTick;
             if (!state.inPlayed && now >= ammoCommitTick) {
-                if (NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition()) > 0)
+                if (load(player, state.stack, state.item.definition()))
                     com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunReload(player, state.item.definition().weaponClass());
                 syncInventory(player);
                 state.inPlayed = true;
@@ -272,7 +300,7 @@ public final class NativeGunActions {
                 state.outPlayed = true;
             }
             if (!state.inPlayed && now >= state.start + state.item.definition().magInTick()) {
-                if (NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition()) > 0)
+                if (load(player, state.stack, state.item.definition()))
                     com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunReload(player, state.item.definition().weaponClass());
                 syncInventory(player);
                 sound(player, AflSounds.NATIVE_GUN_MAGAZINE_IN.get());
@@ -285,6 +313,13 @@ public final class NativeGunActions {
         }
         if (now >= state.end) {
             SESSIONS.remove(player);
+            if (state.unload) {
+                // the swap: the magazine leaves the gun for the hand (the gun to its weapon position, Loadout#toHand)
+                NativeMagazines.eject(player, state.stack, state.item.definition());
+                if (player.getMainHandItem() != state.stack) UNLOADED.add(state.stack);
+                return;
+            }
+            if (state.reload) NativeMagazines.endSwap(state.stack);
             // completed only: a first draw or an empty reload cut short leaves the slide where it was, unchambered
             if (state.clip.equals(FIRST_DRAW) || state.reload && state.reloadStartedEmpty
                     && NativeGunAmmo.read(state.stack, state.item.definition()) > 0) {
@@ -295,12 +330,65 @@ public final class NativeGunActions {
         } finally { NativeFireControl.tick(player); }
     }
 
+    /**
+     * The reload key with no fuller magazine (docs/native_guns/magazine_system_v1.md 3.1): the gun's unload clip (unload_empty
+     * with the slide locked back), its own sounds, the magazine into the hand at {@link #UNLOAD_SWAP_TICK}. A gun without the
+     * clip hands it over at once, with its magazine-out sound.
+     */
+    private static void unload(ServerPlayer player, ItemStack held, NativeGunItem item, int slot) {
+        NativeGunDefinition definition = item.definition();
+        String clip = NativeGunAmmo.read(held, definition) == 0 ? "unload_empty" : "unload";
+        if (item.animationAsset() == null || !item.supportsClip(clip) || !NativeGunAnimations.hasClip(item.animationAsset(), clip)) {
+            if (!NativeMagazines.eject(player, held, definition)) return;
+            var out = net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(
+                    ApocalypseFirstLight.MOD_ID, definition.id().getPath() + "_magazine_out"));
+            if (out != null) sound(player, out);
+            return;
+        }
+        NativeFireControl.cancel(player);
+        Session state = new Session();
+        state.stack = held; state.item = item;
+        state.id = GeoItem.getOrAssignId(held, player.serverLevel());
+        state.start = player.server.getTickCount();
+        state.end = state.start + UNLOAD_SWAP_TICK;
+        state.clip = clip;
+        state.operation = true; state.unload = true; state.slot = slot;
+        state.dimension = player.level().dimension();
+        state.cues.addAll(magazineCues(NativeGunAnimations.cues(item.animationAsset(), clip), held, item, clip));
+        SESSIONS.put(player, state); syncInventory(player);
+        item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, clip);
+    }
+
+    /** The reload's magazine-in: a magazine swap (NativeMagazines) or loose rounds; whether anything went in. */
+    private static boolean load(ServerPlayer player, ItemStack gun, NativeGunDefinition definition) {
+        if (NativeMagazines.system(definition)) return NativeMagazines.swap(player, gun, definition);
+        return NativeGunAmmo.transfer(player.getInventory(), gun, definition) > 0;
+    }
+
     // Bound to the player entity (ClientboundSoundEntityPacket -> EntityBoundSoundInstance), not to the position the
     // action started at: a long mono action sound (HR55 reload_empty 3 s, inspect 6 s) follows the shooter instead of
     // staying behind when they turn and walk away. Same source, volume, pitch and audible range as before. Not the shot
     // itself: that one is heard as far as its noise (noise/RangedSound, 2026-10-09).
     private static void sound(ServerPlayer player, SoundEvent sound) {
         player.serverLevel().playSound(null, player, sound, SoundSource.PLAYERS, 1.0F, 1.0F);
+    }
+
+    /**
+     * A clip's sounds without the magazine the gun does not have (magazine-item guns, NativeMagazines; user 2026-10-20: a
+     * magazine pushed into an empty gun played the old one's release and pull-out): with no magazine fitted a reload has
+     * no {@code <gun>_magazine_release} / {@code _magazine_out}, an inspect none of its four magazine sounds.
+     */
+    private static java.util.List<NativeGunAnimations.Cue> magazineCues(java.util.List<NativeGunAnimations.Cue> cues, ItemStack gun,
+            NativeGunItem item, String clip) {
+        var definition = item.definition();
+        if (!NativeMagazines.system(definition) || !NativeMagazines.fitted(gun, definition).isEmpty()) return cues;
+        boolean inspect = isInspect(clip);
+        cues.removeIf(c -> {
+            String path = c.sound().getPath();
+            return path.endsWith("_magazine_release") || path.endsWith("_magazine_out")
+                    || inspect && (path.endsWith("_magazine_in") || path.endsWith("_magazine_seat"));
+        });
+        return cues;
     }
 
     private static boolean isInspect(String clip) {
@@ -318,7 +406,8 @@ public final class NativeGunActions {
     public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             NativeFireControl.logout(player);
-            SESSIONS.remove(player);
+            Session s = SESSIONS.remove(player);
+            if (s != null && s.reload) NativeMagazines.endSwap(s.stack);
             NEXT_FIRE.remove(player);
             NEXT_DRY_FIRE.remove(player);
             EQUIPPED.remove(player);

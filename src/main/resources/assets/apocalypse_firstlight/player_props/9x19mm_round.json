@@ -1,0 +1,13 @@
+{
+  "about": "A loose 9x19 mm round in the fingers while a magazine is loaded (gun/p9_01_mag_load; docs/native_guns/magazine_system_v1.md 4): the round item as client/AflStaticMeshItemClient draws it (upright, base at y 0.451463, centred on x / z), at the P9-01 prop's scale so it matches the magazine. Points: base, mid, tip, and pinch: where the right hand's palm is while it holds the round (1.7 px behind the base along the round, 1.5 px off it on +z), so the round shows past the fingertips (the palm is 1.5 px short of the hand's end, skeleton/GunStance#PALM_Y). Symmetry x (round about its axis), for the mirrored loading.",
+  "items": ["9x19mm_round"],
+  "scale": 0.49467,
+  "symmetry": "x",
+  "bounds": [[0.48, 0.4515, 0.48], [0.52, 0.5485, 0.52]],
+  "points": {
+    "base": [0.5, 0.4515, 0.5],
+    "mid": [0.5, 0.5, 0.5],
+    "tip": [0.5, 0.5485, 0.5],
+    "pinch": [0.5, 0.2367, 0.6895]
+  }
+}

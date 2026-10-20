@@ -118,7 +118,7 @@
 | 0 | 原版眼睛 |
 | 100 | 环绕镜头（2026-10-18，`client/camera/OrbitCamera`，替代原版 F5；见 `orbit_camera_v1.md`） |
 | 200 | 机器 QTE（拉绳弯腰） |
-| 300 | 骨架身体眼睛（走近） |
+| 300 | 骨架身体眼睛（走近）；坐车乘员（`SeatedRiders`）；身体动作的低头（2026-10-20，`client/skeleton/FirstPersonActionView`，id `skeleton_action_look`，见 `docs/rendering/first_person_body_v1.md` 3.5.2） |
 | 400 | 界面视角（检修台） |
 | 500 | 过场（开局动画，以后的剧情镜头） |
 | 600 | 死亡镜头（布娃娃 V1 R-C，`client/survivor/DeathCamera`，2026-10-16 写好，未实机确认；见 `ragdoll_v1_plan.md` 第 4 节） |
@@ -320,6 +320,10 @@
 - **输入锁、界面模式**：代码在，没有请求用它们，所以现在不生效。界面模式只做了 `NORMAL` / `NO_HANDS` / `NO_HUD`；`CINEMA`、黑边、黑场、跳过、分离镜头都跟开局动画一起推迟。
 - **FOV**：请求带 FOV 时在 `ComputeFov` 的 LOW 优先级里缓入（`ViewFov` 在 LOWEST 记录最终值）；现在没有请求带 FOV。
 - 没有新网络包，协议号仍是 47。
+
+- **2026-10-20 补充**：
+  - 新的镜头源：第一人称身体动作的低头（`FirstPersonActionView`）。动作带 `first_person_pitch` 时，0.45 s 淡入把俯仰压到至少这个角度，停止时 0.45 s 淡出；只改镜头，不改玩家朝向。
+  - 同 id 的请求在淡出时又被打开，新请求从旧请求当时的权重接着淡入（`CameraFade#open(now, weight)`，用 smoothstep 的反函数算起点），以前是从 0 重新淡入，画面会跳一下。对所有请求生效：环绕镜头、坐车、死亡镜头在淡出中重新打开时也不再跳。编译通过，没进游戏看过。
 
 ### 8.3 和方案不同的地方
 

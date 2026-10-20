@@ -41,7 +41,10 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
             pose.last().normal().mul(new org.joml.Matrix3f(at).normal());
             skeletonPartDepth++;
             try {
-                super.renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
+                // a magazine prop shows its own magazine (NativeMagazineRendering: another type, or none)
+                if(NativeMagazineRendering.replaces(currentItemStack,bone))
+                    renderReplacedMagazine(pose,item,bone,type,buffers,reRender,partial,light,overlay,red,green,blue,alpha);
+                else super.renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
             } finally {
                 skeletonPartDepth--;
                 pose.popPose();
@@ -82,13 +85,19 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
         if(renderPerspective!=null&&renderPerspective.firstPerson()&&!reRender)
             FieldAttachmentHotspots.capture(currentItemStack,bone,pose);
         if(NativeMagazineRendering.replaces(currentItemStack,bone)){
-            pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
-            if(!bone.isHidden())NativeMagazineRendering.render(currentItemStack,bone,pose,buffers,light,overlay);
-            if(!NativeMagazineRendering.replacesSubtree(currentItemStack)&&!bone.isHidingChildren())
-                for(var child:bone.getChildBones())renderRecursively(pose,item,child,type,buffers,buffers.getBuffer(type),reRender,partial,light,overlay,red,green,blue,alpha);
-            pose.popPose();buffers.getBuffer(type);return;
+            renderReplacedMagazine(pose,item,bone,type,buffers,reRender,partial,light,overlay,red,green,blue,alpha);
+            return;
         }
         super.renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
+    }
+    /** A magazine bone drawn as its magazine (NativeMagazineRendering), its children unless that magazine replaces them. */
+    private void renderReplacedMagazine(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,
+            boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
+        pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
+        if(!bone.isHidden())NativeMagazineRendering.render(currentItemStack,bone,pose,buffers,light,overlay);
+        if(!NativeMagazineRendering.replacesSubtree(currentItemStack,bone)&&!bone.isHidingChildren())
+            for(var child:bone.getChildBones())renderRecursively(pose,item,child,type,buffers,buffers.getBuffer(type),reRender,partial,light,overlay,red,green,blue,alpha);
+        pose.popPose();buffers.getBuffer(type);
     }
     public NativeAnimatedWeaponRenderer(NativeAnimatedWeaponItem.Profile profile) {
         super(new GeoModel<>() {

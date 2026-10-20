@@ -15,7 +15,14 @@ public final class CameraFade {
     }
 
     public void open(double now) {
-        openedAt = now;
+        open(now, 0);
+    }
+
+    /** Opens from {@code weight} (0..1): a request opened again while it eased out goes on from where it stood. */
+    public void open(double now, double weight) {
+        // the smoothstep's inverse: the time into the ease-in that has this weight
+        double w = Math.max(0, Math.min(1, weight));
+        openedAt = now - in * (0.5 - Math.sin(Math.asin(1 - 2 * w) / 3));
         closedAt = Double.NaN;
     }
 

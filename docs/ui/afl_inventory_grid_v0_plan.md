@@ -43,7 +43,7 @@
 |---|---|
 | 负重 | 口袋里的东西作为新的来源计入；胸挂、背包里的东西跟着那件装备一起算（负重计算本来就会读物品里的 `Items` 列表） |
 | 尸体（幸存者 V0） | 口袋里的东西进尸体；胸挂、背包整件进尸体，里面的东西还在里面 |
-| 换弹找弹匣 / 弹药 | 先找快捷栏，再找口袋、胸挂、背包 |
+| 换弹找弹匣 / 弹药 | 先找快捷栏，再找口袋、胸挂、背包。2026-10-19 起 P9-01 换弹只找胸挂和口袋里的弹匣物品（不找背包、快捷栏、主物品栏），压弹的散装子弹可以从任何地方拿，含背包。2026-10-20 起没有更满的弹匣时，换弹键把枪里的弹匣取下来放进「手」格（`Loadout#toHand`：先离开当前位置、「手」格原来的东西放回去，枪留在枪位；创造 / 旁观放进第一个空快捷栏格）（[magazine_system_v1.md](../native_guns/magazine_system_v1.md) 第 3.1 节，未提交，没进游戏看过） |
 | 电池供电、物品污染 | 网格里的东西也算 |
 | 锁定栏位 | 规则换成“按格子和物品判断”：武器栏只收对应武器；已经在武器栏里的非武器（旧存档）算溢出，能取不能放 |
 | 创造模式 | 创造模式物品栏不改；网格里的东西照样保存，只是在创造模式里看不到 |
@@ -262,7 +262,7 @@
 |---|---|
 | `inventory/HotbarRoles.java` | 四个位置、`accepts`（背带、枪套条件）、`holsterWorn` |
 | `inventory/PlayerStorageCapacity.java` | 生存开放 4 格；拒收按 `HotbarRoles.accepts` |
-| `inventory/grid/Loadout.java` | 绑定和手上的状态、按键、每 tick 规则（接上、切走放回、整理溢出）、预留格子、同步 |
+| `inventory/grid/Loadout.java` | 绑定和手上的状态、按键、每 tick 规则（接上、切走放回、整理溢出）、预留格子、同步；`toHand` 把东西放进手里（2026-10-20，取下的弹匣） |
 | `inventory/grid/GunSling.java`、`GunSlingItem.java`、`PistolHolsterItem.java` | 背带标记和两件新物品（枪套是 Curios 物品，右键穿上） |
 | `inventory/grid/GridStorage.java`、`PlayerGrids.java` | 预留格子（`Reserved`）；`View.insert` / `freeCells` |
 | `inventory/grid/GridActions.java`、`GridPackets.java` | 新操作 `BIND`、`UNBIND`、`SLING`；包 `LoadoutSync`、`UseBind` |

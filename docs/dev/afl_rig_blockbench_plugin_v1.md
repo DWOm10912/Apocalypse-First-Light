@@ -56,6 +56,7 @@ P2 的枪械动画实机 NOT PASS（[player_skeleton_v1_design.md](player_skelet
 | `src/test/resources/assets/apocalypse_firstlight/player_props/afl_rig_test_pistol.json`、`afl_rig_test_magazine.json` | 测试动作用的两个道具（手枪、弹匣），数值是随手定的 |
 | `src/test/java/com/antaurora/apofirstlight/skeleton/GunPropExport.java`、`build.gradle` 任务 `gunPropExport` | 从枪的模型生成枪道具文件 `player_props/<枪>.json`（第 11.1 节） |
 | `src/main/resources/assets/apocalypse_firstlight/player_props/p9_01.json` | P9 枪道具（`gunPropExport` 生成） |
+| `src/main/blockbench/player_actions/p9_01_mag_load.bbmodel` | P9 弹匣压弹 `gun/p9_01_mag_load` 的插件工程（2026-10-19，我通过 MCP 做的）：弹匣、子弹两个道具，弹匣道具组里有不导出的游戏网格外观 `look_*`（按物品渲染器的摆法：竖直、枢轴在物品 (0.5, 0.635, 0.5)）。见 [magazine_system_v1.md](../native_guns/magazine_system_v1.md) 第 4 节 |
 | `src/main/blockbench/player_actions/p9_01_actions.bbmodel` | P9 全部动作的 Blockbench 工程（插件工程）：掏枪、收枪、待机、冲刺，以及不导出的低位待机草稿 `gun.p9_01_idle_low`、`gun.p9_01_idle_b`。2026-10-17 前叫 `p9_01_draw_holster.bbmodel`。2026-10-17 晚用插件 `importAction` 把仓库里第四、五轮的四个动作 JSON 重新导入并保存（之前工程里还是第三轮的关键帧，见 [p9_stance_loops_v1.md](p9_stance_loops_v1.md) 第 7 节） |
 
 ## 3. 怎么用
@@ -437,7 +438,7 @@ node tools/blockbench/afl_rig_check.mjs
 - `AflRigParity` 加了 `gun/p9_01_draw`、`gun/p9_01_holster`：对拍覆盖 `carry` 预览、大小插值、握把锁手（第 7 节）。
 - ActionCheck 加了 7 个 P9 场景（p9 文档第 4.1 节）。
 - 限制：插件里没有实际挂点，`carry` 永远是预览值；游戏开发环境第一次用到时比一次，差超过 0.05 px 写日志警告（`SkeletonGunStance.checkCarry`）。
-- 2026-10-17 又加了 `gun/p9_01_reload_tactical`、`gun/p9_01_reload_empty`、`gun/p9_01_inspect`（对拍一致），ActionCheck 加了 16 个换弹、检视场景（[p9_reload_inspect_v1.md](p9_reload_inspect_v1.md) 第 7 节）。同日加了瞄准时换弹 `gun/p9_01_reload_tactical_ads`（对拍一致）、`gun/p9_01_reload_empty_ads` 和 9 个场景（第 2.7 节）；它们用 `view` 坐标系加 `view_pitch`，由脚本生成。
+- 2026-10-17 又加了 `gun/p9_01_reload_tactical`、`gun/p9_01_reload_empty`、`gun/p9_01_inspect`（对拍一致），ActionCheck 加了 16 个换弹、检视场景（[p9_reload_inspect_v1.md](p9_reload_inspect_v1.md) 第 7 节）。同日加了瞄准时换弹 `gun/p9_01_reload_tactical_ads`（对拍一致）、`gun/p9_01_reload_empty_ads` 和 9 个场景（第 2.7 节）；它们用 `view` 坐标系加 `view_pitch`，由脚本生成。2026-10-19 加了压弹 `gun/p9_01_mag_load`（插件导出，两个道具、`prop:` 坐标系、`hidden`、`loop: time`）：130 个场景，骨头、道具都差 0.00001 px。同一次运行里 `machine/generator_pull`（骨头最多差 7.9 px）、`tool/crowbar_smash`、`gun/p9_01_draw / holster / sprint`（约 0.5 px）不一致，这几个和这一轮无关，没查。
 
 ### 11.7 枪零件道具 `gun_part`（2026-10-17，未提交）
 

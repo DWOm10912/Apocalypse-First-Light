@@ -248,6 +248,7 @@ public final class AflCreativeTabs {
             AflItems.PISTOL_SUPPRESSOR_01,
             AflItems.RIFLE_SUPPRESSOR_01,
             AflItems.HEAVY_SUPPRESSOR_01,
+            AflItems.P9_01_MAGAZINE,
             AflItems.P9_01_EXTENDED_MAGAZINE,
             AflItems.BR51_EXTENDED_MAGAZINE_35,
             AflItems.BR51_DRUM_MAGAZINE_50);
@@ -298,6 +299,11 @@ public final class AflCreativeTabs {
                         else if (item.get() instanceof com.antaurora.apofirstlight.item.ChannelLetterBlockItem letter) letter.variants().forEach(output::accept);
                         // tunnel fixtures: each egress sign and name plate (Tunnel parts removable V1.1)
                         else if (item.get() instanceof com.antaurora.apofirstlight.item.TunnelFixtureItem fixture) fixture.variants().forEach(output::accept);
+                        // magazine items that hold rounds (NativeMagazines): an empty one and a full one
+                        else if (item.get() instanceof com.antaurora.apofirstlight.weapon.NativeMagazineItem magazine && magazine.roundGun() != null) {
+                            output.accept(magazine);
+                            output.accept(com.antaurora.apofirstlight.weapon.NativeMagazines.full(magazine));
+                        }
                         else output.accept(item.get());
                     }))
                     .build();

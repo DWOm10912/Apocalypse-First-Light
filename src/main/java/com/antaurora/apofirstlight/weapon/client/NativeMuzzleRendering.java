@@ -35,7 +35,9 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
     }
     public static void drawItem(ItemStack item,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
         var model=model(item);if(model==null)return;
-        var geometry=resource(item,"geo/",".geo.json");var texture=resource(item,"textures/item/",".png");
+        var geometry=resource(item,"geo/",".geo.json");var texture=item.getItem() instanceof NativeMagazineItem m&&m.textureAsset()!=null
+                ?new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","textures/item/"+m.textureAsset()+".png")
+                :resource(item,"textures/item/",".png");
         // Pure Mesh accessories: an AFL Hybrid Mesh sidecar for this geo takes precedence; Cube geos keep the Gecko path.
         if(VextrisMeshes.byGeometry(geometry)!=null){
             GeckoMeshRenderer.render(geometry,texture,pose,buffers,light,overlay);return;

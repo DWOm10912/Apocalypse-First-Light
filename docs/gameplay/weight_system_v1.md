@@ -137,6 +137,8 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 
 有效 MAGAZINE 的物品质量只在 magazine 项计算一次，不进入普通附件项；没有有效 MAGAZINE 时取枪定义默认空匣质量。若有失效但仍 stored 的弹匣，它额外算作实际持有物，而有效配置仍使用隐式默认匣。
 
+2026-10-19 起 P9-01 用弹匣系统（[magazine_system_v1.md](../native_guns/magazine_system_v1.md)，未提交，没进游戏看过）：它的标准弹匣 `p9_01_magazine` 是真实物品（0.080 kg，估计值），装在 MAGAZINE 槽里，按上面的有效 MAGAZINE 规则计一次；没装弹匣的 P9 不再加默认空匣质量。手里或身上的弹匣物品按自身质量加里面子弹的质量算（`AflCarriedContents`）。下面一段只适用于其他枪。
+
 默认弹匣当前没有可交易 ItemStack。拆除扩容后恢复默认匣的质量按最终配置推导，**V1 不宣称默认弹匣实体质量严格守恒**，没有改附件交易来强行实体化默认匣。Silverwood 双管枪默认 magazine 组件设为 0，壳体整体记在 receiver。
 
 枪内弹量只读 `NativeGunAmmo.read(stack, definition)`；缺失 NBT 按既有语义视为当前容量，已有零弹量保持零。没有额外 chamber +1。备用弹仅统计实际库存 Ammo ItemStack，一件 = 一发；不读取 reserve() 或 HUD ∞。Creative 射击/补弹如何改变枪内真值仍由现有 Runtime 决定。
@@ -165,7 +167,7 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 | 附件 | kg |
 |---|---:|
 | pistol_red_dot / rifle_red_dot_01 | 0.100 / 0.250 |
-| p9_01_extended_magazine | 0.120 |
+| p9_01_magazine（标准 17 发，2026-10-19） / p9_01_extended_magazine | 0.080 / 0.120 |
 | br51_extended_magazine_35 / br51_drum_magazine_50 | 0.300 / 0.800 |
 | pistol_suppressor_01 / rifle_suppressor_01 / heavy_suppressor_01 | 0.250 / 0.450 / 0.700 |
 

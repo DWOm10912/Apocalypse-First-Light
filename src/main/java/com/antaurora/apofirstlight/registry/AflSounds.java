@@ -267,6 +267,9 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_IN = pistolSound("magazine_in");
     public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_RELEASE = pistolSound("magazine_release");
     public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_SEAT = pistolSound("magazine_seat");
+    /** A round pressed into a P9-01 magazine by hand (weapon/NativeMagazineLoading; docs/native_guns/magazine_system_v1.md 4). */
+    public static final RegistryObject<SoundEvent> P9_01_MAG_LOAD = pistolSound("mag_load");
+    public static final RegistryObject<SoundEvent> P9_01_MAG_LOAD_LAST = pistolSound("mag_load_last");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_BACK = pistolSound("slide_back");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_RELEASE = pistolSound("slide_release");
     public static final RegistryObject<SoundEvent> NATIVE_GUN_DRY_FIRE = nativeGunSound("dry_fire");

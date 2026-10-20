@@ -210,7 +210,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
         }
         NativeSightRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
-        if(!magazine||!com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replacesSubtree(stack))
+        if(!magazine||!com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replacesSubtree(stack,b))
             for(var child:b.getChildBones())draw(child,stack,p,buffers,type,light,mesh);
         p.popPose();
     }

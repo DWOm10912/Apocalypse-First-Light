@@ -2087,6 +2087,8 @@
             if (clip) json.clip = clipKey;
             if (x.param_clip) json.param_clip = x.param_clip;
             Object.assign(json, {layer: a.layer, mask: a.mask, priority: a.priority, first_person: a.first_person, blend: {in: a.blend_in, out: a.blend_out}});
+            // the own first person's view eased down to at least this pitch while it runs (PlayerAction#firstPersonPitch)
+            if (x.first_person_pitch !== undefined) json.first_person_pitch = x.first_person_pitch;
             // a gun's stance loop: by the clock or the stride, its time within the animation's length
             if (a.loop && a.loop !== 'none') Object.assign(json, {loop: a.loop, length: r4(anim.length)});
             if (a.loop && a.loop !== 'none' && a.hip_fire) json.hip_fire = true;   // the idle is the hip-fire stance: a shot leaves it
@@ -2300,7 +2302,7 @@
             const hk = k => ({at: k.at || 0, target: fullTarget(k.target, first), blend: k.blend !== undefined ? k.blend : 0.2, roll: k.roll || 0, pole: k.pole});
             a.hands = {right: ((json.hands || {}).right || []).map(hk), left: ((json.hands || {}).left || []).map(hk)};
             for (const side of ['right', 'left']) for (const k of a.hands[side]) length = Math.max(length, k.at + k.blend);
-            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check']) if (json[f] !== undefined) a.extra[f] = json[f];
+            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check', 'first_person_pitch']) if (json[f] !== undefined) a.extra[f] = json[f];
             const rawList = tracksJson.map((t, i) => ({index: i, json: t})).filter(r => raw.has(r.json.id));
             if (rawList.length) a.extra.props_raw = rawList;
             // the file's tracks as the runtime reads them (the project's points): where a prop: frame's earlier prop is

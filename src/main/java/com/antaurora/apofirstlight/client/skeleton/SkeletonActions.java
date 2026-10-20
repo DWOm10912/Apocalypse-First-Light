@@ -50,6 +50,7 @@ import java.util.Map;
  * around), its hand anchors from the view ({@link PlayerAction.ViewAnchor});</li>
  * <li>a jerry can in the main hand (S2): carried, or pouring (item/FuelCanItem's pour tag, synced with the stack); the
  * pour's time runs back twice as fast after it stops, so the can is tipped back and lowered;</li>
+ * <li>a magazine being loaded (weapon/NativeMagazineLoading's clock on the stack): {@code gun/<gun>_mag_load};</li>
  * <li>first of all, a gun's draw or put-away (SkeletonGunStance#action: {@code gun/<id>_draw}, {@code gun/<id>_holster};
  * docs/dev/p9_draw_holster_actions_v1.md 2.4), played only with the gun stance (PlayerSkeleton).</li>
  * </ul>
@@ -66,10 +67,13 @@ import java.util.Map;
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class SkeletonActions {
-    /** What a player does now, as its source sees it: the anchors in the world, the parameter, the side, its time's speed. */
-    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed) {
+    /**
+     * What a player does now, as its source sees it: the anchors in the world, the parameter, the side, its time's speed;
+     * {@code gun}: the held gun's own (SkeletonGunStance#action), played only with the gun stance.
+     */
+    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun) {
         Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror) {
-            this(id, started, param, anchors, mirror, 1F);
+            this(id, started, param, anchors, mirror, 1F, false);
         }
     }
 
@@ -131,6 +135,15 @@ public final class SkeletonActions {
         return PlayerSkeleton.enabled() && FirstPersonBodyConfig.showBody();
     }
 
+    /**
+     * The player's action is the held gun's own (its draw, put-away, reload...: SkeletonGunStance#action), played only with
+     * the gun stance; any other (the magazine loading, gun/<gun>_mag_load, too) only without it (PlayerSkeleton#solve).
+     */
+    static boolean gunAction(Player p) {
+        Track t = TRACKS.get(p.getId());
+        return t != null && t.last != null && t.last.gun();
+    }
+
     /** A player plays (or eases out of) an action this frame. */
     static boolean active(Player p) {
         Track t = TRACKS.get(p.getId());
@@ -141,6 +154,12 @@ public final class SkeletonActions {
     static boolean drawsFirstPerson(Player p) {
         Track t = TRACKS.get(p.getId());
         return t != null && t.action != null && t.action.firstPerson == PlayerAction.FirstPerson.BODY;
+    }
+
+    /** The action the own first-person body draws while it runs (not easing out), or null (client/skeleton/FirstPersonActionView). */
+    static PlayerAction ownBodyAction(Player p) {
+        Track t = TRACKS.get(p.getId());
+        return t != null && t.action != null && t.stoppedAt < 0 && t.action.firstPerson == PlayerAction.FirstPerson.BODY ? t.action : null;
     }
 
     /** After a level draw that placed the action's prop: its named points this frame (world). */
@@ -197,6 +216,8 @@ public final class SkeletonActions {
         m.action = t.action;
         double speed = p == Minecraft.getInstance().player && devAction != null ? devSpeed : t.last.speed();
         m.seconds = (float) ((t.stoppedAt >= 0 ? t.stoppedAt : now) - t.start) * (float) speed;
+        // a time loop played as an action (gun/<gun>_mag_load: one round a length) repeats from its start
+        if (m.action.loop == PlayerAction.Loop.TIME) m.seconds = ActionPose.loopSeconds(m.action, m.seconds, 0F);
         m.stopped = t.stoppedAt >= 0 ? (float) (now - t.stoppedAt) : -1F;
         m.age = (float) ((t.stoppedAt >= 0 ? t.stoppedAt : now) - t.shown);
         m.param = t.last.param();
@@ -275,7 +296,7 @@ public final class SkeletonActions {
         Minecraft mc = Minecraft.getInstance();
         if (p == mc.player && devAction != null) return dev(p, partial, now);
         SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
-        if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed());
+        if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed(), true);
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);
         if (set != null && set.getLevel() != null) {
             Vec3[] a = PortableGeneratorPull.anchors(set, partial);
@@ -322,6 +343,14 @@ public final class SkeletonActions {
         }
         POURS.remove(p.getId());
         OPENINGS.remove(p.getId());
+        // loading a magazine (weapon/NativeMagazineLoading): gun/<gun>_mag_load, a loop from the loading's start (synced on the stack)
+        if (main.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeMagazineItem magazine && magazine.roundGun() != null) {
+            long since = com.antaurora.apofirstlight.weapon.NativeMagazines.loadingSince(main);
+            String load = "gun/" + magazine.compatibleGun().getPath() + "_mag_load";
+            // authored with the magazine in the left hand; it stays in the hand it was taken out with (the main hand), so a
+            // right-handed player plays it mirrored (user 2026-10-20 “取下来的弹匣明明是在右手，压弹的时候直接瞬移到左手了”)
+            if (since >= 0 && PlayerActions.get(load) != null) return new Live(load, since / 20.0, 0F, Map.of(), p.getMainArm() == HumanoidArm.RIGHT);
+        }
         if (p.isUsingItem()) {
             ItemStack stack = p.getUseItem();
             ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
@@ -380,7 +409,8 @@ public final class SkeletonActions {
                 "handle_rest", handle, "pull_grip", handle.add(ahead.scale(-0.46 * yank)).add(0, 0.285 * yank, 0).add(left.scale(-0.1 * yank)),
                 "brace", handle.add(left.scale(0.33)).add(0, 0.327, 0).add(ahead.scale(0.03)),
                 "opening", at.add(0, 0.9, 0), "nozzle_grip", at.add(0, 1.0, 0).add(ahead.scale(-0.12)));
-        return new Live(devAction, devStart, devAction.startsWith("machine/") ? yank : 0.5F, anchors, false);
+        // played with or without a gun up (dev)
+        return new Live(devAction, devStart, devAction.startsWith("machine/") ? yank : 0.5F, anchors, false, 1F, SkeletonGunStance.busy(p));
     }
 
     private static double now(float partial) {

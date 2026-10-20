@@ -62,7 +62,8 @@ import net.minecraftforge.fml.common.Mod;
  * dying), and while the camera is away from the eye (gun bench view, generator pull, anything later that moves it).
  * <p>
  * With the player skeleton the arms follow PlayerSkeleton#firstPersonHands instead, and a held gun at its ready is handed
- * from its view model to the body's arms looking down ({@link #gunHandOver}, user 2026-10-19).
+ * from its view model to the body's arms looking down ({@link #gunHandOver}, user 2026-10-19); so is an ordinary held item
+ * ({@link #itemHandOver}, user 2026-10-20 "拿着弹匣也没有镜头渐变"; the same as health V1a's on the D branch).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class FirstPersonBody {
@@ -86,6 +87,8 @@ public final class FirstPersonBody {
     private static final float GUN_BACK = 0.12F, GUN_FREE = 0.25F;
     /** Once the body holds the gun it keeps it until this many degrees above {@link #HAND_TO}: no flicker at the edge. */
     private static final float GUN_KEEP = 3F;
+    /** Once the body holds an ordinary item ({@link #itemOnBody}) it keeps it until this many degrees above {@link #HAND_TO}: no flicker at the edge. */
+    private static final float ITEM_KEEP = 3F;
 
     private enum Draw { NONE, MAIN, SHADOW }
 
@@ -100,6 +103,10 @@ public final class FirstPersonBody {
     private static float gunFree, gunSlide;
     /** The body holds the gun this frame: its arms and the gun drawn, the view model out of view. */
     private static boolean gunBody;
+    /** The frame the item hand-over was last worked out for; the first-person hand's slide (0..1); the body holds the item. */
+    private static long itemFrame = -1;
+    private static float itemSlide;
+    private static boolean itemBody;
 
     private FirstPersonBody() {
     }
@@ -138,7 +145,7 @@ public final class FirstPersonBody {
     public static boolean bodyArms(LocalPlayer player) {
         // player skeleton: its own hands (both empty, a put-away to the mount) replace the first-person hand pass; a held
         // gun at its ready goes to the body's hands looking down (#gunOnBody)
-        if (PlayerSkeleton.enabled()) return PlayerSkeleton.firstPersonHands(player) || gunOnBody();
+        if (PlayerSkeleton.enabled()) return PlayerSkeleton.firstPersonHands(player) || gunOnBody() || itemOnBody();
         ItemStack main = player.getMainHandItem(), off = player.getOffhandItem();
         if (main.getItem() instanceof NativeGunItem || main.is(AflItems.CROWBAR.get()) || JerryCanFirstPerson.isCan(main)) return false;
         if (player.isUsingItem()) return false;
@@ -148,12 +155,20 @@ public final class FirstPersonBody {
 
     /**
      * ItemInHandRenderer#renderHandsWithItems, around each renderArmWithItem call: how far the first-person hand goes down (camera space) while the body shows
-     * its arms, from nothing at {@link #HAND_FROM} deg down to out of view at {@link #HAND_TO}.
+     * its arms, from nothing at {@link #HAND_FROM} deg down to out of view at {@link #HAND_TO}. With the player skeleton: out of
+     * view before the body's arms take over an action (client/skeleton/FirstPersonActionView), back up after it.
      */
     public static float handDrop(float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || PlayerSkeleton.enabled() || !shown(minecraft.gameRenderer.getMainCamera()) || !bodyArms(player)) return 0F;
+        if (player == null || !shown(minecraft.gameRenderer.getMainCamera())) return 0F;
+        // player skeleton: out of view looking down (#itemHandOver) or as the body's arms take an action over
+        // (client/skeleton/FirstPersonActionView), whichever is further
+        if (PlayerSkeleton.enabled()) {
+            itemHandOver();
+            return HAND_DROP * Math.max(itemSlide, com.antaurora.apofirstlight.client.skeleton.FirstPersonActionView.viewModelSlide());
+        }
+        if (!bodyArms(player)) return 0F;
         return HAND_DROP * smooth((player.getViewXRot(partialTick) - HAND_FROM) / (HAND_TO - HAND_FROM));
     }
 
@@ -203,6 +218,49 @@ public final class FirstPersonBody {
         float pitch = player.getViewXRot(partial);
         gunBody = free && gunFree >= 1F && (pitch >= HAND_TO || gunBody && pitch >= HAND_TO - GUN_KEEP);
         gunSlide = gunBody ? 1F : smooth((pitch - HAND_FROM) / (HAND_TO - HAND_FROM)) * smooth(gunFree);
+    }
+
+    /** With the skeleton: the body's hand holds the ordinary held item this frame, the first-person hand out of view ({@link #itemHandOver}). */
+    public static boolean itemOnBody() {
+        itemHandOver();
+        return itemBody;
+    }
+
+    /**
+     * Ordinary items handed over to the body looking down, with the player skeleton (as without it, 3.4): the first-person
+     * hand with the item slides out from {@link #HAND_FROM} to {@link #HAND_TO} deg down, and from there the body's arms show,
+     * the item in its hand (ItemInHandLayer), until the view comes back above {@link #HAND_TO} - {@link #ITEM_KEEP}. Not for
+     * what has its own first-person arms (guns, the crowbar, the fuel can), an item in use, nor a loaded crossbow; empty
+     * hands and player actions are the skeleton's own (PlayerSkeleton#firstPersonHands). The pitch is the camera's while an
+     * action's look turns it (client/skeleton/FirstPersonActionView). Worked out once per frame, so the body's draw and the
+     * hand pass agree.
+     */
+    private static void itemHandOver() {
+        if (itemFrame == frames) return;
+        itemFrame = frames;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        Camera camera = minecraft.gameRenderer.getMainCamera();
+        if (player == null || !PlayerSkeleton.enabled() || !shown(camera) || !ordinaryItem(player)
+                || !PlayerSkeleton.supportedPose(player) || PlayerSkeleton.firstPersonHands(player)) {
+            itemBody = false;
+            itemSlide = 0F;
+            return;
+        }
+        float pitch = com.antaurora.apofirstlight.client.skeleton.FirstPersonActionView.looking() ? camera.getXRot()
+                : player.getViewXRot(minecraft.getFrameTime());
+        itemBody = pitch >= HAND_TO || itemBody && pitch >= HAND_TO - ITEM_KEEP;
+        itemSlide = itemBody ? 1F : smooth((pitch - HAND_FROM) / (HAND_TO - HAND_FROM));
+    }
+
+    /** Something in the hand that the body can simply hold: not empty, no first-person arms of its own, not in use. */
+    private static boolean ordinaryItem(LocalPlayer player) {
+        ItemStack main = player.getMainHandItem(), off = player.getOffhandItem();
+        if (main.isEmpty() && off.isEmpty()) return false;
+        if (main.getItem() instanceof NativeGunItem || main.is(AflItems.CROWBAR.get()) || JerryCanFirstPerson.isCan(main)) return false;
+        if (player.isUsingItem()) return false;
+        return !(main.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(main)
+                || off.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(off));
     }
 
     /** The smooth step of {@code t} clamped to 0..1. */

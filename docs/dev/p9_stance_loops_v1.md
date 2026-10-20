@@ -50,6 +50,8 @@
 
 ## 2. 姿势循环（运行时 `client/skeleton/SkeletonGunStance`）
 
+> 2026-10-19：`loop: time` 的动作作为普通动作播放时（`client/skeleton/SkeletonActions`，第一个用到的是弹匣压弹 `gun/p9_01_mag_load`）也按长度取模循环（`ActionPose.loopSeconds`）。以前只有这里的姿势循环会绕回，普通动作播完停在最后一帧。
+
 ### 2.1 动作文件和权重
 
 - 一把枪可以有两个循环动作，按枪的 id 找：

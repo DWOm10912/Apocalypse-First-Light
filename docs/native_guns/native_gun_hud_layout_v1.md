@@ -9,6 +9,11 @@
 1. **名字行**：射击模式胶囊（高 7，圆角 2.5，底色 `AflUiStyle.BACK` 0.6，描边 `LINE`；模式字 0.6 倍，`TEXT_DIM`；`hud.apocalypse_firstlight.fire_mode.semi/burst/auto`）+ 间隔 4 + 短枪名（0.75 倍，`TEXT_DIM`，最宽 60，超过就缩小）。
    - 短枪名：显示名第一个空格之前的部分（型号，例如 P9-01、BR-51、HR-55、C.A.T）；玩家用铁砧改过名就显示全名。
 2. **弹药行**：弹匣里的发数大字（1.5 倍）+ 间隔 3 + "/ 备弹"小字（0.75 倍，`TEXT_DIM`；无限备弹显示 ∞）。
+   - 用弹匣物品的枪（2026-10-19 起 P9-01，[magazine_system_v1.md](magazine_system_v1.md) 第 5 节，未提交，没进游戏看过）：
+     - 大字是弹匣里的发数，膛里有一发时后面跟小的「+1」（CS2 式）；
+     - 备弹是胸挂和口袋里能用的弹匣的子弹总数，创造模式也显示真实数字（2026-10-20 起，不再是 ∞）；
+     - 低弹量门槛按弹匣容量算；
+     - 空仓时：找得到更满的弹匣才提示"换弹"；找不到、但枪里的弹匣没满时提示"取下弹匣"（`hud.apocalypse_firstlight.gun.unload_magazine`，Remove magazine），位置、大小、键帽和"换弹"一样（2026-10-20，同一个换弹键，见 magazine_system_v1.md 第 3.1 节）。
    - 剩 ≤ 弹匣容量 1/4 且不为 0：数字琥珀 `AflUiStyle.ACCENT` `#E0A84A`。
    - 空仓：数字红 `#E8867C`；还有备弹时，数字左边 5 处是"换弹"（0.65 倍）和它左边的换弹键帽（`AflKeyHint`，0.7 倍，键取自 `NativeGunInput.reloadKey()`）。
    - 换弹中：数字换成"换弹"（1 倍，`hud.apocalypse_firstlight.gun.reload`），下面一条 1.5 高的进度条（底 `BACK` 0.6，进度 `ACCENT`）。

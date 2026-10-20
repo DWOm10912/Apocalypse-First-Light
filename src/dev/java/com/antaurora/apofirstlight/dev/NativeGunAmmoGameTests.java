@@ -36,11 +36,11 @@ public final class NativeGunAmmoGameTests {
             NativeGunAmmo.set(gun, definition, 0);
             h.assertTrue(NativeGunAmmo.reserve(inventory, definition) == Integer.MAX_VALUE, "Creative empty inventory reserve");
             h.assertTrue(!NativeGunAmmo.consumeOne(gun, definition), "Creative dry fire stays empty");
-            h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == definition.magazineCapacity(), "Creative refill capacity");
+            h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == NativeGunAmmo.capacity(gun, definition), "Creative refill capacity");
             var rounds = new ItemStack(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(definition.ammoType()), 3);
             inventory.setItem(1, rounds);
             h.assertTrue(NativeGunAmmo.consumeOne(gun, definition), "Creative shot consumes magazine");
-            h.assertTrue(NativeGunAmmo.read(gun, definition) == definition.magazineCapacity() - 1, "Finite magazine");
+            h.assertTrue(NativeGunAmmo.read(gun, definition) == NativeGunAmmo.capacity(gun, definition) - 1, "Finite magazine");
             h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == 1 && rounds.getCount() == 3, "Creative keeps physical ammo");
             for (var mode : new net.minecraft.world.level.GameType[] {net.minecraft.world.level.GameType.SURVIVAL, net.minecraft.world.level.GameType.ADVENTURE}) {
                 player.setGameMode(mode);
@@ -123,7 +123,7 @@ public final class NativeGunAmmoGameTests {
         NativeGunAmmo.initialize(gun, D);
         h.assertTrue(!NativeGunAmmo.consumeOne(gun, D) && NativeGunAmmo.read(gun, D) == 0, "Zero never refills");
         NativeGunAmmo.set(gun, D, 999);
-        h.assertTrue(NativeGunAmmo.read(gun, D) == 17, "Capacity bound");
+        h.assertTrue(NativeGunAmmo.read(gun, D) == 18, "Capacity bound (17 + 1, docs/native_guns/magazine_system_v1.md)");
         ItemStack before = gun.copy();
         NativeGunAmmo.consumeOne(gun, D);
         var item = AflItems.P9_01.get();
@@ -167,8 +167,10 @@ public final class NativeGunAmmoGameTests {
         ItemStack gun = new ItemStack(AflItems.P9_01.get());
         NativeGunAmmo.set(gun, D, 12);
         inventory.setItem(1, new ItemStack(AflItems.ROUND_9MM.get(), 20));
-        h.assertTrue(NativeGunAmmo.transfer(inventory, gun, D) == 5
-                && NativeGunAmmo.reserve(inventory, D) == 15 && NativeGunAmmo.read(gun, D) == 17, "12+20");
+        // the loose-round primitive (guns without magazine items); the P9-01 holds 17 + 1 (docs/native_guns/magazine_system_v1.md)
+        int room = NativeGunAmmo.capacity(gun, D) - 12;
+        h.assertTrue(NativeGunAmmo.transfer(inventory, gun, D) == room
+                && NativeGunAmmo.reserve(inventory, D) == 20 - room && NativeGunAmmo.read(gun, D) == NativeGunAmmo.capacity(gun, D), "12+20");
         h.assertTrue(NativeGunAmmo.transfer(inventory, gun, D) == 0, "Full magazine");
         NativeGunAmmo.set(gun, D, 12);
         inventory.setItem(1, new ItemStack(AflItems.ROUND_9MM.get(), 3));
@@ -180,30 +182,45 @@ public final class NativeGunAmmoGameTests {
 
     @GameTest(template = "network_empty", timeoutTicks = 100)
     public static void reloadCommitAndCancellation(GameTestHelper h) {
+        // the P9-01 reloads by swapping magazines from the rig and the pockets (docs/native_guns/magazine_system_v1.md 3)
         var player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "ammo_timing"));
+        player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
         ItemStack gun = new ItemStack(AflItems.P9_01.get());
         player.getInventory().selected = 0;
         player.getInventory().setItem(0, gun);
-        player.getInventory().setItem(1, new ItemStack(AflItems.ROUND_9MM.get(), 20));
+        com.antaurora.apofirstlight.equipment.AflEquipmentSlots.stacks(player, com.antaurora.apofirstlight.equipment.AflEquipmentSlots.RIG)
+                .ifPresent(s -> s.setStackInSlot(0, new ItemStack(AflItems.FIELD_CHEST_RIG.get())));
+        java.util.function.IntConsumer spare = rounds -> {
+            var mag = new ItemStack(AflItems.P9_01_MAGAZINE.get());
+            com.antaurora.apofirstlight.weapon.NativeMagazines.setRounds(mag, rounds);
+            var view = com.antaurora.apofirstlight.inventory.grid.PlayerGrids.view(player);
+            view.get(com.antaurora.apofirstlight.inventory.grid.PlayerGrids.Target.RIG).insert(mag);
+            view.commit();
+        };
+        java.util.function.Supplier<java.util.List<Integer>> rig = () -> com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(player).stream()
+                .filter(s -> s.is(AflItems.P9_01_MAGAZINE.get())).map(com.antaurora.apofirstlight.weapon.NativeMagazines::rounds).sorted().toList();
+        spare.accept(17);
         NativeGunAmmo.set(gun, D, 12);
         NativeGunActions.request(player, true, 0);
         NativeGunActions.request(player, true, 0);
         NativeGunActions.request(player, false, 0);
-        h.assertTrue(NativeGunAmmo.read(gun, D) == 12 && NativeGunAmmo.reserve(player.getInventory(), D) == 20,
-                "Start/spam/fire during reload must not transfer");
-        h.runAfterDelay(18, () -> {
+        h.assertTrue(NativeGunAmmo.read(gun, D) == 12 && rig.get().equals(java.util.List.of(17)),
+                "Start/spam/fire during reload must not swap");
+        // the swap commits at the clip's magazine-in tick (presentation.mag_in_tick)
+        h.runAfterDelay(D.magInTick() - 1, () -> {
             NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
             h.assertTrue(NativeGunAmmo.read(gun, D) == 12, "Before mag-in");
         });
-        h.runAfterDelay(19, () -> {
+        h.runAfterDelay(D.magInTick(), () -> {
             NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
             NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
-            h.assertTrue(NativeGunAmmo.read(gun, D) == 17 && NativeGunAmmo.reserve(player.getInventory(), D) == 15,
-                    "Exactly one transfer at tick19");
+            h.assertTrue(NativeGunAmmo.read(gun, D) == 17 && rig.get().equals(java.util.List.of(12)),
+                    "Exactly one swap at mag-in, the old magazine back with its 12 " + rig.get());
         });
         h.runAfterDelay(26, () -> {
             NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
             NativeGunAmmo.set(gun, D, 12);
+            spare.accept(17);
             NativeGunActions.request(player, true, 0);
             player.getInventory().selected = 2;
             NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
@@ -211,7 +228,7 @@ public final class NativeGunAmmoGameTests {
         });
         h.runAfterDelay(48, () -> {
             NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
-            h.assertTrue(NativeGunAmmo.read(gun, D) == 12 && NativeGunAmmo.reserve(player.getInventory(), D) == 15,
+            h.assertTrue(NativeGunAmmo.read(gun, D) == 12 && rig.get().equals(java.util.List.of(12, 17)),
                     "Slot cancellation must not later commit");
             h.succeed();
         });

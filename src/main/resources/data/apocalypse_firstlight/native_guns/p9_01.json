@@ -106,7 +106,8 @@
   "magazine_slot": {
     "hotspot_anchor": "magazine",
     "hotspot_offset": [0, -4.14, 1.82],
-    "accepts": ["apocalypse_firstlight:p9_01_extended_magazine"]
+    "standard": "apocalypse_firstlight:p9_01_magazine",
+    "accepts": ["apocalypse_firstlight:p9_01_magazine", "apocalypse_firstlight:p9_01_extended_magazine"]
   },
   "suppressed_fire_sound": "apocalypse_firstlight:p9_01_suppressed",
   "muzzle_slot": {

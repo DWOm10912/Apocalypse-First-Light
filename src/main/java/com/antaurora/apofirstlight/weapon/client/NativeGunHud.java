@@ -37,6 +37,9 @@ import java.util.Map;
  * <li>the rounds in the magazine large, "/ reserve" small after them. A quarter of the magazine or less: amber. Empty:
  * red, with the reload key cap and "Reload" left of it while there are rounds to load. Reloading: "Reload" in place of
  * the count with an amber bar under it (the action clip the client plays, reload_*, against the gun's reload ticks).</li>
+ * <li>a gun that loads from magazine items (weapon/NativeMagazines, the P9-01): the fitted magazine's rounds, a small
+ * "+1" after them for the chambered round, and as the reserve the rounds in the spare magazines in the rig and the
+ * pockets (CS2 style, user 2026-10-19); the reload prompt while a fuller one is there.</li>
  * </ul>
  * A view of vanilla-synced stack and inventory data; no ammo cache or client writes.
  */
@@ -60,14 +63,27 @@ public final class NativeGunHud {
         if (FieldAttachmentViewState.isActive() || mc.player == null || mc.options.hideGui || mc.player.isSpectator()
                 || !(mc.player.getMainHandItem().getItem() instanceof NativeGunItem)) return;
         ItemStack stack = mc.player.getMainHandItem();
-        render(graphics, width, height, NativeGunHudConfigManager.get(), stack, reserve(stack), reloadProgress(mc, stack, partialTick));
+        String reserve = reserve(stack);
+        var definition = ((NativeGunItem) stack.getItem()).definition();
+        // the empty gun's prompt: "Reload", or for a magazine-item gun with no fuller spare "Remove magazine" (the same key)
+        String prompt;
+        if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition))
+            prompt = com.antaurora.apofirstlight.weapon.NativeMagazines.canReload(mc.player, stack, definition) ? "reload"
+                    : com.antaurora.apofirstlight.weapon.NativeMagazines.ejectable(mc.player, stack, definition) ? "unload_magazine" : null;
+        else prompt = "0".equals(reserve) ? null : "reload";
+        render(graphics, width, height, NativeGunHudConfigManager.get(), stack, reserve, prompt, reloadProgress(mc, stack, partialTick));
     };
 
     private static String reserve(ItemStack stack) {
         var player = Minecraft.getInstance().player;
         if (player == null) return "0";
         var definition = ((NativeGunItem) stack.getItem()).definition();
-        return NativeGunAmmo.infiniteReserve(player.getInventory()) ? "∞" : Integer.toString(NativeGunAmmo.reserve(player.getInventory(), definition));
+        // a gun that loads from magazine items: the rounds in the spare magazines in the rig and the pockets (CS2's
+        // reserve), in creative too (its reloads swap real magazines)
+        if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition))
+            return Integer.toString(com.antaurora.apofirstlight.weapon.NativeMagazines.spares(player, definition)[1]);
+        if (NativeGunAmmo.infiniteReserve(player.getInventory())) return "∞";
+        return Integer.toString(NativeGunAmmo.reserve(player.getInventory(), definition));
     }
 
     // ---- the reload under way, as the client sees it ----
@@ -112,7 +128,7 @@ public final class NativeGunHud {
 
     public static Map<String, NativeGunHudLayout.Box> preview(GuiGraphics graphics, int width, int height, NativeGunHudConfig layout) {
         ItemStack stack = editorStack();
-        render(graphics, width, height, layout, stack, reserve(stack), -1);
+        render(graphics, width, height, layout, stack, reserve(stack), null, -1);
         return Map.of();
     }
 
@@ -125,13 +141,24 @@ public final class NativeGunHud {
         return space > 0 ? Component.literal(s.substring(0, space)) : name;
     }
 
-    private static void render(GuiGraphics g, int width, int height, NativeGunHudConfig layout, ItemStack stack, String reserve, float reloading) {
+    private static void render(GuiGraphics g, int width, int height, NativeGunHudConfig layout, ItemStack stack, String reserve, @org.jetbrains.annotations.Nullable String prompt, float reloading) {
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
         var definition = ((NativeGunItem) stack.getItem()).definition();
         int current = NativeGunAmmo.read(stack, definition);
         boolean empty = current == 0;
         boolean low = !empty && current * 4 <= NativeGunAmmo.capacity(stack, definition);
+        // magazine-item guns (NativeMagazines): the magazine's rounds, "+1" for the chambered round
+        boolean magazines = com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition);
+        String chamber = "";
+        if (magazines) {
+            int inMagazine = com.antaurora.apofirstlight.weapon.NativeMagazines.magazineRounds(stack, definition);
+            var fitted = com.antaurora.apofirstlight.weapon.NativeMagazines.fitted(stack, definition);
+            int size = fitted.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeMagazineItem m ? m.capacity() : 1;
+            if (com.antaurora.apofirstlight.weapon.NativeMagazines.chamber(stack, definition) > 0) chamber = "+1";
+            low = !empty && inMagazine * 4 <= size;
+            current = inMagazine;
+        }
         var mode = com.antaurora.apofirstlight.weapon.NativeFireModes.current(stack, definition);
         Component modeText = Component.translatable("hud.apocalypse_firstlight.fire_mode." + mode.key());
 
@@ -147,7 +174,10 @@ public final class NativeGunHud {
             String tail = "/ " + reserve;
             float tailW = font.width(tail) * RESERVE;
             text(g, font, Component.literal(tail), -tailW, -7 * RESERVE, RESERVE, AflUiStyle.TEXT_DIM, 1);
-            float countRight = -tailW - GAP_RESERVE, countH = 7 * COUNT;
+            float chamberW = font.width(chamber) * RESERVE;
+            if (!chamber.isEmpty() && reloading < 0)
+                text(g, font, Component.literal(chamber), -tailW - GAP_RESERVE - chamberW, -7 * RESERVE, RESERVE, AflUiStyle.TEXT, 1);
+            float countRight = -tailW - GAP_RESERVE - (chamber.isEmpty() || reloading >= 0 ? 0 : chamberW + 1), countH = 7 * COUNT;
             if (reloading >= 0) {
                 Component word = Component.translatable("hud.apocalypse_firstlight.gun.reload");
                 float w = font.width(word) * RELOAD_WORD, h = 8 * RELOAD_WORD;
@@ -158,10 +188,10 @@ public final class NativeGunHud {
                 String count = Integer.toString(current);
                 float w = font.width(count) * COUNT;
                 text(g, font, Component.literal(count), countRight - w, -countH, COUNT, empty ? EMPTY : low ? AflUiStyle.ACCENT : AflUiStyle.TEXT, 1);
-                if (empty && !"0".equals(reserve)) {
-                    // the reload key cap and "Reload", centred on the count's height
+                if (empty && prompt != null) {
+                    // the reload key cap and "Reload" (or "Remove magazine"), centred on the count's height
                     var cap = AflKeyHint.of(NativeGunInput.reloadKey());
-                    Component word = Component.translatable("hud.apocalypse_firstlight.gun.reload");
+                    Component word = Component.translatable("hud.apocalypse_firstlight.gun." + prompt);
                     float wordW = font.width(word) * PROMPT, capW = cap.width(font) * CAP, mid = -countH / 2;
                     float x = countRight - w - 5 - wordW;
                     text(g, font, word, x, mid - 4 * PROMPT, PROMPT, AflUiStyle.TEXT, 1);
