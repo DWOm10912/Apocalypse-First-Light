@@ -69,7 +69,7 @@
 
 | 手上 | 身体的手臂 | 第一人称的手 |
 |---|---|---|
-| 空手、方块、普通物品 | 画，垂在身体两侧，东西拿在身体的手里（原版 `ItemInHandLayer`） | 低头 25° 开始往下滑，45° 滑出画面（`ItemInHandRendererFirstPersonBodyMixin`，在 `renderArmWithItem` 前后压栈并下移，最多 0.7 格，平滑曲线） |
+| 空手、方块、普通物品 | 画，垂在身体两侧，东西拿在身体的手里（原版 `ItemInHandLayer`） | 低头 25° 开始往下滑，45° 滑出画面（`ItemInHandRendererFirstPersonBodyMixin`，最多 0.7 格，平滑曲线。在 `renderHandsWithItems` 里每次调用 `renderArmWithItem` 的前后压栈并下移；不挂在 `renderArmWithItem` 自己的开头和结尾：Oculus 会在开头取消它，出栈就跑不到了） |
 | 枪（`NativeGunItem`）、撬棍、倒油的油桶（自己有第一人称手臂） | 藏 | 照旧（它们取消 `RenderHandEvent`，自己画） |
 | 正在使用物品：吃喝、拉弓、举盾、温度计；手持已上弦的弩 | 藏 | 照旧（这些动作的手臂会指向视线方向，伸进摄像机） |
 

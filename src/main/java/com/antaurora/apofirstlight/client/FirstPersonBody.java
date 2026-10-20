@@ -126,7 +126,7 @@ public final class FirstPersonBody {
     }
 
     /**
-     * ItemInHandRenderer#renderArmWithItem: how far the first-person hand goes down (camera space) while the body shows
+     * ItemInHandRenderer#renderHandsWithItems, around each renderArmWithItem call: how far the first-person hand goes down (camera space) while the body shows
      * its arms, from nothing at {@link #HAND_FROM} deg down to out of view at {@link #HAND_TO}.
      */
     public static float handDrop(float partialTick) {
