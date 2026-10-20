@@ -33,7 +33,7 @@ import java.util.UUID;
  * dial in its middle is temperature/ClientTemperatureHud, the status badges above it client/StatusBadgeHud. Vanilla
  * hearts, food, armour, air, mount hearts and the experience bar are hidden (AflHudEvents).
  * <ul>
- * <li>Health: the left arc, one segment per heart (2 HP), filled from the bottom up. Red, poisoned green, withered grey,
+ * <li>Health: the left arc, one segment per 10 HP at 100 HP (health V1a; 2 HP below 50), filled from the bottom up. Red, poisoned green, withered grey,
  * frozen ice blue; absorption continues the fill in gold (the arc gains segments for it); health just lost lingers as a
  * pale ghost for 0.45 s and then drains; at 4 HP or less the arc pulses, glows red and the number turns red. Radiation
  * sickness II / III / IV tints about 30 / 60 / 100 % of the filled segments (a stable per-player choice).</li>
@@ -61,7 +61,9 @@ public final class SurvivalVitalsHud {
             STAMINA = 0xC8C6BE, STAMINA_LOW = 0xD6983A, WINDED = 0xBE443A;
     /** Radiation sickness II, III, IV. */
     private static final int[] RADIATION = {0xA09666, 0x88805A, 0x7A7454};
-    private static final int LOW_HEALTH = 4, FOOD_LOW = 6, FOOD_CRITICAL = 3;
+    /** Low health: at or under this share of the maximum (with absorption). */
+    private static final double LOW_HEALTH = 0.2;
+    private static final int FOOD_LOW = 6, FOOD_CRITICAL = 3;
     private static double health = Double.NaN, ghost, absorb, armor, armorAlpha, stamina = Double.NaN, air = Double.NaN, airAlpha;
     private static double ghostUntil;
     private static final double[] NEED = {Double.NaN, Double.NaN, Double.NaN}, GROWN = new double[3];
@@ -115,7 +117,9 @@ public final class SurvivalVitalsHud {
 
     /** Draws the health arc and the armour lane; true while health is low. */
     private static boolean health(GuiGraphics graphics, Font font, LocalPlayer player, double x, double y, double dt, double now) {
-        double hp = Math.max(0, player.getHealth()), max = Math.max(1, player.getMaxHealth()), abs = Math.max(0, player.getAbsorptionAmount());
+        // absorption stops vanilla-scale damage before health V1a scales it, so one point stands for about this much health
+        double hp = Math.max(0, player.getHealth()), max = Math.max(1, player.getMaxHealth()),
+                abs = Math.max(0, player.getAbsorptionAmount()) * com.antaurora.apofirstlight.health.HealthConfig.get().damage.defaultScale;
         if (Double.isNaN(health)) { health = ghost = hp; absorb = abs; armor = Math.min(20, player.getArmorValue()) / 20.0; }
         if (hp < health - 1e-3) {   // damage: the arc drops fast, what was lost lingers as a ghost, then drains
             ghost = Math.max(ghost, health);
@@ -130,10 +134,11 @@ public final class SurvivalVitalsHud {
         armorAlpha += ((armorPoints > 0 ? 1 : 0) - armorAlpha) * ease(dt, FADE);
 
         double cap = Math.max(max, hp + abs);
-        int segments = (int)Math.min(30, Math.ceil(cap / 2 - 1e-6));
+        double unit = segmentHealth(max);
+        int segments = (int)Math.min(30, Math.ceil(cap / unit - 1e-6));
         int colour = player.hasEffect(MobEffects.POISON) ? POISON : player.hasEffect(MobEffects.WITHER) ? WITHER
                 : player.isFullyFrozen() ? FROZEN : RED;
-        boolean low = hp + abs <= LOW_HEALTH;
+        boolean low = hp + abs <= LOW_HEALTH * max;
         double pulse = low ? 0.5 + 0.5 * Math.sin(now * Math.PI * 2 * 1.6) : 0;
         if (low) colour = mix(colour, 0xFFFFFF, 0.3 * pulse);
         double r = SurvivalHudLayout.RADIUS, band = SurvivalHudLayout.BAND, gap = SurvivalHudLayout.SEGMENT_GAP;
@@ -144,7 +149,7 @@ public final class SurvivalVitalsHud {
             bands.add(new AflGauge.Band(r + 1.1, band + 2.2, start, span, 0, 0, 0, 1, RED, 0.12 + 0.14 * pulse, AflGauge.BACK, 0));
         }
         bands.add(AflGauge.Band.arc(r, band, start, span, segments, gap, 0, health / cap, colour, 1));
-        radiation(bands, player, health, cap, segments);
+        radiation(bands, player, health, cap, segments, unit);
         if (absorb > 1e-3) bands.add(overlay(segments, health / cap, (health + absorb) / cap, GOLD, 1));
         if (ghost > health + 1e-3) bands.add(overlay(segments, health / cap, ghost / cap, GHOST, 0.8));
         bands.add(AflGauge.Band.line(r + SurvivalHudLayout.OUTLINE_WIDTH, SurvivalHudLayout.OUTLINE_WIDTH, start, span,
@@ -154,6 +159,11 @@ public final class SurvivalVitalsHud {
             bands.add(AflGauge.Band.arc(lane, SurvivalHudLayout.LANE_WIDTH, start, span, 0, 0, 0, armor, ARMOR, armorAlpha));
         AflGauge.draw(graphics, "health", x, y, lane + 4.6, bands, null);
         return low;
+    }
+
+    /** Health per arc segment: 10 at 100 HP, a vanilla heart (2) for small maximums. */
+    private static double segmentHealth(double max) {
+        return max >= 50 ? 10 : 2;
     }
 
     private static AflGauge.Band overlay(int segments, double from, double to, int rgb, double alpha) {
@@ -191,7 +201,10 @@ public final class SurvivalVitalsHud {
         AflGauge.draw(graphics, "stamina", x, y, lane + 0.5, bands, null);
     }
 
-    /** The heart and the health number side by side, centred in the bottom gap. */
+    /**
+     * The heart and the health number side by side, centred in the bottom gap. Only the current health: every survivor has
+     * the same maximum (health V1a: 100), and "100/100" did not fit between the arcs' ends (user, 2026-10-19).
+     */
     private static void number(GuiGraphics graphics, Font font, LocalPlayer player, double cx, double cy, boolean low) {
         String text = String.valueOf((int)Math.ceil(Math.max(0, player.getHealth()) - 1e-4));
         double k = AflHudText.halfScale(), w = font.width(text) * k, heart = SurvivalHudLayout.HEART_SIZE, gap = 0.9;
@@ -279,12 +292,12 @@ public final class SurvivalVitalsHud {
     // ---- radiation sickness: tinted health segments ----
 
     /** Stage II / III / IV: about 30 / 60 / 100 % of the filled segments, chosen per player (stable while health holds). */
-    private static void radiation(List<AflGauge.Band> bands, LocalPlayer player, double shownHealth, double cap, int segments) {
+    private static void radiation(List<AflGauge.Band> bands, LocalPlayer player, double shownHealth, double cap, int segments, double unit) {
         var sickness = player.getEffect(AflMobEffects.RADIATION_SICKNESS.get());
         if (sickness == null) return;
         int stage = sickness.getAmplifier() + 1;
         if (stage < 2) return;
-        int filled = (int)Math.ceil(Math.max(0, player.getHealth()) / 2.0);
+        int filled = (int)Math.ceil(Math.max(0, player.getHealth()) / unit);
         int target = switch (stage) {
             case 2 -> (filled * 3 + 9) / 10;
             case 3 -> (filled * 6 + 9) / 10;
@@ -295,7 +308,7 @@ public final class SurvivalVitalsHud {
         UUID id = player.getUUID();
         for (int k = 0; k < filled; k++) {
             if (!selected(id, k, filled, target)) continue;
-            double from = 2.0 * k / cap, to = Math.min(shownHealth, 2.0 * (k + 1)) / cap;
+            double from = unit * k / cap, to = Math.min(shownHealth, unit * (k + 1)) / cap;
             if (to > from) bands.add(overlay(segments, from, to, colour, 1));
         }
     }

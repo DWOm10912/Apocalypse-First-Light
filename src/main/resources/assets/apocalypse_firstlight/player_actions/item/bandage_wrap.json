@@ -1,0 +1,412 @@
+{
+  "format_version": 1,
+  "about": "Health V1a: wrapping a bandage (item use 4 s, MedicalItem.BANDAGE_TICKS), first and third person alike. Authored in Blockbench with the AFL Rig plugin (src/main/blockbench/player_actions/medical_bandage_wrap.bbmodel). The left forearm comes out in front of the chest (FK clip keys, the chest not turned); the right hand brings the roll (player_props/bandage, its axis point kept on the forearm's middle line, so between keys it swings round the forearm) to the forearm's inner top and presses the loose end on (0.45-0.6 s), then three turns of 0.83 s from 0.6 to 3.1 s with BandageWrapRenderer's band (each: let go at the inner top, the roll goes over and down the far side and under on its own, the hand takes it under the forearm and brings it up the inner side); the end is laid on (3.1-3.3 s), the roll is put away and the palm presses the wrap twice (3.3-3.75 s); both arms come down from 3.75 s. docs/gameplay/survival_health_v1a.md 7",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "medical.bandage_wrap"
+  },
+  "clip": "medical.bandage_wrap",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 50,
+  "first_person": "body",
+  "blend": {
+    "in": 0.3,
+    "out": 0.3
+  },
+  "first_person_pitch": 65,
+  "prop": {
+    "id": "bandage",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "pinch",
+        "pos": [
+          -6,
+          10.5,
+          0
+        ],
+        "rot": [
+          -90,
+          0,
+          0
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.198,
+          5.3204,
+          -6.9338
+        ],
+        "rot": [
+          127.201,
+          25.744,
+          -120.016
+        ],
+        "blend": 0.45
+      },
+      {
+        "at": 0.45,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.549,
+          5.5913,
+          -7.0108
+        ],
+        "rot": [
+          127.201,
+          25.744,
+          -120.016
+        ],
+        "blend": 0.08
+      },
+      {
+        "at": 0.53,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.198,
+          5.3204,
+          -6.9338
+        ],
+        "rot": [
+          127.201,
+          25.744,
+          -120.016
+        ],
+        "blend": 0.07
+      },
+      {
+        "at": 0.6,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.2881,
+          5.2503,
+          -6.7696
+        ],
+        "rot": [
+          -71.838,
+          9.707,
+          117.202
+        ],
+        "blend": 0.25
+      },
+      {
+        "at": 0.85,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.3782,
+          5.1802,
+          -6.6054
+        ],
+        "rot": [
+          100.78,
+          -22.94,
+          -119.293
+        ],
+        "blend": 0.25
+      },
+      {
+        "at": 1.1,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.4984,
+          5.0868,
+          -6.3864
+        ],
+        "rot": [
+          127.201,
+          25.744,
+          -120.016
+        ],
+        "blend": 0.3333
+      },
+      {
+        "at": 1.4333,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.5885,
+          5.0167,
+          -6.2222
+        ],
+        "rot": [
+          -71.838,
+          9.707,
+          117.202
+        ],
+        "blend": 0.25
+      },
+      {
+        "at": 1.6833,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.6786,
+          4.9466,
+          -6.058
+        ],
+        "rot": [
+          100.78,
+          -22.94,
+          -119.293
+        ],
+        "blend": 0.25
+      },
+      {
+        "at": 1.9333,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.7988,
+          4.8531,
+          -5.839
+        ],
+        "rot": [
+          127.201,
+          25.744,
+          -120.016
+        ],
+        "blend": 0.3333
+      },
+      {
+        "at": 2.2667,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.8889,
+          4.7831,
+          -5.6748
+        ],
+        "rot": [
+          -71.838,
+          9.707,
+          117.202
+        ],
+        "blend": 0.25
+      },
+      {
+        "at": 2.5167,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          3.979,
+          4.713,
+          -5.5106
+        ],
+        "rot": [
+          100.78,
+          -22.94,
+          -119.293
+        ],
+        "blend": 0.25
+      },
+      {
+        "at": 2.7667,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          4.0992,
+          4.6195,
+          -5.2917
+        ],
+        "rot": [
+          127.201,
+          25.744,
+          -120.016
+        ],
+        "blend": 0.3333
+      },
+      {
+        "at": 3.1,
+        "frame": "chest",
+        "point": "axis",
+        "pos": [
+          4.6053,
+          4.9005,
+          -5.4495
+        ],
+        "rot": [
+          121.99,
+          16.997,
+          -118.11
+        ],
+        "blend": 0.15
+      },
+      {
+        "at": 3.25,
+        "frame": "chest",
+        "point": "pinch",
+        "pos": [
+          -0.3542,
+          3.104,
+          -3.7382
+        ],
+        "rot": [
+          117.249,
+          8.129,
+          -117.075
+        ],
+        "blend": 0.05,
+        "hidden": true
+      },
+      {
+        "at": 3.3,
+        "frame": "chest",
+        "point": "pinch",
+        "pos": [
+          0.0425,
+          3.2481,
+          -3.8944
+        ],
+        "rot": [
+          117.249,
+          8.129,
+          -117.075
+        ],
+        "blend": 0.12,
+        "hidden": true
+      },
+      {
+        "at": 3.42,
+        "frame": "chest",
+        "point": "pinch",
+        "pos": [
+          -0.3542,
+          3.104,
+          -3.7382
+        ],
+        "rot": [
+          117.249,
+          8.129,
+          -117.075
+        ],
+        "blend": 0.12,
+        "hidden": true
+      },
+      {
+        "at": 3.54,
+        "frame": "chest",
+        "point": "pinch",
+        "pos": [
+          0.0425,
+          3.2481,
+          -3.8944
+        ],
+        "rot": [
+          117.249,
+          8.129,
+          -117.075
+        ],
+        "blend": 0.12,
+        "hidden": true
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:pinch",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 0.6,
+        "target": "pose",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 1,
+        "target": "prop:pinch",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 1.4333,
+        "target": "pose",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 1.8333,
+        "target": "prop:pinch",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 2.2667,
+        "target": "pose",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 2.6667,
+        "target": "prop:pinch",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 3.75,
+        "target": "pose",
+        "blend": 0.25,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      }
+    ],
+    "left": []
+  },
+  "events": [],
+  "check": {
+    "use_ticks": 80
+  }
+}

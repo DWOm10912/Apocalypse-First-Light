@@ -805,5 +805,65 @@
   "tree_crash": {
     "subtitle": "subtitles.apocalypse_firstlight.tree_crash",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/crash", "attenuation_distance": 24}]
+  },
+  "medical_bandage_grab": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_grab", "attenuation_distance": 4}]
+  },
+  "medical_bandage_press": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_press", "attenuation_distance": 4}]
+  },
+  "medical_bandage_wrap_1": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_wrap_1", "attenuation_distance": 4}]
+  },
+  "medical_bandage_wrap_2": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_wrap_2", "attenuation_distance": 4}]
+  },
+  "medical_bandage_wrap_3": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_wrap_3", "attenuation_distance": 4}]
+  },
+  "medical_bandage_lay": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_lay", "attenuation_distance": 4}]
+  },
+  "medical_bandage_tear": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_tear", "attenuation_distance": 4}]
+  },
+  "medical_bandage_pat": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_pat", "attenuation_distance": 4}]
+  },
+  "medical_bandage_lower": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_bandage",
+    "sounds": [{"name": "apocalypse_firstlight:medical/bandage_lower", "attenuation_distance": 4}]
+  },
+  "medical_alcohol_twist_1": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_cap",
+    "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_twist_1", "attenuation_distance": 4}]
+  },
+  "medical_alcohol_twist_2": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_cap",
+    "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_twist_2", "attenuation_distance": 4}]
+  },
+  "medical_alcohol_thread_click": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_cap",
+    "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_thread_click", "attenuation_distance": 4}]
+  },
+  "medical_alcohol_cap_off": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_cap",
+    "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_cap_off", "attenuation_distance": 4}]
+  },
+  "medical_alcohol_cap_on": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_cap",
+    "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_cap_on", "attenuation_distance": 4}]
+  },
+  "medical_alcohol_pour": {
+    "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_pour",
+    "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_pour", "attenuation_distance": 4}]
   }
 }

@@ -7,6 +7,10 @@ import com.antaurora.apofirstlight.registry.AflMobEffects;
 import com.antaurora.apofirstlight.stamina.ClientStamina;
 import com.antaurora.apofirstlight.temperature.ClientTemperature;
 import com.antaurora.apofirstlight.temperature.TemperatureReadout;
+import com.antaurora.apofirstlight.health.ClientHealth;
+import com.antaurora.apofirstlight.health.HealthConfig;
+import com.antaurora.apofirstlight.health.PlayerHealth;
+import com.antaurora.apofirstlight.health.Wounds;
 import com.antaurora.apofirstlight.thirst.ClientThirst;
 import com.antaurora.apofirstlight.thirst.ClientThirstHud;
 import com.antaurora.apofirstlight.thirst.ThirstConfig;
@@ -167,6 +171,27 @@ public final class StatusBadgeHud {
     static final AflRingIcon.Glyph SHIELD = (x, y) -> AflRingIcon.convex(x, y, 0.5, 0.08, 0.86, 0.22, 0.8, 0.6, 0.5, 0.92, 0.2, 0.6, 0.14, 0.22);
     static final AflRingIcon.Glyph BOLT = (x, y) -> Math.min(Math.min(AflRingIcon.segment(x, y, 0.62, 0.08, 0.34, 0.52),
             AflRingIcon.segment(x, y, 0.34, 0.52, 0.66, 0.48)), AflRingIcon.segment(x, y, 0.66, 0.48, 0.38, 0.92)) - 0.08;
+    // wounds (health V1a; user, 2026-10-19: one cross for all three could not be told apart): claw marks, a swollen cut,
+    // a swollen cut with a drop of pus under it
+    /** A line from a to b, w0 thick at its ends and w1 in its middle. */
+    private static double taper(double x, double y, double ax, double ay, double bx, double by, double w0, double w1) {
+        double dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(x - ax - dx * t, y - ay - dy * t) - (w0 + (w1 - w0) * (1 - Math.abs(2 * t - 1)));
+    }
+    /** A cut swollen round its lips: an almond along 35 deg up to the right, size k, the cut itself left dark. */
+    private static double swollen(double x, double y, double cx, double cy, double k) {
+        double u = ((x - cx) * 0.819 - (y - cy) * 0.574) / k, v = ((x - cx) * 0.574 + (y - cy) * 0.819) / k;
+        double lens = Math.max(Math.hypot(u, v - 0.2753) - 0.4453, Math.hypot(u, v + 0.2753) - 0.4453);
+        double cut = AflRingIcon.segment(u, v, -0.24, 0, 0.24, 0) - 0.04;
+        return Math.max(lens, -cut) * k;
+    }
+    static final AflRingIcon.Glyph CLAW = (x, y) -> Math.min(Math.min(
+            taper(x, y, 0.42, 0.16, 0.18, 0.80, 0.02, 0.065),
+            taper(x, y, 0.62, 0.10, 0.38, 0.88, 0.02, 0.07)),
+            taper(x, y, 0.82, 0.18, 0.58, 0.80, 0.02, 0.065));
+    static final AflRingIcon.Glyph SWOLLEN = (x, y) -> swollen(x, y, 0.5, 0.5, 1.0);
+    static final AflRingIcon.Glyph FESTERING = (x, y) -> Math.min(swollen(x, y, 0.46, 0.38, 0.86),
+            Math.min(Math.hypot(x - 0.56, y - 0.77) - 0.105, AflRingIcon.convex(x, y, 0.56, 0.5, 0.655, 0.74, 0.465, 0.74)));
     static final AflRingIcon.Glyph THERMOMETER = (x, y) -> Math.min(AflRingIcon.segment(x, y, 0.5, 0.12, 0.5, 0.62) - 0.09,
             Math.hypot(x - 0.5, y - 0.74) - 0.17);
 
@@ -212,14 +237,44 @@ public final class StatusBadgeHud {
         int food = player.getFoodData().getFoodLevel();
         if (food <= 0) list.add(new Status("hunger", 2, Kind.DANGER, SurvivalVitalsHud.DRUMSTICK, t("hunger.2"), t("hunger.2.effect"), Double.NaN, null));
         else if (food <= 6) list.add(new Status("hunger", 1, Kind.BAD, SurvivalVitalsHud.DRUMSTICK, t("hunger.1"), t("hunger.1.effect"), Double.NaN, null));
-        // good: well fed while healing (vanilla's natural regeneration from 18 food points, unless AFL stops it)
-        var thirst = ClientThirst.state();
-        boolean dehydrated = thirst != null && thirst.value() < ThirstConfig.get().dehydratedBelow;
-        if (food >= 18 && player.isHurt() && cold < 2 && heat < 2 && !dehydrated)
-            list.add(new Status("fed", 1, Kind.GOOD, FORK_KNIFE, t("fed"), t("fed.effect"), Double.NaN, null));
+        wounds(list);
+        // good: healing (health V1a: the server says whether natural regeneration runs, awake or resting)
+        var regen = ClientHealth.regen();
+        if (regen == PlayerHealth.Regen.AWAKE || regen == PlayerHealth.Regen.REST)
+            list.add(new Status("recovering", 1, Kind.GOOD, SurvivalVitalsHud.HEART, t("recovering"),
+                    t(regen == PlayerHealth.Regen.REST ? "recovering.rest" : "recovering.awake"), Double.NaN, null));
         if (ClientTemperature.coldness() > 0.02 && ClientTemperature.trend() > 0.25)
             list.add(new Status("warming", 1, Kind.GOOD, FLAME, t("warming"), t("warming.effect"), Double.NaN, null));
         return list;
+    }
+
+    /**
+     * Wounds (health V1a): one badge per stage present (scratch, local infection, suppuration), its line saying what was done
+     * and what to do next for the least treated wound of that stage; a cleaned infection / suppuration shows its recovery
+     * as the arc (the time left of it).
+     */
+    private static void wounds(List<Status> list) {
+        var wounds = ClientHealth.wounds();
+        for (var stage : Wounds.Stage.values()) {
+            Wounds.View least = null;
+            int count = 0;
+            for (var w : wounds) {
+                if (w.stage() != stage) continue;
+                count++;
+                if (least == null || treated(w) < treated(least)) least = w;
+            }
+            if (least == null) continue;
+            String name = stage.name().toLowerCase(Locale.ROOT);
+            String care = least.cleaned() && least.bandaged() ? "treated" : least.cleaned() ? "cleaned" : least.bandaged() ? "bandaged" : "untreated";
+            Kind kind = stage == Wounds.Stage.SUPPURATION && !least.cleaned() ? Kind.DANGER : Kind.BAD;
+            double left = Float.isNaN(least.recovery()) ? Double.NaN : 1 - least.recovery();
+            AflRingIcon.Glyph glyph = switch (stage) { case SCRATCH -> CLAW; case INFECTION -> SWOLLEN; case SUPPURATION -> FESTERING; };
+            list.add(new Status("wound_" + name, stage.ordinal() + 1, kind, glyph,
+                    count > 1 ? t("wound." + name + ".many", count) : t("wound." + name), t("wound." + name + "." + care), left, null));
+        }
+    }
+    private static int treated(Wounds.View w) {
+        return (w.cleaned() ? 1 : 0) + (w.bandaged() ? 1 : 0);
     }
 
     /** A timed AFL effect: the arc follows the time left against the longest time seen while it lasts. */
@@ -246,7 +301,8 @@ public final class StatusBadgeHud {
             thirstValue = value; thirstAt = now;
         }
         if (value <= 0) list.add(new Status("thirst", 3, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.3"),
-                t("thirst.3.effect", (int)Math.round(c.damageIntervalSeconds)), Double.NaN, null));
+                t("thirst.3.effect", (int)Math.round(c.damageIntervalSeconds),
+                (int)Math.round(HealthConfig.get().damage.defaultScale)), Double.NaN, null));
         else if (value < c.dehydratedBelow) {
             double seconds = thirstRate > 1e-5 ? value / thirstRate - (now - thirstAt) : Double.NaN;
             list.add(new Status("thirst", 2, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.2"),

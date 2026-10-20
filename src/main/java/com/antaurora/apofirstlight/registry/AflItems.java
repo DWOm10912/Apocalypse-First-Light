@@ -534,6 +534,14 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.temperature.ClinicalThermometerItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> WRIST_THERMOMETER = ITEMS.register("wrist_thermometer",
             () -> new com.antaurora.apofirstlight.temperature.WristThermometerItem(new Item.Properties().stacksTo(1)));
+    // Health V1a (docs/gameplay/survival_health_v1a.md 7): a bandage covers a wound, medical alcohol cleans one; one used per
+    // wound treated. Placeholder cuboid models (tools/author-medical-items-v1a.mjs); Creative tab only, no recipe or loot yet.
+    public static final RegistryObject<Item> BANDAGE = ITEMS.register("bandage",
+            () -> new com.antaurora.apofirstlight.health.MedicalItem(com.antaurora.apofirstlight.health.Wounds.Treatment.BANDAGE,
+                    new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> MEDICAL_ALCOHOL = ITEMS.register("medical_alcohol",
+            () -> new com.antaurora.apofirstlight.health.MedicalItem(com.antaurora.apofirstlight.health.Wounds.Treatment.ALCOHOL,
+                    new Item.Properties().stacksTo(8)));
     // Grid Inventory V0 test gear (docs/ui/afl_inventory_grid_v0_plan.md 7): a rig with four separate pouches, a 5x6
     // backpack, and a 6x10 one that makes the right column scroll; placeholder icons, nothing drawn on the body
     public static final RegistryObject<Item> FIELD_CHEST_RIG = ITEMS.register("field_chest_rig",

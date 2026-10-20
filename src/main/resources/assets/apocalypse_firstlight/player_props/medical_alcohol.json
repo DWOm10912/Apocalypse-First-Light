@@ -1,0 +1,14 @@
+{
+  "about": "Health V1a (docs/gameplay/survival_health_v1a.md 7): the medical alcohol bottle without its cap, held in the right hand by the player action item/alcohol_clean; the cap is the prop medical_alcohol_cap. Drawn as the bottle and label parts of the item's equipment mesh (tools/build-equipment-meshes-v1.mjs BOTTLE: 9.25 px tall, r 1.7 px, mouth at 9.0 px; item offset 0.2109375). Points (item block units): grip, where the right palm holds it, beside the body (the palm's middle 2.05 px off the bottle's side); mouth, the open mouth's middle; mouth_tip, 1 px further out along the axis (client/MedicalPourJets: the stream's way); base, the foot's middle.",
+  "items": ["medical_alcohol"],
+  "scale": 0.6,
+  "bounds": [[0.3951, 0.2109, 0.3951], [0.6049, 0.7734, 0.6049]],
+  "symmetry": "z",
+  "mesh": {"model": "medical_alcohol", "atlas": "medical_alcohol_mesh", "offset": 0.2109375, "parts": ["bottle", "label"]},
+  "points": {
+    "grip": [0.1802, 0.3859, 0.5],
+    "mouth": [0.5, 0.7734, 0.5],
+    "mouth_tip": [0.5, 0.8359, 0.5],
+    "base": [0.5, 0.2109, 0.5]
+  }
+}

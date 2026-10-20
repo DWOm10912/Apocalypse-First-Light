@@ -110,6 +110,13 @@ public final class PlayerAction {
     public final Approach approach;
     public final List<HandKey> right, left;
     public final FirstPerson firstPerson;
+    /**
+     * JSON {@code first_person_pitch} (deg, + = down), or NaN: while the action runs in the own first person (BODY), the view
+     * eases down to at least this pitch (the mouse still looks lower, not higher; client/skeleton/SkeletonActions#lookDown),
+     * so the hands' work in front of the chest is in view: a bandage wound round the held-out forearm (health V1a,
+     * docs/gameplay/survival_health_v1a.md 7). The AFL Rig preview shows the first person at this pitch.
+     */
+    public final float firstPersonPitch;
     /** JSON {@code loop} ({@code "time"}, {@code "stride"}) and the loop's {@code length} (s; NaN: the clip's). */
     public final Loop loop;
     public final float length;
@@ -168,6 +175,7 @@ public final class PlayerAction {
         right = keys(id, hands, "right");
         left = keys(id, hands, "left");
         firstPerson = json.has("first_person") ? FirstPerson.valueOf(json.get("first_person").getAsString().toUpperCase()) : FirstPerson.BODY;
+        firstPersonPitch = json.has("first_person_pitch") ? json.get("first_person_pitch").getAsFloat() : Float.NaN;
         loop = json.has("loop") ? Loop.valueOf(json.get("loop").getAsString().toUpperCase()) : Loop.NONE;
         length = json.has("length") ? json.get("length").getAsFloat() : Float.NaN;
         hipFire = json.has("hip_fire") && json.get("hip_fire").getAsBoolean();

@@ -154,6 +154,7 @@
 - 第一人称：低头才看得到手在胸前，平视时手不在画面里，自然取代现在"手移出画面"的处理。
 - 事件：无；读数仍由物品使用结束时服务端算（不变）。
 - 左手拿温度计时左右镜像。
+- 同样走物品使用的还有生命与健康 V1a 的绷带 `item/bandage_wrap`、医用酒精 `item/alcohol_clean`（`first_person: view_model`，挂点 `treat`、`wrap_*`、`bottle`、`dab`，见 `docs/gameplay/survival_health_v1a.md` 第 7 节）。
 
 ### 4.2 发电机拉绳 `machine/generator_pull`
 

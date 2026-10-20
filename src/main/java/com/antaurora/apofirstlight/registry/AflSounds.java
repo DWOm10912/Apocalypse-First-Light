@@ -213,6 +213,23 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> TREE_CHOP = simple("tree_chop");
     public static final RegistryObject<SoundEvent> TREE_CRACK = simple("tree_crack");
     public static final RegistryObject<SoundEvent> TREE_CRASH = simple("tree_crash");
+    /** Health V1a medical use (docs/gameplay/survival_health_v1a.md 7.6, tools/build-medical-sounds-v1a.cjs): pieces of the user's
+     *  Firefly takes, played by health/MedicalItem on the actions' keyframes. */
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_GRAB = simple("medical_bandage_grab");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_PRESS = simple("medical_bandage_press");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_WRAP_1 = simple("medical_bandage_wrap_1");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_WRAP_2 = simple("medical_bandage_wrap_2");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_WRAP_3 = simple("medical_bandage_wrap_3");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_LAY = simple("medical_bandage_lay");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_TEAR = simple("medical_bandage_tear");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_PAT = simple("medical_bandage_pat");
+    public static final RegistryObject<SoundEvent> MEDICAL_BANDAGE_LOWER = simple("medical_bandage_lower");
+    public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_TWIST_1 = simple("medical_alcohol_twist_1");
+    public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_TWIST_2 = simple("medical_alcohol_twist_2");
+    public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_THREAD_CLICK = simple("medical_alcohol_thread_click");
+    public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_CAP_OFF = simple("medical_alcohol_cap_off");
+    public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_CAP_ON = simple("medical_alcohol_cap_on");
+    public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_POUR = simple("medical_alcohol_pour");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

@@ -1538,9 +1538,11 @@
             const entry = {id, group: name, scale: def.scale, D, hold, frame, items: def.items || [id], symmetry: def.symmetry || null,
                 open_block: def.open_block || null, about: def.about || ''};
             if (def.gun) Object.assign(entry, {gun: def.gun, grips: def.grips || null, carry: def.carry || null});
+            if (def.mesh) entry.mesh = clone(def.mesh);
             if (at >= 0) c.props[at] = entry;
             else c.props.push(entry);
             if (def.gun) addGunLook(entry, g);
+            if (def.mesh) addMeshLook(entry, g);
             Project.saved = false;
             Canvas.updateAll();
             return g;
@@ -1596,6 +1598,34 @@
                 const pv = bones[part.bone].pivot || [0, 0, 0], at = tf.mul(frameOf(part.bone), tf.translation([-pv[0] / 16, pv[1] / 16, pv[2] / 16]));
                 const el = new Mesh({name: 'gun_' + part.name, origin: g.origin.slice(), vertices: {}, color: 3, locked: true, export: false});
                 const keys = el.addVertices(...part.vertices.map(v => v3.sub(v3.add(p.D, v3.mul(tf.apply(at, v.slice(0, 3)), k)), g.origin)));
+                for (const face of part.faces) {
+                    const polys = face.length <= 4 ? [face] : face.slice(1, -1).map((x, i) => [face[0], x, face[i + 2]]);   // bigger polygons as fans
+                    for (const poly of polys) el.addFaces(new MeshFace(el, {vertices: poly.map(x => keys[x])}));
+                }
+                el.addTo(g).init();
+            }
+            Canvas.updateAll();
+        }
+
+        /**
+         * A prop drawn as parts of an item's AFL Mesh (player_props "mesh", skeleton/action/PlayerProps.MeshLook; health V1a
+         * 2026-10-19: the medical alcohol's bottle and its cap as two props): those parts of meshes/<model>.aflmesh.json where
+         * the item renderer puts them (vertex v blocks -> item units (v.x + 0.5, v.y + offset, v.z + 0.5)), as locked meshes
+         * under the prop group that are not exported. Edit coords e = D + item * k, as the points.
+         */
+        function addMeshLook(p, g) {
+            g = g || propGroupOf(p);
+            if (!g || !p.mesh) return;
+            const json = readJson(res('meshes/' + p.mesh.model + '.aflmesh.json'));
+            if (!json) return Blockbench.showQuickMessage('没找到 meshes/' + p.mesh.model + '.aflmesh.json', 2500);
+            for (const old of g.children.filter(x => x instanceof Mesh && x.name.startsWith('look_'))) old.remove();
+            const k = 16 * p.scale, off = p.mesh.offset || 0;
+            const colors = {};
+            p.mesh.parts.forEach((n, i) => { colors[n] = [0, 4, 3, 5, 6, 7][i % 6]; });
+            for (const part of json.parts) {
+                if (!p.mesh.parts.includes(part.name)) continue;
+                const el = new Mesh({name: 'look_' + part.name, origin: g.origin.slice(), vertices: {}, color: colors[part.name], locked: true, export: false});
+                const keys = el.addVertices(...part.vertices.map(v => v3.sub(v3.add(p.D, v3.mul([v[0] + 0.5, v[1] + off, v[2] + 0.5], k)), g.origin)));
                 for (const face of part.faces) {
                     const polys = face.length <= 4 ? [face] : face.slice(1, -1).map((x, i) => [face[0], x, face[i + 2]]);   // bigger polygons as fans
                     for (const poly of polys) el.addFaces(new MeshFace(el, {vertices: poly.map(x => keys[x])}));
@@ -2087,6 +2117,8 @@
             if (clip) json.clip = clipKey;
             if (x.param_clip) json.param_clip = x.param_clip;
             Object.assign(json, {layer: a.layer, mask: a.mask, priority: a.priority, first_person: a.first_person, blend: {in: a.blend_in, out: a.blend_out}});
+            // the own first person's view eased down to at least this pitch while it runs (PlayerAction#firstPersonPitch)
+            if (x.first_person_pitch !== undefined) json.first_person_pitch = x.first_person_pitch;
             // a gun's stance loop: by the clock or the stride, its time within the animation's length
             if (a.loop && a.loop !== 'none') Object.assign(json, {loop: a.loop, length: r4(anim.length)});
             if (a.loop && a.loop !== 'none' && a.hip_fire) json.hip_fire = true;   // the idle is the hip-fire stance: a shot leaves it
@@ -2149,6 +2181,7 @@
             if (box) json.bounds = [v3.mul(v3.sub(box.from, p.D), 1 / k).map(r4), v3.mul(v3.sub(box.to, p.D), 1 / k).map(r4)];
             if (p.symmetry) json.symmetry = p.symmetry;
             if (p.open_block) json.open_block = p.open_block;
+            if (p.mesh) json.mesh = p.mesh;
             json.points = {};
             for (const n in def.points) json.points[n] = def.points[n].map(r4);
             const path = res('player_props/' + p.id + '.json'), old = readJson(path);
@@ -2300,7 +2333,7 @@
             const hk = k => ({at: k.at || 0, target: fullTarget(k.target, first), blend: k.blend !== undefined ? k.blend : 0.2, roll: k.roll || 0, pole: k.pole});
             a.hands = {right: ((json.hands || {}).right || []).map(hk), left: ((json.hands || {}).left || []).map(hk)};
             for (const side of ['right', 'left']) for (const k of a.hands[side]) length = Math.max(length, k.at + k.blend);
-            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check']) if (json[f] !== undefined) a.extra[f] = json[f];
+            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check', 'first_person_pitch']) if (json[f] !== undefined) a.extra[f] = json[f];
             const rawList = tracksJson.map((t, i) => ({index: i, json: t})).filter(r => raw.has(r.json.id));
             if (rawList.length) a.extra.props_raw = rawList;
             // the file's tracks as the runtime reads them (the project's points): where a prop: frame's earlier prop is
@@ -2513,6 +2546,7 @@
                         Animator.preview();
                     },
                     addSegment, holster: addHolsterRef,
+                    meshLook: id => addMeshLook(liveProps(cfg()).find(p => p.id === id)),
                     solve: seconds => {
                         const c = cfg(), anim = Animation.selected;
                         const r = core.solveFrame(S.poser, {slim: c.slim, crouch: c.crouch, pitch: c.view_pitch, rifle: c.rifle,

@@ -1,0 +1,24 @@
+{
+  "about": "Survival and health V1a (docs/gameplay/survival_health_v1a.md): 100 HP, damage taken by players scaled after armour, natural regeneration, wounds. All numbers are game balance parameters.",
+  "max_health": 100,
+  "legacy_scale": 5,
+  "damage": {
+    "default_scale": 5,
+    "rules": [
+      {"about": "infected melee (vanilla zombie, 3 on Normal) -> 12", "type": "minecraft:mob_attack", "infected_attacker": true, "scale": 4},
+      {"about": "bullets: P9-01 7 -> 30, BR-51 18 -> 62, HR55 26 -> 90", "type": "apocalypse_firstlight:native_bullet",
+        "curve": [[0, 0], [7, 30], [18, 62], [26, 90], [40, 125], [100, 250]]},
+      {"about": "lightning (world/LightningStrikes, 1000): lethal as it is, not scaled", "type": "minecraft:lightning_bolt", "scale": 1},
+      {"about": "falls: 4 blocks 5, 6 blocks 15, 10 blocks 35", "type": "minecraft:fall", "scale": 5}
+    ],
+    "never_below_one": ["minecraft:starve"]
+  },
+  "regen": {
+    "delay_seconds": 15,
+    "awake_per_minute": 3,
+    "rest_per_minute": 8,
+    "min_food": 7,
+    "sleep_per_minute": 8,
+    "sleep_max": 30
+  }
+}

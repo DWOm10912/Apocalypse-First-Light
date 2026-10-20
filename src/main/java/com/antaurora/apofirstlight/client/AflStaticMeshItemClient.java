@@ -67,6 +67,10 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.SIMPLE_HEARING_PROTECTION.get(), "simple_hearing_protection", "simple_hearing_protection_mesh", 0.280324);
             // Geiger counter V2 (equipment meshes, 2026-10-15): the mesh with a live LCD and count LED (0.5 - 3.12 / 32)
             bind(AflItems.GEIGER_COUNTER.get(), GeigerCounterItemRenderer::new, "geiger_counter");
+            // Health V1a medical items (equipment meshes, 2026-10-19): 0.5 - height / 32 (4.149 / 9.25 px); in use, the player skeleton
+            // draws them as action props (player_props/bandage, medical_alcohol: the bottle's parts, its cap a second prop)
+            bind(AflItems.BANDAGE.get(), "bandage", "bandage_mesh", 0.370357);
+            bind(AflItems.MEDICAL_ALCOHOL.get(), "medical_alcohol", "medical_alcohol_mesh", 0.210938);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(

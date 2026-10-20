@@ -175,6 +175,7 @@ public final class PlayerStamina {
                 if (player.getFoodData().getFoodLevel() <= c.lowFoodLevel) regen *= c.regenLowFood;
                 regen *= com.antaurora.apofirstlight.thirst.PlayerThirst.staminaRegenMultiplier(player); // thirsty, sick
                 regen *= PlayerTemperature.staminaRegenMultiplier(player); // cold / heat stages
+                regen *= com.antaurora.apofirstlight.health.Wounds.staminaRegenMultiplier(player); // infected wound
                 s.value += regen / 20;
             }
             settle(s, max);

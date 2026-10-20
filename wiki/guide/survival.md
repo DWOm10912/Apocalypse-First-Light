@@ -4,6 +4,54 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 <StatusTag s="integrated" /> 这些数值是测试用的初始值，之后还会调整
 
+## 生命值
+
+- <StatusTag s="test" /> 生命与健康 V1a 还在分支上，没有合并，也没有进游戏验收
+
+生命值上限为 <V d="health/health_v1#max_health" />，所有幸存者相同。生命弧每格 10 点，弧下方显示"当前/上限"。生命值低于上限的 20% 时，生命弧闪动
+
+**受到的伤害**：护甲、抗性和伤害吸收仍按原版计算，剩下的伤害再换算成 100 点制，每次只换算一次。只换算玩家受到的伤害，枪械对感染者的伤害不变
+
+| 来源 | 失去的生命值 |
+|---|---|
+| 感染者近战 | 原版伤害 ×<V d="health/health_v1#damage.rules.0.scale" /> |
+| 枪弹（打中玩家） | P9-01 约 <V d="health/health_v1#damage.rules.1.curve.1.1" />，BR-51 约 <V d="health/health_v1#damage.rules.1.curve.2.1" />，HR-55 约 <V d="health/health_v1#damage.rules.1.curve.3.1" /> |
+| 雷击 | <V d="health/health_v1#damage.rules.2.scale" /> 倍，必死 |
+| 摔落 | 原版伤害 ×<V d="health/health_v1#damage.rules.3.scale" /> |
+| 其他 | 原版伤害 ×<V d="health/health_v1#damage.default_scale" /> |
+
+**自然恢复**
+
+- 受伤后 <V d="health/health_v1#regen.delay_seconds" u="秒" /> 内不恢复。之后清醒时每分钟恢复 <V d="health/health_v1#regen.awake_per_minute" /> 点，休息时（睡觉、坐在椅子上、乘坐载具但不驾驶）每分钟恢复 <V d="health/health_v1#regen.rest_per_minute" /> 点
+- 饥饿值低于 <V d="health/health_v1#regen.min_food" />、脱水或体温达到冷 2 / 热 2 时，无法自然恢复生命值
+- 睡觉跳过夜晚时，按跳过的时间一次性恢复，每分钟 <V d="health/health_v1#regen.sleep_per_minute" /> 点，最多 <V d="health/health_v1#regen.sleep_max" /> 点
+- 原版的饱食回血已关闭
+
+## 伤口
+
+被感染者近战打中时，有 <V d="wounds/wounds_v1#scratch_chance" pct /> 的概率留下抓伤，身上最多 <V d="wounds/wounds_v1#max_wounds" /> 处伤口。伤口在状态图标里显示，离线时不会发展，死亡后清空
+
+| 阶段 | 影响 | 发展 |
+|---|---|---|
+| 抓伤 | 不扣生命值 | 约 <V d="wounds/wounds_v1#scratch.check_days" /> 个游戏日后判定一次感染：未处理 <V d="wounds/wounds_v1#scratch.infect_chance" pct />，清洁后 ×<V d="wounds/wounds_v1#scratch.cleaned_factor" />，包扎后 ×<V d="wounds/wounds_v1#scratch.bandaged_factor" />，清洁并包扎则不会感染。约 <V d="wounds/wounds_v1#scratch.heal_days" /> 个游戏日愈合，处理后更快 |
+| 伤口感染 | 耐力恢复 ×<V d="wounds/wounds_v1#infection.stamina_regen" />，视线不时模糊一阵，几秒后恢复 | 每个游戏日有 <V d="wounds/wounds_v1#infection.worsen_chance" pct /> 的概率化脓（已包扎 <V d="wounds/wounds_v1#infection.worsen_chance_bandaged" pct />），<V d="wounds/wounds_v1#infection.resolve_chance" pct /> 的概率自行好转。清洁后约 <V d="wounds/wounds_v1#infection.recover_days_cleaned" /> 个游戏日好转，清洁并包扎约 <V d="wounds/wounds_v1#infection.recover_days_both" /> 个游戏日 |
+| 伤口化脓 | 耐力恢复 ×<V d="wounds/wounds_v1#suppuration.stamina_regen" />，生命恢复 ×<V d="wounds/wounds_v1#suppuration.health_regen" />，高烧：画面发灰，亮处刺眼，视线模糊更频繁、更严重并伴随头晕，偶尔一阵寒战 | 不清洁很难好转（每个游戏日 <V d="wounds/wounds_v1#suppuration.ease_chance" pct /> 的概率减轻为感染）。清洁后先减轻为感染，再按感染好转 |
+
+同一处抓伤再次被抓时，伤势加重，感染概率提高。屏幕效果可以在 AFL 设置的"身体"一栏调弱或关闭
+
+**医疗用品**（目前只在创造模式物品栏里，没有配方）
+
+| 物品 | 用法 |
+|---|---|
+| <ItemIcon id="medical_alcohol" /> 医用酒精 | 按住右键 <V j="MedicalItem.ALCOHOL_TICKS" x="0.05" u="秒" />，清洁一处伤口（先处理最严重的） |
+| <ItemIcon id="bandage" /> 绷带 | 按住右键 <V j="MedicalItem.BANDAGE_TICKS" x="0.05" u="秒" />，包扎一处伤口。化脓的伤口要先清洁 |
+
+每用完一次消耗一个，中途松开不消耗，创造模式不消耗。游泳、在水下或驾驶时不能使用
+
+使用时能看到完整的处理过程，第一人称和第三人称是同一套动作，第一人称会自动低头看着手臂：绷带是伸出左前臂，右手拿着纱布卷绕三圈，布从卷上拉出来缠到手臂上，最后按住布头；医用酒精是拧下瓶盖拿在左手，把酒精倒在左前臂上，再把瓶盖拧回去
+
+包扎好以后，纱布会一直缠在左前臂上（左撇子是右前臂），自己和其他玩家都看得到。没有包扎着的伤口时纱布消失：伤口愈合、感染后包扎失效，或者死亡
+
 ## 耐力
 
 上限 <V d="stamina/stamina_v1#max" />，停止活动 <V d="stamina/stamina_v1#delay_seconds" u="秒" /> 后每秒恢复 <V d="stamina/stamina_v1#regen" />（耗尽后需等待 <V d="stamina/stamina_v1#exhausted_delay_seconds" u="秒" />）
@@ -34,7 +82,7 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 |---|---|
 | 低于 <V d="thirst/thirst_v1#thirsty_below" /> | 耐力恢复 ×<V d="thirst/thirst_v1#stamina_regen_thirsty" /> |
 | 低于 <V d="thirst/thirst_v1#dehydrated_below" /> | 耐力恢复 ×<V d="thirst/thirst_v1#stamina_regen_dehydrated" />，无法自然恢复生命值 |
-| 0 | 每 <V d="thirst/thirst_v1#damage_interval_seconds" u="秒" /> 失去 1 点生命值，直到渴死 |
+| 0 | 每 <V d="thirst/thirst_v1#damage_interval_seconds" u="秒" /> 失去 <V d="health/health_v1#damage.default_scale" /> 点生命值，直到渴死 |
 
 **饮水**
 
@@ -53,10 +101,10 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 |---|---|---|
 | 冷 1 | 低于 <V d="temperature/temperature_v1#cold_stages.0.below" u="°C" /> | 耐力恢复减缓 |
 | 冷 2 | 低于 <V d="temperature/temperature_v1#cold_stages.1.below" u="°C" /> | 在此基础上移动速度降低、饥饿加快，无法自然恢复生命值 |
-| 冷 3 | 低于 <V d="temperature/temperature_v1#cold_stages.2.below" u="°C" /> | 每 <V d="temperature/temperature_v1#damage_interval_seconds" u="秒" /> 失去 1 点生命值 |
+| 冷 3 | 低于 <V d="temperature/temperature_v1#cold_stages.2.below" u="°C" /> | 每 <V d="temperature/temperature_v1#damage_interval_seconds" u="秒" /> 失去 <V d="health/health_v1#damage.default_scale" /> 点生命值 |
 | 热 1 | 高于 <V d="temperature/temperature_v1#heat_stages.0.above" u="°C" /> | 水分消耗加快，耐力消耗增加 |
 | 热 2 | 高于 <V d="temperature/temperature_v1#heat_stages.1.above" u="°C" /> | 在此基础上移动速度降低，无法自然恢复生命值 |
-| 热 3 | 高于 <V d="temperature/temperature_v1#heat_stages.2.above" u="°C" /> | 每 <V d="temperature/temperature_v1#damage_interval_seconds" u="秒" /> 失去 1 点生命值 |
+| 热 3 | 高于 <V d="temperature/temperature_v1#heat_stages.2.above" u="°C" /> | 每 <V d="temperature/temperature_v1#damage_interval_seconds" u="秒" /> 失去 <V d="health/health_v1#damage.default_scale" /> 点生命值 |
 
 - 寒冷时屏幕边缘结霜，炎热时画面泛光、晃动
 - 淋雨大约一分钟就会湿透，潮湿时体温下降更快；没有火源时，大约 <V d="temperature/temperature_v1#wetness.dry_seconds" u="秒" /> 才能干
@@ -66,6 +114,6 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 ## 饥饿
 
-饥饿沿用原版系统，AFL 目前还没有自己的食物。饥饿值 ≤ <V d="stamina/stamina_v1#low_food_level" /> 时耐力恢复 ×<V d="stamina/stamina_v1#regen_low_food" />；肠胃感染和冷 2 及以上会额外消耗饥饿值
+饥饿沿用原版系统，AFL 目前还没有自己的食物。饥饿值 ≤ <V d="stamina/stamina_v1#low_food_level" /> 时耐力恢复 ×<V d="stamina/stamina_v1#regen_low_food" />；低于 <V d="health/health_v1#regen.min_food" /> 时无法自然恢复生命值；肠胃感染和冷 2 及以上会额外消耗饥饿值
 
 <StatusTag s="planned" /> 食物腐败和储存

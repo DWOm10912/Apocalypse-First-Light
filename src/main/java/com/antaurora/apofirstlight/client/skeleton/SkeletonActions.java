@@ -30,6 +30,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -118,6 +119,12 @@ public final class SkeletonActions {
     /** The view's turn while stepping (deg, Minecraft's yaw and pitch) and how much of it (pitch NaN: the player's own). */
     private static float lookYaw, lookPitch = Float.NaN, lookWeight;
     private static long frame;
+    /**
+     * PlayerAction#firstPersonPitch: how fast the own first-person view eases down to it (per second, exponential), and the
+     * clock of the last frame it did.
+     */
+    private static final double LOOK_DOWN_RATE = 6.0;
+    private static long lookDownFrame;
     // dev play
     private static String devAction;
     private static float devSpeed = 1F;
@@ -267,6 +274,30 @@ public final class SkeletonActions {
 
     static void newFrame() {
         frame++;
+    }
+
+    /**
+     * PlayerAction#firstPersonPitch (health V1a, the bandage and the medical alcohol): while the own action runs in the own
+     * first person, the view eases down to at least its pitch each frame after the mouse turned it (RenderTickEvent START, as
+     * client/JerryCanPourView), so the work on the held-out forearm is in view; the mouse may still look lower. The head
+     * looks down with it, as the others see it. Nothing in third person.
+     */
+    @SubscribeEvent
+    public static void lookDown(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) return;
+        long now = System.nanoTime();
+        double dt = lookDownFrame == 0 ? 0 : Math.min(0.1, (now - lookDownFrame) / 1e9);
+        lookDownFrame = now;
+        Minecraft mc = Minecraft.getInstance();
+        var player = mc.player;
+        if (player == null || mc.level == null || mc.isPaused() || !mc.options.getCameraType().isFirstPerson() || !drawsArms()) return;
+        Track t = TRACKS.get(player.getId());
+        if (t == null || t.action == null || t.stoppedAt >= 0 || t.action.firstPerson != PlayerAction.FirstPerson.BODY) return;
+        float floor = t.action.firstPersonPitch;
+        if (Float.isNaN(floor) || player.getXRot() >= floor) return;
+        float p = player.getXRot() + (floor - player.getXRot()) * (float) (1 - Math.exp(-LOOK_DOWN_RATE * dt));
+        player.setXRot(p);
+        player.xRotO = p;
     }
 
     // ---------------------------------------------------------------- sources

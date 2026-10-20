@@ -80,7 +80,7 @@
 |---|---|---:|---|
 | 身体 | 大块头 | 1 | 力量 +1（开局可以到 6）；移动耗耐力 ×1.1 |
 | | 运动员 | 2 | 耐力上限 +10；移动耗耐力 ×0.9 |
-| | 体质好 | 2 | 最大生命 +2；自然回血 ×1.2 |
+| | 体质好 | 2 | 自然回血 ×1.2（最大生命 +2 在生命与健康 V1a 去掉：所有人 100 点） |
 | | 落地稳 | 1 | 摔落伤害 ×0.8 |
 | 代谢 | 铁胃 | 1 | 喝生水生病几率 ×0.5；饥饿速度 ×0.95 |
 | 冷热 | 耐寒 | 1 | "耐寒"成长从 3 级开始（舒适温度下限低 1 °C，之后还能练；2026-10-18 前是直接低 1 °C） |
@@ -99,7 +99,7 @@
 
 | 组 | 特质 | 点 | 属性 |
 |---|---|---:|---|
-| 身体 | 体弱 | 2 | 最大生命 −2；耐力恢复 ×0.9 |
+| 身体 | 体弱 | 2 | 耐力恢复 ×0.9（最大生命 −2 在生命与健康 V1a 去掉：所有人 100 点） |
 | | 烟瘾 | 1 | 耐力上限 −10（以后有需求系统再加"想抽烟"） |
 | 代谢 | 肠胃弱 | 1 | 喝生水生病几率 ×1.5 |
 | | 容易渴 | 1 | 口渴速度 ×1.2 |
@@ -359,9 +359,9 @@ C 对两个场景的答复（2026-10-15）：
 | | `stamina_regen` | 乘（…10） | 15 /s（`regen`） | `PlayerStamina` 恢复 |
 | | `move_stamina_cost` | 乘（…10） | 走、跑、潜行、跳、游泳、攀爬、办公椅 | `PlayerStamina.cost` |
 | | `work_stamina_cost` | 乘（…10） | 其余消耗：近战、挖掘、劈柴、拉绳、摇把、开枪、换弹 | `PlayerStamina.cost` |
-| | 最大生命 | 原版 `generic.max_health` | 20 | 原版 |
+| | 最大生命 | 原版 `generic.max_health` | 100（V1a 起基础值由 `health/PlayerHealth` 设定，幸存者修饰项不再改它） | 原版 |
 | | `fall_damage` | 乘（…10） | ×1 | `SurvivorStatEvents`（`LivingFallEvent` 的伤害系数） |
-| | `natural_regen` | 乘（…10） | 饱食回血（两种都算） | `FoodDataSurvivorStatsMixin` |
+| | `natural_regen` | 乘（…10） | 自然回血（V1a 起是 AFL 自己的回血） | `health/PlayerHealth` |
 | 代谢 | `thirst_rate` | 乘（…10） | `thirst_v1.base_per_hour` + 出力 | `PlayerThirst` |
 | | `hunger_rate` | 乘（…10） | 原版消耗度 | `PlayerHungerRateMixin`（`causeFoodExhaustion`） |
 | | `raw_water_sickness` | 乘（…10） | `chance_bottle` 0.2 / `chance_sip` 0.05 | `PlayerThirst` |
@@ -434,7 +434,7 @@ C 对两个场景的答复（2026-10-15）：
   - 继任者在 `Survivors.roll()` 里抽（`SurvivorSetup.rollSuccessor`，随机流 `SurvivorNames.stream(seed, 501)`）。
 - **校验和确认**（`SurvivorSetup`）：`check` 按第 5、6 节查：开局范围、预算、负面最多 4 点、互斥（包括和背景特质互斥）、背景特质不能再选、只有背景能给的不能选。`confirm` 存最终值：机能加上 `body_bonus`（大块头力量开局能到 6），成长 = 默认，被 `growth_start` 抬高、被 `growth_cap` 封顶。
 - **修饰项**（`SurvivorModifiers`）：每个（来源，属性）一个，名字 `afl.survivor:body/<id>` 或 `afl.survivor:trait/<id>`，UUID 从名字算。加 = `ADDITION`；乘 f = `MULTIPLY_TOTAL` f − 1，同一属性上的几个系数相乘。
-  - 用永久修饰（存进玩家文件），这样"体质好"的最大生命 +2 在读回血量之前就在。
+  - 用永久修饰（存进玩家文件），这样"体质好"的最大生命 +2 在读回血量之前就在。（V1a 起特质不再改最大生命，这条只对以后的上限修饰有用。）
   - 登录、重生（包括出末地）、确认、重置时先删掉所有 `afl.survivor:` 修饰再加，所以玩家身上总是当前幸存者的那一套。选择中、死了、没有幸存者 = 没有修饰。
 - **近似**：力量和"干惯粗活"改的是 `work_stamina_cost`。这个属性管所有干活的消耗（也包括开枪、换弹），比第 4、5 节写的范围大一点；以后要细分再拆属性。
 - **开发指令**（权限 2，在界面做出来之前代替它）：

@@ -56,6 +56,10 @@ import net.minecraftforge.fml.common.Mod;
  * </ul>
  * Not drawn: spectator, invisible, sleeping (vanilla already draws that), lying poses (swimming, crawling, elytra, riptide,
  * dying), and while the camera is away from the eye (gun bench view, generator pull, anything later that moves it).
+ * <p>
+ * With the player skeleton the arms follow PlayerSkeleton#firstPersonHands instead, and an ordinary held item (the bandage,
+ * the medical alcohol, a block...) is handed from the first-person hand to the body's hand looking down ({@link #itemOnBody},
+ * health V1a, user 2026-10-19: "低头看不见自己的手"), the same pitches as without the skeleton.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class FirstPersonBody {
@@ -72,6 +76,8 @@ public final class FirstPersonBody {
     private static final float HAND_FROM = 25F, HAND_TO = 45F, HAND_DROP = 0.7F;
     /** The body's arms swing forward at most this far (rad, 20 deg) while the arms are shown: then first on screen at 45.6 deg down. */
     private static final float ARM_FORWARD = 0.35F;
+    /** Once the body holds an ordinary item ({@link #itemOnBody}) it keeps it until this many degrees above {@link #HAND_TO}: no flicker at the edge. */
+    private static final float ITEM_KEEP = 3F;
 
     private enum Draw { NONE, MAIN, SHADOW }
 
@@ -80,6 +86,11 @@ public final class FirstPersonBody {
     private static boolean arms;
     private static final boolean[] SAVED = new boolean[6];
     private static boolean saved;
+    /** Render frames (RenderTickEvent START) and the one the item hand-over was last worked out for. */
+    private static long frames, itemFrame = -1;
+    /** The first-person hand's slide this frame (0..1); the body holds the item this frame. */
+    private static float itemSlide;
+    private static boolean itemBody;
 
     private FirstPersonBody() {
     }
@@ -117,7 +128,7 @@ public final class FirstPersonBody {
      */
     public static boolean bodyArms(LocalPlayer player) {
         // player skeleton V1 prototype: its own hands (empty, the BR51) replace the first-person hand pass
-        if (PlayerSkeleton.enabled()) return PlayerSkeleton.firstPersonHands(player);
+        if (PlayerSkeleton.enabled()) return PlayerSkeleton.firstPersonHands(player) || itemOnBody();
         ItemStack main = player.getMainHandItem(), off = player.getOffhandItem();
         if (main.getItem() instanceof NativeGunItem || main.is(AflItems.CROWBAR.get()) || JerryCanFirstPerson.isCan(main)) return false;
         if (player.isUsingItem()) return false;
@@ -132,9 +143,59 @@ public final class FirstPersonBody {
     public static float handDrop(float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || PlayerSkeleton.enabled() || !shown(minecraft.gameRenderer.getMainCamera()) || !bodyArms(player)) return 0F;
-        float t = Mth.clamp((player.getViewXRot(partialTick) - HAND_FROM) / (HAND_TO - HAND_FROM), 0F, 1F);
-        return HAND_DROP * t * t * (3F - 2F * t);
+        if (player == null || !shown(minecraft.gameRenderer.getMainCamera())) return 0F;
+        if (PlayerSkeleton.enabled()) {
+            itemHandOver();
+            return HAND_DROP * itemSlide;
+        }
+        if (!bodyArms(player)) return 0F;
+        return HAND_DROP * smooth((player.getViewXRot(partialTick) - HAND_FROM) / (HAND_TO - HAND_FROM));
+    }
+
+    /** With the skeleton: the body's hand holds the ordinary held item this frame, the first-person hand out of view ({@link #itemHandOver}). */
+    public static boolean itemOnBody() {
+        itemHandOver();
+        return itemBody;
+    }
+
+    /**
+     * Ordinary items handed over to the body looking down, with the player skeleton (as without it, 3.4): the first-person
+     * hand with the item slides out from {@link #HAND_FROM} to {@link #HAND_TO} deg down, and from there the body's arms show,
+     * the item in its hand (ItemInHandLayer), until the view comes back above {@link #HAND_TO} - {@link #ITEM_KEEP}. Not for
+     * what has its own first-person arms (guns, the crowbar, the fuel can), an item in use (its player action or vanilla's
+     * use pose), nor a loaded crossbow; empty hands and player actions are the skeleton's own (PlayerSkeleton#firstPersonHands).
+     * Worked out once per frame, so the body's draw and the hand pass agree.
+     */
+    private static void itemHandOver() {
+        if (itemFrame == frames) return;
+        itemFrame = frames;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player == null || !PlayerSkeleton.enabled() || !shown(minecraft.gameRenderer.getMainCamera()) || !ordinaryItem(player)
+                || !PlayerSkeleton.supportedPose(player) || PlayerSkeleton.firstPersonHands(player)) {
+            itemBody = false;
+            itemSlide = 0F;
+            return;
+        }
+        float pitch = player.getViewXRot(minecraft.getFrameTime());
+        itemBody = pitch >= HAND_TO || itemBody && pitch >= HAND_TO - ITEM_KEEP;
+        itemSlide = itemBody ? 1F : smooth((pitch - HAND_FROM) / (HAND_TO - HAND_FROM));
+    }
+
+    /** Something in the hand that the body can simply hold: not empty, no first-person arms of its own, not in use. */
+    private static boolean ordinaryItem(LocalPlayer player) {
+        ItemStack main = player.getMainHandItem(), off = player.getOffhandItem();
+        if (main.isEmpty() && off.isEmpty()) return false;
+        if (main.getItem() instanceof NativeGunItem || main.is(AflItems.CROWBAR.get()) || JerryCanFirstPerson.isCan(main)) return false;
+        if (player.isUsingItem()) return false;
+        return !(main.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(main)
+                || off.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(off));
+    }
+
+    /** The smooth step of {@code t} clamped to 0..1. */
+    private static float smooth(float t) {
+        t = Mth.clamp(t, 0F, 1F);
+        return t * t * (3F - 2F * t);
     }
 
     /** LevelRenderer#renderEntity RETURN. */
@@ -213,6 +274,7 @@ public final class FirstPersonBody {
 
     @SubscribeEvent
     public static void frame(TickEvent.RenderTickEvent event) {
+        if (event.phase == TickEvent.Phase.START) frames++;
         // a canceled draw has no Post: setModelProperties shows every part again before the next draw anyway
         saved = false;
         drawing = Draw.NONE;

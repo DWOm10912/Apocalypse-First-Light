@@ -143,6 +143,14 @@
       "unit_mass_kg": 0.05,
       "estimated": true
     },
+    "apocalypse_firstlight:bandage": {
+      "unit_mass_kg": 0.03,
+      "estimated": true
+    },
+    "apocalypse_firstlight:medical_alcohol": {
+      "unit_mass_kg": 0.13,
+      "estimated": true
+    },
     "apocalypse_firstlight:crowbar": {
       "unit_mass_kg": 1.2,
       "estimated": true

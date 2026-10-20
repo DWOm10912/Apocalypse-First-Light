@@ -37,6 +37,13 @@ import java.util.Optional;
  * {@code prop:<id>:<name>} holds the gun as the gun stance does. {@code "carry": {"bone", "pos", "quat", "scale"}}: the
  * prop's placement at the gun's carry mount at rest (rest model px carried by the bone; its size there over {@code scale});
  * the game uses the live mount (ActionPose.Moment#carry), the plugin and the checks this.
+ * <p>
+ * Parts of an AFL Mesh item ({@code "mesh": {"model", "atlas", "offset", "parts": [names]}}, health V1a 2026-10-19,
+ * docs/gameplay/survival_health_v1a.md 7): the prop is drawn as only those parts of the item's equipment mesh
+ * ({@code geo/<model>.geo.json}, {@code meshes/<model>.aflmesh.json}, {@code textures/item/<atlas>.png}) where its item
+ * renderer would draw them ({@code offset}: client/AflStaticMeshItemClient's vertical offset, the mesh's foot at (0.5,
+ * offset, 0.5) item units), not as the whole item: the medical alcohol's bottle without its cap, and the cap as a second
+ * prop. Its items still say which held item it is.
  */
 public final class PlayerProps {
     private static final String ROOT = "assets/apocalypse_firstlight/player_props/";
@@ -64,8 +71,14 @@ public final class PlayerProps {
      */
     public record GunPart(String gun, String bone) {}
 
+    /**
+     * Named parts of an item's AFL Mesh drawn as the prop ({@code mesh}): the geometry and atlas names, the item renderer's
+     * vertical offset (item block units) and the part names.
+     */
+    public record MeshLook(String model, String atlas, float offset, List<String> parts) {}
+
     public record Prop(String id, List<String> items, float scale, Vector3f min, Vector3f max, int symmetry, String openBlock,
-                       Map<String, Vector3f> points, String gun, Map<String, Grip> grips, Carry carry, GunPart gunPart) {
+                       Map<String, Vector3f> points, String gun, Map<String, Grip> grips, Carry carry, GunPart gunPart, MeshLook mesh) {
         /** A point (item block units) in the prop's model frame (px, before its placement), or null when unknown. */
         public Vector3f local(String point) {
             Vector3f p = points.get(point);
@@ -135,8 +148,15 @@ public final class PlayerProps {
                     JsonObject g = json.getAsJsonObject("gun_part");
                     part = new GunPart(g.get("gun").getAsString(), g.get("bone").getAsString());
                 }
+                MeshLook mesh = null;
+                if (json.has("mesh")) {
+                    JsonObject m = json.getAsJsonObject("mesh");
+                    List<String> parts = new java.util.ArrayList<>();
+                    for (var e : m.getAsJsonArray("parts")) parts.add(e.getAsString());
+                    mesh = new MeshLook(m.get("model").getAsString(), m.get("atlas").getAsString(), m.get("offset").getAsFloat(), List.copyOf(parts));
+                }
                 return Optional.of(new Prop(k, List.copyOf(items), json.get("scale").getAsFloat(), min, max, symmetry, open,
-                        Map.copyOf(points), gun, Map.copyOf(grips), carry, part));
+                        Map.copyOf(points), gun, Map.copyOf(grips), carry, part, mesh));
             } catch (IOException e) {
                 throw new IllegalStateException("player prop file " + k, e);
             }

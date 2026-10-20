@@ -32,7 +32,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `thirst/ClientThirstHud.java` | 三种水瓶的液体颜色、水滴图形 `WATER_DROP`（HUD 口渴小圆、徽章、提示共用）、注册提示组件（2026-10-17 起不再画 HUD） |
 | `thirst/ThirstCommands.java` | `/aflthirst` 调试命令 |
 | `client/AflRingIcon.java` | 图标距离场，以及单独画一个图形（提示里的水滴） |
-| `mixin/FoodDataThirstMixin.java` | 脱水时不自然回血（体温 V1 也复用它：C2 / H2 起不自然回血） |
+| `mixin/FoodDataThirstMixin.java` | 脱水时不自然回血（体温 V1 也复用它：C2 / H2 起不自然回血）。**生命与健康 V1a（2026-10-19）起**它把原版饱食回血整个关掉，回血改由 `health/PlayerHealth` 统一判定，脱水仍然阻断（`PlayerThirst.blocksNaturalRegen`），见 [survival_health_v1a.md](survival_health_v1a.md) |
 | `stamina/PlayerStamina.java` | 把花掉的耐力交给口渴（`consumeSpent`），恢复速度乘口渴倍率 |
 | `registry/AflItems`、`AflMobEffects`、`AflRecipes`、`AflCreativeTabs` | 注册 |
 | `network/AflNetwork.java` | 注册两种包，协议 36 |
@@ -100,7 +100,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 |---|---|
 | ≥ 30 | 无 |
 | 15–30 | 耐力恢复 ×0.75 |
-| < 15 | 耐力恢复 ×0.5；不会自然回血（饱食度的两种自然回血都跳过，也不消耗饱和度） |
+| < 15 | 耐力恢复 ×0.5；不会自然回血（V1a 起由 `PlayerHealth` 判定） |
 | 0 | 每 10 秒扣 1 点血（伤害类型“脱水”，穿透护甲），**简单、普通、困难都会渴死**；和平难度口渴不下降，也不扣血。2026-10-03 用户要求改：原来按原版饥饿规则（简单停在 10 点、普通停在 1 点），那样玩家可以无视口渴 |
 
 死亡信息：“%1$s 渴死了”。
@@ -162,7 +162,7 @@ HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节�
 4. 喝水：原版喝水声，+20，还回玻璃瓶；口渴满时喝不了。
 5. 空手蹲下对着水源右键：每 0.5 秒一口，+5；对着流动的水、工业废液没反应；手里拿着东西也不行。
 6. `/aflthirst sick`：HUD 左下出现病菌徽章（原版效果栏没有）；约 60–90 秒后出现第一次症状；再喝脏水不会让症状变密。
-7. `/aflthirst set 10`：耐力回得慢，受伤后不会自然回血；`set 0` 后每 10 秒扣 1 点血，任何非和平难度都会一直扣到死亡（死亡信息“渴死了”）。
+7. `/aflthirst set 10`：耐力回得慢，受伤后不会自然回血；`set 0` 后每 10 秒扣 1 点血（V1a 起换算成 100 点制的 5 点），任何非和平难度都会一直扣到死亡（死亡信息“渴死了”）。
 8. 跑动、挖掘后口渴下降比站着快。
 9. 切创造：口渴不变，喝水没效果，水滴环不显示。
 10. 死亡后口渴为 100，退出重进保留。
@@ -170,6 +170,6 @@ HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节�
 
 ## 幸存者属性（2026-10-17）
 
-口渴（基础 + 出力）× `apocalypse_firstlight:thirst_rate`；喝生水生病的几率 × `raw_water_sickness`。另外饥饿：玩家所有的消耗度 × `hunger_rate`（`PlayerHungerRateMixin`），吃饭回血 × `natural_regen`（`FoodDataSurvivorStatsMixin`，两种回血都算）。
+口渴（基础 + 出力）× `apocalypse_firstlight:thirst_rate`；喝生水生病的几率 × `raw_water_sickness`。另外饥饿：玩家所有的消耗度 × `hunger_rate`（`PlayerHungerRateMixin`），自然回血 × `natural_regen`（V1a 起在 `health/PlayerHealth` 里乘，`FoodDataSurvivorStatsMixin` 已删除）。
 
 属性层 P1，见 [幸存者背景、机能、特质与成长 V1](survivor_background_skills_v1_plan.md) 第 10 节。默认值时行为和以前完全一样；还没有特质或机能去改它，游戏里没有看过。

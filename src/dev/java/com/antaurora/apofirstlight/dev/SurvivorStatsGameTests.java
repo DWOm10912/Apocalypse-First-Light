@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchSpeed;
+import com.antaurora.apofirstlight.health.PlayerHealth;
 import com.antaurora.apofirstlight.noise.movement.MovementNoiseEvents;
 import com.antaurora.apofirstlight.radiation.RadiationSicknessManager;
 import com.antaurora.apofirstlight.registry.AflAttributes;
@@ -131,11 +132,13 @@ public final class SurvivorStatsGameTests {
         hungry.causeFoodExhaustion(1.0F);
         log.close("exhaustion, x2", hungry.getFoodData().getExhaustionLevel() - before, 2.0);
 
-        // natural healing (FoodDataSurvivorStatsMixin): the slow branch heals 1 every 80 ticks at food 18+
-        log.close("natural heal, default", healOnce(survivor(level, "afl-stats-heal")), 1.0);
+        // natural healing (health V1a, health/PlayerHealth): vanilla's food healing is off (FoodDataThirstMixin), the
+        // survivor's natural_regen scales PlayerHealth's own
+        log.close("vanilla food healing off", healOnce(survivor(level, "afl-stats-heal")), 0.0);
+        log.close("natural heal multiplier, default", PlayerHealth.regenMultiplier(survivor(level, "afl-stats-heal-x1")), 1.0);
         var healer = survivor(level, "afl-stats-healer");
         base(healer, AflAttributes.NATURAL_REGEN, 2);
-        log.close("natural heal, x2", healOnce(healer), 2.0);
+        log.close("natural heal multiplier, x2", PlayerHealth.regenMultiplier(healer), 2.0);
 
         // fall damage: the event's multiplier
         log.close("fall multiplier, default", fallMultiplier(plain), 1.0);

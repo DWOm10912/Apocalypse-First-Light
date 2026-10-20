@@ -3,11 +3,6 @@
   "cost": 2,
   "effects": [
     {
-      "attribute": "minecraft:generic.max_health",
-      "op": "add",
-      "value": 2
-    },
-    {
       "attribute": "apocalypse_firstlight:natural_regen",
       "op": "multiply",
       "value": 1.2

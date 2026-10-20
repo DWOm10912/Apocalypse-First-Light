@@ -4,6 +4,54 @@ AFL's survival HUD replaces vanilla hearts, hunger and the experience bar: a rou
 
 <StatusTag s="integrated" /> These values are starting values and will be tuned
 
+## Health
+
+- <StatusTag s="test" /> Health V1a is still on its branch: not merged, not checked in game
+
+Maximum health is <V d="health/health_v1#max_health" />, the same for every survivor. Each segment of the health arc is 10, with "current/max" under the arc. Below 20% of the maximum the arc flashes
+
+**Damage taken**: armour, resistance and absorption still work as in vanilla; what gets through is then converted to the 100 scale, once per hit. Only damage to players is converted: guns do the same to the infected as before
+
+| Source | Health lost |
+|---|---|
+| Infected melee | Vanilla damage ×<V d="health/health_v1#damage.rules.0.scale" /> |
+| Bullets (hitting a player) | P9-01 about <V d="health/health_v1#damage.rules.1.curve.1.1" />, BR-51 about <V d="health/health_v1#damage.rules.1.curve.2.1" />, HR-55 about <V d="health/health_v1#damage.rules.1.curve.3.1" /> |
+| Lightning | ×<V d="health/health_v1#damage.rules.2.scale" />, always lethal |
+| Falls | Vanilla damage ×<V d="health/health_v1#damage.rules.3.scale" /> |
+| Everything else | Vanilla damage ×<V d="health/health_v1#damage.default_scale" /> |
+
+**Natural healing**
+
+- No healing for <V d="health/health_v1#regen.delay_seconds" u="s" /> after taking damage. Then <V d="health/health_v1#regen.awake_per_minute" /> a minute awake, <V d="health/health_v1#regen.rest_per_minute" /> a minute resting (asleep, in a chair, or riding in a vehicle you are not driving)
+- No natural healing with food below <V d="health/health_v1#regen.min_food" />, while dehydrated, or at Cold 2 / Heat 2 and worse
+- Sleeping through the night heals once for the time skipped, <V d="health/health_v1#regen.sleep_per_minute" /> a minute, at most <V d="health/health_v1#regen.sleep_max" />
+- Vanilla's food healing is off
+
+## Wounds
+
+A melee hit from an infected has a <V d="wounds/wounds_v1#scratch_chance" pct /> chance to leave a scratch; you can have up to <V d="wounds/wounds_v1#max_wounds" /> wounds. Wounds show as status badges, do not progress while you are offline, and are gone after death
+
+| Stage | Effect | Progress |
+|---|---|---|
+| Scratch | No health lost | After about <V d="wounds/wounds_v1#scratch.check_days" /> game day, one roll for infection: <V d="wounds/wounds_v1#scratch.infect_chance" pct /> untreated, ×<V d="wounds/wounds_v1#scratch.cleaned_factor" /> cleaned, ×<V d="wounds/wounds_v1#scratch.bandaged_factor" /> bandaged, none if cleaned and bandaged. Heals in about <V d="wounds/wounds_v1#scratch.heal_days" /> game days, sooner when treated |
+| Infected wound | Stamina recovery ×<V d="wounds/wounds_v1#infection.stamina_regen" />, now and then the view blurs for a few seconds | Each game day a <V d="wounds/wounds_v1#infection.worsen_chance" pct /> chance to fester (<V d="wounds/wounds_v1#infection.worsen_chance_bandaged" pct /> bandaged), <V d="wounds/wounds_v1#infection.resolve_chance" pct /> to clear up by itself. Once cleaned it gets better in about <V d="wounds/wounds_v1#infection.recover_days_cleaned" /> game day, <V d="wounds/wounds_v1#infection.recover_days_both" /> cleaned and bandaged |
+| Festering wound | Stamina recovery ×<V d="wounds/wounds_v1#suppuration.stamina_regen" />, health recovery ×<V d="wounds/wounds_v1#suppuration.health_regen" />, a fever: colours look washed out, bright light glares, the blurring comes more often and harder with dizziness, and now and then a fit of chills | Rarely gets better uncleaned (<V d="wounds/wounds_v1#suppuration.ease_chance" pct /> a game day to ease to an infection). Once cleaned it eases to an infection first, then gets better as one |
+
+A scratch scratched again gets worse and more likely to become infected. The screen effect can be turned down or off under Body in the AFL settings
+
+**Medical supplies** (Creative inventory only for now, no recipe)
+
+| Item | Use |
+|---|---|
+| <ItemIcon id="medical_alcohol" /> Medical Alcohol | Hold right-click for <V j="MedicalItem.ALCOHOL_TICKS" x="0.05" u="s" /> to clean one wound (the worst first) |
+| <ItemIcon id="bandage" /> Bandage | Hold right-click for <V j="MedicalItem.BANDAGE_TICKS" x="0.05" u="s" /> to bandage one wound. A festering wound must be cleaned first |
+
+One is used per treatment; letting go early uses nothing; Creative uses nothing. Not while swimming, under water or driving
+
+You see the whole treatment, the same moves in first and third person; in first person the view tips down to the arm: for a bandage you hold out your left forearm and wind the roll round it three times, the cloth pulling off the roll onto the arm, then press the end down; for medical alcohol you unscrew the cap and hold it in your left hand, pour the alcohol over your left forearm and screw the cap back on
+
+Once bandaged, the gauze stays wrapped round your left forearm (the right one if you are left-handed), for you and for other players to see. It comes off when no wound is bandaged any more: the wound healed, an infection spoiled the dressing, or you died
+
 ## Stamina
 
 Maximum <V d="stamina/stamina_v1#max" />. After <V d="stamina/stamina_v1#delay_seconds" u="s" /> at rest it regenerates <V d="stamina/stamina_v1#regen" /> per second (<V d="stamina/stamina_v1#exhausted_delay_seconds" u="s" /> after running out)
@@ -34,7 +82,7 @@ Full is <V d="thirst/thirst_v1#max" />. It drops <V d="thirst/thirst_v1#base_per
 |---|---|
 | Below <V d="thirst/thirst_v1#thirsty_below" /> | Stamina regeneration ×<V d="thirst/thirst_v1#stamina_regen_thirsty" /> |
 | Below <V d="thirst/thirst_v1#dehydrated_below" /> | Stamina regeneration ×<V d="thirst/thirst_v1#stamina_regen_dehydrated" />, no natural healing |
-| 0 | 1 health every <V d="thirst/thirst_v1#damage_interval_seconds" u="s" /> until you die |
+| 0 | <V d="health/health_v1#damage.default_scale" /> health every <V d="thirst/thirst_v1#damage_interval_seconds" u="s" /> until you die |
 
 **Drinking**
 
@@ -53,10 +101,10 @@ Core temperature starts at <V d="temperature/temperature_v1#normal" u="°C" /> a
 |---|---|---|
 | Cold 1 | Below <V d="temperature/temperature_v1#cold_stages.0.below" u="°C" /> | Slower stamina regeneration |
 | Cold 2 | Below <V d="temperature/temperature_v1#cold_stages.1.below" u="°C" /> | Also slower walking, faster hunger, no natural healing |
-| Cold 3 | Below <V d="temperature/temperature_v1#cold_stages.2.below" u="°C" /> | 1 health every <V d="temperature/temperature_v1#damage_interval_seconds" u="s" /> |
+| Cold 3 | Below <V d="temperature/temperature_v1#cold_stages.2.below" u="°C" /> | <V d="health/health_v1#damage.default_scale" /> health every <V d="temperature/temperature_v1#damage_interval_seconds" u="s" /> |
 | Heat 1 | Above <V d="temperature/temperature_v1#heat_stages.0.above" u="°C" /> | Faster thirst, higher stamina costs |
 | Heat 2 | Above <V d="temperature/temperature_v1#heat_stages.1.above" u="°C" /> | Also slower walking, no natural healing |
-| Heat 3 | Above <V d="temperature/temperature_v1#heat_stages.2.above" u="°C" /> | 1 health every <V d="temperature/temperature_v1#damage_interval_seconds" u="s" /> |
+| Heat 3 | Above <V d="temperature/temperature_v1#heat_stages.2.above" u="°C" /> | <V d="health/health_v1#damage.default_scale" /> health every <V d="temperature/temperature_v1#damage_interval_seconds" u="s" /> |
 
 - Frost creeps in from the screen edges when you are cold; heat makes the screen glare and shimmer
 - Rain soaks you in about a minute and being wet makes you colder; without a fire you take about <V d="temperature/temperature_v1#wetness.dry_seconds" u="s" /> to dry
@@ -66,6 +114,6 @@ Core temperature starts at <V d="temperature/temperature_v1#normal" u="°C" /> a
 
 ## Food
 
-Food uses the vanilla system; AFL has no foods of its own yet. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is ×<V d="stamina/stamina_v1#regen_low_food" />, and stomach sickness and Cold 2 or worse burn extra food
+Food uses the vanilla system; AFL has no foods of its own yet. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is ×<V d="stamina/stamina_v1#regen_low_food" />; below <V d="health/health_v1#regen.min_food" /> there is no natural healing; stomach sickness and Cold 2 or worse burn extra food
 
 <StatusTag s="planned" /> Food spoilage and storage
