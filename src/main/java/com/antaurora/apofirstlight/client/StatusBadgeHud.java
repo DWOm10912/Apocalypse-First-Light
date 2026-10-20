@@ -293,16 +293,22 @@ public final class StatusBadgeHud {
 
     /** A badge: shadow, the kind's disc, a light sheen and rim, the time-left arc, the white pictogram, the gained flash. */
     private static void badge(GuiGraphics graphics, String id, Status s, double x, double y, double r, double flash, double alpha) {
+        AflGauge.draw(graphics, id, x, y, r + 4.7, badgeBands(s.kind(), r, s.left(), flash, alpha), badgeGlyph(s.icon(), r, alpha));
+    }
+    /** The badge's bands (also drawn offline for the wiki's status icons, test StatusBadgeIcons). */
+    static List<AflGauge.Band> badgeBands(Kind kind, double r, double left, double flash, double alpha) {
         List<AflGauge.Band> bands = new ArrayList<>();
         bands.add(AflGauge.Band.disc(r + 0.7, 0x000000, 0.22 * alpha));
-        bands.add(AflGauge.Band.disc(r, s.kind().rgb, 0.95 * alpha));
+        bands.add(AflGauge.Band.disc(r, kind.rgb, 0.95 * alpha));
         bands.add(AflGauge.Band.line(r - 0.6, 0.5, 300, 120, 0xFFFFFF, 0.14 * alpha));
         bands.add(AflGauge.Band.line(r + 0.2, 0.5, 0, 360, AflUiStyle.LINE, 0.4 * alpha));
-        if (!Double.isNaN(s.left()))
-            bands.add(new AflGauge.Band(r + 1.6, 0.8, 0, 360, 0, 0, 0, s.left(), 0xF0ECE4, 0.9 * alpha, AflGauge.BACK, 0.4 * alpha));
+        if (!Double.isNaN(left))
+            bands.add(new AflGauge.Band(r + 1.6, 0.8, 0, 360, 0, 0, 0, left, 0xF0ECE4, 0.9 * alpha, AflGauge.BACK, 0.4 * alpha));
         if (flash > 0) bands.add(AflGauge.Band.line(r + 2.6 + (1 - flash) * 1.5, 0.6, 0, 360, AflUiStyle.LINE, 0.7 * flash * alpha));
-        AflGauge.draw(graphics, id, x, y, r + 4.7, bands,
-                new AflGauge.Glyph(s.icon(), r * 1.18, WHITE, alpha));
+        return bands;
+    }
+    static AflGauge.Glyph badgeGlyph(AflRingIcon.Glyph icon, double r, double alpha) {
+        return new AflGauge.Glyph(icon, r * 1.18, WHITE, alpha);
     }
 
     /** Beside a badge: the sliding label (name and effect) while `slide` > 0, otherwise its time or countdown, if any. */

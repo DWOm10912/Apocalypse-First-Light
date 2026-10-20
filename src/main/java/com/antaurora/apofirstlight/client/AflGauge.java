@@ -183,12 +183,23 @@ public final class AflGauge {
     private static long q(double v, int steps) { return Math.round(v * steps); }
 
     private static void raster(NativeImage image, int size, int s, double cx, double cy, List<Band> bands, @Nullable Glyph glyph) {
+        if (bands.isEmpty()) image.fillRect(0, 0, size, size, 0);
+        raster(size, s, cx, cy, bands, glyph, image::setPixelRGBA);
+    }
+
+    /** Where {@link #raster} writes a pixel (packed ABGR, as NativeImage). */
+    @FunctionalInterface interface PixelSink { void set(int x, int y, int abgr); }
+
+    /**
+     * The gauge rastered on the CPU into `out`; with no bands only the glyph's box is written (the rest is left as it is).
+     * Also used offline for the wiki's status icons (test StatusBadgeIcons).
+     */
+    static void raster(int size, int s, double cx, double cy, List<Band> bands, @Nullable Glyph glyph, PixelSink out) {
         double[] p = new double[4];
         double box = glyph == null ? 0 : glyph.size() * s, gx = cx - box / 2, gy = cy + (glyph == null ? 0 : glyph.offsetY() * s) - box / 2;
         int fx0 = 0, fy0 = 0, fx1 = size, fy1 = size;
         if (bands.isEmpty()) {
             // a glyph alone (the GPU draws the bands): only its box (glyphs live in their unit box), two pixels round it for the anti-aliasing
-            image.fillRect(0, 0, size, size, 0);
             if (glyph == null || box <= 0) return;
             fx0 = Math.max(0, (int)Math.floor(gx) - 2); fx1 = Math.min(size, (int)Math.ceil(gx + box) + 2);
             fy0 = Math.max(0, (int)Math.floor(gy) - 2); fy1 = Math.min(size, (int)Math.ceil(gy + box) + 2);
@@ -223,10 +234,10 @@ public final class AflGauge {
                 over(p, glyph.rgb(), clamp(0.5 - d) * glyph.alpha());
             }
             int a = (int)Math.round(clamp(p[3]) * 255);
-            if (a == 0) { image.setPixelRGBA(px, py, 0); continue; }
+            if (a == 0) { out.set(px, py, 0); continue; }
             int rr = (int)Math.round(clamp(p[0] / p[3]) * 255), gg = (int)Math.round(clamp(p[1] / p[3]) * 255),
                     bb = (int)Math.round(clamp(p[2] / p[3]) * 255);
-            image.setPixelRGBA(px, py, a << 24 | bb << 16 | gg << 8 | rr); // NativeImage packs ABGR
+            out.set(px, py, a << 24 | bb << 16 | gg << 8 | rr); // NativeImage packs ABGR
         }
     }
 

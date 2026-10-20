@@ -39,7 +39,7 @@ try {
 }
 
 // 1b. Survivor data (backgrounds, body, growth, traits, statuses, gun level curves) loads and every entry has a lang name;
-// every <LevelTable id="..."> names an entry that exists.
+// every status stage has its icon; every <LevelTable id="..."> names an entry that exists.
 let survivorIds = null
 try {
   const sv = loadSurvivor()
@@ -47,6 +47,9 @@ try {
     if (!e.name.zh || e.name.zh === e.id || !e.name.en || e.name.en === e.id) errors.push(`survivor ${e.id}: no lang name`)
   }
   for (const e of sv.growth) for (const pk of e.perks) if (pk.name.zh === pk.id) errors.push(`survivor perk ${pk.id}: no lang name`)
+  // the HUD status icons on the statuses page, drawn by `gradlew wikiStatusIcons` (test client/StatusBadgeIcons)
+  for (const s of sv.statuses) for (const r of s.rows)
+    if (!fs.existsSync(path.join(WIKI, 'public/img/status', `${s.id}_${r.stage}.png`))) errors.push(`status ${s.id} stage ${r.stage}: public/img/status/${s.id}_${r.stage}.png not drawn (gradlew wikiStatusIcons)`)
   survivorIds = new Set([...sv.body, ...sv.growth].map((e) => e.id))
 } catch (e) {
   errors.push(`survivor data failed to load: ${e.message}`)
