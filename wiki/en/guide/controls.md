@@ -26,7 +26,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | Left / right click (orbit, on foot) | Turn to the dot in the middle of the screen first, then dig, place or use; aiming a gun (right click) drops to first person until you let go |
 | Scroll (orbit, in a vehicle) | Camera distance |
 
-<StatusTag s="new" /> In a vehicle the camera chases behind it; the mouse swings it round, and a moment after you let the mouse be it eases back behind while the vehicle moves
+<StatusTag s="verified" d="2026-10-19" /> In a vehicle the camera chases behind it; the mouse swings it round, and a moment after you let the mouse be it eases back behind while the vehicle moves
 
 ## Guns
 

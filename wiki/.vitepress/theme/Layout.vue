@@ -15,7 +15,7 @@ const v = data.version
     <template #layout-bottom>
       <footer class="aflfoot">
         <span>Apocalypse: First Light Wiki · staticgrove.net</span>
-        <span>{{ t('数值来自游戏数据', 'Numbers from the game data') }} · {{ v.mod }} · <code>{{ v.commit }}</code> · {{ t('构建', 'built') }} {{ v.built }}</span>
+        <span>{{ t('数值来自游戏数据', 'Numbers from the game data') }} · {{ v.mod }} · <code>{{ v.branch }}@{{ v.commit }}</code><template v-if="v.dirtyWiki"> {{ t('+ 未提交的 Wiki 改动', '+ uncommitted wiki edits') }}</template> · {{ t('同步', 'synced') }} {{ v.synced }}</span>
       </footer>
     </template>
   </Layout>

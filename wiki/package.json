@@ -7,10 +7,14 @@
     "build": "node scripts/check-wiki.mjs && vitepress build .",
     "preview": "vitepress preview . --port 5179",
     "check": "node scripts/check-wiki.mjs",
-    "images": "node scripts/sync-images.mjs"
+    "images": "node scripts/images.mjs",
+    "images:upload": "node scripts/images.mjs upload",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:probe": "node scripts/deploy.mjs --probe"
   },
   "devDependencies": {
     "sharp": "^0.33.5",
-    "vitepress": "1.6.4"
+    "vitepress": "1.6.4",
+    "wrangler": "4.147.0"
   }
 }

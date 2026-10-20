@@ -8,9 +8,11 @@ New worlds default to the **AFL Federal Six States**: an island of about 20×16 
 
 | Page | Covers |
 |---|---|
+| [Setting](./lore) | The Columbian Federation, six states, 16 towns |
+| [Pre-war Companies](./companies) | The Federation's companies and brands |
 | [Biomes](./biomes) | 20 biomes and their temperatures |
-| [Roads](./roads) | Interstates, state highways, tunnels |
-| [Places](./places) | The farmhouse, fuel stations and future towns |
+| [Roads](./roads) | Interstates, state highways, interchanges, tunnels |
+| [Places](./places) | The farmhouse, fuel stations, the town of Linden |
 | [Forests](./forests) | AFL's own trees and felling |
 | [Weather](./weather) | Rain, wind and body temperature |
 
@@ -18,9 +20,10 @@ New worlds default to the **AFL Federal Six States**: an island of about 20×16 
 
 - Terrain, rivers, lakes, coasts and 20 biomes
 - Six AFL tree species in place of vanilla trees
-- Interstates and state highways, with tunnels and signs
+- Interstates and state highways, with interchanges, tunnels and signs
+- The streets and lots of the town of Linden (no buildings yet)
 - A clean starting area, with radiation rising the farther out you go. See [Radiation](../guide/radiation)
 
 ## Not yet
 
-<StatusTag s="planned" /> Towns and cities, generated fuel stations and buildings, loot in the wild
+<StatusTag s="planned" /> Buildings in towns, the other 15 towns and the cities, generated fuel stations and buildings, loot in the wild

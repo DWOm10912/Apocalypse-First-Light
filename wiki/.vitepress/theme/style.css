@@ -63,3 +63,9 @@
 .afl-src code { font-size: 11.5px; color: var(--afl-blue); background: none; padding: 0; }
 
 .afl-src code { word-break: break-all; }
+
+/* Item icons (ItemIcon.vue): keep an icon and its name on one line in table name cells; smaller inside running text */
+.vp-doc td:first-child:has(> img.item-icon:first-child) { white-space: nowrap; }
+.vp-doc td:not(:first-child) .item-icon,
+.vp-doc li .item-icon,
+.vp-doc p .item-icon { width: 1.9em; height: 1.9em; margin: -0.25em 0.3em -0.25em 0; }

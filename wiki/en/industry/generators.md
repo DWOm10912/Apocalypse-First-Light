@@ -6,6 +6,8 @@ An AFL "hour" is one in-game hour (<V j="DieselGeneratorBlockEntity.HOUR_TICKS" 
 
 ## Diesel Generator
 
+<ModelShot id="diesel_generator" zh="柴油发电机" en="Diesel generator" />
+
 A large fixed generator that connects to a building through a steel power port
 
 | | |
@@ -20,6 +22,8 @@ A large fixed generator that connects to a building through a steel power port
 - Starts with a key
 
 ## Portable Generator
+
+<ModelShot id="portable_diesel_generator" zh="便携发电机" en="Portable generator" />
 
 A small pull-start generator with <V j="PortableDieselGeneratorBlockEntity.SOCKETS" /> built-in sockets that power appliances directly through cords
 
@@ -40,6 +44,8 @@ A small pull-start generator with <V j="PortableDieselGeneratorBlockEntity.SOCKE
 The engine stays warm for <V j="PortableDieselGeneratorBlockEntity.WARM_TICKS" x="0.05" u="s" /> after it stops. Plugging in more than the rated load trips it
 
 ## Thermal Generator
+
+<ModelShot id="thermal_generator" zh="热能发电机" en="Thermal generator" />
 
 Burns coal or lava for power
 

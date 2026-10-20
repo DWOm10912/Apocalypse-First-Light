@@ -4,33 +4,40 @@
 
 ## 数值是怎么来的
 
-这个网站不手抄数字。构建网站时，脚本直接读取模组仓库里的游戏数据：
+本站不手抄数值。构建时，脚本直接读取模组仓库里的游戏数据：
 
 | 内容 | 来源 |
 |---|---|
 | 枪械参数 | `data/apocalypse_firstlight/native_guns/*.json` |
 | 重量、背包占格 | `item_mass/*.json`、`item_size/*.json` |
-| 体力、口渴、体温 | `stamina/`、`thirst/`、`temperature/` 下的 JSON |
+| 耐力、口渴、体温 | `stamina/`、`thirst/`、`temperature/` 下的 JSON |
+| 背景、身体、特质、成长 | `survivor_backgrounds/`、`survivor_body/`、`survivor_traits/`、`survivor_growth/` 下的 JSON |
 | 机器耗电、容量 | `machine_balance/*.json` |
-| 写在代码里的数值 | 直接从 Java 源码的常量读取 |
+| 写在代码里的数值 | 直接读取 Java 源码中的常量 |
 | 名称 | 游戏的 `zh_cn` / `en_us` 语言文件 |
 
-正文里<V d="stamina/stamina_v1#max" />这样的琥珀色等宽数字都是从游戏数据读出来的，鼠标停在上面能看到出处。
+正文里像 <V d="stamina/stamina_v1#max" /> 这样的琥珀色等宽数字都读自游戏数据，鼠标悬停可查看出处
 
 ## 版本对应
 
-- 页面顶部和底部标出的版本号来自模组的 `gradle.properties`，数据提交号是生成这些数值的那次提交
-- 公开网站只在发布新版本时更新，所以网站上的数值和你下载的那个版本一致
-- 本地预览如果有没提交的数据改动，会在版本卡片里提示
+- 页面顶部和底部的版本号取自模组的 `gradle.properties`；数据提交号是生成这些数值时所用的那次提交
+- 本站是内部开发资料库。Main 每次把功能集成进主线后重新构建并部署，页脚的提交号和同步时间对应这次部署时的主线状态
+- 各工作区分支上尚未集成的内容不会出现在本站
+- 本地预览时如果有未提交的数据改动，版本卡片会给出提示
 
 ## 数值历史
 
-每把枪页面底部的“数值历史”和 [数值变更](/changelog/values) 页是从游戏数据文件的 git 历史自动整理的：哪天、哪个版本、哪个数从多少改成多少。弹道和后坐力之类的手感参数只统计次数
+每把枪页面底部的“数值历史”和 [数值变更](/changelog/values) 页根据游戏数据文件的 git 历史自动整理，记录每项数值在哪天、哪个版本从多少改为多少。弹道、后坐力等手感参数只统计改动次数
 
 ## 状态标记
 
-- <StatusTag s="live" /> 正常游戏里就有
-- <StatusTag s="new" /> 刚加入，数值可能还会调
-- <StatusTag s="creative" /> 东西做好了，但生存模式还拿不到
-- <StatusTag s="test" /> 只在测试世界里出现
-- <StatusTag s="planned" /> 还没做，只是计划
+功能按进度分四档，只会逐档向前，不会跳档：
+
+- <StatusTag s="verified" d="日期" /> 已集成进主线，并已通过实机验收；后面是验收日期
+- <StatusTag s="integrated" /> 已集成进主线，但尚未实机验收，可能存在问题
+- <StatusTag s="test" /> 只出现在测试世界或开发命令里，或者仍在工作区分支上
+- <StatusTag s="planned" /> 尚未制作，只有设计或计划
+
+另有一个标记不表示进度：
+
+- <StatusTag s="creative" /> 内容已经做好，但生存模式中还无法获得

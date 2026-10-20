@@ -37,15 +37,44 @@ export function loadVersion() {
   const commitDate = git(['log', '-1', '--format=%cs'])
   // data files with uncommitted edits: the wiki then shows values newer than the last commit
   const dirtyData = git(['status', '--porcelain', '--', 'src/main/resources/data']).split('\n').filter(Boolean).length
+  // wiki pages with uncommitted edits (deploys allow this; the game files must be committed)
+  const dirtyWiki = git(['status', '--porcelain', '--', 'wiki']).split('\n').filter(Boolean).length
   return {
     mod: props.mod_version,
     minecraft: props.minecraft_version,
     forge: props.forge_version,
     commit,
     commitDate,
+    branch: git(['rev-parse', '--abbrev-ref', 'HEAD']),
     dirtyData,
-    built: new Date().toISOString().slice(0, 10)
+    dirtyWiki,
+    built: new Date().toISOString().slice(0, 10),
+    // when this build was made (= synced with the main line when it is deployed), local time with its offset
+    synced: localStamp(new Date())
   }
+}
+
+function localStamp(d) {
+  const pad = (n) => String(n).padStart(2, '0')
+  const off = -d.getTimezoneOffset()
+  const sign = off >= 0 ? '+' : '-'
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())} UTC${sign}${Math.floor(Math.abs(off) / 60)}${off % 60 ? ':' + pad(Math.abs(off) % 60) : ''}`
+}
+
+// Main-line history for the update log: first-parent commits of HEAD, newest first, with what kind of thing changed.
+export function loadUpdates(limit = 80) {
+  const log = git(['log', '--first-parent', `-${limit}`, '--format=%h%x1f%cs%x1f%s'])
+  if (!log) return []
+  return log.split('\n').map((line) => {
+    const [hash, date, subject] = line.split('\x1f')
+    const files = git(['show', '--first-parent', '-m', '--name-only', '--format=', hash]).split('\n').filter(Boolean)
+    const kinds = []
+    if (files.some((f) => f.startsWith('wiki/'))) kinds.push('wiki')
+    if (files.some((f) => f.startsWith('src/main/resources/data/'))) kinds.push('data')
+    if (files.some((f) => f.startsWith('src/main/java/'))) kinds.push('code')
+    if (files.some((f) => f.startsWith('docs/'))) kinds.push('docs')
+    return { hash, date, subject, kinds, merge: /^合并|^Merge/.test(subject) }
+  })
 }
 
 let langCache

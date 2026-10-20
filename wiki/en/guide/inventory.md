@@ -52,4 +52,4 @@ Kilograms in these tables assume the default 30 kg comfortable load
 
 Cabinets, shelves, bins and other containers in the world start "unsearched". Open one and its contents turn up one slot at a time; close the screen to stop and pick up where you left off next time
 
-<StatusTag s="new" /> For now most of what you find is store-themed "goods" (grocery, hardware, pharmacy, school, industrial); detailed item lists are still being made
+<StatusTag s="integrated" /> For now most of what you find is store-themed "goods" (grocery, hardware, pharmacy, school, industrial); detailed item lists are still being made

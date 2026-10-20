@@ -1,0 +1,9 @@
+{
+  "_comment": "Cloudflare Pages deploy (scripts/deploy.mjs). accessVerified stays false until the user has checked, logged out, that the production URL, a preview URL, the custom domain and a static asset all ask for Cloudflare Access; only then may the full wiki be deployed. Set only on the user's word (user 2026-10-19 confirmed the checks in chat).",
+  "project": "afl-wiki",
+  "productionBranch": "main",
+  "customDomain": "wiki.staticgrove.net",
+  "accessVerified": true,
+  "accessVerifiedAt": "2026-10-19",
+  "accessVerifiedNote": "User 2026-10-19: production pages.dev, preview and static test file require login; custom domain goes to Access login in a private window; policy allows only the user email."
+}

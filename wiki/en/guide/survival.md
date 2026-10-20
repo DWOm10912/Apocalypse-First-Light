@@ -2,7 +2,7 @@
 
 AFL's survival HUD replaces vanilla hearts, hunger and the experience bar: a round module in the lower left, with health on the left arc, stamina on the right arc and a body temperature gauge in the middle. Three small dials beside it show food, thirst and load. They stay small and faint, and grow, show a number and turn red when you are in trouble
 
-<StatusTag s="new" /> These values are starting values and will be tuned
+<StatusTag s="integrated" /> These values are starting values and will be tuned
 
 ## Stamina
 
@@ -61,11 +61,11 @@ Core temperature starts at <V d="temperature/temperature_v1#normal" u="°C" /> a
 - Frost creeps in from the screen edges when you are cold; heat makes the screen glare and shimmer
 - Rain soaks you in about a minute and being wet makes you colder; without a fire you take about <V d="temperature/temperature_v1#wetness.dry_seconds" u="s" /> to dry
 - Campfires, fire, furnaces and AFL's box stove keep you warm
-- <StatusTag s="new" /> In a T15's cab you stay out of the rain; the cab has its own air, with a heater and A/C (see [T15](../vehicles/t15))
-- **Readings**: a wrist thermometer shows air temperature; a clinical thermometer takes your temperature after a 3 s hold. Without them the HUD shows no numbers
+- <StatusTag s="verified" d="2026-10-19" /> In a T15's cab you stay out of the rain; the cab has its own air, with a heater and A/C (see [T15](../vehicles/t15))
+- <ItemIcon id="wrist_thermometer" /><ItemIcon id="clinical_thermometer" />**Readings**: a wrist thermometer shows air temperature; a clinical thermometer takes your temperature after a 3 s hold. Without them the HUD shows no numbers
 
 ## Food
 
-Food uses the vanilla system; AFL has no foods of its own yet. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is halved, and stomach sickness and Cold 2 or worse burn extra food
+Food uses the vanilla system; AFL has no foods of its own yet. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is ×<V d="stamina/stamina_v1#regen_low_food" />, and stomach sickness and Cold 2 or worse burn extra food
 
 <StatusTag s="planned" /> Food spoilage and storage

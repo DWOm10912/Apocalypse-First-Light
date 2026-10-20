@@ -16,8 +16,10 @@ const v = data.version
       <dt>Minecraft</dt><dd>{{ v.minecraft }}</dd>
       <dt>Forge</dt><dd>{{ v.forge }}</dd>
       <dt>{{ t('数据提交', 'Data commit') }}</dt><dd class="afl-mono">{{ v.commit }} · {{ v.commitDate }}</dd>
-      <dt>{{ t('网站构建', 'Site built') }}</dt><dd>{{ v.built }}</dd>
+      <dt>{{ t('分支', 'Branch') }}</dt><dd class="afl-mono">{{ v.branch }}</dd>
+      <dt>{{ t('同步时间', 'Synced') }}</dt><dd>{{ v.synced }}</dd>
     </dl>
+    <div v-if="v.dirtyWiki" class="warn">● {{ t(`Wiki 有 ${v.dirtyWiki} 个文件的改动还没提交：页面比提交 ${v.commit} 新，游戏数值仍是这个提交的`, `${v.dirtyWiki} wiki files have uncommitted edits: the pages are newer than commit ${v.commit}; the game numbers are that commit's`) }}</div>
     <div v-if="v.dirtyData" class="warn">● {{ t(`有 ${v.dirtyData} 个数据文件还没提交：本地预览显示的是未提交的值`, `${v.dirtyData} data files are uncommitted: this local preview shows unreleased values`) }}</div>
     <div v-else class="ok">● {{ t('页面数值与这个提交的游戏数据一致', 'Every number matches the game data in this commit') }}</div>
     <a class="more" :href="link('/about/')">{{ t('数值是怎么来的 →', 'Where the numbers come from →') }}</a>

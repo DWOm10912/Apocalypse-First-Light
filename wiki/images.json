@@ -1,16 +1,25 @@
 {
-  "_comment": "Wiki images. src = path in the repo; crop = [left, top, width, height] as fractions; width = output width. Run: npm run images",
+  "_comment": "Wiki images. src = path in the repo; crop = [left, top, width, height] as fractions; width = output width; category = folder under afl/wiki/ on R2 (guns, vehicles, items, industry, survival, world, companies, ui); visibility = public (uploaded to the public R2 domain img.staticgrove.net) or internal (only bundled into the Access-protected site). Unreleased story, hidden places and anything confidential must be internal. Run: npm run images, then npm run images:upload (Main only).",
   "afl_title": {
     "src": "design/branding/afl_title.png",
     "width": 600,
-    "format": "webp"
+    "format": "webp",
+    "category": "ui",
+    "visibility": "internal"
   },
   "favicon": {
     "src": "design/branding/afl_badge.png",
     "width": 64,
-    "format": "png"
+    "format": "png",
+    "category": "ui",
+    "visibility": "internal"
   },
-  "hero_vehicle": { "src": "design/vehicles/first_pickup_v0/sheets/v1_front34.png", "width": 1800 },
+  "hero_vehicle": {
+    "src": "design/vehicles/first_pickup_v0/sheets/v1_front34.png",
+    "width": 1800,
+    "category": "vehicles",
+    "visibility": "internal"
+  },
   "hero_building": {
     "src": "run/screenshots/2026-10-14_18.33.39.png",
     "crop": [
@@ -19,7 +28,9 @@
       1,
       0.78
     ],
-    "width": 1800
+    "width": 1800,
+    "category": "industry",
+    "visibility": "internal"
   },
   "hero_forest": {
     "src": "run/screenshots/2026-10-12_00.00.44.png",
@@ -29,10 +40,22 @@
       0.82,
       0.78
     ],
-    "width": 1800
+    "width": 1800,
+    "category": "world",
+    "visibility": "internal"
   },
-  "hero_cold": { "src": "run/screenshots/2026-10-04_14.35.51.png", "width": 1800 },
-  "hero_guns": { "src": "design/items/p9_01_v3/ingame/2026-10-17/09_sundial_lite.webp", "width": 1800 },
+  "hero_cold": {
+    "src": "run/screenshots/2026-10-04_14.35.51.png",
+    "width": 1800,
+    "category": "survival",
+    "visibility": "internal"
+  },
+  "hero_guns": {
+    "src": "design/items/p9_01_v3/ingame/2026-10-17/09_sundial_lite.webp",
+    "width": 1800,
+    "category": "guns",
+    "visibility": "internal"
+  },
   "hud": {
     "src": "design/ui/hud_v2/sheets/hud_v2b_1_main.png",
     "crop": [
@@ -41,14 +64,98 @@
       1,
       0.815
     ],
-    "width": 1600
+    "width": 1600,
+    "category": "ui",
+    "visibility": "internal"
   },
-  "world_map": { "src": "design/worldgen/federal_c2/c2_national_ecology.png", "width": 1400 },
-  "maintenance_bench": { "src": "run/screenshots/2026-09-29_00.15.07.png", "width": 1400 },
-  "gun_p9_01": { "src": "design/wiki/gun_renders/p9_01.png", "width": 1200 },
-  "gun_blackridge_50": { "src": "design/wiki/gun_renders/blackridge_50.png", "width": 1200 },
-  "gun_br51_01": { "src": "design/wiki/gun_renders/br51_01.png", "width": 1200 },
-  "gun_cat": { "src": "design/wiki/gun_renders/cat.png", "width": 1200 },
-  "gun_hr55": { "src": "design/wiki/gun_renders/hr55.png", "width": 1200 },
-  "gun_silverwood_12": { "src": "design/wiki/gun_renders/silverwood_12.png", "width": 1200 }
+  "world_map": {
+    "src": "design/worldgen/federal_c2/c2_national_ecology.png",
+    "width": 1400,
+    "category": "world",
+    "visibility": "internal"
+  },
+  "maintenance_bench": {
+    "src": "run/screenshots/2026-09-29_00.15.07.png",
+    "width": 1400,
+    "category": "industry",
+    "visibility": "internal"
+  },
+  "gun_p9_01": {
+    "src": "design/wiki/gun_renders/p9_01.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  },
+  "gun_blackridge_50": {
+    "src": "design/wiki/gun_renders/blackridge_50.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  },
+  "gun_br51_01": {
+    "src": "design/wiki/gun_renders/br51_01.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  },
+  "gun_cat": {
+    "src": "design/wiki/gun_renders/cat.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  },
+  "gun_hr55": {
+    "src": "design/wiki/gun_renders/hr55.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  },
+  "gun_silverwood_12": {
+    "src": "design/wiki/gun_renders/silverwood_12.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  },
+  "model_jerry_can": {
+    "src": "design/wiki/icons/shots/jerry_can.png",
+    "width": 1200,
+    "category": "items",
+    "visibility": "public"
+  },
+  "model_fuel_dispenser": {
+    "src": "design/wiki/icons/shots/fuel_dispenser.png",
+    "width": 1200,
+    "category": "industry",
+    "visibility": "public"
+  },
+  "model_diesel_generator": {
+    "src": "design/wiki/icons/shots/diesel_generator.png",
+    "width": 1200,
+    "category": "industry",
+    "visibility": "public"
+  },
+  "model_portable_diesel_generator": {
+    "src": "design/wiki/icons/shots/portable_diesel_generator.png",
+    "width": 1200,
+    "category": "industry",
+    "visibility": "public"
+  },
+  "model_thermal_generator": {
+    "src": "design/wiki/icons/shots/thermal_generator.png",
+    "width": 1200,
+    "category": "industry",
+    "visibility": "public"
+  },
+  "model_distribution_panel": {
+    "src": "design/wiki/icons/shots/distribution_panel.png",
+    "width": 1200,
+    "category": "industry",
+    "visibility": "public"
+  },
+  "model_gun_maintenance_bench": {
+    "src": "design/wiki/icons/shots/gun_maintenance_bench.png",
+    "width": 1200,
+    "category": "guns",
+    "visibility": "public"
+  }
 }

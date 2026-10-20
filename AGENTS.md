@@ -33,18 +33,26 @@ Reason if NO:
 WIKI UPDATED = YES/NO/NOT NEEDED
 ```
 
-# Player Wiki
+# Development Wiki
 
-The player wiki lives in `wiki/` (VitePress, see `docs/wiki/afl_wiki_v1_plan.md`). It is part of the Definition of Done for player-visible changes.
+The wiki lives in `wiki/` (VitePress, B design). Since 2026-10-19 (user) it is the user's private online development reference, deployed behind Cloudflare Access at `wiki.staticgrove.net`; see `docs/wiki/afl_wiki_v2_plan.md`. It replaces the 2026-10-18 pause: keep it current in every task. It is part of the Definition of Done for any change to features, values, controls, items, names, lore or settings.
 
-**Paused (user, 2026-10-18):** until shortly before the V1 test release, no session updates the wiki, local `wiki/` included; one session will then bring it up to date in one pass. Until then the rules below do not apply; report `WIKI UPDATED = NOT NEEDED (paused until V1 test release)`.
+Who does what:
 
-- When a task changes something a player can see or feel (values, controls, items, names, recipes, how a system behaves, whether something is in the game), update the matching `wiki/` page in both languages (`wiki/<page>.md` and `wiki/en/<page>.md`) in the same task.
-- Never hand-copy numbers: use `<V d="folder/file#key.path" />` for datapack JSON and `<V j="Class.CONSTANT" />` for Java numeric constants. Gun, ammo, attachment and biome tables come from the data automatically.
+- **C, D and other workspaces** update the matching `wiki/` pages on their own branch in the same task (both languages: `wiki/<page>.md` and `wiki/en/<page>.md`), so the merge brings code and wiki together. They may run `npm --prefix wiki run check` and `npm --prefix wiki run deploy -- --dry-run`, never a real deploy or an image upload.
+- **Main** integrates, then runs `npm --prefix wiki run deploy` from the main checkout on master after each integration into master. Only Main uploads public images (`npm --prefix wiki run images:upload`). The scripts refuse other worktrees and branches.
+
+Rules for pages:
+
+- Status, never skipped: `<StatusTag s="verified" d="YYYY-MM-DD" />` = in master and the user checked it in game (date of that check); `integrated` = in master, not checked in game; `test` = test worlds / dev commands only, or still on a branch; `planned` = designed, not built. `creative` is an extra tag (creative-only for now). A branch never marks its own work `integrated` or `verified`: Main sets that when merging, `verified` only after a user in-game PASS. Never describe planned or draft content as current.
+- Never hand-copy numbers: `<V d="folder/file#key.path" />` for datapack JSON, `<V j="Class.CONSTANT" />` for Java numeric constants; gun, ammo, attachment, biome, survivor and town tables come from the data automatically. Two tag-led lines in a row run together in markdown: write them as a list (`- <StatusTag ... /> ...`).
 - New guns need `wiki/content/guns/<id>.zh.md` and `<id>.en.md`.
-- Mark unfinished content with `<StatusTag s="creative|test|planned|new|live" />`; never describe planned content as current.
-- Run `npm --prefix wiki run check` before finishing; it fails on missing values, missing translations, missing gun prose and unbuilt images.
+- Items and blocks are shown as 3D renders of the game model, never flat sprites: `<ItemIcon id="<item id>" />` in tables and lists, `<ModelShot id="<item id>" />` for a large picture (plus `model_<id>` in `images.json`). Any workspace may add them; Main renders missing ones in Blockbench (`wiki/scripts/icons.mjs`, `docs/wiki/afl_wiki_v2_plan.md` section 5.1) before deploying.
+- Images: add them to `wiki/images.json` with a `category` (guns, vehicles, items, industry, survival, world, companies, ui) and a `visibility`. `public` images are uploaded to the public domain `img.staticgrove.net`; unreleased story, hidden places and anything confidential must be `internal` (bundled only into the Access-protected site). When unsure, use `internal`.
+- Run `npm --prefix wiki run check` before finishing; it fails on missing values, translations, gun prose, invalid status tags and unbuilt images.
 - The user's Obsidian overview under `docs/项目内容/` (for example `02 - 制作清单.md`) should be kept in step with the same change.
+
+Report line: `WIKI UPDATED = YES/NO/NOT NEEDED (<why>)`; for Main, also whether it was deployed.
 
 # Chinese Localization
 

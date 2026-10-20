@@ -40,6 +40,6 @@ Dirty water carries the radiation of where you filled it, and boiling doesn't re
 
 ## Geiger counter
 
-Held in hand it shows the current dose rate on a digital display and clicks. It measures the rate only, not how much dose you have built up
+<ItemIcon id="geiger_counter" />Held in hand it shows the current dose rate on a digital display and clicks. It measures the rate only, not how much dose you have built up
 
 <StatusTag s="creative" />

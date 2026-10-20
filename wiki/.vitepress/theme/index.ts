@@ -14,6 +14,15 @@ import AccuracyTable from './components/AccuracyTable.vue'
 import BiomeTable from './components/BiomeTable.vue'
 import AmmoTable from './components/AmmoTable.vue'
 import AttachmentTable from './components/AttachmentTable.vue'
+import UpdateLog from './components/UpdateLog.vue'
+import TraitTable from './components/TraitTable.vue'
+import BackgroundTable from './components/BackgroundTable.vue'
+import LevelTable from './components/LevelTable.vue'
+import StatusTable from './components/StatusTable.vue'
+import GunLevelTable from './components/GunLevelTable.vue'
+import TownTable from './components/TownTable.vue'
+import ItemIcon from './components/ItemIcon.vue'
+import ModelShot from './components/ModelShot.vue'
 import './style.css'
 
 export default {
@@ -33,5 +42,14 @@ export default {
     app.component('BiomeTable', BiomeTable)
     app.component('AmmoTable', AmmoTable)
     app.component('AttachmentTable', AttachmentTable)
+    app.component('UpdateLog', UpdateLog)
+    app.component('TraitTable', TraitTable)
+    app.component('BackgroundTable', BackgroundTable)
+    app.component('LevelTable', LevelTable)
+    app.component('StatusTable', StatusTable)
+    app.component('GunLevelTable', GunLevelTable)
+    app.component('TownTable', TownTable)
+    app.component('ItemIcon', ItemIcon)
+    app.component('ModelShot', ModelShot)
   }
 } satisfies Theme

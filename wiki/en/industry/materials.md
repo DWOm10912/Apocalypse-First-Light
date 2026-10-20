@@ -6,24 +6,26 @@
 
 | Ore | Processing |
 |---|---|
-| Galena | Crush → galena → industrial furnace → lead brick |
-| Pentlandite | Crush → pentlandite → chemical reactor → electrolytic nickel |
-| Spodumene | Crush → spodumene concentrate → chemical reactor → lithium carbonate |
-| Wolframite | Crush → wolframite → chemical reactor → tungsten oxide → industrial furnace → tungsten powder |
-| Bauxite, sphalerite, cassiterite | No processing recipes yet |
+| <ItemIcon id="galena_ore" /> Galena | Crush → <ItemIcon id="galena" />galena → industrial furnace → <ItemIcon id="lead_brick" />lead brick |
+| <ItemIcon id="pentlandite_ore" /> Pentlandite | Crush → <ItemIcon id="pentlandite" />pentlandite → chemical reactor → <ItemIcon id="electrolytic_nickel" />electrolytic nickel |
+| <ItemIcon id="spodumene_ore" /> Spodumene | Crush → <ItemIcon id="spodumene_concentrate" />spodumene concentrate → chemical reactor → <ItemIcon id="lithium_carbonate" />lithium carbonate |
+| <ItemIcon id="wolframite_ore" /> Wolframite | Crush → <ItemIcon id="wolframite" />wolframite → chemical reactor → <ItemIcon id="tungsten_oxide" />tungsten oxide → industrial furnace → <ItemIcon id="tungsten_powder" />tungsten powder |
+| <ItemIcon id="bauxite_ore" /> Bauxite | No processing recipes yet |
+| <ItemIcon id="sphalerite_ore" /> Sphalerite | No processing recipes yet |
+| <ItemIcon id="cassiterite_ore" /> Cassiterite | No processing recipes yet |
 
 Industrial ores need a diamond pickaxe. Crushing gives 1–3 per ore; each chemical reactor run uses 20 L of water and produces 20 L of industrial waste
 
 ## Tungsten and steel
 
-- Tungsten powder sinters into **tungsten filament** in the industrial furnace
-- Tungsten powder plus carbon makes **tungsten carbide powder** in the alloy furnace, then a **cemented carbide blank**
-- Iron ingot plus carbon makes a **steel billet** in the alloy furnace
+- <ItemIcon id="tungsten_filament" />Tungsten powder sinters into **tungsten filament** in the industrial furnace
+- <ItemIcon id="tungsten_carbide_powder" /><ItemIcon id="cemented_carbide_blank" />Tungsten powder plus carbon makes **tungsten carbide powder** in the alloy furnace; that powder plus electrolytic nickel, again in the alloy furnace, makes a **cemented carbide blank**
+- <ItemIcon id="steel_billet" />Iron ingot plus carbon makes a **steel billet** in the alloy furnace
 
 ## Other recipes
 
-- 4 lead bricks make **lead shielding bricks** (block radiation, see [Radiation](../guide/radiation#shielding))
-- Reinforced concrete crushes back into concrete rubble
+- <ItemIcon id="lead_shielding_bricks" />4 lead bricks make **lead shielding bricks** (block radiation, see [Radiation](../guide/radiation#shielding))
+- Reinforced concrete goes through the crusher for concrete rubble and steel scrap (3–5 of each)
 - Curbs: grass block or sidewalk plus concrete rubble
 
 Machine power use: see [Industry](./)

@@ -1,0 +1,145 @@
+{
+  "gun_blackridge_50": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_blackridge_50.1200w.e23135c1c17b90.webp",
+    "key": "afl/wiki/guns/gun_blackridge_50.1200w.e23135c1c17b90.webp",
+    "sha256": "e23135c1c17b90928fe7d257c70eee24e147792a2d6d924142fdac91bdaeb3e4",
+    "bytes": 36594,
+    "width": 1200,
+    "height": 750,
+    "srcSig": "525cf013a8864943f069fcbdaff351dc67ad140ca487b1de83a0a278628caf4e",
+    "uploaded": "2026-10-19T21:11:35.934Z"
+  },
+  "gun_br51_01": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_br51_01.1200w.920c6f46902e5d.webp",
+    "key": "afl/wiki/guns/gun_br51_01.1200w.920c6f46902e5d.webp",
+    "sha256": "920c6f46902e5db02f22aa58d270633bca952755cb875b39bc067a505aa1bb4a",
+    "bytes": 30862,
+    "width": 1200,
+    "height": 750,
+    "srcSig": "31b39604e47a833032921bba0abaaee05904467324c4d50fde6b18298c6f7225",
+    "uploaded": "2026-10-19T21:11:36.479Z"
+  },
+  "gun_cat": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_cat.1200w.0400f94f95418a.webp",
+    "key": "afl/wiki/guns/gun_cat.1200w.0400f94f95418a.webp",
+    "sha256": "0400f94f95418a67b609726d1a6bc269e8ac41d684e84f2eea54350f0ac80064",
+    "bytes": 20852,
+    "width": 1200,
+    "height": 750,
+    "srcSig": "0cb7e4e9e12ea2ba2f146f4f32e8a7e2f9b4a5758ee3994d03857dd246ce1f42",
+    "uploaded": "2026-10-19T21:11:36.911Z"
+  },
+  "gun_hr55": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_hr55.1200w.8699d67237269e.webp",
+    "key": "afl/wiki/guns/gun_hr55.1200w.8699d67237269e.webp",
+    "sha256": "8699d67237269ed4be10e5f5b4a974f9a729cad26da8fde6920953c8a0fa411d",
+    "bytes": 29944,
+    "width": 1200,
+    "height": 750,
+    "srcSig": "53d52ac2c7244a6a62e754b7ac584347d8326d971584d80831960f6e22d3e823",
+    "uploaded": "2026-10-19T21:11:37.425Z"
+  },
+  "gun_p9_01": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_p9_01.1200w.9cae3ae2eefa0c.webp",
+    "key": "afl/wiki/guns/gun_p9_01.1200w.9cae3ae2eefa0c.webp",
+    "sha256": "9cae3ae2eefa0c99abe700df05342884b959d15a052b772fa8f0416e8dd1af1a",
+    "bytes": 30210,
+    "width": 1200,
+    "height": 750,
+    "srcSig": "b83602caaca55cab332c7990bd7cbec6c0114703298d040b9f763f3701f4ce67",
+    "uploaded": "2026-10-19T21:11:35.291Z"
+  },
+  "gun_silverwood_12": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_silverwood_12.1200w.66b89c6196675f.webp",
+    "key": "afl/wiki/guns/gun_silverwood_12.1200w.66b89c6196675f.webp",
+    "sha256": "66b89c6196675f769fcee55583e8a816cf0c811454f7c239b8ba8678baa4f34e",
+    "bytes": 23158,
+    "width": 1200,
+    "height": 750,
+    "srcSig": "92566f688d5534a400704d08c65b5fa512be0a19a1058646f44d0e11f2534770",
+    "uploaded": "2026-10-19T21:11:37.840Z"
+  },
+  "model_diesel_generator": {
+    "category": "industry",
+    "url": "https://img.staticgrove.net/afl/wiki/industry/model_diesel_generator.1200w.03ff6193e18830.webp",
+    "key": "afl/wiki/industry/model_diesel_generator.1200w.03ff6193e18830.webp",
+    "sha256": "03ff6193e18830d7e76279023f7bfed3fbb2c0136b69672d5814308eaaddd55b",
+    "bytes": 25510,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "37f546dd0712351b2a12f1b04d85668f6de37f9648aa9b449410f7c291a47da4",
+    "uploaded": "2026-10-19T22:26:44.564Z"
+  },
+  "model_distribution_panel": {
+    "category": "industry",
+    "url": "https://img.staticgrove.net/afl/wiki/industry/model_distribution_panel.1200w.58c033bf876e98.webp",
+    "key": "afl/wiki/industry/model_distribution_panel.1200w.58c033bf876e98.webp",
+    "sha256": "58c033bf876e984b1a0f99c8cd5282329f0dcf4b3f8a5da526a6aea5dbd3ee15",
+    "bytes": 9988,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "b74e6051b40660f67f779384d70bc0ab5f8a4f22319de98dfd39ce94946ea9e2",
+    "uploaded": "2026-10-19T22:26:45.965Z"
+  },
+  "model_fuel_dispenser": {
+    "category": "industry",
+    "url": "https://img.staticgrove.net/afl/wiki/industry/model_fuel_dispenser.1200w.a27d99018f0322.webp",
+    "key": "afl/wiki/industry/model_fuel_dispenser.1200w.a27d99018f0322.webp",
+    "sha256": "a27d99018f03229ed7912b1a08789ca863bd9a3e136a4a19988358597b510110",
+    "bytes": 20594,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "2a94da32a7cf5e070c5afe7a82fc1f8e687b90e953f5bb799e8c6ee5fdf07436",
+    "uploaded": "2026-10-19T22:26:44.189Z"
+  },
+  "model_gun_maintenance_bench": {
+    "category": "guns",
+    "url": "https://img.staticgrove.net/afl/wiki/guns/model_gun_maintenance_bench.1200w.4e1a913075793e.webp",
+    "key": "afl/wiki/guns/model_gun_maintenance_bench.1200w.4e1a913075793e.webp",
+    "sha256": "4e1a913075793e072acbb5280b26a3bc8fc8327dd02ca0ad8d4e5711c93984e9",
+    "bytes": 22182,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "2c2d6e4c8d38072cbcbfc2b19a117e546d0990d6c853de7461443eac302979f2",
+    "uploaded": "2026-10-19T22:26:46.460Z"
+  },
+  "model_jerry_can": {
+    "category": "items",
+    "url": "https://img.staticgrove.net/afl/wiki/items/model_jerry_can.1200w.ff09e5f138b8bd.webp",
+    "key": "afl/wiki/items/model_jerry_can.1200w.ff09e5f138b8bd.webp",
+    "sha256": "ff09e5f138b8bde0659d0c6e66c1b9b470268ab803db161bf40f25236ef4cac2",
+    "bytes": 11636,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "375d690402f701fb0c1fc6b50f160576c5a98b1736164ba75b681cb9cb452ae3",
+    "uploaded": "2026-10-19T22:26:43.778Z"
+  },
+  "model_portable_diesel_generator": {
+    "category": "industry",
+    "url": "https://img.staticgrove.net/afl/wiki/industry/model_portable_diesel_generator.1200w.a19f41fcb00079.webp",
+    "key": "afl/wiki/industry/model_portable_diesel_generator.1200w.a19f41fcb00079.webp",
+    "sha256": "a19f41fcb000792f7060abb3cf88a1dbc2c02399a5c9978a54425e48f2cd46ed",
+    "bytes": 33180,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "a492d195851837bbc091322d9af87eab8e2cec04286ccd4313a1d0e51edd1668",
+    "uploaded": "2026-10-19T22:26:45.087Z"
+  },
+  "model_thermal_generator": {
+    "category": "industry",
+    "url": "https://img.staticgrove.net/afl/wiki/industry/model_thermal_generator.1200w.7630f42eba8f1a.webp",
+    "key": "afl/wiki/industry/model_thermal_generator.1200w.7630f42eba8f1a.webp",
+    "sha256": "7630f42eba8f1af0b514d514b7aab5ab08343d22d432133bad9daf2edf81cd93",
+    "bytes": 20530,
+    "width": 1200,
+    "height": 900,
+    "srcSig": "c1807b2e645a11b6b2c7ce9ab22fcfc5a60961b84a8be9755d2fa2b444588da0",
+    "uploaded": "2026-10-19T22:26:45.541Z"
+  }
+}

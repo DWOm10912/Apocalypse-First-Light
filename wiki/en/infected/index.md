@@ -1,6 +1,6 @@
 # Infected
 
-<StatusTag s="new" /> The infected currently use the vanilla zombie's body and stats. What AFL changes is how they see, hear and break in
+<StatusTag s="integrated" /> The infected currently use the vanilla zombie's body and stats. What AFL changes is how they see, hear and break in
 
 ## Stats
 

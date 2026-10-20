@@ -1,0 +1,97 @@
+{
+  "_comment": "Item pictures for the wiki (scripts/icons.mjs). Keys are item ids; values may set bbmodel (source file), rot (item display rotation, degrees) and hide (regexp of group/element names to hide). Ids used by <ItemIcon>/<ModelShot> on pages are added automatically.",
+  "field_chest_rig": {},
+  "canvas_backpack": {
+    "rot": [
+      25,
+      148,
+      0
+    ]
+  },
+  "hiking_backpack": {
+    "rot": [
+      25,
+      148,
+      0
+    ]
+  },
+  "pistol_holster": {
+    "rot": [
+      25,
+      148,
+      0
+    ]
+  },
+  "gun_sling": {},
+  "simple_hearing_protection": {},
+  "wrist_thermometer": {},
+  "clinical_thermometer": {},
+  "geiger_counter": {},
+  "crowbar": {
+    "rot": [
+      12,
+      -18,
+      -45
+    ]
+  },
+  "jerry_can": {},
+  "small_fuel_drum": {},
+  "fuel_drum": {},
+  "hand_fuel_pump": {},
+  "fuel_dispenser": {},
+  "underground_fuel_tank_diesel": {},
+  "galena_ore": {},
+  "pentlandite_ore": {},
+  "spodumene_ore": {},
+  "wolframite_ore": {},
+  "bauxite_ore": {},
+  "sphalerite_ore": {},
+  "cassiterite_ore": {},
+  "galena": {},
+  "pentlandite": {},
+  "spodumene_concentrate": {},
+  "wolframite": {},
+  "lead_brick": {},
+  "electrolytic_nickel": {},
+  "lithium_carbonate": {},
+  "tungsten_oxide": {},
+  "tungsten_powder": {},
+  "tungsten_filament": {},
+  "tungsten_carbide_powder": {},
+  "cemented_carbide_blank": {},
+  "steel_billet": {},
+  "lead_shielding_bricks": {},
+  "crusher": {},
+  "industrial_furnace": {},
+  "alloy_furnace": {},
+  "chemical_reactor": {},
+  "compressor": {},
+  "intake_pump": {},
+  "charging_station": {
+    "hide": "_lit$"
+  },
+  "energy_battery": {},
+  "energy_cell": {},
+  "precision_fabrication_station": {},
+  "diesel_generator": {},
+  "portable_diesel_generator": {},
+  "thermal_generator": {
+    "bbmodel": "src/main/blockbench/thermal_generator_3d.bbmodel"
+  },
+  "distribution_panel": {
+    "bbmodel": "src/main/blockbench/distribution_panel_v1.bbmodel",
+    "hide": "^port_|pullbox|conduit"
+  },
+  "wiring_wrench": {},
+  "insulated_copper_wire": {},
+  "wall_outlet": {},
+  "power_strip_3": {},
+  "wall_switch": {},
+  "emergency_light": {},
+  "keyless_lampholder": {},
+  "porcelain_lampholder": {},
+  "generator_inlet_box": {
+    "bbmodel": "src/main/blockbench/generator_inlet_box_v1.bbmodel"
+  },
+  "gun_maintenance_bench": {}
+}

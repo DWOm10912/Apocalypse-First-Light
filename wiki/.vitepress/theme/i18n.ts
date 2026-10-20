@@ -33,10 +33,20 @@ export const SLOT_NAMES: Record<string, { zh: string; en: string }> = {
   magazine: { zh: '弹匣', en: 'Magazine' }
 }
 
-// Images that exist in public/img (keys from images.json).
+// Images from images.json (scripts/images.mjs). Public images are served from R2 at the URL in images.lock.json;
+// one not uploaded yet is staged under /img/staged/; internal images are bundled under /img/.
 import images from '../../images.json'
+import uploaded from '../../images.lock.json'
 export const hasImage = (key: string) => Object.prototype.hasOwnProperty.call(images, key)
-export const img = (key: string) => withBase(`/img/${key}.${(images as any)[key]?.format ?? 'webp'}`)
+export function img(key: string) {
+  const spec = (images as any)[key]
+  const file = `${key}.${spec?.format ?? 'webp'}`
+  if (spec?.visibility === 'public') {
+    const remote = (uploaded as any)[key]?.url
+    return remote ?? withBase(`/img/staged/${file}`)
+  }
+  return withBase(`/img/${file}`)
+}
 
 // Damage at a distance, same formula as NativeGunShot.damageAt:
 // full damage up to falloff_start, then linear down to base × min_damage_multiplier at max_range.

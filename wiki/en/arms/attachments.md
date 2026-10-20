@@ -16,4 +16,4 @@ Attachments go in three slots: sight, muzzle and magazine. This table is generat
 
 With a suppressor fitted, the range at which infected hear the shot is multiplied by the suppressor's factor (the "Noise radius" in the table). You and other players still hear it within <V j="NativeGunNoise.SUPPRESSED_SOUND_RADIUS" u="blocks" />
 
-<Shot k="maintenance_bench" zh="枪械维护台" en="Gun Maintenance Bench" />
+<ModelShot id="gun_maintenance_bench" zh="枪械维护台" en="Gun Maintenance Bench" />

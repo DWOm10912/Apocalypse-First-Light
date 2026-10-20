@@ -2,6 +2,8 @@
 
 状态：本地站点 V1 已搭好（2026-10-18），中英双语，`npm --prefix wiki run build` 通过。还没有上线，用户还没有在浏览器里看过实际站点（只看了截图）。
 
+> **2026-10-19：** 已由 V2 接替，见 [afl_wiki_v2_plan.md](afl_wiki_v2_plan.md)（内部开发资料库、Cloudflare Access、R2 图片、Main 部署）。下面"上线步骤"一节已作废；状态标签从 new / live 改成四档。本文其余部分（结构、数值同步、枪械主图、截图）仍然有效。
+
 ## 为什么要做
 
 - 准星提示和机器界面只写一个动作或读数，说明和规则统一放到 wiki（见 `docs/models/building_power_v1.md`、`docs/machines/diesel_standby_generator_v1.md`）。
@@ -73,7 +75,7 @@
 
 页面截图（2026-10-18，桌面 1440 / 手机 390）：`design/wiki/v1_build/*.png`。
 
-## 上线步骤（用户操作）
+## 上线步骤（用户操作，已作废，见 V2 第 7 节）
 
 1. Cloudflare 开账号，把 `staticgrove.net` 的 DNS 托管到 Cloudflare。
 2. Cloudflare Pages 新建项目：连接 GitHub 仓库，构建命令 `npm --prefix wiki ci && npm --prefix wiki run build`，输出目录 `wiki/.vitepress/dist`；或者本地构建后用 `wrangler pages deploy` 上传。

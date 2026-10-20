@@ -23,6 +23,7 @@ const sections = {
 
 // Sidebar entries per section; gun pages are generated from native_guns/*.json.
 import { loadGuns } from './lib/gamedata.mjs'
+import { searchSource } from './lib/search-text.mjs'
 const guns = loadGuns()
 const byClass = (cls) => guns.filter((g) => g.weaponClass === cls)
 
@@ -36,6 +37,9 @@ function sidebar(loc: 'zh' | 'en') {
         { text: t('开局', 'First Steps'), link: `${p}/guide/` },
         { text: t('操作按键', 'Controls'), link: `${p}/guide/controls` },
         { text: t('生存状态', 'Survival Stats'), link: `${p}/guide/survival` },
+        { text: t('状态效果', 'Status Effects'), link: `${p}/guide/statuses` },
+        { text: t('幸存者与特质', 'Survivor & Traits'), link: `${p}/guide/survivor` },
+        { text: t('成长', 'Growth'), link: `${p}/guide/growth` },
         { text: t('背包与负重', 'Inventory & Weight'), link: `${p}/guide/inventory` },
         { text: t('辐射', 'Radiation'), link: `${p}/guide/radiation` }
       ] }
@@ -69,6 +73,8 @@ function sidebar(loc: 'zh' | 'en') {
     [`${p}/world/`]: [
       { text: t('世界与探索', 'World'), items: [
         { text: t('总览', 'Overview'), link: `${p}/world/` },
+        { text: t('世界观', 'Setting'), link: `${p}/world/lore` },
+        { text: t('战前企业', 'Pre-war Companies'), link: `${p}/world/companies` },
         { text: t('生物群系', 'Biomes'), link: `${p}/world/biomes` },
         { text: t('道路与城镇', 'Roads & Towns'), link: `${p}/world/roads` },
         { text: t('建筑与地点', 'Buildings & Places'), link: `${p}/world/places` },
@@ -82,7 +88,8 @@ function sidebar(loc: 'zh' | 'en') {
     [`${p}/changelog/`]: [
       { text: t('更新日志', 'Changelog'), items: [
         { text: t('版本', 'Versions'), link: `${p}/changelog/` },
-        { text: t('数值变更', 'Value Changes'), link: `${p}/changelog/values` }
+        { text: t('数值变更', 'Value Changes'), link: `${p}/changelog/values` },
+        { text: t('开发记录', 'Development Log'), link: `${p}/changelog/updates` }
       ] }
     ],
     [`${p}/about/`]: [
@@ -147,6 +154,10 @@ export default defineConfig({
     search: {
       provider: 'local',
       options: {
+        // index the names the data tables show, not just the markdown (lib/search-text.mjs)
+        _render(src, env, md) {
+          return md.render(searchSource(src, env.relativePath ?? ''), env)
+        },
         locales: {
           root: { translations: { button: { buttonText: '搜索', buttonAriaLabel: '搜索' }, modal: { noResultsText: '没有找到', resetButtonTitle: '清除', footer: { selectText: '选择', navigateText: '切换', closeText: '关闭' } } } }
         }

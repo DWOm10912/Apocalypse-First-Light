@@ -1,17 +1,19 @@
 # Getting Started
 
-AFL is a grounded post-apocalyptic survival mod: no enchanting, no experience, and when you die you carry on as a different survivor. This page covers your first steps in a new world
+AFL is a grounded post-apocalyptic survival mod: no enchanting, no vanilla experience (skills grow by doing things), and when you die you carry on as a different survivor. This page covers your first steps in a new world
 
 ## Creating a world
 
 - New worlds default to the **AFL Federal Six States** map. The old terrain is still available as "AFL r1" in the world type list
 - The vanilla difficulty button is replaced by **Survivor mode: Normal / Hard**, which is locked once chosen. Vanilla Hardcore counts as Hard
 - Vanilla difficulty is fixed at Normal and `/difficulty` is disabled
-- The first time you join, you confirm your survivor's name: your account name or one you choose
+- You also pick a start scene: creek valley farmhouse (default, up to 3 players), wilderness or roadside
+- <StatusTag s="integrated" /> The farmhouse start puts you at the foot of its porch steps, facing the house; wilderness and roadside still start at the world spawn for now
+- Next comes survivor setup: a name (your account name or one you choose), a background, body levels and traits; see [Survivor & Traits](./survivor)
 
 ## After you spawn
 
-1. You start on flat ground in the starting state (S1), among temperate forest and river valleys
+1. With the farmhouse start you stand at the foot of the [farmhouse](../world/places#creek-valley-farmhouse) porch steps; with the others you start on flat ground in the starting state (S1). Around you are temperate forest and river valleys
 2. **Find water**: use a glass bottle on a water source to fill a bottle of dirty water, then boil it in a furnace, smoker or campfire. Drinking dirty water can make you sick. See [Survival Stats](./survival)
 3. **Stay warm**: rain, swimming and nights lower your body temperature. Find a roof, light a campfire or wear leather armor
 4. **Search containers**: cabinets, bins and shelves are searched one slot at a time while the screen is open
@@ -28,5 +30,8 @@ AFL is a grounded post-apocalyptic survival mod: no enchanting, no experience, a
 
 - [Controls](./controls)
 - [Survival Stats](./survival): stamina, thirst, temperature, food
+- [Status Effects](./statuses)
+- [Survivor & Traits](./survivor)
+- [Growth](./growth)
 - [Inventory and Weight](./inventory)
 - [Radiation](./radiation)
