@@ -62,8 +62,8 @@ public final class ForestHomeDevCommands {
         ForestHomeSavedData d = ForestHomeRuntime.data(level);
         StructureReservation r = d.reservation();
         if (r == null) {
-            String why = d.report().isEmpty() ? "this world was not created with the start home gate (folder " + ForestHomeRuntime.GATE
-                    + "*, federal surface)" : "the planner found no site:\n" + d.report();
+            String why = d.report().isEmpty() ? "this world was not created with the start_area gate (federal worlds made since 2026-10-19)"
+                    : "no site at creation: " + d.report();
             x.getSource().sendFailure(Component.literal("no start home reservation; " + why));
             return 0;
         }
@@ -73,13 +73,17 @@ public final class ForestHomeDevCommands {
         String text = String.format(Locale.ROOT,
                 "%s %s: origin %d %d %d rotation %d (front heading %.0f), ground Y %d, %s%n"
                         + "box %s%nporch %.1f %d %.1f%nnode H %s: %.1f %d %.1f heading %.0f %s %s width %.0f %s%n"
-                        + "chunk pass %s%nplanner at creation: %s",
+                        + "gate %s%nmailbox %s%nchunk pass %s%nsite at creation: %s",
                 r.id(), r.state(), r.x(), r.y(), r.z(), r.rotation(), ForestHomeLayout.heading(r.rotation()), ForestHomeLayout.groundY(r),
                 r.template(), a == null ? "-" : a.box().toString(), porch[0], ForestHomeLayout.groundY(r), porch[1],
                 h.id(), h.x(), Math.round(h.y()), h.z(), h.heading(), h.privateSpec(), h.publicClass(), h.width(), h.state(),
-                a == null ? "INACTIVE (template missing? see the log)" : "active", d.report());
+                fixture(d.gate()), fixture(d.mailbox()), a == null ? "INACTIVE (template missing? see the log)" : "active", d.report());
         x.getSource().sendSuccess(() -> Component.literal(text), false);
         return 1;
+    }
+
+    private static String fixture(ForestHomeSavedData.Fixture f) {
+        return f == null ? "none" : f.origin().toShortString() + " facing " + f.facing().getName();
     }
 
     private static int tp(CommandContext<CommandSourceStack> x) {
@@ -89,8 +93,9 @@ public final class ForestHomeDevCommands {
             x.getSource().sendFailure(Component.literal("no start home reservation in this world"));
             return 0;
         }
-        double[] porch = ForestHomeLayout.porch(r);
-        p.teleportTo(x.getSource().getServer().overworld(), porch[0], ForestHomeLayout.groundY(r), porch[1], p.getYRot(), p.getXRot());
+        // the forest-home start's first spot: the grass at the foot of the porch steps, facing the house
+        double[] spot = ForestHomeLayout.startSpot(r, 0);
+        p.teleportTo(x.getSource().getServer().overworld(), spot[0], ForestHomeLayout.groundY(r), spot[1], ForestHomeLayout.facingHouse(r.rotation()), 0F);
         return 1;
     }
 }

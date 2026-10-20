@@ -94,6 +94,17 @@ public abstract class RectMultiblockBlock<C extends Enum<C> & StringRepresentabl
         return masterPosition(pos, state);
     }
 
+    /**
+     * Every cell of a structure at origin, as placeStructure writes it (each cell carries masterState's other properties);
+     * for world generation, which writes the cells chunk by chunk without the item.
+     */
+    public Map<BlockPos, BlockState> cellStates(BlockPos origin, Direction facing, BlockState masterState) {
+        Map<BlockPos, BlockState> out = new LinkedHashMap<>();
+        BlockState turned = masterState.setValue(FACING, facing);
+        for (C cell : cells()) out.put(cellPosition(origin, facing, cell), turned.setValue(cellProperty(), cell));
+        return out;
+    }
+
     protected BlockState stateFor(Direction facing, C cell) {
         return defaultBlockState().setValue(FACING, facing).setValue(cellProperty(), cell);
     }

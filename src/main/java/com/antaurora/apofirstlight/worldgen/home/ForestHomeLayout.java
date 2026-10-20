@@ -24,6 +24,12 @@ public final class ForestHomeLayout {
     private ForestHomeLayout() {}
 
     public static final String ID = "forest_home_b", TEMPLATE = "apocalypse_firstlight:forest_home_b", OWNER = "main";
+    /**
+     * The start_area rules (world generation version lock, WorldgenRules): bump on any change to the template, this
+     * frame, the earthwork or the driveway fixtures, since a world places its house chunk by chunk with the rules it was
+     * made with. 2 (2026-10-19): the site from the county road G3, the farm gate and the mailbox.
+     */
+    public static final int RULES = 2;
     public static final int SIZE_X = 37, SIZE_Y = 13, SIZE_Z = 26;
     /** Template y of the first air layer over the grade (paper k 0). */
     public static final int GROUND = 3;
@@ -97,4 +103,23 @@ public final class ForestHomeLayout {
 
     /** World block of the front porch's step, where a player stands to go in (paper X 8, k 0, Z 14: before the porch). */
     public static double[] porch(StructureReservation r) { return world(r.x(), r.z(), r.rotation(), 8.5 + PX, 14.5 + PZ); }
+
+    /**
+     * The forest-home start's spots on the grass at the foot of the porch steps (paper k 0, Z 15; the three steps are
+     * X 7..9 at Z 14, the railing's gap X 8 at Z 13), at most START_SPOTS: before the middle step first, then one block to
+     * each side. World point {x, z} of the spot's block centre; the feet stand on the template's grade (groundY).
+     */
+    public static double[] startSpot(StructureReservation r, int index) {
+        double dx = switch (Math.floorMod(index, START_SPOTS)) { case 1 -> -1; case 2 -> 1; default -> 0; };
+        return world(r.x(), r.z(), r.rotation(), 8.5 + dx + PX, 15.5 + PZ);
+    }
+
+    /** How many survivors may start before the porch together (a family's house: SurvivorScenes' forest home, 3). */
+    public static final int START_SPOTS = 3;
+
+    /** Minecraft yaw (0 = south, 90 = west) of a player before the porch looking at the house (the front's reverse). */
+    public static float facingHouse(int r) {
+        double h = Math.toRadians(heading(r) + 180), dx = Math.cos(h), dz = Math.sin(h);
+        return (float) Math.toDegrees(Math.atan2(-dx, dz));
+    }
 }

@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
  *   curbs, sidewalks and driveway aprons (concrete) at their design height, the normal by differences over the same
  *   material (a curb's face is no slope); the town's turf (utility strips, lots, yards) as graded turf above;</li>
  *   <li>the forest home's gravel driveway (County road G3, Driveway#height, 2026-10-18): its height, the normal by
- *   differences; kind TURF (grip 0.70) until the vehicle's grip table has gravel (Main), its turf edges as above.</li>
+ *   differences; kind GRAVEL (grip 0.65, Main 2026-10-19), its turf edges as above.</li>
  * </ul>
  * Read only: no chunk is loaded (an unloaded chunk gives nothing), no state kept; the same network (RoadStructureBlock's
  * bound works) on both sides. Called per wheel point many times a tick: #sample(Level, double, double, double, Out)
@@ -66,8 +66,11 @@ public final class RoadSurfaceQuery {
     /** How far past a road's end a point still lies on its end (RoadCurve#local's own reach), m. */
     static final double END = 0.01;
 
-    /** The road's surface kinds (the vehicle maps them to its grip: asphalt 1.0, concrete 0.95, turf 0.70). */
-    public enum Surface { ASPHALT, CONCRETE, TURF }
+    /**
+     * The road's surface kinds (the vehicle maps them to its grip: asphalt 1.0, concrete 0.95, gravel 0.65, turf 0.70);
+     * GRAVEL is the forest home's driveway (Main, 2026-10-19).
+     */
+    public enum Surface { ASPHALT, CONCRETE, TURF, GRAVEL }
 
     /** A surface found: height (world y), unit upward normal, kind, whether it blocks (no wheel stands on it). */
     public record Hit(double height, double nx, double ny, double nz, Surface surface, boolean blocking) {}
@@ -243,11 +246,11 @@ public final class RoadSurfaceQuery {
         return true;
     }
 
-    /** A driveway point's unit upward normal into out (height y, kind TURF): differences STEP each way, one-sided at its edge. */
+    /** A driveway point's unit upward normal into out (height y, kind GRAVEL): differences STEP each way, one-sided at its edge. */
     static void driveNormal(Driveway dw, double x, double z, double y, Out out) {
         double gx = driveSlope(dw, x, z, y, STEP, 0), gz = driveSlope(dw, x, z, y, 0, STEP);
         double inv = 1 / Math.sqrt(gx * gx + 1 + gz * gz);
-        out.set(y, -gx * inv, inv, -gz * inv, Surface.TURF, false);
+        out.set(y, -gx * inv, inv, -gz * inv, Surface.GRAVEL, false);
     }
 
     private static double driveSlope(Driveway dw, double x, double z, double y, double dx, double dz) {

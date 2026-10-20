@@ -16,6 +16,13 @@ import com.antaurora.apofirstlight.wiring.WiringSupply;
 import com.antaurora.apofirstlight.worldgen.federal.FederalMap;
 import com.antaurora.apofirstlight.worldgen.home.ForestHomeLayout;
 import com.antaurora.apofirstlight.worldgen.home.ForestHomeRuntime;
+import com.antaurora.apofirstlight.worldgen.home.ForestHomeSavedData;
+import com.antaurora.apofirstlight.block.RuralMailboxBlock;
+import com.antaurora.apofirstlight.block.TubeFarmGateBlock;
+import com.antaurora.apofirstlight.blockentity.RuralMailboxBlockEntity;
+import com.antaurora.apofirstlight.blockentity.TubeFarmGateBlockEntity;
+import com.antaurora.apofirstlight.registry.AflBlocks;
+import net.minecraft.core.Direction;
 import com.antaurora.apofirstlight.worldgen.home.StartAreaPlanner;
 import com.antaurora.apofirstlight.worldgen.network.contract.StructureReservation;
 import com.antaurora.apofirstlight.worldgen.structure.AflTemplatePlacer;
@@ -161,8 +168,19 @@ public final class ForestHomeM4GameTests {
         int rot = 1;
         int[] o = ForestHomeLayout.origin(s[0] + 0.5, s[2] + 0.5, rot);
         StructureReservation r = ForestHomeLayout.reservation(o[0], s[1], o[1], rot);
-        ForestHomeRuntime.Active a = ForestHomeRuntime.activate(level, r);
-        check(a != null, "the reservation did not activate (template apocalypse_firstlight:forest_home_b missing?)");
+        ForestHomeRuntime.Active probe = ForestHomeRuntime.activate(level, r);
+        check(probe != null, "the reservation did not activate (template apocalypse_firstlight:forest_home_b missing?)");
+        // M4 round 2: the driveway's farm gate across a chunk border just south of the keep (its four columns run east,
+        // facing north), the mailbox six blocks east of it; on the generator's ground (no road works in this world)
+        var gen = level.getChunkSource().getGenerator();
+        var rs = level.getChunkSource().randomState();
+        int gx = (((probe.minX() >> 4) + 1) << 4) - 2, gz = probe.maxZ() + 4, mx = gx + 6;
+        ForestHomeSavedData.Fixture gateAt = new ForestHomeSavedData.Fixture(new BlockPos(gx,
+                gen.getBaseHeight(gx, gz, Heightmap.Types.WORLD_SURFACE_WG, level, rs), gz), Direction.NORTH);
+        ForestHomeSavedData.Fixture boxAt = new ForestHomeSavedData.Fixture(new BlockPos(mx,
+                gen.getBaseHeight(mx, gz, Heightmap.Types.WORLD_SURFACE_WG, level, rs), gz), Direction.SOUTH);
+        ForestHomeRuntime.Active a = ForestHomeRuntime.activate(level, r, gateAt, boxAt);
+        check(a != null, "the reservation with fixtures did not activate");
         check(ForestHomeRuntime.excludesTree(level.getSeed(), s[0], s[2], 12), "no tree exclusion at the pivot");
         check(!ForestHomeRuntime.excludesTree(level.getSeed(), s[0] + 60, s[2] + 60, 12), "tree exclusion 60 m away");
 
@@ -234,11 +252,29 @@ public final class ForestHomeM4GameTests {
         }
         check(holes == 0, holes + " plot columns open under the floor");
         check(edgeOff == 0, edgeOff + " of " + edge + " ring edge columns off the yard grass (" + grass + ")");
+
+        // the fixtures: every cell as the item would place it, the master's block entity, nothing removed it
+        int fixtureCells = 0;
+        TubeFarmGateBlock gate = (TubeFarmGateBlock) AflBlocks.TUBE_FARM_GATE.get();
+        RuralMailboxBlock mailbox = (RuralMailboxBlock) AflBlocks.RURAL_MAILBOX.get();
+        var gateCells = gate.cellStates(gateAt.origin(), gateAt.facing(), gate.defaultBlockState()
+                .setValue(TubeFarmGateBlock.OPEN, false).setValue(TubeFarmGateBlock.SIGN, TubeFarmGateBlock.Sign.FRONT));
+        var boxCells = mailbox.cellStates(boxAt.origin(), boxAt.facing(), mailbox.defaultBlockState()
+                .setValue(RuralMailboxBlock.OPEN, false).setValue(RuralMailboxBlock.FLAG, false));
+        check(gateCells.keySet().stream().map(p -> p.getX() >> 4).distinct().count() == 2, "the test gate does not cross a chunk border");
+        for (var cells : List.of(gateCells, boxCells))
+            for (var e : cells.entrySet()) {
+                BlockState got = level.getBlockState(e.getKey());
+                check(got.equals(e.getValue()), "fixture cell " + e.getKey().toShortString() + " is " + got + ", want " + e.getValue());
+                fixtureCells++;
+            }
+        check(level.getBlockEntity(gateAt.origin()) instanceof TubeFarmGateBlockEntity, "no gate block entity at its master cell");
+        check(level.getBlockEntity(boxAt.origin()) instanceof RuralMailboxBlockEntity, "no mailbox block entity at its master cell");
         ApocalypseFirstLight.LOGGER.info(TAG + "PASS placement: site {} {} {} rotation {} origin {} box {}; {} chunks generated in {} ms (shuffled); "
                         + "{} blocks and {} block entities match the reference; wiring {} cells {} devices (reference {} / {}); "
-                        + "plot solid under the floor; {} ring edge columns at grass {}; largest ring step {}",
+                        + "plot solid under the floor; {} ring edge columns at grass {}; largest ring step {}; gate + mailbox {} cells across chunks",
                 s[0], s[1], s[2], rot, a.origin().toShortString(), box, chunks.size(), genMs, blocks, entities, wired[0], wired[1],
-                refWired[0], refWired[1], edge, grass, step);
+                refWired[0], refWired[1], edge, grass, step, fixtureCells);
     }
 
     /** The panel's tick (unpacks its wiring, solves); then the wired cells in the box (shifted) and the devices fed. */

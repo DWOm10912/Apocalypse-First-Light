@@ -152,6 +152,7 @@ public final class Survivors {
             SurvivorRecord first = firstSurvivor(player, lineage);
             first.state = SurvivorRecord.State.ALIVE;
             first.spawnSource = "initial";
+            placeAtScene(player, data, first);
             start(player, first);
             lineage.lives.add(first);
             lineage.status = SurvivorLineage.Status.ACTIVE;
@@ -164,6 +165,28 @@ public final class Survivors {
                 && !player.getPersistentData().hasUUID(PLAYER_SURVIVOR_KEY)) {
             player.getPersistentData().putUUID(PLAYER_SURVIVOR_KEY, current.id);
         }
+    }
+
+    /**
+     * A lineage's first survivor stands at the world's start scene's place (SurvivorSceneStarts; the forest home: the
+     * foot of the porch steps), one spot per first survivor in arrival order; none left, or no such place in this world:
+     * where vanilla put the player (the world spawn area), source "initial". Before the setup screen's hold, which keeps
+     * the player where this leaves them.
+     */
+    private static void placeAtScene(ServerPlayer player, SurvivorWorldData data, SurvivorRecord first) {
+        ServerLevel overworld = player.server.overworld();
+        if (player.level() != overworld || !player.isAlive()) return;
+        int index = 0;
+        for (SurvivorLineage other : data.lineages()) if (other.playerId != null && !other.playerId.equals(player.getUUID()) && !other.lives.isEmpty()) index++;
+        SurvivorSceneStarts.Spot spot = SurvivorSceneStarts.spot(overworld, data.scene, index);
+        if (spot == null) return;
+        double x = spot.feet().getX() + 0.5, y = spot.feet().getY(), z = spot.feet().getZ() + 0.5;
+        player.teleportTo(overworld, x, y, z, spot.yaw(), 0.0F);
+        first.spawnSource = SurvivorScenes.byId(data.scene).id();
+        first.spawnDimension = overworld.dimension().location().toString();
+        first.spawnPos = spot.feet();
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} starts at the {} scene, spot {} ({})", player.getGameProfile().getName(),
+                first.spawnSource, index, spot.feet().toShortString());
     }
 
     /**

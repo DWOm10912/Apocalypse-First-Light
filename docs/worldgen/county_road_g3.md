@@ -3,13 +3,13 @@
 日期：2026-10-18，侧接改版 2026-10-19。分支 `feature/county-road-g3`（C worktree，从 master `5335d150` 开出）。
 
 状态：
-- **代码完成，2026-10-19 已提交到分支，未合并 master**（用户通知 Main 合并）。
+- **已合并 master**：2026-10-19 Main 合并（`ce81f51a`，分支 `c5494bb4`）；合并后编译通过。
 - **离线检查**：侧接版 6 个种子全部 PASS（第 7 节，`countyCheck`）。
 - **游戏实机**：
   - 旧的"县道从车道尽头开始"那一版，接头用户 2026-10-19 实机 PASS（隔离测试世界 `G3_turf14`）；
   - 侧接版用户 2026-10-19 实机 PASS（隔离测试世界 `G3_side1`，用户种子）。
-- **大门和信箱平台**（6.4 节，Main 2026-10-19 请求）：分支 `feature/county-road-g3-pads`（从 master `ce81f51a` 开出），离线检查 6 个种子 PASS，未提交、未合并、没进游戏看过。
-- **老宅的位置还没接上**：Main 的 `ForestHomeRuntime` 现在仍在建世界时自己跑一遍没有禁区的 G2，房子会落在它自己选的点上，不是本文选的点。Main 2026-10-19 回复：合并后改用 `home.reservation()`，按 `home` 的锚点放大门和信箱。在这之前，测试世界里的县道和碎石车道会通到一块空林地。
+- **大门和信箱平台**（6.4 节，Main 2026-10-19 请求）：C 提交 `f12c1df2`，2026-10-19 Main 合并进 master `3e67b2c5`；离线检查 6 个种子 PASS，没进游戏看过。
+- **老宅的位置还没接上**：Main 的 `ForestHomeRuntime` 原来在建世界时自己跑一遍没有禁区的 G2，房子落在它自己选的点上，不是本文选的点。Main 2026-10-19 回复：合并后改用 `home.reservation()`，按 `home` 的锚点放大门和信箱。**2026-10-19 Main 已接上**（[M4 第二轮](forest_home_b_m4_round2.md)，未进游戏）：房子放在 `home` 的位置，大门和信箱由 Main 的区块写入放，车道路面报 `GRAVEL`。
 
 用户 2026-10-18 批准的四条：
 1. 县道不跨州际；
@@ -148,7 +148,7 @@ G2 给出最多 8 个候选址。
 - **网格**（`DriveMesh`，客户端和县道一起画，`JunctionMesh#pavement`；客户端收到路网 JSON 后用里面的 `home` 自己建同一条车道，`RoadClient#receive` → `Driveway#of`，和服务端 `RoadNetworkRuntime` 同一个方法）：碎石带沿中心线每 1 m 一个断面（贴图分块线上也有一个），横向线卡在当地半宽上，边缘没有锯齿；喇叭口按 t 分行（8 → 6 m 每 0.5 m，再在圆弧上取 12 个角度），横向 30 列，再加铺装边下 0.3 m 的一条，三角形在 4 m 贴图分块线上切开；两边往下 0.25 m 的裙边挡住旁边草皮的 1/8 台阶（喇叭口两边的圆弧也有），车道接上县道时铺装边那头不画裙边。材质 `RoadMesh.Material.GRAVEL`；
 - **贴图**：`textures/block/road/gravel`（含 `_n` / `_s`，LabPBR），和沥青同样密度（每米 240 像素，4 m 一块，960 × 960），生成器 `tools/build-drive-gravel-texture.mjs`（`--check` 只检查）。压实的碎石子加细料：8–35 mm 的碎石，大多是灰色石灰岩，少量黄褐色和深色，石子之间露出灰褐色细料；
 - **方块**（`RoadWorks#driveColumn`）：整格九个点都在碎石上（或接头处在县道铺装上），而且整格每 0.05 m 一个点（21 × 21）都落在碎石或铺装上的格子是 `Kind.DRIVE`，放和县道一样的不可见碰撞方块 `road_surface`（高度取九点平均），下面两层原版碎石，再下面泥土填到地面，上面清空；碎石边上的格子是坡面草皮（`graded_turf`），在碎石下面的角向下取整到 1/8，落在县道铺装上的角取铺装高度再向下取整，往外 2.5 m 从碎石边的高度过渡到基准高度。基准高度：这个角被县道或镇的土方草皮格共用时取那格草皮在这个角的高度（`RoadWorks#roadCorner`），否则取原地面；碎石边 0.3 m 以内的草皮不长草（`BARE`）。两格 `graded_turf` 共用的角必须一样高（2026-10-19，第 7 节）；
-- **车辆**：路面查询（`RoadSurfaceQuery`）认车道：高度取 `Driveway#height`，法线用差分。种类暂时报 `TURF`（抓地 0.70），加 `GRAVEL` 种类要改 Main 的车辆抓地表，已通知 Main；
+- **车辆**：路面查询（`RoadSurfaceQuery`）认车道：高度取 `Driveway#height`，法线用差分。种类报 `GRAVEL`（抓地 0.65；2026-10-19 Main 加的种类和抓地数值，之前是 `TURF` 0.70）；
 - 车道上不长树（`RoadWorks#clear`）；
 - **挖开和露出的侧面**：车道的碰撞格也进了客户端的路面格（`RoadCells#of`，`RoadCells.DRIVE`），挖掉一格网格开洞、坑边补碎石侧壁；碰撞格旁边那格没了，露出碰撞格的侧面时补一面墙（见 [C3 10.5](federal_highways_c3.md)）。
 
@@ -168,7 +168,7 @@ G2 给出最多 8 个候选址。
 | `beyond` | 2026-10-19 新加：车道口另一头（县道起点一端）通到哪：`town` / `state` / `end`（到头）/ `none`；旧 JSON 读成 `none` |
 | `barrier` | 2026-10-19 新加：到头时的 ROAD ENDS 路障 {x, y, z, 朝向 x, z}，县道起点向里 1 m；不到头为 null |
 
-信箱和大门用已有的 `tube_farm_gate`（4 × 2 格镀锌管农场大门）和 `rural_mailbox`（[rural_driveway_v1.md](../models/rural_driveway_v1.md)）。契约第 4 节说 Main 提供放置方法、C 的区块写入调用；Main 2026-10-18 回复合并后给放置入口，2026-10-19 回复按新锚点放。这次只给锚点，**还没放**；ROAD ENDS 路障和 PRIVATE DRIVE 牌没有模型。
+信箱和大门用已有的 `tube_farm_gate`（4 × 2 格镀锌管农场大门）和 `rural_mailbox`（[rural_driveway_v1.md](../models/rural_driveway_v1.md)）。契约第 4 节说 Main 提供放置方法、C 的区块写入调用；Main 2026-10-18 回复合并后给放置入口，2026-10-19 回复按新锚点放。2026-10-19 Main 按锚点放了大门（关着，PRIVATE DRIVE 牌就是大门上 `sign=front` 的牌子，朝县道）和信箱（[M4 第二轮](forest_home_b_m4_round2.md) 第 4 节），朝向取最近的东南西北；ROAD ENDS 路障没有模型，还没放。
 
 ### 6.4 大门和信箱平台（2026-10-19）
 

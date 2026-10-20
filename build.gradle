@@ -605,6 +605,15 @@ tasks.register('systemPlans', JavaExec) {
     if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
 }
 
+// Main, M4 round 2: the forest-home start on G3's site (gate, mailbox, start spots); needs systemPlans' plans
+tasks.register('forestHomeStartCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.ForestHomeStartCheck'
+    maxHeapSize = '6g'
+    if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
+}
+
 tasks.register('countyCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath

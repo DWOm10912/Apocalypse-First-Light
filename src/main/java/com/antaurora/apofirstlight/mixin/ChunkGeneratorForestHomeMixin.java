@@ -21,4 +21,10 @@ public abstract class ChunkGeneratorForestHomeMixin {
     private void apocalypse$forestHome(WorldGenLevel level, ChunkAccess chunk, StructureManager structures, CallbackInfo ci) {
         ForestHomeChunkPass.apply(level, chunk);
     }
+
+    /** County road G3: the driveway's farm gate and mailbox after the road's pass and the features (ForestHomeChunkPass#fixtures). */
+    @Inject(method = "applyBiomeDecoration", at = @At("RETURN"))
+    private void apocalypse$forestHomeFixtures(WorldGenLevel level, ChunkAccess chunk, StructureManager structures, CallbackInfo ci) {
+        ForestHomeChunkPass.fixtures(level, chunk);
+    }
 }

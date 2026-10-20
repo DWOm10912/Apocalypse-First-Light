@@ -10,9 +10,10 @@ import java.util.List;
  * outbreak night come with the V2 story mode). The V1 test build (user 2026-10-18, via C: "V1 测试版只有 Linden + 老宅")
  * starts in the forest home by default and hides the bunker (no bunker generates since 2026-10-10). One
  * scene per world, picked on the Create World page (everyone in a world starts in it). Known on the client before any
- * server exists, so a fixed list, not data. None is connected to a placement yet: every first survivor starts at the
- * world spawn, as in V0 (spawn source "initial"); the record keeps the scene for when the forest home porch (Main) and
- * C's roadside and lot anchors exist.
+ * server exists, so a fixed list, not data. The forest home is connected since 2026-10-19 (Main, SurvivorSceneStarts):
+ * the world spawn and the first survivors' spots are at the foot of its porch steps, in a world that has the house (new
+ * federal worlds with the start_area gate); elsewhere, and for the other scenes, first survivors start at the world
+ * spawn as in V0 (spawn source "initial"). The roadside start waits for C's roadside anchor.
  *
  * @param maxPlayers how many may start there together (the forest home: a family's house, at most 3), 0 = any
  * @param recommended the background the scene suits (shown, never enforced), or null
@@ -30,7 +31,7 @@ public final class SurvivorScenes {
     /** The Create World page's pick until the player changes it. */
     public static final String DEFAULT = "afl:forest_home";
     public static final List<Scene> ALL = List.of(
-            new Scene(DEFAULT, 3, "afl:forest_resident", false, false),
+            new Scene(DEFAULT, 3, "afl:forest_resident", true, false),
             new Scene(WILDERNESS, 0, null, true, false),
             new Scene("afl:roadside", 0, "afl:trucker", false, false),
             new Scene("afl:bunker", 0, null, false, true));

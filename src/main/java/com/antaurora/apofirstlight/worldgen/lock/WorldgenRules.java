@@ -79,6 +79,10 @@ public final class WorldgenRules {
                 new WorldgenSystem(WorldgenGates.TERRAIN_WORKS,
                         com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkStage.worksVersion(), Severity.HARD,
                         "road cuts, fills, slopes and ditches in the terrain"),
+                // Main, M4 round 2 (2026-10-19): the forest start home on the county road G3's site (gated like the roads)
+                new WorldgenSystem(WorldgenGates.START_AREA,
+                        com.antaurora.apofirstlight.worldgen.home.ForestHomeLayout.ID + "#" + com.antaurora.apofirstlight.worldgen.home.ForestHomeLayout.RULES,
+                        Severity.HARD, "the forest start home: its site, earthwork, house, driveway gate and mailbox"),
                 new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
                         "natural trees"));
         return List.of(

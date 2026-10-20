@@ -34,6 +34,14 @@ public final class SurvivorEvents {
                 SurvivorWorldData.NAME);
         data.freshWorld = true;
         Survivors.applyCreateScreenChoice(level.getServer(), data);
+        // the start scene's place (the forest home, planned earlier in this event) is the world spawn: its chunks are
+        // the spawn chunks, and a later player without a spot arrives round it
+        SurvivorSceneStarts.Spot spot = SurvivorSceneStarts.spot(level, data.scene, 0);
+        if (spot != null) {
+            event.getSettings().setSpawn(spot.feet(), spot.yaw());
+            event.setCanceled(true);
+            ApocalypseFirstLight.LOGGER.info("[AFL Survivor] world spawn at the {} scene: {}", data.scene, spot.feet().toShortString());
+        }
         data.setDirty();
     }
 

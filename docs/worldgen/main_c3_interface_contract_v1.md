@@ -3,6 +3,9 @@
 状态：**用户已批准，两边都还没有实现**。
 - 2026-10-18 C 实现了 G3 的第一版（[县道 G3](county_road_g3.md)，分支 `feature/county-road-g3`，未提交、未合并、没进游戏）：C 在建网时带禁区调用 G2、按县道长短选老宅、修县道（接 Linden 街网，接不上就 T 字接州道）和碎石车道，选中的位置写在路网 JSON 的 `home` 里。和本文不同的地方：没有 A1 沿路地块（`FrontageLot`）和 `TownSite`（V1 只有 Linden）；信箱和大门只给了锚点、没放；Main 的 `ForestHomeRuntime` 还要改成读 `home`（已通知 Main）。
 - 2026-10-19 C 把 G3 改成**侧接**（用户 2026-10-19："改成侧接：县道路过老宅附近，车道沿溪从侧面 T 字接入"；[侧接方案](county_road_g3_side_join_plan.md)，同一分支，用户 2026-10-19 实机 PASS，已提交到分支、未合并，改之前已通知 Main）：县道是一条路过老宅的路（两头各接镇或州道，接不上一头时过车道口约 300 m 到头），碎石车道从 `H` 沿溪 100–250 m，从侧面 T 字接到县道铺装边。G3 行和第 4 节已按这个改；`home` 加了 `beyond` 和 `barrier`（[县道 G3](county_road_g3.md) 第 6 节）。
+- 2026-10-19 Main 把 `feature/county-road-g3` 合并进 master（`ce81f51a`），合并后编译和 `countyCheck` 6 个种子 PASS。下一步 Main 把 `ForestHomeRuntime` 改成读 `home.reservation()`。
+- 2026-10-19 Main 接上了（[M4 第二轮](forest_home_b_m4_round2.md)，在 master 上未提交，未进游戏）：`ForestHomeRuntime` 读 `home.reservation()`；`AFL_HOME_` 前缀换成 `start_area` 开关（Main 登记在 `WorldgenRules`）；大门和信箱由 Main 按 `gate` / `mailbox` 在区块装饰末尾写入（第 4 节的"Main 提供放置"改成 Main 自己放，C 不用调用）；车道路面种类 `GRAVEL`。C 同日答应在两个锚点做整格平台（分支 `feature/county-road-g3-pads`）。
+- 2026-10-19 C 提交平台（`f12c1df2`，RULES g3.4，`surface22`，`road_works#12`），Main 同日合并进 master `3e67b2c5`（用户批准，未推送）：锚点的 `y` 是平台的整数高度，Main 的放法不用改。
 - Main 起草（2026-10-14），按用户同日批准的分工写；
 - Claude C 同日回复两次：同意规划顺序、"契约类型放 Main"、G3 退路、形状和索引放 `contract`，提的具体条件都写进了下面各节；
 - 用户同日批准这份接口规划，定了实施顺序（第 12 节）。以后接口细节 Main 和 C 直接商量，定了就改这份文档；默认开局和正式世界生成规则的重大改变交用户确认。

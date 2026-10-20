@@ -1,5 +1,9 @@
 package com.antaurora.apofirstlight.worldgen.home;
 
+import com.antaurora.apofirstlight.block.RectMultiblockBlock;
+import com.antaurora.apofirstlight.block.RuralMailboxBlock;
+import com.antaurora.apofirstlight.block.TubeFarmGateBlock;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.worldgen.structure.AflTemplatePlacer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
@@ -7,13 +11,16 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -94,6 +101,37 @@ public final class ForestHomeChunkPass {
 
     private static void set(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int y, int z, BlockState s) {
         chunk.setBlockState(p.set(x, y, z), s, false);
+    }
+
+    /**
+     * The driveway's farm gate (closed, the PRIVATE DRIVE sign toward the road) and mailbox (flag down, empty), at the
+     * END of the chunk's feature step (ChunkGeneratorForestHomeMixin): after the road's chunk pass cleared over its
+     * gravel and turf, and after the features. Each chunk writes only its own cells of a fixture, straight into the
+     * chunk (the road's WorldGenRegion guard keeps generation writes off its columns), so chunks may generate in any order;
+     * the master cell gets its block entity. A cell's own tick waits for unloaded neighbours (RectMultiblockBlock#tick).
+     */
+    public static void fixtures(WorldGenLevel level, ChunkAccess chunk) {
+        ForestHomeRuntime.Active a = ForestHomeRuntime.active();
+        if (a == null || level.getLevel() != a.level() || a.gate() == null && a.mailbox() == null) return;
+        if (a.gate() != null && AflBlocks.TUBE_FARM_GATE.get() instanceof TubeFarmGateBlock gate)
+            write(chunk, gate, gate.cellStates(a.gate().origin(), a.gate().facing(), gate.defaultBlockState()
+                    .setValue(TubeFarmGateBlock.OPEN, false).setValue(TubeFarmGateBlock.SIGN, TubeFarmGateBlock.Sign.FRONT)));
+        if (a.mailbox() != null && AflBlocks.RURAL_MAILBOX.get() instanceof RuralMailboxBlock box)
+            write(chunk, box, box.cellStates(a.mailbox().origin(), a.mailbox().facing(), box.defaultBlockState()
+                    .setValue(RuralMailboxBlock.OPEN, false).setValue(RuralMailboxBlock.FLAG, false)));
+    }
+
+    private static void write(ChunkAccess chunk, RectMultiblockBlock<?> block, Map<BlockPos, BlockState> cells) {
+        ChunkPos cp = chunk.getPos();
+        for (Map.Entry<BlockPos, BlockState> e : cells.entrySet()) {
+            BlockPos pos = e.getKey();
+            if (pos.getX() >> 4 != cp.x || pos.getZ() >> 4 != cp.z || chunk.isOutsideBuildHeight(pos)) continue;
+            chunk.setBlockState(pos, e.getValue(), false);
+            if (block.isMaster(e.getValue()) && block instanceof EntityBlock eb) {
+                BlockEntity be = eb.newBlockEntity(pos, e.getValue());
+                if (be != null) chunk.setBlockEntity(be);
+            }
+        }
     }
 
     /** WorldGenRegion#setBlock guard: no generation write but the template's own lands in the template box. */

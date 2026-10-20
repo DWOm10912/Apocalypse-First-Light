@@ -206,6 +206,7 @@ public final class LevelVehicleWorld implements VehicleWorld {
             case ASPHALT -> 1.00;
             case CONCRETE -> 0.95;
             case TURF -> 0.70;
+            case GRAVEL -> 0.65;   // the forest home's driveway: the gravel block's grip (GRIP_WORDS)
         };
     }
 
