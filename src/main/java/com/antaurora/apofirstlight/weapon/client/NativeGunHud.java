@@ -95,7 +95,9 @@ public final class NativeGunHud {
         }
         // the empty reload's clip, or one of its variants (_ads, the skill tiers' _1.._4)
         boolean empty = clip.startsWith(gun.reloadClip(stack, true));
-        int ticks = Math.max(1, gun.reloadTicks(stack, empty));
+        // a proficiency tier's reload (NativeReloadTiers) runs its own clip's length
+        int ticks = Math.max(1, com.antaurora.apofirstlight.weapon.NativeReloadTiers.tiered(clip) && gun.animationAsset() != null
+                ? com.antaurora.apofirstlight.weapon.NativeGunAnimations.ticks(gun.animationAsset(), clip) : gun.reloadTicks(stack, empty));
         return Math.max(0, Math.min(1, (now - reloadStart + partialTick) / ticks));
     }
 

@@ -156,7 +156,8 @@ public final class SurvivorSetupGameTests {
                 "sheet growth: pistol 6, 15 of 225, top 10, firearms: " + pistolView);
         log.check("reload_novice".equals(pistolView.getCompound("Perks").getString("0"))
                 && "reload_trained".equals(pistolView.getCompound("Perks").getString("4"))
-                && "reload_practised".equals(pistolView.getCompound("Perks").getString("7")), "sheet growth: the gun nodes at 0, 4, 7");
+                && "reload_ads".equals(pistolView.getCompound("Perks").getString("5"))
+                && "reload_practised".equals(pistolView.getCompound("Perks").getString("7")), "sheet growth: the gun nodes at 0, 4, 5, 7");
         var coldView = grownSheet.getCompound(3);
         log.check(SurvivorGrowth.COLD.equals(coldView.getString("Id")) && "climate".equals(coldView.getString("Group"))
                 && coldView.getInt("Lv") == 3 && coldView.getList("Curves", net.minecraft.nbt.Tag.TAG_COMPOUND).size() == 1,

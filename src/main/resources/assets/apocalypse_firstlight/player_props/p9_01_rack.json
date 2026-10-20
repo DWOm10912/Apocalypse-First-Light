@@ -1,0 +1,24 @@
+{
+  "about": "Where the support hand takes the P9's slide for an overhand rack (docs/dev/gun_proficiency_v1_plan.md 4): no look of its own; keyed on the gun prop at the slide's rear top, moved with the slide. Written by tools/author-p9-01-reload-actions.mjs.",
+  "items": [],
+  "scale": 0.49467,
+  "bounds": [
+    [
+      -0.01,
+      -0.01,
+      -0.01
+    ],
+    [
+      0.01,
+      0.01,
+      0.01
+    ]
+  ],
+  "points": {
+    "hand": [
+      0,
+      0.375,
+      0.16875
+    ]
+  }
+}

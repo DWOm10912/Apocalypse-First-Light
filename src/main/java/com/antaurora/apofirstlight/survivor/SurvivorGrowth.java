@@ -75,12 +75,14 @@ public final class SurvivorGrowth {
 
     /**
      * The gun class tiers (gun proficiency plan section 3; 10 levels since 2026-10-18, an ordinary survivor starts at 0):
-     * 0-3 novice, 4-6 experienced, 7-10 practised. Each tier is one way of reloading; the practised one also reloads while
-     * aiming.
+     * 0-3 novice, 4-6 experienced, 7-10 practised. Each tier is one way of reloading.
      */
     public static int tier(int level) {
         return level <= 3 ? 0 : level <= 6 ? 1 : 2;
     }
+
+    /** From this gun level a reload started while aiming keeps the aim (user 2026-10-18; was the practised tier). */
+    public static final int ADS_RELOAD_LEVEL = 5;
 
     /** The first level of each tier above novice. */
     public static boolean tierStart(int level) {
@@ -102,12 +104,17 @@ public final class SurvivorGrowth {
      * as practised (as the client skips the level there), anyone without a set-up living survivor as novice.
      */
     public static int gunTier(ServerPlayer player, WeaponClass weaponClass) {
-        if (player.isCreative() || player.isSpectator()) return 2;
+        return tier(gunLevel(player, weaponClass));
+    }
+
+    /** The player's level with a gun class on the server: Creative and Spectator 10, no set-up living survivor 0. */
+    public static int gunLevel(ServerPlayer player, WeaponClass weaponClass) {
+        if (player.isCreative() || player.isSpectator()) return 10;
         SurvivorRecord record = trainee(player);
         if (record == null) return 0;
         SurvivorCatalog.Snapshot catalog = SurvivorCatalog.get();
         SurvivorCatalog.GrowthDef def = catalog.growth().get(gunItem(weaponClass));
-        return def == null ? 0 : tier(SurvivorSetup.growthLevel(record, catalog, def));
+        return def == null ? 0 : SurvivorSetup.growthLevel(record, catalog, def);
     }
 
     /** The gun class's growth item (gun proficiency plan section 3). */

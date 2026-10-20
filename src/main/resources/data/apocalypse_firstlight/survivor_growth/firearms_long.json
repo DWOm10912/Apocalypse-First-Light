@@ -25,6 +25,7 @@
   "perks": {
     "0": "reload_novice",
     "4": "reload_trained",
+    "5": "reload_ads",
     "7": "reload_practised"
   }
 }

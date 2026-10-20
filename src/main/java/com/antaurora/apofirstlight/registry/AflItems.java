@@ -30,7 +30,10 @@ public final class AflItems {
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "p9_01"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("p9_01_v3_native", "static_idle",
                             java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty",
-                                    "reload_tactical_ads", "reload_empty_ads", "shoot", "draw", "put_away", "inspect", "inspect_empty"),
+                                    "reload_tactical_ads", "reload_empty_ads", "shoot", "draw", "put_away", "inspect", "inspect_empty",
+                                    // proficiency tiers (NativeReloadTiers)
+                                    "reload_tactical_experienced", "reload_empty_experienced", "reload_tactical_novice", "reload_empty_novice",
+                                    "reload_tactical_novice_fumble", "reload_empty_novice_fumble"),
                             java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->

@@ -16,6 +16,7 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {MP, MAG_TILT} from './build-p9-01-v2-native.mjs';
+import {tierTiming, SLIDE_LOCK, SLIDE_TOP_REAR} from './author-p9-01-v3-native-animations.mjs';
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -192,11 +193,79 @@ function inspect(empty) {
     return [id, json];
 }
 
+// ---------- lower tiers (docs/dev/gun_proficiency_v1_plan.md 4; 2026-10-18) ----------
+// Same beats as the first-person tier clips (tierTiming): the gun is worked lower and closer, the head over it (the head
+// follows the look, so it is the gun that comes into the eyes' way): experienced at the lower chest, novice tucked in close
+// and tipped up to look into the magwell, a second look after the seat; the empty reload racks the slide overhand (the
+// left hand on a helper point riding the slide). Fumble: the magazine goes in crooked, stops, comes out, goes in again.
+const RACK = {
+    about: 'Where the support hand takes the P9\'s slide for an overhand rack (docs/dev/gun_proficiency_v1_plan.md 4): no look of its own;'
+        + ' keyed on the gun prop at the slide\'s rear top, moved with the slide. Written by tools/author-p9-01-reload-actions.mjs.',
+    items: [], scale: S, bounds: [[-0.01, -0.01, -0.01], [0.01, 0.01, 0.01]],
+    points: {hand: r6(SLIDE_TOP_REAR.map(n => n / 16))},
+};
+defs.p9_01_rack = RACK;
+/** The rack point with the slide `d` gun px back from battery. */
+const onSlide = d => ({frame: 'prop:p9_01', point: 'hand', pos: r3(v3.add(local(RACK, 'hand'), [0, 0, -d * S])), rot: [0, 0, 0]});
+const TIER_POSES = {
+    experienced: {work: gun([-0.6, 3.4, -8.0], 30, 10, -24), meet: gun([0.0, 3.9, -7.8], 26, 12, -26), hold: gun([-0.4, 3.6, -8.0], 30, 12, -20),
+        rack: gun([-0.6, 3.6, -9.4], 14, 24, 30), mid: [2.6, 8.4, -7.4]},
+    novice: {work: gun([-0.8, 3.0, -7.6], 38, 12, -20), meet: gun([-0.2, 3.4, -7.4], 34, 14, -24), hold: gun([-0.6, 3.2, -7.6], 38, 16, -16),
+        look: gun([-0.8, 2.8, -7.6], 40, 20, -12), rack: gun([-0.4, 3.2, -9.4], 16, 24, 30), mid: [2.4, 8.6, -6.8]},
+};
+function tierReload(empty, tierName, fumble = false) {
+    const T = tierTiming(empty, tierName, fumble), P = TIER_POSES[tierName];
+    const id = `p9_01_reload_${empty ? 'empty' : 'tactical'}_${tierName}${fumble ? '_fumble' : ''}`;
+    const json = base(id, `P9 ${empty ? 'empty' : 'tactical'} reload, ${tierName} tier${fumble ? ', fumbled' : ''} (gun/${id};`
+        + ' docs/dev/gun_proficiency_v1_plan.md 4): the gun is worked ' + (tierName === 'novice' ? 'close to the body, tipped up to look into the'
+        + ' magwell' : 'at the lower chest') + ', the old magazine drops, a fresh one comes from the belt pouch and is guided in'
+        + (fumble ? ' crooked, stops on the edge, comes out and goes in on the second try' : '') + (tierName === 'novice' ? ', then a second look' : '')
+        + (empty ? '; the support hand racks the slide overhand' : '') + '; back to the chest ready. Same beats and length as the first-person'
+        + ' clip. Written by tools/author-p9-01-reload-actions.mjs.', T.end);
+    const gunKeys = [k(0, CHEST_READY, 0), k(0, P.work, T.up), k(T.up + 0.06, P.meet, (fumble ? T.bump : T.seat) - 0.02 - T.up - 0.06)];
+    if (fumble) gunKeys.push(k(T.out, P.work, T.again - T.out), k(T.again + 0.04, P.meet, T.seat - 0.06 - T.again));
+    gunKeys.push(k(T.seat, P.hold, 0.14));
+    if (T.lookAt != null) gunKeys.push(k(T.lookAt, P.look, 0.18));
+    if (empty) { const r0 = T.lookEnd != null ? T.lookEnd + 0.02 : T.seat + 0.16; gunKeys.push(k(r0, P.rack, T.grab - r0)); }
+    gunKeys.push(k(T.back, CHEST_READY, T.backEnd - T.back));
+    // the fresh magazine: from the pouch when the hand gets there, up past the chest, into the magwell
+    const atPouch = Math.max(0.28, T.drop - 0.04);
+    const crooked = {rot: [7, 0, 9]};
+    const magKeys = [k(0, POUCH, 0, {hidden: true}), k(atPouch, POUCH, 0),
+        k(atPouch + 0.02, keyAt(MAG, 'chest', 'base', P.mid, 26, 18, -40), T.enter - atPouch - 0.02),
+        k(T.enter + 0.02, inGun(MAG_ENTRY, fumble ? crooked : {}), T.align - T.enter - 0.02)];
+    if (fumble) magKeys.push(k(T.align, inGun(3.0, crooked), T.bump - T.align), k(T.bump + 0.06, inGun(4.7, crooked), T.out - T.bump - 0.06),
+        k(T.out, inGun(MAG_ENTRY), T.again - T.out));
+    const pushFrom = fumble ? T.again : T.align;
+    magKeys.push(k(pushFrom, inGun(MAG_PART), T.seat - 0.12 - pushFrom), k(T.seat - 0.04, inGun(0), 0.04), k(T.seat, inGun(0), 0, {hidden: true}));
+    json.props = [
+        {id: 'p9_01', keys: gunKeys},
+        {id: 'p9_01_mag', keys: magKeys},
+        {id: 'p9_01_mag_old', keys: [k(0, inGun(0), 0, {hidden: true}), k(T.drop, inGun(0), 0), k(T.drop, inGun(MAG_CLEAR), 0.08)]},
+    ];
+    if (empty) json.props.push({id: 'p9_01_rack', keys: [k(0, onSlide(SLIDE_LOCK), 0), k(T.pull, onSlide(SLIDE_LOCK + 0.08), T.pulled - T.pull),
+        k(T.let, onSlide(SLIDE_LOCK + 0.08), 0), k(T.let, onSlide(0), 0.03)]});
+    // the support hand lets go as the gun turns (as the trained reload), meets the magazine at the pouch, and takes the grip
+    // again while the gun comes back to the chest ready
+    const left = [{at: 0, target: 'prop:p9_01:grip_l', blend: 0, roll: 0, pole: POLE_L},
+        {at: 0.02, target: 'prop:p9_01_mag:base', blend: atPouch - 0.02, roll: 0, pole: POLE_L_LOW}];
+    if (empty) left.push({at: T.seat + 0.04, target: 'prop:p9_01_rack:hand', blend: T.grab - T.seat - 0.04, roll: 0, pole: POLE_L},
+        {at: T.back, target: 'prop:p9_01:grip_l', blend: T.backEnd - 0.1 - T.back, roll: 0, pole: POLE_L});
+    else left.push({at: Math.max(T.seat + 0.04, T.back - 0.06), target: 'prop:p9_01:grip_l', blend: T.backEnd - 0.1 - Math.max(T.seat + 0.04, T.back - 0.06), roll: 0, pole: POLE_L});
+    json.hands = {right: [{at: 0, target: 'prop:p9_01:grip_r', blend: 0, roll: 0, pole: POLE_R}], left};
+    json.events = [];
+    const start = rootKeyOf(json, 2, T.drop + 0.08);
+    json.props[2].keys.push(...fall(T.drop + 0.08, start, [-260, 40, 120]));
+    return [id, json];
+}
+
 // ---------- write / check ----------
 const text = o => JSON.stringify(o, null, 2) + '\n';
 const outputs = [
-    ['player_props/p9_01_mag.json', MAG], ['player_props/p9_01_mag_old.json', OLD],
-    ...[reload(false), reload(true), inspect(false), inspect(true), reload(false, true), reload(true, true)].map(([id, json]) => ['player_actions/gun/' + id + '.json', json]),
+    ['player_props/p9_01_mag.json', MAG], ['player_props/p9_01_mag_old.json', OLD], ['player_props/p9_01_rack.json', RACK],
+    ...[reload(false), reload(true), inspect(false), inspect(true), reload(false, true), reload(true, true),
+        ...['experienced', 'novice'].flatMap(tier => [tierReload(false, tier), tierReload(true, tier)]),
+        tierReload(false, 'novice', true), tierReload(true, 'novice', true)].map(([id, json]) => ['player_actions/gun/' + id + '.json', json]),
 ];
 const check = process.argv.includes('--check');
 let differ = 0;
@@ -220,6 +289,7 @@ const worst = {};
 for (const [rel, json] of outputs.filter(([r]) => r.startsWith('player_actions'))) {
     const action = asAction(json), name = path.basename(rel, '.json'), bad = [];
     let wristMax = 0, twistMax = 0, offMax = 0, clearMin = Infinity, clearAt = '';
+    let armMin = Infinity, armAt = '';
     for (const pitch of [0, -30, 30, -45, 45]) for (let t = 0; t <= json.length + 1e-6; t += 0.02) {
         const res = core.solveFrame(poser, {action, seconds: t, time: t, pitch});
         const ro = core.readouts(res);
@@ -230,6 +300,17 @@ for (const [rel, json] of outputs.filter(([r]) => r.startsWith('player_actions')
             if ((r.w > 0.99 && r.off > 0.6) || r.wrist > 50 || r.twist > 30) bad.push(`${t.toFixed(2)}/${pitch} ${side} off ${r.off.toFixed(2)} wrist ${r.wrist.toFixed(0)} twist ${r.twist.toFixed(0)}`);
         }
         const inv = tf.inv(res.pose.world[rig.chest]), head = tf.inv(res.pose.world[rig.head]);
+        // ActionCheck's arm rule: forearm and hand centre lines >= 2 px outside the chest box (the skin around them); as its
+        // scenes, level look and away from the chest ready at both ends (the idle's own arms sit closer)
+        if (pitch === 0 && t > 0.3 && t < json.length - 0.6) for (const right of [true, false]) {
+            const upper = right ? rig.upperArmR : rig.upperArmL, fore = right ? rig.forearmR : rig.forearmL, hand = right ? rig.handR : rig.handL;
+            for (let y = 6; y <= core.DISTAL_Y; y += 0.5) {
+                const p = tf.apply(inv, res.pose.point(y < 8 ? fore : hand, v3.add(rig.pivot[upper], [core.centreX(right, false), y, 0])));
+                const o = outside(p, TORSO);
+                if (o < armMin) { armMin = o; armAt = `${right ? 'R' : 'L'} ${t.toFixed(2)}/${pitch}`; }
+                if (o < 2) bad.push(`${t.toFixed(2)}/${pitch} ${right ? 'R' : 'L'} arm ${o.toFixed(2)} px from the chest box`);
+            }
+        }
         json.props.forEach((p, i) => {
             if (!res.props[i] || res.hidden[i]) return;
             for (const c of corners(defs[p.id])) {
@@ -238,7 +319,7 @@ for (const [rel, json] of outputs.filter(([r]) => r.startsWith('player_actions')
             }
         });
     }
-    worst[name] = {offMax: +offMax.toFixed(2), wristMax: +wristMax.toFixed(0), twistMax: +twistMax.toFixed(0), clearMin: +clearMin.toFixed(2), clearAt,
+    worst[name] = {offMax: +offMax.toFixed(2), wristMax: +wristMax.toFixed(0), twistMax: +twistMax.toFixed(0), clearMin: +clearMin.toFixed(2), clearAt, armMin: +armMin.toFixed(2), armAt,
         bad: bad.length, firstBad: process.env.ALL ? bad : bad.slice(0, 12)};
 }
 console.log(JSON.stringify(worst, null, 1));
