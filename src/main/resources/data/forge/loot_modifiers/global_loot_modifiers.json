@@ -2,6 +2,7 @@
   "replace": false,
   "entries": [
     "apocalypse_firstlight:environment_contamination",
-    "apocalypse_firstlight:remove_buckets"
+    "apocalypse_firstlight:remove_buckets",
+    "apocalypse_firstlight:retired_vanilla"
   ]
 }

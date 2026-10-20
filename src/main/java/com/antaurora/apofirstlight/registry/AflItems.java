@@ -520,6 +520,9 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    // Flip lighter V1 (docs/gameplay/flip_lighter_v1.md, 2026-10-20): flick open, strike, light; the fuel rides in its tag
+    public static final RegistryObject<Item> FLIP_LIGHTER = ITEMS.register("flip_lighter",
+            () -> new com.antaurora.apofirstlight.item.FlipLighterItem(new Item.Properties()));
     // Thirst V1 (docs/gameplay/thirst_system_v1.md): filled at a water source (dirty); boiled, it becomes purified water
     // when it carries no radiation and boiled water (still radioactive) when it does
     public static final RegistryObject<Item> DIRTY_WATER_BOTTLE = ITEMS.register("dirty_water_bottle",

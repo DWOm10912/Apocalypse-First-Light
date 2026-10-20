@@ -1,0 +1,6 @@
+{
+  "type": "apocalypse_firstlight:remove_items",
+  "conditions": [],
+  "tag": "apocalypse_firstlight:retired/unobtainable",
+  "retirement": true
+}

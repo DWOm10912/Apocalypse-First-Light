@@ -1,0 +1,19 @@
+{
+  "remove_recipes": [
+    "minecraft:anvil",
+    "minecraft:enchanting_table",
+    "minecraft:brewing_stand",
+    "minecraft:grindstone",
+    "minecraft:smithing_table",
+    "minecraft:ender_chest",
+    "minecraft:shield_decoration",
+    "minecraft:armor_dye"
+  ],
+  "remove_recipe_types": [
+    "minecraft:smithing_trim"
+  ],
+  "closed_dimensions": [
+    "minecraft:the_nether",
+    "minecraft:the_end"
+  ]
+}

@@ -57,6 +57,10 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.worldgen.lock.WorldgenLockConfig.SPEC, "apocalypse_firstlight-worldgen.toml");
+        // Vanilla Survival Rework V1: the retirement switch (common config, loaded before data packs so recipe pruning can read it)
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.COMMON,
+                com.antaurora.apofirstlight.world.VanillaRetirement.SPEC, "apocalypse_firstlight-common.toml");
         // First-person body V1: the player's own choice (client config), whether to draw the body in first person
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.CLIENT,

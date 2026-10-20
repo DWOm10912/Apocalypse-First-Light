@@ -215,6 +215,28 @@ public final class FireFx {
         FLASHES.add(new Flash(at, 0.1F + 0.05F * r.nextFloat(), level.getGameTime()));
     }
 
+    /**
+     * The flint's sparks off a lighter's wheel at {@code at} (FlipLighterClient): 3 to 6 short bright streaks thrown
+     * mostly up and out along {@code out}, no flash.
+     */
+    public static void flintSparks(ClientLevel level, Vec3 at, Vec3 out) {
+        RandomSource r = level.random;
+        int count = 3 + r.nextInt(4);
+        for (int i = 0; i < count && STREAKS.size() < MAX_STREAKS; i++) {
+            Vec3 d = out.scale(0.4).add(r.nextGaussian() * 0.35, 0.5 + r.nextDouble() * 0.4, r.nextGaussian() * 0.35).normalize().scale(0.05 + r.nextDouble() * 0.08);
+            Streak s = new Streak();
+            s.x = s.ox = at.x;
+            s.y = s.oy = at.y;
+            s.z = s.oz = at.z;
+            s.vx = d.x;
+            s.vy = d.y;
+            s.vz = d.z;
+            s.width = 0.003F + 0.003F * r.nextFloat();
+            s.life = 2 + r.nextInt(4);
+            STREAKS.add(s);
+        }
+    }
+
     /** A fuel container went up (AflNetwork.FuelBlastS2CPacket): a burst of black smoke and sparks, then a column of smoke. */
     public static void blast(Vec3 at, float power, boolean diesel) {
         ClientLevel level = Minecraft.getInstance().level;

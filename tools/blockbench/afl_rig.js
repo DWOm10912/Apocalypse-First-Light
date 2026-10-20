@@ -2495,6 +2495,8 @@
                     state: () => ({repo: S.repo, err: S.err, loco: S.loco, ui: clone(UI)}),
                     importAction: path => importAction({path, content: nodeFs().readFileSync(path, 'utf8')}),
                     createProp: (id, frame, hold) => { createProp(id, readPropDef(id), frame, hold); refreshUi(); },
+                    /** Merges a .bbmodel into prop id's look (as the menu item; offset: item px of the file's origin). */
+                    mergeLook: (path, offset, id) => mergePropLook({path, content: nodeFs().readFileSync(path, 'utf8')}, offset || [0, 0, 0], liveProps(cfg()).find(p => p.id === id)),
                     /** The selected animation's prop tracks as the export writes them (unrounded), and what kept any out. */
                     propTracks: () => {
                         const anim = Animation.selected;

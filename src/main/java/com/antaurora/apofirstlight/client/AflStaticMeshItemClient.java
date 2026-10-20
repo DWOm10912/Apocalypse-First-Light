@@ -67,6 +67,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.SIMPLE_HEARING_PROTECTION.get(), "simple_hearing_protection", "simple_hearing_protection_mesh", 0.280324);
             // Geiger counter V2 (equipment meshes, 2026-10-15): the mesh with a live LCD and count LED (0.5 - 3.12 / 32)
             bind(AflItems.GEIGER_COUNTER.get(), GeigerCounterItemRenderer::new, "geiger_counter");
+            // Flip lighter V1 (equipment meshes, 2026-10-20): the lid, wheel and flame from the stack's tag (0.5 - 11.4 / 32)
+            bind(AflItems.FLIP_LIGHTER.get(), FlipLighterRenderer::new, "flip_lighter");
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(

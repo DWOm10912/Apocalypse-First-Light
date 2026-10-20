@@ -105,8 +105,11 @@ public final class BoxStove {
         return s.is(FUEL_KINDLING) ? KINDLING_TICKS : 0;
     }
 
-    /** A fire-maker: flint and steel or a fire charge. */
-    public static boolean igniter(ItemStack s) { return s.is(Items.FLINT_AND_STEEL) || s.is(Items.FIRE_CHARGE); }
+    /** A fire-maker: a lit flip lighter (item/FlipLighterItem), flint and steel or a fire charge. */
+    public static boolean igniter(ItemStack s) {
+        if (s.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return com.antaurora.apofirstlight.item.FlipLighterItem.isLit(s);
+        return s.is(Items.FLINT_AND_STEEL) || s.is(Items.FIRE_CHARGE);
+    }
 
     /** The smoking recipe of an item (food, dirty water: AFL's boiling recipes are smoking recipes). */
     public static Optional<SmokingRecipe> recipe(Level level, ItemStack s) {
@@ -290,7 +293,10 @@ public final class BoxStove {
                 }
                 case LIGHT -> {
                     stove.light();
-                    if (held.is(Items.FIRE_CHARGE)) {
+                    if (held.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) {
+                        // the lit lighter held to the kindling: it burns a little fuel, no sound of its own
+                        com.antaurora.apofirstlight.item.FlipLighterItem.burn(held, com.antaurora.apofirstlight.item.FlipLighterItem.STOVE_LIGHT_TICKS);
+                    } else if (held.is(Items.FIRE_CHARGE)) {
                         if (!creative) held.shrink(1);
                         level.playSound(null, pos, SoundEvents.FIRECHARGE_USE, SoundSource.BLOCKS, 0.8F, 1.0F);
                     } else {

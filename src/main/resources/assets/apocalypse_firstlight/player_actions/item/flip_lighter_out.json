@@ -1,0 +1,64 @@
+{
+  "format_version": 1,
+  "about": "Flip lighter: the flame died (Act out: no fuel left, under water). From held out back to before the chest, open (0-0.5 s).",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "flip_lighter",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "view",
+        "point": "grip",
+        "pos": [
+          -1.8,
+          4.9,
+          -4.9
+        ],
+        "rot": [
+          -4,
+          203,
+          0
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0.05,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.6,
+          1.8,
+          -7
+        ],
+        "rot": [
+          -8,
+          200,
+          0
+        ],
+        "blend": 0.45
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

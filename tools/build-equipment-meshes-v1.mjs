@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {Part, extrude, revolve, area2, newell, png} from './cube-slab-mesh-lib.mjs';
+import {Part, extrude, revolve, area2, newell, png, triangulate} from './cube-slab-mesh-lib.mjs';
 import {bake} from './build-material-meshes-v1.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -578,6 +578,97 @@ function geigerCounter() {
 }
 
 /**
+ * Flip lighter (2026-10-20, docs/gameplay/flip_lighter_v1.md): an old windproof flip-top lighter, silver plated, no maker's
+ * marks; 38 x 13 x 57 mm at 1 px = 5 mm. Stands on y = 0, front face +Z, the hinge on the +X side. The case and the lid
+ * are lathed-looking shells (rounded-rectangle rings, rounded bottom and lid top); inside the case top the steel insert:
+ * the chimney (front and back walls with eight holes each, the hinge-side ends rising into ears that carry the flint
+ * wheel's axle), the cam beside it, the cotton wick with a charred tip. The lid's parts are named lid* and the wheel
+ * `wheel`: the item renderer (client/FlipLighterRenderer) turns them about the points printed as stats.points.
+ */
+export const LIGHTER = {hinge: [4.0, 7.3, 0], wheel: [2.05, 10.45, 0], wick: [0.9, 10.42, 0], lidTop: 11.4};
+function flipLighter() {
+  const B = 'flip_lighter', parts = [], add = p => { parts.push(p); return p; };
+  const HX = 3.8, HZ = 1.3, R = 0.75, SEG = 4;
+  // plan of the shells at an inset d (same vertex count at every inset, so rings join quad to quad); axis y: (u, v) = (z, x)
+  const plan = d => rr(-HZ + d, -HX + d, HZ - d, HX - d, Math.max(0.05, R - d), SEG);
+  const at = (L, y) => L.map(([z, x]) => [x, y, z]);
+  // rings [y, inset] joined in order. The profile's normal is dy outward plus d(inset) up (a ring stepping in as it rises
+  // faces up and out); sgn -1 turns it round for the lid's inside
+  const rings = (part, list, sgn, mat) => {
+    const ids = list.map(([y, d]) => at(plan(d), y).map(q => part.vtx(q)));
+    for (let k = 0; k + 1 < ids.length; k++) {
+      const dy = list[k + 1][0] - list[k][0], dd = list[k + 1][1] - list[k][1];
+      for (let i = 0; i < ids[k].length; i++) {
+        const j = (i + 1) % ids[k].length, P = part.v[ids[k][i]], Q = part.v[ids[k][j]], h = Math.hypot(P[0] + Q[0], P[2] + Q[2]) || 1;
+        part.face([ids[k][i], ids[k][j], ids[k + 1][j], ids[k + 1][i]], [sgn * dy * (P[0] + Q[0]) / h, sgn * dd, sgn * dy * (P[2] + Q[2]) / h], 'side', mat);
+      }
+    }
+  };
+  const cap = (part, y, d, up, mat) => {
+    const L = plan(d), {pts, tris} = triangulate(L, []), ids = pts.map(([z, x]) => part.vtx([x, y, z]));
+    for (const t of tris) part.face(t.map(i => ids[i]), [0, up, 0], 'cap', mat);
+  };
+  // case: rounded bottom edge, a small round at the seam, the rim round the insert's top plate
+  const kase = add(new Part('case', B, 'silver'));
+  rings(kase, [[0, 0.32], [0.04, 0.16], [0.12, 0.06], [0.25, 0], [7.2, 0], [7.27, 0.03], [7.3, 0.09]], 1);
+  rings(kase, [[7.3, 0.09], [7.3, 0.18]], 1);          // rim (flat, facing up)
+  rings(kase, [[7.3, 0.18], [7.25, 0.18]], 1, 'insert');   // a 0.25 mm step down to the insert (faces in)
+  cap(kase, 0, 0.32, -1);
+  cap(kase, 7.25, 0.18, 1, 'insert');
+  // lid: outer shell with a rounded top, the inner wall 0.5 mm in, the ceiling 0.6 mm under the top
+  const lid = add(new Part('lid', B, 'silver'));
+  rings(lid, [[7.32, 0], [11.05, 0], [11.2, 0.05], [11.32, 0.14], [11.4, 0.3]], 1);
+  cap(lid, 11.4, 0.3, 1);
+  rings(lid, [[7.32, 0], [7.32, 0.1]], -1);           // bottom edge of the shell
+  rings(lid, [[7.32, 0.1], [11.28, 0.1]], -1);        // inner wall, facing in
+  cap(lid, 11.28, 0.1, -1);
+  // hinge: five knuckles on the +X side at the seam (case 1, 3, 5; lid 2, 4), each on a leaf sunk into its shell
+  const [hx, hy] = LIGHTER.hinge;
+  for (let k = 0; k < 5; k++) {
+    const z0 = -1.0 + k * 0.4 + 0.01, z1 = z0 + 0.38, onLid = k % 2 === 1;
+    const p = add(new Part(onLid ? 'lid_hinge_' + k : 'hinge_' + k, B, 'silver'));
+    revolve(p, hx, hy, [[z1, 0], [z1, 0.24], [z0, 0.24], [z0, 0]], 8);
+    extrude(p, 'z', {outer: orient(onLid ? [[3.62, hy + 0.05], [hx, hy + 0.05], [hx, hy + 0.5], [3.62, hy + 0.5]] : [[3.5, hy - 0.5], [hx, hy - 0.5], [hx, hy - 0.08], [3.5, hy - 0.08]], true), holes: []}, z0 + 0.02, z1 - 0.02, 0);   // the leaf just inside the knuckle's ends: no shared faces
+  }
+  // chimney: front / back walls (holes, ears round the wheel axle) and two end walls; top at 10.5
+  const [wx, wy] = LIGHTER.wheel, top = 10.5, T = 0.08, cx = 2.95, cz = 1.0;
+  const tab = Array.from({length: 9}, (_, i) => { const a = (7 + (173 - 7) * i / 8) * Math.PI / 180; return [wx + 0.42 * Math.cos(a), wy + 0.42 * Math.sin(a)]; });
+  const wall = orient([[-cx, 7.25], [cx, 7.25], [cx, top], ...tab, [-cx, top]], true);
+  const holes = [];
+  for (const y of [8.35, 9.3]) for (const x of [-2.1, -0.8, 0.5, 1.8]) holes.push(orient(circle(x, y, 0.28, 8), false));
+  for (const [name, z0, z1] of [['chimney_front', cz - T, cz], ['chimney_back', -cz, -cz + T]])
+    extrude(add(new Part(name, B, 'insert')), 'z', {outer: wall, holes}, z0, z1, 0);
+  for (const [name, x0, x1] of [['chimney_left', -cx, -cx + T], ['chimney_right', cx - T, cx]])
+    extrude(add(new Part(name, B, 'insert')), 'x', {outer: orient([[-cz + T, 7.25], [cz - T, 7.25], [cz - T, top], [-cz + T, top]], true), holes: []}, x0, x1, 0);
+  // axle rivets on the ears' outer faces
+  for (const [name, z0, z1] of [['rivet_front', cz, cz + 0.06], ['rivet_back', -cz - 0.06, -cz]])
+    extrude(add(new Part(name, B, 'insert')), 'z', {outer: orient(circle(wx, wy, 0.2, 8), true), holes: []}, z0, z1, 0);
+  // flint wheel between the walls: 16 flats read as the knurl
+  revolve(add(new Part('wheel', B, 'wheel')), wx, wy, [[cz - T - 0.04, 0], [cz - T - 0.04, 0.78], [-cz + T + 0.04, 0.78], [-cz + T + 0.04, 0]], 16);
+  // cam: the spring lever outside the hinge-side end wall that holds the lid open or shut
+  extrude(add(new Part('cam', B, 'insert')), 'z', {outer: orient([[cx + 0.05, 7.25], [3.35, 7.25], [3.35, 8.6], [3.15, 8.9], [cx + 0.05, 8.9]], true), holes: []}, -0.25, 0.25, 0);
+  // wick: cotton, charred tip
+  const [kx, ky] = LIGHTER.wick;
+  extrude(add(new Part('wick', B, 'wick')), 'y', {outer: orient(circle(0, kx, 0.17, 8), true), holes: []}, 7.25, ky - 0.12, 0);
+  extrude(add(new Part('wick_tip', B, 'char')), 'y', {outer: orient(circle(0, kx, 0.16, 8), true), holes: []}, ky - 0.12, ky, 0);
+  return {PARTS: parts, MATS: {
+    silver: {c: [170, 167, 160], hl: 14, sm: 150, se: 168, f0: 237},   // worn silver plate, satin (LabPBR silver)
+    insert: {c: [136, 138, 140], hl: 10, sm: 116, se: 136, f0: 230},   // stainless insert
+    wheel: {c: [88, 90, 92], hl: 8, sm: 80, se: 100, f0: 230},          // knurled steel wheel
+    wick: {c: [196, 184, 160], hl: 2, sm: 40, se: 50, f0: 20},          // cotton wick
+    char: {c: [40, 36, 32], hl: 2, sm: 30, se: 40, f0: 20},             // its burnt tip
+  },
+  // held standing in the fist: third person face to the side like a vanilla sprite, first person face to the eye turned a
+  // little, the hinge side (where the lid opens) to the right
+  display: {
+    thirdperson_righthand: {rotation: [0, 0, 0], translation: [0, 1.5, 0.5], scale: [0.3, 0.3, 0.3]},
+    firstperson_righthand: {rotation: [0, -25, 0], translation: [0, 2.5, 0], scale: [0.32, 0.32, 0.32]},
+  },
+  atlas: 512, icon: {view: [20, 200, 0], coverage: 0.35, mat: {silver: [196, 194, 188]}},
+  points: {hinge: LIGHTER.hinge, wheel: LIGHTER.wheel, wick: LIGHTER.wick}};
+}
+
+/**
  * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
  * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
  * outline; 2x supersampled. spec.hud: screen(p) -> [x right, y up], toward = the direction to the viewer, scale px / unit.
@@ -647,6 +738,7 @@ export const ITEMS = {
   pistol_holster: pistolHolster,
   simple_hearing_protection: simpleHearingProtection,
   geiger_counter: geigerCounter,
+  flip_lighter: flipLighter,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -664,6 +756,8 @@ if (isMain) {
     if (spec.anchor) stats.wornAnchor = spec.anchor.map((v, k) => +(v + shift[k] - (k === 1 ? (hi[1] - lo[1]) / 2 : 0)).toFixed(4));
     // worn gear is authored in a body-part frame: its renderer translates by -origin / 16 to put it back there
     if (spec.worn) stats.origin = shift.map(v => +v.toFixed(4));
+    // pivots a renderer turns parts about (px, after the bake shift)
+    if (spec.points) stats.points = Object.fromEntries(Object.entries(spec.points).map(([k, q]) => [k, q.map((v, i) => +(v + shift[i]).toFixed(4))]));
     if (spec.hud) {
       const {buf, W, H} = drawHud(spec.PARTS, spec.hud);
       outputs.push([path.join(ROOT, `src/main/resources/assets/apocalypse_firstlight/textures/gui/melee/${id}_hud.png`), buf]);

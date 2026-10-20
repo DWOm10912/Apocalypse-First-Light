@@ -1,10 +1,12 @@
-// Fuel flame textures (docs/gameplay/fuel_fire_v1.md, 2026-10-05), from a Blender fire simulation rendered as a 48-frame
-// loop (tools/blender/fuel_flame_v1.blend: Mantaflow gas domain 1.2 x 1.2 x 2.4 m, res 112 + noise x2, a 0.84 x 0.67 m
-// fuel pool with a moving clouds texture on its fuel; "flame" -> colour ramp -> emission, Cycles, orthographic side view,
-// frames 60-107 with the first 12 crossfaded from 108-119; 256 x 352 each, black background).
-//   node tools/build-fuel-flame-v1.mjs tools/blender/fuel_flame_v1_loop [--check]      (l00.png .. l47.png, the kept render)
+// Fuel flame textures (docs/gameplay/fuel_fire_v1.md). V3 (2026-10-20): re-rendered from tools/blender/fuel_flame_v2.blend
+// (the same Mantaflow pool fire baked at res 160, vorticity 1.0, flame vorticity 3.0, noise strength 0.7, fuel clouds scale
+// 0.35; shaded as emission with a blackbody colour 900..2100 K from "flame", strength ((flame - 0.2) / 0.8)^2.5 x 7, the
+// 2 cm above the pool darkened, Standard view; Cycles, orthographic side view, frames 60..119 at 512 x 704, crossfaded into
+// a 48-frame loop by tools/blender-loop-crossfade.mjs 60 48 12). V1 (2026-10-05, fuel_flame_v1.blend, 64 x 88 frames) read
+// as glowing fog: emission wherever there was any flame, through a flat colour ramp.
+//   node tools/build-fuel-flame-v1.mjs tools/blender/fuel_flame_v2_loop [--check]      (l00.png .. l47.png, the kept render)
 // Outputs:
-// - textures/effect/fuel_flame.png (512 x 528: 8 x 6 frames of 64 x 88): the burning fuel flames (client/FuelFlames),
+// - textures/effect/fuel_flame.png (768 x 792: 8 x 6 frames of 96 x 132): the burning fuel flames (client/FuelFlames),
 //   drawn additively; colour unpremultiplied, alpha from brightness, the bottom rows faded (no hard line on the ground).
 //   _s: LabPBR, emissive (alpha 254) wherever the flame is.
 // - assets/minecraft/textures/block/fire_0.png, fire_1.png (64 x 3072: 48 square frames, .mcmeta frametime 1): vanilla
@@ -19,7 +21,7 @@ import {png, readPng} from './cube-slab-mesh-lib.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = process.argv[2];
 if (!SRC || !fs.existsSync(SRC)) throw new Error('usage: node tools/build-fuel-flame-v1.mjs <loopFramesDir> [--check]');
-const FRAMES = 48, FW = 64, FH = 88, COLS = 8, ROWS = 6, SQ = 64;
+const FRAMES = 48, FW = 96, FH = 132, COLS = 8, ROWS = 6, SQ = 64;
 const A = path.join(ROOT, 'src/main/resources/assets');
 
 const frames = [];
@@ -43,7 +45,7 @@ for (let i = 0; i < FRAMES; i++) {
   const f = frames[i], ox = (i % COLS) * FW, oy = Math.floor(i / COLS) * FH;
   for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
     const [r, g, b] = area(f, x * W / FW, y * H / FH, (x + 1) * W / FW, (y + 1) * H / FH);
-    const m = Math.max(r, g, b), alpha = Math.min(1, m * 1.15) * smooth(0, 5, FH - 1 - y);   // fade the last rows
+    const m = Math.max(r, g, b), alpha = Math.min(1, m * 1.15) * smooth(0, 7, FH - 1 - y);   // fade the last rows
     const k = ((oy + y) * SW + ox + x) * 4, s = m > 1e-3 ? 1 / m : 0;
     sheet[k] = Math.round(Math.min(1, r * s) * 255); sheet[k + 1] = Math.round(Math.min(1, g * s) * 255); sheet[k + 2] = Math.round(Math.min(1, b * s) * 255);
     sheet[k + 3] = Math.round(alpha * 255);

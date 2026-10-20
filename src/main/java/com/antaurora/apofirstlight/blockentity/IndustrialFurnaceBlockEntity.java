@@ -252,17 +252,22 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
                     industrialRecipe.processingTime(), industrialRecipe.result());
         }
         return level.getRecipeManager().getRecipeFor(RecipeType.BLASTING, input, level)
-                .map(recipe -> fromVanillaRecipe((AbstractCookingRecipe) recipe, level))
+                .map(recipe -> fromVanillaRecipe((AbstractCookingRecipe) recipe, input, level))
                 .orElseGet(() -> level.getRecipeManager()
                         .getRecipeFor(RecipeType.SMELTING, input, level)
-                        .map(recipe -> fromVanillaRecipe((AbstractCookingRecipe) recipe, level))
+                        .map(recipe -> fromVanillaRecipe((AbstractCookingRecipe) recipe, input, level))
                         .orElse(null));
     }
 
-    private static LaneRecipe fromVanillaRecipe(AbstractCookingRecipe recipe, Level level) {
+    /**
+     * The result through assemble, not the recipe's display result: recipes such as Thirst's boiling
+     * (thirst/WaterBoilingRecipes) decide it from the input, so radioactive dirty water stays contaminated here as it
+     * does in a furnace or the box stove. Plain vanilla recipes return a copy of the same stack as before.
+     */
+    private static LaneRecipe fromVanillaRecipe(AbstractCookingRecipe recipe, SimpleContainer input, Level level) {
         return new LaneRecipe(recipe.getId(), recipe.getCookingTime(),
                 requiredTicks(recipe.getCookingTime()),
-                recipe.getResultItem(level.registryAccess()).copy());
+                recipe.assemble(input, level.registryAccess()));
     }
 
     private SimpleContainer recipeInput(int lane) {

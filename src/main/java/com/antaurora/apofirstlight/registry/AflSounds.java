@@ -213,6 +213,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> TREE_CHOP = simple("tree_chop");
     public static final RegistryObject<SoundEvent> TREE_CRACK = simple("tree_crack");
     public static final RegistryObject<SoundEvent> TREE_CRASH = simple("tree_crash");
+    // Flip lighter V1: placeholders on vanilla events in sounds.json until the user records them (Firefly)
+    public static final RegistryObject<SoundEvent> FLIP_LIGHTER_OPEN = simple("flip_lighter_open");
+    public static final RegistryObject<SoundEvent> FLIP_LIGHTER_STRIKE = simple("flip_lighter_strike");
+    public static final RegistryObject<SoundEvent> FLIP_LIGHTER_CLOSE = simple("flip_lighter_close");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

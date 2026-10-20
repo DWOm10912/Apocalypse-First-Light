@@ -813,5 +813,17 @@
   "tree_crash": {
     "subtitle": "subtitles.apocalypse_firstlight.tree_crash",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/crash", "attenuation_distance": 24}]
+  },
+  "flip_lighter_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.flip_lighter_open",
+    "sounds": [{"name": "minecraft:block.iron_trapdoor.open", "type": "event", "pitch": 1.9, "volume": 0.35}]
+  },
+  "flip_lighter_strike": {
+    "subtitle": "subtitles.apocalypse_firstlight.flip_lighter_strike",
+    "sounds": [{"name": "minecraft:item.flintandsteel.use", "type": "event", "pitch": 1.4, "volume": 0.6}]
+  },
+  "flip_lighter_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.flip_lighter_close",
+    "sounds": [{"name": "minecraft:block.iron_trapdoor.close", "type": "event", "pitch": 1.9, "volume": 0.35}]
   }
 }
