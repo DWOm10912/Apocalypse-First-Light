@@ -64,6 +64,8 @@ public final class NativeGunInput {
             event.setCanceled(true);event.setSwingHand(false);return;
         }
         if (!event.isAttack() || !ready(mc)) return;
+        // orbit camera on foot: no shot until the body has turned to the camera's view (it is fired then)
+        if (com.antaurora.apofirstlight.client.camera.OrbitCamera.holdClick(event)) return;
         event.setCanceled(true);
         event.setSwingHand(false);
         if (!attackHeld) {

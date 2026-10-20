@@ -23,7 +23,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | F5 | First person / orbit camera (vanilla's front view is gone) |
 | Mouse (orbit) | Swing the camera all the way round you or the vehicle |
 | W A S D (orbit, on foot) | Walk the way the camera looks; your character turns by itself |
-| Left / right click (orbit, on foot) | Turn to the dot in the middle of the screen first, then dig, place or use; aiming a gun (right click) drops to first person until you let go |
+| Left / right click (orbit, on foot) | Your character first turns to the dot in the middle of the screen (about 0.3 s for half a turn), then digs, places, uses or fires; while held, the body keeps facing the dot and the movement keys strafe; aiming a gun (right click) turns first, then drops to first person until you let go |
 | Scroll (orbit, in a vehicle) | Camera distance |
 
 <StatusTag s="verified" d="2026-10-19" /> In a vehicle the camera chases behind it; the mouse swings it round, and a moment after you let the mouse be it eases back behind while the vehicle moves
