@@ -78,10 +78,7 @@
   - 敲路牙不掉路牙方块，否则"拿到一个路牙 + 地面还在"等于凭空多一格材料。
 - 创造模式一下把整格拆掉，和原版一样，不掉东西。
 - 不是玩家挖的（爆炸、`/setblock … destroy`）：整格没了，掉落表给地面那块（人行道 / 泥土）和 2 个混凝土碎块，各自带 `survives_explosion`。
-- 配方（无序合成）：
-  - `concrete_sidewalk` + 2 `concrete_rubble` → `curb_sidewalk`；
-  - `grass_block` + 2 `concrete_rubble` → `curb_grass`。
-  - 和敲路牙掉的碎块一样多，来回不赚不亏。漆色在放下后用染料涂。
+- **配方已删除**（用户 2026-10-20 删掉了 AFL 的 6 个工作台配方，"不是我之前要求加的"；见 [afl_workbench_known_recipes_v1_plan.md](../gameplay/afl_workbench_known_recipes_v1_plan.md)）。原来是无序合成 `concrete_sidewalk` / `grass_block` + 2 `concrete_rubble` → `curb_sidewalk` / `curb_grass`（和敲路牙掉的碎块一样多）。现在只能在创造模式获取。漆色在放下后用染料涂。
 - 混凝土碎块现在还能从粉碎机粉碎钢筋混凝土得到。
 
 **挖掘审计**（AGENTS）：

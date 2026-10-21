@@ -20,8 +20,8 @@
 | `steel_billet` | 钢坯 / Steel Billet | 合金炉：铁锭 + 煤炭 / 木炭 | **暂无** |
 | `steel_scrap` | 钢废料 / Steel Scrap | 粉碎钢筋混凝土 | **暂无** |
 | `galena` | 方铅矿 / Galena | 粉碎方铅矿矿石 | 工业熔炉 → 铅砖 |
-| `lead_brick` | 铅砖 / Lead Brick | 工业熔炉：方铅矿 | 合成铅屏蔽砖 |
-| `lead_shielding_bricks`（方块） | 铅屏蔽砖 / Lead Shielding Bricks | 4 × 铅砖（2×2 有序合成） | 辐射屏蔽建筑方块 |
+| `lead_brick` | 铅砖 / Lead Brick | 工业熔炉：方铅矿 | 原来合成铅屏蔽砖（配方已删除） |
+| `lead_shielding_bricks`（方块） | 铅屏蔽砖 / Lead Shielding Bricks | 无（2026-10-20 删掉了原来的 4 × 铅砖 2×2 有序合成，用户："不是我之前要求加的"） | 辐射屏蔽建筑方块 |
 | `pentlandite` | 镍黄铁矿 / Pentlandite | 粉碎镍黄铁矿矿石 | 化学反应器 → 电解镍 |
 | `electrolytic_nickel` | 电解镍 / Electrolytic Nickel | 化学反应器：镍黄铁矿 + 水 | 硬质合金坯件的粘结金属 |
 | `wolframite` | 黑钨矿 / Wolframite | 粉碎黑钨矿矿石 | 化学反应器 → 氧化钨 |

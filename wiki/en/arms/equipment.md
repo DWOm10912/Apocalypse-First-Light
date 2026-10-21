@@ -20,9 +20,9 @@ See [Inventory and Weight](../guide/inventory)
 
 | Item | Effect | How to get |
 |---|---|---|
-| <ItemIcon id="simple_hearing_protection" /> Simple Hearing Protection | Worn on the ears; eases ringing from gunfire and muffles outside sound | Crafted: iron ingot, leather, wool |
-| <ItemIcon id="wrist_thermometer" /> Wrist Thermometer | Worn on the wrist; always shows air temperature | Crafted: leather, glass pane, copper ingot |
-| <ItemIcon id="clinical_thermometer" /> Clinical Thermometer | Hold right click for about 3 s to take your temperature | Crafted: glass panes, red dye |
+| <ItemIcon id="simple_hearing_protection" /> Simple Hearing Protection | Worn on the ears; eases ringing from gunfire and muffles outside sound | <StatusTag s="creative" /> |
+| <ItemIcon id="wrist_thermometer" /> Wrist Thermometer | Worn on the wrist; always shows air temperature | <StatusTag s="creative" /> |
+| <ItemIcon id="clinical_thermometer" /> Clinical Thermometer | Hold right click for about 3 s to take your temperature | <StatusTag s="creative" /> |
 | <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate | <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> Flip Lighter | Right click to flip it open and strike it; lit, it gives light and lights stoves, campfires, candles and TNT | <StatusTag s="creative" /> |

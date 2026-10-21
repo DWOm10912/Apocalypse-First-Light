@@ -10,29 +10,53 @@ internal: true
 - 中文界面和玩家打开来读的文件（报纸、便条、说明书、广播字幕）用中文名
 - 产品名和型号不译：Tamarack T15、P9-01、Silverwood 12
 
-**状态说明：** 已冻结 = 名称经过检查、用户确认，改名要用户同意；已确认 = 用户定过或者游戏里已经有；候选 = 设计建议，还没定
+**状态说明：** 已冻结 = 名称经过检查、用户确认，改名要用户同意；V1 锁定 = 用户 2026-10-20 按行业定的名单，V1 测试版之前不改（只做过网页检索，没查商标库）；候选 = 设计建议，还没定
 
 <StatusTag s="planned" /> 品牌视觉（字标、颜色、铭牌和招牌规格）还没做，先做 PRAIRIE、Halstead、Stanton
 
-## 第一批 7 家
+## 按行业
 
-名称和中文名都在 2026-10-18 冻结、确认
+水、电、燃油和电话各只有一家公司，枪械有好几家。"游戏里"指现在已经有的，其余是以后可以放品牌的地方
 
-| 英文 | 中文 | 行业 | 游戏里 |
-|---|---|---|---|
-| PRAIRIE | 普雷里 | 加油站兼便利店连锁，全国性 | A1 加油站的红色店招、价格牌 |
-| Halstead Motor Company | 霍尔斯特德汽车公司 | 汽车 | Tamarack T15 皮卡 |
-| Kincaid Engine Company | 金凯德发动机公司 | 发动机、发电机组 | 还没有（发电机现在不印品牌） |
-| Laurel Valley Electric Cooperative | 月桂谷电力合作社 | 农村电力合作社，地方性 | 还没有 |
-| Marais Cola（Marais Bottling Company） | 马雷可乐（马雷装瓶公司） | 汽水 | 还没有（售货机灯箱现在是空白的） |
-| Dunleavy's Pharmacy | 邓利维药房 | 地方老药房 | 还没有（要等 Linden 有房子） |
-| Stanton Firearms Company | 斯坦顿枪械公司 | 手枪 | P9-01，常在警察局里找到 |
+| 行业 | 企业 | 中文 | 状态 | 游戏里 / 以后 |
+|---|---|---|---|---|
+| 燃油：炼油、批发、加油站、液化气（只有一家） | PRAIRIE | 普雷里 | 已冻结 | 游戏里：A1 加油站的店招和价格牌 |
+| 电力（只有一家，国营） | Federal Power Authority | 联邦电力局 | V1 锁定 | 变电站、电线杆编号牌、电表箱铭牌、停电通知 |
+| 自来水（只有一家，国营） | Federal Water Authority | 联邦水务局 | V1 锁定 | 水塔、消防栓、水表井盖、账单 |
+| 电话（只有一家，私营） | Kittredge Telephone & Telegraph | 基特里奇电话电报公司 | V1 锁定 | 电话亭、电话簿 |
+| 汽车 | Halstead Motor Company | 霍尔斯特德汽车公司 | 已冻结 | 游戏里：Tamarack T15 |
+| 重卡、客车 | Ironwood Truck Company | 铁木卡车公司 | V1 锁定 | 牵引车头、校车 |
+| 发动机、发电机组 | Kincaid Engine Company | 金凯德发动机公司 | 已冻结 | 发电机（现在不印品牌） |
+| 公路货运 | Calloway Freight Lines | 卡洛韦货运 | V1 锁定 | 半挂车、货场 |
+| 手枪 | Stanton Firearms Company | 斯坦顿枪械公司 | 已冻结 | 游戏里：P9-01 |
+| 军用步枪 | Kessler Arsenal | 凯斯勒兵工厂 | V1 锁定 | 游戏里：BR-51 |
+| 大口径 | Blackridge Firearms | 黑岭枪械 | V1 锁定 | 游戏里：HR-55、Blackridge .50 |
+| 霰弹枪 | Silverwood Gun Works | 银木枪厂 | V1 锁定 | 游戏里：Silverwood 12 |
+| 猎枪、栓动步枪 | Thornbury Rifle Company | 索恩伯里步枪公司 | V1 锁定 | 以后的猎枪 |
+| 廉价手枪、转轮 | Ruddock Arms | 拉多克枪械 | V1 锁定 | 以后的便宜手枪；可以写质量问题和召回 |
+| 瞄具 | Corrigan Optical | 科里根光学 | V1 锁定 | 红点，以后的瞄准镜 |
+| 民用弹药 | Merritt Cartridge Company | 梅里特弹药公司 | V1 锁定 | 弹药纸盒、铁皮罐 |
+| 制药、急救 | Whitcomb Laboratories | 惠特科姆制药 | V1 锁定 | 纱布、酒精、药品包装 |
+| 药房 | Dunleavy's Pharmacy | 邓利维药房 | 已冻结 | Linden 的药房（要等 Linden 有房子） |
+| 防护装备 | Ostrander Safety Company | 奥斯特兰德安全用品公司 | V1 锁定 | 防毒面具、防辐射服 |
+| 仪表、收音机、电池 | Northfield Instruments | 北原仪器 | V1 锁定 | 盖革计数器、收音机、手电和电池 |
+| 手工具 | Harker Tool Company | 哈克工具公司 | V1 锁定 | 撬棍、斧头 |
+| 汽水 | Marais Cola（Marais Bottling Company） | 马雷可乐（马雷装瓶公司） | 已冻结 | 售货机灯箱（现在是空白的） |
+| 罐头、谷物 | Sutton Valley Foods | 萨顿谷食品 | V1 锁定 | 货架包装、罐头 |
+| 超市（全国连锁） | Hartwell's | 哈特韦尔超市 | V1 锁定 | 城镇里的大超市 |
+| 超市（地区） | Haverly's | 哈弗利超市 | V1 锁定 | S1 的超市 |
+
+- 2026-10-20 撤销：**月桂谷电力合作社**（Laurel Valley Electric Cooperative），因为电力只能有一家，旧名字也不保留。**马雷港炼油公司**（Port Marais Refining Company）不再是公司，改成 PRAIRIE 在 Port Marais 的炼油厂：PRAIRIE Port Marais Refinery，普雷里马雷港炼油厂
+- 水电国营，联邦政府瓦解以后就没人管了，停水停电本身就说得通。不写它们怎么取得垄断
+
+## 第一批
 
 ### PRAIRIE · 普雷里
 
+- 联邦唯一的燃油公司（用户 2026-10-20）：自己炼油、做批发、开加油站，液化气也归它
 - 公司正式名先空着，玩家看到的一律是 PRAIRIE
 - 价格牌有 GASOLINE / DIESEL 两行
-- 候选：总部在 S2 的 Sutton；从给农场送柴油的燃油批发商起家，后来开了路边加油站；不自己炼油；每个镇都有、夜里一直亮灯的普通加油站
+- 候选：总部在 S2 的 Sutton；从给农场送柴油的燃油批发商起家，后来开了路边加油站；每个镇都有、夜里一直亮灯的普通加油站
 
 ### Halstead · 霍尔斯特德
 
@@ -44,10 +68,6 @@ internal: true
 
 - 品牌字样 KINCAID
 - 候选：总部在 Kessler，原来是船用发动机厂；给 Halstead 供柴油机。老宅的便携柴油发电机可以是它的入门型号，A1 的备用发电机组是工业型号。以后加品牌只改贴图，不改玩法
-
-### Laurel Valley Electric · 月桂谷电力
-
-- 候选：办公楼在 S1 的 Laurel Ridge，供电范围包括 Linden 和周边山谷；农户自己出钱拉线建立，电从大电厂买。老宅不通电网可以解释成合作社的线没拉到那么深（只是候选解释）
 
 ### Marais Cola · 马雷可乐
 
@@ -70,33 +90,21 @@ internal: true
 | 枪 | 制造商 | 状态 |
 |---|---|---|
 | P9-01 | Stanton Firearms Company · 斯坦顿枪械公司 | 已冻结 |
-| BR-51 | Kessler Arsenal · 凯斯勒兵工厂 | 归属已确认，厂商是候选 |
-| HR-55、Blackridge .50 | Blackridge Firearms · 黑岭枪械 | 归属已确认，厂商是候选 |
-| Silverwood 12 | Silverwood Gun Works · 银木枪厂 | 归属已确认，厂商是候选 |
+| BR-51 | Kessler Arsenal · 凯斯勒兵工厂 | 归属已确认 |
+| HR-55、Blackridge .50 | Blackridge Firearms · 黑岭枪械 | 归属已确认 |
+| Silverwood 12 | Silverwood Gun Works · 银木枪厂 | 归属已确认 |
 | C.A.T | 不明 | 保持来源不明 |
 
 BR-51、HR-55 里的数字只是型号或项目编号，不代表定型年份
 
-## 候选库
+<StatusTag s="planned" /> 以后可能加的枪类，都是候选，真做某把枪时跟着那把枪的设计一起确认：
 
-下面 13 家全部是候选，正式启用前要先做一轮名称检查
-
-| 英文 | 中文 | 行业 | 候选总部 |
-|---|---|---|---|
-| Ironwood Truck Company | 铁木卡车公司 | 重卡、客车 | Kessler |
-| Kessler Arsenal | 凯斯勒兵工厂 | 国营兵工厂 | Kessler |
-| Silverwood Gun Works | 银木枪厂 | 霰弹枪 | Sutton |
-| Blackridge Firearms | 黑岭枪械 | 大口径枪械 | Mesa Roja |
-| Merritt Cartridge Company | 梅里特弹药公司 | 民用弹药 | Elmwood |
-| Whitcomb Laboratories | 惠特科姆制药 | 制药、急救 | Bellhaven |
-| Port Marais Refining Company | 马雷港炼油公司 | 炼油 | Port Marais |
-| Harker Tool Company | 哈克工具公司 | 手工具 | Bellhaven |
-| Haverly's | 哈弗利超市 | 地区超市 | Bellhaven |
-| Sutton Valley Foods | 萨顿谷食品 | 罐头、谷物 | Sutton |
-| Kittredge Telephone & Telegraph | 基特里奇电话电报公司 | 电话 | 首都（还没定） |
-| Northfield Instruments | 北原仪器 | 辐射仪表、收音机 | Kessler |
-| Calloway Freight Lines | 卡洛韦货运 | 公路货运 | Sutton |
-
-还有一家全国连锁超市，名字没起
+| 枪类 | 建议的厂家 |
+|---|---|
+| 重机枪、通用机枪、轻机枪 | 凯斯勒兵工厂（只有军用，在军方据点、检查站、军车残骸里找到） |
+| 警用冲锋枪（9×19 mm） | 斯坦顿（和 P9 用同一种子弹，在警察局、警车里找到） |
+| 军用冲锋枪 | 凯斯勒兵工厂 |
+| 廉价冲锋枪 | 拉多克枪械（做工差、容易卡壳，可选） |
+| 反器材步枪 | 黑岭（和 Blackridge .50 是同一条产品线） |
 
 来源：`docs/world/federation_companies_v1.md`

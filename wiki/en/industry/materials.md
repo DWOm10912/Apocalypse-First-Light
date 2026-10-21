@@ -24,9 +24,8 @@ Industrial ores need a diamond pickaxe. Crushing gives 1–3 per ore; each chemi
 
 ## Other recipes
 
-- <ItemIcon id="lead_shielding_bricks" />4 lead bricks make **lead shielding bricks** (block radiation, see [Radiation](../guide/radiation#shielding))
 - Reinforced concrete goes through the crusher for concrete rubble and steel scrap (3–5 of each)
-- Curbs: grass block or sidewalk plus concrete rubble
+- <StatusTag s="creative" /> **Lead shielding bricks** (block radiation, see [Radiation](../guide/radiation#shielding)) and curbs have no crafting recipe now; creative only
 
 Machine power use: see [Industry](./)
 

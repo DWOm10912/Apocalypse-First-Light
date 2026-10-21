@@ -75,15 +75,7 @@ Forge `PlaySoundEvent` 只能替换播放实例，不能统一覆盖最终音量
 
 ## 配方、创造页、本地化
 
-`data/apocalypse_firstlight/recipes/simple_hearing_protection.json`：
-
-```text
- I 
-L L
-W W
-```
-
-I = `minecraft:iron_ingot`，L = `minecraft:leather`，W = `minecraft:wool` item tag（任意颜色）；产出 1。
+**配方已删除**（用户 2026-10-20 删掉了 AFL 的 6 个工作台配方，"不是我之前要求加的"；见 [afl_workbench_known_recipes_v1_plan.md](../gameplay/afl_workbench_known_recipes_v1_plan.md)）。原来是 `recipes/simple_hearing_protection.json`，原版 3×3 有序合成：上排中间铁锭，中排两边皮革，下排两边任意颜色羊毛，产出 1。现在只能在创造模式获取，以后由 AFL 工作台重新给配方。
 
 创造页：2026-09-28 起位于 **黎明启示录 · 近战与装备**（`apocalypse_firstlight:melee_and_equipment`，英文 `AFL · Melee & Equipment`），排在撬棍之后、盖革计数器之前。原来只放耳罩的独立“黎明启示录 装备”页（`equipment`）已移除，见 [创造标签页 V1](../ui/creative_tabs_v1.md)。
 

@@ -20,9 +20,9 @@
 
 | 物品 | 作用 | 获取 |
 |---|---|---|
-| <ItemIcon id="simple_hearing_protection" /> 简易护耳罩 | 戴在耳部，减轻枪声引起的耳鸣，但也会让周围的声音变小 | 合成：铁锭、皮革、羊毛 |
-| <ItemIcon id="wrist_thermometer" /> 腕式温度计 | 戴在手腕上，持续显示气温 | 合成：皮革、玻璃板、铜锭 |
-| <ItemIcon id="clinical_thermometer" /> 体温计 | 按住右键约 3 秒测量体温 | 合成：玻璃板、红色染料 |
+| <ItemIcon id="simple_hearing_protection" /> 简易护耳罩 | 戴在耳部，减轻枪声引起的耳鸣，但也会让周围的声音变小 | <StatusTag s="creative" /> |
+| <ItemIcon id="wrist_thermometer" /> 腕式温度计 | 戴在手腕上，持续显示气温 | <StatusTag s="creative" /> |
+| <ItemIcon id="clinical_thermometer" /> 体温计 | 按住右键约 3 秒测量体温 | <StatusTag s="creative" /> |
 | <ItemIcon id="geiger_counter" /> 盖革计数器 | 显示当前辐射剂量率 | <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> 撬棍 | 近战武器，也能拆下隧道里的部件 | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> 翻盖打火机 | 右键翻盖、打火，点着能照明，也能点燃柴炉、营火、蜡烛和 TNT | <StatusTag s="creative" /> |
