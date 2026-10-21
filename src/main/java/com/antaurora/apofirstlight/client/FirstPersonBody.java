@@ -123,6 +123,7 @@ public final class FirstPersonBody {
         if (player.isVisuallySwimming() || player.isFallFlying() || player.isAutoSpinAttack()) return false;
         if (PlayerSkeleton.enabled() && SkeletonActions.cameraOnBody(camera)) return true;   // on the stepping body's own eye
         if (PlayerSkeleton.enabled() && SeatedRiders.cameraOnBody(camera)) return true;     // riding a get-in / get-out
+        if (PlayerSkeleton.enabled() && com.antaurora.apofirstlight.client.skeleton.GroundSitClient.cameraOnBody(camera)) return true;   // sat on the ground
         Vec3 eye = player.getPosition(minecraft.getFrameTime()), at = camera.getPosition();
         double dx = at.x - eye.x, dz = at.z - eye.z, up = at.y - eye.y - player.getEyeHeight();
         return dx * dx + dz * dz <= AWAY_LEVEL * AWAY_LEVEL && Math.abs(up) <= AWAY_UP;

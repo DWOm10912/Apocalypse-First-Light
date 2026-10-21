@@ -1,0 +1,38 @@
+{
+  "about": "Survival and health V1a wounds (docs/gameplay/survival_health_v1a.md 5): scratch -> local infection -> suppuration, cleaned with medical alcohol and covered with a bandage. Times in game days (24000 ticks, 20 real minutes), counted only while the player is online. All numbers are game balance parameters, not medical figures.",
+  "day_ticks": 24000,
+  "scratch_chance": 0.35,
+  "max_wounds": 3,
+  "max_severity": 3,
+  "severity_step": 0.25,
+  "scratch": {
+    "check_days": 1.0,
+    "infect_chance": 0.25,
+    "cleaned_factor": 0.2,
+    "bandaged_factor": 0.5,
+    "heal_days": 1.5,
+    "heal_days_cleaned": 1.25,
+    "heal_days_bandaged": 1.25,
+    "heal_days_both": 0.75
+  },
+  "infection": {
+    "check_days": 1.0,
+    "worsen_chance": 0.4,
+    "worsen_chance_bandaged": 0.2,
+    "resolve_chance": 0.2,
+    "recover_days_cleaned": 1.0,
+    "recover_days_both": 0.5,
+    "stamina_regen": 0.95,
+    "health_regen": 1.0,
+    "visual": 0.5
+  },
+  "suppuration": {
+    "check_days": 1.0,
+    "ease_chance": 0.1,
+    "recover_days_cleaned": 1.0,
+    "recover_days_both": 0.5,
+    "stamina_regen": 0.9,
+    "health_regen": 0.85,
+    "visual": 1.0
+  }
+}

@@ -130,6 +130,15 @@ public final class PlayerSkeleton {
             eyeHeight += (p.getEyeHeight() - eyeHeight) * 0.5F;
             boolean gun = SkeletonGunStance.busy(p);
             float target = head + SkeletonGunStance.chestTwist(p, 1F);
+            float seat = GroundSitClient.seatYaw(p);
+            if (!Float.isNaN(seat)) {
+                // sat on the ground: the hips keep the way it sat, the chest turns with the look within the waist's twist
+                pelvis = seat;
+                chest += Mth.wrapDegrees(target - chest) * 0.35F;
+                chest = pelvis + Mth.clamp(Mth.wrapDegrees(chest - pelvis), -WAIST, WAIST);
+                turnTicks = -1;
+                return;
+            }
             if (gun) chest = target;
             else {
                 chest += Mth.wrapDegrees(target - chest) * 0.35F;
@@ -318,6 +327,14 @@ public final class PlayerSkeleton {
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
+        // health V1a: the gauze on the forearm, and the cloth off the roll the bandage action carries (the splint actions'
+        // second prop, fractures V1)
+        Vector3f roll = d.solved.prop != null && !d.solved.propHidden && "bandage".equals(d.solved.prop.id())
+                ? d.solved.propPose.transformPosition(com.antaurora.apofirstlight.skeleton.action.ActionPose.point(d.solved.prop, "center", false), new Vector3f()) : null;
+        for (Solved.Extra extra : d.solved.extras)
+            if (roll == null && "bandage".equals(extra.prop().id()))
+                roll = extra.pose().transformPosition(com.antaurora.apofirstlight.skeleton.action.ActionPose.point(extra.prop(), "center", false), new Vector3f());
+        com.antaurora.apofirstlight.client.BandageWrapRenderer.drawSkeleton(d.player, d.solved.pose, d.solved.slim, arms, m, pose, d.buffers, light, overlay, roll);
         // the own first-person body draws a gun only while its arms are shown (#firstPersonHands, or the gun handed to
         // the body looking down: FirstPersonBody#gunOnBody); otherwise a held one is the view model's
         boolean ownView = d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts();
@@ -325,7 +342,7 @@ public final class PlayerSkeleton {
             SkeletonGunStance.render(d.solved.hold, pose, d.buffers, light);
         for (Solved.Extra e : d.solved.extras) {
             ItemStack stack = extraStack(e.prop());
-            if (!stack.isEmpty()) drawPlaced(d, e.prop(), e.pose(), e.open(), stack, pose, d.buffers, light);
+            if (!stack.isEmpty() || e.prop().mesh() != null) drawPlaced(d, e.prop(), e.pose(), e.open(), stack, pose, d.buffers, light);
         }
         return true;
     }
@@ -378,7 +395,10 @@ public final class PlayerSkeleton {
         pose.last().normal().mul(normal);
         Minecraft mc = Minecraft.getInstance();
         net.minecraft.world.level.block.state.BlockState open = opened ? openState(prop) : null;
-        if (open != null) {
+        if (prop.mesh() != null) {
+            // only the named parts of the item's AFL Mesh, where its item renderer puts the mesh (PlayerProps.MeshLook)
+            drawMeshParts(prop.mesh(), pose, buffers, light);
+        } else if (open != null) {
             // the block in its open state (the same geometry, block units as the item's): the jerry can's cap swung off
             mc.getBlockRenderer().renderSingleBlock(open, pose, buffers, light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
                     net.minecraftforge.client.model.data.ModelData.EMPTY, null);
@@ -387,6 +407,28 @@ public final class PlayerSkeleton {
             mc.getItemRenderer().renderStatic(d.player, stack, net.minecraft.world.item.ItemDisplayContext.NONE, false, pose, buffers,
                     d.player.level(), light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, d.player.getId());
         }
+        pose.popPose();
+    }
+
+    /**
+     * PlayerProps.MeshLook: the named parts of the item's mesh, from the item block units pose (the mesh's foot at (0.5,
+     * offset, 0.5), as client/AflStaticMeshItemRenderer draws the whole item). The parts' bones are the bake's one root
+     * bone at the origin (tools/build-material-meshes-v1.mjs bake), so no bone transform.
+     */
+    private static void drawMeshParts(PlayerProps.MeshLook look, PoseStack pose, MultiBufferSource buffers, int light) {
+        net.minecraft.resources.ResourceLocation geometry = new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID,
+                "geo/" + look.model() + ".geo.json");
+        com.antaurora.vextris.mesh.MeshModel mesh = com.antaurora.vextris.client.VextrisMeshes.byGeometry(geometry);
+        if (mesh == null) return;
+        List<com.antaurora.vextris.mesh.MeshPart> parts = new java.util.ArrayList<>();
+        for (com.antaurora.vextris.mesh.MeshPart part : mesh.allParts()) if (look.parts().contains(part.name())) parts.add(part);
+        if (parts.isEmpty()) return;
+        net.minecraft.resources.ResourceLocation texture = new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID,
+                "textures/item/" + look.atlas() + ".png");
+        pose.pushPose();
+        pose.translate(0.5F, look.offset(), 0.5F);
+        com.antaurora.vextris.client.MeshRenderer.renderParts(parts, pose, buffers.getBuffer(net.minecraft.client.renderer.RenderType.entityCutoutNoCull(texture)),
+                light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 1F, 1F, 1F, 1F);
         pose.popPose();
     }
 
@@ -486,6 +528,13 @@ public final class PlayerSkeleton {
             }
             SeatPose.body(in, seat, stand, moment, seated.torso(), eyeModel.y);
         }
+        // sat on the ground (docs/gameplay/splint_animation_v2_plan.md 3): the sitting clips on the stance layer; the eye is
+        // the posed one (the own first-person camera follows it), the look does not bend the chest
+        GroundSitClient.Sit sit = d.world && seated == null ? GroundSitClient.stance(p, in, poser().rig(), partial) : null;
+        if (sit != null) {
+            in.eyeTarget = null;
+            in.chestPitch = GroundSitClient.chestPitch(sit, in.chestPitch);
+        }
         // a player action: its clips, step and facing before the body. With a gun up only the gun's own draw and put-away
         // (the gun has both hands), and those only with it (docs/dev/p9_draw_holster_actions_v1.md 2.4)
         ActionPose.Moment action = seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
@@ -495,6 +544,7 @@ public final class PlayerSkeleton {
         // the own first-person body leaves an action that keeps its view model alone (the view model is the hands)
         if (action != null && firstPerson && action.action.firstPerson == PlayerAction.FirstPerson.VIEW_MODEL) action = null;
         if (action != null && !ActionPose.body(in, poser().rig(), action)) action = null;
+        if (action != null && sit != null) GroundSitClient.keepLegs(in, poser().rig(), action.action);
         if (action != null && d.world) SkeletonActions.stepped(p, in.rootOffset, toModel);
         // a gun's stance loops (idle, sprint) on the body under its draw or put-away (docs/dev/p9_stance_loops_v1.md)
         // the gun's stance as others see it, the own first-person body too: there a held gun is its old view model's
@@ -519,6 +569,18 @@ public final class PlayerSkeleton {
             boolean using = p.isUsingItem();
             in.right = !rightStack.isEmpty() || using ? HumanoidPoser.ArmMode.VANILLA : HumanoidPoser.ArmMode.CLIP;
             in.left = !leftStack.isEmpty() || using ? HumanoidPoser.ArmMode.VANILLA : HumanoidPoser.ArmMode.CLIP;
+            // an action clip that moves an arm keeps it (the bandage's held-out forearm while the item is in use): vanilla's
+            // pose only as the action blends in or out
+            if (action != null && in.actionClip != null) {
+                if (in.right == HumanoidPoser.ArmMode.VANILLA && clipMovesArm(in.actionClip, true, action.mirror)) {
+                    in.right = HumanoidPoser.ArmMode.CLIP;
+                    in.vanillaRightWeight = 1F - in.actionWeight;
+                }
+                if (in.left == HumanoidPoser.ArmMode.VANILLA && clipMovesArm(in.actionClip, false, action.mirror)) {
+                    in.left = HumanoidPoser.ArmMode.CLIP;
+                    in.vanillaLeftWeight = 1F - in.actionWeight;
+                }
+            }
             if (model.attackTime > 0F) {
                 // a punch: the swinging arm follows vanilla's swing over the clip
                 boolean swingRight = (p.swingingArm == InteractionHand.MAIN_HAND) == rightMain;
@@ -543,6 +605,7 @@ public final class PlayerSkeleton {
         }
         poser().solveArms(in, out.pose, report);
         if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
+        if (sit != null) GroundSitClient.solved(p, out.pose, origin, toModel);
         if (d.world && out.prop != null) {
             Matrix4f fromModel = new Matrix4f(toModel).invert();
             Map<String, Vec3> points = new java.util.HashMap<>();
@@ -553,6 +616,13 @@ public final class PlayerSkeleton {
             }
             SkeletonActions.propPoints(p, points);
         }
+    }
+
+    /** The action clip turns this arm (upper arm or forearm; the clip's other side when the action is mirrored). */
+    private static boolean clipMovesArm(com.antaurora.apofirstlight.skeleton.SkeletonClips.Clip clip, boolean right, boolean mirror) {
+        SkeletonRig rig = poser().rig();
+        boolean r = right != mirror;
+        return clip.rotates(r ? rig.upperArmR : rig.upperArmL) || clip.rotates(r ? rig.forearmR : rig.forearmL);
     }
 
     /** A world point (blocks) to model px. */

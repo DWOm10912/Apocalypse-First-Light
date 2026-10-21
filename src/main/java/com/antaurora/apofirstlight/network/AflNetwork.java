@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "59";
+    private static final String PROTOCOL = "60";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -126,6 +126,8 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.stamina.StaminaPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.thirst.ThirstPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.temperature.TemperaturePackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.health.HealthPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
@@ -160,6 +162,11 @@ public final class AflNetwork {
     /** Vehicle physics: a truck's state, to one client (a new watcher, a refused driver). */
     public static void vehicleTo(ServerPlayer player, Object packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Sitting on the ground (client): sit down or get up (sit/GroundSit). */
+    public static void sitToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** Player skeleton V1 (client): the own aim changed. */
@@ -235,6 +242,18 @@ public final class AflNetwork {
     /** Thirst V1: the player's own thirst. */
     public static void thirstState(ServerPlayer player, com.antaurora.apofirstlight.thirst.ThirstPackets.State packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    /** Survival and health V1a: the own regeneration state and wounds. */
+    public static void healthState(ServerPlayer player, com.antaurora.apofirstlight.health.HealthPackets.State packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    /** Health: a player's body marks (dressings, splints, broken limbs), to the player and the players tracking it. */
+    public static void bodyMarks(ServerPlayer player, com.antaurora.apofirstlight.health.HealthPackets.Marks packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), packet);
+    }
+    /** Health: another player's body marks, to one viewer that starts tracking it. */
+    public static void bodyMarksTo(ServerPlayer viewer, com.antaurora.apofirstlight.health.HealthPackets.Marks packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> viewer), packet);
     }
     /** Thirst V1 (client): one sip at the water source in view. */
     public static void thirstSip() {

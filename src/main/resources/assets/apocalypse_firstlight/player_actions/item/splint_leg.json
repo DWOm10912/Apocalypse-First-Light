@@ -1,0 +1,173 @@
+{
+  "format_version": 1,
+  "about": "Splint V2 (docs/gameplay/splint_animation_v2_plan.md): splinting a broken lower leg sat on the ground (the seat: sit/GroundSit, the stance body.sit under it; SplintItem sits the player down first). 6 s (SplintItem.LEG_USE_TICKS 120), keyed on the left leg, mirrored for the right (client/skeleton/SkeletonActions). The right hand lays the splint (player_props/splint) on the shin (0-0.9 s, the left hand steadies it); at 0.9 s it is hidden and client/BandageWrapRenderer draws the two slats on both sides of the shin; three ties, ankle to knee, from 1.45, 2.7 and 3.95 s: the right hand pushes the strip under the leg from the inside, the left takes it on the outside, both ends up over the outer top and pulled tight (the renderer grows each tie over its first 0.65 s); the hands back on the thigh, the toes moved twice (5.3-5.75 s), sat back as body.sit. The body held (hold_body: arms keyed by FK, the look does not bend the chest); the own first-person camera on the posed eye (first_person_eye), the view eased down to 70 deg. Written by tools/medical-actions-v1a/author_splint_v2.cjs from the approved concept.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "medical.splint_leg"
+  },
+  "clip": "medical.splint_leg",
+  "layer": "action",
+  "mask": "full",
+  "priority": 50,
+  "first_person": "body",
+  "blend": {
+    "in": 0.3,
+    "out": 0.4
+  },
+  "first_person_pitch": 70,
+  "first_person_eye": true,
+  "hold_body": true,
+  "props": [
+    {
+      "id": "splint",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6,
+            10.5,
+            0
+          ],
+          "rot": [
+            -90,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6,
+            10.5,
+            0
+          ],
+          "rot": [
+            -90,
+            0,
+            0
+          ],
+          "blend": 0.4
+        },
+        {
+          "at": 0.4,
+          "frame": "bone:shin_l",
+          "point": "center",
+          "pos": [
+            3.1826,
+            19.8,
+            -3.5238
+          ],
+          "rot": [
+            180,
+            -70,
+            90
+          ],
+          "blend": 0.3
+        },
+        {
+          "at": 0.7,
+          "frame": "bone:shin_l",
+          "point": "center",
+          "pos": [
+            2.7722,
+            19.8,
+            -2.3962
+          ],
+          "rot": [
+            180,
+            -70,
+            90
+          ],
+          "blend": 0.2
+        },
+        {
+          "at": 0.9,
+          "frame": "bone:shin_l",
+          "point": "center",
+          "pos": [
+            2.7722,
+            19.8,
+            -2.3962
+          ],
+          "rot": [
+            180,
+            -70,
+            90
+          ],
+          "blend": 0.05,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:splint:grip",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.5,
+          1,
+          0.6
+        ]
+      },
+      {
+        "at": 0.9,
+        "target": "pose",
+        "blend": 0.25,
+        "roll": 0,
+        "pole": [
+          -0.5,
+          1,
+          0.6
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          0.5,
+          1,
+          0.6
+        ]
+      },
+      {
+        "at": 0.45,
+        "target": "prop:splint:hold_2",
+        "blend": 0.2,
+        "roll": 0,
+        "pole": [
+          0.5,
+          1,
+          0.6
+        ]
+      },
+      {
+        "at": 0.9,
+        "target": "pose",
+        "blend": 0.2,
+        "roll": 0,
+        "pole": [
+          0.5,
+          1,
+          0.6
+        ]
+      }
+    ]
+  },
+  "events": [],
+  "check": {
+    "use_ticks": 120
+  }
+}

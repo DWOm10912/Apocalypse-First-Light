@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.client.ui.AflKeyHint;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
+import com.antaurora.apofirstlight.health.BodyPart;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
 import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.inventory.grid.GridActions;
@@ -20,7 +21,7 @@ import com.antaurora.apofirstlight.weight.ClientWeightState;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -80,10 +81,14 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     private record SlingHit(int hotbarIndex, float x, float y, float w, float h) implements Hit {}
     /** One item lying nearby (its entity id): click takes it onto the cursor, shift-click straight in. */
     private record GroundHit(int entityId, ItemStack stack, float x, float y, float w, float h) implements Hit {}
+    /** A part of the body map (BodySilhouette): hover shows its injuries and what helps; a click does nothing. */
+    private record BodyHit(BodyPart part, float x, float y, float w, float h) implements Hit {}
 
     private final Player player;
     private final List<Hit> hits = new ArrayList<>();
     private float scale = 1, originX, originY;
+    /** The body map's badges this frame, drawn at GUI coordinates once the canvas is popped. */
+    private List<Object[]> bodyBadges = List.of();
     private float scroll, scrollMax;
     private boolean rotated;
     private float overflowH;
@@ -160,6 +165,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         drawHover(g, hover, carried, mx, my);
         if (!carried.isEmpty()) drawCarried(g, carried, mx, my);
         pose.popPose();
+        BodySilhouette.badges(g, bodyBadges, originX, originY, scale);
 
         if (carried.isEmpty()) tooltip(g, hover, mouseX, mouseY);
     }
@@ -209,7 +215,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
 
     private void gearColumn(GuiGraphics g, float mx, float my) {
         panel(g, A_X, A_Y, A_W, A_H);
-        InventoryScreen.renderEntityInInventoryFollowsMouse(g, 80, 168, 64, 80 - mx, 70 - my, player);
+        bodyMap(g, mx, my);
         String[] left = {"head", "face", "ears", "watch", "legs"};
         int[] leftSlots = {HEAD, PLACEHOLDER, EARS_SLOT, WRIST_SLOT, LEGS};
         String[] right = {"base", "coat", "armor", "gloves", "feet"};
@@ -246,6 +252,21 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
                     String.format(Locale.ROOT, "%.0f", temperature.comfortMin()));
             text(g, line, 145 - width(line, 6), 255.8F, 6, AflUiStyle.TEXT_DIM, 1);
         }
+    }
+
+    /**
+     * The body map in place of the 3D model (docs/ui/body_silhouette_v1_plan.md): the player's skin front-on, dimmed, the
+     * injured parts washed and badged; each part a hover target.
+     */
+    private void bodyMap(GuiGraphics g, float mx, float my) {
+        bodyBadges = List.of();
+        if (!(player instanceof AbstractClientPlayer client)) return;
+        BodyPart hovered = null;
+        for (var p : BodySilhouette.layout("slim".equals(client.getModelName()))) {
+            hits.add(new BodyHit(p.part(), p.x(), p.y(), p.w(), p.h()));
+            if (in(mx, my, p.x(), p.y(), p.w(), p.h())) hovered = p.part();
+        }
+        bodyBadges = BodySilhouette.draw(g, font, client, menu.getCarried().isEmpty() ? hovered : null);
     }
 
     private static String kg(long grams) {
@@ -579,6 +600,8 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
                     Component.translatable("screen.apocalypse_firstlight.inventory.bind_unbind")), mouseX, mouseY);
         } else if (hover instanceof SlingHit) {
             hint(g, List.of(Component.translatable("screen.apocalypse_firstlight.inventory.sling_off")), mouseX, mouseY);
+        } else if (hover instanceof BodyHit b) {
+            BodySilhouette.tooltip(g, font, player, b.part(), mouseX, mouseY, width, height);
         } else if (hover instanceof PlaceholderHit p) {
             hint(g, List.of(p.label(), Component.translatable("screen.apocalypse_firstlight.inventory.wear_hint")), mouseX, mouseY);
         }
@@ -704,6 +727,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         if (button != 0 && button != 1) return true;
         float mx = vx(mouseX), my = vy(mouseY);
         Hit hit = hitAt(mx, my);
+        if (hit instanceof BodyHit) return true;
         var carried = menu.getCarried();
         if (button == 0 && carried.isEmpty() && in(mx, my, charX, CHAR_Y, charW, CHAR_H)) {
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));

@@ -116,6 +116,26 @@ public final class PlayerAction {
      * front of the chest is in view; it eases back to where the player looks when the action stops.
      */
     public final float firstPersonPitch;
+    /**
+     * JSON {@code first_person_eye}: the own first-person camera sits on the posed body's eye while the action shows, as it
+     * does for an action that steps the body ({@link #approach}): an action that brings the body down where the vanilla eye
+     * stays up (the splint on a leg, sitting on the ground; fractures V1, docs/gameplay/fracture_splint_v1_plan.md). It
+     * eases down and back up with the action's blend, the posed eye being the blended pose's.
+     */
+    public final boolean firstPersonEye;
+    /**
+     * JSON {@code hold_body}: while the action shows, the clip alone turns and bends the chest; the player's look neither
+     * twists nor bends it on top (ActionPose#body), so arms keyed to the body land where they were keyed whatever the look:
+     * the splint V2 actions (docs/gameplay/splint_animation_v2_plan.md), their hands on the leg or the forearm by FK.
+     */
+    public final boolean holdBody;
+    /**
+     * JSON {@code first_person_view} [[s, pitch], ...] (deg, + = down; times rising), or null: while the action shows, the
+     * own view (and so the head, as the others see it) follows this pitch, smooth-stepped between the keys, and keeps its
+     * yaw: an action that throws the whole body about (falling over on a landing, docs/gameplay/fall_landing_v1_plan.md).
+     * See {@link #viewAt}.
+     */
+    public final float[][] firstPersonView;
     /** JSON {@code loop} ({@code "time"}, {@code "stride"}) and the loop's {@code length} (s; NaN: the clip's). */
     public final Loop loop;
     public final float length;
@@ -175,6 +195,19 @@ public final class PlayerAction {
         left = keys(id, hands, "left");
         firstPerson = json.has("first_person") ? FirstPerson.valueOf(json.get("first_person").getAsString().toUpperCase()) : FirstPerson.BODY;
         firstPersonPitch = json.has("first_person_pitch") ? json.get("first_person_pitch").getAsFloat() : Float.NaN;
+        firstPersonEye = json.has("first_person_eye") && json.get("first_person_eye").getAsBoolean();
+        holdBody = json.has("hold_body") && json.get("hold_body").getAsBoolean();
+        if (json.has("first_person_view")) {
+            JsonArray v = json.getAsJsonArray("first_person_view");
+            firstPersonView = new float[v.size()][];
+            for (int i = 0; i < v.size(); i++) {
+                JsonArray k = v.get(i).getAsJsonArray();
+                firstPersonView[i] = new float[]{k.get(0).getAsFloat(), k.get(1).getAsFloat()};
+                if (i > 0 && !(firstPersonView[i][0] > firstPersonView[i - 1][0]))
+                    throw new IllegalArgumentException("player action " + id + ": first_person_view times must rise");
+            }
+            if (firstPersonView.length == 0) throw new IllegalArgumentException("player action " + id + ": first_person_view empty");
+        } else firstPersonView = null;
         loop = json.has("loop") ? Loop.valueOf(json.get("loop").getAsString().toUpperCase()) : Loop.NONE;
         length = json.has("length") ? json.get("length").getAsFloat() : Float.NaN;
         hipFire = json.has("hip_fire") && json.get("hip_fire").getAsBoolean();
@@ -215,6 +248,19 @@ public final class PlayerAction {
     public int propIndex(String propId) {
         for (int i = 0; i < props.size(); i++) if (props.get(i).id().equals(propId)) return i;
         return -1;
+    }
+
+    /** {@link #firstPersonView} at this second (deg), smooth-stepped between its keys; NaN without one. */
+    public float viewAt(float seconds) {
+        float[][] v = firstPersonView;
+        if (v == null) return Float.NaN;
+        if (seconds <= v[0][0]) return v[0][1];
+        for (int i = 1; i < v.length; i++) {
+            if (seconds > v[i][0]) continue;
+            float u = (seconds - v[i - 1][0]) / (v[i][0] - v[i - 1][0]), s = u * u * (3 - 2 * u);
+            return v[i - 1][1] + (v[i][1] - v[i - 1][1]) * s;
+        }
+        return v[v.length - 1][1];
     }
 
     /** The bones the action's clips may move (V1 names: full, upper, arms, arm_r, arm_l, legs), for this rig. */

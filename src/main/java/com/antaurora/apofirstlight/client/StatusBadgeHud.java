@@ -7,6 +7,12 @@ import com.antaurora.apofirstlight.registry.AflMobEffects;
 import com.antaurora.apofirstlight.stamina.ClientStamina;
 import com.antaurora.apofirstlight.temperature.ClientTemperature;
 import com.antaurora.apofirstlight.temperature.TemperatureReadout;
+import com.antaurora.apofirstlight.health.BodyPart;
+import com.antaurora.apofirstlight.health.ClientHealth;
+import com.antaurora.apofirstlight.health.Fractures;
+import com.antaurora.apofirstlight.health.HealthConfig;
+import com.antaurora.apofirstlight.health.PlayerHealth;
+import com.antaurora.apofirstlight.health.Wounds;
 import com.antaurora.apofirstlight.thirst.ClientThirst;
 import com.antaurora.apofirstlight.thirst.ClientThirstHud;
 import com.antaurora.apofirstlight.thirst.ThirstConfig;
@@ -20,6 +26,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
@@ -48,9 +55,14 @@ import java.util.Map;
  * kind's colour (green good, brown bad, blue cold / wet, red dangerous), a white pictogram, a light rim. Most urgent
  * nearest the module (danger, bad, cold / wet, good). A timed one (a stomach bug, fuel on the body) shows the time left
  * as a light arc round it and as a number beside it; dehydration shows the water left before it hurts as the arc alone.</li>
- * <li>Gaining a state (or a worse stage of it): its rim flashes and its name and effect slide out beside it for 4 s.</li>
- * <li>Holding the status key (Left Alt, rebindable): a card above the module with the body's numbers and every state with
- * its effect and time left; the slide-out labels step aside meanwhile. Off for now ({@link #DETAILS_CARD}).</li>
+ * <li>Gaining a state (or a worse stage of it): its rim flashes and its name and effect slide out beside it for 4 s. When
+ * only its effect line changes (a wound cleaned or bandaged, resting), the label slides out again without the flash
+ * (user 2026-10-20: treating a wound showed nothing). A state back within 10 s of going, at no worse a stage, comes back
+ * quietly; warming shows from a trend over 0.25 and goes under 0.1, so standing by a fire does not blink it.</li>
+ * <li>Pressing the status key (Left Alt, rebindable; user 2026-10-20): every badge's label slides out together for 4 s,
+ * no flash; once per {@link #RECALL_COOLDOWN} s, so a stray Alt does little.</li>
+ * <li>Holding the status key, once the vital signs monitor exists: a card above the module with the body's numbers and
+ * every state with its effect and time left; the slide-out labels step aside meanwhile. Off for now ({@link #DETAILS_CARD}).</li>
  * <li>The chat moves up above the column (not while a screen is open, so clicking chat links still works).</li>
  * </ul>
  * AFL's effects (radiation sickness, the stomach bug, fuel-soaked) are hidden from vanilla's effect icons (their
@@ -62,16 +74,19 @@ public final class StatusBadgeHud {
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, "key.categories.apocalypse_firstlight");
     /**
      * The status key's detail card is off (user 2026-10-17: Left Alt is pressed by mistake too easily) until a vital
-     * signs monitor (an advanced wrist watch) carries those readings; its key is not registered meanwhile.
+     * signs monitor (an advanced wrist watch) carries those readings; meanwhile the key only slides the labels out.
      */
     private static final boolean DETAILS_CARD = false;
+    /** The status key slides the labels out at most once per this many seconds (labels 4 s out, 2 s in). */
+    private static final double RECALL_COOLDOWN = 6;
+    private static double recallAt = -1e9;
     private static final String LANG = "hud.apocalypse_firstlight.status.";
     /** How long a gained state's label stays out, its slide, the rim flash (s). */
     private static final double LABEL_SECONDS = 4, SLIDE = 0.22, FLASH = 0.7, CARD_FADE = 0.12, MOVE = 0.18, CHAT_EASE = 0.2;
     private static final int WHITE = 0xF6F2EA, DANGER_TEXT = 0xE8867C;
 
     /** A badge's kind: its colour and its rank (most urgent first, nearest the module). */
-    enum Kind {
+    public enum Kind {
         DANGER(0xB8443C), BAD(0xA86A3A), COLD(0x4F7FB8), GOOD(0x5FA67E);
         final int rgb;
         Kind(int rgb) { this.rgb = rgb; }
@@ -79,13 +94,39 @@ public final class StatusBadgeHud {
 
     /** One state as shown: key (stable), stage (a higher stage of the same key re-announces it), kind, icon, name, effect;
      *  fraction of a timed state left (NaN: untimed) and the text beside the badge (time left), or null. */
-    record Status(String key, int stage, Kind kind, AflRingIcon.Glyph icon, Component name, Component effect, double left, String aside) {}
+    public record Status(String key, int stage, Kind kind, AflRingIcon.Glyph icon, Component name, Component effect, double left, String aside) {
+        /** Where it comes from and how it goes (the character page's status panel, on hover); one text for every fracture. */
+        public Component detail() { return t((key.startsWith("fracture_") ? "fracture" : key) + ".detail"); }
+    }
+    public static final int DANGER_RGB = DANGER_TEXT;
+
+    /** The local player's states, most urgent first (the character page's status panel; also in Creative). */
+    public static List<Status> current(LocalPlayer player) {
+        List<Status> states = new ArrayList<>(collect(player, System.nanoTime() / 1e9));
+        states.sort(Comparator.comparingInt(s -> s.kind().ordinal()));
+        return states;
+    }
+
+    /** A status badge at GUI coordinates, as in the column (no flash); `id` names its texture. */
+    public static void drawBadge(GuiGraphics graphics, String id, Status s, double x, double y, double r, double alpha) {
+        badge(graphics, id, s, x, y, r, 0, alpha);
+    }
 
     private static final class Seen {
         int stage;
-        double labelUntil, flashUntil, slot = Double.NaN, maxTicks;
+        /** The label's slide-out start and end, the rim flash's end (s). */
+        double labelFrom, labelUntil, flashUntil, slot = Double.NaN, maxTicks;
+        /** The effect line's translation key last frame: a new one (a wound cleaned or bandaged) slides the label out again. */
+        String effectKey;
     }
     private static final Map<String, Seen> SEEN = new HashMap<>();
+    /** A state that went away: when, and at which stage. Back within {@link #QUIET} s at no worse a stage: no flash, no label. */
+    private record Gone(double at, int stage) {}
+    private static final Map<String, Gone> GONE = new HashMap<>();
+    private static final double QUIET = 10;
+    /** Warming shows from a trend over {@link #WARMING_ON} and goes under {@link #WARMING_OFF} (no blinking at one edge). */
+    private static final double WARMING_ON = 0.25, WARMING_OFF = 0.1;
+    private static boolean warmingShown;
     private static double card, chatLift, thirstShown = Double.NaN, thirstAt;
     private static int shownBadges;
     private static boolean drawn;
@@ -99,7 +140,7 @@ public final class StatusBadgeHud {
     }
 
     @SubscribeEvent
-    public static void keys(RegisterKeyMappingsEvent event) { if (DETAILS_CARD) event.register(DETAILS); }
+    public static void keys(RegisterKeyMappingsEvent event) { event.register(DETAILS); }
 
     // ---- glyphs (unit box, y down) ----
     private static final double[] ARM_X = new double[6], ARM_Y = new double[6];
@@ -167,6 +208,40 @@ public final class StatusBadgeHud {
     static final AflRingIcon.Glyph SHIELD = (x, y) -> AflRingIcon.convex(x, y, 0.5, 0.08, 0.86, 0.22, 0.8, 0.6, 0.5, 0.92, 0.2, 0.6, 0.14, 0.22);
     static final AflRingIcon.Glyph BOLT = (x, y) -> Math.min(Math.min(AflRingIcon.segment(x, y, 0.62, 0.08, 0.34, 0.52),
             AflRingIcon.segment(x, y, 0.34, 0.52, 0.66, 0.48)), AflRingIcon.segment(x, y, 0.66, 0.48, 0.38, 0.92)) - 0.08;
+    // wounds (health V1a; user, 2026-10-19: one cross for all three could not be told apart): claw marks, a swollen cut,
+    // a swollen cut with a drop of pus under it
+    /** A line from a to b, w0 thick at its ends and w1 in its middle. */
+    private static double taper(double x, double y, double ax, double ay, double bx, double by, double w0, double w1) {
+        double dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(x - ax - dx * t, y - ay - dy * t) - (w0 + (w1 - w0) * (1 - Math.abs(2 * t - 1)));
+    }
+    /** A cut swollen round its lips: an almond along 35 deg up to the right, size k, the cut itself left dark. */
+    private static double swollen(double x, double y, double cx, double cy, double k) {
+        double u = ((x - cx) * 0.819 - (y - cy) * 0.574) / k, v = ((x - cx) * 0.574 + (y - cy) * 0.819) / k;
+        double lens = Math.max(Math.hypot(u, v - 0.2753) - 0.4453, Math.hypot(u, v + 0.2753) - 0.4453);
+        double cut = AflRingIcon.segment(u, v, -0.24, 0, 0.24, 0) - 0.04;
+        return Math.max(lens, -cut) * k;
+    }
+    static final AflRingIcon.Glyph CLAW = (x, y) -> Math.min(Math.min(
+            taper(x, y, 0.42, 0.16, 0.18, 0.80, 0.02, 0.065),
+            taper(x, y, 0.62, 0.10, 0.38, 0.88, 0.02, 0.07)),
+            taper(x, y, 0.82, 0.18, 0.58, 0.80, 0.02, 0.065));
+    static final AflRingIcon.Glyph SWOLLEN = (x, y) -> swollen(x, y, 0.5, 0.5, 1.0);
+    static final AflRingIcon.Glyph FESTERING = (x, y) -> Math.min(swollen(x, y, 0.46, 0.38, 0.86),
+            Math.min(Math.hypot(x - 0.56, y - 0.77) - 0.105, AflRingIcon.convex(x, y, 0.56, 0.5, 0.655, 0.74, 0.465, 0.74)));
+    // fractures (fractures V1, docs/gameplay/fracture_splint_v1_plan.md 7): a bone with a crack across its middle; splinted, a
+    // slat along it on either side
+    private static double bone(double x, double y) {
+        double shaft = AflRingIcon.segment(x, y, 0.3, 0.7, 0.7, 0.3) - 0.07;
+        double knobs = Math.min(Math.min(Math.hypot(x - 0.211, y - 0.711), Math.hypot(x - 0.289, y - 0.789)),
+                Math.min(Math.hypot(x - 0.711, y - 0.211), Math.hypot(x - 0.789, y - 0.289))) - 0.075;
+        double crack = Math.min(Math.min(AflRingIcon.segment(x, y, 0.42, 0.42, 0.5, 0.47), AflRingIcon.segment(x, y, 0.5, 0.47, 0.5, 0.53)),
+                AflRingIcon.segment(x, y, 0.5, 0.53, 0.58, 0.58)) - 0.024;
+        return Math.max(Math.min(shaft, knobs), -crack);
+    }
+    static final AflRingIcon.Glyph BONE = StatusBadgeHud::bone;
+    static final AflRingIcon.Glyph BONE_SPLINTED = (x, y) -> Math.min(bone(x, y), Math.min(
+            AflRingIcon.segment(x, y, 0.441, 0.841, 0.841, 0.441), AflRingIcon.segment(x, y, 0.159, 0.559, 0.559, 0.159)) - 0.036);
     static final AflRingIcon.Glyph THERMOMETER = (x, y) -> Math.min(AflRingIcon.segment(x, y, 0.5, 0.12, 0.5, 0.62) - 0.09,
             Math.hypot(x - 0.5, y - 0.74) - 0.17);
 
@@ -212,14 +287,73 @@ public final class StatusBadgeHud {
         int food = player.getFoodData().getFoodLevel();
         if (food <= 0) list.add(new Status("hunger", 2, Kind.DANGER, SurvivalVitalsHud.DRUMSTICK, t("hunger.2"), t("hunger.2.effect"), Double.NaN, null));
         else if (food <= 6) list.add(new Status("hunger", 1, Kind.BAD, SurvivalVitalsHud.DRUMSTICK, t("hunger.1"), t("hunger.1.effect"), Double.NaN, null));
-        // good: well fed while healing (vanilla's natural regeneration from 18 food points, unless AFL stops it)
-        var thirst = ClientThirst.state();
-        boolean dehydrated = thirst != null && thirst.value() < ThirstConfig.get().dehydratedBelow;
-        if (food >= 18 && player.isHurt() && cold < 2 && heat < 2 && !dehydrated)
-            list.add(new Status("fed", 1, Kind.GOOD, FORK_KNIFE, t("fed"), t("fed.effect"), Double.NaN, null));
-        if (ClientTemperature.coldness() > 0.02 && ClientTemperature.trend() > 0.25)
+        wounds(list);
+        fractures(list, player);
+        // good: healing (health V1a: the server says whether natural regeneration runs, awake or resting)
+        var regen = ClientHealth.regen();
+        if (regen == PlayerHealth.Regen.AWAKE || regen == PlayerHealth.Regen.REST)
+            list.add(new Status("recovering", 1, Kind.GOOD, SurvivalVitalsHud.HEART, t("recovering"),
+                    t(regen == PlayerHealth.Regen.REST ? "recovering.rest" : "recovering.awake"), Double.NaN, null));
+        warmingShown = ClientTemperature.coldness() > 0.02 && ClientTemperature.trend() > (warmingShown ? WARMING_OFF : WARMING_ON);
+        if (warmingShown)
             list.add(new Status("warming", 1, Kind.GOOD, FLAME, t("warming"), t("warming.effect"), Double.NaN, null));
         return list;
+    }
+
+    /**
+     * Wounds (health V1a): one badge per stage present (scratch, local infection, suppuration), its line saying what was done
+     * and what to do next for the least treated wound of that stage; a cleaned infection / suppuration shows its recovery
+     * as the arc (the time left of it).
+     */
+    private static void wounds(List<Status> list) {
+        var wounds = ClientHealth.wounds();
+        for (var stage : Wounds.Stage.values()) {
+            Wounds.View least = null;
+            int count = 0;
+            for (var w : wounds) {
+                if (w.stage() != stage) continue;
+                count++;
+                if (least == null || treated(w) < treated(least)) least = w;
+            }
+            if (least == null) continue;
+            String name = stage.name().toLowerCase(Locale.ROOT);
+            String care = least.cleaned() && least.bandaged() ? "treated" : least.cleaned() ? "cleaned" : least.bandaged() ? "bandaged" : "untreated";
+            Kind kind = stage == Wounds.Stage.SUPPURATION && !least.cleaned() ? Kind.DANGER : Kind.BAD;
+            double left = Float.isNaN(least.recovery()) ? Double.NaN : 1 - least.recovery();
+            AflRingIcon.Glyph glyph = switch (stage) { case SCRATCH -> CLAW; case INFECTION -> SWOLLEN; case SUPPURATION -> FESTERING; };
+            list.add(new Status("wound_" + name, stage.ordinal() + 1, kind, glyph,
+                    count > 1 ? t("wound." + name + ".many", count) : t("wound." + name), t("wound." + name + "." + care), left, null));
+        }
+    }
+    /**
+     * Fractures: one badge per broken limb (brown, never red: a fracture does not kill by itself), its line what it costs
+     * now; splinted, the arc is the healing still to go (none before: unsplinted it heals too slowly to watch).
+     */
+    private static void fractures(List<Status> list, LocalPlayer player) {
+        for (var f : ClientHealth.fractures()) list.add(fracture(f, player));
+    }
+
+    /** One fracture as its badge (the HUD column, the inventory's body map). */
+    public static Status fracture(Fractures.View f, net.minecraft.world.entity.player.Player player) {
+        String limb = f.part().key();
+        String effect = f.splinted() ? "fracture.splinted" : f.part().leg() ? "fracture.leg"
+                : f.part().mainArm(player) ? "fracture.main_arm" : "fracture.support_arm";
+        return new Status("fracture_" + limb, f.splinted() ? 1 : 2, Kind.BAD, f.splinted() ? BONE_SPLINTED : BONE,
+                t("fracture." + limb), t(effect), f.splinted() ? 1 - f.progress() : Double.NaN, null);
+    }
+
+    /** One wound as its stage's badge, its own care line (the inventory's body map: the wounds of one part). */
+    public static Status wound(Wounds.View w) {
+        String name = w.stage().name().toLowerCase(Locale.ROOT);
+        String care = w.cleaned() && w.bandaged() ? "treated" : w.cleaned() ? "cleaned" : w.bandaged() ? "bandaged" : "untreated";
+        Kind kind = w.stage() == Wounds.Stage.SUPPURATION && !w.cleaned() ? Kind.DANGER : Kind.BAD;
+        AflRingIcon.Glyph glyph = switch (w.stage()) { case SCRATCH -> CLAW; case INFECTION -> SWOLLEN; case SUPPURATION -> FESTERING; };
+        return new Status("wound_" + name, w.stage().ordinal() + 1, kind, glyph, t("wound." + name), t("wound." + name + "." + care),
+                Float.isNaN(w.recovery()) ? Double.NaN : 1 - w.recovery(), null);
+    }
+
+    private static int treated(Wounds.View w) {
+        return (w.cleaned() ? 1 : 0) + (w.bandaged() ? 1 : 0);
     }
 
     /** A timed AFL effect: the arc follows the time left against the longest time seen while it lasts. */
@@ -248,7 +382,8 @@ public final class StatusBadgeHud {
         if (Double.isNaN(thirstShown) || value > thirstShown + 1) thirstShown = value;
         else thirstShown += (value - thirstShown) * Math.min(1, dt * 3);
         if (value <= 0) list.add(new Status("thirst", 3, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.3"),
-                t("thirst.3.effect", (int)Math.round(c.damageIntervalSeconds)), Double.NaN, null));
+                t("thirst.3.effect", (int)Math.round(c.damageIntervalSeconds),
+                (int)Math.round(HealthConfig.get().damage.defaultScale)), Double.NaN, null));
         else if (value < c.dehydratedBelow) list.add(new Status("thirst", 2, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.2"),
                 t("thirst.2.effect", Math.round(c.staminaRegenDehydrated * 100)),
                 Math.max(0, Math.min(1, thirstShown / c.dehydratedBelow)), null));
@@ -265,31 +400,53 @@ public final class StatusBadgeHud {
         lastNanos = nanos;
         drawn = false;
         LocalPlayer player = mc.player;
-        if (player == null) { SEEN.clear(); thirstShown = Double.NaN; return; }
+        boolean pressed = false;
+        while (DETAILS.consumeClick()) pressed = true;   // drained every frame, so a press while hidden does not fire later
+        if (player == null) { SEEN.clear(); GONE.clear(); warmingShown = false; thirstShown = Double.NaN; return; }
         if (mc.options.hideGui || !gui.shouldDrawSurvivalElements() || FieldAttachmentViewState.isActive()) return;
         drawn = true;
         List<Status> states = new ArrayList<>(collect(player, now));
         states.sort(Comparator.comparingInt(s -> s.kind().ordinal()));
-        SEEN.keySet().retainAll(states.stream().map(Status::key).toList());
+        var keys = states.stream().map(Status::key).toList();
+        for (var e : SEEN.entrySet()) if (!keys.contains(e.getKey())) GONE.put(e.getKey(), new Gone(now, e.getValue().stage));
+        SEEN.keySet().retainAll(keys);
+        GONE.values().removeIf(g -> now - g.at() > QUIET);
         boolean open = DETAILS_CARD && mc.screen == null && DETAILS.isDown();
         card += ((open ? 1 : 0) - card) * (1 - Math.exp(-dt / CARD_FADE));
         if (Math.abs(card - (open ? 1 : 0)) < 0.01) card = open ? 1 : 0;
         shownBadges = states.size();
+        boolean recall = pressed && !DETAILS_CARD && !states.isEmpty() && now - recallAt >= RECALL_COOLDOWN;
+        if (recall) recallAt = now;
         Font font = mc.font;
         for (int i = 0; i < states.size(); i++) {
             var s = states.get(i);
-            Seen seen = SEEN.computeIfAbsent(s.key(), k -> new Seen());
-            if (s.stage() > seen.stage) { seen.labelUntil = now + LABEL_SECONDS; seen.flashUntil = now + FLASH; }
+            Seen seen = SEEN.get(s.key());
+            if (seen == null) {
+                seen = new Seen();
+                Gone gone = GONE.remove(s.key());
+                if (gone != null && s.stage() <= gone.stage()) seen.stage = s.stage();   // back soon, no worse: quietly
+                SEEN.put(s.key(), seen);
+            }
+            String effectKey = s.effect().getContents() instanceof TranslatableContents tc ? tc.getKey() : s.effect().getString();
+            if (s.stage() > seen.stage) { label(seen, now); seen.flashUntil = now + FLASH; }
+            else if (recall || seen.effectKey != null && !seen.effectKey.equals(effectKey)) label(seen, now);   // the status key; cleaned, bandaged, resting: the label again, no flash
             seen.stage = s.stage();
+            seen.effectKey = effectKey;
             seen.slot = Double.isNaN(seen.slot) ? i : seen.slot + (i - seen.slot) * (1 - Math.exp(-dt / MOVE));
             double y = SurvivalHudLayout.badgeY(screenHeight, 0) - seen.slot * SurvivalHudLayout.BADGE_STEP;
             if (card < 0.99) badge(graphics, "badge_" + s.key(), s, SurvivalHudLayout.BADGE_X, y, SurvivalHudLayout.BADGE_R,
                     Math.max(0, seen.flashUntil - now) / FLASH, 1 - card);
-            double slide = smooth(Math.min((now - (seen.labelUntil - LABEL_SECONDS)) / SLIDE, (seen.labelUntil - now) / SLIDE)) * (1 - card);
+            double slide = smooth(Math.min((now - seen.labelFrom) / SLIDE, (seen.labelUntil - now) / SLIDE)) * (1 - card);
             aside(graphics, font, s, SurvivalHudLayout.BADGE_X + SurvivalHudLayout.BADGE_R + 2, y, slide, 1 - card);
         }
         if (card > 0.01) card(graphics, font, player, states, screenHeight, card);
     };
+
+    /** Slides the label out for {@link #LABEL_SECONDS} s; already out, it stays out that much longer. */
+    private static void label(Seen seen, double now) {
+        if (now >= seen.labelUntil) seen.labelFrom = now;
+        seen.labelUntil = now + LABEL_SECONDS;
+    }
 
     /** A badge: shadow, the kind's disc, a light sheen and rim, the time-left arc, the white pictogram, the gained flash. */
     private static void badge(GuiGraphics graphics, String id, Status s, double x, double y, double r, double flash, double alpha) {

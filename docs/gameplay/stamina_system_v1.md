@@ -26,7 +26,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 ## 数值（`stamina_v1.json`）
 
 - 最大 100。
-- 恢复每秒 15；在水里 ×0.5；饱食度 ≤ 6 时 ×0.5；口渴时再乘口渴倍率（口渴 < 30 ×0.75、< 15 ×0.5，肠胃感染 ×0.75，见 `thirst_system_v1.md`）；再乘体温倍率（C1 ×0.8，C2 起 ×0.6，H2 起 ×0.75，见 `temperature_system_v1.md`）。
+- 恢复每秒 15；在水里 ×0.5；饱食度 ≤ 6 时 ×0.5；口渴时再乘口渴倍率（口渴 < 30 ×0.75、< 15 ×0.5，肠胃感染 ×0.75，见 `thirst_system_v1.md`）；再乘体温倍率（C1 ×0.8，C2 起 ×0.6，H2 起 ×0.75，见 `temperature_system_v1.md`）；再乘伤口倍率（局部感染 ×0.95，化脓 ×0.90，取最差一处，`health/Wounds.staminaRegenMultiplier`，生命与健康 V1a，见 [survival_health_v1a.md](survival_health_v1a.md)）。
 - 恢复延迟：费力动作后 1.0 秒；降到 0 后 2.0 秒。
 - 力竭解除：耐力回到 30。
 

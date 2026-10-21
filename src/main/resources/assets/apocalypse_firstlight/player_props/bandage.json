@@ -1,0 +1,49 @@
+{
+  "about": "Health V1a (docs/gameplay/survival_health_v1a.md 7): the gauze roll in the right hand while the player action item/bandage_wrap winds it round the held-out left forearm. Drawn as the bandage's equipment mesh, parts roll and tail (tools/build-equipment-meshes-v1.mjs BANDAGE: 5.6 px wide, 4 px across, its axis along x; item offset 0.370357, client/AflStaticMeshItemClient), at half size. Points (item block units): center, the roll's middle; axis, 0.525 under it (4.2 px at this scale): the action's keys put it on the left forearm's middle line, so between keys the roll swings round the forearm, clear of the sleeve's corners and the wrap; pinch, 0.325 over the middle (2.6 px), where the right palm holds it from outside.",
+  "afl_rig": {
+    "plugin": "0.1.0"
+  },
+  "items": [
+    "bandage"
+  ],
+  "scale": 0.5,
+  "bounds": [
+    [
+      0.325,
+      0.3703,
+      0.3563
+    ],
+    [
+      0.675,
+      0.6297,
+      0.6413
+    ]
+  ],
+  "symmetry": "x",
+  "mesh": {
+    "model": "bandage",
+    "atlas": "bandage_mesh",
+    "offset": 0.370357,
+    "parts": [
+      "roll",
+      "tail"
+    ]
+  },
+  "points": {
+    "center": [
+      0.5,
+      0.507,
+      0.5188
+    ],
+    "axis": [
+      0.5,
+      -0.018,
+      0.5188
+    ],
+    "pinch": [
+      0.5,
+      0.832,
+      0.5188
+    ]
+  }
+}

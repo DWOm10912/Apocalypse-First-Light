@@ -69,6 +69,12 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.GEIGER_COUNTER.get(), GeigerCounterItemRenderer::new, "geiger_counter");
             // Flip lighter V1 (equipment meshes, 2026-10-20): the lid, wheel and flame from the stack's tag (0.5 - 11.4 / 32)
             bind(AflItems.FLIP_LIGHTER.get(), FlipLighterRenderer::new, "flip_lighter");
+            // Health V1a medical items (equipment meshes, 2026-10-19): 0.5 - height / 32 (4.149 / 9.25 px); in use, the player skeleton
+            // draws them as action props (player_props/bandage, medical_alcohol: the bottle's parts, its cap a second prop)
+            bind(AflItems.BANDAGE.get(), "bandage", "bandage_mesh", 0.370357);
+            bind(AflItems.MEDICAL_ALCOHOL.get(), "medical_alcohol", "medical_alcohol_mesh", 0.210938);
+            // Fractures and splints V1 (equipment meshes, 2026-10-20): 0.5 - 0.77 / 32
+            bind(AflItems.SPLINT.get(), "splint", "splint_mesh", 0.475938);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(

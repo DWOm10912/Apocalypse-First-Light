@@ -157,6 +157,9 @@ public final class PlayerStamina {
                     else drain = player.isCrouching() ? c.costs.sneak : c.costs.walk;
                 }
                 drain *= w[0] * cost(player, true);
+                // a broken leg: every step costs more (health/Fractures, [not splinted, splinted] 1.3 / 1.15)
+                if (drain > 0 && !player.isSwimming() && !player.isInWater())
+                    drain *= com.antaurora.apofirstlight.health.Fractures.staminaCostMultiplier(com.antaurora.apofirstlight.health.Fractures.of(player));
             } else if (player.getVehicle() instanceof com.antaurora.apofirstlight.entity.OfficeChairEntity && horizontal > 0.01) {
                 // rolling on an office chair (pushing with the feet): light work, a little more under load, no delay;
                 // sitting still on it costs nothing (other mounts do the work themselves: no cost)
@@ -175,6 +178,7 @@ public final class PlayerStamina {
                 if (player.getFoodData().getFoodLevel() <= c.lowFoodLevel) regen *= c.regenLowFood;
                 regen *= com.antaurora.apofirstlight.thirst.PlayerThirst.staminaRegenMultiplier(player); // thirsty, sick
                 regen *= PlayerTemperature.staminaRegenMultiplier(player); // cold / heat stages
+                regen *= com.antaurora.apofirstlight.health.Wounds.staminaRegenMultiplier(player); // infected wound
                 s.value += regen / 20;
             }
             settle(s, max);

@@ -104,6 +104,7 @@ public final class AflBlockEntityRenderers {
                 AflBlockEntityRendering.wrap("wooden_storage_chest", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
         com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity.chunkData = WoodGunRackChunking::modelData;   // resting guns: drawn by the chunk
         event.registerEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.SEAT, net.minecraft.client.renderer.entity.NoopRenderer::new);
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.GROUND_SEAT.get(), net.minecraft.client.renderer.entity.NoopRenderer::new);
         // Survivor Death and Succession V0: the placeholder body (owner's skin lying on its back)
         event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.SURVIVOR_CORPSE.get(),
                 com.antaurora.apofirstlight.client.survivor.SurvivorCorpseRenderer::new);

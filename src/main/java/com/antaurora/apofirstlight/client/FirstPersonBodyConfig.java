@@ -20,6 +20,13 @@ public final class FirstPersonBodyConfig {
     public static final ForgeConfigSpec.EnumValue<SpeedUnit> SPEED_UNIT;
     /** The driving key hints at the top right (toggled in game with the hints key, VehicleDriving.HINTS). */
     public static final ForgeConfigSpec.BooleanValue KEY_HINTS;
+    /** The infected-wound screen effect (health V1a, health/WoundScreenEffect): off, low (half) or normal. Off changes nothing else. */
+    public enum WoundEffect {
+        OFF(0), LOW(0.5), NORMAL(1);
+        public final double strength;
+        WoundEffect(double strength) { this.strength = strength; }
+    }
+    public static final ForgeConfigSpec.EnumValue<WoundEffect> WOUND_EFFECT;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -40,6 +47,11 @@ public final class FirstPersonBodyConfig {
         SPEED_UNIT = builder.comment("The speed on the dashboard: MPH or KMH.").defineEnum("speed_unit", SpeedUnit.MPH);
         KEY_HINTS = builder.comment("Show the driving keys at the top right (Caps Lock by default toggles it while driving).").define("key_hints", true);
         builder.pop();
+        builder.push("health");
+        WOUND_EFFECT = builder.comment("The screen edges dimming while a wound is infected or suppurating: OFF, LOW or NORMAL.",
+                        "Only the picture: the stamina and regeneration penalties stay.")
+                .defineEnum("wound_effect", WoundEffect.NORMAL);
+        builder.pop();
         SPEC = builder.build();
     }
 
@@ -57,6 +69,10 @@ public final class FirstPersonBodyConfig {
 
     public static SpeedUnit speedUnit() {
         return SPEC.isLoaded() ? SPEED_UNIT.get() : SpeedUnit.MPH;
+    }
+
+    public static double woundEffect() {
+        return SPEC.isLoaded() ? WOUND_EFFECT.get().strength : 1;
     }
 
     public static boolean keyHints() {

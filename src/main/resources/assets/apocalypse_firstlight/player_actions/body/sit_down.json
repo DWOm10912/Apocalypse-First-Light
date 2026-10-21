@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "about": "Sitting on the ground (docs/gameplay/splint_animation_v2_plan.md 3): sitting down, 1.25 s (sit/GroundSit.SIT_TICKS 25): the weight on the right leg, the right hand back to the ground, the left leg slid out ahead heel down, down onto the seat, leaning back on the hand a moment, then the right forearm onto the raised right knee. A stance clip under any action (client/skeleton/GroundSitClient, as this client first sees the seat); mirrored when the right leg is the broken one. Written by tools/medical-actions-v1a/author_splint_v2.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "body.sit_down"
+  },
+  "clip": "body.sit_down",
+  "layer": "stance",
+  "mask": "full",
+  "priority": 10,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0
+  },
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": []
+}

@@ -725,6 +725,106 @@ function drawHud(PARTS, {screen, toward, scale}) {
   return {buf: png(rgba, W, H), W, H};
 }
 
+/** Rotate a part so the Z axis (revolve's) points up (+Y). */
+const zToY = part => { part.v = part.v.map(([x, y, z]) => [x, z, -y]); };
+/**
+ * A flat strip of cloth along a polyline in the XY plane (as revolve's cross-section, before zToX / zToY): pts the strip's
+ * middle line, half its width along Z, its thickness across.
+ */
+function ribbon(part, pts, halfW, thick) {
+  const n = pts.length, rings = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], t = unit([b[0] - a[0], b[1] - a[1], 0]), m = [-t[1], t[0], 0];
+    rings.push([[1, 1], [1, -1], [-1, -1], [-1, 1]].map(([s, z]) => part.vtx([pts[i][0] + m[0] * s * thick / 2, pts[i][1] + m[1] * s * thick / 2, z * halfW])));
+  }
+  for (let i = 0; i + 1 < n; i++) for (let k = 0; k < 4; k++) {
+    const k2 = (k + 1) % 4, p = rings[i][k], mid = mul3(add3(part.v[p], part.v[rings[i + 1][k2]]), 0.5), c = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2, 0];
+    part.face([rings[i][k], rings[i][k2], rings[i + 1][k2], rings[i + 1][k]], sub3(mid, c), k % 2 ? 'cap' : 'side');
+  }
+  for (const [i, s] of [[0, -1], [n - 1, 1]]) { const t = unit([pts[Math.min(n - 1, i + 1)][0] - pts[Math.max(0, i - 1)][0], pts[Math.min(n - 1, i + 1)][1] - pts[Math.max(0, i - 1)][1], 0]);
+    part.face(rings[i], mul3(t, s), 'cap'); }
+}
+
+/**
+ * Gauze bandage (health V1a, docs/gameplay/survival_health_v1a.md 7.3): a roll of loose-woven cotton gauze about 7.5 cm
+ * wide and 5 cm across, wound on itself (a small hole down the middle, no core), its loose end peeled off the bottom and
+ * lying out flat. Plain off-white, matte. Lies along X (the roll's axis), the tail toward -Z.
+ */
+export const BANDAGE = {r: 2.0, hole: 0.55, half: 2.8, tail: 2.6};
+function bandage() {
+  const B = 'bandage', {r, hole, half} = BANDAGE;
+  const roll = new Part('roll', B, 'gauze');
+  revolve(roll, 0, 0, [[half, r - 0.12], [half - 0.1, r], [-half + 0.1, r], [-half, r - 0.12], [-half, hole], [half, hole]], 16);
+  // the loose end: round the roll's bottom from behind, off it at the bottom and out flat (its own thickness off the roll)
+  const tail = new Part('tail', B, 'gauze'), tr = r + 0.09, pts = [];
+  for (let a = 200; a <= 270; a += 10) pts.push([tr * Math.cos(a * Math.PI / 180), tr * Math.sin(a * Math.PI / 180)]);
+  for (const d of [0.6, 1.3, 2.0, BANDAGE.tail]) pts.push([d, -tr - 0.02 * d]);
+  ribbon(tail, pts, half - 0.08, 0.09);
+  for (const p of [roll, tail]) zToX(p);
+  return {PARTS: [roll, tail], MATS: {
+    gauze: {c: [226, 222, 210], hl: 4, sm: 34, se: 40, f0: 20},     // bleached cotton gauze: matte, a little warm
+  },
+  icon: {view: [25, -60, 0], coverage: 0.35, mat: {gauze: [236, 232, 222]}}};
+}
+
+/**
+ * Medical alcohol (health V1a): a 16 fl oz bottle of rubbing alcohol, white HDPE, round, a blue wrap-around label with no
+ * printing, a dark blue screw cap with grip ribs on its own part (cap) so the player action can unscrew it (the props
+ * player_props/medical_alcohol, medical_alcohol_cap draw the parts apart, skeleton/action/PlayerProps mesh). The neck has an open mouth under the cap and a tamper ring below it. Stands on +Y.
+ */
+export const BOTTLE = {r: 1.7, mouth: 9.0, capFoot: 7.7, capTop: 9.25, capR: 0.8};
+function medicalAlcohol() {
+  const B = 'medical_alcohol', SEG = 20;
+  const bottle = new Part('bottle', B, 'hdpe');
+  revolve(bottle, 0, 0, [[8.3, 0], [8.3, 0.42], [9.0, 0.42], [9.0, 0.6], [8.92, 0.68], [7.6, 0.68], [7.6, 0.82], [7.4, 0.82], [7.4, 0.7], [7.2, 0.7],
+    [6.9, 1.0], [6.5, 1.4], [6.0, 1.62], [5.6, 1.7], [0.25, 1.7], [0, 1.5], [0, 1.15], [0.18, 0.8], [0.2, 0]], SEG);
+  const label = new Part('label', B, 'label');
+  revolve(label, 0, 0, [[5.2, 1.76], [0.9, 1.76], [0.9, 1.66], [5.2, 1.66]], SEG);
+  const cap = new Part('cap', B, 'cap'), CS = 24;
+  revolve(cap, 0, 0, [[9.25, 0], [9.25, 0.72], [9.17, 0.8], [7.7, 0.8], [7.7, 0.72], [9.1, 0.72], [9.1, 0]], CS);
+  // grip ribs: every other vertex round the cap's outside stands out
+  cap.v = cap.v.map(([x, y, z]) => { const rr = Math.hypot(x, y);
+    if (Math.abs(rr - 0.8) > 1e-3) return [x, y, z];
+    const i = Math.round((Math.atan2(y, x) - Math.PI / CS) / (2 * Math.PI / CS));
+    return i % 2 ? [x * 1.07, y * 1.07, z] : [x, y, z]; });
+  for (const p of [bottle, label, cap]) zToY(p);
+  return {PARTS: [bottle, label, cap], MATS: {
+    hdpe: {c: [222, 224, 220], hl: 5, sm: 118, se: 128, f0: 20},    // white HDPE: a soft sheen
+    label: {c: [52, 102, 168], hl: 4, sm: 92, se: 100, f0: 20},     // plain blue film label
+    cap: {c: [34, 66, 128], hl: 5, sm: 110, se: 120, f0: 20},       // dark blue polypropylene
+  },
+  // held upright in the fist (user 2026-10-20: "酒精离手有点远"): the shared [75, 45, 0] / 2.5 px left the bottle (r 0.93 px
+  // at this scale) 1-2 px off the hand; now along the forearm, its middle 0.6 px out from the hand's face (gripped 0.3 px)
+  display: {
+    thirdperson_righthand: {rotation: [90, 45, 0], translation: [0, 0.6, 0], scale: [0.545, 0.545, 0.545]},
+  },
+  icon: {view: [20, 35, 0], coverage: 0.35, mat: {hdpe: [236, 238, 234], label: [60, 112, 182], cap: [40, 76, 146]}}};
+}
+
+/**
+ * Splint (fractures and splints V1, docs/gameplay/fracture_splint_v1_plan.md 5.1): two planed softwood slats about 10 px long
+ * side by side, bound in the middle with a band of the bandage's gauze. No recipe before the recipe rework (user 2026-10-20).
+ * Plain wood, no paint, matte. Lies along X, flat (the slats' broad faces up). The band's inside stays 0.02 px off the
+ * slats: no shared faces.
+ */
+export const SPLINT = {len: 5.2, half: 0.72, gap: 1.0, thick: 0.45, band: 1.1};
+function splint() {
+  const B = 'splint', {len, half, gap, thick, band} = SPLINT;
+  const slats = [-1, 1].map((s, i) => {
+    const p = new Part('slat_' + i, B, 'wood');
+    extrude(p, 'x', {outer: orient(roundRect(s * gap - half, 0, s * gap + half, thick, 0.12), true), holes: []}, -len, len, 0.12);
+    return p;
+  });
+  const out = gap + half, wrap = new Part('band', B, 'gauze');
+  extrude(wrap, 'x', {outer: orient(roundRect(-out - 0.16, -0.16, out + 0.16, thick + 0.16, 0.3), true),
+    holes: [orient(roundRect(-out - 0.02, -0.02, out + 0.02, thick + 0.02, 0.14), false)]}, -band, band, 0);
+  return {PARTS: [...slats, wrap], MATS: {
+    wood: {c: [186, 152, 106], hl: 6, sm: 58, se: 66, f0: 20},      // planed pine, bare: matte, a little warm
+    gauze: {c: [226, 222, 210], hl: 4, sm: 34, se: 40, f0: 20},     // the bandage's gauze
+  },
+  icon: {view: [30, -50, 0], coverage: 0.4, mat: {wood: [196, 162, 116], gauze: [236, 232, 222]}}};
+}
+
 export const ITEMS = {
   clinical_thermometer: clinicalThermometer,
   wrist_thermometer: wristThermometer,
@@ -739,6 +839,9 @@ export const ITEMS = {
   simple_hearing_protection: simpleHearingProtection,
   geiger_counter: geigerCounter,
   flip_lighter: flipLighter,
+  bandage,
+  medical_alcohol: medicalAlcohol,
+  splint,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

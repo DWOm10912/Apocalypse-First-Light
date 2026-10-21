@@ -23,11 +23,15 @@ public final class AflSettingsScreen extends Screen {
     private static final float PANEL_W = 300, PAD = 14, ROW_H = 22, GAP = 6, BUTTON_H = 20, LABEL_W = 96;
 
     /** One setting: its name and its choices (config value, lang key). */
-    private record Row(String key, ForgeConfigSpec.EnumValue<?> value, List<Enum<?>> choices) {}
+    /** A setting row under its section's heading (a new section starts where the key changes). */
+    private record Row(String section, String key, ForgeConfigSpec.EnumValue<?> value, List<Enum<?>> choices) {}
 
     private static final List<Row> ROWS = List.of(
-            new Row("dash_style", FirstPersonBodyConfig.DASH_STYLE, List.of(FirstPersonBodyConfig.DashStyle.values())),
-            new Row("speed_unit", FirstPersonBodyConfig.SPEED_UNIT, List.of(FirstPersonBodyConfig.SpeedUnit.values())));
+            new Row("vehicles", "dash_style", FirstPersonBodyConfig.DASH_STYLE, List.of(FirstPersonBodyConfig.DashStyle.values())),
+            new Row("vehicles", "speed_unit", FirstPersonBodyConfig.SPEED_UNIT, List.of(FirstPersonBodyConfig.SpeedUnit.values())),
+            new Row("body", "wound_effect", FirstPersonBodyConfig.WOUND_EFFECT, List.of(FirstPersonBodyConfig.WoundEffect.values())));
+    /** Each row's top this frame (render), for the clicks. */
+    private final float[] rowTops = new float[ROWS.size()];
 
     private final Screen parent;
     private float panelX, rowsY, buttonY, innerW;
@@ -49,17 +53,24 @@ public final class AflSettingsScreen extends Screen {
         g.fillGradient(0, 0, width, height, AflUiStyle.argb(0x0A0B0C, 0.55F), AflUiStyle.argb(0x0A0B0C, 0.80F));
         float panelW = Math.min(PANEL_W, width - 32);
         innerW = panelW - 2 * PAD;
-        float panelH = 2 * PAD + font.lineHeight + 10 + font.lineHeight + 6 + ROWS.size() * (ROW_H + GAP) + 8 + BUTTON_H;
+        int sections = 0;
+        for (int i = 0; i < ROWS.size(); i++) if (i == 0 || !ROWS.get(i).section().equals(ROWS.get(i - 1).section())) sections++;
+        float panelH = 2 * PAD + font.lineHeight + 10 + sections * (font.lineHeight + 6) + (sections - 1) * 4 + ROWS.size() * (ROW_H + GAP) + 8 + BUTTON_H;
         panelX = (width - panelW) / 2;
         float y = Math.max(8, (height - panelH) / 2);
         AflUiDraw.panel(g, panelX, y, panelW, panelH, 1.0F);
         y += PAD;
         AflUiDraw.centred(g, font, title, width / 2.0F, y, AflUiStyle.TEXT, 1.0F);
         y += font.lineHeight + 10;
-        AflUiDraw.text(g, font, Component.translatable("screen.apocalypse_firstlight.settings.vehicles"), panelX + PAD, y, AflUiStyle.TEXT_DIM, 1.0F);
-        y += font.lineHeight + 6;
         rowsY = y;
-        for (Row row : ROWS) {
+        for (int i = 0; i < ROWS.size(); i++) {
+            Row row = ROWS.get(i);
+            if (i == 0 || !row.section().equals(ROWS.get(i - 1).section())) {
+                if (i > 0) y += 4;
+                AflUiDraw.text(g, font, Component.translatable("screen.apocalypse_firstlight.settings." + row.section()), panelX + PAD, y, AflUiStyle.TEXT_DIM, 1.0F);
+                y += font.lineHeight + 6;
+            }
+            rowTops[i] = y;
             row(g, row, y, mouseX, mouseY);
             y += ROW_H + GAP;
         }
@@ -96,8 +107,9 @@ public final class AflSettingsScreen extends Screen {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
-        float y = rowsY;
-        for (Row row : ROWS) {
+        for (int i = 0; i < ROWS.size(); i++) {
+            Row row = ROWS.get(i);
+            float y = rowTops[i];
             float x = panelX + PAD + LABEL_W, w = (innerW - LABEL_W - (row.choices().size() - 1) * 4) / row.choices().size();
             for (Enum<?> choice : row.choices()) {
                 if (inside(mouseX, mouseY, x, y, w, ROW_H)) {
@@ -107,7 +119,6 @@ public final class AflSettingsScreen extends Screen {
                 }
                 x += w + 4;
             }
-            y += ROW_H + GAP;
         }
         if (inside(mouseX, mouseY, panelX + PAD, buttonY, innerW, BUTTON_H)) {
             onClose();

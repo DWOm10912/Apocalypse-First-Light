@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "about": "Landing from a fall V1 (docs/gameplay/fall_landing_v1_plan.md 2): a hard landing kept on the feet, 0.6 s (health/FallLanding sends it on a damaging fall that is not a fall-over): down through the knees and hips, the pelvis tipped forward, back up. The legs and hips only (mask legs), so the arms keep what the held item does; the own first person keeps its view model, the camera rides the posed eye down and up (first_person_eye). Written by tools/medical-actions-v1a/author_fall_v1.cjs from the approved concept.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "fall.land_hard"
+  },
+  "clip": "fall.land_hard",
+  "layer": "action",
+  "mask": "legs",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.04,
+    "out": 0.15
+  },
+  "first_person_eye": true,
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": []
+}

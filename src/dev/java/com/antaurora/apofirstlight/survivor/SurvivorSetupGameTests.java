@@ -205,14 +205,14 @@ public final class SurvivorSetupGameTests {
         var sturdy = record(SurvivorRecord.State.ALIVE);
         SurvivorSetup.confirm(sturdy, c, choice("ordinary", Map.of("afl:fitness", 4), "sturdy"));
         SurvivorModifiers.apply(player, sturdy, c);
-        log.close("sturdy: max health 22", player.getAttributeValue(Attributes.MAX_HEALTH), 22);
+        log.close("sturdy: no max health bonus (health V1a: 100 for everyone)", player.getAttributeValue(Attributes.MAX_HEALTH), player.getAttribute(Attributes.MAX_HEALTH).getBaseValue());
         log.close("previous survivor's carry capacity gone", value(player, AflAttributes.CARRY_CAPACITY), 0);
         log.close("fitness 4: max stamina +8", value(player, AflAttributes.MAX_STAMINA), 8);
         log.close("fitness 4: regen x1.08", value(player, AflAttributes.STAMINA_REGEN), 1.08);
         var choosing = record(SurvivorRecord.State.ALIVE);
         SurvivorSetup.reset(choosing);
         SurvivorModifiers.apply(player, choosing, c);
-        log.close("choosing: max health 20", player.getAttributeValue(Attributes.MAX_HEALTH), 20);
+        log.close("choosing: no max health modifier", player.getAttributeValue(Attributes.MAX_HEALTH), player.getAttribute(Attributes.MAX_HEALTH).getBaseValue());
         log.close("choosing: max stamina 0", value(player, AflAttributes.MAX_STAMINA), 0);
         SurvivorModifiers.apply(player, forest, c);
         SurvivorModifiers.apply(player, null, c);

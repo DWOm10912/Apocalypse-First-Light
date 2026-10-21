@@ -119,7 +119,16 @@ const STATUSES = [
   { id: 'gastro', kind: 'bad', timed: true, source: 'effect' },
   { id: 'gasoline', kind: 'bad', timed: true, source: 'effect' },
   { id: 'diesel', kind: 'bad', timed: true, source: 'effect' },
-  { id: 'fed', kind: 'good', source: 'food' },
+  // health V1a: one badge per wound stage (wound_<stage>), named wound.<stage>, its line by the least-treated wound of that
+  // stage; listed here untreated (an uncleaned suppuration is red)
+  { id: 'wound', kind: 'bad', source: 'health', keys: [['wound.scratch', 'wound.scratch.untreated'], ['wound.infection', 'wound.infection.untreated'],
+    ['wound.suppuration', 'wound.suppuration.untreated', true]] },
+  // fractures V1: one badge per broken limb (fracture_<limb>), its line by leg / main arm / support arm, or splinted;
+  // listed for a right-handed player
+  { id: 'fracture', kind: 'bad', source: 'health', keys: [['fracture.right_leg', 'fracture.leg'], ['fracture.right_arm', 'fracture.main_arm'],
+    ['fracture.left_arm', 'fracture.support_arm'], ['fracture.left_leg', 'fracture.splinted']] },
+  // health V1a: natural regeneration under way, awake or resting
+  { id: 'recovering', kind: 'good', source: 'health', keys: [['recovering', 'recovering.awake'], ['recovering', 'recovering.rest']] },
   { id: 'warming', kind: 'good', source: 'temperature' }
 ]
 
@@ -130,7 +139,9 @@ function loadStatuses() {
   const out = []
   for (const s of STATUSES) {
     const rows = []
-    if (s.tiers) {
+    if (s.keys) {
+      s.keys.forEach(([name, effect, danger], i) => rows.push({ stage: i + 1, name: pick(name), effect: pick(effect), danger: !!danger }))
+    } else if (s.tiers) {
       // the slowdown grows with the load ratio and sprinting stops above a ratio, not at a tier: shown as a range
       // (HUD text is "N% slower" with the live N; written out here because N is a curve, see weight/EncumbranceState)
       const LOAD = { zh: '走路变慢，越重越慢；负重超过一定比例后不能疾跑', en: 'Slower walking, more so the heavier the load; no sprinting past a set load ratio' }
@@ -147,11 +158,11 @@ function loadStatuses() {
       const t = readJson(path.join(DATA, 'thirst/thirst_v1.json'))
       rows[0].args = [Math.round(t.stamina_regen_thirsty * 100)]
       rows[1].args = [Math.round(t.stamina_regen_dehydrated * 100)]
-      rows[2].args = [t.damage_interval_seconds]
+      rows[2].args = [t.damage_interval_seconds, readJson(path.join(DATA, 'health/health_v1.json')).damage.default_scale]
     }
     for (const r of rows) for (const loc of ['zh', 'en']) {
       let i = 0
-      r.effect[loc] = r.effect[loc]?.replace(/%(\d\$)?s/g, () => String((r.args ?? [])[i++] ?? '…')).replace(/%%/g, '%')
+      r.effect[loc] = r.effect[loc]?.replace(/%(?:(\d)\$)?s/g, (_, n) => String((r.args ?? [])[n ? n - 1 : i++] ?? '…')).replace(/%%/g, '%')
       if (s.roman) r.name[loc] = r.name[loc]?.replace(/%s/, r.roman)
     }
     for (const r of rows) if (!r.name.zh || !r.name.en || !r.effect.zh || !r.effect.en) throw new Error(`status ${s.id} stage ${r.stage}: lang key missing`)

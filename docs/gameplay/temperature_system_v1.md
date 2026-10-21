@@ -41,7 +41,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `temperature/TemperatureCommands.java` | `/afltemp` 调试命令 |
 | `stamina/PlayerStamina.java` | 体温用独立累加器 `consumeSpentForTemperature`；消耗乘 `staminaCostMultiplier`，恢复乘 `staminaRegenMultiplier` |
 | `thirst/PlayerThirst.java` | 口渴消耗乘 `thirstMultiplier` |
-| `mixin/FoodDataThirstMixin.java` | 脱水，或体温到 C2/H2 及以上时，不自然回血 |
+| `mixin/FoodDataThirstMixin.java` | 脱水，或体温到 C2/H2 及以上时，不自然回血。**生命与健康 V1a（2026-10-19）起**原版饱食回血整个关掉，由 `health/PlayerHealth` 统一判定（仍问 `PlayerTemperature.blocksNaturalRegen`），见 [survival_health_v1a.md](survival_health_v1a.md)；3 期每次 1 点伤害换算成 5 点 |
 | `weight/ClientWeightPenalties.java` | 视野补偿同时去掉负重和体温两个减速修饰器的影响 |
 | `weapon/client/NativeWeaponSway.java` | 持枪晃动乘 `ClientTemperature.swayScale()` |
 | `network/AflNetwork.java` | 注册体温包，协议 37（2026-10-17 包里加冷热阶段和湿度后为 53） |

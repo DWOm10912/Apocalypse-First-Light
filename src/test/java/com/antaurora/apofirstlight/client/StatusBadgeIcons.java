@@ -15,7 +15,8 @@ import java.util.Map;
  * without the time-left arc or the flash, on a transparent background. Run: gradlew wikiStatusIcons.
  * <p>
  * Which glyph and kind each status stage shows follows StatusBadgeHud#collect; keep the two in step (the wiki's list of
- * statuses and stages is wiki/.vitepress/lib/survivor.mjs).
+ * statuses and stages is wiki/.vitepress/lib/survivor.mjs). A stage given as {glyph, kind} has its own glyph (the wounds'
+ * stages, a splinted fracture).
  */
 public final class StatusBadgeIcons {
     /** Real pixels per GUI pixel: the badge (radius 5.4 GUI px) comes out about 100 px across. */
@@ -40,6 +41,12 @@ public final class StatusBadgeIcons {
         icons.put("diesel", new Object[] { StatusBadgeHud.FUEL_CAN, B });
         icons.put("fed", new Object[] { StatusBadgeHud.FORK_KNIFE, G });
         icons.put("warming", new Object[] { StatusBadgeHud.FLAME, G });
+        // health V1a, as survivor.mjs lists them: the three wound stages untreated (an uncleaned suppuration is red), a
+        // fracture on the right leg, right arm, left arm, then a splinted one; recovering awake and resting
+        icons.put("wound", new Object[] { null, new Object[] { StatusBadgeHud.CLAW, B }, new Object[] { StatusBadgeHud.SWOLLEN, B },
+                new Object[] { StatusBadgeHud.FESTERING, D } });
+        icons.put("fracture", new Object[] { StatusBadgeHud.BONE, B, B, B, new Object[] { StatusBadgeHud.BONE_SPLINTED, B } });
+        icons.put("recovering", new Object[] { SurvivalVitalsHud.HEART, G, G });
 
         double r = SurvivalHudLayout.BADGE_R, reach = r + 1.2;
         int size = (int) Math.ceil(2 * reach * SCALE);
@@ -47,10 +54,11 @@ public final class StatusBadgeIcons {
         int written = 0;
         for (var e : icons.entrySet()) {
             Object[] v = e.getValue();
-            AflRingIcon.Glyph glyph = (AflRingIcon.Glyph) v[0];
             for (int stage = 1; stage < v.length; stage++) {
+                AflRingIcon.Glyph glyph = v[stage] instanceof Object[] own ? (AflRingIcon.Glyph) own[0] : (AflRingIcon.Glyph) v[0];
+                StatusBadgeHud.Kind kind = v[stage] instanceof Object[] own ? (StatusBadgeHud.Kind) own[1] : (StatusBadgeHud.Kind) v[stage];
                 BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-                AflGauge.raster(size, SCALE, c, c, StatusBadgeHud.badgeBands((StatusBadgeHud.Kind) v[stage], r, Double.NaN, 0, 1),
+                AflGauge.raster(size, SCALE, c, c, StatusBadgeHud.badgeBands(kind, r, Double.NaN, 0, 1),
                         StatusBadgeHud.badgeGlyph(glyph, r, 1),
                         (x, y, abgr) -> image.setRGB(x, y, abgr & 0xFF00FF00 | (abgr & 0xFF) << 16 | (abgr >> 16) & 0xFF));
                 ImageIO.write(image, "png", new File(out, e.getKey() + "_" + stage + ".png"));

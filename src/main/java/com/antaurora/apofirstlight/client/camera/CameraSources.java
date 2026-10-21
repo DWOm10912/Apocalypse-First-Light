@@ -20,7 +20,8 @@ public final class CameraSources {
             CrowbarFirstPerson::cameraShake,           // crowbar smash: the knock of the impact
             JerryCanFirstPerson::cameraShake,          // jerry can view model: its camera bone
             NativeCameraBoneConsumer::cameraShake,     // guns: the clips' camera bone (reload, inspect, draw, put away)
-            ClientShiver::cameraShake);                // cold: shivering bursts
+            ClientShiver::cameraShake,                 // cold: shivering bursts
+            com.antaurora.apofirstlight.health.WoundScreenEffect::cameraShake);   // infected wound: a fever's dizzy sway and chills
 
     /** Bodies drawn away from their entity (CameraDirector#bodyOffset), summed. */
     public static final List<CameraDirector.BodyOffset> BODY_OFFSETS = List.of(

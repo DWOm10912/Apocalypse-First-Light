@@ -39,6 +39,8 @@ public final class NativeWeaponSway {
             target*=com.antaurora.apofirstlight.stamina.ClientStamina.swayScale();
             // Temperature V1: shivering adds to it.
             target*=com.antaurora.apofirstlight.temperature.ClientTemperature.swayScale();
+            // A broken arm (health/Fractures): the support arm most, the gun hand less.
+            target*=(float)com.antaurora.apofirstlight.health.Fractures.arm(mc.player, com.antaurora.apofirstlight.health.Fractures.ArmEffect.SWAY);
             // Survivor attribute weapon_sway.
             target*=(float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(mc.player, com.antaurora.apofirstlight.registry.AflAttributes.WEAPON_SWAY, 0);
         }

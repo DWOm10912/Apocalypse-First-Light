@@ -8,6 +8,8 @@
 - **2026-10-16 合并准备**：第 4 轮（撬棍左手在下、右手在上）用户实机 PASS；骨架改为默认开，整批提交在 `feature/player-skeleton-p2`，交给 Main 合并。见第 13 节。
 - **S2 第 3 轮已实现**（2026-10-16，按用户实机第 3 轮反馈）：倒油时视角锁定看加油口，第一人称镜头不再跟着头低下去（手臂不再糊满屏幕），只有低的加油口才蹲；撬棍改为双手斜握，拿在手里就是身体动作（替掉旧的第一人称视图模型），挥击和砸玻璃都是双手，第一人称砸的全过程能看到手。离线检查全过，**还没进游戏验证**。见第 12 节。
 - **枪接进动作系统**（2026-10-17，D worktree，未提交）：新的动作组 `gun/`，拿枪时只放枪的动作（`gun/<枪>_draw`、`gun/<枪>_holster`），由 `SkeletonGunStance` 按掏枪、收枪的时间窗触发，不走 `ActionState` 同步；第一批是 P9 掏枪、收枪，用 AFL Rig 插件做。离线检查通过，**还没进游戏验证**。见 [p9_draw_holster_actions_v1.md](p9_draw_holster_actions_v1.md)。下面第 0 节“不做枪械”是当时的范围。
+- **坐地 stance + `hold_body`**（2026-10-20，D 分支，用户实机 PASS）：坐下键的坐姿片段（`body.sit_down` / `body.sit` / `body.stand_up`）放在 stance 层（`HumanoidPoser.Input#stance`），stance 片段可以镜像（`StanceClip#mirror`）；坐着时物品动作的腿和髋留给坐姿（`GroundSitClient#keepLegs`）。动作新字段 `hold_body`：动作期间胸口只按片段扭和弯，视线不叠加（夹板 V2 两个动作用，手按 FK 烘焙）。见 [splint_animation_v2_plan.md](../gameplay/splint_animation_v2_plan.md) 第 6 节。
+- **`first_person_view`**（2026-10-20，D 分支，落地与摔倒 V1，没进游戏）：动作新字段 `[[秒, 度], ...]`，第一人称视线的俯仰随时间变化（关键之间 smoothstep，`PlayerAction#viewAt`）。动作本身不转视线，由来源每帧设玩家的俯仰（`client/skeleton/FallLandingClient#view`，在鼠标转完之后）。`body/fall_over` 用。新的动作来源：落地（`health/FallLanding` 发 `HealthPackets.Landing`，`SkeletonActions#live` 里排在调试播放之后、枪之前）。见 [fall_landing_v1_plan.md](../gameplay/fall_landing_v1_plan.md)。
 - **枪的姿势循环**（2026-10-17，D worktree，未提交）：`gun/<枪>_idle`、`gun/<枪>_sprint` 两个循环动作（字段 `loop`、`length`），权重由持枪状态决定。道具关键帧多了跟视线的坐标系 `view`，动作多了 `view_pitch`、`chest_twist`、`hip_fire` 三个字段。P9 待机是 CS2 式腰射预备。离线检查通过，**还没进游戏验证**。见 [p9_stance_loops_v1.md](p9_stance_loops_v1.md)。
 
 上级文档：[player_skeleton_v1_design.md](player_skeleton_v1_design.md) 第 6 节（动作状态和同步）、第 10 节（人物动画制作工作流）、第 11 节 P2。本文是第 10 节动作层的第一版落地方案，以及第 11 节 P2 里"现有 AFL 手臂动作迁移"的做法。
@@ -154,6 +156,7 @@
 - 第一人称：低头才看得到手在胸前，平视时手不在画面里，自然取代现在"手移出画面"的处理。
 - 事件：无；读数仍由物品使用结束时服务端算（不变）。
 - 左手拿温度计时左右镜像。
+- 同样走物品使用的还有生命与健康 V1a 的绷带 `item/bandage_wrap`、医用酒精 `item/alcohol_clean`（`first_person: view_model`，挂点 `treat`、`wrap_*`、`bottle`、`dab`，见 `docs/gameplay/survival_health_v1a.md` 第 7 节）。
 
 ### 4.2 发电机拉绳 `machine/generator_pull`
 
@@ -281,7 +284,7 @@
 
 | 文件 | 作用 |
 |---|---|
-| `skeleton/action/PlayerAction.java` | 动作定义的解析（格式版本 1）：片段、参数片段、层、遮罩、优先级、进出过渡、`approach`、两只手的目标时间线；`events`、`check` 原样保留 |
+| `skeleton/action/PlayerAction.java` | 动作定义的解析（格式版本 1）：片段、参数片段、层、遮罩、优先级、进出过渡、`approach`、两只手的目标时间线；`events`、`check` 原样保留；`first_person_eye`（2026-10-20，骨折夹板坐地动作）：第一人称相机放在动作姿势的眼睛上（和有 `approach` 的动作一样走 `SkeletonActions#solved` 的 stepping），身体离开站立位置的动作用；`hold_body`（2026-10-20，夹板 V2）：动作期间胸口只按片段扭和弯（`ActionPose#body` 把 `chestYaw` / `chestPitch` 按权重压掉）；`first_person_view`（2026-10-20，落地与摔倒）：第一人称视线俯仰的时间线，`viewAt(秒)` |
 | `skeleton/action/PlayerActions.java` | 从 jar 读 `player_actions/<组>/<名>.json` 和 `item_actions/<物品>.json`，带缓存 |
 | `skeleton/action/ActionPose.java` | 纯函数：某一刻的动作 → 姿势输入。`body`（片段、走近、转身、低头）、`hands`（目标、权重、肘向；两个目标之间绕手掌缓入缓出）、`pitch`、`facing` |
 | `skeleton/HumanoidPoser.java` | 输入加动作片段、参数片段、权重、遮罩、镜像、`rootOffset`；`action()` 在移动层之后、朝向之前叠片段；`forearm()` |

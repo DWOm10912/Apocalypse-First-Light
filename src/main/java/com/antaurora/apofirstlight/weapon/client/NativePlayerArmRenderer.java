@@ -109,6 +109,9 @@ public final class NativePlayerArmRenderer {
         if (player.isModelPartShown(right ? PlayerModelPart.RIGHT_SLEEVE : PlayerModelPart.LEFT_SLEEVE))
             renderPart(right ? model.rightSleeve : model.leftSleeve, pose,
                     buffers.getBuffer(RenderType.entityTranslucent(skin)), light, overlay);
+        // health V1a: the gauze wrap on the bandaged forearm, in the same (zeroed) part frame
+        com.antaurora.apofirstlight.client.BandageWrapRenderer.drawArm(player, right, player.getModelName().equals("slim"),
+                pose, buffers, light, overlay);
     }
 
     private static void renderPart(ModelPart part, PoseStack pose, VertexConsumer buffer, int light, int overlay) {
