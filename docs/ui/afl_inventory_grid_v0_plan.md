@@ -5,6 +5,8 @@
 - 分支：`feature/inventory-grid-v0`，从 master `47140c87` 开出，工作区 `D:/Minecraft Modding/AFL-survivor-v0`。
 - 布局和用户决定：[afl_inventory_grid_v0_concept.md](afl_inventory_grid_v0_concept.md)；调研：[afl_unified_ui_v0_research.md](afl_unified_ui_v0_research.md)。
 
+> 2026-10-21（C 分支）：中栏加了一行两个“挂点”格子（菜单索引 51、52）。同日第二轮起挂点是胸挂自带的，这一行在“胸挂”下面，只在穿着带挂点的胸挂时出现，见 `docs/gameplay/equipment_slots_v1.md`「挂点」。
+
 ## 1. 东西存在哪里
 
 | 部分 | 存在哪里 | 说明 |

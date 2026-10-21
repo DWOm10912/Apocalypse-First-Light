@@ -92,7 +92,7 @@ public final class ForestHomeStartCheck {
             int w = terrain.water(x, z);
             return w == RouteTerrain.RIVER || w == RouteTerrain.LAKE || w == RouteTerrain.SEA;
         };
-        RoadWorks works = new RoadWorks(RoadNetworkJson.designs(built), water, new TownWorks(b.towns()), Driveway.of(home));
+        RoadWorks works = new RoadWorks(RoadNetworkJson.designs(built), water, new TownWorks(b.towns()), Driveway.of(home), RoadWorks.Ground.of(s));
         RoadNetworkRuntime.Network n = new RoadNetworkRuntime.Network(planJson, "check", built, works, s, home);
         StructureReservation r = home.reservation();
         RotatedRect keep = ForestHomeLayout.plot(r).grow(ForestHomeLayout.GRADE_MARGIN);

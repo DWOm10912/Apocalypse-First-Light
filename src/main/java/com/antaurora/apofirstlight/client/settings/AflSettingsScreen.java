@@ -22,14 +22,15 @@ import java.util.List;
 public final class AflSettingsScreen extends Screen {
     private static final float PANEL_W = 300, PAD = 14, ROW_H = 22, GAP = 6, BUTTON_H = 20, LABEL_W = 96;
 
-    /** One setting: its name and its choices (config value, lang key). */
     /** A setting row under its section's heading (a new section starts where the key changes). */
     private record Row(String section, String key, ForgeConfigSpec.EnumValue<?> value, List<Enum<?>> choices) {}
 
     private static final List<Row> ROWS = List.of(
             new Row("vehicles", "dash_style", FirstPersonBodyConfig.DASH_STYLE, List.of(FirstPersonBodyConfig.DashStyle.values())),
             new Row("vehicles", "speed_unit", FirstPersonBodyConfig.SPEED_UNIT, List.of(FirstPersonBodyConfig.SpeedUnit.values())),
-            new Row("body", "wound_effect", FirstPersonBodyConfig.WOUND_EFFECT, List.of(FirstPersonBodyConfig.WoundEffect.values())));
+            new Row("body", "wound_effect", FirstPersonBodyConfig.WOUND_EFFECT, List.of(FirstPersonBodyConfig.WoundEffect.values())),
+            new Row("map", "minimap_turn", FirstPersonBodyConfig.MINIMAP_TURN, List.of(FirstPersonBodyConfig.MinimapTurn.values())),
+            new Row("map", "compass", FirstPersonBodyConfig.COMPASS, List.of(FirstPersonBodyConfig.CompassBar.values())));
     /** Each row's top this frame (render), for the clicks. */
     private final float[] rowTops = new float[ROWS.size()];
 

@@ -577,6 +577,141 @@ function geigerCounter() {
     mat: {rubber: [226, 176, 52], shell: [70, 72, 76], lcd: [168, 178, 156]}}};
 }
 
+/** Turn a lathed part (revolve builds along Z) to stand on Y: the profile's z becomes the height. */
+const zToY = part => { part.v = part.v.map(([x, y, z]) => [x, z, -y]); };
+/** A straight bar in the (z, x) plane of an axis-y extrusion, from a to b ([x, z] points), w wide. */
+function barPlan([x0, z0], [x1, z1], w) {
+  const d = unit([x1 - x0, 0, z1 - z0]), nx = -d[2] * w / 2, nz = d[0] * w / 2;
+  return orient([[z0 + nz, x0 + nx], [z1 + nz, x1 + nx], [z1 - nz, x1 - nx], [z0 - nz, x0 - nx]], true);
+}
+/** Card letters as strokes in a 0..1 high glyph box (x right, y up), read with their tops toward the card's rim. */
+const GLYPHS = {
+  N: {w: 0.68, strokes: [[[0, 0], [0, 1]], [[0, 1], [0.68, 0]], [[0.68, 0], [0.68, 1]]]},
+  E: {w: 0.56, strokes: [[[0, 0], [0, 1]], [[0, 1], [0.56, 1]], [[0, 0.5], [0.46, 0.5]], [[0, 0], [0.56, 0]]]},
+  S: {w: 0.62, strokes: [[[0.6, 0.86], [0.44, 1], [0.16, 1], [0.02, 0.86], [0.02, 0.64], [0.16, 0.52], [0.46, 0.48], [0.6, 0.36], [0.6, 0.14], [0.46, 0], [0.16, 0], [0, 0.14]]]},
+  W: {w: 0.8, strokes: [[[0, 1], [0.2, 0], [0.4, 0.62], [0.6, 0], [0.8, 1]]]},
+};
+
+/**
+ * Pocket compass (clips, user 2026-10-21: "完善罗盘的模型……要一次性做精致", PBR, the dial really turning): a liquid-free
+ * card compass after the common olive-drab marching compasses, 56 mm across at 1 px = 10 mm, lying face up (+Y), north
+ * end (the bail) toward -Z. A lathed olive coated aluminium case (bevelled base, the rim a hair below the bezel: the seam
+ * reads as a dark line), a black rotating bezel with 30 grip notches, white marks every 30 degrees and an orange luminous
+ * index at north; under the glass the fixed red lubber line on the case wall at north and the floating card: a cream disc
+ * with ticks every 10 degrees (long every 30), N E S W as raised print (N red) read toward the rim, a red north arrow and
+ * a white south tail, a brass pivot cap. Every card part is named card_*: CompassItemRenderer turns them about the pivot
+ * so the card's N points to the world's north (-Z). A lug on the north wall carries a stainless steel ring.
+ */
+export const COMPASS = {caseR: 2.8, cardR: 2.12, cardY: 0.62};
+function compass() {
+  const B = 'compass', parts = [], add = p => { parts.push(p); return p; };
+  // case: a cup, outer wall bevelled at the base, the floor under the card at 0.35, the rim top at 0.98
+  const kase = add(new Part('case', B, 'case'));
+  revolve(kase, 0, 0, [[0.35, 0], [0.35, 2.45], [0.98, 2.45], [0.98, 2.78], [0.18, 2.8], [0, 2.58], [0, 0]], 40);
+  zToY(kase);
+  // bezel: notched outer edge (30 notches), its hole over the window
+  const notch = [];
+  for (let i = 0; i < 60; i++) { const a = 2 * Math.PI * i / 60, r = i % 2 ? 2.8 : 2.9; notch.push([r * Math.cos(a), r * Math.sin(a)]); }
+  extrude(add(new Part('bezel', B, 'bezel')), 'y', {outer: orient(notch, true), holes: [orient(circle(0, 0, 2.18, 40), false)]}, 1.0, 1.36, 0.06);
+  // bezel marks every 30 degrees (raised white print) and the luminous index at north
+  for (let d = 30; d < 360; d += 30) {
+    const a = d * Math.PI / 180, i0 = [2.3 * Math.sin(a), -2.3 * Math.cos(a)], i1 = [2.66 * Math.sin(a), -2.66 * Math.cos(a)];
+    extrude(add(new Part('bezel_mark_' + d, B, 'mark')), 'y', {outer: barPlan(i0, i1, 0.09), holes: []}, 1.36, 1.38, 0);
+  }
+  extrude(add(new Part('bezel_index', B, 'lume')), 'y', {outer: orient([[-2.72, -0.2], [-2.72, 0.2], [-2.3, 0]], true), holes: []}, 1.36, 1.385, 0);
+  // the glass under the bezel's lip
+  extrude(add(new Part('glass', B, 'glass')), 'y', {outer: orient(circle(0, 0, 2.2, 40), true), holes: []}, 1.12, 1.2, 0);
+  // fixed lubber line on the case wall at north, over the card's rim
+  extrude(add(new Part('lubber', B, 'red')), 'y', {outer: orient(roundRect(-2.44, -0.045, -2.16, 0.045, 0.02, 1), true), holes: []}, 0.6, 0.97, 0);
+  // the card: disc, ticks, letters, arrow, pivot cap (all turned together)
+  const {cardR, cardY} = COMPASS, top = cardY + 0.06;
+  extrude(add(new Part('card_disc', B, 'dial')), 'y', {outer: orient(circle(0, 0, cardR, 40), true), holes: []}, cardY, top, 0);
+  for (let d = 0; d < 360; d += 10) {
+    const a = d * Math.PI / 180, r0 = d % 30 ? 1.82 : 1.64, rr0 = [r0 * Math.sin(a), -r0 * Math.cos(a)], rr1 = [2.04 * Math.sin(a), -2.04 * Math.cos(a)];
+    extrude(add(new Part('card_tick_' + d, B, 'ink')), 'y', {outer: barPlan(rr0, rr1, d % 30 ? 0.045 : 0.07), holes: []}, top, top + 0.012, 0);
+  }
+  const H = 0.46, RL = 1.2;
+  for (const [ch, d] of [['N', 0], ['E', 90], ['S', 180], ['W', 270]]) {
+    const g = GLYPHS[ch], a = d * Math.PI / 180, up = [Math.sin(a), -Math.cos(a)], right = [Math.cos(a), Math.sin(a)];
+    const at = ([gx, gy]) => { const u = (gx - g.w / 2) * H, v = (gy - 0.5) * H; return [RL * up[0] + u * right[0] + v * up[0], RL * up[1] + u * right[1] + v * up[1]]; };
+    // each stroke a little higher than the one before and sunk a little deeper into the card: where strokes cross,
+    // neither their tops nor their buried bottoms share a plane
+    let n = 0;
+    g.strokes.forEach((line, si) => line.slice(1).forEach((q, k) => {
+      extrude(add(new Part(`card_${ch.toLowerCase()}_${si}_${k}`, B, ch === 'N' ? 'red' : 'ink')), 'y', {outer: barPlan(at(line[k]), at(q), 0.075), holes: []}, top - 0.003 * (n + 1), top + 0.014 + 0.002 * n++, 0);
+    }));
+  }
+  extrude(add(new Part('card_arrow', B, 'red')), 'y', {outer: orient([[-0.82, 0], [0, 0.17], [0, -0.17]], true), holes: []}, top, top + 0.02, 0);
+  extrude(add(new Part('card_tail', B, 'needle')), 'y', {outer: orient([[0.62, 0], [0, -0.13], [0, 0.13]], true), holes: []}, top, top + 0.02, 0);
+  const cap = add(new Part('card_pivot', B, 'brass'));
+  revolve(cap, 0, 0, [[top + 0.008, 0], [top + 0.008, 0.17], [top + 0.09, 0.13], [top + 0.13, 0]], 10);  // seated into the needle
+  zToY(cap);
+  // lug on the north wall and the ring through it
+  extrude(add(new Part('lug', B, 'case')), 'y', {outer: orient(roundRect(-3.2, -0.5, -2.55, 0.5, 0.18), true), holes: []}, 0.3, 0.9, 0.06);
+  extrude(add(new Part('ring', B, 'steel')), 'y', {outer: orient(circle(-3.62, 0, 0.6, 16), true), holes: [orient(circle(-3.62, 0, 0.4, 16), false)]}, 0.5, 0.7, 0);
+  // the same ring swung up on its lug (round wire, standing across the case): drawn instead of ring while the compass
+  // hangs from a clip (ClipRenderer), so it hooks over the carabiner's bottom bar
+  const RP = [];
+  for (let i = 0; i <= 24; i++) { const a = 2 * Math.PI * i / 24; RP.push([0, 0.6 + 0.5 * Math.sin(a), -3.62 + 0.5 * Math.cos(a)]); }
+  const ringUp = add(new Part('ring_up', B, 'steel')), rr2 = [];
+  for (let i = 0; i < RP.length - 1; i++) {
+    const t = unit(sub3(RP[(i + 1) % (RP.length - 1)], RP[(i - 1 + RP.length - 1) % (RP.length - 1)])), n = [0, t[2], -t[1]];
+    rr2.push(ringAt(ringUp, RP[i], n, [1, 0, 0], hexSection(0.1, 0.1)));
+  }
+  loft(ringUp, rr2, RP.slice(0, -1), {closed: true});
+  return {PARTS: parts, MATS: {
+    case: {c: [76, 80, 62], hl: 10, sm: 118, se: 140, f0: 24},       // olive drab coated aluminium, satin
+    bezel: {c: [34, 35, 36], hl: 12, sm: 150, se: 160, f0: 24},      // black anodised bezel
+    mark: {c: [216, 212, 200], hl: 0, sm: 96, se: 100, f0: 20},      // white bezel print
+    lume: {c: [226, 152, 62], hl: 0, sm: 110, se: 120, f0: 20},      // orange luminous index
+    glass: {...GLASS, c: [190, 204, 210], alpha: 46},                // clear crystal: faint, the card keeps its contrast
+    red: {c: [182, 44, 36], hl: 0, sm: 110, se: 120, f0: 20},        // red print: N, north arrow, lubber line
+    dial: {c: [226, 220, 200], hl: 2, sm: 96, se: 100, f0: 20},      // cream card
+    ink: {c: [26, 26, 24], hl: 0, sm: 96, se: 100, f0: 20},          // black print
+    needle: {c: [236, 234, 226], hl: 0, sm: 110, se: 120, f0: 20},   // white south tail
+    brass: {c: [176, 140, 70], hl: 10, sm: 150, se: 170, f0: 230},   // brass pivot cap
+    steel: {c: [150, 152, 156], hl: 12, sm: 130, se: 150, f0: 230},  // stainless ring
+  },
+  // third person: flat, face up, north end (the bail) forward; first person: face turned up to the eye; both pinched at
+  // the south rim (baked (0, 0, 3.0)), which lands on the wiring wrench's grip points (docs/models/equipment_meshes_v1.md
+  // "手持适配规则"; user 2026-10-21: the first transform stood the compass up 2 px in front of the fist): translation =
+  // landing - scale * R * grip. Ground: on its back; item frame: face out, north up; inventory: the live mesh
+  // (CompassItemRenderer turns the card there too)
+  display: {
+    thirdperson_righthand: {rotation: [90, 0, 0], translation: [0, 0.6, 1.37], scale: [0.5, 0.5, 0.5]},
+    firstperson_righthand: {rotation: [40, -13, 12], translation: [1.616, 0.893, 0.848], scale: [0.72, 0.72, 0.72]},
+    ground: {rotation: [0, 0, 0], translation: [0, 2, 0], scale: [0.5, 0.5, 0.5]},
+    fixed: {rotation: [-90, 180, 0], translation: [0, 0, 0], scale: [1.1, 1.1, 1.1]},
+  },
+  pivot: [0, 0, 0], atlas: 512, icon: {view: [60, 0, 0], coverage: 0.4, live: true, xray: ['glass'], hide: ['ring_up'], mat: {case: [94, 98, 78], bezel: [44, 45, 46], dial: [240, 234, 214]}}};
+}
+
+/**
+ * A clip on the belt (worn, no item; ClipRenderer draws it at each clip): a black webbing tab sewn over the belt with a
+ * steel wire-gate carabiner hanging from it, authored at body scale in the body frame (+X the player's left, +Y up, +Z out
+ * of the body), the tab's top centre at the origin. The clipped thing hangs from the carabiner's bottom (y -1.15).
+ */
+function clipMount() {
+  const B = 'clip_mount', parts = [];
+  const tab = new Part('tab', B, 'web');
+  extrude(tab, 'z', {outer: orient(roundRect(-0.38, -0.62, 0.38, 0, 0.08), true), holes: []}, 0, 0.12, 0);
+  parts.push(tab);
+  // carabiner: a D of round wire through the tab's bottom loop
+  const P = [];
+  for (let i = 0; i <= 28; i++) { const a = 2 * Math.PI * i / 28; P.push([0.2 * Math.sin(a), -0.89 + 0.27 * Math.cos(a), 0.16]); }
+  const wire = new Part('carabiner', B, 'steel'), rings = [];
+  for (let i = 0; i < P.length - 1; i++) {
+    const t = unit(sub3(P[(i + 1) % (P.length - 1)], P[(i - 1 + P.length - 1) % (P.length - 1)])), n = [t[1], -t[0], 0];
+    rings.push(ringAt(wire, P[i], n, [0, 0, 1], hexSection(0.045, 0.045)));
+  }
+  loft(wire, rings, P.slice(0, -1), {closed: true});
+  parts.push(wire);
+  return {PARTS: parts, MATS: {
+    web: {c: [40, 42, 40], ...NYLON},
+    steel: {c: [150, 152, 156], hl: 12, sm: 130, se: 150, f0: 230},
+  }, meshOnly: true, worn: true};
+}
+
 /**
  * Flip lighter (2026-10-20, docs/gameplay/flip_lighter_v1.md): an old windproof flip-top lighter, silver plated, no maker's
  * marks; 38 x 13 x 57 mm at 1 px = 5 mm. Stands on y = 0, front face +Z, the hinge on the +X side. The case and the lid
@@ -725,8 +860,6 @@ function drawHud(PARTS, {screen, toward, scale}) {
   return {buf: png(rgba, W, H), W, H};
 }
 
-/** Rotate a part so the Z axis (revolve's) points up (+Y). */
-const zToY = part => { part.v = part.v.map(([x, y, z]) => [x, z, -y]); };
 /**
  * A flat strip of cloth along a polyline in the XY plane (as revolve's cross-section, before zToX / zToY): pts the strip's
  * middle line, half its width along Z, its thickness across.
@@ -872,6 +1005,8 @@ export const ITEMS = {
   bandage,
   medical_alcohol: medicalAlcohol,
   splint,
+  compass,
+  clip_mount: clipMount,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -891,6 +1026,8 @@ if (isMain) {
     if (spec.worn) stats.origin = shift.map(v => +v.toFixed(4));
     // pivots a renderer turns parts about (px, after the bake shift)
     if (spec.points) stats.points = Object.fromEntries(Object.entries(spec.points).map(([k, q]) => [k, q.map((v, i) => +(v + shift[i]).toFixed(4))]));
+    // a part turned by code (the compass card): its pivot in the baked frame
+    if (spec.pivot) stats.pivot = spec.pivot.map((v, k) => +(v + shift[k]).toFixed(4));
     if (spec.hud) {
       const {buf, W, H} = drawHud(spec.PARTS, spec.hud);
       outputs.push([path.join(ROOT, `src/main/resources/assets/apocalypse_firstlight/textures/gui/melee/${id}_hud.png`), buf]);

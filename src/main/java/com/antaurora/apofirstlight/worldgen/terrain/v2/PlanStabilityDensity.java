@@ -21,7 +21,9 @@ import com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef;
  *   max(caves, floor), so nothing opens there at all. The depth is measured from the exact planned surface of the
  *   column (cached per column), never from the 4-block flat cache, so the floor cannot add blocks above the plan.
  *   Tunnel V1 (2026-10-16): also the rock a tunnel keeps round its bores and under its approaches (TunnelWorks#rock), up
- *   to the finished ground, in every terrain class (a bore lies far under any stable layer).</li>
+   *   to the finished ground, in every terrain class (a bore lies far under any stable layer). Town Framework V1
+ *   (2026-10-17): under a town's footprint. 2026-10-19: under every road's works (formation, cut and fill slopes,
+ *   RoadWorks#ROCK), so a cut in the foothills never opens a cave in its face.</li>
  * </ul>
  * The carvers get the same depth in mixin/WorldCarverStabilityMixin, lava lakes in mixin/LakeFeatureStabilityMixin.
  */
@@ -53,7 +55,7 @@ public record PlanStabilityDensity(DensityFunction height, boolean hard, Terrain
             int hd = hardDepth(stable);
             double top = Columns.height(surface, works, context.blockX(), context.blockZ()), depth = top - context.blockY();
             // a tunnel's rock round its bores and under its approaches, up to the ground (Tunnel V1, TunnelWorks#rock)
-            double[] rock = Columns.rock(works, context.blockX(), context.blockZ());
+            double[] rock = Columns.rock(surface, works, context.blockX(), context.blockZ());
             if (rock != null && context.blockY() >= rock[0] && context.blockY() <= rock[1] && depth > 0) return FLOOR;
             if (hd <= 0) return NONE;
             return depth > 0 && depth <= hd ? FLOOR : NONE;
@@ -84,15 +86,15 @@ public record PlanStabilityDensity(DensityFunction height, boolean hard, Terrain
         private final Object[] rockOwners = new Object[256];
         private final double[][] rocks = new double[256][];
 
-        /** RoadWorksRef#rock per block column, cached like the height (null: no tunnel's rock there). */
-        static double[] rock(RoadWorksRef ref, int x, int z) {
+        /** RoadWorksRef#rock per block column, cached like the height (null: no works' rock there). */
+        static double[] rock(TerrainPlanSurface surface, RoadWorksRef ref, int x, int z) {
             Object w = ref == null ? null : ref.get();
             if (w == null) return null;
             Columns c = LOCAL.get();
             int i = (x & 15) | ((z & 15) << 4);
             long key = ((long) x << 32) ^ (z & 0xffffffffL);
             if (c.rockOwners[i] != w || c.rockKeys[i] != key) {
-                c.rocks[i] = ref.rock(x, z);
+                c.rocks[i] = ref.rock(x, z, surface);
                 c.rockKeys[i] = key;
                 c.rockOwners[i] = w;
             }

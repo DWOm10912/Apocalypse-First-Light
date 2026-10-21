@@ -43,6 +43,8 @@ public final class TownWorks {
      * 15 %), the apron's lip over the gutter (one collision layer), m.
      */
     public static final double FLARE = 2.5, LIP = 1.0 / 32;
+    /** Fuel Stop A1's aprons: their flares along the sidewalk no steeper than this (its surface may lie a metre off it). */
+    static final double A1_FLARE_GRADE = 0.08;
     /** The steepest bank from a pad down (or up) to its sidewalks a lot's margin is widened for (rise per run). */
     public static final double BANK = 0.6;
     /**
@@ -98,6 +100,23 @@ public final class TownWorks {
         List<TownPlan> out = new ArrayList<>();
         for (Town t : towns) out.add(t.plan);
         return out;
+    }
+
+    /** A town's intersection control and markings (TownControl), worked out once; empty for a plan not in these works. */
+    public TownControl.Plan control(TownPlan p) {
+        for (Town t : towns)
+            if (t.plan == p) {
+                TownControl.Plan c = t.control;
+                if (c == null) t.control = c = TownControl.of(t);
+                return c;
+            }
+        return new TownControl.Plan(List.of(), List.of());
+    }
+
+    /** A town's Fuel Stop A1 (2026-10-20: picked and floored on the finished ground), or null. */
+    public TownBuildings.FuelStop fuelStop(TownPlan p) {
+        for (Town t : towns) if (t.plan == p) return t.fuelStop;
+        return null;
     }
 
     /** Whether a town's footprint or slopes can reach chunk (cx, cz). */
@@ -239,6 +258,25 @@ public final class TownWorks {
     /** Whether a point lies on a footprint (streets, intersections, blocks). */
     public boolean onFootprint(double x, double z) { return spot(x, z) != null; }
 
+    /**
+     * Whether world point (x, z) is on one of Fuel Stop A1's aprons (its flares too): they climb across the sidewalk to
+     * its surface, steeper than a street where the cross street lies a metre off it (docs/worldgen/town_buildings_v1.md 8).
+     */
+    public boolean onFuelStopApron(double x, double z) {
+        Spot sp = spot(x, z);
+        if (sp == null || sp.part() != Part.DRIVEWAY) return false;
+        Town[] ts = near(x, z);
+        if (ts != null)
+            for (Town t : ts) {
+                double[] l = t.plan.local(x, z);
+                for (Drive d : t.a1Drives) {
+                    double a = d.par() ? l[0] : l[1], c = d.par() ? l[1] : l[0];
+                    if (a >= d.s0() - d.flare() && a <= d.s1() + d.flare() && (c - d.vEdge()) * d.dir() >= -0.01 && (c - d.vEdge()) * d.dir() <= TownStreets.C14.row()) return true;
+                }
+            }
+        return false;
+    }
+
     private static long key(int cx, int cz) { return ((long) cx << 32) ^ (cz & 0xffffffffL); }
 
     /**
@@ -294,8 +332,14 @@ public final class TownWorks {
         double across(double s, double v) { return par ? v - line : s - line; }
     }
 
-    /** A driveway: along s0 .. s1 at the lot's frontage edge vEdge, its street toward dir (-1: smaller v, +1: larger). */
-    record Drive(double s0, double s1, double vEdge, int dir) {}
+    /**
+     * A driveway: on a parallel street (par) along s0 .. s1 at the lot's frontage edge vEdge, its street toward dir (-1:
+     * smaller v, +1: larger); on a cross street (Fuel Stop A1's side entrance, 2026-10-20) along v s0 .. s1 at the block's
+     * end s = vEdge, its street toward dir along s.
+     */
+    record Drive(boolean par, double s0, double s1, double vEdge, int dir, double top, double flare) {
+        Drive(boolean par, double s0, double s1, double vEdge, int dir) { this(par, s0, s1, vEdge, dir, Double.NaN, FLARE); }
+    }
 
     /** A block in the index: its lots and its graded ground (null while the grids are laid out). */
     static final class BlockX {
@@ -308,6 +352,10 @@ public final class TownWorks {
 
     final class Town {
         final TownPlan plan;
+        /** The town's Fuel Stop A1 (TownBuildings#fuelStops: the flattest candidate, on its floor), or null. */
+        TownBuildings.FuelStop fuelStop;
+        /** Fuel Stop A1's two aprons (#onFuelStopApron). */
+        final List<Drive> a1Drives = new ArrayList<>(2);
         final NodeX[] nodes;
         final Seg[] segs;
         /** The index: CELL squares over the limit grown by REACH + CELL, from (i0, j0), ni x nj, lists of what reaches each. */
@@ -315,6 +363,8 @@ public final class TownWorks {
         final int ni, nj;
         final List<Object>[] cells;
         final List<BlockX> blocks = new ArrayList<>();
+        /** Its control and markings (TownControl), made on first use (pure: any thread may make it). */
+        volatile TownControl.Plan control;
 
         @SuppressWarnings("unchecked")
         Town(TownPlan p) {
@@ -410,19 +460,84 @@ public final class TownWorks {
                     TownPlan.Block b = x.b;
                     if (l.s0() >= b.s0() - 0.01 && l.s1() <= b.s1() + 0.01 && l.v0() >= b.v0() - 0.01 && l.v1() <= b.v1() + 0.01) { x.lots.add(l); break; }
                 }
-            // the driveways, indexed over the street strip in front of each (the widest right of way)
+            // the driveways, indexed over the street strip in front of each (the widest right of way); the lots that could
+            // take Fuel Stop A1 wait until it is chosen on the finished ground (2026-10-20)
+            List<TownBuildings.FuelStop> stops = TownBuildings.fuelStops(p);
+            List<TownPlan.Lot> waiting = new ArrayList<>();
+            for (TownBuildings.FuelStop c : stops) waiting.add(p.lots.get(c.lot()));
             for (BlockX x : blocks)
-                for (TownPlan.Lot l : x.lots) {
-                    double vEdge = l.face() == TownPlan.FACE_V0 ? l.v0() : l.v1();
-                    int dir = l.face() == TownPlan.FACE_V0 ? -1 : 1;
-                    double reach = TownStreets.C14.row();
-                    for (double[] d : TownPlan.driveways(l, x.b.s0(), x.b.s1()))
-                        add(d[0] - FLARE, d[1] + FLARE, Math.min(vEdge, vEdge + dir * reach), Math.max(vEdge, vEdge + dir * reach), new Drive(d[0], d[1], vEdge, dir));
-                }
+                for (TownPlan.Lot l : x.lots) if (!waiting.contains(l)) drives(l, x, null);
             // the blocks' ground (the streets round them are in place: their sidewalks are its edges)
             Grid[] gs = new Grid[blocks.size()];
             for (int k = 0; k < gs.length; k++) gs[k] = grid(blocks.get(k));
             for (int k = 0; k < gs.length; k++) blocks.get(k).grid = gs[k];
+            // Fuel Stop A1: the candidate whose ground round it lies nearest its floor (the sidewalk at its main entrance,
+            // rounded), the nearest the crossing on a tie; its lot takes the template's entrances, the others their own
+            TownBuildings.FuelStop best = null;
+            double bestStep = Double.POSITIVE_INFINITY;
+            for (TownBuildings.FuelStop c : stops) {
+                TownBuildings.FuelStop f = floored(c);
+                if (f == null) continue;
+                double step = worstStep(f);
+                if (step < bestStep - 1e-9) { best = f; bestStep = step; }
+            }
+            fuelStop = best;
+            for (BlockX x : blocks)
+                for (TownPlan.Lot l : x.lots) if (waiting.contains(l)) drives(l, x, best != null && p.lots.get(best.lot()) == l ? best : null);
+            // its block's ground again, now level with its surface over the footprint and banked along its streets, its
+            // aprons up to that surface (2026-10-20)
+            if (best != null)
+                for (BlockX x : blocks) if (x.lots.contains(p.lots.get(best.lot()))) x.grid = grid(x);
+        }
+
+        /** A lot's driveways, Fuel Stop A1's (fs, its lot) the template's two entrances, the side one on the cross street. */
+        private void drives(TownPlan.Lot l, BlockX x, TownBuildings.FuelStop fs) {
+            double vEdge = l.face() == TownPlan.FACE_V0 ? l.v0() : l.v1(), reach = TownStreets.C14.row();
+            int dir = l.face() == TownPlan.FACE_V0 ? -1 : 1;
+            if (fs == null) {
+                for (double[] d : TownPlan.driveways(l, x.b.s0(), x.b.s1()))
+                    add(d[0] - FLARE, d[1] + FLARE, Math.min(vEdge, vEdge + dir * reach), Math.max(vEdge, vEdge + dir * reach), new Drive(true, d[0], d[1], vEdge, dir));
+                return;
+            }
+            // Fuel Stop A1's: up to its surface at the lot line, flared along the sidewalk over the rise from it at either end
+            double top = fs.site().floorY(), e = fs.sideEdge();
+            double[] m = fs.main(), sd = fs.side();
+            double fm = FLARE, fsd = FLARE;
+            for (double a : m) {
+                Spot sp = streetSpot(a, vEdge + dir * 0.25);
+                if (sp != null) fm = Math.max(fm, Math.abs(top - sp.h()) / A1_FLARE_GRADE);
+            }
+            for (double a : sd) {
+                Spot sp = streetSpot(e + fs.sideDir() * 0.25, a);
+                if (sp != null) fsd = Math.max(fsd, Math.abs(top - sp.h()) / A1_FLARE_GRADE);
+            }
+            Drive dm = new Drive(true, m[0], m[1], vEdge, dir, top, fm), dsd = new Drive(false, sd[0], sd[1], e, fs.sideDir(), top, fsd);
+            add(m[0] - fm, m[1] + fm, Math.min(vEdge, vEdge + dir * reach), Math.max(vEdge, vEdge + dir * reach), dm);
+            add(Math.min(e, e + fs.sideDir() * reach), Math.max(e, e + fs.sideDir() * reach), sd[0] - fsd, sd[1] + fsd, dsd);
+            a1Drives.add(dm);
+            a1Drives.add(dsd);
+        }
+
+        /** A Fuel Stop A1 candidate on the floor of the sidewalk outside its main entrance, rounded; null off the footprint. */
+        private TownBuildings.FuelStop floored(TownBuildings.FuelStop c) {
+            TownPlan.Lot l = plan.lots.get(c.lot());
+            Spot sp = spot((c.main()[0] + c.main()[1]) / 2, l.face() == TownPlan.FACE_V0 ? l.v0() - 0.5 : l.v1() + 0.5);
+            return sp == null ? null : c.withFloor((int) Math.round(sp.h()));
+        }
+
+        /** The largest height between a Fuel Stop A1's surface (its floor Y) and the ground just outside its footprint, m. */
+        private double worstStep(TownBuildings.FuelStop f) {
+            TownBuildings.Site s = f.site();
+            int dx = -s.fx(), dz = -s.fz(), rx = -dz, rz = dx;
+            int cx = rx + dx > 0 ? s.x0() : s.x1(), cz = rz + dz > 0 ? s.z0() : s.z1(), n = TownBuildings.A1;
+            double worst = 0;
+            for (int i = 0; i < n; i++)
+                for (int[] uw : new int[][]{{i, -1}, {n, i}, {i, n}, {-1, i}}) {
+                    double[] t = plan.local(cx + rx * uw[0] + dx * uw[1] + 0.5, cz + rz * uw[0] + dz * uw[1] + 0.5);
+                    Spot sp = spot(t[0], t[1]);
+                    if (sp != null) worst = Math.max(worst, Math.abs(s.floorY() - sp.h()));
+                }
+            return worst;
         }
 
         private void add(double s0, double s1, double v0, double v1, Object o) {
@@ -456,9 +571,13 @@ public final class TownWorks {
                 if (o instanceof BlockX x && s >= x.b.s0() && s <= x.b.s1() && v >= x.b.v0() && v <= x.b.v1()) {
                     // while the grids are laid out (the streets' spots only) a block has none yet
                     if (x.grid == null) return null;
-                    boolean lot = false;
-                    for (TownPlan.Lot l : x.lots) if (s >= l.s0() && s <= l.s1() && v >= l.v0() && v <= l.v1()) { lot = true; break; }
-                    return new Spot(lot ? Part.LOT : Part.YARD, x.grid.at(s, v));
+                    TownPlan.Lot lot = null;
+                    for (TownPlan.Lot l : x.lots) if (s >= l.s0() && s <= l.s1() && v >= l.v0() && v <= l.v1()) { lot = l; break; }
+                    double h = x.grid.at(s, v);
+                    // Fuel Stop A1's banked strips keep its feed cables (a block under its surface) in the ground
+                    if (lot != null && fuelStop != null && plan.lots.get(fuelStop.lot()) == lot && fuelStop.banked(plan, s, v))
+                        h = Math.max(h, fuelStop.site().floorY() - TownBuildings.A1_BANK_LOW);
+                    return new Spot(lot != null ? Part.LOT : Part.YARD, h);
                 }
             return null;
         }
@@ -471,12 +590,33 @@ public final class TownWorks {
             if (w <= ha) return new Spot(Part.ASPHALT, e - TownStreets.CROWN * w / ha);
             double top = e - TownStreets.CROWN + TownStreets.CURB_HEIGHT;
             double band = sec.curb() + sec.utility();
-            if (g.par() && w <= ha + band) {
+            {
+                // Fuel Stop A1's entrances (2026-10-20): the apron climbs from the gutter's lip across the curb, the utility
+                // strip and the sidewalk to the template's surface at the lot line (its floor: no step at the edge), flared
+                // at its ends into the sidewalk (Drive#flare: no steeper than A1_FLARE_GRADE)
+                double edge = g.line() + Math.signum(ws) * sec.halfRow(), out = Double.POSITIVE_INFINITY, end = Double.NaN, flare = FLARE;
+                for (Object o : here) {
+                    if (!(o instanceof Drive d) || Double.isNaN(d.top()) || d.par() != g.par() || d.dir() != -(int) Math.signum(ws) || Math.abs(d.vEdge() - edge) > 0.5) continue;
+                    double od = Math.max(0, Math.max(d.s0() - a, a - d.s1()));
+                    if (od < out) {
+                        out = od;
+                        end = d.top();
+                        // a flare ends at the latest where the street's strip meets an intersection's box (no step there)
+                        double room = a > d.s1() ? g.a1() - g.p1() - a : a < d.s0() ? a - g.a0() - g.p0() : Double.POSITIVE_INFINITY;
+                        flare = Math.max(1e-3, Math.min(d.flare(), od + Math.max(0, room)));
+                    }
+                }
+                if (out <= flare && w <= sec.halfRow()) {
+                    double gutter = e - TownStreets.CROWN, apron = gutter + LIP + (end - gutter - LIP) * (w - ha) / (sec.halfRow() - ha);
+                    return new Spot(Part.DRIVEWAY, apron + (top - apron) * out / flare);
+                }
+            }
+            if (w <= ha + band) {
                 // a driveway of the lot on this side (the nearest: two neighbours' flares may meet): the apron from the
                 // gutter's lip up to the sidewalk, flared at its ends
                 double edge = g.line() + Math.signum(ws) * sec.halfRow(), out = Double.POSITIVE_INFINITY;
                 for (Object o : here) {
-                    if (!(o instanceof Drive d) || d.dir() != -(int) Math.signum(ws) || Math.abs(d.vEdge() - edge) > 0.5) continue;
+                    if (!(o instanceof Drive d) || d.par() != g.par() || d.dir() != -(int) Math.signum(ws) || Math.abs(d.vEdge() - edge) > 0.5) continue;
                     out = Math.min(out, Math.max(0, Math.max(d.s0() - a, a - d.s1())));
                 }
                 if (out <= FLARE) {
@@ -493,10 +633,13 @@ public final class TownWorks {
         private Spot node(NodeX n, double ds, double dv) {
             double dA = asphaltDistance(n, ds, dv);
             if (dA <= 1e-9) {
-                // crowned across each arm by that arm's own width (the centre square by the widest)
+                // crowned across each arm by that arm's own width; in the centre square from the widest at the node to the
+                // arm's at the square's edge on its side (a narrower arm, a county road's mouth facing a wider street, meets
+                // the square without a step: 2026-10-19)
                 double[] ha = n.ha();
-                double hp = ha[ds >= 0 ? 0 : 1] > 0 && Math.abs(ds) > n.haX() ? ha[ds >= 0 ? 0 : 1] : n.haP();
-                double hx = ha[dv >= 0 ? 2 : 3] > 0 && Math.abs(dv) > n.haP() ? ha[dv >= 0 ? 2 : 3] : n.haX();
+                double ap = ha[ds >= 0 ? 0 : 1], ax = ha[dv >= 0 ? 2 : 3];
+                double hp = ap > 0 && Math.abs(ds) > n.haX() ? ap : ap > 0 ? n.haP() + (ap - n.haP()) * Math.abs(ds) / n.haX() : n.haP();
+                double hx = ax > 0 && Math.abs(dv) > n.haP() ? ax : ax > 0 ? n.haX() + (ax - n.haX()) * Math.abs(dv) / n.haP() : n.haX();
                 double cf = Math.min(1, Math.min(Math.abs(dv) / hp, Math.abs(ds) / hx));
                 return new Spot(Part.ASPHALT, n.h() - TownStreets.CROWN * cf);
             }
@@ -567,18 +710,33 @@ public final class TownWorks {
                     sum += st.h();
                     nfix++;
                 }
+            TownPlan.Lot a1 = fuelStop == null ? null : plan.lots.get(fuelStop.lot());
             for (TownPlan.Lot l : x.lots) {
                 // a lot as wide as its block (a park, a school, a parking lot) is not one pad: its ground follows the streets
                 // round it (a flat pad over 128 m of a 7 % grade leaves banks steeper than 1:1); every other lot, a highway or
                 // industry lot too, is levelled at its pad (2026-10-18: buildings stand on it, its driveway enters it level)
                 if (l.s0() - b.s0() < 0.5 && b.s1() - l.s1() < 0.5) continue;
+                if (l == a1) {
+                    // Fuel Stop A1 (2026-10-20): its template's surface over the footprint and a GRID round it (the edge's
+                    // ground level with it before the bank starts), but for the strips along its streets, which bank
+                    // between the sidewalk and it; the rest of a wider lot graded between
+                    for (int j = 1; j < nv; j++)
+                        for (int i = 1; i < ns; i++) {
+                            if (!fuelStop.level(plan, b.s0() + i * ds, b.v0() + j * dv, GRID)) continue;
+                            h[i + w * j] = fuelStop.site().floorY();
+                            fix[i + w * j] = true;
+                            sum += h[i + w * j];
+                            nfix++;
+                        }
+                    continue;
+                }
                 // the margin: LOT_BLEND, wider where the sidewalk along one of the lot's block edges lies further from its
                 // pad than BANK allows over it, or a neighbouring lot's pad (each takes half the difference)
                 double far = 0;
                 for (TownPlan.Lot o : x.lots) {
                     if (o == l || o.s0() - b.s0() < 0.5 && b.s1() - o.s1() < 0.5) continue;
                     boolean touch = o.s0() <= l.s1() + 0.5 && o.s1() >= l.s0() - 0.5 && o.v0() <= l.v1() + 0.5 && o.v1() >= l.v0() - 0.5;
-                    if (touch) far = Math.max(far, Math.abs(o.pad() - l.pad()) / 2);
+                    if (touch) far = Math.max(far, Math.abs((o == a1 ? fuelStop.site().floorY() : o.pad()) - l.pad()) / 2);
                 }
                 for (int j = 0; j <= nv; j++)
                     for (int i = 0; i <= ns; i++) {

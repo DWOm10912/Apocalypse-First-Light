@@ -8,7 +8,7 @@ You have five equipment slots: back, rig, wrist, ears and holster
 
 | Item | Slot | Effect |
 |---|---|---|
-| <ItemIcon id="field_chest_rig" /> Field Chest Rig | Rig | 4 magazine pouches: three 1×2, one 2×2 |
+| <ItemIcon id="field_chest_rig" /> Field Chest Rig | Rig | 4 magazine pouches: three 1×2, one 2×2; 2 clips on the straps |
 | <ItemIcon id="canvas_backpack" /> Canvas Backpack | Back | 5×6 cells |
 | <ItemIcon id="hiking_backpack" /> Hiking Backpack | Back | 6×10 cells |
 | <ItemIcon id="pistol_holster" /> Pistol Holster | Holster | Lets a pistol use slot 2 |
@@ -23,7 +23,9 @@ See [Inventory and Weight](../guide/inventory)
 | <ItemIcon id="simple_hearing_protection" /> Simple Hearing Protection | Worn on the ears; eases ringing from gunfire and muffles outside sound | <StatusTag s="creative" /> |
 | <ItemIcon id="wrist_thermometer" /> Wrist Thermometer | Worn on the wrist; always shows air temperature | <StatusTag s="creative" /> |
 | <ItemIcon id="clinical_thermometer" /> Clinical Thermometer | Hold right click for about 3 s to take your temperature | <StatusTag s="creative" /> |
-| <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate | <StatusTag s="creative" /> |
+| <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate. Works in your hand or on a chest rig clip | <StatusTag s="creative" /> |
+| Pocket Compass | In your hand or on a chest rig clip it shows the compass at the top of the screen, see [Map](../guide/map). The card under the glass always points north | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
+| Map | Draws in where you go while carried; right click it in hand to unfold it, see [Map](../guide/map) | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> Flip Lighter | Right click to flip it open and strike it; lit, it gives light and lights stoves, campfires, candles and TNT | <StatusTag s="creative" /> |
 
@@ -38,6 +40,24 @@ See [Inventory and Weight](../guide/inventory)
 - A lit lighter burns fuel; the fuel bar in the inventory shows what is left. It goes out when the fuel runs out or under water
 - Infected within <V j="FlipLighterItem.SOUND_RADIUS" /> blocks can hear it flip and strike
 - For now it comes only from the creative inventory, and its sounds are placeholders
+
+## Clips
+
+- <StatusTag s="verified" d="2026-10-21" /> Clips on the chest rig straps
+
+Clips are on the chest rig: the field chest rig has one on each shoulder strap, and each holds one small thing. The row only shows up under the rig in the inventory once you wear one. What is clipped on works without being in your hand, and you can see it on you: the compass hangs from a carabiner on one strap, the Geiger counter sits upright on the other
+
+Clipped things stay on the rig: take it off or drop it and they are still on it
+
+| Item | While clipped on |
+|---|---|
+| Geiger Counter | Clicks and shows its reading as usual |
+| Pocket Compass | Shows the compass at the top of the screen |
+| Lighter | <StatusTag s="planned" /> One key takes it out and lights it |
+
+- Drag something in to clip it on, drag it out to take it off; shift-clicking from the inventory clips it to a free clip first
+- Things that clip on say "Clips on a chest rig" in their tooltip
+- Clipped things still count toward your weight
 
 ## Armor
 

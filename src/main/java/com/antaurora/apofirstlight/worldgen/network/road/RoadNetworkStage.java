@@ -33,9 +33,20 @@ public final class RoadNetworkStage {
      * RoadWorks.Kind.DRIVE; 11: County road G3 side join, 2026-10-19: the county road runs past the home, the driveway
      * joins its paved edge from the side through a filleted apron, Driveway#near / RoadCounty#mouth; 12: the farm gate's
      * and the mailbox's pads, 2026-10-19: level turf at their whole Y, the driveway level there, Driveway#padY /
-     * RoadWorks#padded).
+     * RoadWorks#padded; 13: a town intersection's centre square crowned toward each arm's own width at its edge, so a
+     * narrower arm (a county road's mouth) meets it without a step, TownWorks#node, 2026-10-19; 14: RoadWorks#ROCK under
+     * every road's works against caves and carvers, no springs in or beside them, RoadWorksRef#rock / #springBlocked,
+     * SpringFeatureRoadMixin, and a deep cut's rock cut, CrossSection#rockCut, RoadWorks.ROCK_CUT, 2026-10-19; 15: the
+     * framework towns' grids on the block grid, their exits' crossroads turning onto it, TownGrid, 2026-10-19; 16: Linden's
+     * fixed layout, TownLayout, 2026-10-19; 17: Linden's site chosen before the network, FixedTownSite, the interstate run
+     * straight past its front, its exit on 6th St, RoadNetworkPlan#pins, 2026-10-20; 18: 16 and 17 withdrawn (user
+     * 2026-10-20: every town is built, the story in its landmarks), the towns grown round their exits again, a landmark's
+     * whole block, the fallback search out to TownExits.FALLBACK_SEARCH with steeper blocks, 2026-10-20; 19: Fuel Stop A1's
+     * corner lot takes its template's two entrances as driveways, the side one on the cross street, TownBuildings#fuelStop,
+     * 2026-10-20; 20: Fuel Stop A1's lot at its template's surface, banked along its streets, its aprons up to that
+     * surface at the lot line, TownBuildings#bank, 2026-10-20).
      */
-    public static final int WORKS_VERSION = 12;
+    public static final int WORKS_VERSION = 20;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -60,9 +71,15 @@ public final class RoadNetworkStage {
      * 20: County road G3: the county road's C2 pavement and markings, its town mouth, its limit sign, its T junction's pad
      * and signs, 2026-10-18; 21: County road G3 side join: the county road past the home, the driveway's apron mesh onto
      * its paved edge, DriveMesh, 2026-10-19; 22: the gravel level and crownless at the gate's pad, PAD_LIFT over its whole
-     * Y, 2026-10-19).
+     * Y, 2026-10-19; 23: Town control V1: the towns' stop bars, crosswalks and centre lines, TownControl, their STOP
+     * signs, speed limits, population lines and hundred blocks, TownSigns, 2026-10-19; 24: the towns' streets on the
+     * block grid, TownGrid, 2026-10-19; 25: Linden's fixed layout, the same in every world, TownLayout, 2026-10-19; 26: Linden's site first, the network
+     * planned round it, FixedTownSite / RoadNetworkPlan#pins, 2026-10-20; 27: 25 and 26 withdrawn, the towns grown round
+     * their exits again with a landmark's block and the fallback search, TownSites#landmarks / TownExits#site, 2026-10-20; 28:
+     * Fuel Stop A1's driveway aprons, TownBuildings#fuelStop, 2026-10-20; 29: its lot at its surface, its banked strips and
+     * the objects on them raised, its aprons up to its surface, TownBuildings#bank, 2026-10-20).
      */
-    public static final int SURFACE_VERSION = 22;
+    public static final int SURFACE_VERSION = 29;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {

@@ -29,13 +29,13 @@ public abstract class LakeFeatureStabilityMixin {
         if (plan == null) return;
         BlockPos o = context.origin();
         int airTop = o.getY() + 3;
-        // nor in the rock kept round a tunnel or under a town (RoadWorksRef#rock, 2026-10-17)
+        // nor in the rock kept round a tunnel, under a town or under a road's works (RoadWorksRef#rock)
         com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef works = access.apocalypse$roadWorksRef();
         int[][] at = {{0, 0}, {15, 0}, {0, 15}, {15, 15}, {8, 8}};
         for (int[] d : at) {
             int x = o.getX() + d[0], z = o.getZ() + d[1];
             if (airTop >= plan.baseHeightAt(x, z) - plan.stableDepth(x, z) - 1) { cir.setReturnValue(false); return; }
-            double[] rock = works == null ? null : works.rock(x, z);
+            double[] rock = works == null ? null : works.rock(x, z, plan);
             if (rock != null && airTop >= rock[0] && o.getY() - 4 <= rock[1]) { cir.setReturnValue(false); return; }
         }
     }

@@ -114,7 +114,7 @@ public final class CountyCheck {
             return w == RouteTerrain.RIVER || w == RouteTerrain.LAKE || w == RouteTerrain.SEA;
         };
         List<RoadDesign> ds = RoadNetworkJson.designs(r.json());
-        RoadWorks w = new RoadWorks(ds, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(r.towns()), Driveway.of(h));
+        RoadWorks w = new RoadWorks(ds, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(r.towns()), Driveway.of(h), RoadWorks.Ground.of(s));
         RoadWorks.Ground g = RoadWorks.Ground.of(s);
         double[] dr = h.drive();
         Driveway dw = w.drive();

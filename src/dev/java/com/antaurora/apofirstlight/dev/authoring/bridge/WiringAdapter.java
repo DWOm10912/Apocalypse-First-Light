@@ -27,8 +27,9 @@ import static com.antaurora.apofirstlight.dev.authoring.bridge.BridgeJson.*;
  *   <li>{@code wiring_group {device, group}}: the group of the tap feeding a device ({@code /afl dev wiring group});</li>
  *   <li>{@code wiring_clear {min, max, dry_run?}}: every node in a box of the plot;</li>
  *   <li>{@code wiring_read {min?, max?}}: the nodes and the devices (their feed) in the plot or a crop;</li>
- *   <li>{@code wiring_panel {pos, main?}}: a panel's mode, main and last solve; {@code main} closes or opens the main
- *   (no undo step, like a player at the panel).</li>
+ *   <li>{@code wiring_panel {pos, mode?, main?}}: a panel's mode, main and last solve; {@code mode} ({@code wired} or
+ *   {@code legacy_area}, 2026-10-20: rewiring Fuel Stop A1) sets the supply mode as {@code /afl dev panel_mode}, {@code main}
+ *   closes or opens the main (no undo step, like a player at the panel).</li>
  * </ul>
  * Lay, group and clear are one undo step each in the shared history: the nodes of every touched cell and the 26 cells
  * around it (links and slope links reach no further), before and after. Wire costs nothing here and nothing is refunded.
@@ -192,6 +193,11 @@ final class WiringAdapter {
         var at = pos(a, "pos");
         if (!scope.contains(at)) throw new IllegalArgumentException("OUTSIDE_AUTHORING_SCOPE");
         if (!(level.getBlockEntity(at) instanceof DistributionPanelBlockEntity panel)) throw new IllegalArgumentException("NOT_A_PANEL: " + id(level.getBlockState(at)));
+        if (a.has("mode")) panel.setMode(switch (string(a, "mode", "")) {
+            case "wired" -> DistributionPanelBlockEntity.SupplyMode.WIRED;
+            case "legacy_area" -> DistributionPanelBlockEntity.SupplyMode.LEGACY_AREA;
+            default -> throw new IllegalArgumentException("INVALID_SUPPLY_MODE: wired or legacy_area");
+        });
         if (a.has("main")) {
             boolean on = bool(a, "main");
             if (panel.live() != on) panel.toggleMain(null);

@@ -43,8 +43,9 @@ public final class GeigerSoundController {
     private GeigerSoundController() {}
 
     private static boolean holding(Minecraft mc) {
-        return mc.player != null && mc.level != null && (mc.player.getMainHandItem().is(AflItems.GEIGER_COUNTER.get())
-                || mc.player.getOffhandItem().is(AflItems.GEIGER_COUNTER.get()));
+        // in the hand or clipped on (clips, user 2026-10-21)
+        return mc.player != null && mc.level != null
+                && com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(mc.player, AflItems.GEIGER_COUNTER.get());
     }
 
     /** Every frame: step the reading (counts play ticks through onCounts). */

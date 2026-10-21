@@ -31,9 +31,11 @@ public final class WorldgenGates {
     public static final String TERRAIN_WORKS = "terrain_works";
     /** Main: the forest-house start (site, reservation, placement). */
     public static final String START_AREA = "start_area";
+    /** C: the framework towns' buildings on their lots (TownBuildings, TownBuildingPass; 2026-10-19). */
+    public static final String TOWN_BUILDINGS = "town_buildings";
 
     /** Every gated system id, in a fixed order. */
-    public static final List<String> GATED = List.of(ROAD_NETWORK, TERRAIN_WORKS, START_AREA);
+    public static final List<String> GATED = List.of(ROAD_NETWORK, TERRAIN_WORKS, START_AREA, TOWN_BUILDINGS);
 
     public static boolean gated(String id) { return GATED.contains(id); }
 

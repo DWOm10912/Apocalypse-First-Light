@@ -507,6 +507,22 @@ public final class RoadInterchanges {
         c.curve.frame(sc, g);
         double nx = -g[3], nz = g[2];
         double[] qp = {g[0] + side * nx * off, g[1] + side * nz * off}, dq = {-side * nx, -side * nz};
+        // a town's stub (TownGrid#path) that already runs in along the normal from beyond qp is kept as it is, so the
+        // town's grid finds its exit cross street where the stub turned onto the block grid (2026-10-19)
+        if (r.corridor() != null && r.corridor().startsWith("town_") && len > off + POINT) {
+            rc.frame(len - off, f);
+            if (Math.hypot(f[0] - qp[0], f[1] - qp[1]) < 0.5 && f[2] * dq[0] + f[3] * dq[1] > Math.cos(Math.toRadians(0.5))) {
+                List<double[]> pts = new ArrayList<>();
+                for (int i = 0; i < r.xs().length; i++) {
+                    double[] l = rc.local(r.xs()[i], r.zs()[i], 50, 0);
+                    double st = l == null ? (i == 0 ? 0 : len) : l[0];
+                    if (i == 0 || st < len - off - POINT / 2) pts.add(new double[]{r.xs()[i], r.zs()[i]});
+                }
+                pts.add(qp);
+                back[0] = 0;
+                return pts;
+            }
+        }
         double bestScore = Double.NEGATIVE_INFINITY, bestB = 0, bestR = 0;
         double[][] bestC = null;
         why[0] = "too short";

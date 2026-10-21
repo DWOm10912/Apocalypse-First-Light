@@ -36,7 +36,7 @@ import java.util.Set;
  *   <li>PAVED: collision (road_surface, 1/32 steps, up to two blocks), asphalt, gravel, a cobblestone sub-base (no ore
  *   rule replaces it: ores write past the guard, through BulkSectionAccess), then dirt down to the
  *   natural ground;</li>
- *   <li>TURF: one graded_turf block on the shared corners, dirt below;</li>
+ *   <li>TURF: one graded_turf block on the shared corners, dirt below; a rock cut's face (RoadWorks.ROCK_CUT): bare stone;</li>
  *   <li>DECK / ABUTMENT: collision on road_structure (the deck down to its slab's or girder's underside), the abutment
  *   wall down to the ground; structure never replaces natural ground (it only fills above it);</li>
  *   <li>BARRIER: road_structure for the parapets (the top block cut to the parapet's height), and at the span's ends the
@@ -108,6 +108,9 @@ public final class RoadChunkPass {
 
     private static final Column[] EMPTY = new Column[0];
 
+    /** A rock cut's face (RoadWorks.ROCK_CUT): this many blocks from its top set to stone, m. */
+    static final int ROCK_SKIN = 3;
+
     /** The lowest Y the guard protects in a finished column (Integer.MAX_VALUE: none). */
     public static int guard(Column c) {
         return switch (c.kind()) {
@@ -128,7 +131,7 @@ public final class RoadChunkPass {
         if (cols == null) return;
         BlockState dirt = Blocks.DIRT.defaultBlockState(), base = Blocks.COBBLESTONE.defaultBlockState(),
                 gravel = Blocks.GRAVEL.defaultBlockState(), asphalt = AflBlocks.ASPHALT.get().defaultBlockState(),
-                structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState();
+                structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState(), stone = Blocks.STONE.defaultBlockState();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
             Column c = cols[lx | lz << 4];
@@ -164,6 +167,13 @@ public final class RoadChunkPass {
                 }
                 case TURF -> {
                     int d = c.data();
+                    if ((d & RoadWorks.ROCK_CUT) != 0) {
+                        // a rock cut's face: bare stone (the surface rules' grass and dirt replaced), nothing grows on it
+                        for (int k = 0; k < ROCK_SKIN; k++) set(chunk, p, x, c.y() - k, z, stone);
+                        fill(chunk, p, x, c.y() - ROCK_SKIN, z, stone, lowest);
+                        clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
+                        break;
+                    }
                     set(chunk, p, x, c.y(), z, ((GradedTurfBlock) AflBlocks.GRADED_TURF.get()).with(d & 15, d >> 4 & 15, d >> 8 & 15, d >> 12 & 15, (d >> 16 & 1) != 0));
                     fill(chunk, p, x, c.y() - 1, z, dirt, lowest);
                     if (body) culvert(chunk, p, x, z, n.works().culvertCell(x, z), c.y() - 1, Integer.MIN_VALUE, false);
@@ -410,6 +420,8 @@ public final class RoadChunkPass {
      * earthworks like the ground beside them).
      */
     public static boolean guarded(WorldGenLevel level, BlockPos pos, BlockState state) {
+        // a town building's own template on its lot (Fuel Stop A1, TownBuildingPass#placeFuelStop)
+        if (com.antaurora.apofirstlight.worldgen.building.TownBuildingPass.placing()) return false;
         RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level.getLevel());
         if (n == null) return false;
         Column[] cols = columns(n, pos.getX() >> 4, pos.getZ() >> 4);

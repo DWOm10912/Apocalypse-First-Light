@@ -25,8 +25,10 @@ import java.util.Map;
  * <ul>
  *   <li>formation (|u| <= EDGE): the median swale, or the turf just under the paved band;</li>
  *   <li>roadside: the shoulder hinge plus CrossSection.roadside (1:4 foreslope, 1 m ditch, 1:3 backslope, or the
- *   1:4 / 1:3 fill slope), which meets the ground at the daylight line by construction; beyond MAX_HALF_WIDTH - 4 the
- *   surface is blended into the ground so it never ends in a step;</li>
+ *   1:4 / 1:3 fill slope), which meets the ground at the daylight line by construction, and a deep cut turns into the
+ *   rock cut (CrossSection#rockCut: 0.25H:1V lifts with benches; before 2026-10-19 a cut the 1:3 slope could not finish
+ *   within the works ended in a wall); beyond MAX_HALF_WIDTH - 4 the surface is blended into the ground (a cut deeper
+ *   than the rock cut reaches still ends in a wall there);</li>
  *   <li>beyond the route's ends: the end cross-section approaching the ground at 1:4;</li>
  *   <li>within a bridge span: no works (the natural valley under the deck);</li>
  *   <li>a point whose result is within 3 cm of the ground is natural (NaN);</li>
@@ -58,6 +60,14 @@ public final class RoadWorks {
      * square and is offset up to 0.25 m), m (#bare).
      */
     public static final double PLANT_CLEAR = 0.3;
+    /** The planned ground the roadside's rock cut reads (#RoadWorks(List, Water, TownWorks, Driveway, Ground)), or null. */
+    private final Ground ground;
+    /**
+     * Solid ground kept under the works' finished surface (formation, cut and fill slopes) against the plan's caves, the
+     * carvers and the springs (RoadWorksRef#rock, 2026-10-19), m: the foothills have no hard stable floor, so a cut opened
+     * cave mouths and aquifer pockets in its face; as deep as under a town (TownWorks#ROCK).
+     */
+    public static final double ROCK = 8;
     /** TURF column data flag: no plants (#bare). */
     public static final int BARE = 1 << 17;
     /**
@@ -73,6 +83,14 @@ public final class RoadWorks {
      * the works' top and the sky cleared above. The ground runs on under the concrete (Tunnel V1, 2026-10-16).
      */
     public static final int TUNNEL_OVER = 1 << 22;
+    /**
+     * TURF data: a rock cut's face (CrossSection#rockCut, 2026-10-19): the column's corners spread more than ROCK_SPREAD in
+     * a cut, steeper than graded turf can draw; bare stone up to y (its mean finished height), cleared above, no plants.
+     * Its corners read as a full block (#turfTop: y + 1).
+     */
+    public static final int ROCK_CUT = 1 << 23;
+    /** The corner spread over which a cut column is a rock face (#ROCK_CUT), m: steeper than about 1:1. */
+    public static final double ROCK_SPREAD = 1.5;
     /** CULVERT column data: the square reaches the channel, a wall, the roofed channel; keeps the natural ground (Culvert.Cell). */
     public static final int C_CHANNEL = 1, C_WALL = 2, C_ROOF = 4, C_KEEP = 8;
     /**
@@ -182,7 +200,14 @@ public final class RoadWorks {
 
     public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns) { this(roads, water, towns, Driveway.EMPTY); }
 
-    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns, Driveway drive) {
+    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns, Driveway drive) { this(roads, water, towns, drive, null); }
+
+    /**
+     * ground: the planned ground, for the height a deep cut's roadside must reach (CrossSection#roadside, the rock cut);
+     * null (the client's copy): the ground at the point itself.
+     */
+    public RoadWorks(List<RoadDesign> roads, Water water, TownWorks towns, Driveway drive, Ground ground) {
+        this.ground = ground;
         this.roads = List.copyOf(roads);
         this.water = water;
         this.towns = towns;
@@ -790,7 +815,13 @@ public final class RoadWorks {
         if (v <= sec.edge) design = d.formationY(sc, h.u());
         else {
             double h0 = d.formationY(sc, Math.copySign(sec.edge, h.u()));
-            design = h0 + sec.roadside(v - sec.edge, g - h0);
+            // the height the slope must reach: the ground where the works start blending into it (the rock cut)
+            double need = g - h0;
+            if (ground != null) {
+                double[] e = d.point(h.s(), Math.copySign(MAX_HALF_WIDTH - BLEND, h.u()));
+                need = ground.at(e[0], e[1]) - h0;
+            }
+            design = h0 + sec.roadside(v - sec.edge, g - h0, need);
         }
         if (beyond > 0) design = approach(g, design, beyond * END_SLOPE);
         if (v > MAX_HALF_WIDTH - BLEND) {
@@ -1119,9 +1150,13 @@ public final class RoadWorks {
             boolean wings = onRoute && BridgeMesh.nearEnd(d, centre.s(), 2);
             int[] tops = null;
             Hit[] hits = new Hit[4];
+            // the deepest corner's cut and whether a corner lies under a pavement or by a pad (a rock face never does)
+            double dig = 0;
+            boolean edge = false;
             for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
                 double g = ground.at(x + a, z + b), f = surface(x + a, z + b, g);
                 boolean natural = Double.isNaN(f);
+                if (!natural) dig = Math.min(dig, f - g);
                 Hit h = natural ? null : hit(x + a, z + b, REACH);
                 // toward the daylight line the turf meets the natural surface as drawn, not the planned ground (group B);
                 // not by a tunnel, whose density keeps rock over the band it clears (its natural tops are not the ground there)
@@ -1136,7 +1171,10 @@ public final class RoadWorks {
                 }
                 if (!natural) {
                     any = true;
-                    if (h != null && underPavement(h) || nearPad && padDistance(x + a, z + b) <= CrossSection.BEVEL_RUN) f = Math.floor(f * 8 + 1e-9) / 8;
+                    if (h != null && underPavement(h) || nearPad && padDistance(x + a, z + b) <= CrossSection.BEVEL_RUN) {
+                        f = Math.floor(f * 8 + 1e-9) / 8;
+                        edge = true;
+                    }
                 }
                 // under a tunnel's works the ground in front runs on: a corner in or behind the concrete keeps the floor
                 if (over != null) {
@@ -1169,6 +1207,12 @@ public final class RoadWorks {
                 if (h == null || h.beyond() > 0 || elevated(h) || !h.road().section.paved(h.v()) || !underPavement(h)) continue;
                 double top = h.road().pavementY(h.sc(), h.u());
                 if (q[i] > top) q[i] = Math.floor(top * 8 + 1e-9) / 8;
+            }
+            // a rock cut's face (2026-10-19): steeper than graded turf draws, bare stone up to the corners' mean
+            double lo = Math.min(Math.min(q[0], q[1]), Math.min(q[2], q[3])), hi = Math.max(Math.max(q[0], q[1]), Math.max(q[2], q[3]));
+            if (over == null && tunnel == null && !edge && hi - lo > ROCK_SPREAD && dig < -ROCK_SPREAD) {
+                int top = (int) Math.round((q[0] + q[1] + q[2] + q[3]) / 4) - 1;
+                return new Column(Kind.TURF, top, 0, 0, 8 | 8 << 4 | 8 << 8 | 8 << 12 | ROCK_CUT | BARE, 0, 0, 0);
             }
             // corner order nw, ne, sw, se = (x, z), (x + 1, z), (x, z + 1), (x + 1, z + 1)
             int[] fit = fit(q);

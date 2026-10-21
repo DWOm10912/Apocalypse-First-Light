@@ -21,7 +21,8 @@ import java.util.Locale;
  *   <li>a state road that already ends on the interstate within JOIN_SEARCH of the town point (the planner's join: its own
  *   diamond): one stub on the other side at its station, so its diamond is the town's exit and the state road comes
  *   into town over it;</li>
- *   <li>own crossings: two stubs from both sides along the interstate's normal, at the stations along SEARCH (every
+ *   <li>own crossings: two stubs from both sides (TownGrid#path: along the interstate's normal, then onto the town's
+ *   grid on the block grid, 2026-10-19), at the stations along SEARCH (every
  *   STEP) with dry stubs (then, after all of those, the stations from SEARCH out to WIDE_SEARCH), ranked by the earthwork under their designed profiles near the interstate (the state class at
  *   EXIT_GRADE, under the diamond's terminal limit), the interstate's own height over its ground at the crossing, the
  *   buildable land round it (#land) and the distance from the town point; MAX_OPTIONS of them at least SPACING apart.</li>
@@ -36,11 +37,11 @@ public final class TownExits {
     private TownExits() {}
 
     /**
-     * The stubs' lengths off the interstate's centreline, m: on the town's side (the side with more buildable land round
-     * the town point) LENGTH, on the far side FAR_LENGTH (beyond the diamond's crossroad realignment, RoadInterchanges.BACK,
-     * and the far side's first parallel street).
+     * The stubs' reach across the grid beyond their side's Front St (TownGrid#front), m: on the town's side (the side with
+     * more buildable land round the town point) LENGTH, on the far side FAR_LENGTH (beyond the far side's first parallel
+     * street). Before 2026-10-19 the stubs ran 460 and 280 m along the normal, Front St 150 m off the interstate.
      */
-    public static final double LENGTH = 460, FAR_LENGTH = 280;
+    public static final double LENGTH = 310, FAR_LENGTH = 130;
     /**
      * The search each way from the town point along the interstate: for a state road's join JOIN_SEARCH, for an own
      * crossing SEARCH (a diamond keeps RoadInterchanges.FOOT off interstate structures each way), every STEP, m.
@@ -51,6 +52,11 @@ public final class TownExits {
      * whose first SEARCH m are all bridges, culverts, a tunnel or too near its end at a kink still gets its town), m.
      */
     public static final double WIDE_SEARCH = 3000;
+    /**
+     * The fallback search (2026-10-20: every town is built): when no exit within WIDE_SEARCH builds with a town round it,
+     * the crossings out to FALLBACK_SEARCH, blocks as steep as TownPlanner.FALLBACK_RELIEF counted, one block enough, m.
+     */
+    public static final double FALLBACK_SEARCH = 6000;
     /**
      * The stubs' grade limits: EXIT_GRADE within TERMINAL_REACH of the interstate (below the diamond's crossroad grade at a
      * ramp terminal, RoadInterchanges.TERMINAL_GRADE), STREET_GRADE beyond (a town street). A stub is designed over a
@@ -88,11 +94,12 @@ public final class TownExits {
     /** Every framework town's exit options (TownSites.FRAMEWORK order). */
     public static List<Site> sites(List<RouteData> roads, List<RouteData> legs, RouteTerrain terrain, List<String> report) {
         List<Site> out = new ArrayList<>();
-        for (String town : TownSites.FRAMEWORK) out.add(site(town, roads, legs, terrain, report));
+        for (String town : TownSites.FRAMEWORK) out.add(site(town, roads, legs, terrain, report, false));
         return out;
     }
 
-    private static Site site(String town, List<RouteData> roads, List<RouteData> legs, RouteTerrain terrain, List<String> report) {
+    /** A town's exit options; fallback: the wider search with steeper blocks (FALLBACK_SEARCH), its own crossings only. */
+    public static Site site(String town, List<RouteData> roads, List<RouteData> legs, RouteTerrain terrain, List<String> report, boolean fallback) {
         List<Option> options = new ArrayList<>();
         // the town point: where two interstate legs meet at the town, one ending and one starting there (a leg named for
         // the town may start at a join elsewhere: its corridor meets another interstate away from the town)
@@ -121,9 +128,12 @@ public final class TownExits {
         // a joined curve rounding the town point may pass it wider: the nearest within 100 m
         if (hosts.isEmpty() && nearest != null) { hosts.add(nearest); stations.add(ns); }
         if (hosts.isEmpty()) { report.add("town " + town + ": its interstate is not in the built network; no exit"); return new Site(town, options); }
-        // own crossings, over every host: {cost, s, earthwork, land, datum, host, town side}
+        // own crossings, over every host: {cost, s, earthwork, land, datum, host, town side, band (0 within SEARCH, 1 within
+        // WIDE_SEARCH, 2 within FALLBACK_SEARCH)}
         List<double[]> ranked = new ArrayList<>();
         int dry = 0, tried = 0, bridged = 0;
+        double far = fallback ? FALLBACK_SEARCH : WIDE_SEARCH, relief = fallback ? TownPlanner.FALLBACK_RELIEF : TownPlanner.MAX_RELIEF;
+        int least = fallback ? 1 : MIN_BLOCKS;
         for (int hi = 0; hi < hosts.size(); hi++) {
             RouteData host = hosts.get(hi);
             double hs = stations.get(hi);
@@ -133,7 +143,7 @@ public final class TownExits {
             int townSide = land(c, hs, -1, terrain) >= land(c, hs, 1, terrain) ? -1 : 1;
             // a state road joining the interstate near the town: its diamond is the exit
             for (RouteData r : roads) {
-                if (!r.roadClass().equals("state")) continue;
+                if (fallback || !r.roadClass().equals("state")) continue;
                 int n = r.xs().length;
                 for (int e = 0; e < 2; e++) {
                     double px = e == 0 ? r.xs()[0] : r.xs()[n - 1], pz = e == 0 ? r.zs()[0] : r.zs()[n - 1];
@@ -149,8 +159,9 @@ public final class TownExits {
                             "town %s: exit over the diamond of %s at s %.0f (town point s %.0f), one stub", town, r.id(), l[0], hs)));
                 }
             }
-            for (double s = Math.max(LENGTH, hs - WIDE_SEARCH); s <= Math.min(c.length - LENGTH, hs + WIDE_SEARCH); s += STEP) {
+            for (double s = Math.max(EDGE, hs - far); s <= Math.min(c.length - EDGE, hs + far); s += STEP) {
                 boolean wide = Math.abs(s - hs) > SEARCH;
+                int band = !wide ? 0 : Math.abs(s - hs) <= WIDE_SEARCH ? 1 : 2;
                 if (!wide) tried++;
                 // the diamond takes no interstate bridge, culvert or tunnel within its footprint
                 boolean structure = false;
@@ -158,20 +169,20 @@ public final class TownExits {
                     if (q.s1() >= s - RoadInterchanges.FOOT && q.s0() <= s + RoadInterchanges.FOOT) structure = true;
                 if (structure) { if (!wide) bridged++; continue; }
                 // the town's side here: the more town blocks reachable from the crossing (the planner's own count)
-                int bl = reach(c, s, -1, terrain), br = reach(c, s, 1, terrain), side = bl >= br ? -1 : 1, blocks = Math.max(bl, br);
-                if (blocks < MIN_BLOCKS) continue;
+                int bl = reach(c, s, -1, terrain, relief), br = reach(c, s, 1, terrain, relief), side = bl >= br ? -1 : 1, blocks = Math.max(bl, br);
+                if (blocks < least) continue;
                 RouteData a = stub(town, side, c, s, LENGTH, hp.at(s), terrain), b = stub(town, -side, c, s, FAR_LENGTH, hp.at(s), terrain);
                 if (a == null || b == null) continue;
                 if (!wide) dry++;
                 double[] pc = c.point(s, 0);
                 double fill = (earthwork(a, terrain) + earthwork(b, terrain)) / 2, land = Math.min(1, blocks / (double) TownPlanner.MAX_BLOCKS),
                         datum = Math.abs(hp.at(s) - terrain.height(pc[0], pc[1]));
-                ranked.add(new double[]{fill + DATUM_WEIGHT * datum - LAND_WEIGHT * land + DISTANCE_WEIGHT * Math.abs(s - hs), s, fill, blocks, datum, hi, side, wide ? 1 : 0});
+                ranked.add(new double[]{fill + DATUM_WEIGHT * datum - LAND_WEIGHT * land + DISTANCE_WEIGHT * Math.abs(s - hs), s, fill, blocks, datum, hi, side, band});
             }
             if (Boolean.getBoolean("afl.debugTowns")) {
                 System.out.printf(Locale.ROOT, "DEBUG town %s: host %s at s %.0f of %.0f, foot %.0f, structures %s%n", town, host.id(), hs, c.length, RoadInterchanges.FOOT, host.structures());
                 for (double s = Math.max(0, hs - 6000); s <= Math.min(c.length, hs + 6000); s += 200)
-                    System.out.printf(Locale.ROOT, "DEBUG blocks %s s %6.0f: reachable left %2d right %2d%n", host.id(), s, reach(c, s, -1, terrain), reach(c, s, 1, terrain));
+                    System.out.printf(Locale.ROOT, "DEBUG blocks %s s %6.0f: reachable left %2d right %2d%n", host.id(), s, reach(c, s, -1, terrain, relief), reach(c, s, 1, terrain, relief));
             }
         }
         // the near band first, each band by its cost
@@ -179,7 +190,7 @@ public final class TownExits {
         if (Boolean.getBoolean("afl.debugTowns"))
             for (double[] q : ranked) System.out.printf(Locale.ROOT, "DEBUG town %s: %s s %.0f cost %.2f earthwork %.2f blocks %.0f datum %.2f%n", town, hosts.get((int) q[5]).id(), q[1], q[0], q[2], q[3], q[4]);
         List<double[]> taken = new ArrayList<>();
-        int[] perBand = new int[2];
+        int[] perBand = new int[3];
         for (double[] q : ranked) {
             if (perBand[(int) q[7]] >= MAX_OPTIONS) continue;
             boolean near = false;
@@ -193,24 +204,32 @@ public final class TownExits {
             int townSide = (int) q[6];
             RouteData a = stub(town, townSide, c, q[1], LENGTH, hp.at(q[1]), terrain), b = stub(town, -townSide, c, q[1], FAR_LENGTH, hp.at(q[1]), terrain);
             options.add(new Option(town, List.of(a, b), List.of(a.id(), b.id()), String.format(Locale.ROOT,
-                    "town %s: exit on %s at s %.0f (town point s %.0f%s, town %s; earthwork %.2f m, interstate %.2f m off its ground, %.0f town blocks reachable; within %.0f m %d of %d crossings dry, %d by interstate structures)",
-                    town, host.id(), q[1], stations.get((int) q[5]), q[7] > 0 ? ", beyond " + (int) SEARCH + " m" : "", townSide < 0 ? "left" : "right",
+                    "town %s: %sexit on %s at s %.0f (town point s %.0f%s, town %s; earthwork %.2f m, interstate %.2f m off its ground, %.0f town blocks reachable; within %.0f m %d of %d crossings dry, %d by interstate structures)",
+                    town, fallback ? "fallback " : "", host.id(), q[1], stations.get((int) q[5]), q[7] > 0 ? ", beyond " + (int) (q[7] > 1 ? WIDE_SEARCH : SEARCH) + " m" : "", townSide < 0 ? "left" : "right",
                     q[2], q[4], q[3], SEARCH, dry, tried, bridged)));
         }
-        if (options.isEmpty()) report.add(String.format(Locale.ROOT, "town %s: no dry crossing within %.0f m of its point on %d interstate leg(s) (within %.0f m %d of %d stations by interstate structures); no exit",
-                town, WIDE_SEARCH, hosts.size(), SEARCH, bridged, tried));
+        if (options.isEmpty()) report.add(String.format(Locale.ROOT, "town %s: no dry crossing within %.0f m of its point on %d interstate leg(s) (within %.0f m %d of %d stations by interstate structures); no %sexit",
+                town, far, hosts.size(), SEARCH, bridged, tried, fallback ? "fallback " : ""));
         return new Site(town, options);
     }
 
+    /** The own crossings' stations keep this far from the interstate's ends, m (the stubs' old length). */
+    static final double EDGE = 460;
+
     /**
-     * One stub: from length off the interstate (side u: -1 its left, 1 its right) to its centreline at station s, designed
-     * over the guide line from the interstate's height there (datum); null over water.
+     * One stub (side u: -1 the interstate's left, 1 its right) from beyond its Front St (TownGrid#front, beyond m further
+     * across the grid) along TownGrid#path to the interstate's centreline at station s, designed over the guide line from
+     * the interstate's height there (datum); null over water.
      */
-    static RouteData stub(String town, int side, RoadCurve host, double s, double length, double datum, RouteTerrain terrain) {
-        int k = (int) Math.round(length / POINT);
+    static RouteData stub(String town, int side, RoadCurve host, double s, double beyond, double datum, RouteTerrain terrain) {
+        double[] f = new double[5];
+        host.frame(s, f);
+        double front = TownGrid.front(f[0], f[1], f[2], f[3], side)[1];
+        List<double[]> path = TownGrid.path(f[0], f[1], f[2], f[3], side, front + beyond, POINT).pts();
+        int k = path.size() - 1;
         double[] xs = new double[k + 1], zs = new double[k + 1];
         for (int i = 0; i <= k; i++) {
-            double[] p = host.point(s, side * (length - i * POINT));
+            double[] p = path.get(k - i);
             xs[i] = RoadNetworkJson.round2(p[0]);
             zs[i] = RoadNetworkJson.round2(p[1]);
         }
@@ -254,13 +273,19 @@ public final class TownExits {
      */
     /**
      * The town blocks reachable from a crossing at s on one side, as TownPlanner grows its town (2026-10-17): its cells
-     * (CROSS along, MAX_K each way, by its BANDS from FRONT, on the straight frame of the host's tangent at s) whose ground
-     * stays dry and within MAX_RELIEF (sampled every REACH_SAMPLE m), connected to the two cells next to the crossing.
-     * Roads are not counted (the planner keeps clear of them afterwards). At most TownPlanner.MAX_BLOCKS.
+     * (CROSS along, MAX_K each way, by its BANDS from its Front St, on the grid TownGrid lays for the crossing, 2026-10-19)
+     * whose ground stays dry and within MAX_RELIEF (sampled every REACH_SAMPLE m), connected to the two cells next to the
+     * exit's cross street. Roads are not counted (the planner keeps clear of them afterwards). At most
+     * TownPlanner.MAX_BLOCKS. relief: a buildable cell's most (TownPlanner.MAX_RELIEF, FALLBACK_RELIEF for the fallback).
      */
-    static int reach(RoadCurve host, double s, int side, RouteTerrain terrain) {
-        double[] v = TownPlanner.lines(TownPlanner.BANDS), f = new double[5];
+    static int reach(RoadCurve host, double s, int side, RouteTerrain terrain, double relief) {
+        double[] f = new double[5];
         host.frame(s, f);
+        double[] fs = TownGrid.front(f[0], f[1], f[2], f[3], side), o = TownGrid.origin(f[0], f[1]), a = TownGrid.axis(f[2], f[3]);
+        double[] v = TownPlanner.lines(TownPlanner.BANDS, fs[1]);
+        // the grid's frame for cellOk: origin at the exit cross street's s, s along side * a (the planner's handedness:
+        // the plan turns with the side, never mirrors), v across toward the side
+        double[] g = {o[0] + a[0] * fs[0], o[1] + a[1] * fs[0], side * a[0], side * a[1], -side * a[1], side * a[0]};
         int nk = 2 * TownPlanner.MAX_K, nj = TownPlanner.BANDS;
         byte[] ok = new byte[nk * nj];   // 0 unknown, 1 buildable, 2 not
         java.util.ArrayDeque<Integer> q = new java.util.ArrayDeque<>();
@@ -269,7 +294,7 @@ public final class TownExits {
         int n = 0;
         while (!q.isEmpty() && n < TownPlanner.MAX_BLOCKS) {
             int i = q.poll(), k = i / nj - TownPlanner.MAX_K, j = i % nj;
-            if (ok[i] == 0) ok[i] = (byte) (cellOk(f, k, v[j], v[j + 1], side, terrain) ? 1 : 2);
+            if (ok[i] == 0) ok[i] = (byte) (cellOk(g, k, v[j], v[j + 1], terrain, relief) ? 1 : 2);
             if (ok[i] != 1) continue;
             n++;
             int[][] next = {{k - 1, j}, {k + 1, j}, {k, j - 1}, {k, j + 1}};
@@ -285,18 +310,18 @@ public final class TownExits {
     /** reach's sampling step, m. */
     static final double REACH_SAMPLE = 16;
 
-    private static boolean cellOk(double[] f, int k, double v0, double v1, int side, RouteTerrain terrain) {
+    /** g: the grid's frame {ox, oz, ax, az, bx, bz} (s from the exit cross street, v toward the side). */
+    private static boolean cellOk(double[] g, int k, double v0, double v1, RouteTerrain terrain, double relief) {
         double lo = Double.POSITIVE_INFINITY, hi = Double.NEGATIVE_INFINITY;
         for (double a = 0; a <= TownPlanner.CROSS + 1e-6; a += REACH_SAMPLE)
             for (double w = v0; w <= v1 + 1e-6; w += REACH_SAMPLE) {
-                double t = k * TownPlanner.CROSS + Math.min(a, TownPlanner.CROSS), u = side * Math.min(w, v1);
-                // the right-hand normal of the tangent (tx, tz) is (-tz, tx): u > 0 to the right
-                double x = f[0] + f[2] * t - f[3] * u, z = f[1] + f[3] * t + f[2] * u;
+                double t = k * TownPlanner.CROSS + Math.min(a, TownPlanner.CROSS), u = Math.min(w, v1);
+                double x = g[0] + g[2] * t + g[4] * u, z = g[1] + g[3] * t + g[5] * u;
                 if (terrain.water(x, z) != RouteTerrain.DRY) return false;
                 double h = terrain.height(x, z);
                 lo = Math.min(lo, h);
                 hi = Math.max(hi, h);
-                if (hi - lo > TownPlanner.MAX_RELIEF) return false;
+                if (hi - lo > relief) return false;
             }
         return true;
     }

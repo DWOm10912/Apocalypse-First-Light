@@ -8,7 +8,7 @@
 
 | 装备 | 装备位 | 作用 |
 |---|---|---|
-| <ItemIcon id="field_chest_rig" /> 野战胸挂 | 胸挂 | 4 个弹匣袋：3 个 1×2、1 个 2×2 |
+| <ItemIcon id="field_chest_rig" /> 野战胸挂 | 胸挂 | 4 个弹匣袋：3 个 1×2、1 个 2×2；肩带上 2 个挂点 |
 | <ItemIcon id="canvas_backpack" /> 帆布背包 | 背包 | 5×6 格 |
 | <ItemIcon id="hiking_backpack" /> 登山背包 | 背包 | 6×10 格 |
 | <ItemIcon id="pistol_holster" /> 手枪枪套 | 枪套 | 手枪可放入 2 号栏 |
@@ -23,7 +23,9 @@
 | <ItemIcon id="simple_hearing_protection" /> 简易护耳罩 | 戴在耳部，减轻枪声引起的耳鸣，但也会让周围的声音变小 | <StatusTag s="creative" /> |
 | <ItemIcon id="wrist_thermometer" /> 腕式温度计 | 戴在手腕上，持续显示气温 | <StatusTag s="creative" /> |
 | <ItemIcon id="clinical_thermometer" /> 体温计 | 按住右键约 3 秒测量体温 | <StatusTag s="creative" /> |
-| <ItemIcon id="geiger_counter" /> 盖革计数器 | 显示当前辐射剂量率 | <StatusTag s="creative" /> |
+| <ItemIcon id="geiger_counter" /> 盖革计数器 | 显示当前辐射剂量率。拿在手里或挂在胸挂的挂点上都会工作 | <StatusTag s="creative" /> |
+| 指南针 | 拿在手里或挂在胸挂的挂点上时，屏幕顶部显示罗盘，见 [地图](../guide/map)。表盘里的刻度盘一直指北 | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
+| 地图 | 带在身上时画下走过的地方，拿在手里按右键翻开，见 [地图](../guide/map) | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> 撬棍 | 近战武器，也能拆下隧道里的部件 | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> 翻盖打火机 | 右键翻盖、打火，点着能照明，也能点燃柴炉、营火、蜡烛和 TNT | <StatusTag s="creative" /> |
 
@@ -38,6 +40,24 @@
 - 点着时会消耗燃油，物品栏里的燃油条显示剩余燃油；燃油用完或到了水下，火会熄灭
 - 翻盖、打火的声音能被附近 <V j="FlipLighterItem.SOUND_RADIUS" /> 格内的感染者听到
 - 目前只能从创造模式物品栏获得，音效是临时的
+
+## 挂点
+
+- <StatusTag s="verified" d="2026-10-21" /> 胸挂肩带上的挂点
+
+挂点在胸挂上：野战胸挂两条肩带上各有一个，每个挂一件小东西。穿上胸挂后，背包界面“胸挂”下面才会出现这一行。挂上去的东西不用拿在手里也在工作，也能在身上看到：指南针用登山扣挂在肩带上，盖革计数器竖着别在另一条肩带上
+
+挂着的东西跟着胸挂走：脱下胸挂、丢在地上都还挂在上面
+
+| 物品 | 挂着时 |
+|---|---|
+| 盖革计数器 | 照常响，显示读数 |
+| 指南针 | 屏幕顶部显示罗盘 |
+| 打火机 | <StatusTag s="planned" /> 一个键直接掏出来点亮 |
+
+- 拖进去挂上，拖出来取下；从物品栏 Shift 点击会先挂到空的挂点上
+- 能挂的东西提示里写着“可以挂在胸挂上”
+- 挂着的东西照样算负重
 
 ## 护甲
 

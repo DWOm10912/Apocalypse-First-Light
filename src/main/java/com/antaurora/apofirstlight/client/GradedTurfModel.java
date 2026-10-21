@@ -95,7 +95,7 @@ public final class GradedTurfModel {
      * Quads of one state and top orientation: the unculled ones (top, and sides that rise above the cell) and the culled
      * sides, each for the solid layer (top, the grass side, the bottom) and the cutout layer (the grass side's tinted
      * overlay), and the top alone. Chunk meshing (a render type given) draws the sloped top unculled. Callers without a
-     * render type (Xaero's map colour asks for the UP face of the model, the breaking overlay) get the solid quads with the
+     * render type (a map mod asking for the UP face's colour, the breaking overlay) get the solid quads with the
      * top as the UP face, so a map shows tinted grass, not the particle (dirt) texture.
      */
     private record Quads(List<BakedQuad> free, Map<Direction, List<BakedQuad>> culled, List<BakedQuad> cutoutFree,

@@ -49,8 +49,8 @@ public final class GeigerHudOverlay {
 
     private static void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || (!minecraft.player.getMainHandItem().is(AflItems.GEIGER_COUNTER.get())
-                && !minecraft.player.getOffhandItem().is(AflItems.GEIGER_COUNTER.get()))) return;
+        if (minecraft.player == null || minecraft.options.hideGui
+                || !com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(minecraft.player, AflItems.GEIGER_COUNTER.get())) return;
         GeigerHudConfig config = GeigerHudConfigManager.get();
         if (!config.enabled()) return;
         preview(graphics, screenWidth, screenHeight, config);

@@ -8,6 +8,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -35,6 +36,13 @@ public final class AflEquipmentSlots {
      */
     public static final String BACK = "back", WRIST = "bracelet", EARS = "ears", RIG = "rig", HOLSTER = "holster";
     /**
+     * The clips (user 2026-10-21): small things, a Geiger counter, a compass or a lighter (the apocalypse_firstlight:clippable
+     * tag), hang on the worn chest rig's straps and do their job there (#inUse). Not a Curios slot: they are saved in the rig
+     * (RigClips) and exist only while one is worn. Menu indices 51 and 52, after the page; CLIPS is the most any rig has.
+     */
+    public static final String CLIP = "clip";
+    public static final int CLIPS = 2;
+    /**
      * The AFL slots added to the inventory menu, in menu order (indices 46..50). The vanilla inventory page shows the
      * first three in the column right of the player model; the AFL inventory page places all of them itself.
      */
@@ -57,7 +65,32 @@ public final class AflEquipmentSlots {
     }
     /** The first stack of the slot type, or empty. */
     public static ItemStack get(LivingEntity entity, String id) {
-        return stacks(entity, id).map(s -> s.getStackInSlot(0)).orElse(ItemStack.EMPTY);
+        return get(entity, id, 0);
+    }
+    /** The stack in one slot of the slot type, or empty. */
+    public static ItemStack get(LivingEntity entity, String id, int index) {
+        return stacks(entity, id).filter(s -> index < s.getSlots()).map(s -> s.getStackInSlot(index)).orElse(ItemStack.EMPTY);
+    }
+
+    /** What hangs on one clip of the worn chest rig, or empty (no rig, or it has fewer clips). */
+    public static ItemStack clip(LivingEntity entity, int index) {
+        return com.antaurora.apofirstlight.inventory.grid.RigClips.get(get(entity, RIG), index);
+    }
+
+    /** Whether one of the worn rig's clips holds the item. */
+    public static boolean clipped(LivingEntity entity, Item item) {
+        var rig = get(entity, RIG);
+        for (int i = 0; i < com.antaurora.apofirstlight.inventory.grid.RigClips.count(rig); i++)
+            if (com.antaurora.apofirstlight.inventory.grid.RigClips.get(rig, i).is(item)) return true;
+        return false;
+    }
+
+    /**
+     * A gadget at work: in the hand or clipped on (user 2026-10-21: the compass bar, the Geiger counter's reading and
+     * clicks). Either side.
+     */
+    public static boolean inUse(LivingEntity entity, Item item) {
+        return entity != null && (entity.getMainHandItem().is(item) || entity.getOffhandItem().is(item) || clipped(entity, item));
     }
     static SlotContext context(LivingEntity entity, String id) { return new SlotContext(id, entity, 0, false, true); }
 

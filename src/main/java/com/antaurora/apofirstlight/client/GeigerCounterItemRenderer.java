@@ -86,11 +86,16 @@ public final class GeigerCounterItemRenderer extends BlockEntityWithoutLevelRend
         }
     }
 
-    /** The local player's own counter: any first-person draw, or one of its hand stacks in third person. */
+    /** The local player's own counter: any first-person draw, one of its hand stacks in third person, or on one of its rig's clips. */
     private static boolean live(ItemStack stack, ItemDisplayContext context) {
         var player = Minecraft.getInstance().player;
         if (player == null) return false;
         if (context.firstPerson()) return true;
+        if (context == ItemDisplayContext.NONE) {
+            for (int i = 0; i < com.antaurora.apofirstlight.equipment.AflEquipmentSlots.CLIPS; i++)
+                if (com.antaurora.apofirstlight.equipment.AflEquipmentSlots.clip(player, i) == stack) return true;
+            return false;
+        }
         return (context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND)
                 && (stack == player.getMainHandItem() || stack == player.getOffhandItem());
     }

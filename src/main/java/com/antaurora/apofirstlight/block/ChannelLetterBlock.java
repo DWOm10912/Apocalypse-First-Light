@@ -29,6 +29,7 @@ import java.util.Map;
  * the AFL sign font, tools/afl-sign-font.mjs): one aluminium letter per cell, 0.75 m cap height, red acrylic face, hung on
  * the wall behind it (FACING away from the wall). Any word is spelled from these (the store's PRAIRIE). On the building's
  * lighting circuit like the wall pack: wiring found through the wall behind it, dark by day (photocell), light 9 when lit.
+ * Since 2026-10-20 a wiring device (tag wiring_devices): over hidden wiring its tap sits in the wall behind it (its mount).
  * The item carries the letter in its BlockStateTag (ChannelLetterBlockItem) and a broken letter drops its own letter.
  */
 public class ChannelLetterBlock extends BuildingLightBlock {

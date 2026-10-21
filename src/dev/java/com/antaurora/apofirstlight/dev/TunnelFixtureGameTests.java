@@ -253,9 +253,22 @@ public final class TunnelFixtureGameTests {
         for (long c : cells(dne)) h.assertTrue(holds(level, c, dne), "DO NOT ENTER in all its cells");
         for (long c : cells(ww)) h.assertTrue(holds(level, c, ww), "WRONG WAY in all its cells");
         h.assertTrue(AflBlocks.TUNNEL_FIXTURES.get(TunnelFixtureBlock.Kind.WRONG_WAY_SIGN).getId().getPath().equals("road_wrong_way_sign"), "ramp sign ids");
+        // Town Framework V1 (2026-10-19): the town's speed limit, and a town STOP with its ALL WAY plaque (bone all_way)
+        Item speedItem = AflItems.TUNNEL_FIXTURE_ITEMS.get(TunnelFixtureBlock.Kind.SPEED_LIMIT_SIGN).get();
+        h.assertTrue(place(h, player, speedItem, new Vec3(4.5, 2, 21.5), Direction.UP) == InteractionResult.CONSUME, "speed limit sign placed");
+        h.assertTrue(place(h, player, TunnelFixtureBlock.stack(TunnelFixtureBlock.Kind.STOP_SIGN, "all_way"), new Vec3(20.5, 2, 21.5), Direction.UP)
+                == InteractionResult.CONSUME, "all-way STOP placed");
+        TunnelFixtureBlockEntity.Entry speed = entryNear(h, h.absoluteVec(new Vec3(4.5, 2, 21.5)));
+        TunnelFixtureBlockEntity.Entry allWay = entryNear(h, h.absoluteVec(new Vec3(20.5, 2, 21.5)));
+        h.assertTrue(speed != null && speed.kind == TunnelFixtureBlock.Kind.SPEED_LIMIT_SIGN, "speed limit sign stored");
+        h.assertTrue(allWay != null && allWay.kind == TunnelFixtureBlock.Kind.STOP_SIGN && "all_way".equals(allWay.placement.bone()), "all-way STOP stored with its bone");
+        for (long c : cells(speed)) h.assertTrue(holds(level, c, speed), "speed limit in all its cells");
+        for (long c : cells(allWay)) h.assertTrue(holds(level, c, allWay), "all-way STOP in all its cells");
+        h.assertTrue(allWay.part().bounds()[4] - allWay.part().bounds()[1] > RoadSigns.TOWN_BOTTOM + RoadSigns.STOP - 0.01, "the town STOP stands at 7 ft");
+        h.assertTrue(AflBlocks.TUNNEL_FIXTURES.get(TunnelFixtureBlock.Kind.SPEED_LIMIT_SIGN).getId().getPath().equals("road_speed_limit_sign"), "speed limit id");
         // Survival: bare hands do not move them, the crowbar takes each down in 3 s and it drops itself
         int rampSignCells = 0;
-        for (TunnelFixtureBlockEntity.Entry e : List.of(dne, ww)) {
+        for (TunnelFixtureBlockEntity.Entry e : List.of(dne, ww, speed, allWay)) {
             clearDrops(h);
             Set<Long> ec = cells(e);
             rampSignCells += ec.size();

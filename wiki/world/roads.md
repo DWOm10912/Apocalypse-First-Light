@@ -17,6 +17,15 @@
 - 出口匝道与州道相接的路口设有禁止驶入标志（DO NOT ENTER）和逆行标志（WRONG WAY），不要从出口匝道逆行驶上州际
 - F-40 上有一个通往 Linden 的出口，见 [地点](./places#城镇)
 
+## 路基和边坡
+
+<StatusTag s="test" /> 只在测试世界里有，还没进游戏看过
+
+- 路基、挖方和填方的边坡下面 <V j="RoadWorks.ROCK" u="m" /> 是实心的：边坡上不会露出洞口，路边不会冒出泉水
+- 边坡外面的天然山坡照旧，有洞口和泉水
+- 很深的挖方做成岩石边坡：陡的石面，每升 <V j="CrossSection.ROCK_LIFT" u="m" /> 留一道 <V j="CrossSection.ROCK_BENCH" u="m" /> 宽的平台；浅的挖方还是草坡
+- 州际旁边特别深的挖方，边坡最外面还可能剩一段较矮的直壁
+
 ## 隧道
 
 - 公路遇到山体阻挡时以隧道穿过，净高 5.1 m
@@ -38,6 +47,20 @@
 - <StatusTag s="integrated" /> 车道口有一道关闭的镀锌管农场大门，门上的 PRIVATE DRIVE 牌朝向县道；路边有一个乡村信箱，里面是空的
 - <StatusTag s="integrated" /> 大门目前只能朝向正东、正南、正西、正北；县道大多是斜的，所以大门常常斜着横在车道上
 - <StatusTag s="planned" /> 县道尽头的 ROAD ENDS 路障：位置已确定，还没有模型
+
+## 镇里的路口和标线
+
+<StatusTag s="test" /> 只在测试世界里有，还没进游戏看过
+
+- Linden 的路口设有停车让行标志（STOP）：T 字路口是支路一侧停车，十字路口是次要街道停车；Main St 和出口横街交叉的路口四个方向都要停车，STOP 牌下面挂 ALL WAY 小牌
+- 停车让行的方向在路口前画有白色停止线，车停在线前
+- Main St 和出口横街上的路口画有人行横道，宽度不小于 <V j="TownControl.WALK" u="m" />
+- Main St 和出口横街画双黄中心线，不可越线；住宅街不画中心线
+- 镇里的 STOP 牌比公路上的高，牌底离地 <V j="RoadSigns.TOWN_BOTTOM" u="m" />，行人从牌下经过不会碰头
+- 进镇的路上，城界牌往里 <V j="TownSigns.SPEED_IN" u="m" /> 立着限速牌：SPEED LIMIT <V j="TownSigns.SPEED_LIMIT" /> mph
+- 城界牌第三行是镇上的人口（POP）
+- 街名牌上，街名后面的小字是这一段的门牌号段，例如 6th St 路口写 600
+- 这些路牌和公路上的一样，可以用撬棍拆下
 
 ## 开车
 

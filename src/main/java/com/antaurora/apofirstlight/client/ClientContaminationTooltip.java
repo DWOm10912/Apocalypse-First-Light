@@ -66,7 +66,7 @@ public final class ClientContaminationTooltip {
         for (ItemStack stack : player.getInventory().offhand) {
             if (stack.is(AflItems.GEIGER_COUNTER.get())) return true;
         }
-        return false;
+        return com.antaurora.apofirstlight.equipment.AflEquipmentSlots.clipped(player, AflItems.GEIGER_COUNTER.get());
     }
 
     private static ChatFormatting color(ItemContamination.Level level) {

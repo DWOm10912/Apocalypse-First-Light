@@ -20,17 +20,26 @@ import java.util.List;
 /**
  * A chest rig or backpack of Grid Inventory V0 (docs/ui/afl_inventory_grid_v0_plan.md 1, 7): worn in its Curios slot,
  * it adds its grid to the right column of the inventory page; what is inside stays inside when it comes off. Right-click
- * puts it on (swapping out what is worn). Placeholder look: a flat icon, nothing drawn on the body yet.
+ * puts it on (swapping out what is worn). A chest rig may carry clips on its shoulder straps ({@link RigClips}).
  */
 public final class GridGearItem extends Item implements GridContainerItem, ICurioItem {
     private final String slot;
     private final GridLayout layout;
+    private final int clips;
 
     public GridGearItem(String slot, GridLayout layout, Properties properties) {
+        this(slot, layout, 0, properties);
+    }
+
+    public GridGearItem(String slot, GridLayout layout, int clips, Properties properties) {
         super(properties.stacksTo(1));
         this.slot = slot;
         this.layout = layout;
+        this.clips = clips;
     }
+
+    /** The clips on the rig's straps (RigClips), none on a backpack. */
+    public int clips() { return clips; }
 
     @Override public String wornSlot() { return slot; }
 
@@ -48,12 +57,14 @@ public final class GridGearItem extends Item implements GridContainerItem, ICuri
         return new ICurio.SoundInfo(SoundEvents.ARMOR_EQUIP_LEATHER, 1.0F, 1.0F);
     }
 
-    /** Capacity, then how much is inside. */
+    /** Capacity, the clips, then how much is inside. */
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> lines, TooltipFlag flag) {
         int cells = 0;
         for (var section : layout.sections()) cells += section.w() * section.h();
         lines.add(Component.translatable("tooltip.apocalypse_firstlight.grid_gear.capacity", cells)
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        if (clips > 0) lines.add(Component.translatable("tooltip.apocalypse_firstlight.grid_gear.clips", clips)
                 .withStyle(net.minecraft.ChatFormatting.GRAY));
         var items = stack.getTag() == null ? null : stack.getTag().getList("Items", net.minecraft.nbt.Tag.TAG_COMPOUND);
         if (items != null && !items.isEmpty())

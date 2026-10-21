@@ -98,7 +98,15 @@ public final class TunnelFixtures {
             case "egress_sign" -> new double[][]{{-0.6, 0, 0, 0.6, 0.3, MIN}};
             case "name_plate" -> new double[][]{{-3.2, -0.4, 0, 3.2, 0.4, MIN}};
             // road signs (C3.3b, RoadSigns): the face from its bottom at RoadSigns.BOTTOM, the post under it
-            case "stop_sign" -> new double[][]{{-RoadSigns.STOP / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.STOP / 2, RoadSigns.BOTTOM + RoadSigns.STOP, 0.17},
+            // a town's STOP higher (bone town), its ALL WAY plaque under it (bone all_way; Town Framework V1)
+            case "stop_sign" -> {
+                double b = "town".equals(bone) || "all_way".equals(bone) ? RoadSigns.TOWN_BOTTOM : RoadSigns.BOTTOM;
+                double[] face = {-RoadSigns.STOP / 2, b, -0.07, RoadSigns.STOP / 2, b + RoadSigns.STOP, 0.17};
+                if (!"all_way".equals(bone)) yield new double[][]{face, {-0.12, 0, -0.12, 0.12, b, 0.12}};
+                double p0 = b - RoadSigns.ALL_WAY_GAP - RoadSigns.ALL_WAY_H;
+                yield new double[][]{face, {-RoadSigns.ALL_WAY_W / 2, p0, -0.07, RoadSigns.ALL_WAY_W / 2, b - RoadSigns.ALL_WAY_GAP, 0.17}, {-0.12, 0, -0.12, 0.12, p0, 0.12}};
+            }
+            case "speed_limit_sign" -> new double[][]{{-RoadSigns.SPEED_W / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.SPEED_W / 2, RoadSigns.BOTTOM + RoadSigns.SPEED_H, 0.17},
                     {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};
             case "side_road_sign" -> new double[][]{{-RoadSigns.DIAMOND / 2, RoadSigns.BOTTOM, -0.07, RoadSigns.DIAMOND / 2, RoadSigns.BOTTOM + RoadSigns.DIAMOND, 0.17},
                     {-0.12, 0, -0.12, 0.12, RoadSigns.BOTTOM, 0.12}};

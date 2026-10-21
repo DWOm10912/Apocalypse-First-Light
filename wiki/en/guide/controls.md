@@ -40,6 +40,15 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | V | Inspect |
 | Z | Change attachments in the field |
 
+## Map
+
+- <StatusTag s="verified" d="2026-10-21" /> See [Map](./map)
+
+| Key | Action |
+|---|---|
+| Use (right click) holding the Map | Unfold the world map; right click or Esc in it folds it away |
+| Show or Hide Minimap | Unbound by default |
+
 ## Driving (in the driver's seat)
 
 | Key | Action |

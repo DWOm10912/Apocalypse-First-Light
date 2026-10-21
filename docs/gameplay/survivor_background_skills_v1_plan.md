@@ -218,7 +218,7 @@
 | 地堡 `afl:bunker` | 专属结构型 | 待定 | 新加的，结构和位置都还没有（谁做、在哪里待定）；V1 测试版隐藏（2026-10-18） |
 | 溪谷老宅 `afl:forest_home` | 专属结构型（前廊） | 不进 | 最多 3 人（用户 2026-10-17）；见下表。2026-10-19 Main 接上（`SurvivorSceneStarts`，[M4 第二轮](../worldgen/forest_home_b_m4_round2.md) 第 5 节，未进游戏）：有老宅的世界，出生点和前 3 个第一个幸存者在前廊台阶下，`SpawnSource` = `afl:forest_home` |
 | 野外 `afl:wilderness` | 开放环境型 | 进 | V0 的 `wilderness_ring`，现在就能用；随机物资还没做 |
-| 公路 `afl:roadside` | 开放环境型 | 进 | 见下表 |
+| 公路 `afl:roadside` | 开放环境型 | 进 | 见下表。2026-10-19 C 做了路肩点（`RoadsideStart`，[契约](../worldgen/main_c3_interface_contract_v1.md) 9.1 节，分支 `feature/linden-markings`，未提交），D 还没接上 |
 
 **V1 测试版**（用户 2026-10-18，C 会话转达：「V1 测试版只有 Linden + 老宅（老宅开局为默认，地堡开局先隐藏）」，记录在 C 的 `docs/worldgen/federal_towns_v1.md` 6.2 节）：建世界页默认选溪谷老宅，排第一；地堡不在建世界页上出现（`SurvivorScenes` 的 `hidden`；地堡结构 2026-10-10 起就不生成），已经选过地堡的世界读档照旧；野外、公路 V1 测试版也留着（用户 2026-10-18：「野外和公路开局 V1 测试版都留着」）。所以 V1 测试版建世界页是三个开局：溪谷老宅（默认）、野外、公路。
 

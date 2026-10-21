@@ -10,20 +10,18 @@
 
 ## Fuel stations
 
-<StatusTag s="test" /> A North American roadside station: dispensers, canopy and underground tanks. The equipment works (see [Fuel and Refueling](../vehicles/fuel)) but stations don't generate in the world yet
+<StatusTag s="integrated" /> A North American roadside station: dispensers, canopy and underground tanks. The equipment works (see [Fuel and Refueling](../vehicles/fuel))
+
+- <StatusTag s="integrated" /> Every town has one station on a corner highway lot near its F-40 exit, the main entrance on the front street and the side entrance on the cross street. The driveways run up to the station's own ground; the grass along the streets slopes to the sidewalk, and where the street is higher, the light poles and the price sign stand up on the slope. Where the town is hilly, the grass along the street can be a steep 3 m bank and the driveways steep too
+- <StatusTag s="integrated" /> The station's lights, outlets and channel letters are wired through the walls to the distribution panel on 4 circuits: sales floor, back rooms, outlets, and outside lights with the letters
 
 ## Towns
 
-<StatusTag s="verified" d="2026-10-18" /> **Linden** is the first town with streets, in a valley beside the F-40 interstate. Take the Linden exit off F-40 and you enter town at the green city limit sign
-
-- Streets have curbs, a planting strip and sidewalks; each intersection has two crossed street name signs. The street along the interstate is Front St, the main street is Main St, and the cross streets run 1st St, 2nd St… from west to east
-- Blocks are split into lots: residential, downtown, highway commercial, industrial, mobile home park, civic, school, park and parking
-- Every lot has a driveway to its street, so you can drive in and out without hopping the curb. A house driveway is <V j="TownPlan.DRIVE_HOUSE" u="m" /> wide, highway commercial lots have two of <V j="TownPlan.DRIVE_HWY" u="m" />, industrial lots <V j="TownPlan.DRIVE_IND" u="m" />; downtown and parks have none
-- Each lot is levelled to a flat pad a little above the sidewalk, with gentle slopes between lots. Lots as wide as their whole block (school, park, parking) follow the ground
-- The ground under the town is solid for <V j="TownWorks.ROCK" u="m" />, so you won't dig into caves below it
-- Only worlds created with this version have Linden
-
-<StatusTag s="planned" /> There are no buildings on the lots yet. The other 15 towns have their names decided and for now only appear on road signs
+- <StatusTag s="planned" /> The six states have 16 town names and sites decided; only Linden is built so far
+- <StatusTag s="integrated" /> Linden's streets and lots run square with the blocks
+- <StatusTag s="integrated" /> Linden's street names and zoning rules are the same in every world, but the town grows around its F-40 exit, so its size and shape follow the terrain. If nothing near its usual exit fits, it searches farther along F-40 and accepts steeper blocks, so that every world gets a Linden
+- <StatusTag s="integrated" /> The town has one landmark building on a whole block, on Main St near the town square. It is a white box for now; what building it is has not been decided
+- <StatusTag s="integrated" /> Every lot except the fuel station's has a white-box building (a placeholder box with outer walls, a flat roof and a doorway) facing its street. Houses, shops, highway stores, civic buildings, warehouses and the school each have their own size; parks have none. The real buildings are still being designed
 
 ## Containers
 

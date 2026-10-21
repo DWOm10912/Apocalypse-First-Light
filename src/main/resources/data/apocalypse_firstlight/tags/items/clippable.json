@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:geiger_counter",
+    "apocalypse_firstlight:compass",
+    {"id": "apocalypse_firstlight:flip_lighter", "required": false}
+  ]
+}

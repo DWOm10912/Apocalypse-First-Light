@@ -34,7 +34,9 @@ import top.theillusivec4.curios.api.type.ISlotType;
  * The client side of AFL's equipment slots: their slot frames on the inventory page (the vanilla background has none
  * in that column), Curios' own panel button hidden while every slot the player has lives on AFL's page, and worn gear
  * drawn on the body: the hearing protection over the ears, chest rig and backpacks on the torso, the pistol holster on
- * the right thigh (their meshes, {@link WornMeshRenderer}), the wrist thermometer on the left wrist.
+ * the right thigh (their meshes, {@link WornMeshRenderer}), the wrist thermometer on the left wrist, the compass and
+ * Geiger counter on the chest rig's shoulder-strap clips ({@link ClipRenderer}; the flip lighter joins when it reaches
+ * this branch).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientEquipmentSlots {
@@ -49,8 +51,9 @@ public final class ClientEquipmentSlots {
             // origins: the bake shifts printed by tools/build-equipment-meshes-v1.mjs
             CuriosRendererRegistry.register(AflItems.SIMPLE_HEARING_PROTECTION.get(),
                     () -> new WornMeshRenderer(WornMeshRenderer.Part.HEAD, "simple_hearing_protection", 0F, -1.7504F, 0.2F));
-            CuriosRendererRegistry.register(AflItems.FIELD_CHEST_RIG.get(),
-                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "field_chest_rig", 0F, 10.175F, -0.73F));
+            // the chest rig with what hangs on its straps' clips (ClipRenderer)
+            CuriosRendererRegistry.register(AflItems.FIELD_CHEST_RIG.get(), () -> new ClipRenderer(
+                    new WornMeshRenderer(WornMeshRenderer.Part.BODY, "field_chest_rig", 0F, 10.175F, -0.73F), ClipRenderer.FIELD_CHEST_RIG));
             CuriosRendererRegistry.register(AflItems.CANVAS_BACKPACK.get(),
                     () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "canvas_backpack", 0F, 9.3F, 1.58F));
             CuriosRendererRegistry.register(AflItems.HIKING_BACKPACK.get(),

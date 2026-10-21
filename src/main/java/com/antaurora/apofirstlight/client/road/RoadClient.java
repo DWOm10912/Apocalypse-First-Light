@@ -183,14 +183,15 @@ public final class RoadClient {
 
     public static void receive(String json) {
         clear();
+        home = null;
         if (json == null || json.isEmpty()) { roads = List.of(); index = null; return; }
         try {
             roads = RoadNetworkJson.designs(json);
+            home = com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.read(json);
             // with the forest home's driveway (county_road_g3 section 6): its gravel mesh and its surface for the vehicles
             index = new RoadWorks(roads, RoadWorks.Water.NONE, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(
                     com.antaurora.apofirstlight.worldgen.network.town.TownPlan.read(json)),
-                    com.antaurora.apofirstlight.worldgen.network.road.Driveway.of(
-                            com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.read(json)));
+                    com.antaurora.apofirstlight.worldgen.network.road.Driveway.of(home));
             // road_structure's collision follows the bridge mesh (a dedicated server's client has only this copy)
             com.antaurora.apofirstlight.block.RoadStructureBlock.works(index);
         } catch (RuntimeException e) {
@@ -199,6 +200,14 @@ public final class RoadClient {
             index = null;
         }
     }
+
+    /** The road network's works on this client (the map draws from it; AFL Map V1), or null. */
+    public static RoadWorks works() { return index; }
+
+    /** The forest home of the network (County road G3; the map draws its buildings), or null. */
+    public static com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.Home home() { return home; }
+
+    private static com.antaurora.apofirstlight.worldgen.network.road.RoadCounty.Home home;
 
     private static boolean active(ClientLevel level) { return index != null && level != null && level.dimension() == Level.OVERWORLD; }
 

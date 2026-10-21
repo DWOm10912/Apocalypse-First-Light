@@ -23,8 +23,7 @@ public final class RadiationSyncEvents {
                 RadiationManager.PlayerRadiation playerRadiation = RadiationManager.getPlayerRadiation(player);
                 RadiationSample worldSample = playerRadiation.worldSample();
                 AflNetwork.sendRadiation(player, worldSample.finalRadiation());
-                if (player.getMainHandItem().is(AflItems.GEIGER_COUNTER.get())
-                        || player.getOffhandItem().is(AflItems.GEIGER_COUNTER.get())) {
+                if (com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(player, AflItems.GEIGER_COUNTER.get())) {
                     player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
                         double measuredRate = worldSample.zone() == RadiationZone.SAFE
                                 ? exposure.getResidualRadiationRate() + playerRadiation.carriedItemRadiation()

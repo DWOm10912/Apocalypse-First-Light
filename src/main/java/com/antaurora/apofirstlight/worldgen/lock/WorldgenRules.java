@@ -83,6 +83,11 @@ public final class WorldgenRules {
                 new WorldgenSystem(WorldgenGates.START_AREA,
                         com.antaurora.apofirstlight.worldgen.home.ForestHomeLayout.ID + "#" + com.antaurora.apofirstlight.worldgen.home.ForestHomeLayout.RULES,
                         Severity.HARD, "the forest start home: its site, earthwork, house, driveway gate and mailbox"),
+                // C, Town buildings V1 (2026-10-19): the framework towns' buildings on their lots (gated like the roads)
+                new WorldgenSystem(WorldgenGates.TOWN_BUILDINGS,
+                        "town_buildings#" + com.antaurora.apofirstlight.worldgen.network.town.TownBuildings.VERSION + "#"
+                                + com.antaurora.apofirstlight.worldgen.building.BuildingKits.VERSION,
+                        Severity.HARD, "the town buildings: which stands on each lot, where, and how it is built"),
                 new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
                         "natural trees"));
         return List.of(

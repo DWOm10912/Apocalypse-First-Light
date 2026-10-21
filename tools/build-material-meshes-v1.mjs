@@ -345,8 +345,14 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
   const w = Math.max(...px) - Math.min(...px), h = Math.max(...py) - Math.min(...py), s = r3(14 / Math.max(w, h));
   const cx = (Math.max(...px) + Math.min(...px)) / 2, cy = (Math.max(...py) + Math.min(...py)) / 2, k = 12 / Math.max(...size);
   const S3 = v => [r3(v), r3(v), r3(v)];
+  // third person: a vanilla block's turn, moved so the mesh's point nearest the hand lands where the hand closes on the
+  // wiring wrench's grip (item frame [0, -0.9, 1.37] px, accepted in game; docs/models/equipment_meshes_v1.md
+  // "手持适配规则"): a vanilla block's fixed [0, 2.5, 0] left flat and small meshes 0.2-0.6 px in front of the fist
+  // (user 2026-10-21, with the body's hand taking the item looking down)
+  const tpS = 0.42 * k, tpR = R3([75, 45, 0]);
+  const near = PARTS.flatMap(p => p.v).map(q => tpR([q[0] * tpS, (q[1] - size[1] / 2) * tpS, q[2] * tpS])).reduce((a, b) => b[1] < a[1] ? b : a);
   const display = {
-    thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(0.42 * k)},
+    thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, r3(-0.9 - near[1]), r3(1.37 - near[2])], scale: S3(tpS)},
     firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1, 0], scale: S3(0.5 * k)},
     ground: {rotation: [0, 0, 0], translation: [0, 3, 0], scale: S3(0.4 * k)},
     fixed: {rotation: [0, 0, 0], translation: [0, 0, 0], scale: S3(0.7 * k)},
@@ -355,9 +361,13 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
   const iconView = {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)};
   // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
   const icon = `apocalypse_firstlight:item/${id}`;
-  const itemModel = {loader: 'forge:separate_transforms', gui_light: 'front', textures: {particle: icon},
-    base: {parent: 'builtin/entity', textures: {particle: icon}, display},
-    perspectives: {gui: {parent: 'minecraft:item/generated', textures: {layer0: icon}}}};
+  // icon.live: the mesh in the inventory too, in the icon's view (its renderer draws moving parts there, like a vanilla
+  // compass); the 2D icon is still written (particles, wiki)
+  const itemModel = iconOpts.live
+    ? {parent: 'builtin/entity', gui_light: 'front', textures: {particle: icon}, display: {...display, gui: iconView}}
+    : {loader: 'forge:separate_transforms', gui_light: 'front', textures: {particle: icon},
+      base: {parent: 'builtin/entity', textures: {particle: icon}, display},
+      perspectives: {gui: {parent: 'minecraft:item/generated', textures: {layer0: icon}}}};
   const offset = r6(0.5 - size[1] / 32);
 
   const outputs = [

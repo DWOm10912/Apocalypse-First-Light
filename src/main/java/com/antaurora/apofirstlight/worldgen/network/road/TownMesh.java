@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
+import com.antaurora.apofirstlight.worldgen.network.town.TownControl;
 import com.antaurora.apofirstlight.worldgen.network.town.TownPlan;
 import com.antaurora.apofirstlight.worldgen.network.town.TownWorks;
 
@@ -17,6 +18,12 @@ import java.util.List;
  * pavement's outer edge a SKIRT hides the turf's 1/8 steps. A square holding three parts, or two in a saddle, is one
  * part (its centre's). Texture in the town's coordinates, a tile every RoadMesh.TEXTURE metres (a square never crosses
  * one). Drawn with the roads' chunk meshes (JunctionMesh#pavement).
+ * <p>
+ * The markings (TownControl: stop bars, crosswalks, the C14 streets' double yellow line, 2026-10-19) are painted on the
+ * asphalt's own triangles: each mark is cut by the squares and their fans' diagonals as #square draws them and takes the
+ * height of the triangle under it, so it lies exactly on the asphalt (the renderer offsets the paint in depth); where a
+ * mark crosses a square holding the curb its corners take the asphalt's height there. Texture: across the mark's short
+ * side 0 .. 1, along its long side a tile every RoadMesh.TEXTURE metres, as the roads' lines.
  */
 public final class TownMesh {
     private TownMesh() {}
@@ -54,7 +61,83 @@ public final class TownMesh {
                         for (double fs = s; fs < s + CELL - 1e-9; fs += FINE)
                             for (double fv = v; fv < v + CELL - 1e-9; fv += FINE) square(world, works, p, fs, fv, FINE);
                 }
+            // the markings over the asphalt
+            for (TownControl.Mark m : works.control(p).marks())
+                if (m.s1() >= s0 && m.s0() <= s1 && m.v1() >= v0 && m.v0() <= v1) paint(world, works, p, m);
             for (RoadMesh.Triangle t : world) RoadMesh.clipInto(out, t, x0, z0);
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ markings
+
+    /** One mark, cut by the CELL squares (FINE ones where a square holds the curb) it lies on. */
+    private static void paint(List<RoadMesh.Triangle> out, TownWorks w, TownPlan p, TownControl.Mark m) {
+        RoadMesh.Material mat = m.yellow() ? RoadMesh.Material.YELLOW : RoadMesh.Material.WHITE;
+        for (double s = Math.floor(m.s0() / CELL) * CELL; s < m.s1(); s += CELL)
+            for (double v = Math.floor(m.v0() / CELL) * CELL; v < m.v1(); v += CELL) {
+                if (Math.min(m.s1(), s + CELL) - Math.max(m.s0(), s) < 1e-6 || Math.min(m.v1(), v + CELL) - Math.max(m.v0(), v) < 1e-6) continue;
+                if (pure(w, p, s, v, CELL)) piece(out, w, p, m, mat, s, v, CELL);
+                else
+                    for (double fs = s; fs < s + CELL - 1e-9; fs += FINE)
+                        for (double fv = v; fv < v + CELL - 1e-9; fv += FINE) piece(out, w, p, m, mat, fs, fv, FINE);
+            }
+    }
+
+    /**
+     * The part of mark m over square (s, v, c): the two halves of the square's fan (its diagonal from (s, v)), each on
+     * that triangle's plane when the square is all asphalt, else at the asphalt's height at each corner.
+     */
+    private static void piece(List<RoadMesh.Triangle> out, TownWorks w, TownPlan p, TownControl.Mark m, RoadMesh.Material mat, double s, double v, double c) {
+        double a0 = Math.max(m.s0(), s), a1 = Math.min(m.s1(), s + c), b0 = Math.max(m.v0(), v), b1 = Math.min(m.v1(), v + c);
+        if (a1 - a0 < 1e-6 || b1 - b0 < 1e-6) return;
+        // the square's own one-class case (#square): its four corners asphalt, drawn as their fan
+        boolean flat = clsAt(w, p, s, v) == 1 && clsAt(w, p, s + c, v) == 1 && clsAt(w, p, s + c, v + c) == 1 && clsAt(w, p, s, v + c) == 1;
+        double y0 = 0, y1 = 0, y2 = 0, y3 = 0;
+        if (flat) {
+            y0 = at(w, p, s, v).h();
+            y1 = at(w, p, s + c, v).h();
+            y2 = at(w, p, s + c, v + c).h();
+            y3 = at(w, p, s, v + c).h();
+        }
+        double ms = (m.s0() + m.s1()) / 2, mv = (m.v0() + m.v1()) / 2;
+        boolean longS = m.s1() - m.s0() >= m.v1() - m.v0();
+        double tile = Math.floor(((longS ? s : v) + c / 2) / RoadMesh.TEXTURE) * RoadMesh.TEXTURE;
+        for (int half = 0; half < 2; half++) {
+            // the half below the diagonal (a >= b: the triangle k0 k1 k2) or above it (k0 k2 k3)
+            List<double[]> poly = new ArrayList<>(List.of(new double[]{a0, b0}, new double[]{a1, b0}, new double[]{a1, b1}, new double[]{a0, b1}));
+            poly = diagonal(poly, s, v, half == 0);
+            if (poly.size() < 3) continue;
+            RoadMesh.Vertex[] q = new RoadMesh.Vertex[poly.size()];
+            for (int i = 0; i < q.length; i++) {
+                double ps = poly.get(i)[0], pv = poly.get(i)[1], a = (ps - s) / c, b = (pv - v) / c, y;
+                if (flat) y = half == 0 ? y0 + a * (y1 - y0) + b * (y2 - y1) : y0 + b * (y3 - y0) + a * (y2 - y3);
+                else y = height(w, p, 1, ps, pv, ms, mv);
+                if (Double.isNaN(y)) return;
+                double[] xz = p.world(ps, pv);
+                double u = longS ? (pv - m.v0()) / (m.v1() - m.v0()) : (ps - m.s0()) / (m.s1() - m.s0());
+                // along: the tile of this square (a square never crosses one)
+                double t = ((longS ? ps : pv) - tile) / RoadMesh.TEXTURE;
+                q[i] = new RoadMesh.Vertex(xz[0], y, xz[1], u, t);
+            }
+            for (int i = 1; i + 1 < q.length; i++) top(out, mat, q[0], q[i], q[i + 1]);
+        }
+    }
+
+    /** A convex polygon clipped to one side of the square's diagonal from (s, v): a - b >= 0 (below) or <= 0. */
+    private static List<double[]> diagonal(List<double[]> in, double s, double v, boolean below) {
+        List<double[]> out = new ArrayList<>(6);
+        double[] a = in.get(in.size() - 1);
+        double da = (below ? 1 : -1) * ((a[0] - s) - (a[1] - v));
+        for (double[] b : in) {
+            double db = (below ? 1 : -1) * ((b[0] - s) - (b[1] - v));
+            if (da >= 0 != db >= 0) {
+                double t = da / (da - db);
+                out.add(new double[]{a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t});
+            }
+            if (db >= 0) out.add(b);
+            a = b;
+            da = db;
         }
         return out;
     }

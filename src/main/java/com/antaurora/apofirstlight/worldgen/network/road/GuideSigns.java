@@ -21,8 +21,10 @@ import java.util.Locale;
  *   right), the arrow at that side.</li>
  *   <li>street (Town Framework V1): a street name blade (D3-1) at a town intersection, the name in dests, white on green
  *   on both faces, on one post at its middle; extra top: the upper blade of the pair (the cross street's, turned a
- *   quarter), on the lower one, its post a stub from the lower blade's top;</li>
- *   <li>limit (Town Framework V1): the town's limit sign on its exit crossroad, the town's name over CITY LIMIT.</li>
+ *   quarter), on the lower one, its post a stub from the lower blade's top; exit: the street's hundred block (600), set
+ *   small after the name (2026-10-19), or nothing;</li>
+ *   <li>limit (Town Framework V1): the town's limit sign on its exit crossroad, the town's name over CITY LIMIT, under
+ *   it the extra line (its population, POP 4300: TownSigns, 2026-10-19) when there is one.</li>
  * </ul>
  * shield: a GuideSignAtlas tile (F40, R61; empty: none), several joined by + (one row each, their cardinals joined by +
  * in the same order: F40+F65 with E+S), cardinal N, S, E, W or empty, the destinations the towns'
@@ -76,6 +78,8 @@ public final class GuideSigns {
      * beside the name; the lower blade's bottom over its foot (7.5 ft), the gap between the two blades, m.
      */
     public static final double BLADE_CAP = 0.2, BLADE_H = 0.32, BLADE_MIN = 0.9, BLADE_MARGIN = 0.15, BLADE_BOTTOM = 2.3, BLADE_GAP = 0.04;
+    /** A blade's hundred block: its cap height (4 in) and its gap after the name, m. */
+    public static final double BLADE_BLOCK_CAP = 0.1, BLADE_BLOCK_GAP = 0.1;
     /**
      * A blade's border: its inset and width (2026-10-17: the guide signs' 0.035 + 0.05 left 0.15 m inside, the 0.2 m
      * letters ran over the border), m.
@@ -242,6 +246,7 @@ public final class GuideSigns {
             case LIMIT -> {
                 for (String d : s.dests) rows.add(new Row(List.of(Run.text(d, CAP)), false));
                 rows.add(new Row(List.of(Run.text("CITY LIMIT", CAP_SMALL)), false));
+                if (!s.extra.isEmpty()) rows.add(new Row(List.of(Run.text(s.extra, CAP_SMALL)), false));
             }
             default -> { }
         }
@@ -281,12 +286,16 @@ public final class GuideSigns {
      * extra top: over the lower one by BLADE_GAP, its post from the lower one's top); one post at x 0.
      */
     private static Layout blade(Spec s) {
-        String name = s.dests.isEmpty() ? "" : s.dests.get(0);
-        double w = Math.max(BLADE_MIN, width(name, BLADE_CAP) + 2 * BLADE_MARGIN);
+        String name = s.dests.isEmpty() ? "" : s.dests.get(0), block = s.exit;
+        double wn = width(name, BLADE_CAP), wb = block.isEmpty() ? 0 : BLADE_BLOCK_GAP + width(block, BLADE_BLOCK_CAP);
+        double w = Math.max(BLADE_MIN, wn + wb + 2 * BLADE_MARGIN);
         boolean top = "top".equals(s.extra);
         double y0 = s.feet[0] + BLADE_BOTTOM + (top ? BLADE_H + BLADE_GAP : 0), y1 = y0 + BLADE_H;
         List<Piece> pieces = new ArrayList<>();
-        set(pieces, name, BLADE_CAP, -width(name, BLADE_CAP) / 2, (y0 + y1) / 2 - BLADE_CAP / 2);
+        double base = (y0 + y1) / 2 - BLADE_CAP / 2, x = -(wn + wb) / 2;
+        set(pieces, name, BLADE_CAP, x, base);
+        // the hundred block after the name, on its baseline
+        if (!block.isEmpty()) set(pieces, block, BLADE_BLOCK_CAP, x + wn + BLADE_BLOCK_GAP, base);
         double foot = top ? s.feet[0] + BLADE_BOTTOM + BLADE_H : s.feet[0];
         return new Layout(new double[]{-w / 2, y0, w / 2, y1}, null, new double[]{0}, new double[]{foot}, pieces, true);
     }
@@ -346,7 +355,7 @@ public final class GuideSigns {
     public static String describe(String bone) {
         Spec s = Spec.parse(bone);
         List<String> parts = new ArrayList<>();
-        if (!s.exit.isEmpty()) parts.add("EXIT " + s.exit);
+        if (!s.exit.isEmpty() && s.type != Type.STREET) parts.add("EXIT " + s.exit);
         String[] shields = s.shield.split("\\+", -1), cards = s.cardinal.split("\\+", -1);
         for (int i = 0; i < Math.max(shields.length, cards.length); i++) {
             RoadNames.Route r = RoadNames.Route.of(i < shields.length ? shields[i] : "");
@@ -356,7 +365,11 @@ public final class GuideSigns {
         }
         parts.addAll(s.dests);
         if (s.type == Type.ADVANCE) parts.add("h".equals(s.extra) ? "1/2 MILE" : "1 MILE");
-        if (s.type == Type.LIMIT) parts.add("CITY LIMIT");
+        if (s.type == Type.STREET && !s.exit.isEmpty()) parts.add(s.exit);
+        if (s.type == Type.LIMIT) {
+            parts.add("CITY LIMIT");
+            if (!s.extra.isEmpty()) parts.add(s.extra);
+        }
         return String.join(" | ", parts);
     }
 

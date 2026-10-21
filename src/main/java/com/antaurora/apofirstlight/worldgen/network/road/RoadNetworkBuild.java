@@ -147,46 +147,52 @@ public final class RoadNetworkBuild {
      * the exits' own land measure sees small slopes, not a hillside whose every block climbs more than the planner's relief
      * limit): the first whose town reaches GOOD_TOWN blocks is kept, else the one with the most blocks (the earlier on a
      * tie); its stubs go first in the road list, so the full build pairs them the same way. A town none of whose options
-     * builds with a town round it keeps no stub (reported).
+     * builds with a town round it tries the fallback options (2026-10-20, every town is built: TownExits#site with
+     * fallback, out to FALLBACK_SEARCH with steeper blocks); one that still has none keeps no stub (reported NOT BUILT).
      */
     private static List<RouteData> townExits(List<RouteData> roads, List<RouteData> legs, com.antaurora.apofirstlight.worldgen.network.route.RouteTerrain terrain,
                                              List<RoadSystems.Claim> claims, List<String> report) {
         List<RouteData> out = roads;
-        for (com.antaurora.apofirstlight.worldgen.network.town.TownExits.Site site : com.antaurora.apofirstlight.worldgen.network.town.TownExits.sites(roads, legs, terrain, report)) {
-            String corridor = com.antaurora.apofirstlight.worldgen.network.town.TownSites.corridor(site.town());
+        for (com.antaurora.apofirstlight.worldgen.network.town.TownExits.Site first : com.antaurora.apofirstlight.worldgen.network.town.TownExits.sites(roads, legs, terrain, report)) {
+            String corridor = com.antaurora.apofirstlight.worldgen.network.town.TownSites.corridor(first.town());
             List<RouteData> best = null;
-            int bestBlocks = 0, bestK = 0;
+            int bestBlocks = 0, bestK = 0, bestOf = 0;
             String bestLine = null;
-            int k = 0;
-            for (com.antaurora.apofirstlight.worldgen.network.town.TownExits.Option o : site.options()) {
-                k++;
-                List<RouteData> trial = new ArrayList<>(o.stubs());
-                trial.addAll(out);
-                List<String> tr = new ArrayList<>();
-                RoadInterchanges.Result ir = RoadInterchanges.build(trial, claims, tr, o.roads()::contains);
-                boolean built = false;
-                for (RouteData r : ir.roads())
-                    if (r.id().contains(corridor + ":")) for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) built = true;
-                if (!built) {
-                    String why = "";
-                    // the skip line: "interchange skipped (trimmed): <site>: <why per shift>"
-                    for (String l : tr) if (l.startsWith("interchange skipped")) why = l.substring(l.indexOf(": ", "interchange skipped (trimmed): ".length()) + 2);
-                    report.add(o.line() + ": not built" + (why.isEmpty() ? "" : " (" + (why.length() > 400 ? why.substring(0, 400) + "..." : why) + ")"));
-                    continue;
+            for (int pass = 0; pass < 2 && best == null; pass++) {
+                com.antaurora.apofirstlight.worldgen.network.town.TownExits.Site site = pass == 0 ? first
+                        : com.antaurora.apofirstlight.worldgen.network.town.TownExits.site(first.town(), roads, legs, terrain, report, true);
+                if (pass > 0) report.add("town " + first.town() + ": no exit option builds with a town round it; the fallback search");
+                int k = 0;
+                for (com.antaurora.apofirstlight.worldgen.network.town.TownExits.Option o : site.options()) {
+                    k++;
+                    List<RouteData> trial = new ArrayList<>(o.stubs());
+                    trial.addAll(out);
+                    List<String> tr = new ArrayList<>();
+                    RoadInterchanges.Result ir = RoadInterchanges.build(trial, claims, tr, o.roads()::contains);
+                    boolean built = false;
+                    for (RouteData r : ir.roads())
+                        if (r.id().contains(corridor + ":")) for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) built = true;
+                    if (!built) {
+                        String why = "";
+                        // the skip line: "interchange skipped (trimmed): <site>: <why per shift>"
+                        for (String l : tr) if (l.startsWith("interchange skipped")) why = l.substring(l.indexOf(": ", "interchange skipped (trimmed): ".length()) + 2);
+                        report.add(o.line() + ": not built" + (why.isEmpty() ? "" : " (" + (why.length() > 400 ? why.substring(0, 400) + "..." : why) + ")"));
+                        continue;
+                    }
+                    String[] noTown = new String[1];
+                    int blocks = townBlocks(site.town(), ir.roads(), terrain, noTown);
+                    if (blocks <= 0) {
+                        report.add(o.line() + String.format(Locale.ROOT, ": built, but no town round it (%s; option %d of %d)", noTown[0], k, site.options().size()));
+                        continue;
+                    }
+                    if (blocks > bestBlocks) { best = trial; bestBlocks = blocks; bestK = k; bestOf = site.options().size(); bestLine = o.line(); }
+                    if (blocks >= GOOD_TOWN) break;
+                    report.add(o.line() + String.format(Locale.ROOT, ": built, a town of %d blocks round it (option %d of %d; looking on for %d)", blocks, k, site.options().size(), GOOD_TOWN));
                 }
-                String[] noTown = new String[1];
-                int blocks = townBlocks(site.town(), ir.roads(), terrain, noTown);
-                if (blocks <= 0) {
-                    report.add(o.line() + String.format(Locale.ROOT, ": built, but no town round it (%s; option %d of %d)", noTown[0], k, site.options().size()));
-                    continue;
-                }
-                if (blocks > bestBlocks) { best = trial; bestBlocks = blocks; bestK = k; bestLine = o.line(); }
-                if (blocks >= GOOD_TOWN) break;
-                report.add(o.line() + String.format(Locale.ROOT, ": built, a town of %d blocks round it (option %d of %d; looking on for %d)", blocks, k, site.options().size(), GOOD_TOWN));
             }
-            if (best == null) report.add("town " + site.town() + ": no exit option builds with a town round it; the town has no interchange");
+            if (best == null) report.add("town " + first.town() + ": NOT BUILT: no exit option, normal or fallback, builds with a town round it; the town has no interchange");
             else {
-                report.add(bestLine + String.format(Locale.ROOT, ": built (option %d of %d, a town of %d blocks)", bestK, site.options().size(), bestBlocks));
+                report.add(bestLine + String.format(Locale.ROOT, ": built (option %d of %d, a town of %d blocks)", bestK, bestOf, bestBlocks));
                 out = best;
             }
         }
