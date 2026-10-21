@@ -3,7 +3,7 @@
   "minecraft:geometry": [
     {
       "description": {
-        "identifier": "geometry.vehicle_key",
+        "identifier": "geometry.pickup_t15_key",
         "texture_width": 256,
         "texture_height": 256,
         "visible_bounds_width": 2,
@@ -16,7 +16,7 @@
       },
       "bones": [
         {
-          "name": "vehicle_key",
+          "name": "pickup_t15_key",
           "pivot": [
             0,
             0,

@@ -49,4 +49,5 @@
 - 隔离图形客户端通过真实 JEI runtime 检查：分类、催化剂、五种燃料、五种布局构建、热更新 FE 后无旧可见条目；恢复原值后打开 JEI 页面并实际绘制。截图：`build/thermal-fluid-client/screenshots/2026-09-08_12.08.21.png`。
 - 客户端使用真实 Jade Tooltip 构建器检查空槽/非空槽：非空恰好增加名称/数量行与流体条，数量为 1000/4000。此项不是手动逐朝向悬停美术验收，液位动态显示仍未实现。
 - 客户端日志：`build/thermal-fluid-client-final.log`，`AFL THERMAL CLIENT PROBE = PASS`。隔离运行目录使既有 Native Gun smoke 找不到其相对源码路径并报错；本轮机器 probe 独立通过，未据此宣称枪械回归通过，也未修改该无关测试。
-- 可复跑：`gradlew.bat build runGameTestServer --offline -I src/dev/thermal-generator-model-gametest.init.gradle`；图形 probe 用 `src/dev/thermal-fluid-client.init.gradle`，需要 `build/thermal-fluid-client/saves/fluid_probe` 隔离测试存档，完成后自动关闭自己启动的客户端。
+- 可复跑：`gradlew.bat build runGameTestServer --offline -I src/dev/thermal-generator-model-gametest.init.gradle`。
+- 2026-10-21：开发环境不再加载 JEI 和 Jade（用户：这两个功能 AFL 自己做），上面两条 JEI / Jade 图形检查是当时的记录，现在跑不了。JEI 图形 probe（`dev/ThermalFluidClientProbe`、`src/dev/thermal-fluid-client.init.gradle`）已删除：它直接实现 JEI 的插件接口又挂在 Forge 事件总线上，没有 JEI 时开发客户端一启动就会因为找不到类而崩溃。`ThermalFluidGameTests`、`ReactorIntegrationGameTests` 里检查 Jade 数据的几步会调用 `compat/jade/MachineJadeServerDataProvider`，没有 Jade 时这几项测试会报找不到类，等 AFL 自己的查看信息做好后改写。

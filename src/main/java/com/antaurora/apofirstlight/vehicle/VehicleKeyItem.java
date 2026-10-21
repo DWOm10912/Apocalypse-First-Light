@@ -13,27 +13,35 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * A vehicle's key (docs/vehicles/t15_hotwire_v1_design.md section 9; 2026-10-21): one key per vehicle, bound to it by the
- * vehicle's UUID ({@link #TAG_VEHICLE}) and naming its model ({@link #TAG_MODEL}). A key only starts its own vehicle; one
- * from the Creative tab is bound to nothing and starts none. No recipe (user 2026-10-20: none before the recipe rework).
+ * vehicle's UUID ({@link #TAG_VEHICLE}). Every vehicle model has its own key item with its maker's badge on the head, as in
+ * real life (user 2026-10-21; the T15's is pickup_t15_key). A key only starts its own vehicle; one from the Creative tab
+ * is bound to nothing and starts none. No recipe (user 2026-10-20: none before the recipe rework).
  */
 public final class VehicleKeyItem extends Item {
-    public static final String TAG_VEHICLE = "Vehicle", TAG_MODEL = "Model";
+    public static final String TAG_VEHICLE = "Vehicle";
+    private static final Map<String, VehicleKeyItem> BY_MODEL = new HashMap<>();
+    private final String model;
 
-    public VehicleKeyItem(Properties properties) {
+    /** model: the vehicle model this key belongs to (its tooltip key, tooltip.apocalypse_firstlight.vehicle_key.<model>). */
+    public VehicleKeyItem(Properties properties, String model) {
         super(properties);
+        this.model = model;
+        BY_MODEL.put(model, this);
     }
 
-    /** A new key for this truck. */
+    /** A new key for this vehicle: the model's own key item, bound to the vehicle. */
     public static ItemStack forVehicle(UUID vehicle, String model) {
-        ItemStack stack = new ItemStack(com.antaurora.apofirstlight.registry.AflItems.VEHICLE_KEY.get());
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putUUID(TAG_VEHICLE, vehicle);
-        tag.putString(TAG_MODEL, model);
+        VehicleKeyItem item = BY_MODEL.get(model);
+        if (item == null) throw new IllegalArgumentException("no key item for vehicle model " + model);
+        ItemStack stack = new ItemStack(item);
+        stack.getOrCreateTag().putUUID(TAG_VEHICLE, vehicle);
         return stack;
     }
 
@@ -87,7 +95,7 @@ public final class VehicleKeyItem extends Item {
         CompoundTag tag = stack.getTag();
         boolean bound = tag != null && tag.hasUUID(TAG_VEHICLE);
         AflEquipmentTooltip.addDescription(lines, bound
-                ? "tooltip.apocalypse_firstlight.vehicle_key." + (tag.contains(TAG_MODEL) ? tag.getString(TAG_MODEL) : "pickup_t15")
+                ? "tooltip.apocalypse_firstlight.vehicle_key." + model
                 : "tooltip.apocalypse_firstlight.vehicle_key.blank");
     }
 }

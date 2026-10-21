@@ -17,6 +17,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Part, extrude, revolve, area2, newell, png, triangulate} from './cube-slab-mesh-lib.mjs';
 import {bake} from './build-material-meshes-v1.mjs';
+import {pineKeystone} from './halstead-badge.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const orient = (L, ccw) => (area2(L) > 0) === ccw ? L : L.slice().reverse();
@@ -959,12 +960,14 @@ function splint() {
 }
 
 /**
- * Vehicle key (docs/vehicles/t15_hotwire_v1_design.md section 9, 2026-10-21): a 1990s car key, the nickel-plated steel blade
- * with its cuts on one edge, the black plastic head with a ring hole, a split ring through it. Plain, no lettering. The
- * same key as the T15 mesh's key bone (tools/pickup-t15/cab.mjs key()), at icon size. Lies flat along X, tip at -X.
+ * Tamarack T15 key (docs/vehicles/t15_hotwire_v1_design.md section 9, 2026-10-21): a 1990s car key, the nickel-plated steel
+ * blade with its cuts on one edge, the black plastic head with a ring hole, a split ring through it. Every vehicle model has
+ * its own key, its maker's badge on the head as on a real one (user 2026-10-21): this one carries Halstead's chrome
+ * three-bar pine keystone (tools/halstead-badge.mjs, the grille badge B) on both faces, its top toward the ring. The same
+ * key as the T15 mesh's key bone (tools/pickup-t15/cab.mjs key()), at icon size. Lies flat along X, tip at -X.
  */
-function vehicleKey() {
-  const B = 'vehicle_key';
+function pickupT15Key() {
+  const B = 'pickup_t15_key';
   const blade = new Part('blade', B, 'nickel');
   extrude(blade, 'y', {outer: orient([[-0.55, 0.8], [-0.55, -4.4], [-0.15, -5.0], [0.55, -4.7], [0.55, -4.1], [0.22, -3.6], [0.55, -3.0], [0.22, -2.4],
     [0.55, -1.8], [0.22, -1.3], [0.55, -0.8], [0.55, 0.8]], true), holes: []}, -0.14, 0.14, 0);
@@ -973,9 +976,16 @@ function vehicleKey() {
   // split ring through the hole: a torus in the X-Y plane, its inner side through the hole
   const ring = new Part('ring', B, 'nickel'), R = 1.5, t = 0.16;
   revolve(ring, 3.55 + R, 0, Array.from({length: 8}, (_, i) => { const a = 2 * Math.PI * i / 8; return [t * Math.cos(a), R + t * Math.sin(a)]; }), 18);
-  return {PARTS: [blade, head, ring], MATS: {
+  // the badge between the blade and the ring hole, set 0.04 px into the head and standing 0.05 px proud of each face
+  const badge = new Part('badge', B, 'chrome'), {ring: kr, solids} = pineKeystone(0, 1.98, 1.3);
+  for (const [a0, a1] of [[0.34, 0.43], [-0.43, -0.34]]) {
+    extrude(badge, 'y', {outer: orient(kr[0], true), holes: [orient(kr[1], false)]}, a0, a1, 0);
+    for (const L of solids) extrude(badge, 'y', {outer: orient(L, true), holes: []}, a0, a1, 0);
+  }
+  return {PARTS: [blade, head, ring, badge], MATS: {
     nickel: {c: [184, 182, 174], hl: 6, sm: 176, se: 186, f0: 255},   // nickel-plated steel, worn soft
     plastic: {c: [30, 30, 32], hl: 4, sm: 96, se: 104, f0: 20},       // black moulded head
+    chrome: {c: [204, 208, 212], hl: 4, sm: 232, se: 240, f0: 255},   // the badge: bright chrome on the black head
   },
   // held like the wiring wrench (its rotations, user-accepted in hand), pinched at the head 2 px from its blade end, tip
   // out: translation = the wrench grip's landing point - scale * R * grip (user 2026-10-21: the block-style default
@@ -984,11 +994,11 @@ function vehicleKey() {
     thirdperson_righthand: {rotation: [0, -90, -80], translation: [0, -0.372, 1.277], scale: [0.55, 0.55, 0.55]},
     firstperson_righthand: {rotation: [0, -90, -110], translation: [1.13, 0.011, 2.631], scale: [0.5, 0.5, 0.5]},
   },
-  icon: {view: [35, -50, 0], coverage: 0.5, mat: {nickel: [196, 194, 186], plastic: [44, 44, 46]}}};
+  icon: {view: [35, -50, 0]}};
 }
 
 export const ITEMS = {
-  vehicle_key: vehicleKey,
+  pickup_t15_key: pickupT15Key,
   clinical_thermometer: clinicalThermometer,
   wrist_thermometer: wristThermometer,
   wiring_wrench: wiringWrench,

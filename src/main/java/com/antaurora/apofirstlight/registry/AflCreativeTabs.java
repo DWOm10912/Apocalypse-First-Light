@@ -273,7 +273,7 @@ public final class AflCreativeTabs {
             AflItems.HIKING_BACKPACK,
             AflItems.GUN_SLING,
             AflItems.PISTOL_HOLSTER,
-            AflItems.VEHICLE_KEY);
+            AflItems.PICKUP_T15_KEY);
 
     // Thirst V1: water first; later drinks, food and medicine
     public static final RegistryObject<CreativeModeTab> SURVIVAL_SUPPLIES = tab("survival_supplies", MELEE_AND_EQUIPMENT,

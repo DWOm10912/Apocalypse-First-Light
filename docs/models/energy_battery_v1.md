@@ -44,7 +44,7 @@
 | 外形 | 圆柱形小电池：深色收缩膜外壳，膜包过两端边缘；正极一端有琥珀色色环；镀镍的端面和凸起的正极帽；负极是平的金属底。不印字 |
 | 成品 | 252 个三角面，9.35 × 4.66 × 4.54 px，没有共面重叠，256 atlas，13 texel/px |
 | 材质（LabPBR） | 收缩膜 [42,46,52] smoothness 118–140、F0 20；色环 [184,136,46] 同样的光泽；端面和正极帽 [156,158,162] 镀镍钢，F0 255、smoothness 132–150 |
-| 显示 | 物品栏是由模型画出的 16×16 2D 图标（`textures/item/energy_battery.png`，视角 [30,225,0]）；手持、地面、展示框是 Mesh（`forge:separate_transforms`，`AflStaticMeshItemRenderer`，竖直偏移 0.354375） |
+| 显示 | 物品栏是由模型渲染出的 64×64 图标（2026-10-21 起，`textures/item/energy_battery.png`，视角 [30,225,0]，画法见 [material_meshes_v1.md](material_meshes_v1.md)「物品栏图标」）；手持、地面、展示框是 Mesh（`forge:separate_transforms`，`AflStaticMeshItemRenderer`，竖直偏移 0.354375） |
 | 文件 | `src/main/blockbench/energy_battery.bbmodel`、`textures/energy_battery_mesh{,_s,_n}.png`；运行时 `geo/energy_battery.geo.json`、`meshes/energy_battery.aflmesh.json`、`models/item/energy_battery.json`、`textures/item/energy_battery{,_mesh,_mesh_s,_mesh_n}.png` |
 
 ## 待实机确认

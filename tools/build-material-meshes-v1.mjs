@@ -227,55 +227,73 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
 };
 
 /**
- * 16x16 inventory icon drawn from the mesh in the inventory view (the item model's GUI perspective shows this sprite, the
- * mesh is only used in the world): flat tone per face (top brightest, screen-left side lighter than screen-right, like
- * vanilla block icons), each pixel takes the face that covers most of it (no anti-aliasing), a darker seam where one part
- * passes in front of another, then a vanilla rim (darker silhouette pixels at the bottom / right).
- * icon: {mat: {name: other material name or [r, g, b]}} (icon-only colours: pixel art wants more contrast between pieces
- * than the PBR base colours), coverage: fraction of a pixel a part must cover to be drawn (thin wires need less),
- * xray: material names drawn only where nothing else is behind them (glass: what is inside shows through it),
- * seamless: part names that get no darker seam around them (a one-pixel needle would leave a dark cross),
- * depthSeam: icon px; a part passing in front of itself by more than this also gets the seam (the turns of a coil).
- * hide: part names left out of the icon and its fit (straps of worn gear that wrap a body the icon does not show).
+ * Inventory icon: the textured mesh rendered flat in the inventory view (user 2026-10-21: "以后游戏内的所有物品都用其3D
+ * 模型的平面图"; the item model's GUI perspective shows this picture, the mesh itself is drawn in the world). ICON_SIZE
+ * px square, the same framing as the 16 px view (14 of 16 slot pixels), every face sampled from the bake's own Base
+ * Color atlas, lit from the top front left (both sides of a face, so open straps and sheets still show), ICON_SS x
+ * ICON_SS supersampled and box-filtered down. Glass (atlas alpha below 255) is blended over what is behind it.
+ * icon.hide: part names left out of the picture and its fit (straps of worn gear that wrap a body the icon does not show).
+ * The old pixel-art options (mat, coverage, xray, seamless, depthSeam) no longer change the picture.
  */
-function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5, xray = [], seamless = [], depthSeam = Infinity} = {}) {
-  // centreY: the mesh is drawn centred like the item renderer does (rests on y = 0, offset by half its height)
-  const N = 16, SS = 6, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation, tris = [];
-  const colourOf = m => { const o = iconMat[m]; return Array.isArray(o) ? o : MATS[o ?? m].c; };
-  for (const p of PARTS) for (const f of p.f) {
-    const P = f.ids.map(i => { const q = rot(p.v[i]).map(v => v * s); return [8 + q[0] + tr[0], 8 - q[1] - tr[1], q[2]]; });
-    const n3 = norm(newell(f.ids.map(i => rot(p.v[i]))));
-    if (n3[2] <= 0) continue;                                            // faces turned away are always behind others
-    const tone = 0.66 + 0.33 * Math.max(0, n3[1]) - 0.12 * n3[0], c = colourOf(f.mat).map(v => v * tone);
-    for (let q = 1; q + 1 < P.length; q++) tris.push({P: [P[0], P[q], P[q + 1]], c, part: p, glass: xray.includes(f.mat)});
-  }
-  const px = new Array(N * N).fill(null);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const votes = new Map();
-    for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
-      const X = x + (sx + 0.5) / SS, Y = y + (sy + 0.5) / SS; let best = null, bz = -Infinity, glass = null, gz = -Infinity;
-      for (const tri of tris) {
-        const [A, B, C] = tri.P, den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-12) continue;
-        const l1 = ((B[1] - C[1]) * (X - C[0]) + (C[0] - B[0]) * (Y - C[1])) / den, l2 = ((C[1] - A[1]) * (X - C[0]) + (A[0] - C[0]) * (Y - C[1])) / den, l3 = 1 - l1 - l2;
-        if (l1 < 0 || l2 < 0 || l3 < 0) continue;
-        const z = l1 * A[2] + l2 * B[2] + l3 * C[2];
-        if (tri.glass) { if (z > gz) { gz = z; glass = {tri, z}; } } else if (z > bz) { bz = z; best = {tri, z}; }
+const ICON_SIZE = 64, ICON_SS = 4, ICON_LIGHT = norm([-0.35, 0.85, 0.4]);
+function drawIcon(PARTS, UV, atlasPng, view, centreY) {
+  const N = ICON_SIZE * ICON_SS, k = N / 16, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation;
+  const atlas = readPng(atlasPng);
+  const opaque = [], glass = [];
+  for (const p of PARTS) {
+    const uvs = UV.faceUV.get(p);
+    for (const f of p.f) {
+      const P = f.ids.map(i => { const q = rot(p.v[i]).map(v => v * s); return [(8 + q[0] + tr[0]) * k, (8 - q[1] - tr[1]) * k, q[2]]; });
+      let n3 = norm(newell(f.ids.map(i => rot(p.v[i]))));
+      if (n3[2] < 0) n3 = n3.map(v => -v);                              // both sides: the side the viewer sees
+      const shade = 0.58 + 0.5 * Math.max(0, dot(n3, ICON_LIGHT)), u = uvs.get(f);
+      for (let q = 1; q + 1 < P.length; q++) {
+        const tri = {P: [P[0], P[q], P[q + 1]], T: [u[0], u[q], u[q + 1]], shade};
+        (MATS_ALPHA_OF(atlas, tri) < 1 ? glass : opaque).push(tri);
       }
-      if (!best) best = glass;
-      if (best) { const v = votes.get(best.tri.c) || {n: 0, part: best.tri.part, z: 0}; v.n++; v.z += best.z; votes.set(best.tri.c, v); }
     }
-    let win = null, total = 0; for (const [c, v] of votes) { total += v.n; if (!win || v.n > win.v.n) win = {c, v}; }
-    if (win && total >= coverage * SS * SS) px[y * N + x] = {c: win.c, part: win.v.part, z: win.v.z / win.v.n};
   }
-  const out = Buffer.alloc(N * N * 4), at = (x, y) => x < 0 || y < 0 || x >= N || y >= N ? null : px[y * N + x];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const p = at(x, y); if (!p) continue;
-    let c = p.c;
-    if (!at(x + 1, y) || !at(x, y + 1)) c = c.map(v => v * 0.62); else if (!at(x - 1, y) || !at(x, y - 1)) c = c.map(v => v * 0.86);
-    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part ? q.z > p.z && !seamless.includes(q.part.name) : q.z > p.z + depthSeam; })) c = c.map(v => v * 0.74);
-    out.set([...c.map(v => Math.max(0, Math.min(255, Math.round(v)))), 255], (y * N + x) * 4);
+  const col = new Float32Array(N * N * 3), cover = new Uint8Array(N * N), depth = new Float32Array(N * N).fill(-Infinity);
+  const texel = (tu, tv) => { const x = Math.min(atlas.w - 1, Math.max(0, Math.floor(tu))), y = Math.min(atlas.w - 1, Math.max(0, Math.floor(tv))), o = (y * atlas.w + x) * atlas.bpp;
+    return [atlas.px[o] / 255, atlas.px[o + 1] / 255, atlas.px[o + 2] / 255, atlas.bpp === 4 ? atlas.px[o + 3] / 255 : 1]; };
+  const raster = (tri, blend) => {
+    const [A, B, C] = tri.P, den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-12) return;
+    const x0 = Math.max(0, Math.floor(Math.min(A[0], B[0], C[0]))), x1 = Math.min(N - 1, Math.ceil(Math.max(A[0], B[0], C[0])));
+    const y0 = Math.max(0, Math.floor(Math.min(A[1], B[1], C[1]))), y1 = Math.min(N - 1, Math.ceil(Math.max(A[1], B[1], C[1])));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const X = x + 0.5, Y = y + 0.5;
+      const l1 = ((B[1] - C[1]) * (X - C[0]) + (C[0] - B[0]) * (Y - C[1])) / den, l2 = ((C[1] - A[1]) * (X - C[0]) + (A[0] - C[0]) * (Y - C[1])) / den, l3 = 1 - l1 - l2;
+      if (l1 < 0 || l2 < 0 || l3 < 0) continue;
+      const z = l1 * A[2] + l2 * B[2] + l3 * C[2], i = y * N + x;
+      if (z <= depth[i]) continue;
+      const t = texel(l1 * tri.T[0][0] + l2 * tri.T[1][0] + l3 * tri.T[2][0], l1 * tri.T[0][1] + l2 * tri.T[1][1] + l3 * tri.T[2][1]);
+      const c = [t[0] * tri.shade, t[1] * tri.shade, t[2] * tri.shade];
+      if (blend) {                                                       // glass over what is behind it (or over nothing)
+        const al = cover[i] ? t[3] : 1;
+        for (let j = 0; j < 3; j++) col[i * 3 + j] = col[i * 3 + j] * (1 - al) + c[j] * al;
+      } else { depth[i] = z; col.set(c, i * 3); }
+      cover[i] = 1;
+    }
+  };
+  for (const tri of opaque) raster(tri, false);
+  glass.sort((p, q) => (p.P[0][2] + p.P[1][2] + p.P[2][2]) - (q.P[0][2] + q.P[1][2] + q.P[2][2]));   // back to front
+  for (const tri of glass) raster(tri, true);
+  const out = Buffer.alloc(ICON_SIZE * ICON_SIZE * 4);
+  for (let y = 0; y < ICON_SIZE; y++) for (let x = 0; x < ICON_SIZE; x++) {
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let j = 0; j < ICON_SS; j++) for (let i = 0; i < ICON_SS; i++) {
+      const q = (y * ICON_SS + j) * N + x * ICON_SS + i; if (!cover[q]) continue;
+      r += col[q * 3]; g += col[q * 3 + 1]; b += col[q * 3 + 2]; n++;
+    }
+    if (n) out.set([r / n, g / n, b / n].map(v => Math.max(0, Math.min(255, Math.round(v * 255)))).concat(Math.round(255 * n / (ICON_SS * ICON_SS))), (y * ICON_SIZE + x) * 4);
   }
-  return png(out, N, N);
+  return png(out, ICON_SIZE, ICON_SIZE);
+}
+/** A triangle's glass alpha: the atlas alpha at its centroid (glass islands carry their material's alpha, the rest 255). */
+function MATS_ALPHA_OF(atlas, tri) {
+  const tu = (tri.T[0][0] + tri.T[1][0] + tri.T[2][0]) / 3, tv = (tri.T[0][1] + tri.T[1][1] + tri.T[2][1]) / 3;
+  const x = Math.min(atlas.w - 1, Math.max(0, Math.floor(tu))), y = Math.min(atlas.w - 1, Math.max(0, Math.floor(tv)));
+  return atlas.bpp === 4 ? atlas.px[(y * atlas.w + x) * 4 + 3] / 255 : 1;
 }
 
 // inventory icon view: vanilla block-item angle, no roll; an item may pick its own (icon.view), still without roll
@@ -337,7 +355,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     visible_bounds_width: 2, visible_bounds_height: 2, visible_bounds_offset: [0, 0.5, 0]}, bones: [{name: id, pivot: [0, 0, 0]}]}]};
   const sidecar = Object.keys(LAYERS).length ? convert(source, geo, {}, id + '.bbmodel', 2, null, LAYERS) : convert(source, geo, {}, id + '.bbmodel', 2);
 
-  // inventory view fitted to 14 of 16 slot pixels from the projected mesh (used to draw the 2D icon); the world views share
+  // inventory view fitted to 14 of 16 slot pixels from the projected mesh (used to draw the icon render); the world views share
   // one size rule (longest side normalised to 12 px) so every material is held at the same apparent size
   const iconParts = PARTS.filter(p => !(iconOpts.hide ?? []).includes(p.name));
   const centred = iconParts.flatMap(p => p.v).map(q => [q[0], q[1] - size[1] / 2, q[2]]), rot = R3(gui);
@@ -376,7 +394,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     [path.join(ASSETS, `meshes/${id}.aflmesh.json`), serializeCompact(sidecar)],
     // meshOnly: a mesh drawn by code only (no item: no item model, no icon)
     ...(meshOnly ? [] : [[path.join(ASSETS, `models/item/${id}.json`), JSON.stringify(itemModel, null, 2) + '\n'],
-      [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(iconParts, MATS, iconView, size[1] / 2, iconOpts)]]),
+      [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(iconParts, UV, PNGS[0], iconView, size[1] / 2)]]),
     ...['', '_s', '_n'].flatMap((x, i) => [[path.join(BB, `textures/${atlasName}${x}.png`), PNGS[i]], [path.join(ASSETS, `textures/item/${atlasName}${x}.png`), PNGS[i]]]),
   ];
   const zf = zFightLevels(PARTS, new Map());

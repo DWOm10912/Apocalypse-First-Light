@@ -7,7 +7,7 @@ The normal ForgeGradle `runClient` is the daily AFL client and automatically ins
 - `embeddium-0.3.31+mc1.20.1.jar`
 - `oculus-mc1.20.1-1.8.0.jar`
 
-`build.gradle` supplies these optional renderer mods through `runtimeOnly fg.deobf(...)` from Curse Maven. Distant Horizons is no longer included in the development runtime. Keep shaders off for baseline terrain reviews.
+`build.gradle` supplies these optional renderer mods through `runtimeOnly fg.deobf(...)` from Curse Maven. Distant Horizons is no longer included in the development runtime. Since 2026-10-21 (user) JEI and Jade are not loaded either: AFL will make its own recipe viewer and look-at info, and their APIs stay compile-only for the old optional compat code. No map mod is loaded (AFL has its own map). Keep shaders off for baseline terrain reviews.
 
 Run the daily client with:
 

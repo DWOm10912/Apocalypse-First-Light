@@ -11,6 +11,7 @@
 // Left-hand drive: the driver sits at -z. Concept frame (metres, x forward, y up, z right).
 import {FX as FRX, FY, FZ, frame, slab, rbox, abox, obox, loftSolid, sweep, tube, lathe, roundPath, fillet, circle, cross, norm, add, mul, sub} from '../vehicle-mesh-kit.mjs';
 import {HW, YB, BELT, ROOF, CB, WS1, DOOR_R, DOOR_F, ROOF_W, sideZ, wsX, PIVOTS, STEER_TILT, KEY_CYL, P, sym} from './common.mjs';
+import {pineBadge} from '../halstead-badge.mjs';
 
 // two meshes on the cab atlas (per-mesh limits): 'cab' (panel, column, wheel, floor, trims, lining) and 'seat' (bench seat, belts)
 let MESH = 'cab';
@@ -182,6 +183,9 @@ function key(kc, up, side, out) {
     [0.0024, -0.006], [0.0042, -0.002], [0.0042, 0.016]], [], -0.001, 0.001);
   const head = fillet([[-0.012, 0.014], [0.012, 0.014], [0.012, 0.042], [-0.012, 0.042]], [0.004, 0.004, 0.009, 0.009], 4);
   slab(C('key', 'trim'), F, head, [circle(1, 12).map(([a, b]) => [a * 0.0032, 0.034 + b * 0.0032])], -0.0028, 0.0028, {r0: 0.0015, r1: 0.0015});
+  // Halstead's chrome pine keystone on both faces between the blade and the ring hole (user 2026-10-21: every vehicle's key
+  // carries its maker's badge; the pickup_t15_key item is the same key), 0.6 mm proud
+  for (const [a0, a1] of [[0.0024, 0.0034], [-0.0024, -0.0034]]) pineBadge(C('key', 'chrome'), F, 0, 0.0225, 0.0085, a0, a1, 0);
 }
 
 // ================================================================ floor, tunnel, pedals, levers

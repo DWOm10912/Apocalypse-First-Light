@@ -1467,7 +1467,7 @@ dark    = max(0.8 × start, lug)；white = max(0.8 × cold, vapour)
   - 遮阳板 `visor_l` / `visor_r` 绕外端的杆往下翻 80°。
   - 手套箱盖 `glovebox` 绕下沿往座椅方向放下 75°，仪表板中段做了手套箱内腔（截面挖空，底上铺一层毡）。
   - 烟灰缸 `ashtray` 带一个钢托盘，往驾驶室拉出 7 cm。
-- 钥匙（`vehicle/VehicleKeyItem`，物品 `apocalypse_firstlight:vehicle_key`，网格 `tools/build-equipment-meshes-v1.mjs` `vehicleKey()`）：一车一钥，NBT 里存车的 UUID（`Vehicle`）和车型（`Model`）。只在创造物品栏（未绑车的空钥匙），没有配方。网格大小 1×1，0.015 kg。
+- 钥匙（`vehicle/VehicleKeyItem`，物品 `apocalypse_firstlight:pickup_t15_key`，网格 `tools/build-equipment-meshes-v1.mjs` `pickupT15Key()`）：一车一钥，NBT 里存车的 UUID（`Vehicle`）。2026-10-21 改（用户：「每辆车的钥匙不一样，并且上面印着对应公司的图标，就和现实中一样」）：每种车型一件钥匙物品（`VehicleKeyItem(properties, model)`，`forVehicle(uuid, model)` 按车型找对应的钥匙物品），钥匙头两面是车厂的车标，T15 的是镀铬的 Halstead 三杠松树盾，车内钥匙骨骼也有；原来的通用 `vehicle_key` 改名为 `pickup_t15_key`，旧存档由 `registry/VehicleKeyLegacyMappings` 迁移，旧的 `Model` 标签不再读写。用户 2026-10-21 实机 PASS。只在创造物品栏（未绑车的空钥匙），没有配方。网格大小 1×1，0.015 kg。
 - 钥匙在哪（`vehicle/CabStowage.KeySpot`，同步，存档 `Key`）：
   - 位置：点火锁、座椅上、手套箱、烟灰缸、左 / 右遮阳板后面，或者不在车里（`ELSEWHERE`）。
   - 车里的钥匙画在那个位置（平放，跟着手套箱盖、烟灰缸、遮阳板一起动）。不在车里就不画。

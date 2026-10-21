@@ -3,10 +3,10 @@
  "jobs": [
   {
    "kind": "bbmodel",
-   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/vehicle_key.bbmodel",
+   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/pickup_t15_key.bbmodel",
    "sources": [
-    "src/main/resources/assets/apocalypse_firstlight/models/item/vehicle_key.json",
-    "src/main/blockbench/vehicle_key.bbmodel"
+    "src/main/resources/assets/apocalypse_firstlight/models/item/pickup_t15_key.json",
+    "src/main/blockbench/pickup_t15_key.bbmodel"
    ],
    "rot": [
     25,
@@ -15,8 +15,8 @@
    ],
    "sig": "c70b81ddf55deb26",
    "hide": null,
-   "id": "vehicle_key",
-   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/vehicle_key.png"
+   "id": "pickup_t15_key",
+   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/pickup_t15_key.png"
   }
  ]
 }

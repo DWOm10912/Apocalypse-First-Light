@@ -75,8 +75,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.MEDICAL_ALCOHOL.get(), "medical_alcohol", "medical_alcohol_mesh", 0.210938);
             // Fractures and splints V1 (equipment meshes, 2026-10-20): 0.5 - 0.77 / 32
             bind(AflItems.SPLINT.get(), "splint", "splint_mesh", 0.475938);
-            // Vehicle key (equipment meshes, 2026-10-21): 0.5 - 3.32 / 32
-            bind(AflItems.VEHICLE_KEY.get(), "vehicle_key", "vehicle_key_mesh", 0.39625);
+            // Tamarack T15 key (equipment meshes, 2026-10-21): 0.5 - 3.32 / 32
+            bind(AflItems.PICKUP_T15_KEY.get(), "pickup_t15_key", "pickup_t15_key_mesh", 0.39625);
             // Pocket compass (equipment meshes, 2026-10-21): the mesh with its card turned to the north (0.5 - 1.385 / 32)
             bind(AflItems.COMPASS.get(), CompassItemRenderer::new, "compass");
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.

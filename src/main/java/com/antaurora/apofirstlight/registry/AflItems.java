@@ -578,10 +578,11 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.inventory.grid.GunSlingItem(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> PISTOL_HOLSTER = ITEMS.register("pistol_holster",
             () -> new com.antaurora.apofirstlight.inventory.grid.PistolHolsterItem(new Item.Properties()));
-    // Vehicle keys (docs/vehicles/t15_hotwire_v1_design.md 9, 2026-10-21): one per vehicle, bound by its UUID; Creative tab
-    // only (an unbound key), no recipe
-    public static final RegistryObject<Item> VEHICLE_KEY = ITEMS.register("vehicle_key",
-            () -> new com.antaurora.apofirstlight.vehicle.VehicleKeyItem(new Item.Properties().stacksTo(1)));
+    // Vehicle keys (docs/vehicles/t15_hotwire_v1_design.md 9, 2026-10-21): one per vehicle, bound by its UUID; one key item
+    // per vehicle model, its maker's badge on the head (user 2026-10-21); Creative tab only (an unbound key), no recipe.
+    // Saves from before the split hold vehicle_key: VehicleKeyLegacyMappings
+    public static final RegistryObject<Item> PICKUP_T15_KEY = ITEMS.register("pickup_t15_key",
+            () -> new com.antaurora.apofirstlight.vehicle.VehicleKeyItem(new Item.Properties().stacksTo(1), "pickup_t15"));
     // Vehicles tab (2026-10-21): a use on the ground opens the spawner (colour, wear, fuel, key spot); Creative only, no recipe
     public static final RegistryObject<Item> PICKUP_T15 = ITEMS.register("pickup_t15",
             () -> new com.antaurora.apofirstlight.vehicle.VehicleSpawnerItem(new Item.Properties().stacksTo(1)));
