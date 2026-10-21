@@ -3,19 +3,70 @@
  "jobs": [
   {
    "kind": "bbmodel",
-   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/p9_01_extended_magazine_mesh.bbmodel",
+   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/bandage.bbmodel",
    "sources": [
-    "src/main/blockbench/p9_01_extended_magazine_mesh.bbmodel"
+    "src/main/resources/assets/apocalypse_firstlight/models/item/bandage.json",
+    "src/main/blockbench/bandage.bbmodel"
+   ],
+   "rot": [
+    25,
+    -32,
+    0
+   ],
+   "sig": "8cad9fb998b99aac",
+   "hide": null,
+   "id": "bandage",
+   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/bandage.png"
+  },
+  {
+   "kind": "bbmodel",
+   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/medical_alcohol.bbmodel",
+   "sources": [
+    "src/main/resources/assets/apocalypse_firstlight/models/item/medical_alcohol.json",
+    "src/main/blockbench/medical_alcohol.bbmodel"
+   ],
+   "rot": [
+    25,
+    -32,
+    0
+   ],
+   "sig": "e0174df25559354b",
+   "hide": null,
+   "id": "medical_alcohol",
+   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/medical_alcohol.png"
+  },
+  {
+   "kind": "bbmodel",
+   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/p9_01_v3_native.bbmodel",
+   "sources": [
+    "src/main/blockbench/p9_01_v3_native.bbmodel"
    ],
    "rot": [
     170.257,
     40.967,
     -159.464
    ],
-   "sig": "8c8c96f7e7e9e5ec",
+   "sig": "c8b774e502f47688",
+   "hide": "^(barrel.*|frame.*|part_magrel_.*|part_slidestop|part_takedown_.*|part_trigger|trigger|slide.*|righthand|lefthand|mag_out|empty_old_mag|.*_reference.*)$",
+   "id": "p9_01_magazine",
+   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/p9_01_magazine.png"
+  },
+  {
+   "kind": "bbmodel",
+   "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/splint.bbmodel",
+   "sources": [
+    "src/main/resources/assets/apocalypse_firstlight/models/item/splint.json",
+    "src/main/blockbench/splint.bbmodel"
+   ],
+   "rot": [
+    25,
+    -32,
+    0
+   ],
+   "sig": "40cd4f3af16d47c5",
    "hide": null,
-   "id": "p9_01_extended_magazine",
-   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/p9_01_extended_magazine.png"
+   "id": "splint",
+   "out": "D:/Minecraft Modding/Apocalypse First Light/design/wiki/icons/raw/splint.png"
   }
  ]
 }
