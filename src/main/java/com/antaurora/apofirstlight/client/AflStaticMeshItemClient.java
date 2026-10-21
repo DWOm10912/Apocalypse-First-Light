@@ -71,6 +71,8 @@ public final class AflStaticMeshItemClient {
             // draws them as action props (player_props/bandage, medical_alcohol: the bottle's parts, its cap a second prop)
             bind(AflItems.BANDAGE.get(), "bandage", "bandage_mesh", 0.370357);
             bind(AflItems.MEDICAL_ALCOHOL.get(), "medical_alcohol", "medical_alcohol_mesh", 0.210938);
+            // Fractures and splints V1 (equipment meshes, 2026-10-20): 0.5 - 0.77 / 32
+            bind(AflItems.SPLINT.get(), "splint", "splint_mesh", 0.475938);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(

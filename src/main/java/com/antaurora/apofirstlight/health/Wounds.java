@@ -21,8 +21,9 @@ import java.util.UUID;
 /**
  * Wounds V1a (docs/gameplay/survival_health_v1a.md 5): the small stand-in for the later body state's injury list
  * (docs/gameplay/survival_health_v2_design.md 6). Up to {@code max_wounds} wounds, each a scratch that may turn into a local
- * infection and then suppuration; medical alcohol cleans one, a bandage covers one. No part of the body yet, no bleeding,
- * no health lost over time: an infection lowers stamina regeneration, suppuration also natural health regeneration, and
+ * infection and then suppuration; medical alcohol cleans one, a bandage covers one. Each wound has a {@link BodyPart} (an
+ * infected's scratch lands by BodyPart#scratchPart's weights; a wound saved before parts existed gets a random arm): only where
+ * it is drawn (the inventory's body figure, the gauze), not what it does. No bleeding, no health lost over time: an infection lowers stamina regeneration, suppuration also natural health regeneration, and
  * both show on the screen (health/WoundScreenEffect: blur spells, a fever's haze and chills). Only the worst wound counts, so several never stack.
  * <p>
  * Time is each wound's own age in ticks, which only runs while its player is online (ticked once a second by PlayerHealth),
@@ -37,14 +38,15 @@ public final class Wounds {
     /** What became of a wound in one step. */
     enum Change { NONE, WORSE, EASED, HEALED }
 
-    /** What the client knows of a wound: its stage, whether it is cleaned / bandaged, its recovery (0..1, NaN: none). */
-    public record View(Stage stage, boolean cleaned, boolean bandaged, float recovery) {}
+    /** What the client knows of a wound: its stage, whether it is cleaned / bandaged, its recovery (0..1, NaN: none), where it is. */
+    public record View(Stage stage, boolean cleaned, boolean bandaged, float recovery, BodyPart part) {}
 
     static final String KEY = "afl_wounds";
     private static final int VERSION = 1;
 
     static final class Wound {
         Stage stage = Stage.SCRATCH;
+        BodyPart part = BodyPart.LEFT_ARM;
         int severity = 1;
         boolean cleaned, bandaged, rolled;
         long age, cleanedAt = -1, nextCheck;
@@ -52,6 +54,7 @@ public final class Wounds {
         CompoundTag save() {
             CompoundTag t = new CompoundTag();
             t.putString("stage", stage.name().toLowerCase(Locale.ROOT));
+            t.putString("part", part.key());
             t.putInt("severity", severity);
             t.putBoolean("cleaned", cleaned);
             t.putBoolean("bandaged", bandaged);
@@ -62,8 +65,10 @@ public final class Wounds {
             return t;
         }
 
-        static Wound load(CompoundTag t) {
+        static Wound load(CompoundTag t, RandomSource random) {
             Wound w = new Wound();
+            BodyPart part = BodyPart.parse(t.getString("part"));
+            w.part = part != null ? part : BodyPart.randomArm(random);
             try {
                 w.stage = Stage.valueOf(t.getString("stage").toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ex) {
@@ -97,7 +102,7 @@ public final class Wounds {
     private static State load(ServerPlayer player) {
         State s = new State();
         CompoundTag root = player.getPersistentData().getCompound(KEY);
-        for (Tag t : root.getList("list", Tag.TAG_COMPOUND)) s.wounds.add(Wound.load((CompoundTag) t));
+        for (Tag t : root.getList("list", Tag.TAG_COMPOUND)) s.wounds.add(Wound.load((CompoundTag) t, player.getRandom()));
         return s;
     }
 
@@ -148,6 +153,7 @@ public final class Wounds {
         State s = state(player);
         if (s.wounds.size() < c.maxWounds) {
             Wound w = new Wound();
+            w.part = BodyPart.scratchPart(player.getRandom());
             s.wounds.add(w);
         } else {
             Wound youngest = null;
@@ -162,12 +168,13 @@ public final class Wounds {
         return true;
     }
 
-    /** Dev (/afl health wound): adds a wound already at this stage (in a free slot, else replacing the oldest). */
-    static void set(ServerPlayer player, Stage stage) {
+    /** Dev (/afl health wound): adds a wound already at this stage (in a free slot, else replacing the oldest), on this part (null: by the scratch weights). */
+    static void set(ServerPlayer player, Stage stage, BodyPart part) {
         WoundConfig c = WoundConfig.get();
         State s = state(player);
         if (s.wounds.size() >= c.maxWounds) s.wounds.remove(0);
         Wound w = new Wound();
+        w.part = part != null ? part : BodyPart.scratchPart(player.getRandom());
         to(w, stage, c);
         s.wounds.add(w);
         s.dirty = true;
@@ -325,7 +332,7 @@ public final class Wounds {
     static List<View> views(ServerPlayer player) {
         WoundConfig c = WoundConfig.get();
         List<View> out = new ArrayList<>();
-        for (Wound w : state(player).wounds) out.add(new View(w.stage, w.cleaned, w.bandaged, (float) recovery(w, c)));
+        for (Wound w : state(player).wounds) out.add(new View(w.stage, w.cleaned, w.bandaged, (float) recovery(w, c), w.part));
         return out;
     }
 

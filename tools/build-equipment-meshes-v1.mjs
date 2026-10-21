@@ -710,6 +710,30 @@ function medicalAlcohol() {
   icon: {view: [20, 35, 0], coverage: 0.35, mat: {hdpe: [236, 238, 234], label: [60, 112, 182], cap: [40, 76, 146]}}};
 }
 
+/**
+ * Splint (fractures and splints V1, docs/gameplay/fracture_splint_v1_plan.md 5.1): two planed softwood slats about 10 px long
+ * side by side, bound in the middle with a band of the bandage's gauze. No recipe before the recipe rework (user 2026-10-20).
+ * Plain wood, no paint, matte. Lies along X, flat (the slats' broad faces up). The band's inside stays 0.02 px off the
+ * slats: no shared faces.
+ */
+export const SPLINT = {len: 5.2, half: 0.72, gap: 1.0, thick: 0.45, band: 1.1};
+function splint() {
+  const B = 'splint', {len, half, gap, thick, band} = SPLINT;
+  const slats = [-1, 1].map((s, i) => {
+    const p = new Part('slat_' + i, B, 'wood');
+    extrude(p, 'x', {outer: orient(roundRect(s * gap - half, 0, s * gap + half, thick, 0.12), true), holes: []}, -len, len, 0.12);
+    return p;
+  });
+  const out = gap + half, wrap = new Part('band', B, 'gauze');
+  extrude(wrap, 'x', {outer: orient(roundRect(-out - 0.16, -0.16, out + 0.16, thick + 0.16, 0.3), true),
+    holes: [orient(roundRect(-out - 0.02, -0.02, out + 0.02, thick + 0.02, 0.14), false)]}, -band, band, 0);
+  return {PARTS: [...slats, wrap], MATS: {
+    wood: {c: [186, 152, 106], hl: 6, sm: 58, se: 66, f0: 20},      // planed pine, bare: matte, a little warm
+    gauze: {c: [226, 222, 210], hl: 4, sm: 34, se: 40, f0: 20},     // the bandage's gauze
+  },
+  icon: {view: [30, -50, 0], coverage: 0.4, mat: {wood: [196, 162, 116], gauze: [236, 232, 222]}}};
+}
+
 export const ITEMS = {
   clinical_thermometer: clinicalThermometer,
   wrist_thermometer: wristThermometer,
@@ -725,6 +749,7 @@ export const ITEMS = {
   geiger_counter: geigerCounter,
   bandage,
   medical_alcohol: medicalAlcohol,
+  splint,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

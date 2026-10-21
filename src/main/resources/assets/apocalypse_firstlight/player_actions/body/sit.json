@@ -1,0 +1,24 @@
+{
+  "format_version": 1,
+  "about": "Sitting on the ground (docs/gameplay/splint_animation_v2_plan.md 3): sat, the left leg out straight (toes up), the right knee up with the forearm over it, the left hand on the left thigh; the eye 1.03 blocks over the ground (sit/GroundSit.EYE). A stance clip under any action (client/skeleton/GroundSitClient); mirrored when the right leg is the broken one. Written by tools/medical-actions-v1a/author_splint_v2.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "body.sit"
+  },
+  "clip": "body.sit",
+  "layer": "stance",
+  "mask": "full",
+  "priority": 10,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0
+  },
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": [],
+  "loop": "time",
+  "length": 2
+}

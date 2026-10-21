@@ -79,8 +79,15 @@ public final class HumanoidPoser {
          * to at most 1). Never mirrored (guns are right-handed).
          */
         public final List<StanceClip> stance = new ArrayList<>();
-        /** One stance loop's clip at its time (s), weight and mask (PlayerAction#mask). */
-        public record StanceClip(SkeletonClips.Clip clip, float time, float weight, boolean[] mask) {}
+        /**
+         * One stance loop's clip at its time (s), weight and mask (PlayerAction#mask); {@code mirror}: across the body's
+         * middle, as a mirrored action (sitting on the ground with the right leg out: client/skeleton/GroundSitClient).
+         */
+        public record StanceClip(SkeletonClips.Clip clip, float time, float weight, boolean[] mask, boolean mirror) {
+            public StanceClip(SkeletonClips.Clip clip, float time, float weight, boolean[] mask) {
+                this(clip, time, weight, mask, false);
+            }
+        }
         /** Model px the root moves (an action stepping up to what it works on), before the eye's own shift. */
         public final Vector3f rootOffset = new Vector3f();
         /** Riding: the legs take vanilla's angles. */
@@ -398,16 +405,19 @@ public final class HumanoidPoser {
             float turned = 0, moved = 0;
             for (Input.StanceClip s : in.stance) {
                 if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b]) continue;
-                if (s.clip().rotates(b)) turned += s.weight();
-                if (s.clip().moves(b)) moved += s.weight();
+                int from = s.mirror() ? mirror[b] : b;
+                if (s.clip().rotates(from)) turned += s.weight();
+                if (s.clip().moves(from)) moved += s.weight();
             }
             if (turned > 0) {
                 float share = turned > 1 ? 1 / turned : 1, rest = Math.max(0, 1 - turned);
                 base.set(pose.local[b]);
                 sum.set(base.x * rest, base.y * rest, base.z * rest, base.w * rest);
                 for (Input.StanceClip s : in.stance) {
-                    if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b] || !s.clip().rotates(b)) continue;
-                    s.clip().rotation(b, s.time(), q);
+                    int from = s.mirror() ? mirror[b] : b;
+                    if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b] || !s.clip().rotates(from)) continue;
+                    s.clip().rotation(from, s.time(), q);
+                    if (s.mirror()) q.set(q.x, -q.y, -q.z, q.w);
                     if (base.dot(q) < 0) q.set(-q.x, -q.y, -q.z, -q.w);
                     float w = s.weight() * share;
                     sum.set(sum.x + q.x * w, sum.y + q.y * w, sum.z + q.z * w, sum.w + q.w * w);
@@ -418,8 +428,11 @@ public final class HumanoidPoser {
                 float share = moved > 1 ? 1 / moved : 1;
                 Vector3f offset = pose.offset[b].mul(Math.max(0, 1 - moved));
                 for (Input.StanceClip s : in.stance) {
-                    if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b] || !s.clip().moves(b)) continue;
-                    offset.add(s.clip().position(b, s.time(), p).mul(s.weight() * share));
+                    int from = s.mirror() ? mirror[b] : b;
+                    if (s.clip() == null || s.weight() <= 0 || b >= s.mask().length || !s.mask()[b] || !s.clip().moves(from)) continue;
+                    s.clip().position(from, s.time(), p);
+                    if (s.mirror()) p.x = -p.x;
+                    offset.add(p.mul(s.weight() * share));
                 }
             }
         }

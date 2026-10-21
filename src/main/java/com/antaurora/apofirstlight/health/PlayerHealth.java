@@ -53,8 +53,9 @@ import java.util.UUID;
  * skipped game time, at most sleep_max, under the same conditions; the skip's target time is remembered so the same
  * skip never heals twice.</li>
  * </ul>
- * Each second the regeneration state and the wounds go to the client (HealthPackets) when they changed (and at least every
- * 5 s while there are wounds, for their recovery bars).
+ * Each second the regeneration state, the wounds and the fractures go to the client (HealthPackets) when they changed (and
+ * at least every 5 s while there are wounds or fractures, for their recovery bars). Fractures (Fractures) heal here too, a
+ * second at a time and over a night skipped asleep, and lower the regeneration ceiling (HealthCap).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class PlayerHealth {
@@ -72,6 +73,10 @@ public final class PlayerHealth {
     }
 
     private static final Map<UUID, State> STATES = new HashMap<>();
+
+    static {
+        HealthCap.register(Fractures::cap);
+    }
 
     private PlayerHealth() {
     }
@@ -109,6 +114,7 @@ public final class PlayerHealth {
     public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             Wounds.forget(player);
+            Fractures.forget(player);
             STATES.remove(player.getUUID());
         }
     }
@@ -118,12 +124,14 @@ public final class PlayerHealth {
         if (!(event.getOriginal() instanceof ServerPlayer original) || !(event.getEntity() instanceof ServerPlayer player)) return;
         if (event.isWasDeath()) {
             Wounds.clear(player);
+            Fractures.clear(player);
         } else {
             // vanilla put the old health on a fresh 20 HP player (clamped): raise the base first, then take the health back
             var instance = player.getAttribute(Attributes.MAX_HEALTH);
             if (instance != null) instance.setBaseValue(HealthConfig.get().maxHealth);
             player.setHealth(Math.min(player.getMaxHealth(), original.getHealth()));
             Wounds.save(player, Wounds.state(player));
+            Fractures.save(player, Fractures.state(player));
             CompoundTag health = original.getPersistentData().getCompound(KEY);
             if (!health.isEmpty()) player.getPersistentData().put(KEY, health.copy());
         }
@@ -168,6 +176,7 @@ public final class PlayerHealth {
         if (health > 0) {
             state(player).lastDamageTick = player.server.getTickCount();
             Wounds.onDamage(player, source, (float) health);
+            Fractures.onDamage(player, source, health);
         }
     }
 
@@ -206,6 +215,8 @@ public final class PlayerHealth {
         State s = state(player);
         ensureMaximum(player);
         Wounds.step(player, 20);
+        Fractures.step(player, 20, resting(player));
+        Fractures.apply(player);
         HealthConfig c = HealthConfig.get();
         Regen regen;
         if (!player.isAlive() || player.isSpectator()) regen = Regen.NONE;
@@ -228,13 +239,22 @@ public final class PlayerHealth {
             wounds.dirty = false;
             s.forceSync = true;
         }
+        var bones = Fractures.state(player);
+        if (bones.dirty) {
+            Fractures.save(player, bones);
+            bones.dirty = false;
+            s.forceSync = true;
+        }
         List<Wounds.View> views = Wounds.views(player);
-        BandageSync.update(player, views);   // the bandage flag for everyone who draws this player
-        var packet = new HealthPackets.State((byte) s.regen.ordinal(), (float) Wounds.visual(player), views);
+        List<Fractures.View> fractures = Fractures.views(player);
+        BodyMarkSync.update(player, views, fractures);   // the dressings and splints everyone who draws this player sees
+        var packet = new HealthPackets.State((byte) s.regen.ordinal(), (float) Wounds.visual(player), views, fractures);
         s.sinceSync++;
         boolean changed = s.sent == null || s.sent.regen() != packet.regen() || !sameShape(s.sent.wounds(), views)
+                || !sameFractures(s.sent.fractures(), fractures)
                 || Math.abs(s.sent.visual() - packet.visual()) > 0.02
-                || !views.isEmpty() && s.sinceSync >= 5 && !Objects.equals(s.sent.wounds(), views);
+                || s.sinceSync >= 5 && (!views.isEmpty() && !Objects.equals(s.sent.wounds(), views)
+                        || !fractures.isEmpty() && !Objects.equals(s.sent.fractures(), fractures));
         if (!s.forceSync && !changed) return;
         s.forceSync = false;
         s.sinceSync = 0;
@@ -248,8 +268,16 @@ public final class PlayerHealth {
         for (int i = 0; i < a.size(); i++) {
             var x = a.get(i);
             var y = b.get(i);
-            if (x.stage() != y.stage() || x.cleaned() != y.cleaned() || x.bandaged() != y.bandaged()) return false;
+            if (x.stage() != y.stage() || x.cleaned() != y.cleaned() || x.bandaged() != y.bandaged() || x.part() != y.part()) return false;
         }
+        return true;
+    }
+
+    /** Same broken limbs, splinted alike (only the healing differs). */
+    private static boolean sameFractures(List<Fractures.View> a, List<Fractures.View> b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++)
+            if (a.get(i).part() != b.get(i).part() || a.get(i).splinted() != b.get(i).splinted()) return false;
         return true;
     }
 
@@ -266,6 +294,8 @@ public final class PlayerHealth {
             if (tag.contains("last_sleep") && tag.getLong("last_sleep") == target) continue;
             tag.putLong("last_sleep", target);
             player.getPersistentData().put(KEY, tag);
+            Fractures.step(player, skipped, true);   // bones heal over the skipped night, asleep
+            state(player).forceSync = true;
             if (!canRegenerate(player)) continue;
             double amount = Math.min(c.regen.sleepMax, skipped / 1200.0 * c.regen.sleepPerMinute * regenMultiplier(player));
             heal(player, amount);
@@ -279,9 +309,9 @@ public final class PlayerHealth {
         State s = state(player);
         long since = player.server.getTickCount() - s.lastDamageTick;
         return String.format(java.util.Locale.ROOT,
-                "health %.1f / %.0f (cap %.0f, absorption %.1f) | regen %s, last damage %s s ago, x%.2f | wounds %s | stamina regen x%.2f, visual %.2f",
+                "health %.1f / %.0f (cap %.0f, absorption %.1f) | regen %s, last damage %s s ago, x%.2f | wounds %s | fractures %s | stamina regen x%.2f, visual %.2f",
                 player.getHealth(), player.getMaxHealth(), HealthCap.cap(player), player.getAbsorptionAmount(), s.regen,
-                since > 1_000_000 ? "-" : String.valueOf(since / 20), regenMultiplier(player), Wounds.views(player),
+                since > 1_000_000 ? "-" : String.valueOf(since / 20), regenMultiplier(player), Wounds.views(player), Fractures.views(player),
                 Wounds.staminaRegenMultiplier(player), Wounds.visual(player));
     }
 

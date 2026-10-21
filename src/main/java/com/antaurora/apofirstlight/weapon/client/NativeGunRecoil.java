@@ -90,7 +90,9 @@ public final class NativeGunRecoil {
         double v = STATE.vertical(), h = STATE.horizontal();
         // gun growth (2026-10-18): each level of the gun class brings the aim back a little faster
         double recovery = owner.isCreative() || !(owner.getMainHandItem().getItem() instanceof NativeGunItem held) ? 1
-                : com.antaurora.apofirstlight.client.survivor.SurvivorSheetClient.gunRecoilRecovery(held.definition().weaponClass());
+                : com.antaurora.apofirstlight.client.survivor.SurvivorSheetClient.gunRecoilRecovery(held.definition().weaponClass())
+                        // a broken arm brings the aim back slower (health/Fractures)
+                        * com.antaurora.apofirstlight.health.Fractures.arm(owner, com.antaurora.apofirstlight.health.Fractures.ArmEffect.RECOIL_RECOVERY);
         STATE.advance(dt, recovery);
         applyAim(STATE.vertical() - v, STATE.horizontal() - h);
     }

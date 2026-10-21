@@ -7,7 +7,9 @@ import com.antaurora.apofirstlight.registry.AflMobEffects;
 import com.antaurora.apofirstlight.stamina.ClientStamina;
 import com.antaurora.apofirstlight.temperature.ClientTemperature;
 import com.antaurora.apofirstlight.temperature.TemperatureReadout;
+import com.antaurora.apofirstlight.health.BodyPart;
 import com.antaurora.apofirstlight.health.ClientHealth;
+import com.antaurora.apofirstlight.health.Fractures;
 import com.antaurora.apofirstlight.health.HealthConfig;
 import com.antaurora.apofirstlight.health.PlayerHealth;
 import com.antaurora.apofirstlight.health.Wounds;
@@ -93,8 +95,8 @@ public final class StatusBadgeHud {
     /** One state as shown: key (stable), stage (a higher stage of the same key re-announces it), kind, icon, name, effect;
      *  fraction of a timed state left (NaN: untimed) and the text beside the badge (time left, a countdown), or null. */
     public record Status(String key, int stage, Kind kind, AflRingIcon.Glyph icon, Component name, Component effect, double left, String aside) {
-        /** Where it comes from and how it goes (the character page's status panel, on hover). */
-        public Component detail() { return t(key + ".detail"); }
+        /** Where it comes from and how it goes (the character page's status panel, on hover); one text for every fracture. */
+        public Component detail() { return t((key.startsWith("fracture_") ? "fracture" : key) + ".detail"); }
     }
     public static final int DANGER_RGB = DANGER_TEXT;
 
@@ -227,6 +229,19 @@ public final class StatusBadgeHud {
     static final AflRingIcon.Glyph SWOLLEN = (x, y) -> swollen(x, y, 0.5, 0.5, 1.0);
     static final AflRingIcon.Glyph FESTERING = (x, y) -> Math.min(swollen(x, y, 0.46, 0.38, 0.86),
             Math.min(Math.hypot(x - 0.56, y - 0.77) - 0.105, AflRingIcon.convex(x, y, 0.56, 0.5, 0.655, 0.74, 0.465, 0.74)));
+    // fractures (fractures V1, docs/gameplay/fracture_splint_v1_plan.md 7): a bone with a crack across its middle; splinted, a
+    // slat along it on either side
+    private static double bone(double x, double y) {
+        double shaft = AflRingIcon.segment(x, y, 0.3, 0.7, 0.7, 0.3) - 0.07;
+        double knobs = Math.min(Math.min(Math.hypot(x - 0.211, y - 0.711), Math.hypot(x - 0.289, y - 0.789)),
+                Math.min(Math.hypot(x - 0.711, y - 0.211), Math.hypot(x - 0.789, y - 0.289))) - 0.075;
+        double crack = Math.min(Math.min(AflRingIcon.segment(x, y, 0.42, 0.42, 0.5, 0.47), AflRingIcon.segment(x, y, 0.5, 0.47, 0.5, 0.53)),
+                AflRingIcon.segment(x, y, 0.5, 0.53, 0.58, 0.58)) - 0.024;
+        return Math.max(Math.min(shaft, knobs), -crack);
+    }
+    static final AflRingIcon.Glyph BONE = StatusBadgeHud::bone;
+    static final AflRingIcon.Glyph BONE_SPLINTED = (x, y) -> Math.min(bone(x, y), Math.min(
+            AflRingIcon.segment(x, y, 0.441, 0.841, 0.841, 0.441), AflRingIcon.segment(x, y, 0.159, 0.559, 0.559, 0.159)) - 0.036);
     static final AflRingIcon.Glyph THERMOMETER = (x, y) -> Math.min(AflRingIcon.segment(x, y, 0.5, 0.12, 0.5, 0.62) - 0.09,
             Math.hypot(x - 0.5, y - 0.74) - 0.17);
 
@@ -273,6 +288,7 @@ public final class StatusBadgeHud {
         if (food <= 0) list.add(new Status("hunger", 2, Kind.DANGER, SurvivalVitalsHud.DRUMSTICK, t("hunger.2"), t("hunger.2.effect"), Double.NaN, null));
         else if (food <= 6) list.add(new Status("hunger", 1, Kind.BAD, SurvivalVitalsHud.DRUMSTICK, t("hunger.1"), t("hunger.1.effect"), Double.NaN, null));
         wounds(list);
+        fractures(list, player);
         // good: healing (health V1a: the server says whether natural regeneration runs, awake or resting)
         var regen = ClientHealth.regen();
         if (regen == PlayerHealth.Regen.AWAKE || regen == PlayerHealth.Regen.REST)
@@ -309,6 +325,33 @@ public final class StatusBadgeHud {
                     count > 1 ? t("wound." + name + ".many", count) : t("wound." + name), t("wound." + name + "." + care), left, null));
         }
     }
+    /**
+     * Fractures: one badge per broken limb (brown, never red: a fracture does not kill by itself), its line what it costs
+     * now; splinted, the arc is the healing still to go (none before: unsplinted it heals too slowly to watch).
+     */
+    private static void fractures(List<Status> list, LocalPlayer player) {
+        for (var f : ClientHealth.fractures()) list.add(fracture(f, player));
+    }
+
+    /** One fracture as its badge (the HUD column, the inventory's body map). */
+    public static Status fracture(Fractures.View f, net.minecraft.world.entity.player.Player player) {
+        String limb = f.part().key();
+        String effect = f.splinted() ? "fracture.splinted" : f.part().leg() ? "fracture.leg"
+                : f.part().mainArm(player) ? "fracture.main_arm" : "fracture.support_arm";
+        return new Status("fracture_" + limb, f.splinted() ? 1 : 2, Kind.BAD, f.splinted() ? BONE_SPLINTED : BONE,
+                t("fracture." + limb), t(effect), f.splinted() ? 1 - f.progress() : Double.NaN, null);
+    }
+
+    /** One wound as its stage's badge, its own care line (the inventory's body map: the wounds of one part). */
+    public static Status wound(Wounds.View w) {
+        String name = w.stage().name().toLowerCase(Locale.ROOT);
+        String care = w.cleaned() && w.bandaged() ? "treated" : w.cleaned() ? "cleaned" : w.bandaged() ? "bandaged" : "untreated";
+        Kind kind = w.stage() == Wounds.Stage.SUPPURATION && !w.cleaned() ? Kind.DANGER : Kind.BAD;
+        AflRingIcon.Glyph glyph = switch (w.stage()) { case SCRATCH -> CLAW; case INFECTION -> SWOLLEN; case SUPPURATION -> FESTERING; };
+        return new Status("wound_" + name, w.stage().ordinal() + 1, kind, glyph, t("wound." + name), t("wound." + name + "." + care),
+                Float.isNaN(w.recovery()) ? Double.NaN : 1 - w.recovery(), null);
+    }
+
     private static int treated(Wounds.View w) {
         return (w.cleaned() ? 1 : 0) + (w.bandaged() ? 1 : 0);
     }

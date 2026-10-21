@@ -279,7 +279,8 @@ public final class AflCreativeTabs {
             AflItems.CLINICAL_THERMOMETER,
             AflItems.WRIST_THERMOMETER,
             AflItems.BANDAGE,
-            AflItems.MEDICAL_ALCOHOL);
+            AflItems.MEDICAL_ALCOHOL,
+            AflItems.SPLINT);
 
     /** Title key itemGroup.apocalypse_firstlight.&lt;id&gt;; placed after {@code after} when given. */
     @SafeVarargs

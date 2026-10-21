@@ -51,7 +51,9 @@ import java.util.Map;
  * around), its hand anchors from the view ({@link PlayerAction.ViewAnchor});</li>
  * <li>a jerry can in the main hand (S2): carried, or pouring (item/FuelCanItem's pour tag, synced with the stack); the
  * pour's time runs back twice as fast after it stops, so the can is tipped back and lowered;</li>
- * <li>first of all, a gun's draw or put-away (SkeletonGunStance#action: {@code gun/<id>_draw}, {@code gun/<id>_holster};
+ * <li>first of all, a landing that hurt (health/FallLanding sends it; client/FallLandingClient): body/land_hard or
+ * body/fall_over, mirrored when the right hand goes down;</li>
+ * <li>then a gun's draw or put-away (SkeletonGunStance#action: {@code gun/<id>_draw}, {@code gun/<id>_holster};
  * docs/dev/p9_draw_holster_actions_v1.md 2.4), played only with the gun stance (PlayerSkeleton).</li>
  * </ul>
  * A source with its own clock (item use, crowbar, jerry can) sets the action's time every frame; the others count from
@@ -239,8 +241,8 @@ public final class SkeletonActions {
     /** After the solve: the own posed eye (world), for the first-person camera while the action steps the body away. */
     static void solved(AbstractClientPlayer p, SkeletonPose pose, ActionPose.Moment m, Vec3 origin, Matrix4f toModel) {
         if (p != Minecraft.getInstance().player) return;
-        stepping = m != null && m.action.approach != null && ActionPose.weight(m) > 0 && m.anchors.apply(m.action.approach.anchor()) != null
-                && m.seconds > 0;
+        stepping = m != null && ActionPose.weight(m) > 0 && m.seconds > 0 && (m.action.firstPersonEye
+                || m.action.approach != null && m.anchors.apply(m.action.approach.anchor()) != null);
         if (!stepping) return;
         Matrix4f fromModel = new Matrix4f(toModel).invert();
         Vector3f e = fromModel.transformPosition(ActionPose.cameraEye(pose).div(16F));
@@ -305,6 +307,8 @@ public final class SkeletonActions {
     private static Live live(AbstractClientPlayer p, float partial, double now) {
         Minecraft mc = Minecraft.getInstance();
         if (p == mc.player && devAction != null) return dev(p, partial, now);
+        FallLandingClient.Playing landing = FallLandingClient.playing(p, now);
+        if (landing != null) return new Live(landing.id(), landing.started(), 0F, Map.of(), landing.mirror());
         SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
         if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed());
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);
@@ -355,12 +359,22 @@ public final class SkeletonActions {
         OPENINGS.remove(p.getId());
         if (p.isUsingItem()) {
             ItemStack stack = p.getUseItem();
+            float used = stack.getUseDuration() - p.getUseItemRemainingTicks() + partial;
+            // the splint (fractures V1): the leg or the arm action by the limb it goes on, mirrored for a right limb (both
+            // are keyed on the left one)
+            if (stack.getItem() instanceof com.antaurora.apofirstlight.health.SplintItem) {
+                var limb = com.antaurora.apofirstlight.health.SplintItem.target(p);
+                if (limb != null) return new Live(limb.leg() ? "item/splint_leg" : "item/splint_arm", now - used / 20.0, 0F, Map.of(), limb.right());
+            }
             ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
             String action = id != null && ApocalypseFirstLight.MOD_ID.equals(id.getNamespace()) ? PlayerActions.useAction(id.getPath()) : null;
             if (action != null) {
-                float used = stack.getUseDuration() - p.getUseItemRemainingTicks() + partial;
                 HumanoidArm arm = p.getUsedItemHand() == InteractionHand.MAIN_HAND ? p.getMainArm() : p.getMainArm().getOpposite();
-                return new Live(action, now - used / 20.0, 0F, Map.of(), arm == HumanoidArm.LEFT);
+                boolean mirror = arm == HumanoidArm.LEFT;
+                // the bandage and the alcohol work on the wound's forearm (the left one as keyed; the right one mirrored)
+                if (stack.getItem() instanceof com.antaurora.apofirstlight.health.MedicalItem medical)
+                    mirror = com.antaurora.apofirstlight.client.BandageWrapRenderer.workedArm(p, medical.treatment()).right();
+                return new Live(action, now - used / 20.0, 0F, Map.of(), mirror);
             }
         }
         return null;

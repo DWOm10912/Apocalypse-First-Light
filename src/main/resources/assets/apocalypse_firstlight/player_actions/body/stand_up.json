@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "about": "Sitting on the ground (docs/gameplay/splint_animation_v2_plan.md 3): getting up, 1.0 s (sit/GroundSit.STAND_TICKS 20; the seat lets the player off at its end): the right foot pulled in, both hands push on the right knee, the left leg kept straight heel down, up. A stance clip (client/skeleton/GroundSitClient); mirrored when the right leg is the broken one. Written by tools/medical-actions-v1a/author_splint_v2.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "body.stand_up"
+  },
+  "clip": "body.stand_up",
+  "layer": "stance",
+  "mask": "full",
+  "priority": 10,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0
+  },
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": []
+}

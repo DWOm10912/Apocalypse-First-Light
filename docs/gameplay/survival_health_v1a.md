@@ -66,7 +66,7 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 |---|---|---|
 | 等待 | 最后一次扣血后 `delay_seconds`（15 s）内 | 0 |
 | 清醒 | 其余时间 | `awake_per_minute` 3 |
-| 休息 | 睡觉，或坐在不由自己驾驶的座位上（家具椅、办公椅、皮卡乘客位；骑马之类的生物不算） | `rest_per_minute` 8 |
+| 休息 | 睡觉，或坐在不由自己驾驶的座位上（家具椅、办公椅、皮卡乘客位、按坐下键坐在地上；骑马之类的生物不算） | `rest_per_minute` 8 |
 | 阻断 | 饥饿 < `min_food`（7，即"饥饿"徽章 ≤ 6 的那一档）、脱水（`PlayerThirst.blocksNaturalRegen`）、冷 2 / 热 2 及以上（`PlayerTemperature.blocksNaturalRegen`）、游戏规则 `naturalRegeneration` 关闭 | 0 |
 
 - 倍率：`natural_regen`（幸存者属性，体质好 ×1.2）× 伤口倍率（化脓 0.85，恢复期间渐变回 1）。辐射病对所有回血的倍率照旧（`RadiationSicknessEvents`）。
@@ -91,6 +91,7 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 - 有多处伤口时取最差的一处的惩罚；清洁后的感染 / 化脓在恢复期内惩罚线性淡出（化脓淡到感染的值）。
 - 死亡清空伤口；切维度保留。
 - 动作栏提示：抓伤、开始感染、化脓、全部愈合、已清洁、已包扎。
+- **部位**（2026-10-20，背包身体图 V1，[body_silhouette_v1_plan.md](../ui/body_silhouette_v1_plan.md)）：每处伤口有一个部位（`health/BodyPart`：头、胸、腹、右臂、左臂、右腿、左腿），抓伤按权重随机（手臂各 30、胸 15、腹 10、腿各 7.5、头 0）；旧存档里没有部位的伤口读档时随机给一只手臂。部位只决定伤标在哪、纱布画在哪，规则不变。
 
 ## 6. HUD 和屏幕效果
 
@@ -135,14 +136,14 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
   - **液流**（`client/MedicalPourJets`）：使用 2.1–2.9 s、瓶轴朝下（世界 y < −0.2）时从画出来的瓶口（道具点 `mouth`，方向到 `mouth_tip`）流出一股细的透明液体（LiquidJet，寿命 0.25 s：落到袖子上约 0.13 s，再往下一点就消失；半径 0.006，水的贴图，颜色 #DDE6EA，不透明度 110），在油渍的世界渲染里画。第一、第三人称都从骨骼画出的瓶口取点（第一人称画自己的身体也是世界渲染）。只是表现，清洁的效果照旧在使用结束时由服务端结算。
   - 数值检查（`node tools/check-medical-actions-v1a.cjs`，视角俯仰 0 / ±30 / 60，站立和潜行，每 0.05 s）：两个动作都无报告。绷带：手掌离目标 0 px，腕部最多 9°，前臂扭转最多 15°，手掌离躯干盒子至少 0.12 px；酒精：手掌离目标最多 0.49 px，腕部最多 16°，前臂扭转最多 30°（限值），手掌离躯干至少 1.08 px。对帧时另外检查了瓶盖离开瓶口后不碰瓶子、瓶子不穿进左前臂（只剩手指捏盖时手腕贴着瓶口），并在 Blockbench 离屏视图看过第一人称和第三人称的关键帧。游戏里没看过。
 - **包扎留在身上（7.5）**（用户 2026-10-19 实机后："绷带：需要真正留在玩家身上"；`client/BandageWrapRenderer`、`health/BandageSync`）：
-  - 只要有一处伤口是"已包扎"，那只前臂上就一直缠着纱布：左前臂，左撇子是右前臂（和包扎动作的镜像一致）。V1a 的伤口没有部位，所以总是这只前臂。没有已包扎的伤口了（愈合、感染让包扎作废、新抓伤刷新了这一处、`/afl health clear`、死亡）就消失。
+  - 已包扎的伤口在哪个部位，纱布就缠在哪里（2026-10-20 起伤口有部位）：手臂缠前臂，腿缠小腿；头、胸、腹 V1 不画。包扎动作本身还是在一只前臂上做（伤在手臂上就是那只，否则是主手对面那只，`BandageWrapRenderer#workedArm`），伤在别处时用完纱布才出现在对应部位。没有已包扎的伤口了（愈合、感染让包扎作废、新抓伤刷新了这一处、`/afl health clear`、死亡）就消失。
   - 位置：前臂上离手臂末端（手的端面）`BAND_FROM` 1.5 px 到 `BAND_TO` 5.5 px 的一段（手臂自己的坐标，和包扎动画约定的同一段）。三圈：靠手腕一圈平绕（1.5–3.2 px），中间一圈斜绕（中心 3.5 px，每 px 横向斜 0.16 px，覆盖约 2.1–4.9 px），靠肘一圈平绕（3.8–5.5 px）；每圈宽 1.7 px，后一圈压在前一圈上面。
   - 几何（程序生成的网格，不是贴图）：每圈的横截面是袖子外层（手臂 + 0.25 px）的方框向外偏移、四角圆弧（每角 3 段），表面离袖子 0.14 / 0.21 / 0.28 px（一圈比一圈高），两侧有侧壁一直到离手臂 0.05 px，所以和手臂、袖子、相邻的圈都没有共面（最小间距 0.07 px）。沿布宽分 4 条，边上暗一点（0.9），侧壁 0.82。材质用绷带物品自己的纱布贴图（`textures/item/bandage_mesh.png` 里一块平的米白区域，带它的 `_n` / `_s`），`RenderType.entitySolid`，背面剔除。
   - 玩家骨骼（`PlayerSkeleton#draw` 画完皮肤后调用 `drawSkeleton`）：顶点按 C-min 皮肤网格同样的方式随关节弯（`SkinMesh` 的环：关节处取半旋转，环之间线性），所以手腕、手肘弯的时候纱布跟着皮肤走，不会切进去也不会浮起来；自己第一人称的身体（世界渲染里画的那份）手臂可见时也有。
   - 原版身体（骨骼关闭，或骨骼不画的姿势：游泳、睡觉、死亡、鞘翅）：`BandageWrapRenderer.Layer` 画在原版手臂部件上（刚性）；骨骼画过的玩家这个层会跳过。
   - 第一人称视图模型（枪、油桶、撬棍等用 `NativePlayerArmRenderer` 画的手臂）：画完手臂和袖子后调用 `drawArm`，在同一个部件坐标里画。注意视图模型的手臂有展示缩放（沿手臂 0.78），所以在视图模型自己的单位里这一段是离末端 1.17–4.29。原版第一人称空手（只画主手）不画。
   - 使用绷带时（4 s）纱布一圈一圈缠上去：进度 = clamp((使用秒数 − 0.6) / 2.5, 0, 1)，每圈占三分之一，每圈从前臂前侧（−z 面中间）开始沿着手臂绕过去（开口两端有端面）。骨骼画出卷的时候（包扎动作 0.6–3.3 s），这一圈的开口端改为跟着卷在前臂上的实际角度走，落后卷 30°（圈数仍按时间，两者相差不到半圈），并从开口端到卷画一条和一圈一样宽的布带（卷那头窄到 0.8，正反两面），像缠胶带一样把布从卷上拉出来（用户之前的要求"就和裹胶带一样"）。中途松开：没有别的已包扎伤口就消失。用完时客户端先保持完整的纱布最多 1 s，等服务端的结果（一般同一 tick 就到）。别的玩家的进度由客户端自己的 `isUsingItem` / `getTicksUsingItem` 算。
-  - 同步：伤口列表只发给本人，所以另加一个包 `HealthPackets.Bandaged`（玩家 UUID + 是否包扎），发给本人和所有在追踪他的玩家（`TRACKING_ENTITY_AND_SELF`）：每秒健康同步时变了才发（`PlayerHealth#sync`），用完绷带立刻发（`MedicalItem#finishUsingItem`），登录、重生、换维度时强制发；有人开始追踪这个玩家时单独发给他（是否包扎都发，纠正以前留下的旧值）。客户端存在 `ClientHealth`（按 UUID），退出世界时清空。协议号没有再改（分支上已是 59）。
+  - 同步：伤口列表只发给本人，所以另加一个包 `HealthPackets.Marks`（`health/BodyMarkSync`；2026-10-20 取代只有一个"是否包扎"的 `Bandaged` / `BandageSync`）：玩家 UUID、已包扎的部位、已固定和骨折的肢体、下一次包扎和清洁要处理的部位，发给本人和所有在追踪他的玩家（`TRACKING_ENTITY_AND_SELF`）：每秒健康同步时变了才发（`PlayerHealth#sync`），用完绷带、夹板立刻发，登录、重生、换维度时强制发；有人开始追踪这个玩家时单独发给他。客户端存在 `ClientHealth`（按 UUID），退出世界时清空。网络协议 60。
   - 编译通过，游戏里还没看过。
 - **声音（7.6）**（用户 2026-10-19/20："酒精的音效应该分段，这种整段不行，太多杂音"；拿起 / 放下瓶子、翻瓶时液体晃动"3 轮都不行"，先不做）：
   - 来源：用户的 Firefly 生成，绷带一整条（5 s），酒精三条分开生成（拧一下瓶盖、盖子离开 / 盖回、倾倒）。`node tools/build-medical-sounds-v1a.cjs <素材文件夹>` 切成 15 段单声道 Vorbis（`sounds/medical/*.ogg`，48 kHz），每条素材一个总增益，每段再单独补增益（布料摩擦比按压声低约 28 dB，补 10–14 dB），首尾淡入淡出，限幅 −1 dBFS。素材的原始文件名、各段的切点见脚本开头。
@@ -155,7 +156,8 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 ## 8. 存档
 
 - `afl_health`（玩家 persistentData）：`last_sleep`。
-- `afl_wounds`：`v`、`list`（每处 `stage`、`severity`、`cleaned`、`bandaged`、`rolled`、`age`、`cleaned_at`、`next_check`）。没有伤口时删除这个键。
+- `afl_wounds`：`v`、`list`（每处 `stage`、`severity`、`cleaned`、`bandaged`、`rolled`、`age`、`cleaned_at`、`next_check`、`part`）。没有伤口时删除这个键。
+- `afl_fractures`：骨折（[fracture_splint_v1_plan.md](fracture_splint_v1_plan.md) 第 6 节）。
 - 旧存档按第 2 节自动升到 100 点；没有伤口数据的玩家就是没有伤口。
 
 ## 9. 开发指令
@@ -167,9 +169,10 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 | `/afl health` | 只看状态 |
 | `/afl health hp <值>` | 设生命（最多到上限，0 直接死亡） |
 | `/afl health scratch` | 按僵尸抓伤的规则加一处抓伤 |
-| `/afl health wound <scratch\|infection\|suppuration>` | 直接加一处该阶段的伤口（满了替换最早的一处） |
+| `/afl health wound <scratch\|infection\|suppuration> [部位]` | 直接加一处该阶段的伤口（满了替换最早的一处）；部位 `head`、`chest`、`belly`、`right_arm`、`left_arm`、`right_leg`、`left_leg`，不写按抓伤权重随机 |
+| `/afl health fracture <right_arm\|left_arm\|right_leg\|left_leg> [splint\|heal]` | 骨折（已经断了就是再断）/ 固定 / 治好那一处；`/afl health fracture heal` 全部治好 |
 | `/afl health clear` | 清空伤口 |
-| `/afl health advance <天数>` | 所有伤口按在线逐秒推进这么多游戏日（每次判定照常掷骰） |
+| `/afl health advance <天数>` | 所有伤口和骨折按在线逐秒推进这么多游戏日（每次判定照常掷骰） |
 
 ## 10. 验收矩阵（实机，由用户做）
 
@@ -207,18 +210,19 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 - 手臂离第一人称镜头很近（玩家模型的手臂只有 6 + 6 px，伸出的前臂中段离眼睛最多约 11 px），所以第一人称里手臂显得大；这是共用骨骼动作的代价，游戏里由用户判断。
 - 液流只是表现，不在地面留痕迹；只有骨骼画出瓶子道具时才有液流（骨骼关闭时没有）。
 - 两个动作、液流、布带、新屏幕效果都没在光影下看过。
-- "休息"只认服务端能判定的状态（睡觉、坐不由自己驾驶的座位），躺下、坐地上这类以后再加。
+- "休息"只认服务端能判定的状态（睡觉、坐不由自己驾驶的座位）。坐在地上（坐下键 `N`，2026-10-20，[splint_animation_v2_plan.md](splint_animation_v2_plan.md)）也是坐座位，所以算休息；躺下以后再加。
 - 跳夜结算只给正在睡觉的玩家；没睡的玩家照常按秒回血。
 - 旧"体弱"满血玩家升级后是 90/100（见第 2 节）。
 - 抓伤只来自感染者近战；感染者传染、其他来源以后接 `Wounds.scratch`。
 - 留在身上的纱布：尸体（布娃娃，`SkeletonBodyRenderer`）上不画；原版第一人称空手不画；骨骼关闭时包扎只按时间缠、没有布带。
-- 网络协议 58 → 59（之后又加了包 `HealthPackets.Bandaged`，没再改号）：**和 master 撞号**（Main 2026-10-19 也把协议改成了 59），合并时这边要改成 60。
+- 网络协议：分支上 58 → 60（2026-10-20 骨折和部位改了 `HealthPackets.State`、加了 `Marks`）；master 现在是 59，合并时取 60，master 再改过就取更大的下一个。
 - `FirstPersonBody`、`PlayerSkeleton` 合并时会和 master `b2a62541`（"P9 低头交给身体"：`gunHandOver` / `gunDrop` / `armsShown`）冲突：两边都改了 `bodyArms`、`handDrop` 和第一人称手的取消条件。合并时把普通物品的 `itemHandOver` 和枪的 `gunHandOver` 合成一套（同一个帧计数、同样 25° / 45° / 3°），不要二选一。
-- Wiki 状态表、生存页已更新（分支上），master 上 `ad389e74` 加了状态图标（`gradlew wikiStatusIcons`）：合并后要给"恢复中"和三种伤口出图，去掉"饱腹"。
+- Wiki 状态表、生存页已更新（分支上），master 上 `ad389e74` 加了状态图标（`gradlew wikiStatusIcons`）：合并后要给"恢复中"、三种伤口和骨折（未固定 / 已固定两种图标）出图，去掉"饱腹"；夹板的 3D 物品图标（wiki `ItemIcon splint`）也要 Main 渲染。
 
 ## 12. 以后
 
 - V1b：出血、包扎止血；V2 见设计稿（部位、骨折、药物、营养等）。
+- 骨折与夹板 V1、背包身体图 V1：已实现，未进游戏（[fracture_splint_v1_plan.md](fracture_splint_v1_plan.md)、[body_silhouette_v1_plan.md](../ui/body_silhouette_v1_plan.md)）。
 - 骨骼动作的手指；第三人称拆下的瓶盖。
 - 配方、战利品（医药箱、药店）。
 - 生命监测仪：把伤口详情放进状态卡片。

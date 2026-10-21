@@ -211,7 +211,7 @@ P2 的枪械动画实机 NOT PASS（[player_skeleton_v1_design.md](player_skelet
   - 一个道具挂在 `prop:<别的道具>` 上，而那个道具不在动作里或排在后面时，拒绝导出并说明原因；
   - `hidden` 只在为真时写；`open_from` 每个道具各自写回；
   - 手目标里第一个道具的点写成短的 `prop:<点>`，别的道具写 `prop:<道具>:<点>`。
-- 导入时没用到的字段（`approach`、`param_clip`、`view_anchors`、`events`、`check`）存在动画的 `afl.extra` 里，导出时原样写回。
+- 导入时没用到的字段（`approach`、`param_clip`、`view_anchors`、`events`、`check`、`first_person_pitch`、`first_person_eye`、`hold_body`、`first_person_view`）存在动画的 `afl.extra` 里，导出时原样写回。`first_person_view`（2026-10-20，落地与摔倒 V1）预览时也认：播放时视线俯仰按它的时间线走（`viewAt`，和游戏里的 `PlayerAction#viewAt` 一样 smoothstep），第一人称预览跟着低头抬头。`hold_body`（2026-10-20，夹板 V2）预览时也认：动作期间视线不弯、不扭胸口（核心 `actionBody` 和游戏里的 `ActionPose#body` 一样）。
 - 存工程时，工程设置（`afl_rig`：仓库、视角、道具列表）和每个动画的 `afl` 设置（含每个道具的挂点表）都写进 .bbmodel（第一阶段 MCP 核对过 `Codecs.project.compile` 的输出）。
 - 第一阶段的工程打开时自动改成新格式：一个道具 `prop` 变成道具列表，动画的 `prop_point`、`prop_open_from`、`prop_raw` 搬进新的位置，手目标 `prop:<点>` 变成 `prop:<道具>:<点>`。
 

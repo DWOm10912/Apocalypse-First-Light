@@ -542,6 +542,9 @@ public final class AflItems {
     public static final RegistryObject<Item> MEDICAL_ALCOHOL = ITEMS.register("medical_alcohol",
             () -> new com.antaurora.apofirstlight.health.MedicalItem(com.antaurora.apofirstlight.health.Wounds.Treatment.ALCOHOL,
                     new Item.Properties().stacksTo(8)));
+    // Fractures and splints V1 (docs/gameplay/fracture_splint_v1_plan.md 5): sets one broken limb; 2 sticks + 1 bandage
+    public static final RegistryObject<Item> SPLINT = ITEMS.register("splint",
+            () -> new com.antaurora.apofirstlight.health.SplintItem(new Item.Properties().stacksTo(4)));
     // Grid Inventory V0 test gear (docs/ui/afl_inventory_grid_v0_plan.md 7): a rig with four separate pouches, a 5x6
     // backpack, and a 6x10 one that makes the right column scroll; placeholder icons, nothing drawn on the body
     public static final RegistryObject<Item> FIELD_CHEST_RIG = ITEMS.register("field_chest_rig",

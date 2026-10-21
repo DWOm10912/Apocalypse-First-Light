@@ -135,7 +135,7 @@ public final class MedicalItem extends Item {
         if (level.isClientSide || !(player instanceof ServerPlayer server)) return stack;
         if (!Wounds.treat(server, treatment)) return stack;
         PlayerHealth.markSync(server);
-        BandageSync.update(server);   // at once: the wrap the use drew stays on (client/BandageWrapRenderer)
+        BodyMarkSync.update(server);   // at once: the wrap the use drew stays on (client/BandageWrapRenderer)
         if (!player.getAbilities().instabuild) stack.shrink(1);
         return stack;
     }

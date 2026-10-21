@@ -21,6 +21,16 @@ AFL replaces the vanilla inventory with a grid: every item takes up a block of c
 
 AFL has no off hand; guns are always held right-handed
 
+## Body map
+
+- <StatusTag s="test" /> The body map is still on a branch, not merged and not checked in game
+
+The middle of the inventory's left column shows your own skin from the front, turned grey. The screen's left is your body's right; R and L under the feet say which is which, with your health below
+
+An injured part is tinted and carries the same status badge as the HUD: red wants treating soon (an uncleaned infection, an unsplinted fracture), brown wants treating (an untreated scratch), amber is treated and getting better
+
+Hover over a part to list each injury on it and what to do: the best item you have on you is outlined; better ones you do not have are dimmed above it, so you know what to look for; with nothing at all you get one line on what to do without. "On you" means your hands, pockets, rig and backpack, not the ground or a container. See [Survival](./survival#wounds)
+
 ## Weight
 
 Everything has a close-to-real weight. Blocks are weighed as "one block to carry", so they are much lighter than the real thing. Items with no listed weight count as <V d="item_mass/core_v1#policy.fallback_unit_mass_kg" u="kg" /> each

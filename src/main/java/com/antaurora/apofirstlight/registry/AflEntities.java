@@ -36,6 +36,15 @@ public final class AflEntities {
                             com.antaurora.apofirstlight.vehicle.PickupTruckEntity::new, MobCategory.MISC)
                     .sized(1.9F, 1.9F).clientTrackingRange(10).build("pickup_t15"));
 
+    /**
+     * Sitting on the ground (docs/gameplay/splint_animation_v2_plan.md 3): the invisible seat under a player who sat down
+     * with the sit key; never saved, never summoned.
+     */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.sit.GroundSeat>> GROUND_SEAT =
+            ENTITY_TYPES.register("ground_seat", () -> EntityType.Builder.<com.antaurora.apofirstlight.sit.GroundSeat>of(
+                            com.antaurora.apofirstlight.sit.GroundSeat::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F).noSave().noSummon().clientTrackingRange(10).build("ground_seat"));
+
     private AflEntities() {
     }
 }

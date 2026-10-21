@@ -1,0 +1,138 @@
+{
+  "format_version": 1,
+  "about": "Splint V2 (docs/gameplay/splint_animation_v2_plan.md): splinting a broken forearm, standing or sat (upper body). 8 s (SplintItem.USE_TICKS 160), keyed on the left arm, mirrored for the right (client/skeleton/SkeletonActions). The left forearm held across the belly; the right hand lays the splint (player_props/splint) on it (0-1.3 s), then BandageWrapRenderer draws the two slats on its palm side and back; three ties, wrist to elbow, from 2.0, 3.4 and 4.8 s: the right hand takes the strip under the forearm, round the outside and over the top (the renderer grows each tie over its first 0.55 s), then the forearm comes up to the mouth, the teeth hold one end and the right hand pulls the other tight (t + 0.8 - 1.0 s), back down; the fingers moved twice (6.2-6.8 s); the forearm carried close to the body and let down. The body held (hold_body: arms keyed by FK); the own first-person view eased down to 45 deg. Written by tools/medical-actions-v1a/author_splint_v2.cjs from the approved concept.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "medical.splint_arm"
+  },
+  "clip": "medical.splint_arm",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 50,
+  "first_person": "body",
+  "blend": {
+    "in": 0.3,
+    "out": 0.3
+  },
+  "first_person_pitch": 45,
+  "hold_body": true,
+  "props": [
+    {
+      "id": "splint",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6,
+            10.5,
+            0
+          ],
+          "rot": [
+            -90,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6,
+            10.5,
+            0
+          ],
+          "rot": [
+            -90,
+            0,
+            0
+          ],
+          "blend": 0.6
+        },
+        {
+          "at": 0.6,
+          "frame": "bone:forearm_l",
+          "point": "center",
+          "pos": [
+            7.28,
+            8,
+            -3.52
+          ],
+          "rot": [
+            180,
+            -70,
+            90
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 1.1,
+          "frame": "bone:forearm_l",
+          "point": "center",
+          "pos": [
+            6.87,
+            8,
+            -2.4
+          ],
+          "rot": [
+            180,
+            -70,
+            90
+          ],
+          "blend": 0.2
+        },
+        {
+          "at": 1.3,
+          "frame": "bone:forearm_l",
+          "point": "center",
+          "pos": [
+            6.87,
+            8,
+            -2.4
+          ],
+          "rot": [
+            180,
+            -70,
+            90
+          ],
+          "blend": 0.05,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:splint:grip",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      },
+      {
+        "at": 1.3,
+        "target": "pose",
+        "blend": 0.25,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          1,
+          0.4
+        ]
+      }
+    ],
+    "left": []
+  },
+  "events": [],
+  "check": {
+    "use_ticks": 160
+  }
+}

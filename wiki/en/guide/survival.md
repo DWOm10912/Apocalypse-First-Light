@@ -37,7 +37,7 @@ Maximum health is <V d="health/health_v1#max_health" />, the same for every surv
 
 **Natural healing**
 
-- No healing for <V d="health/health_v1#regen.delay_seconds" u="s" /> after taking damage. Then <V d="health/health_v1#regen.awake_per_minute" /> a minute awake, <V d="health/health_v1#regen.rest_per_minute" /> a minute resting (asleep, in a chair, or riding in a vehicle you are not driving)
+- No healing for <V d="health/health_v1#regen.delay_seconds" u="s" /> after taking damage. Then <V d="health/health_v1#regen.awake_per_minute" /> a minute awake, <V d="health/health_v1#regen.rest_per_minute" /> a minute resting (asleep, in a chair, sitting on the ground, or riding in a vehicle you are not driving)
 - No natural healing with food below <V d="health/health_v1#regen.min_food" />, while dehydrated, or at Cold 2 / Heat 2 and worse
 - Sleeping through the night heals once for the time skipped, <V d="health/health_v1#regen.sleep_per_minute" /> a minute, at most <V d="health/health_v1#regen.sleep_max" />
 - Vanilla's food healing is off
@@ -45,6 +45,8 @@ Maximum health is <V d="health/health_v1#max_health" />, the same for every surv
 ## Wounds
 
 A melee hit from an infected has a <V d="wounds/wounds_v1#scratch_chance" pct /> chance to leave a scratch; you can have up to <V d="wounds/wounds_v1#max_wounds" /> wounds. Wounds show as status badges, do not progress while you are offline, and are gone after death
+
+<StatusTag s="test" /> Every wound is on a body part: mostly the arms, then the chest, abdomen and legs, never the head. The body map in your inventory shows where (see [Inventory](./inventory#body-map))
 
 | Stage | Effect | Progress |
 |---|---|---|
@@ -60,12 +62,57 @@ A scratch scratched again gets worse and more likely to become infected. The scr
 |---|---|
 | <ItemIcon id="medical_alcohol" /> Medical Alcohol | Hold right-click for <V j="MedicalItem.ALCOHOL_TICKS" x="0.05" u="s" /> to clean one wound (the worst first) |
 | <ItemIcon id="bandage" /> Bandage | Hold right-click for <V j="MedicalItem.BANDAGE_TICKS" x="0.05" u="s" /> to bandage one wound. A festering wound must be cleaned first |
+| <ItemIcon id="splint" /> Splint | <StatusTag s="test" /> Sets one fracture (legs first). A leg is splinted sitting on the ground: right-click standing and you sit down first; once sat, hold right-click for <V j="SplintItem.LEG_USE_TICKS" x="0.05" u="s" />, and you stay sitting after. An arm can be splinted standing or sitting: hold right-click for <V j="SplintItem.USE_TICKS" x="0.05" u="s" /> |
 
 One is used per treatment; letting go early uses nothing; Creative uses nothing. Not while swimming, under water or driving
 
 You see the whole treatment, the same moves in first and third person; in first person the view tips down to the arm: for a bandage you hold out your left forearm and wind the roll round it three times, the cloth pulling off the roll onto the arm, then press the end down; for medical alcohol you unscrew the cap and hold it in your left hand, pour the alcohol over your left forearm and screw the cap back on
 
-Once bandaged, the gauze stays wrapped round your left forearm (the right one if you are left-handed), for you and for other players to see. It comes off when no wound is bandaged any more: the wound healed, an infection spoiled the dressing, or you died
+Once bandaged, the gauze stays wrapped round the wounded part, for you and for other players to see. It comes off when no wound is bandaged any more: the wound healed, an infection spoiled the dressing, or you died
+
+<StatusTag s="test" /> The gauze goes on the wounded arm or leg; wounds on the head, chest or abdomen show no gauze yet. Bandaging and cleaning are still done on one forearm: the wounded one, or else the one not holding the gun
+
+## Fractures
+
+- <StatusTag s="test" /> Fractures and splints are still on a branch, not merged and not checked in game
+- <StatusTag s="test" /> Sitting on the ground: N sits down; N, jump or sneak gets up. Only on a block's collision face (not in the air, in water or on a ladder). Sitting counts as rest. See [Controls](./controls)
+
+A fall that costs health ends one of two ways:
+
+- <StatusTag s="test" /> **Hard landing**: you stay on your feet and sink into your knees. Only a leg can break
+- <StatusTag s="test" /> **Falling over**: you lose your footing, pitch forward onto one hand, stay on all fours a moment and get up. For those few seconds you cannot move or use anything. Only a fall-over can break an arm, the one you landed on
+
+Chance to fall over = (health lost − <V d="health/health_v1#fracture.fall_over.chance.0" />) ÷ <V d="health/health_v1#fracture.fall_over.chance.1" />, at most <V d="health/health_v1#fracture.fall_over.chance.2" pct />, then adjusted by how you land:
+
+- A leg already broken: ×<V d="health/health_v1#fracture.fall_over.broken_leg" />
+- Carrying more than a light load: +<V d="health/health_v1#fracture.fall_over.load" pct />; jumping down at a sprint: +<V d="health/health_v1#fracture.fall_over.speed" pct />; landing on a block edge or a slope: +<V d="health/health_v1#fracture.fall_over.edge" pct />
+- Holding sneak as you land: ×<V d="health/health_v1#fracture.fall_over.sneak" />
+- A landing that breaks a leg always falls over
+
+Fractures are judged by the health the fall actually took, so armour and landing in water make them less likely:
+
+- **Leg** (random side): chance = (health lost − <V d="health/health_v1#fracture.leg_fall.0" />) ÷ <V d="health/health_v1#fracture.leg_fall.1" />, at most <V d="health/health_v1#fracture.leg_fall.2" pct />
+- **Arm** (only when falling over, the hand you landed on): chance = (health lost − <V d="health/health_v1#fracture.arm_fall.0" />) ÷ <V d="health/health_v1#fracture.arm_fall.1" />, at most <V d="health/health_v1#fracture.arm_fall.2" pct />
+- Breaking a broken limb again sets its healing back by <V d="health/health_v1#fracture.rebreak_setback" pct /> and knocks the splint off; it has to be set again
+
+| Effect | Not splinted | Splinted |
+|---|---|---|
+| Leg: movement speed | ×<V d="health/health_v1#fracture.leg.move.0" /> | ×<V d="health/health_v1#fracture.leg.move.1" /> |
+| Leg: jump height (still up one block) | ×<V d="health/health_v1#fracture.leg.jump.0" /> | ×<V d="health/health_v1#fracture.leg.jump.1" /> |
+| Leg: sprinting | From <V d="health/health_v1#fracture.sprint_from.0" pct /> healed | From <V d="health/health_v1#fracture.sprint_from.1" pct /> healed |
+| Leg: stamina used walking | ×<V d="health/health_v1#fracture.leg.stamina.0" /> | ×<V d="health/health_v1#fracture.leg.stamina.1" /> |
+| Gun arm: aim sway | ×<V d="health/health_v1#fracture.main_arm.sway.0" /> | ×<V d="health/health_v1#fracture.main_arm.sway.1" /> |
+| Gun arm: mining speed / melee damage | ×<V d="health/health_v1#fracture.main_arm.dig.0" /> / ×<V d="health/health_v1#fracture.main_arm.melee.0" /> | ×<V d="health/health_v1#fracture.main_arm.dig.1" /> / ×<V d="health/health_v1#fracture.main_arm.melee.1" /> |
+| Other arm: aim sway | ×<V d="health/health_v1#fracture.support_arm.sway.0" /> | ×<V d="health/health_v1#fracture.support_arm.sway.1" /> |
+| Arm: climbing ladders and vines | ×<V d="health/health_v1#fracture.main_arm.climb.0" /> | ×<V d="health/health_v1#fracture.main_arm.climb.1" /> |
+| Natural healing ceiling (leg / arm) | <V d="health/health_v1#fracture.leg.cap.0" /> / <V d="health/health_v1#fracture.main_arm.cap.0" /> | <V d="health/health_v1#fracture.leg.cap.1" /> / <V d="health/health_v1#fracture.main_arm.cap.1" /> |
+
+- With a broken leg, landing from 2 blocks or more hurts a little more
+- **Healing**: splinted, a leg mends in about <V d="health/health_v1#fracture.leg_heal_days" /> game days, an arm in about <V d="health/health_v1#fracture.arm_heal_days" />; unsplinted it heals ×<V d="health/health_v1#fracture.unsplinted" /> as fast; resting ×<V d="health/health_v1#fracture.rest" />. From <V d="health/health_v1#fracture.fade_from" pct /> healed the effects wear off. Like wounds it only counts while you are online, and nights slept through count too
+- The splint stays on that leg or arm and goes when the bone has mended. Death clears fractures
+- <StatusTag s="test" /> A bone breaking makes an audible snap, heard by anyone within <V j="MovementNoiseEvents.VERY_HEAVY_LANDING_RADIUS" /> blocks
+- <StatusTag s="test" /> Falling over makes a thump as your hand hits the ground, heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
+- A broken arm does not slow reloading yet (later)
 
 ## Stamina
 

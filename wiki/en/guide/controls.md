@@ -16,6 +16,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | Q (inventory) | Drop the item under the cursor |
 | F | Does nothing: AFL has no off hand |
 | Left Alt | Every status badge slides its name and effect out for 4 seconds; once every 6 seconds at most |
+| N | <StatusTag s="test" /> Sit on the ground / get up (jump or sneak also gets up). Only on a block's collision face; sitting counts as rest |
 
 ## Camera
 

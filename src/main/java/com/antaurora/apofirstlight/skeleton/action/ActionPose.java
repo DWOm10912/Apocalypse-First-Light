@@ -141,6 +141,11 @@ public final class ActionPose {
         in.actionWeight = w;
         in.paramClip = a.paramClip == null ? null : SkeletonClips.byKey(a.paramClip);
         in.paramWeight = w * Math.max(0F, Math.min(1F, m.param));
+        if (a.holdBody) {
+            // the clip bends and turns the chest; the look does not add to it
+            in.chestYaw *= 1F - w;
+            in.chestPitch *= 1F - w;
+        }
         if (a.approach != null) {
             Vector3f anchor = m.anchors.apply(a.approach.anchor());
             if (anchor != null) {

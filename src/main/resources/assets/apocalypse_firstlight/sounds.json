@@ -865,5 +865,18 @@
   "medical_alcohol_pour": {
     "subtitle": "subtitles.apocalypse_firstlight.medical_alcohol_pour",
     "sounds": [{"name": "apocalypse_firstlight:medical/alcohol_pour", "attenuation_distance": 4}]
+  },
+  "fracture_crack": {
+    "subtitle": "subtitles.apocalypse_firstlight.fracture_crack",
+    "sounds": [{"name": "apocalypse_firstlight:health/fracture_crack", "attenuation_distance": 12}]
+  },
+  "body_fall": {
+    "subtitle": "subtitles.apocalypse_firstlight.body_fall",
+    "sounds": [
+      {"name": "apocalypse_firstlight:health/fall_1", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:health/fall_2", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:health/fall_3", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:health/fall_4", "attenuation_distance": 8}
+    ]
   }
 }

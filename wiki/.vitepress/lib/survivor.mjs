@@ -123,6 +123,10 @@ const STATUSES = [
   // stage; listed here untreated (an uncleaned suppuration is red)
   { id: 'wound', kind: 'bad', source: 'health', keys: [['wound.scratch', 'wound.scratch.untreated'], ['wound.infection', 'wound.infection.untreated'],
     ['wound.suppuration', 'wound.suppuration.untreated', true]] },
+  // fractures V1: one badge per broken limb (fracture_<limb>), its line by leg / main arm / support arm, or splinted;
+  // listed for a right-handed player
+  { id: 'fracture', kind: 'bad', source: 'health', keys: [['fracture.right_leg', 'fracture.leg'], ['fracture.right_arm', 'fracture.main_arm'],
+    ['fracture.left_arm', 'fracture.support_arm'], ['fracture.left_leg', 'fracture.splinted']] },
   // health V1a: natural regeneration under way, awake or resting
   { id: 'recovering', kind: 'good', source: 'health', keys: [['recovering', 'recovering.awake'], ['recovering', 'recovering.rest']] },
   { id: 'warming', kind: 'good', source: 'temperature' }

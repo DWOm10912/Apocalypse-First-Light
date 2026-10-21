@@ -230,6 +230,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_CAP_OFF = simple("medical_alcohol_cap_off");
     public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_CAP_ON = simple("medical_alcohol_cap_on");
     public static final RegistryObject<SoundEvent> MEDICAL_ALCOHOL_POUR = simple("medical_alcohol_pour");
+    /** Fractures and falls V1 (docs/gameplay/fall_landing_v1_plan.md 5, tools/build-fracture-sounds-v1.cjs): a bone breaking
+     *  (health/Fractures#breakLimb) and a body falling over on landing (four variants). */
+    public static final RegistryObject<SoundEvent> FRACTURE_CRACK = simple("fracture_crack");
+    public static final RegistryObject<SoundEvent> BODY_FALL = simple("body_fall");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

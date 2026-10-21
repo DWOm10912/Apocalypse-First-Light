@@ -129,6 +129,15 @@ public final class PlayerSkeleton {
             eyeHeight += (p.getEyeHeight() - eyeHeight) * 0.5F;
             boolean gun = SkeletonGunStance.busy(p);
             float target = head + SkeletonGunStance.chestTwist(p, 1F);
+            float seat = GroundSitClient.seatYaw(p);
+            if (!Float.isNaN(seat)) {
+                // sat on the ground: the hips keep the way it sat, the chest turns with the look within the waist's twist
+                pelvis = seat;
+                chest += Mth.wrapDegrees(target - chest) * 0.35F;
+                chest = pelvis + Mth.clamp(Mth.wrapDegrees(chest - pelvis), -WAIST, WAIST);
+                turnTicks = -1;
+                return;
+            }
             if (gun) chest = target;
             else {
                 chest += Mth.wrapDegrees(target - chest) * 0.35F;
@@ -317,9 +326,13 @@ public final class PlayerSkeleton {
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
-        // health V1a: the gauze on the forearm, and the cloth off the roll the bandage action carries
+        // health V1a: the gauze on the forearm, and the cloth off the roll the bandage action carries (the splint actions'
+        // second prop, fractures V1)
         Vector3f roll = d.solved.prop != null && !d.solved.propHidden && "bandage".equals(d.solved.prop.id())
                 ? d.solved.propPose.transformPosition(com.antaurora.apofirstlight.skeleton.action.ActionPose.point(d.solved.prop, "center", false), new Vector3f()) : null;
+        for (Solved.Extra extra : d.solved.extras)
+            if (roll == null && "bandage".equals(extra.prop().id()))
+                roll = extra.pose().transformPosition(com.antaurora.apofirstlight.skeleton.action.ActionPose.point(extra.prop(), "center", false), new Vector3f());
         com.antaurora.apofirstlight.client.BandageWrapRenderer.drawSkeleton(d.player, d.solved.pose, d.solved.slim, arms, m, pose, d.buffers, light, overlay, roll);
         // the own first-person body draws a gun only on its own hands (#firstPersonHands); a held one is the view model's
         boolean ownView = d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts();
@@ -512,6 +525,13 @@ public final class PlayerSkeleton {
             }
             SeatPose.body(in, seat, stand, moment, seated.torso(), eyeModel.y);
         }
+        // sat on the ground (docs/gameplay/splint_animation_v2_plan.md 3): the sitting clips on the stance layer; the eye is
+        // the posed one (the own first-person camera follows it), the look does not bend the chest
+        GroundSitClient.Sit sit = d.world && seated == null ? GroundSitClient.stance(p, in, poser().rig(), partial) : null;
+        if (sit != null) {
+            in.eyeTarget = null;
+            in.chestPitch = GroundSitClient.chestPitch(sit, in.chestPitch);
+        }
         // a player action: its clips, step and facing before the body. With a gun up only the gun's own draw and put-away
         // (the gun has both hands), and those only with it (docs/dev/p9_draw_holster_actions_v1.md 2.4)
         ActionPose.Moment action = seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
@@ -520,6 +540,7 @@ public final class PlayerSkeleton {
         // the own first-person body leaves an action that keeps its view model alone (the view model is the hands)
         if (action != null && firstPerson && action.action.firstPerson == PlayerAction.FirstPerson.VIEW_MODEL) action = null;
         if (action != null && !ActionPose.body(in, poser().rig(), action)) action = null;
+        if (action != null && sit != null) GroundSitClient.keepLegs(in, poser().rig(), action.action);
         if (action != null && d.world) SkeletonActions.stepped(p, in.rootOffset, toModel);
         // a gun's stance loops (idle, sprint) on the body under its draw or put-away (docs/dev/p9_stance_loops_v1.md)
         // the gun's stance as others see it, the own first-person body too: there a held gun is its old view model's
@@ -580,6 +601,7 @@ public final class PlayerSkeleton {
         }
         poser().solveArms(in, out.pose, report);
         if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
+        if (sit != null) GroundSitClient.solved(p, out.pose, origin, toModel);
         if (d.world && out.prop != null) {
             Matrix4f fromModel = new Matrix4f(toModel).invert();
             Map<String, Vec3> points = new java.util.HashMap<>();
