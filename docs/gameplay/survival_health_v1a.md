@@ -50,7 +50,7 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 |---|---|---|
 | `minecraft:mob_attack`，攻击者是感染者（`InfectedEntityRules.isInfected`） | × 4 | 原版僵尸普通难度 3 → **12**（简单 2.5 → 10，困难 4.5 → 18） |
 | `apocalypse_firstlight:native_bullet` | 分段线性曲线 `[0,0] [7,30] [18,62] [26,90] [40,125] [100,250]`，超出按最后一段斜率外推 | P9-01 7 → **30**，BR-51 18 → **62**，HR-55 26 → **90**（护甲后的值，命中部位倍率之后） |
-| `minecraft:lightning_bolt` | × 1 | `LightningStrikes.LETHAL_DAMAGE` 1000，照样必死 |
+| `minecraft:lightning_bolt` | × 1 | 雷击伤 V1（[lightning_injury_v1_plan.md](lightning_injury_v1_plan.md)，D 分支未合并）按方式扣 AFL 生命；master 上仍是 1000 必死 |
 | `minecraft:fall` | × 5 | 原版"落差 − 3"：4 格 → **5**，6 格 → **15**，10 格 → **35** |
 | 其它（火、岩浆、溺水、仙人掌、口渴 / 体温 3 期每次 1 点、辐射病等） | × 5 | 持续伤害的生存时间和原来一样（口渴 0 时每 10 s 失去 5 点，100 点约 200 s） |
 
@@ -92,6 +92,8 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 - 死亡清空伤口；切维度保留。
 - 动作栏提示：抓伤、开始感染、化脓、全部愈合、已清洁、已包扎。
 - **部位**（2026-10-20，背包身体图 V1，[body_silhouette_v1_plan.md](../ui/body_silhouette_v1_plan.md)）：每处伤口有一个部位（`health/BodyPart`：头、胸、腹、右臂、左臂、右腿、左腿），抓伤按权重随机（手臂各 30、胸 15、腹 10、腿各 7.5、头 0）；旧存档里没有部位的伤口读档时随机给一只手臂。部位只决定伤标在哪、纱布画在哪，规则不变。
+- **烧伤**（2026-10-21，雷击伤第二轮，[lightning_injury_v1_plan.md](lightning_injury_v1_plan.md) 10.5，分支 `feature/lightning-injury`，没进游戏看）：每处伤口多了"来源"（`Wounds.Kind`：抓伤、雷击烧伤、金属烫伤，存档 `kind`，旧存档读成抓伤）。烧伤只由雷击留下，有自己的 `burn.max_burns` 4 个位置，不占抓伤的 3 个。新鲜烧伤不按抓伤规则走：`burn.heal_days` 1–3 天（金属烫伤 `deep_heal_days` 3–5 天）自己好；`check_days` 0.5 天时没包扎掷一次感染（`infect_chance` 0.1，金属烫伤 0.15），包扎了就不掷；酒精不用在新鲜烧伤上。感染以后和抓伤的感染一样往下走。徽章 `wound_burn`、`wound_deep_burn`，身体图上建议绷带。网络里每处伤口多一个字节（协议 63）。
+- **皮肤伤痕层**（2026-10-21，[skin_wound_marks_v1_plan.md](skin_wound_marks_v1_plan.md)，同一分支，没进游戏看）：每处伤口画在玩家皮肤上（像素和皮肤一样大）：雷击烧伤、金属烫伤、抓伤、感染的红肿、化脓的黄白点，按恢复变淡；头、胸、腹包扎后画一块纱布贴片（以前不显示）；包扎的四肢照旧是几何纱布，伤痕不画。每处伤口存一个 `seed` 定位置；`HealthPackets.Marks` 带上伤痕列表，发给看得到的人（协议 64）。背包身体图在灰色上叠伤痕正面。
 
 ## 6. HUD 和屏幕效果
 

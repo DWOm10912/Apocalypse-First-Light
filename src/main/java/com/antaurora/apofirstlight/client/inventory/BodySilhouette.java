@@ -104,6 +104,14 @@ final class BodySilhouette {
 
     private static Injury wound(Wounds.View w, Carried c) {
         var status = StatusBadgeHud.wound(w);
+        if (w.freshBurn()) {
+            // a burn: a bandage over it keeps it from becoming infected; it heals by itself either way
+            boolean deep = w.kind() == Wounds.Kind.DEEP_BURN;
+            if (!w.bandaged())
+                return new Injury(status, 2, List.of(c.option(AflItems.BANDAGE.get(), "bandage.wrap", "bandage.burn.why")),
+                        t(deep ? "without.deep_burn" : "without.burn"));
+            return new Injury(status, 1, List.of(), t("healing.burn"));
+        }
         if (w.stage() == Wounds.Stage.SCRATCH) {
             if (!w.cleaned() && !w.bandaged())
                 return new Injury(status, 2, List.of(c.option(AflItems.MEDICAL_ALCOHOL.get(), "alcohol.clean", "alcohol.clean.why"),
@@ -160,6 +168,7 @@ final class BodySilhouette {
     static List<Object[]> draw(GuiGraphics g, Font font, AbstractClientPlayer player, @Nullable BodyPart hovered) {
         boolean slim = "slim".equals(player.getModelName());
         ResourceLocation skin = player.getSkinTextureLocation();
+        ResourceLocation wounds = com.antaurora.apofirstlight.client.WoundSkin.texture(player, slim);
         Carried carried = new Carried(player);
         List<Object[]> badges = new ArrayList<>();
         RenderSystem.enableBlend();
@@ -178,6 +187,8 @@ final class BodySilhouette {
                 AflUiShapes.fill(g, x, y, w, h, 0.6F, top.urgency() >= 3 ? RED : top.urgency() == 2 ? BROWN : AMBER, 0.42F);
                 badges.add(new Object[]{p, top.status()});
             }
+            // the marks on the skin's front (client/WoundSkin) in their own colours over the grey
+            if (wounds != null) blit(g, wounds, x, y, w, h, uv[0], uv[1], uv[2], uv[3]);
             if (p.part() == hovered)
                 AflUiShapes.box(g, x, y, w, h, 0.6F, AflUiStyle.BACK_HOVER, 0F, AflUiStyle.LINE, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
         }

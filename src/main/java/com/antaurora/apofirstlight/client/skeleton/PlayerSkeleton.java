@@ -128,6 +128,13 @@ public final class PlayerSkeleton {
             crouch += (crouching - crouch) * 0.5F;   // as the camera eases its eye height
             run += ((p.isSprinting() ? 1 : 0) - run) * 0.35F;
             eyeHeight += (p.getEyeHeight() - eyeHeight) * 0.5F;
+            float prone = ProneClient.bodyYaw(p, 1F);
+            if (!Float.isNaN(prone)) {
+                // lying on the front: hips and chest the body's own way (ProneClient turns it)
+                pelvis = chest = prone;
+                turnTicks = -1;
+                return;
+            }
             boolean gun = SkeletonGunStance.busy(p);
             float target = head + SkeletonGunStance.chestTwist(p, 1F);
             float seat = GroundSitClient.seatYaw(p);
@@ -307,6 +314,43 @@ public final class PlayerSkeleton {
                                float r, float g, float b, float a) {
         Draw d = DRAWS.peek();
         if (d == null || d.solved == null || d.model != model) return false;
+        // lying in the own first person the arms come forward along the view for this draw (ProneClient#firstPersonReach);
+        // the solved pose is the frame's cached one, so they go back after it
+        Vector3f ahead = null;
+        if (d.world && d.player == Minecraft.getInstance().player && FirstPersonBody.hidingParts() && ProneClient.prone(d.player)) {
+            net.minecraft.client.Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+            Matrix4f toModel = new Matrix4f(pose.last().pose()).invert().mul(d.head);
+            float yaw = camera.getYRot() * Mth.DEG_TO_RAD;
+            Vector3f level = toModel.transformDirection(new Vector3f(-Mth.sin(yaw), 0F, Mth.cos(yaw)));
+            level.y = 0F;
+            if (level.lengthSquared() > 1e-6F) {
+                level.normalize();
+                Vec3 at = camera.getPosition().subtract(Mth.lerp(d.partial, d.player.xOld, d.player.getX()),
+                        Mth.lerp(d.partial, d.player.yOld, d.player.getY()), Mth.lerp(d.partial, d.player.zOld, d.player.getZ()));
+                Vector3f eye = toModel.transformPosition(new Vector3f((float) at.x, (float) at.y, (float) at.z)).mul(16F);
+                float reach = ProneClient.firstPersonReach(d.player, d.partial, d.solved.pose, eye, level, camera.getXRot());
+                if (reach > 0F) shiftArms(d.solved.pose, ahead = level.mul(reach));
+            }
+        }
+        try {
+            return drawSolved(d, pose, consumer, light, overlay, r, g, b, a);
+        } finally {
+            if (ahead != null) shiftArms(d.solved.pose, ahead.negate());
+        }
+    }
+
+    private static final String[] ARM_BONES = {"upper_arm_r", "forearm_r", "hand_r", "upper_arm_l", "forearm_l", "hand_l"};
+
+    /** Both arms (their skin rings, the gauze on them) moved by {@code by} (model px). */
+    private static void shiftArms(SkeletonPose pose, Vector3f by) {
+        for (String bone : ARM_BONES) {
+            int b = pose.rig.find(bone);
+            if (b >= 0) pose.world[b].translateLocal(by);
+        }
+    }
+
+    private static boolean drawSolved(Draw d, PoseStack pose, VertexConsumer consumer, int light, int overlay,
+                                      float r, float g, float b, float a) {
         PlayerModel<?> m = d.model;
         PoseStack.Pose last = pose.last();
         Matrix4f mp = last.pose();
@@ -327,6 +371,19 @@ public final class PlayerSkeleton {
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
+        // skin wound marks V1: the bare skin once more, with the player's wound texture (the same vertices, after the skin)
+        VertexConsumer wounds = com.antaurora.apofirstlight.client.WoundSkin.consumer(d.player, d.solved.slim, d.buffers);
+        if (wounds != null) {
+            SkinMesh.Sink marks = (x, y, z, u, v, nx, ny, nz) -> {
+                mp.transformPosition(x / 16F, y / 16F, z / 16F, p);
+                mn.transform(nx, ny, nz, n);
+                wounds.vertex(p.x, p.y, p.z, r, g, b, a, u, v, overlay, light, n.x, n.y, n.z);
+            };
+            for (SkeletonRig.SkinPart part : rig.skin)
+                if (base(m, part.part()).visible)
+                    SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, part.part().endsWith("_arm") ? arms : 1F, marks);
+            m.head.render(pose, wounds, light, overlay, r, g, b, a);
+        }
         // health V1a: the gauze on the forearm, and the cloth off the roll the bandage action carries (the splint actions'
         // second prop, fractures V1)
         Vector3f roll = d.solved.prop != null && !d.solved.propHidden && "bandage".equals(d.solved.prop.id())
@@ -365,6 +422,8 @@ public final class PlayerSkeleton {
      */
     public static boolean ownsHeldItem(LivingEntity entity, ItemStack stack) {
         Draw d = DRAWS.peek();
+        // crawling: both hands on the ground, the held item put away (ProneClient#stowed)
+        if (d != null && d.player == entity && d.solved != null && ProneClient.stowed(d.player)) return true;
         return d != null && d.player == entity && d.solved != null && d.solved.hold != null
                 && (stack == d.solved.hold.stack() || stack == d.player.getMainHandItem());
     }
@@ -484,7 +543,8 @@ public final class PlayerSkeleton {
         in.crouch = crouch;
         in.time = (p.tickCount + partial) / 20F;
         in.turnStep = s != null && s.turnTicks >= 0 ? (s.turnTicks + partial) / 20F : -1F;
-        boolean gun = SkeletonGunStance.busy(p);
+        // lying on the front (ProneClient): a held gun is an ordinary item there, put away while crawling
+        boolean gun = SkeletonGunStance.busy(p) && !ProneClient.prone(p);
         float pelvis = s != null ? Mth.rotLerp(partial, s.pelvisO, s.pelvis) : body;
         float chest = s != null ? Mth.rotLerp(partial, s.chestO, s.chest) : head + SkeletonGunStance.chestTwist(p, partial);
         in.rootYaw = Mth.wrapDegrees(pelvis - body);
@@ -535,6 +595,8 @@ public final class PlayerSkeleton {
             in.eyeTarget = null;
             in.chestPitch = GroundSitClient.chestPitch(sit, in.chestPitch);
         }
+        // lying on the front (docs/gameplay/lightning_injury_v1_plan.md 10): the prone clips, the eye the posed one
+        ProneClient.Lie lie = seated == null && sit == null ? ProneClient.stance(p, in, poser().rig(), partial) : null;
         // a player action: its clips, step and facing before the body. With a gun up only the gun's own draw and put-away
         // (the gun has both hands), and those only with it (docs/dev/p9_draw_holster_actions_v1.md 2.4)
         ActionPose.Moment action = seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
@@ -569,6 +631,8 @@ public final class PlayerSkeleton {
             boolean using = p.isUsingItem();
             in.right = !rightStack.isEmpty() || using ? HumanoidPoser.ArmMode.VANILLA : HumanoidPoser.ArmMode.CLIP;
             in.left = !leftStack.isEmpty() || using ? HumanoidPoser.ArmMode.VANILLA : HumanoidPoser.ArmMode.CLIP;
+            // lying, the arms are the clips' (on the ground, or under the chest holding the item)
+            if (lie != null) in.right = in.left = HumanoidPoser.ArmMode.CLIP;
             // an action clip that moves an arm keeps it (the bandage's held-out forearm while the item is in use): vanilla's
             // pose only as the action blends in or out
             if (action != null && in.actionClip != null) {
@@ -606,6 +670,7 @@ public final class PlayerSkeleton {
         poser().solveArms(in, out.pose, report);
         if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
         if (sit != null) GroundSitClient.solved(p, out.pose, origin, toModel);
+        if (lie != null && d.world) ProneClient.solved(p, out.pose, origin, toModel);
         if (d.world && out.prop != null) {
             Matrix4f fromModel = new Matrix4f(toModel).invert();
             Map<String, Vec3> points = new java.util.HashMap<>();
@@ -674,11 +739,15 @@ public final class PlayerSkeleton {
         return body;
     }
 
-    /** Standing or crouching on the feet: the poses the skeleton draws (the rest stay vanilla's). */
+    /**
+     * Standing or crouching on the feet, or lying on the front out of water (ProneClient): the poses the skeleton draws
+     * (the rest, swimming among them, stay vanilla's).
+     */
     public static boolean supportedPose(Player p) {
         Pose pose = p.getPose();
-        if (pose != Pose.STANDING && pose != Pose.CROUCHING) return false;
-        return !p.isVisuallySwimming() && !p.isFallFlying() && !p.isAutoSpinAttack() && !p.isSleeping() && !p.isSpectator()
+        boolean prone = ProneClient.prone(p);
+        if (pose != Pose.STANDING && pose != Pose.CROUCHING && !prone) return false;
+        return (prone || !p.isVisuallySwimming()) && !p.isFallFlying() && !p.isAutoSpinAttack() && !p.isSleeping() && !p.isSpectator()
                 && p.deathTime <= 0 && !LivingEntityRenderer.isEntityUpsideDown(p);
     }
 
@@ -691,10 +760,17 @@ public final class PlayerSkeleton {
      */
     public static boolean firstPersonHands(Player p) {
         if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
+        // crawling the hands are on the ground (the item put away); lying still the item's own view model, as standing
+        if (ProneClient.prone(p) && ProneClient.stowed(p)) return true;
         // the own one once the held item's view model has slid out of view (FirstPersonActionView), the two never at once
         if (SkeletonActions.drawsFirstPerson(p) && (p != Minecraft.getInstance().player || FirstPersonActionView.bodyHands())) return true;
         if (p.isUsingItem()) return false;
         return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty();
+    }
+
+    /** PlayerRenderer#setupRotations: the skeleton lays this player down itself (no vanilla swim turn). */
+    public static boolean drawsProne(Player p) {
+        return enabled() && ProneClient.prone(p) && supportedPose(p);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

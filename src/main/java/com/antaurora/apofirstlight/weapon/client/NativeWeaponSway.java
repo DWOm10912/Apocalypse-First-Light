@@ -41,6 +41,8 @@ public final class NativeWeaponSway {
             target*=com.antaurora.apofirstlight.temperature.ClientTemperature.swayScale();
             // A broken arm (health/Fractures): the support arm most, the gun hand less.
             target*=(float)com.antaurora.apofirstlight.health.Fractures.arm(mc.player, com.antaurora.apofirstlight.health.Fractures.ArmEffect.SWAY);
+            // The aftermath of a lightning strike (health/LightningInjury): shaky hands, 1.4x.
+            target*=com.antaurora.apofirstlight.health.ClientLightningInjury.sway();
             // Survivor attribute weapon_sway.
             target*=(float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(mc.player, com.antaurora.apofirstlight.registry.AflAttributes.WEAPON_SWAY, 0);
         }

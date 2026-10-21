@@ -282,6 +282,11 @@ public final class BandageWrapRenderer {
         if (event.phase == TickEvent.Phase.START) skeletonDrew = null;
     }
 
+    /** Whether the skeleton drew this player just now (its layers then leave the body alone; WoundSkin.Layer, before this one's). */
+    public static boolean skeletonDrewThisFrame(Player player) {
+        return skeletonDrew == player;
+    }
+
     private static String skinName(BodyPart part) {
         return switch (part) {
             case RIGHT_ARM -> "right_arm";
@@ -473,7 +478,10 @@ public final class BandageWrapRenderer {
         @SubscribeEvent
         public static void layers(EntityRenderersEvent.AddLayers event) {
             for (String skin : event.getSkins()) {
-                if (event.getSkin(skin) instanceof PlayerRenderer renderer) renderer.addLayer(new Layer(renderer));
+                if (event.getSkin(skin) instanceof PlayerRenderer renderer) {
+                    renderer.addLayer(new WoundSkin.Layer(renderer));   // before Layer, which clears skeletonDrew
+                    renderer.addLayer(new Layer(renderer));
+                }
             }
         }
     }

@@ -70,7 +70,9 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 包扎好以后，纱布会一直缠在伤口所在的部位，自己和其他玩家都看得到。没有包扎着的伤口时纱布消失：伤口愈合、感染后包扎失效，或者死亡
 
-<StatusTag s="verified" d="2026-10-20" /> 纱布缠在伤口所在的手臂或腿上；头部、胸部、腹部的伤口暂时不显示纱布。包扎和清洁的动作仍然在一只前臂上做：伤在手臂上就是那只，否则是不拿枪的那只
+<StatusTag s="verified" d="2026-10-20" /> 纱布缠在伤口所在的手臂或腿上。包扎和清洁的动作仍然在一只前臂上做：伤在手臂上就是那只，否则是不拿枪的那只
+
+- <StatusTag s="test" /> 伤口画在皮肤上，像素和皮肤一样大，每处伤口位置固定：抓伤是三道斜线，感染后周围红肿，化脓时中间有黄白的点；慢慢愈合时颜色变淡，好了就消失。头部、胸部、腹部包扎后在伤口上盖一块纱布；手臂和腿包扎后照旧缠纱布。皮肤第二层和护甲盖住的地方看不到。背包身体图上能看到正面的伤痕
 
 ## 骨折
 
@@ -135,6 +137,37 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 - **震耳**：一次负荷达到 <V d="hearing/tinnitus_v2#jolt_from" /> 会立刻耳鸣，周围的声音降到 ×<V d="hearing/tinnitus_v2#jolt_hearing" />，<V d="hearing/tinnitus_v2#jolt_recover.0" />–<V d="hearing/tinnitus_v2#jolt_recover.1" u="秒" ue="s" /> 内恢复，负荷越大恢复越慢
 - **恢复**：听力负荷每 <V d="hearing/tinnitus_v2#half_life_ticks" x="0.05" u="秒" ue="s" /> 减半，睡觉时快 <V d="hearing/tinnitus_v2#sleep" /> 倍，只在在线时计时。死亡后清空
 - 状态徽章外圈显示耳鸣有多重：开枪、爆炸会让它变满，之后随恢复慢慢变短，不显示倒计时
+
+## 雷击伤
+
+- <StatusTag s="test" /> 雷击伤 V1：只在分支上，还没进游戏验证
+
+落雷先打附近最高的东西：只有头顶不低于周围 <V d="lightning/lightning_injury_v1#target_radius" u="格" ue="blocks" /> 内所有方块时，人或生物才会被选中。站在开阔地、山顶最危险，身边有更高的树或建筑时雷会先打它们。有避雷针时避雷针优先
+
+被雷击分三种：
+
+| 方式 | 条件 | 当场死亡 | 失去生命值 | 昏迷 | 双腿麻痹 | 鼓膜穿孔 |
+|---|---|---|---|---|---|---|
+| 直击 | 被雷正中 | <V d="lightning/lightning_injury_v1#direct.death" pct="true" /> | <V d="lightning/lightning_injury_v1#direct.health.0" />–<V d="lightning/lightning_injury_v1#direct.health.1" /> | <V d="lightning/lightning_injury_v1#direct.unconscious.0" />–<V d="lightning/lightning_injury_v1#direct.unconscious.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#direct.paralysis.0" />–<V d="lightning/lightning_injury_v1#direct.paralysis.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#direct.eardrum" pct="true" /> |
+| 侧闪 | 落点 <V d="lightning/lightning_injury_v1#side_range" u="格" ue="blocks" /> 内 | <V d="lightning/lightning_injury_v1#side.death" pct="true" /> | <V d="lightning/lightning_injury_v1#side.health.0" />–<V d="lightning/lightning_injury_v1#side.health.1" /> | <V d="lightning/lightning_injury_v1#side.unconscious_chance" pct="true" /> 概率，<V d="lightning/lightning_injury_v1#side.unconscious.0" />–<V d="lightning/lightning_injury_v1#side.unconscious.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#side.paralysis_chance" pct="true" /> 概率，<V d="lightning/lightning_injury_v1#side.paralysis.0" />–<V d="lightning/lightning_injury_v1#side.paralysis.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#side.eardrum" pct="true" /> |
+| 地电流 | 落点 <V d="lightning/lightning_injury_v1#ground_range" u="格" ue="blocks" /> 内，站在地上或水里（水里 <V d="lightning/lightning_injury_v1#water_range" u="格" ue="blocks" />） | 不会 | <V d="lightning/lightning_injury_v1#ground.health.0" />（近）–<V d="lightning/lightning_injury_v1#ground.health.1" />（远） | 不会 | <V d="lightning/lightning_injury_v1#ground.paralysis_chance" pct="true" /> 概率，<V d="lightning/lightning_injury_v1#ground.paralysis.0" />–<V d="lightning/lightning_injury_v1#ground.paralysis.1" u="秒" ue="s" /> | 不会 |
+
+- 被雷击中的人身上不会着火，身边被雷点着的火会马上熄灭；离得远的草照样会烧起来。直击和侧闪会让耳鸣直接到严重耳鸣
+- 坐在关着门的车厢里不受伤；室内头顶看不到天时不会被直击或侧闪
+- 被击中的一瞬间眼前一片白光。昏迷时屏幕全黑，周围的声音变得很远，无法移动、使用物品或打开背包；受到至少 <V d="lightning/lightning_injury_v1#wake_damage" u="点伤害" ue="damage" /> 会醒过来。醒来后视线模糊 <V d="lightning/lightning_injury_v1#wake_blur" u="秒" ue="s" />
+- **双腿麻痹**：只能趴着爬，速度 ×<V d="lightning/lightning_injury_v1#crawl" />，无法跳跃。结束后从地上站起来，之后腿软 <V d="lightning/lightning_injury_v1#weak_legs.0" />–<V d="lightning/lightning_injury_v1#weak_legs.1" u="秒" ue="s" />：移动速度 ×<V d="lightning/lightning_injury_v1#weak_move" />，无法疾跑和跳跃，耐力消耗 ×<V d="lightning/lightning_injury_v1#weak_stamina" />
+- **鼓膜穿孔**：一侧耳朵听不清，周围的声音 ×<V d="lightning/lightning_injury_v1#eardrum_hearing" />，持续 <V d="lightning/lightning_injury_v1#eardrum_days" u="天" ue="days" />（在线时间），后一半时间慢慢恢复。耳鸣多半出现在这只耳朵
+- **雷击后遗**：直击、侧闪，或落点 <V d="lightning/lightning_injury_v1#ground_aftermath" u="格" ue="blocks" /> 内的地电流会留下，持续 <V d="lightning/lightning_injury_v1#aftermath_days" u="天" ue="days" />。期间不时头痛，视线模糊几秒（间隔 <V d="lightning/lightning_injury_v1#headache_gap.0" />–<V d="lightning/lightning_injury_v1#headache_gap.1" u="秒" ue="s" />），瞄准晃动 ×<V d="lightning/lightning_injury_v1#aftermath_sway" />，耐力恢复 ×<V d="lightning/lightning_injury_v1#aftermath_stamina_regen" />，生命恢复 ×<V d="lightning/lightning_injury_v1#aftermath_health_regen" />
+- 睡觉时鼓膜和雷击后遗恢复快 <V d="lightning/lightning_injury_v1#sleep" /> 倍。死亡后全部清空
+- 在 <V d="lightning/lightning_injury_v1#afterimage_range" u="格" ue="blocks" /> 内看到落雷，眼里会留下几秒紫色残影，越近越久
+- 其他生物也会被击中：侧闪扣最大生命值的 <V d="lightning/lightning_injury_v1#mob_side" pct="true" />，地电流扣 <V d="lightning/lightning_injury_v1#mob_ground" pct="true" />；四足动物受地电流的范围 ×<V d="lightning/lightning_injury_v1#animal_ground" />
+- **爬行**：在陆地上趴着（双腿麻痹、钻 1 格高的缝、昏迷）时是真的在地上爬：麻痹时用两只手肘轮流把身体往前拉，腿拖在后面；钻缝时手肘和膝盖一起出力。伸手时几乎不动，拉的那一下最快。视角可以先转，身体跟在后面慢慢转过去。爬的时候手里的东西收起来，停下才能用。第一人称看出去，伸出去的手在画面下方，低头能看到两只手轮流撑地。水里游泳不变
+- **身上湿着**：淋着雨或站在水里被击中，电流更多从皮肤表面流过：直击当场死亡的概率降到 <V d="lightning/lightning_injury_v1#direct.wet_death" pct="true" />，侧闪降到 <V d="lightning/lightning_injury_v1#side.wet_death" pct="true" />，但浅表烧伤多 <V d="lightning/lightning_injury_v1#wet_burns" /> 处
+- **雷击烧伤**：电流进出身体的地方。直击 <V d="lightning/lightning_injury_v1#direct.burns" /> 处（头或手臂进，腿出），侧闪 <V d="lightning/lightning_injury_v1#side.burns" /> 处（靠近落点那侧的手臂或胸），落点 <V d="lightning/lightning_injury_v1#ground_burn_range" u="格" ue="blocks" /> 内的地电流 <V d="lightning/lightning_injury_v1#ground.burns" /> 处（腿）。<V d="wounds/wounds_v1#burn.heal_days.0" />–<V d="wounds/wounds_v1#burn.heal_days.1" u="天" ue="days" /> 自己好；没包扎的话，第 <V d="wounds/wounds_v1#burn.check_days" u="天" ue="days" /> 时有 <V d="wounds/wounds_v1#burn.infect_chance" pct="true" /> 的概率感染，用绷带包扎就不会。最多 <V d="wounds/wounds_v1#burn.max_burns" /> 处，不占抓伤的位置，背包身体图上能看到
+- **金属烫伤**：直击和侧闪时，背着的枪（胸）、枪套里的手枪（右腿）、胸挂里的弹匣（腹）会被烧烫，各烫出一处更深的伤，每处多失去 <V d="lightning/lightning_injury_v1#metal_health" /> 点生命值。<V d="wounds/wounds_v1#burn.deep_heal_days.0" />–<V d="wounds/wounds_v1#burn.deep_heal_days.1" u="天" ue="days" /> 才好，没包扎时感染概率 <V d="wounds/wounds_v1#burn.deep_infect_chance" pct="true" />
+- **手里的东西**：直击和侧闪时手猛地一松，主手的东西掉在 <V d="lightning/lightning_injury_v1#drop_range.0" />–<V d="lightning/lightning_injury_v1#drop_range.1" u="格" ue="blocks" /> 外
+- **皮肤上的痕迹**：雷击烧伤是中间焦黑、外面一圈红的小点，金属烫伤是烫它的东西的形状（背上一道斜条、右大腿外侧一块竖长方形、腹前一两个小竖条），慢慢变成粉色或浅褐再消失。直击和侧闪后，从电流进来的地方往肩、胸、背散开一片红色的蕨叶状纹（雷击纹），<V d="lightning/lightning_injury_v1#lichtenberg_days" u="天" ue="days" /> 内淡掉，不疼，不影响任何数值
+- **电池放电**：直击和侧闪时，身上每块能源电池和充电的工具各有 <V d="lightning/lightning_injury_v1#drain_chance" pct="true" /> 的概率电量清零，不会坏
 
 ## 耐力
 

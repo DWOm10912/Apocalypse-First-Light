@@ -51,6 +51,8 @@ public final class WoundScreenEffect {
     private static final double EASE_IN = 2.0, EASE_OUT = 3.0;
     /** Blur disc radius (fraction of the screen width) at a spell's peak: infection, fever; and a fever's steady softness. */
     private static final float SPELL_BLUR = 0.0071F, FEVER_SPELL_BLUR = 0.013F, FEVER_BLUR = 0.0033F;
+    /** Lightning injury: the blur at its peak (waking up, a headache spell). */
+    private static final float LIGHTNING_BLUR = 0.011F;
     /** Fever: the bright parts' spread and its radius (fraction of the screen width); desaturation, wash, warm shift. */
     private static final float BLOOM = 0.55F, BLOOM_RADIUS = 0.028F, DESATURATE = 0.25F, WASH = 0.06F, WARM = 0.015F;
     /** A blur spell: ease in and out (s); its length (s); the gap after it (s) for an infection and with a fever. */
@@ -133,10 +135,13 @@ public final class WoundScreenEffect {
         double seconds = now / 1e9, spell = spell(seconds);
         chills(seconds);   // keeps its plan running for cameraShake
         float strength = (float) FirstPersonBodyConfig.woundEffect();
-        if (shown < 0.004 || strength <= 0 || failed || program == null) return;
+        // lightning injury V1: waking up and the aftermath's headache spells (client/LightningInjuryClient), the same blur
+        float lightning = active ? (float) com.antaurora.apofirstlight.client.LightningInjuryClient.blur() : 0;
+        if ((shown < 0.004 && lightning < 0.004F) || strength <= 0 || failed || program == null) return;
         float f = (float) fever(), i = (float) infection();
         float drift = (float) (1 + 0.2 * Math.sin(seconds * 2.3));
         float blur = strength * (f * FEVER_BLUR + (float) spell * drift * i * (SPELL_BLUR + (FEVER_SPELL_BLUR - SPELL_BLUR) * f));
+        blur = Math.max(blur, strength * lightning * drift * LIGHTNING_BLUR);
         if (blur < 1e-4F && f < 0.01F) return;
         graphics.flush();
         draw(graphics, mc, blur, strength * f);

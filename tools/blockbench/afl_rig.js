@@ -427,7 +427,7 @@
         return {
             slim: false, walkPhase: 0, move: 0, run: 0, crouch: 0, time: 0,
             rootYaw: 0, chestYaw: 0, chestPitch: 0, viewYaw: 0, viewPitch: 0,
-            eyeTarget: null, maxRootShift: 4.27,
+            eyeTarget: null, maxRootShift: 4.27, headClip: 0,
             right: 'CLIP', left: 'CLIP', ikRightWeight: 1, ikLeftWeight: 1,
             vanillaRight: [0, 0, 0, 1], vanillaLeft: [0, 0, 0, 1], vanillaRightWeight: 0, vanillaLeftWeight: 0,
             targetRight: tf.id(), targetLeft: tf.id(),
@@ -508,10 +508,16 @@
             pose.local[rig.thighL] = q4.mul(legBack, pose.local[rig.thighL]);
             pose.local[rig.chest] = q4.mul(q4.mul(q4.y(rad(twist - hip)), q4.x(rad(bend))), chestClip);
             pose.updateAll();
-            // head: the view in model space, relative to the chest as posed
+            // head: the view in model space, relative to the chest as posed; headClip of the way back to the clips' head
+            // (lying out cold: the face on the ground, not where the view looks)
+            const headClip = pose.local[rig.head].slice();
             const view = q4.mul(q4.y(rad(inp.viewYaw)), q4.x(rad(inp.viewPitch)));
             const chestWorld = pose.rotation(rig.chest);
             pose.local[rig.head] = clampEuler(q4.mul(q4.conj(chestWorld), view), rig.limits[rig.head]);
+            if (inp.headClip > 0) {
+                const viewed = pose.local[rig.head];
+                pose.local[rig.head] = q4.slerp(viewed, q4.dot(viewed, headClip) < 0 ? q4.neg(headClip) : headClip, clamp01(inp.headClip));
+            }
             pose.update(rig.head);
             if (inp.eyeTarget) {
                 const eye = rig.sockets.eye;
@@ -1076,8 +1082,9 @@
 
     /**
      * A standing player (PlayerSkeletonCheck.standing: facing ahead, no chest twist) with an action at o.seconds.
-     * o: {slim, crouch, pitch, yaw, chestYaw, rifle, time, action, seconds, param, fp}. fp: the own first person, a gun action
-     * (one with a gun prop) reaching further (firstPersonReach; client/skeleton/SkeletonGunStance#hold).
+     * o: {slim, crouch, pitch, yaw, chestYaw, rifle, time, action, seconds, param, fp, free, headClip}. fp: the own first
+     * person, a gun action (one with a gun prop) reaching further (firstPersonReach; client/skeleton/SkeletonGunStance#hold).
+     * free: no eye target, the root stays put (lying on the front, client/skeleton/ProneClient); headClip: Input.headClip.
      */
     function solveFrame(poser, o) {
         const rig = poser.rig, inp = newInput();
@@ -1092,6 +1099,8 @@
         inp.eyeTarget = [0, eyeModelY(o.crouch), 0];
         let m = o.action ? {action: o.action, seconds: o.seconds || 0, stopped: -1, age: NaN, param: o.param || 0, mirror: false,
             anchors: () => null, prop: null, props: [], propHidden: [], view: viewFrame(inp.eyeTarget, inp.viewYaw, inp.viewPitch)} : null;
+        inp.headClip = o.headClip || 0;
+        if (o.free) inp.eyeTarget = null;
         if (m && !actionBody(inp, rig, m)) m = null;
         if (m && o.fp && (m.action.props || []).some(p => p.def && p.def.gun)) {
             m.viewAhead = firstPersonReach(inp.viewPitch);

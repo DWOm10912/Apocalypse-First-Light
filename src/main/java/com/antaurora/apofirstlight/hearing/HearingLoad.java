@@ -68,6 +68,18 @@ public final class HearingLoad {
         sync(player, s, false);
     }
 
+    /** Lightning injury V1: the load raised to at least this (a strike close by), ringing at once; never lowered. */
+    public static void atLeast(ServerPlayer player, double load) {
+        if (player.isSpectator() || !player.isAlive()) return;
+        var c = TinnitusConfig.get();
+        State s = state(player);
+        if (s.load >= load) return;
+        s.load = Math.min(c.maxLoad, load);
+        AflNetwork.hearing(player, new HearingPackets.Jolt(1));
+        save(player, s);
+        sync(player, s, true);
+    }
+
     /** Dev: sets the load. */
     static void set(ServerPlayer player, double load) {
         State s = state(player);

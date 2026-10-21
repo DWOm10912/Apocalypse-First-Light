@@ -9,6 +9,7 @@ import com.antaurora.apofirstlight.temperature.ClientTemperature;
 import com.antaurora.apofirstlight.temperature.TemperatureReadout;
 import com.antaurora.apofirstlight.health.BodyPart;
 import com.antaurora.apofirstlight.health.ClientHealth;
+import com.antaurora.apofirstlight.health.ClientLightningInjury;
 import com.antaurora.apofirstlight.health.Fractures;
 import com.antaurora.apofirstlight.health.HealthConfig;
 import com.antaurora.apofirstlight.health.PlayerHealth;
@@ -227,6 +228,20 @@ public final class StatusBadgeHud {
             taper(x, y, 0.62, 0.10, 0.38, 0.88, 0.02, 0.07)),
             taper(x, y, 0.82, 0.18, 0.58, 0.80, 0.02, 0.065));
     static final AflRingIcon.Glyph SWOLLEN = (x, y) -> swollen(x, y, 0.5, 0.5, 1.0);
+    // lightning burns (lightning injury, docs/gameplay/lightning_injury_v1_plan.md 10.3): a scorched spot with the fern-like
+    // mark the current leaves running off it; a metal burn is the outline of the hot piece with its middle burnt deepest
+    static final AflRingIcon.Glyph BURN = (x, y) -> {
+        double spot = Math.min(Math.hypot(x - 0.38, y - 0.62) - 0.2, Math.hypot(x - 0.52, y - 0.54) - 0.15);
+        double fern = Math.min(Math.min(AflRingIcon.segment(x, y, 0.58, 0.46, 0.84, 0.14), AflRingIcon.segment(x, y, 0.7, 0.31, 0.88, 0.34)),
+                Math.min(AflRingIcon.segment(x, y, 0.74, 0.26, 0.68, 0.08), AflRingIcon.segment(x, y, 0.64, 0.38, 0.52, 0.2))) - 0.035;
+        return Math.min(spot, fern);
+    };
+    static final AflRingIcon.Glyph DEEP_BURN = (x, y) -> {
+        double dx = Math.abs(x - 0.5) - 0.26, dy = Math.abs(y - 0.5) - 0.18;
+        double box = Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - 0.08;
+        double ring = Math.abs(box) - 0.05;
+        return Math.min(ring, Math.hypot(x - 0.5, y - 0.5) - 0.11);
+    };
     static final AflRingIcon.Glyph FESTERING = (x, y) -> Math.min(swollen(x, y, 0.46, 0.38, 0.86),
             Math.min(Math.hypot(x - 0.56, y - 0.77) - 0.105, AflRingIcon.convex(x, y, 0.56, 0.5, 0.655, 0.74, 0.465, 0.74)));
     // fractures (fractures V1, docs/gameplay/fracture_splint_v1_plan.md 7): a bone with a crack across its middle; splinted, a
@@ -258,6 +273,24 @@ public final class StatusBadgeHud {
         d = Math.min(d, arc(x, y, 0.41, 0.43, 0.10, 180, 400, 0.04));
         d = Math.min(d, arc(x, y, 0.62, 0.42, 0.20, -40, 40, 0.035));
         return Math.min(d, arc(x, y, 0.62, 0.42, 0.31, -35, 35, 0.035));
+    };
+    // lightning injury V1 (docs/gameplay/lightning_injury_v1_plan.md 3.9): the ear alone with a crack through it (a burst
+    // eardrum); two legs side by side, the feet forward (paralysed, then weak legs); the aftermath keeps the bolt
+    static final AflRingIcon.Glyph EAR_BURST = (x, y) -> {
+        double d = arc(x, y, 0.46, 0.40, 0.24, 160, 420, 0.055);
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.58, 0.608, 0.50, 0.80) - 0.055);
+        d = Math.min(d, arc(x, y, 0.43, 0.80, 0.07, 0, 150, 0.055));
+        d = Math.min(d, arc(x, y, 0.47, 0.43, 0.10, 180, 400, 0.04));
+        double crack = Math.min(Math.min(AflRingIcon.segment(x, y, 0.16, 0.20, 0.26, 0.34), AflRingIcon.segment(x, y, 0.26, 0.34, 0.18, 0.46)),
+                AflRingIcon.segment(x, y, 0.18, 0.46, 0.28, 0.60)) - 0.035;
+        return Math.min(d, crack);
+    };
+    static final AflRingIcon.Glyph LEGS = (x, y) -> {
+        double d = AflRingIcon.segment(x, y, 0.30, 0.12, 0.70, 0.12) - 0.07;
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.36, 0.14, 0.38, 0.84) - 0.075);
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.64, 0.14, 0.62, 0.84) - 0.075);
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.36, 0.86, 0.48, 0.86) - 0.05);
+        return Math.min(d, AflRingIcon.segment(x, y, 0.62, 0.86, 0.80, 0.86) - 0.05);
     };
     static final AflRingIcon.Glyph THERMOMETER = (x, y) -> Math.min(AflRingIcon.segment(x, y, 0.5, 0.12, 0.5, 0.62) - 0.09,
             Math.hypot(x - 0.5, y - 0.74) - 0.17);
@@ -310,6 +343,7 @@ public final class StatusBadgeHud {
         if (tinnitus > 0)
             list.add(new Status("tinnitus", tinnitus, Kind.BAD, EAR, t("tinnitus." + tinnitus), t("tinnitus." + tinnitus + ".effect"),
                     TinnitusClient.left(), null));
+        lightning(list);
         // good: healing (health V1a: the server says whether natural regeneration runs, awake or resting)
         var regen = ClientHealth.regen();
         if (regen == PlayerHealth.Regen.AWAKE || regen == PlayerHealth.Regen.REST)
@@ -322,6 +356,24 @@ public final class StatusBadgeHud {
     }
 
     /**
+     * Lightning injury V1: paralysed legs then weak legs (one badge, its arc the time left of both), a burst eardrum, the
+     * aftermath (game days); arcs only, no countdown (as a fracture).
+     */
+    private static void lightning(List<Status> list) {
+        if (ClientLightningInjury.legs()) {
+            boolean paralysed = ClientLightningInjury.paralysed();
+            String key = paralysed ? "legs.paralysed" : "legs.weak";
+            list.add(new Status("legs", paralysed ? 2 : 1, Kind.BAD, LEGS, t(key), t(key + ".effect"), ClientLightningInjury.legsLeft(), null));
+        }
+        if (ClientLightningInjury.eardrumLeft() > 0)
+            list.add(new Status("eardrum", 1, Kind.BAD, EAR_BURST, t("eardrum"),
+                    t(ClientLightningInjury.eardrumSide() < 0 ? "eardrum.effect.left" : "eardrum.effect.right"), ClientLightningInjury.eardrumLeft(), null));
+        if (ClientLightningInjury.aftermathLeft() > 0)
+            list.add(new Status("lightning_aftermath", 1, Kind.BAD, BOLT, t("lightning_aftermath"), t("lightning_aftermath.effect"),
+                    ClientLightningInjury.aftermathLeft(), null));
+    }
+
+    /**
      * Wounds (health V1a): one badge per stage present (scratch, local infection, suppuration), its line saying what was done
      * and what to do next for the least treated wound of that stage; a cleaned infection / suppuration shows its recovery
      * as the arc (the time left of it).
@@ -329,22 +381,37 @@ public final class StatusBadgeHud {
     private static void wounds(List<Status> list) {
         var wounds = ClientHealth.wounds();
         for (var stage : Wounds.Stage.values()) {
-            Wounds.View least = null;
-            int count = 0;
-            for (var w : wounds) {
-                if (w.stage() != stage) continue;
-                count++;
-                if (least == null || treated(w) < treated(least)) least = w;
+            // fresh, a scratch and the two burns are badges of their own; infected, a burn is an infection like any
+            for (var made : stage == Wounds.Stage.SCRATCH ? Wounds.Kind.values() : new Wounds.Kind[]{null}) {
+                Wounds.View least = null;
+                int count = 0;
+                for (var w : wounds) {
+                    if (w.stage() != stage || made != null && w.kind() != made) continue;
+                    count++;
+                    if (least == null || treated(w) < treated(least)) least = w;
+                }
+                if (least == null) continue;
+                String name = woundName(least);
+                String care = least.cleaned() && least.bandaged() ? "treated" : least.cleaned() ? "cleaned" : least.bandaged() ? "bandaged" : "untreated";
+                Kind kind = stage == Wounds.Stage.SUPPURATION && !least.cleaned() ? Kind.DANGER : Kind.BAD;
+                double left = Float.isNaN(least.recovery()) ? Double.NaN : 1 - least.recovery();
+                list.add(new Status("wound_" + name, stage.ordinal() + 1, kind, woundGlyph(least),
+                        count > 1 ? t("wound." + name + ".many", count) : t("wound." + name), t("wound." + name + "." + care), left, null));
             }
-            if (least == null) continue;
-            String name = stage.name().toLowerCase(Locale.ROOT);
-            String care = least.cleaned() && least.bandaged() ? "treated" : least.cleaned() ? "cleaned" : least.bandaged() ? "bandaged" : "untreated";
-            Kind kind = stage == Wounds.Stage.SUPPURATION && !least.cleaned() ? Kind.DANGER : Kind.BAD;
-            double left = Float.isNaN(least.recovery()) ? Double.NaN : 1 - least.recovery();
-            AflRingIcon.Glyph glyph = switch (stage) { case SCRATCH -> CLAW; case INFECTION -> SWOLLEN; case SUPPURATION -> FESTERING; };
-            list.add(new Status("wound_" + name, stage.ordinal() + 1, kind, glyph,
-                    count > 1 ? t("wound." + name + ".many", count) : t("wound." + name), t("wound." + name + "." + care), left, null));
         }
+    }
+
+    /** The wound's badge name: its stage, or what made it while fresh (scratch, burn, deep_burn). */
+    private static String woundName(Wounds.View w) {
+        return w.stage() == Wounds.Stage.SCRATCH ? w.kind().name().toLowerCase(Locale.ROOT) : w.stage().name().toLowerCase(Locale.ROOT);
+    }
+
+    private static AflRingIcon.Glyph woundGlyph(Wounds.View w) {
+        return switch (w.stage()) {
+            case SCRATCH -> switch (w.kind()) { case SCRATCH -> CLAW; case BURN -> BURN; case DEEP_BURN -> DEEP_BURN; };
+            case INFECTION -> SWOLLEN;
+            case SUPPURATION -> FESTERING;
+        };
     }
     /**
      * Fractures: one badge per broken limb (brown, never red: a fracture does not kill by itself), its line what it costs
@@ -365,11 +432,10 @@ public final class StatusBadgeHud {
 
     /** One wound as its stage's badge, its own care line (the inventory's body map: the wounds of one part). */
     public static Status wound(Wounds.View w) {
-        String name = w.stage().name().toLowerCase(Locale.ROOT);
+        String name = woundName(w);
         String care = w.cleaned() && w.bandaged() ? "treated" : w.cleaned() ? "cleaned" : w.bandaged() ? "bandaged" : "untreated";
         Kind kind = w.stage() == Wounds.Stage.SUPPURATION && !w.cleaned() ? Kind.DANGER : Kind.BAD;
-        AflRingIcon.Glyph glyph = switch (w.stage()) { case SCRATCH -> CLAW; case INFECTION -> SWOLLEN; case SUPPURATION -> FESTERING; };
-        return new Status("wound_" + name, w.stage().ordinal() + 1, kind, glyph, t("wound." + name), t("wound." + name + "." + care),
+        return new Status("wound_" + name, w.stage().ordinal() + 1, kind, woundGlyph(w), t("wound." + name), t("wound." + name + "." + care),
                 Float.isNaN(w.recovery()) ? Double.NaN : 1 - w.recovery(), null);
     }
 

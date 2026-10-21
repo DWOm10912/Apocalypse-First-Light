@@ -6,6 +6,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -20,8 +21,9 @@ import java.util.UUID;
 
 /**
  * Wounds V1a (docs/gameplay/survival_health_v1a.md 5): the small stand-in for the later body state's injury list
- * (docs/gameplay/survival_health_v2_design.md 6). Up to {@code max_wounds} wounds, each a scratch that may turn into a local
- * infection and then suppuration; medical alcohol cleans one, a bandage covers one. Each wound has a {@link BodyPart} (an
+ * (docs/gameplay/survival_health_v2_design.md 6). Up to {@code max_wounds} scratches, each may turn into a local
+ * infection and then suppuration; medical alcohol cleans one, a bandage covers one. Lightning burns ({@link Kind}) have
+ * their own {@code burn.max_burns} slots: a bandage keeps one from becoming infected, it heals by itself. Each wound has a {@link BodyPart} (an
  * infected's scratch lands by BodyPart#scratchPart's weights; a wound saved before parts existed gets a random arm): only where
  * it is drawn (the inventory's body figure, the gauze), not what it does. No bleeding, no health lost over time: an infection lowers stamina regeneration, suppuration also natural health regeneration, and
  * both show on the screen (health/WoundScreenEffect: blur spells, a fever's haze and chills). Only the worst wound counts, so several never stack.
@@ -34,26 +36,44 @@ import java.util.UUID;
  */
 public final class Wounds {
     public enum Stage { SCRATCH, INFECTION, SUPPURATION }
+    /**
+     * What made the wound (lightning injury, docs/gameplay/lightning_injury_v1_plan.md 10.3 B, C): an infected's scratch, a
+     * lightning burn (shallow, at the current's way in and out), a metal burn (deeper, where gear on the body got hot). A
+     * burn's first stage is {@link Stage#SCRATCH} (fresh); infected, it goes on as any wound's infection.
+     */
+    public enum Kind { SCRATCH, BURN, DEEP_BURN }
     public enum Treatment { ALCOHOL, BANDAGE }
     /** What became of a wound in one step. */
     enum Change { NONE, WORSE, EASED, HEALED }
 
-    /** What the client knows of a wound: its stage, whether it is cleaned / bandaged, its recovery (0..1, NaN: none), where it is. */
-    public record View(Stage stage, boolean cleaned, boolean bandaged, float recovery, BodyPart part) {}
+    /** What the client knows of a wound: its stage, whether it is cleaned / bandaged, its recovery (0..1, NaN: none), where it is, what made it. */
+    public record View(Stage stage, boolean cleaned, boolean bandaged, float recovery, BodyPart part, Kind kind) {
+        /** A fresh burn (not infected): a bandage keeps it clean, alcohol is not for it. */
+        public boolean freshBurn() {
+            return stage == Stage.SCRATCH && kind != Kind.SCRATCH;
+        }
+    }
 
     static final String KEY = "afl_wounds";
     private static final int VERSION = 1;
 
     static final class Wound {
         Stage stage = Stage.SCRATCH;
+        Kind kind = Kind.SCRATCH;
         BodyPart part = BodyPart.LEFT_ARM;
         int severity = 1;
         boolean cleaned, bandaged, rolled;
-        long age, cleanedAt = -1, nextCheck;
+        /** heal: a burn's age (ticks) at which it is gone, rolled when it was made. */
+        long age, cleanedAt = -1, nextCheck, heal;
+        /** Where its mark sits on the skin (client/WoundSkin, docs/gameplay/skin_wound_marks_v1_plan.md 3.2). */
+        int seed = java.util.concurrent.ThreadLocalRandom.current().nextInt();
 
         CompoundTag save() {
             CompoundTag t = new CompoundTag();
             t.putString("stage", stage.name().toLowerCase(Locale.ROOT));
+            t.putString("kind", kind.name().toLowerCase(Locale.ROOT));
+            t.putLong("heal", heal);
+            t.putInt("seed", seed);
             t.putString("part", part.key());
             t.putInt("severity", severity);
             t.putBoolean("cleaned", cleaned);
@@ -74,6 +94,13 @@ public final class Wounds {
             } catch (IllegalArgumentException ex) {
                 w.stage = Stage.SCRATCH;
             }
+            try {
+                w.kind = t.contains("kind") ? Kind.valueOf(t.getString("kind").toUpperCase(Locale.ROOT)) : Kind.SCRATCH;
+            } catch (IllegalArgumentException ex) {
+                w.kind = Kind.SCRATCH;
+            }
+            w.heal = Math.max(0, t.getLong("heal"));
+            if (t.contains("seed")) w.seed = t.getInt("seed");
             w.severity = Math.max(1, t.getInt("severity"));
             w.cleaned = t.getBoolean("cleaned");
             w.bandaged = t.getBoolean("bandaged");
@@ -151,13 +178,14 @@ public final class Wounds {
     public static boolean scratch(ServerPlayer player) {
         WoundConfig c = WoundConfig.get();
         State s = state(player);
-        if (s.wounds.size() < c.maxWounds) {
+        if (count(s, false) < c.maxWounds) {
             Wound w = new Wound();
             w.part = BodyPart.scratchPart(player.getRandom());
             s.wounds.add(w);
         } else {
             Wound youngest = null;
-            for (Wound w : s.wounds) if (w.stage == Stage.SCRATCH && (youngest == null || w.age < youngest.age)) youngest = w;
+            for (Wound w : s.wounds)
+                if (w.stage == Stage.SCRATCH && w.kind == Kind.SCRATCH && (youngest == null || w.age < youngest.age)) youngest = w;
             if (youngest == null) return false;
             youngest.severity = Math.min(c.maxSeverity, youngest.severity + 1);
             youngest.cleaned = youngest.bandaged = youngest.rolled = false;
@@ -165,6 +193,32 @@ public final class Wounds {
         }
         s.dirty = true;
         message(player, "scratched");
+        return true;
+    }
+
+    /** Scratches (burns false) or burns (true) on the list, any stage. */
+    private static int count(State s, boolean burns) {
+        int n = 0;
+        for (Wound w : s.wounds) if ((w.kind != Kind.SCRATCH) == burns) n++;
+        return n;
+    }
+
+    /**
+     * A lightning burn (deep: a metal burn) on this part (LightningInjury), in its own slots (burn.max_burns): with those
+     * full the burn is not added. Heals by itself in burn.heal_days (deep: deep_heal_days); uncovered it may become
+     * infected once, covered by a bandage it does not. Returns whether it was added.
+     */
+    public static boolean burn(ServerPlayer player, BodyPart part, boolean deep) {
+        WoundConfig c = WoundConfig.get();
+        State s = state(player);
+        if (count(s, true) >= c.burn.maxBurns) return false;
+        Wound w = new Wound();
+        w.kind = deep ? Kind.DEEP_BURN : Kind.BURN;
+        w.part = part;
+        double[] days = deep ? c.burn.deepHealDays : c.burn.healDays;
+        w.heal = c.ticks(days[0] + (days[1] - days[0]) * player.getRandom().nextDouble());
+        s.wounds.add(w);
+        s.dirty = true;
         return true;
     }
 
@@ -219,6 +273,18 @@ public final class Wounds {
     static Change process(Wound w, WoundConfig c, RandomSource random) {
         switch (w.stage) {
             case SCRATCH -> {
+                if (w.kind != Kind.SCRATCH) {
+                    // a fresh burn: one roll unless a bandage covers it by then, gone at its own age
+                    if (!w.bandaged && !w.rolled && w.age >= c.ticks(c.burn.checkDays)) {
+                        w.rolled = true;
+                        if (random.nextDouble() < (w.kind == Kind.DEEP_BURN ? c.burn.deepInfectChance : c.burn.infectChance)) {
+                            w.cleaned = false;
+                            to(w, Stage.INFECTION, c);
+                            return Change.WORSE;
+                        }
+                    }
+                    return w.age >= Math.max(1, w.heal) ? Change.HEALED : Change.NONE;
+                }
                 boolean both = w.cleaned && w.bandaged;
                 if (!both && !w.rolled && w.age >= c.ticks(c.scratch.checkDays)) {
                     w.rolled = true;
@@ -277,6 +343,31 @@ public final class Wounds {
         return stage == Stage.SUPPURATION ? c.suppuration : c.infection;
     }
 
+    /**
+     * The skin marks of a player's wounds (HealthPackets.Marks, to everyone who draws the player): part, what made it, stage,
+     * dressing, seed, and how far it has healed in sixteenths (a fresh burn or scratch by its age, an infection once cleaned
+     * by its recovery), so the marks fade without a packet every second.
+     */
+    static List<HealthPackets.SkinMark> skin(ServerPlayer player) {
+        WoundConfig c = WoundConfig.get();
+        List<HealthPackets.SkinMark> out = new ArrayList<>();
+        for (Wound w : state(player).wounds) {
+            double healed;
+            if (w.stage != Stage.SCRATCH) {
+                double r = recovery(w, c);
+                healed = Double.isNaN(r) ? 0 : r;
+            } else if (w.kind != Kind.SCRATCH) {
+                healed = w.age / (double) Math.max(1, w.heal);
+            } else {
+                double days = w.cleaned && w.bandaged ? c.scratch.healDaysBoth : w.cleaned ? c.scratch.healDaysCleaned
+                        : w.bandaged ? c.scratch.healDaysBandaged : c.scratch.healDays;
+                healed = w.age / (double) Math.max(1, c.ticks(days));
+            }
+            out.add(new HealthPackets.SkinMark(w.part, w.kind, w.stage, w.bandaged, w.seed, (int) Math.floor(Mth.clamp(healed, 0, 1) * 15)));
+        }
+        return out;
+    }
+
     private static long recoveryTicks(Wound w, WoundConfig c) {
         WoundConfig.Stage st = stage(w.stage, c);
         return c.ticks(w.bandaged ? st.recoverDaysBoth : st.recoverDaysCleaned);
@@ -332,7 +423,7 @@ public final class Wounds {
     static List<View> views(ServerPlayer player) {
         WoundConfig c = WoundConfig.get();
         List<View> out = new ArrayList<>();
-        for (Wound w : state(player).wounds) out.add(new View(w.stage, w.cleaned, w.bandaged, (float) recovery(w, c), w.part));
+        for (Wound w : state(player).wounds) out.add(new View(w.stage, w.cleaned, w.bandaged, (float) recovery(w, c), w.part, w.kind));
         return out;
     }
 
@@ -349,6 +440,7 @@ public final class Wounds {
         for (int i = 0; i < wounds.size(); i++) {
             View w = wounds.get(i);
             if (treatment == Treatment.ALCOHOL ? w.cleaned() : w.bandaged()) continue;
+            if (treatment == Treatment.ALCOHOL && w.freshBurn()) continue;   // a burn is covered, not cleaned with alcohol
             if (treatment == Treatment.BANDAGE && w.stage() == Stage.SUPPURATION && !w.cleaned()) continue;
             if (best < 0) { best = i; continue; }
             View b = wounds.get(best);

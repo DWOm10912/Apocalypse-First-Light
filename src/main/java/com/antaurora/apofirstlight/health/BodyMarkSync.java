@@ -14,8 +14,8 @@ import java.util.UUID;
 
 /**
  * What every client that draws a player needs of its body (health V1a 7, the bandage on the body; fractures and splints V1):
- * {@link HealthPackets.Marks}, the parts with a bandaged wound, the splinted and the broken limbs, and where the next bandage
- * and the alcohol go. The wound and fracture lists themselves only go to their owner (HealthPackets.State). Sent to the player and the
+ * {@link HealthPackets.Marks}, the parts with a bandaged wound, the splinted and the broken limbs, where the next bandage
+ * and the alcohol go, and the marks the wounds and lightning leave on the skin (docs/gameplay/skin_wound_marks_v1_plan.md). The wound and fracture lists themselves only go to their owner (HealthPackets.State). Sent to the player and the
  * players tracking it:
  * <ul>
  * <li>when it changes: checked every second with the rest of the health sync (PlayerHealth#sync: healed, a dressing soiled
@@ -38,7 +38,8 @@ public final class BodyMarkSync {
         for (Wounds.View w : wounds) if (w.bandaged()) bandaged |= w.part().bit();
         int bandage = Wounds.target(wounds, Wounds.Treatment.BANDAGE), clean = Wounds.target(wounds, Wounds.Treatment.ALCOHOL);
         return new HealthPackets.Marks(player.getUUID(), bandaged, Fractures.splintedMask(fractures), Fractures.brokenMask(fractures),
-                bandage < 0 ? -1 : wounds.get(bandage).part().ordinal(), clean < 0 ? -1 : wounds.get(clean).part().ordinal());
+                bandage < 0 ? -1 : wounds.get(bandage).part().ordinal(), clean < 0 ? -1 : wounds.get(clean).part().ordinal(),
+                Wounds.skin(player), LightningInjury.fern(player));
     }
 
     private static HealthPackets.Marks marks(ServerPlayer player) {

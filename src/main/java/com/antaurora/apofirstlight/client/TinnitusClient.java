@@ -76,7 +76,8 @@ public final class TinnitusClient {
             double back = 1 - (double) joltLeft / joltTotal;
             m *= Mth.lerp(back * back * (3 - 2 * back), c.joltHearing, 1);
         }
-        return (float) m;
+        // lightning injury V1: a burst eardrum, and the world far away while fainted
+        return (float) (m * LightningInjuryClient.hearing());
     }
 
     /**
@@ -115,8 +116,10 @@ public final class TinnitusClient {
         }
         double[] len = c.length[stage - 1];
         int length = (int) Math.round(20 * Mth.lerp(RANDOM.nextDouble(), len[0], len[1]));
-        // the left ear, the right, or both
-        int side = RANDOM.nextInt(3) - 1;
+        // the left ear, the right, or both; with a burst eardrum mostly that side (lightning injury V1)
+        int bad = com.antaurora.apofirstlight.health.ClientLightningInjury.eardrumLeft() > 0
+                ? com.antaurora.apofirstlight.health.ClientLightningInjury.eardrumSide() : 0;
+        int side = bad != 0 && RANDOM.nextDouble() < 0.6 ? bad : RANDOM.nextInt(3) - 1;
         ring = new Ring(AflSounds.TINNITUS.get(), side, (float) c.volume[stage - 1], length);
         mc.getSoundManager().play(ring);
         schedule(length);

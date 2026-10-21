@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "61";
+    private static final String PROTOCOL = "64";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -124,6 +124,7 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.temperature.TemperaturePackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.health.HealthPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.hearing.HearingPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.health.LightningPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
@@ -571,6 +572,21 @@ public final class AflNetwork {
     /** Tinnitus V2: the own hearing load / a jolt (hearing/HearingPackets), to the player. */
     public static void hearing(ServerPlayer player, Object packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Lightning injury V1: the own states / a strike (health/LightningPackets), to the player. */
+    public static void lightning(ServerPlayer player, Object packet) {
+        if (channel != null && player.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Lightning injury: why a player lies down (health/LightningPackets.Lying), to the players tracking it and itself. */
+    public static void lightningLying(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), packet);
+    }
+
+    /** Lightning injury: another player's lying (health/LightningPackets.Lying), to one viewer that starts tracking it. */
+    public static void lightningLyingTo(ServerPlayer viewer, Object packet) {
+        if (channel != null && viewer.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> viewer), packet);
     }
 
     public static void sendRadiation(ServerPlayer player, double finalRadiation) {

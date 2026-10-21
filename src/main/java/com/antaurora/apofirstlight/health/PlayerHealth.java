@@ -41,7 +41,7 @@ import java.util.UUID;
  * point stops about 5 HP), and only what actually comes off health is scaled, once, by the first matching rule in
  * health_v1.json (infected melee ×4, bullets by a curve, falls ×5) or the default ×5. Players only: mobs and NPCs keep
  * vanilla numbers, so guns do what they always did to the infected. Damage types in never_below_one (vanilla starvation,
- * which on Normal stops at 1 HP) keep the player at 1 HP at least. Lightning keeps its 1000 (a ×1 rule; lethal either way).</li>
+ * which on Normal stops at 1 HP) keep the player at 1 HP at least. Lightning is ×1: LightningInjury hurts in AFL HP.</li>
  * <li><b>Natural regeneration.</b> Vanilla's food regeneration is off (mixin/FoodDataThirstMixin); this class heals instead,
  * once a second: none for {@code delay_seconds} after the last damage; then awake_per_minute, or rest_per_minute while
  * sleeping or sitting on a seat the player does not drive (furniture chair, office chair, a vehicle's passenger seat),
@@ -177,6 +177,7 @@ public final class PlayerHealth {
             state(player).lastDamageTick = player.server.getTickCount();
             Wounds.onDamage(player, source, (float) health);
             Fractures.onDamage(player, source, health);
+            LightningInjury.onDamage(player, source, health);
         }
     }
 
@@ -196,9 +197,10 @@ public final class PlayerHealth {
                 && !PlayerThirst.blocksNaturalRegen(player) && !PlayerTemperature.blocksNaturalRegen(player);
     }
 
-    /** The natural healing multiplier: the survivor's natural_regen x the wounds' (SurvivorStatsGameTests reads it). */
+    /** The natural healing multiplier: the survivor's natural_regen x the wounds' x a lightning aftermath's (SurvivorStatsGameTests reads it). */
     public static double regenMultiplier(ServerPlayer player) {
-        return SurvivorStats.multiplier(player, AflAttributes.NATURAL_REGEN, 0) * Wounds.healthRegenMultiplier(player);
+        return SurvivorStats.multiplier(player, AflAttributes.NATURAL_REGEN, 0) * Wounds.healthRegenMultiplier(player)
+                * LightningInjury.healthRegenMultiplier(player);
     }
 
     /** Heals by this much toward the ceiling (never above it, never taking anything away). */
@@ -268,7 +270,7 @@ public final class PlayerHealth {
         for (int i = 0; i < a.size(); i++) {
             var x = a.get(i);
             var y = b.get(i);
-            if (x.stage() != y.stage() || x.cleaned() != y.cleaned() || x.bandaged() != y.bandaged() || x.part() != y.part()) return false;
+            if (x.stage() != y.stage() || x.cleaned() != y.cleaned() || x.bandaged() != y.bandaged() || x.part() != y.part() || x.kind() != y.kind()) return false;
         }
         return true;
     }

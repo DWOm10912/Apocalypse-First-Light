@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.health;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkDirection;
@@ -10,6 +11,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -38,6 +40,7 @@ public final class HealthPackets {
                 b.writeBoolean(w.bandaged());
                 b.writeFloat(w.recovery());
                 b.writeByte(w.part().ordinal());
+                b.writeByte(w.kind().ordinal());
             }
             b.writeVarInt(p.fractures.size());
             for (Fractures.View f : p.fractures) {
@@ -53,10 +56,13 @@ public final class HealthPackets {
             int n = Math.min(16, b.readVarInt());
             List<Wounds.View> wounds = new ArrayList<>(n);
             Wounds.Stage[] stages = Wounds.Stage.values();
+            Wounds.Kind[] kinds = Wounds.Kind.values();
             for (int i = 0; i < n; i++) {
-                int stage = b.readByte();
-                wounds.add(new Wounds.View(stages[Math.max(0, Math.min(stages.length - 1, stage))], b.readBoolean(), b.readBoolean(),
-                        b.readFloat(), BodyPart.byOrdinal(b.readByte())));
+                Wounds.Stage stage = stages[Math.max(0, Math.min(stages.length - 1, b.readByte()))];
+                boolean cleaned = b.readBoolean(), bandaged = b.readBoolean();
+                float recovery = b.readFloat();
+                BodyPart part = BodyPart.byOrdinal(b.readByte());
+                wounds.add(new Wounds.View(stage, cleaned, bandaged, recovery, part, kinds[Math.max(0, Math.min(kinds.length - 1, b.readByte()))]));
             }
             int m = Math.min(8, b.readVarInt());
             List<Fractures.View> fractures = new ArrayList<>(m);
@@ -70,8 +76,9 @@ public final class HealthPackets {
      * the broken limbs; and the parts the next bandage and the next cleaning go on (BodyPart ordinal, -1: none; the actions'
      * forearm, client/BandageWrapRenderer#workedArm). To the player and its trackers.
      */
-    public record Marks(UUID player, int bandaged, int splinted, int broken, int bandageTarget, int cleanTarget) {
-        public static final Marks NONE = new Marks(new UUID(0, 0), 0, 0, 0, -1, -1);
+    public record Marks(UUID player, int bandaged, int splinted, int broken, int bandageTarget, int cleanTarget, List<SkinMark> skin,
+                        Fern fern) {
+        public static final Marks NONE = new Marks(new UUID(0, 0), 0, 0, 0, -1, -1, List.of(), Fern.NONE);
 
         static void encode(Marks p, FriendlyByteBuf b) {
             b.writeUUID(p.player);
@@ -80,10 +87,37 @@ public final class HealthPackets {
             b.writeByte(p.broken);
             b.writeByte(p.bandageTarget);
             b.writeByte(p.cleanTarget);
+            b.writeVarInt(p.skin.size());
+            for (SkinMark m : p.skin) {
+                b.writeByte(m.part().ordinal());
+                b.writeByte(m.kind().ordinal());
+                b.writeByte(m.stage().ordinal());
+                b.writeBoolean(m.bandaged());
+                b.writeInt(m.seed());
+                b.writeByte(m.healed());
+            }
+            b.writeByte(p.fern.strength());
+            b.writeByte(p.fern.part() == null ? -1 : p.fern.part().ordinal());
+            b.writeInt(p.fern.seed());
         }
 
         static Marks decode(FriendlyByteBuf b) {
-            return new Marks(b.readUUID(), b.readUnsignedByte(), b.readUnsignedByte(), b.readUnsignedByte(), b.readByte(), b.readByte());
+            UUID player = b.readUUID();
+            int bandaged = b.readUnsignedByte(), splinted = b.readUnsignedByte(), broken = b.readUnsignedByte();
+            int bandageTarget = b.readByte(), cleanTarget = b.readByte();
+            int n = Math.min(16, b.readVarInt());
+            Wounds.Kind[] kinds = Wounds.Kind.values();
+            Wounds.Stage[] stages = Wounds.Stage.values();
+            List<SkinMark> skin = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                BodyPart part = BodyPart.byOrdinal(b.readByte());
+                Wounds.Kind kind = kinds[Mth.clamp(b.readByte(), 0, kinds.length - 1)];
+                Wounds.Stage stage = stages[Mth.clamp(b.readByte(), 0, stages.length - 1)];
+                skin.add(new SkinMark(part, kind, stage, b.readBoolean(), b.readInt(), Mth.clamp(b.readByte(), 0, 15)));
+            }
+            int strength = Mth.clamp(b.readByte(), 0, 15), fernPart = b.readByte(), seed = b.readInt();
+            return new Marks(player, bandaged, splinted, broken, bandageTarget, cleanTarget, List.copyOf(skin),
+                    new Fern(strength, fernPart < 0 ? null : BodyPart.byOrdinal(fernPart), seed));
         }
 
         public boolean bandaged(BodyPart part) {
@@ -105,13 +139,24 @@ public final class HealthPackets {
         }
 
         boolean empty() {
-            return bandaged == 0 && splinted == 0 && broken == 0 && bandageTarget < 0 && cleanTarget < 0;
+            return bandaged == 0 && splinted == 0 && broken == 0 && bandageTarget < 0 && cleanTarget < 0 && skin.isEmpty() && fern.strength() == 0;
         }
 
         boolean sameBody(Marks o) {
             return o != null && bandaged == o.bandaged && splinted == o.splinted && broken == o.broken && bandageTarget == o.bandageTarget
-                    && cleanTarget == o.cleanTarget;
+                    && cleanTarget == o.cleanTarget && skin.equals(o.skin) && fern.equals(o.fern);
         }
+    }
+
+    /**
+     * One wound's mark on the skin (client/WoundSkin): where, what made it, its stage, whether it is dressed, the seed that
+     * places it, how far it has healed (0..15 sixteenths).
+     */
+    public record SkinMark(BodyPart part, Wounds.Kind kind, Wounds.Stage stage, boolean bandaged, int seed, int healed) {}
+
+    /** Lightning's fern-like mark on the skin (LightningInjury): strength 0..15 (0 none), the part the current came in by, its seed. */
+    public record Fern(int strength, @Nullable BodyPart part, int seed) {
+        public static final Fern NONE = new Fern(0, null, 0);
     }
 
     /**

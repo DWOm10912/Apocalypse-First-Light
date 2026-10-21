@@ -141,4 +141,6 @@
 - `client/ExplosionTinnitusClientState`、`ExplosionTinnitusEnvelope`、`ExplosionTinnitusOverlay`（那张灰色暗角）、`ExplosionTinnitusSound`；`explosion/ExplosionTinnitusEvents`、`ExplosionTinnitusProfile`；`tinnitus/` 整个包；贴图 `textures/gui/effects/explosion_tinnitus_overlay.png`；`HearingProtectionManager.effectiveTinnitusSeverity`、`HearingProtectionAudio.tinnitusVolumeMultiplier`。
 - dev：`ExplosionTinnitusGameTests`、`GunshotTinnitusGameTests`、`TinnitusAudioRegressionTest`、`TinnitusTimelineTest` 和两个 `*tinnitus-gametest.init.gradle`；`NativeRifleBalanceTests` / `NativeSuppressorTests` 改查 `earDb()`。
 
+**雷击伤 V1**（[lightning_injury_v1_plan.md](lightning_injury_v1_plan.md)，分支 `feature/lightning-injury`，从这个分支开，未合并、未实机）：`HearingLoad.atLeast` 让直击和侧闪把负荷直接拉到严重耳鸣并震一下；`TinnitusClient.hearingMultiplier()` 再乘鼓膜穿孔（×0.7）和昏迷时的 ×0.12；鼓膜穿孔期间耳鸣阵发 60% 落在破的那只耳朵。协议在那个分支上是 62。
+
 **验证**：`compileJava` 和 `compileDevJava` 通过。第一轮实机后用户提了两处（每开一枪倒计时往上加；"稳定高音""偏低带沙"两段听着奇怪），改完后用户 2026-10-21 实机 PASS。

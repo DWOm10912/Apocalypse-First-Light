@@ -94,6 +94,11 @@
 
 **其他文件**：`health/HealthConfig`（`FallOver`）、`health/HealthPackets`（`Landing`）、`health/Fractures`（`onDamage` 改调 `FallLanding.land`）、`client/skeleton/SkeletonActions`（来源）、`skeleton/action/PlayerAction`、`tools/blockbench/afl_rig.js`、`sounds.json`（`body_fall` 四个变体，传 8 格）。
 
+**雷击伤 V1 复用**（[lightning_injury_v1_plan.md](lightning_injury_v1_plan.md)，D 分支 `feature/lightning-injury`，未合并、未实机）：
+
+- `FallLanding.knockDown`：地电流把人打倒，播 `body/fall_over` 和摔地声，不判手骨折。
+- `FallLanding.GET_UP` = 2、`GET_UP_TICKS` = 52：双腿麻痹结束时从趴着站起来，动作 `body/prone_get_up`（2.6 s，`lightning.animation.json`，`tools/medical-actions-v1a/author_lightning_getup_v1.cjs`），`FallLandingClient` 同样锁输入、视角跟 `first_person_view`。
+
 ## 7. 要用户实机看的
 
 1. 摔倒概率（第 3 节的表）合不合适，疾跑跳下、边缘、负重加得够不够。
