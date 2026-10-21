@@ -6,6 +6,7 @@
 // where the material has it (the flagstone joints, >= 5 texels wide, shallow), no per-texel noise.
 import {png} from '../cube-slab-mesh-lib.mjs';
 import {N, hash, clamp, sstep, mul, mix, vn, cells} from '../mesh-trees/hd-art.mjs';
+import {base} from '../wood-photo/sample.mjs';
 
 const SS = 3, MM = 1000 / N;
 
@@ -53,26 +54,21 @@ export function ash() {
     return {c, s: 16, f0: 10, p: 55, h: dark ? 0.6 * sstep(2, 9, cl.edge) : 0, ao: 1};
   };
 }
-/** The stove's split wood (inside the firebox, u along the split): bark brown-grey in long soft ridges, a little char. */
+/**
+ * The stove's split wood (inside the firebox, u along the split): the red oak bark photo (tools/wood-photo, 2026-10-20;
+ * its ridges run along v, so it is turned), a little char.
+ */
+const FW_BARK = base('firewood_bark_240'), FW_END = base('firewood_end_240');
 export function firewoodBark() {
   return (x, y) => {
-    const ridge = vn(x, y, 7060, 60, 20);
-    let c = mix([92, 80, 68], [62, 54, 46], 0.5 * sstep(-0.4, 0.8, ridge));
+    let c = FW_BARK(y + 57, x);
     c = mix(c, [34, 30, 28], 0.35 * sstep(0.2, 1, vn(x, y, 7061, 80, 40)));
     return {c, s: 30, f0: 10, p: 40, h: 0, ao: 1};
   };
 }
-/** The split wood's end grain (disc radius 0.47 of the sprite): rings round an off-centre pith, a bark rim. */
+/** The split wood's end grain (disc radius 0.47 of the sprite): the red oak end photo with its bark rim. */
 export function firewoodEnd() {
-  const seed = 7070;
-  return (x, y) => {
-    const dx = x - N * 0.42, dy = y - N * 0.56, r = Math.hypot(dx, dy) / (N * 0.47), rim = Math.hypot(x - N / 2, y - N / 2) / (N * 0.47);
-    const ring = ((r * 9) % 1 + 1) % 1;
-    let c = mix([172, 136, 96], [146, 112, 78], 0.5 * sstep(0.6, 0.75, ring) * (1 - sstep(0.85, 0.98, ring)));
-    c = mul(c, 1 + 0.04 * vn(x, y, seed, 40));
-    c = mix(c, [86, 74, 62], sstep(0.82, 0.92, rim));
-    return {c, s: 36, f0: 10, p: 40, h: 0, ao: 1};
-  };
+  return (x, y) => ({c: FW_END(x, y), s: 36, f0: 10, p: 40, h: 0, ao: 1});
 }
 /** The heat shield: plain galvanised sheet, a quiet grey satin with a faint large mottle; dielectric (see the header). */
 export function shieldSheet() {

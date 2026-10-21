@@ -30,9 +30,12 @@ import java.util.concurrent.atomic.LongAdder;
  * <ul>
  * <li>Index: the roots of every chunk that arrives, and the server's root messages. A cell of a tree whose root chunk is
  * not here yet draws nothing until that chunk arrives and marks the tree's sections for a rebuild.</li>
- * <li>Levels: each tree has one level for all its cells (no seams inside a crown), from the horizontal camera distance
- * to the root: LOD0 under {@value #NEAR} blocks, LOD1 under {@value #MID}, then LOD2, with {@value #HYSTERESIS} blocks of
- * hysteresis. A change marks the tree's sections for a rebuild; the shadow pass draws the same section meshes.</li>
+ * <li>Levels: each tree has one stage for all its cells (no seams inside a crown), from the horizontal camera distance
+ * to the root (docs/rendering/mesh_trees_p4_formal.md, LOD transition): LOD0 under {@value #NEAR_FROM} blocks, LOD1 from
+ * {@value #NEAR_TO} to {@value #MID_FROM}, LOD2 from {@value #MID_TO}. In each band between, {@value #STEPS} - 1 blend stages:
+ * a growing share of the leaf cards (a fixed random order) comes from the next level, the wood switches halfway, so a
+ * tree changes in small steps instead of all at once. {@value #HYSTERESIS} blocks of hysteresis on every stage edge. A
+ * change marks the tree's sections for a rebuild; the shadow pass draws the same section meshes.</li>
  * <li>Batching (P1, docs/rendering/mesh_trees_p1_forest.md G): level changes wait up to {@value #FLUSH_TICKS} ticks and are
  * applied together (a tree that turns back inside the window never rebuilds); every rebuild mark of a tick goes through
  * one set, so a section that several trees reach is marked once. In a forest most sections hold several trees.</li>
@@ -40,7 +43,11 @@ import java.util.concurrent.atomic.LongAdder;
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT)
 public final class TreeClient {
-    static final int NEAR = 64, MID = 160, HYSTERESIS = 8;
+    static final int NEAR_FROM = 76, NEAR_TO = 100, MID_FROM = 160, MID_TO = 196, HYSTERESIS = 3;
+    /** Stages per level: stage = level * STEPS + blend step; STAGES stages from LOD0 to LOD2. */
+    static final int STEPS = 4, STAGES = (TreeShape.LODS - 1) * STEPS + 1;
+    /** Where stage k turns into k + 1: STEPS edges evenly across each band. */
+    private static final float[] EDGES = edges();
     static final int PROXY = TreeShape.LODS;
 
     /** -1: distance levels; 0..2: one level for every tree; PROXY: the voxel proxy (what Voxy and maps see). */
@@ -48,7 +55,7 @@ public final class TreeClient {
     static final LongAdder lookups = new LongAdder(), lookupNanos = new LongAdder(), carriers = new LongAdder(), orphans = new LongAdder(),
             quadsOut = new LongAdder();
     static long marks, marksWindowStart, marksWindow;
-    static final int[] levelChanges = new int[TreeShape.LODS];
+    static final int[] levelChanges = new int[STAGES];
     static final int FLUSH_TICKS = 10;
     /** Sections to mark this tick (deduplicated); trees whose new level waits for the next flush. Client thread only. */
     private static final LongOpenHashSet DIRTY = new LongOpenHashSet();
@@ -58,10 +65,10 @@ public final class TreeClient {
 
     private TreeClient() {}
 
-    /** The level a root's cells draw now. */
-    static int levelOf(TreeIndex.Root r) {
+    /** The stage a root's cells draw now (level * STEPS + blend step). */
+    static int stageOf(TreeIndex.Root r) {
         int o = override;
-        if (o >= 0) return o;
+        if (o >= 0) return o * STEPS;
         int l = r.level;
         return l < 0 ? 0 : l;
     }
@@ -70,7 +77,7 @@ public final class TreeClient {
         var mc = Minecraft.getInstance();
         if (mc.gameRenderer != null) {
             var cam = mc.gameRenderer.getMainCamera().getPosition();
-            r.level = level(Math.hypot(r.x + 0.5 - cam.x, r.z + 0.5 - cam.z), -1);
+            r.level = stage(Math.hypot(r.x + 0.5 - cam.x, r.z + 0.5 - cam.z), -1);
         }
         dirty(r);
     }
@@ -151,7 +158,7 @@ public final class TreeClient {
         var cam = mc.gameRenderer.getMainCamera().getPosition();
         for (TreeIndex.Root[] list : TreeIndex.CLIENT.all()) for (var r : list) {
             double d = Math.hypot(r.x + 0.5 - cam.x, r.z + 0.5 - cam.z);
-            int old = r.level, now = level(d, old);
+            int old = r.level, now = stage(d, old);
             if (now == old) { if (!PENDING.isEmpty()) PENDING.remove(r); continue; }
             if (old < 0) {
                 // a root without a level yet was meshed as LOD0
@@ -182,12 +189,26 @@ public final class TreeClient {
         if (t - marksWindowStart > 10_000_000_000L) { marksWindow = marks; marksWindowStart = t; }
     }
 
-    /** Distance level with hysteresis (old -1: none yet). */
-    static int level(double d, int old) {
-        int near = NEAR, mid = MID;
-        if (old == 0) near += HYSTERESIS; else if (old > 0) near -= HYSTERESIS;
-        if (old == 2) mid -= HYSTERESIS; else if (old >= 0) mid += HYSTERESIS;
-        return d < near ? 0 : d < mid ? 1 : 2;
+    private static float[] edges() {
+        float[] e = new float[STAGES - 1];
+        int[][] bands = {{NEAR_FROM, NEAR_TO}, {MID_FROM, MID_TO}};
+        for (int b = 0; b < bands.length; b++)
+            for (int k = 0; k < STEPS; k++) e[b * STEPS + k] = bands[b][0] + (bands[b][1] - bands[b][0]) * k / (float) (STEPS - 1);
+        return e;
+    }
+
+    /** Distance stage with hysteresis (old -1: none yet): the old stage holds until the camera is HYSTERESIS past its edges. */
+    static int stage(double d, int old) {
+        if (old >= 0 && old < STAGES && (old == 0 || d >= EDGES[old - 1] - HYSTERESIS) && (old == STAGES - 1 || d < EDGES[old] + HYSTERESIS))
+            return old;
+        int s = 0;
+        while (s < STAGES - 1 && d >= EDGES[s]) s++;
+        return s;
+    }
+
+    /** The plain level nearest a distance (a falling tree's frozen mesh). */
+    static int level(double d) {
+        return (stage(d, -1) + STEPS / 2) / STEPS;
     }
 
     // ------------------------------------------------------------------------------------------------- status
@@ -199,10 +220,15 @@ public final class TreeClient {
 
     private static void status() {
         int[] at = new int[TreeShape.LODS];
-        for (TreeIndex.Root[] list : TreeIndex.CLIENT.all()) for (var r : list) at[Math.max(0, r.level)]++;
-        say(String.format("Mesh tree (client): %d roots indexed in %d chunks; levels now LOD0 %d / LOD1 %d / LOD2 %d; view %s; bands <%d / <%d blocks, hysteresis %d",
-                TreeIndex.CLIENT.size(), TreeIndex.CLIENT.chunks(), at[0], at[1], at[2],
-                override < 0 ? "auto" : override == PROXY ? "proxy" : "LOD" + override, NEAR, MID, HYSTERESIS));
+        int blending = 0;
+        for (TreeIndex.Root[] list : TreeIndex.CLIENT.all()) for (var r : list) {
+            int s = Math.max(0, r.level);
+            at[s / STEPS]++;
+            if (s % STEPS != 0) blending++;
+        }
+        say(String.format("Mesh tree (client): %d roots indexed in %d chunks; levels now LOD0 %d / LOD1 %d / LOD2 %d (%d of them blending); view %s; blends %d-%d / %d-%d blocks in %d steps, hysteresis %d",
+                TreeIndex.CLIENT.size(), TreeIndex.CLIENT.chunks(), at[0], at[1], at[2], blending,
+                override < 0 ? "auto" : override == PROXY ? "proxy" : "LOD" + override, NEAR_FROM, NEAR_TO, MID_FROM, MID_TO, STEPS, HYSTERESIS));
         for (Species sp : Species.values()) {
             var l = TreeShape.layout(sp, 0, 0);
             say(String.format("  %s v0: %.1f m, crown %.1f m, %d cells (wood %d, %d collide; crown %d, %d carry leaves); triangles LOD0 %d, LOD1 %d, LOD2 %d",
@@ -212,7 +238,7 @@ public final class TreeClient {
         long n = lookups.sum();
         say(String.format("  chunk builds: %d cell lookups, %.2f us each, %d found a tree, %d orphans (root chunk not here), %d quads emitted",
                 n, n == 0 ? 0 : lookupNanos.sum() / 1000.0 / n, carriers.sum(), orphans.sum(), quadsOut.sum()));
-        say(String.format("  rebuild marks: %d total, %d since the last 10 s mark; level changes to LOD0/1/2: %s; baked caches %d",
+        say(String.format("  rebuild marks: %d total, %d since the last 10 s mark; stage changes (LOD0, blends, LOD1, blends, LOD2): %s; baked caches %d",
                 marks, marks - marksWindow, Arrays.toString(levelChanges), TreeCellModel.cacheSize()));
         say(String.format("  level batches (every %d ticks): %d, %d trees -> %d sections (%.1f sections per tree); last %d trees -> %d sections, largest %d sections; %d waiting",
                 FLUSH_TICKS, flushes, flushedTrees, flushedSections, flushedTrees == 0 ? 0 : flushedSections / (double) flushedTrees, lastTrees, lastSections, maxSections, PENDING.size()));

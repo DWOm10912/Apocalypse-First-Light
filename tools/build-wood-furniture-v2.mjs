@@ -40,7 +40,7 @@ export const BLOCKS = [
   {id: 'wooden_wardrobe', mass: 55, carry: 'oversized', tool: 'axe', en: 'Wooden Wardrobe', zh: '木衣柜'},
   {id: 'wooden_nightstand', mass: 9, carry: 'bulky', tool: 'axe', en: 'Wooden Nightstand', zh: '木床头柜'},
   {id: 'wooden_tool_rack', mass: 3, carry: 'bulky', tool: 'axe', en: 'Wooden Tool Rack', zh: '木质工具架'},
-  {id: 'wooden_storage_chest', mass: 30, carry: 'oversized', tool: 'axe', en: 'Wooden Storage Chest', zh: '木储物箱'},
+  {id: 'wooden_storage_chest', mass: 30, carry: 'oversized', tool: 'axe', en: 'Wooden Storage Chest', zh: '木制储物箱'},
   {id: 'vintage_chest_freezer', mass: 75, carry: 'oversized', tool: 'pickaxe', tier: 'needs_iron_tool', en: 'Vintage Chest Freezer', zh: '老式冷柜'},
 ];
 

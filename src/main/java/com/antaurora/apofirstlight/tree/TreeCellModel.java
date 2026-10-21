@@ -138,7 +138,7 @@ final class TreeCellModel implements IDynamicBakedModel {
         for (var r : roots) {
             var cell = r.layout.cell(pos.getX() - r.x, pos.getY() - r.y, pos.getZ() - r.z);
             if (cell == null || (cell.kind == TreeShape.WOOD) != woody()) continue;
-            int lod = TreeClient.levelOf(r);
+            int lod = TreeClient.stageOf(r);
             Cell c;
             // P2: a root being chopped draws its notch (near level only: the chopper is close)
             if (kind == Kind.ROOT && cell.x == 0 && cell.y == 0 && cell.z == 0 && lod == 0 && state.getBlock() == TreeBlocks.root()
@@ -232,9 +232,56 @@ final class TreeCellModel implements IDynamicBakedModel {
         return new Cell(List.copyOf(list), false);
     }
 
+    /**
+     * One variant, turn, stage, shading: cell key -> what that cell draws (cells without quads at that stage absent). A
+     * stage between two levels (TreeClient#STEPS) draws the nearer level's leaf cards whose fixed random rank is at least
+     * the blend share and the farther level's below it, the nearer wood under half the share, the farther wood from half
+     * on: the same baked quads as the two levels, picked by reference.
+     */
+    static Map<Integer, Cell> baked(TreeShape.Layout layout, int stage, int shade) {
+        if (stage % TreeClient.STEPS == 0) return level(layout, stage / TreeClient.STEPS, shade);
+        int key = (((layout.species.ordinal() * TreeShape.VARIANTS + layout.variant) * 4 + layout.turns) * TreeClient.STAGES + stage) * 2 + shade;
+        return BAKED.computeIfAbsent(key, k -> {
+            int a = stage / TreeClient.STEPS;
+            float t = (stage % TreeClient.STEPS) / (float) TreeClient.STEPS;
+            var near = level(layout, a, shade);
+            var far = level(layout, a + 1, shade);
+            var out = new java.util.HashMap<Integer, Cell>();
+            for (var cell : layout.cells.values()) {
+                int ck = TreeShape.key(cell.x, cell.y, cell.z);
+                var list = new ArrayList<BakedQuad>();
+                pick(cell, a, near.get(ck), t, false, list);
+                pick(cell, a + 1, far.get(ck), t, true, list);
+                if (!list.isEmpty()) out.put(ck, new Cell(List.copyOf(list), false));
+            }
+            return Map.copyOf(out);
+        });
+    }
+
+    /** A level's baked quads of a cell kept at blend share t: the nearer level (farther false) keeps what the farther drops. */
+    private static void pick(TreeShape.Cell cell, int level, @Nullable Cell baked, float t, boolean farther, List<BakedQuad> out) {
+        if (baked == null) return;
+        var quads = cell.quads[level];
+        int at = 0;
+        for (int i = 0; i < quads.size(); i++) {
+            var q = quads.get(i);
+            int n = q.twoSided ? 2 : 1;
+            boolean below = q.kind == TreeShape.FOLIAGE ? rank(cell, level, i) < t : t >= 0.5F;
+            if (below == farther) for (int j = 0; j < n; j++) out.add(baked.quads.get(at + j));
+            at += n;
+        }
+    }
+
+    /** A quad's fixed random rank in 0..1 (cell, level, index). */
+    private static float rank(TreeShape.Cell cell, int level, int i) {
+        long h = (TreeShape.key(cell.x, cell.y, cell.z) * 0x9E3779B97F4A7C15L) ^ (level * 0xC2B2AE3D27D4EB4FL) ^ (i * 0x165667B19E3779F9L);
+        h ^= h >>> 33; h *= 0xFF51AFD7ED558CCDL; h ^= h >>> 33;
+        return (h >>> 40) / (float) (1 << 24);
+    }
+
     /** One variant, turn, level, shading: cell key -> what that cell draws (cells without quads at that level absent). */
-    static Map<Integer, Cell> baked(TreeShape.Layout layout, int level, int shade) {
-        int key = (((layout.species.ordinal() * TreeShape.VARIANTS + layout.variant) * 4 + layout.turns) * TreeShape.LODS + level) * 2 + shade;
+    private static Map<Integer, Cell> level(TreeShape.Layout layout, int level, int shade) {
+        int key = (((layout.species.ordinal() * TreeShape.VARIANTS + layout.variant) * 4 + layout.turns) * TreeClient.STAGES + level * TreeClient.STEPS) * 2 + shade;
         return BAKED.computeIfAbsent(key, k -> {
             TextureAtlasSprite[] sprites = sprites();
             var out = new java.util.HashMap<Integer, Cell>();

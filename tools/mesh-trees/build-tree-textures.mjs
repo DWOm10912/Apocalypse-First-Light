@@ -1,10 +1,8 @@
 // Mesh Trees P0-A (docs/rendering/mesh_trees_p0a.md) .. P4: the trees' textures, written to
 // src/main/resources/assets/apocalypse_firstlight/textures/block/tree/ (and ../../item/tree/ for the icons); --check
 // compares instead of writing. Per species (white_oak, white_pine, red_oak, shagbark_hickory, red_maple, eastern_hemlock):
-//   <id>_bark           32 x 32 pixel art + LabPBR _n / _s, from bark-art.mjs (2026-10-12, mesh_trees_p4_formal.md W;
-//                       16 px before; a 240 px bark was rejected in game the same day)
-//   <id>_log_end, <id>_end_grain, <id>_cut   32 x 32 + LabPBR _n / _s from the luminance, felling-art.mjs (P2.1 / P2.2,
-//                       the four P3 species with their own palettes and profiles)
+//   (since 2026-10-20 <id>_bark, _log_end, _end_grain and _cut come from CC0 photos, tools/build-wood-photo-v1.mjs,
+//   docs/models/wood_texture_rework_v1_plan.md; the 32 px pixel art of bark-art.mjs / felling-art.mjs is no longer written)
 //   leaf cards          32 x 32 grey values for the crown's tint: LOD0 cards, _mid / _far denser for LOD1 / LOD2, a 16 x 16
 //                       _proxy cube face (what Voxy and maps see); white oak and white pine drawn here (P0-A), the four P3
 //                       species in species-art.mjs
@@ -16,7 +14,6 @@ import {fileURLToPath} from 'node:url';
 import {png} from '../cube-slab-mesh-lib.mjs';
 import * as art from './felling-art.mjs';
 import * as sp from './species-art.mjs';
-import {barkMaps, M as BARK_PX} from './bark-art.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // P4 (mesh_trees_p4_formal.md): the formal textures, apocalypse_firstlight:block/tree/... and item/tree/...
@@ -195,14 +192,6 @@ const outputs = {
   'white_pine_needles_mid.png': needles(4203, 17, 10, 8),
   'white_pine_needles_far.png': needles(4204, 24, 11, 10),
   'white_pine_needles_proxy.png': pineProxy(),
-  // P2.1 formal felling assets (felling-art.mjs)
-  'white_oak_cut.png': art.cutWood(art.OAK, art.OAK_WOOD, 4301),
-  'white_pine_cut.png': art.cutWood(art.PINE, art.PINE_WOOD, 4302),
-  'white_oak_end_grain.png': art.endGrain(art.OAK, art.OAK_WOOD, 4303),
-  'white_pine_end_grain.png': art.endGrain(art.PINE, art.PINE_WOOD, 4304),
-  // P2.2 log block ends
-  'white_oak_log_end.png': art.logEnd(art.OAK, art.OAK_WOOD, 4305),
-  'white_pine_log_end.png': art.logEnd(art.PINE, art.PINE_WOOD, 4306),
   '../../item/tree/white_oak_branch.png': art.branchIcon(art.OAK, false),
   '../../item/tree/white_pine_branch.png': art.branchIcon(art.PINE, true),
   '../../item/tree/white_oak_leaves.png': art.oakLeafIcon(art.OAK),
@@ -228,22 +217,8 @@ for (const [id, leaves, pal, wood, cards, proxyFn, leafIcon, branchIcon, seed] o
   outputs[leaves + '_mid.png'] = cards[1](seed + 3);
   outputs[leaves + '_far.png'] = cards[2](seed + 4);
   outputs[leaves + '_proxy.png'] = proxyFn(seed + 5);
-  outputs[id + '_cut.png'] = art.cutWood(pal, wood, seed + 6);
-  outputs[id + '_end_grain.png'] = art.endGrain(pal, wood, seed + 7);
-  outputs[id + '_log_end.png'] = art.logEnd(pal, wood, seed + 8);
   outputs['../../item/tree/' + id + '_branch.png'] = branchIcon(pal);
   outputs['../../item/tree/' + leaves + '.png'] = leafIcon(pal);
-}
-// the six barks: colour, _s, _n drawn together (bark-art.mjs, fixed seeds of its own)
-for (const [id, pal] of [['white_oak', art.OAK], ['white_pine', art.PINE], ...P3.map(([id, , pal]) => [id, pal])]) {
-  barkMaps(id, pal).forEach((buf, k) => { outputs[id + '_bark' + ['', '_s', '_n'][k] + '.png'] = {png: buf, W: BARK_PX, H: BARK_PX}; });
-}
-// LabPBR of the ends and the cut (normals gentle and smoothed, height alpha flat, dielectric rough wood)
-for (const name of ['white_oak_cut', 'white_pine_cut', 'white_oak_end_grain', 'white_pine_end_grain', 'white_oak_log_end', 'white_pine_log_end',
-  ...P3.flatMap(([id]) => [id + '_cut', id + '_end_grain', id + '_log_end'])]) {
-  const base = outputs[name + '.png'], cut = name.endsWith('_cut');
-  outputs[name + '_n.png'] = art.normalMap(base, cut ? 0.6 : 0.5, false, cut ? 25 : 20);
-  outputs[name + '_s.png'] = art.specularMap(base, cut ? 50 : 40, cut ? 80 : 70, 50, false);
 }
 
 const check = process.argv.includes('--check');

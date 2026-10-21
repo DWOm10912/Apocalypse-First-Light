@@ -6,7 +6,7 @@
 - 冷柜现在是商用的，做一台老式大铁柜；
 - 原版箱子不要了，做自己的储物箱（Mesh），逻辑可以复用，ID 用自己的。
 
-和 [Wood Furniture V1](wood_furniture_v1.md) 同一套做法：几何由生成器程序生成，朝北画，静止时进区块画。床和工具架是 Mesh 拼块（`CabinPieces`，`cabin_mesh/furniture/`）；衣柜、床头柜、储物箱、冷柜从 2026-10-15 起是 AFL 动画网格，门、抽屉、盖子平滑开合（第 2 节）；木家具不分树种，和 V1 共用一套木色（2026-10-15 起是胡桃木油饰面，第 3 节"家具木色"）。概念图 2026-10-15 发给了用户（`design/buildings/forest_start_home_v1/m4_sheets/fv2_sheet.png`），用户还没回复意见。
+和 [Wood Furniture V1](wood_furniture_v1.md) 同一套做法：几何由生成器程序生成，朝北画，静止时进区块画。床和工具架是 Mesh 拼块（`CabinPieces`，`cabin_mesh/furniture/`）；衣柜、床头柜、储物箱、冷柜从 2026-10-15 起是 AFL 动画网格，门、抽屉、盖子平滑开合（第 2 节）；木家具不分树种，和 V1 共用一套木色（2026-10-15 起是胡桃木油饰面，第 3 节"家具木色"；2026-10-20 起木纹改用 CC0 实拍胡桃木单板，见 [Wood Furniture V1](wood_furniture_v1.md) 的"成品木色"）。概念图 2026-10-15 发给了用户（`design/buildings/forest_start_home_v1/m4_sheets/fv2_sheet.png`），用户还没回复意见。
 
 ## 1. 方块
 

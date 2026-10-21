@@ -5,22 +5,38 @@
 // The finish (user 2026-10-15, docs/models/wood_furniture_v2.md "家具木色"): a walnut oil finish, chocolate brown, face
 // CIELAB L 37 / a 7 / b 15, against the six species' planks at 62..85 and the light log walls, so it reads as finished
 // furniture beside any of them. Until 2026-10-15 a neutral mid-brown [142,112,82] / [112,86,62] (L 49, C 22.5) that looked muddy.
+// 2026-10-20 (user picked "B", docs/models/wood_texture_rework_v1_plan.md): the grain is a CC0 photo of walnut veneer
+// (Poly Haven walnut_veneer_02) graded to a lacquered walnut tone, furniture/walnut_finish_240.png, written by
+// tools/build-wood-photo-v1.mjs; every wood texture below samples it (boards at their own offsets and tones). FACE / LATE
+// remain for the design studies only.
 // 240 texels = 1 m, LabPBR like cabin-art (renderX).
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {N, hash, sstep, mul, mix, vn} from '../mesh-trees/hd-art.mjs';
-import {grain, iron} from '../cabin/cabin-art.mjs';
+import {iron} from '../cabin/cabin-art.mjs';
+import {readPng} from '../cube-slab-mesh-lib.mjs';
 
 /** The stained face and its latewood (sRGB). */
 export let FACE = [106, 82, 63], LATE = [80, 57, 38];
 /** Design studies only (design/.../m4_source/wood_finish_swatches.mjs): another finish for the textures made after it. */
 export function setFinish(face, late) { FACE = face; LATE = late; }
-const wood = (late, k = 0.45) => mix(FACE, LATE, late * k);
+const FINISH = readPng(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'walnut_finish_240.png')));
+/** The finish photo at texel (u, v) (grain along u), bilinear, wrapping (the tile is seamless). */
+function walnut(u, v) {
+  const {w, h, bpp, px} = FINISH;
+  u = ((u - 0.5) % w + w) % w; v = ((v - 0.5) % h + h) % h;
+  const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0, x1 = (x0 + 1) % w, y1 = (y0 + 1) % h;
+  const at = (x, y, k) => px[(y * w + x) * bpp + k];
+  return [0, 1, 2].map(k => (at(x0, y0, k) * (1 - fx) + at(x1, y0, k) * fx) * (1 - fy) + (at(x0, y1, k) * (1 - fx) + at(x1, y1, k) * fx) * fy);
+}
 
 /** Planed stock (rails, aprons, seats, slats, drawer fronts, the brackets): grain along u (vertical: along v), satin. */
 export function lumber(vertical) {
   const seed = vertical ? 6010 : 6000;
   return (X, Y) => {
     const [x, y] = vertical ? [Y, X] : [X, Y];
-    const c = mul(wood(grain(y, x, 8, seed, x, y)), 1 + 0.02 * vn(x, y, seed + 3, 120, 30));
+    const c = walnut(x + (vertical ? 97 : 0), y + (vertical ? 41 : 0));
     return {c, s: 130, p: 16, h: 0, ao: 1};
   };
 }
@@ -33,7 +49,7 @@ export function top() {
   const seed = 6100, W = N / 6, tones = Array.from({length: 6}, (_, k) => 0.95 + 0.1 * hash(k, 1, seed));
   return (x, y) => {
     const k = Math.floor(y / W) % 6, ty = y - k * W, d = Math.min(ty, W - ty);
-    let c = mul(wood(grain(ty + 23 * k, x, 8, seed + 5 + k, x, y)), tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 120, 24)));
+    let c = mul(walnut(x + 53 * k, ty + 71 * k), tones[k]);
     if (d < 0.8) c = mul(c, 0.86);
     return {c, s: 145, p: 14, h: 0, ao: 1};
   };
@@ -44,7 +60,7 @@ export function panel() {
   const seed = 6200, W = N / 8, tones = Array.from({length: 8}, (_, k) => 0.95 + 0.1 * hash(k, 1, seed));
   return (x, y) => {
     const k = Math.floor(x / W) % 8, tx = x - k * W, d = Math.min(tx, W - tx);
-    let c = mul(wood(grain(tx + 31 * k, y, 8, seed + 5 + k, y, x)), 0.97 * tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 30, 120)));
+    let c = mul(walnut(y + 61 * k, tx + 43 * k), 0.97 * tones[k]);
     let h = 0, ao = 1;
     if (d < 2.5) { const t = 1 - d / 2.5; h = -1.4 * t; c = mul(c, 1 - 0.25 * t); ao = 1 - 0.25 * t; }
     return {c, s: 125, p: 18, h, ao};
@@ -54,7 +70,7 @@ export function panel() {
 /** Inside a cabinet (sides, back, shelf, floor): the same wood unfinished and in shade, matte. */
 export function inside() {
   const seed = 6300;
-  return (x, y) => ({c: mul(wood(grain(y, x, 8, seed, x, y), 0.4), 0.75 * (1 + 0.02 * vn(x, y, seed + 3, 120, 30))), s: 60, p: 30, h: 0, ao: 1});
+  return (x, y) => ({c: mul(mix(walnut(x + 131 + seed % 7, y + 17), FACE, 0.3), 0.78), s: 60, p: 30, h: 0, ao: 1});
 }
 
 /** Old porcelain enamel (the drop-in sink): cream white, glossy, a faint mottle; dielectric (a glaze, not metal). */

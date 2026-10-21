@@ -26,12 +26,12 @@ public final class TreeForms {
      * the ordinal orders shared crown cells (ForestPlan#wins), the sprite list and the falling tree's packet.
      */
     public enum Species {
-        WHITE_OAK("white_oak", "white_oak_leaves", 0, false, new int[]{3000, 1100, 600}),
-        WHITE_PINE("white_pine", "white_pine_needles", 1, true, new int[]{3400, 1800, 750}),
-        RED_OAK("red_oak", "red_oak_leaves", 0, false, new int[]{3400, 1300, 700}),
-        SHAGBARK_HICKORY("shagbark_hickory", "shagbark_hickory_leaves", 0, false, new int[]{2800, 1100, 600}),
-        RED_MAPLE("red_maple", "red_maple_leaves", 0, false, new int[]{3200, 1250, 700}),
-        EASTERN_HEMLOCK("eastern_hemlock", "eastern_hemlock_needles", 2, true, new int[]{3800, 1900, 850});
+        WHITE_OAK("white_oak", "white_oak_leaves", 0, false, new int[]{3300, 1100, 600}),
+        WHITE_PINE("white_pine", "white_pine_needles", 1, true, new int[]{4000, 1900, 750}),
+        RED_OAK("red_oak", "red_oak_leaves", 0, false, new int[]{4400, 1400, 700}),
+        SHAGBARK_HICKORY("shagbark_hickory", "shagbark_hickory_leaves", 0, false, new int[]{3700, 1200, 600}),
+        RED_MAPLE("red_maple", "red_maple_leaves", 0, false, new int[]{4300, 1250, 700}),
+        EASTERN_HEMLOCK("eastern_hemlock", "eastern_hemlock_needles", 2, true, new int[]{4200, 2000, 850});
 
         public final String id;
         /** The leaf material's item id and the base name of the leaf textures ({@code _mid}, {@code _far}, {@code _proxy}). */
@@ -124,7 +124,7 @@ public final class TreeForms {
             tr[i] = (r0 - 0.11F * u) * (1 - 0.75F * above) + (y < 0.6F ? 0.2F * size * (1 - y / 0.6F) * (1 - y / 0.6F) : 0);
         }
         tr[rings] = 0.05F;
-        f.branches.add(new Branch(tp, tr, 0, true, new int[]{12, 6, 4}, Integer.MAX_VALUE, false));
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{18, 8, 4}, Integer.MAX_VALUE, false));
         f.trunkTop = fork;
         Branch trunk = f.branches.get(0);
         // limbs
@@ -141,7 +141,7 @@ public final class TreeForms {
             float y0 = fork - (isLow ? 0.5F : 0.1F) + 0.1F * i;
             float[] start = at(trunk, y0);
             float rl = Math.min(radiusAt(trunk, y0) * 0.8F, rng.range(0.19F, 0.25F) * size);
-            Branch limb = bend(start, az, el, len, 4, isLow ? 0.1F : 0.07F, rl, 0.06F, 1, rng, new int[]{6, 3, 3}, 2);
+            Branch limb = bend(start, az, el, len, 4, isLow ? 0.1F : 0.07F, rl, 0.06F, 1, rng, new int[]{10, 4, 3}, 2);
             f.branches.add(limb);
             int subs = 2 + (rng.next() < 0.6F ? 1 : 0);
             for (int k = 0; k < subs; k++) {
@@ -150,7 +150,7 @@ public final class TreeForms {
                 float saz = az + (k % 2 == 0 ? 1 : -1) * (float) Math.toRadians(rng.range(25, 55));
                 float sel = el + (float) Math.toRadians(rng.range(28, 55));
                 float sr = Math.min(radiusAlong(limb, t) * 0.75F, 0.1F);
-                Branch sub = bend(s, saz, sel, rng.range(2.2F, 3.4F) * size, 2, 0.06F, sr, 0.035F, 2, rng, new int[]{4, 0, 0}, 0);
+                Branch sub = bend(s, saz, sel, rng.range(2.2F, 3.4F) * size, 2, 0.06F, sr, 0.035F, 2, rng, new int[]{6, 0, 0}, 0);
                 f.branches.add(sub);
                 float[] st = sub.points()[2];
                 f.groups.add(new Group(st[0], st[1] + 0.1F, st[2], rng.range(1.25F, 1.5F), true, BROADLEAF, 0, 0));
@@ -171,7 +171,7 @@ public final class TreeForms {
                 float y = fork + (trunkLen - fork) * (0.3F + 0.22F * k);
                 float[] s = at(trunk, y);
                 Branch shoot = bend(s, laz + (float) (Math.PI * 2 * k / 3), (float) Math.toRadians(rng.range(20, 34)),
-                        rng.range(2.4F, 3.2F) * size, 2, 0.06F, Math.min(radiusAt(trunk, y) * 0.75F, 0.1F), 0.035F, 2, rng, new int[]{4, 0, 0}, 0);
+                        rng.range(2.4F, 3.2F) * size, 2, 0.06F, Math.min(radiusAt(trunk, y) * 0.75F, 0.1F), 0.035F, 2, rng, new int[]{6, 0, 0}, 0);
                 f.branches.add(shoot);
                 float[] st = shoot.points()[2];
                 f.groups.add(new Group(st[0], st[1] + 0.1F, st[2], rng.range(1.35F, 1.55F), true, BROADLEAF, 0, 0));
@@ -214,7 +214,7 @@ public final class TreeForms {
             tr[i] = r0 * (float) Math.pow(1 - u, 0.85) + 0.03F + (y < 0.5F ? 0.14F * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
         }
         tr[rings] = 0.02F;
-        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{18, 8, 4}, Integer.MAX_VALUE, false));
         Branch trunk = f.branches.get(0);
         float clear = rng.range(0.24F, 0.34F) * height;
         f.trunkTop = height;
@@ -234,7 +234,7 @@ public final class TreeForms {
                 float rb = Math.min(radiusAt(trunk, h) * 0.6F, 0.03F + 0.016F * len);
                 int segs = len > 3 ? 3 : 2;
                 Branch b = bend(at(trunk, h), az, el, len, segs, 0.1F, rb, 0.025F, 1, rng,
-                        new int[]{3, rb >= 0.09F && u < 0.45F ? 3 : 0, 0}, 0);
+                        new int[]{4, rb >= 0.09F && u < 0.45F ? 3 : 0, 0}, 0);
                 f.branches.add(b);
                 float dx = (float) Math.cos(az), dz = (float) Math.sin(az);
                 // needle sprays along the outer part, about every 1.1 m, the tip one larger
@@ -296,7 +296,7 @@ public final class TreeForms {
             tr[i] = (r0 - 0.07F * u) * (1 - 0.8F * above) + (y < 0.6F ? 0.17F * size * (1 - y / 0.6F) * (1 - y / 0.6F) : 0);
         }
         tr[rings] = 0.04F;
-        f.branches.add(new Branch(tp, tr, 0, true, new int[]{12, 6, 4}, Integer.MAX_VALUE, false));
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{18, 8, 4}, Integer.MAX_VALUE, false));
         f.trunkTop = fork;
         Branch trunk = f.branches.get(0);
         int limbs = 5 + (int) (rng.next() * 2.99F);
@@ -311,7 +311,7 @@ public final class TreeForms {
             float len = leader ? rng.range(6.2F, 7.4F) * size * (1 - 0.4F * t) * (1 + toward) : rng.range(7.4F, 8.8F) * size * (1 - 0.25F * t);
             float[] start = at(trunk, y0);
             float rl = Math.min(radiusAt(trunk, y0) * (leader ? 0.72F : 0.85F), rng.range(0.17F, 0.22F) * size * (1 - 0.3F * t));
-            Branch limb = bend(start, az, el, len, 4, 0.03F, rl, 0.05F, 1, rng, new int[]{6, 3, 3}, 2);
+            Branch limb = bend(start, az, el, len, 4, 0.03F, rl, 0.05F, 1, rng, new int[]{10, 4, 3}, 2);
             f.branches.add(limb);
             int subs = 2 + (rng.next() < 0.7F ? 1 : 0);
             for (int k = 0; k < subs; k++) {
@@ -320,7 +320,7 @@ public final class TreeForms {
                 float saz = az + (k % 2 == 0 ? 1 : -1) * (float) Math.toRadians(rng.range(28, 55));
                 float sel = el + (float) Math.toRadians(rng.range(0, 28));
                 float sr = Math.min(radiusAlong(limb, ts) * 0.72F, 0.09F);
-                Branch sub = bend(s, saz, sel, rng.range(2.4F, 3.4F) * size, 2, 0.05F, sr, 0.03F, 2, rng, new int[]{4, 0, 0}, 0);
+                Branch sub = bend(s, saz, sel, rng.range(2.4F, 3.4F) * size, 2, 0.05F, sr, 0.03F, 2, rng, new int[]{6, 0, 0}, 0);
                 f.branches.add(sub);
                 float[] st = sub.points()[2];
                 f.groups.add(new Group(st[0], st[1] + 0.1F, st[2], rng.range(1.3F, 1.55F), true, BROADLEAF, 0, 0));
@@ -343,7 +343,7 @@ public final class TreeForms {
                 float y = trunkLen - 2.6F + 1.3F * k;
                 float[] s = at(trunk, y);
                 Branch shoot = bend(s, laz + (float) Math.PI * k, (float) Math.toRadians(rng.range(30, 45)), rng.range(2.0F, 2.8F) * size, 2, 0.05F,
-                        Math.min(radiusAt(trunk, y) * 0.75F, 0.08F), 0.03F, 2, rng, new int[]{4, 0, 0}, 0);
+                        Math.min(radiusAt(trunk, y) * 0.75F, 0.08F), 0.03F, 2, rng, new int[]{6, 0, 0}, 0);
                 f.branches.add(shoot);
                 float[] st = shoot.points()[2];
                 f.groups.add(new Group(st[0], st[1] + 0.1F, st[2], rng.range(1.3F, 1.5F), true, BROADLEAF, 0, 0));
@@ -392,7 +392,7 @@ public final class TreeForms {
             tr[i] = (r0 - 0.06F * u) * (1 - 0.78F * above) + (y < 0.5F ? 0.11F * size * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
         }
         tr[rings] = 0.03F;
-        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{18, 8, 4}, Integer.MAX_VALUE, false));
         f.trunkTop = fork;
         Branch trunk = f.branches.get(0);
         var leaders = new ArrayList<Branch>();
@@ -402,7 +402,7 @@ public final class TreeForms {
             float y0 = fork + rng.range(-0.3F, 0.4F);
             float el = (float) Math.toRadians(90 - rng.range(16, 28));
             Branch stem = bend(at(trunk, y0), az, el, (height - y0) * rng.range(0.75F, 0.88F), 4, -0.02F,
-                    Math.min(radiusAt(trunk, y0) * 0.82F, 0.2F * size), 0.03F, 1, rng, new int[]{8, 4, 3}, 3);
+                    Math.min(radiusAt(trunk, y0) * 0.82F, 0.2F * size), 0.03F, 1, rng, new int[]{12, 6, 3}, 3);
             f.branches.add(stem);
             leaders.add(stem);
         }
@@ -416,7 +416,7 @@ public final class TreeForms {
             float el = (float) Math.toRadians(-10 + 34 * u + rng.range(-6, 6));
             float len = rng.range(3.4F, 4.8F) * size;
             Branch b = bend(at(trunk, h), az, el, len, 3, u < 0.5F ? -0.06F : 0.03F, Math.min(radiusAt(trunk, h) * 0.42F, 0.11F), 0.03F, 1, rng,
-                    new int[]{4, 3, 0}, 1);
+                    new int[]{6, 3, 0}, 1);
             f.branches.add(b);
             float[] tip = b.points()[3];
             f.groups.add(new Group(tip[0], tip[1] + 0.15F, tip[2], rng.range(1.2F, 1.4F), true, BROADLEAF, 0, 0));
@@ -425,7 +425,7 @@ public final class TreeForms {
             float[] s = along(b, 0.45F);
             float sa = az + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(30, 55));
             Branch twig = bend(s, sa, el + (float) Math.toRadians(rng.range(5, 25)), rng.range(1.6F, 2.4F) * size, 2, 0.04F,
-                    Math.min(radiusAlong(b, 0.45F) * 0.6F, 0.05F), 0.02F, 2, rng, new int[]{4, 0, 0}, 0);
+                    Math.min(radiusAlong(b, 0.45F) * 0.6F, 0.05F), 0.02F, 2, rng, new int[]{6, 0, 0}, 0);
             f.branches.add(twig);
             float[] tt = twig.points()[2];
             f.groups.add(new Group(tt[0], tt[1] + 0.1F, tt[2], rng.range(1.1F, 1.3F), true, BROADLEAF, 0, 0));
@@ -444,7 +444,7 @@ public final class TreeForms {
                 float sl = rng.range(2.6F, 4.0F) * size * (1 - 0.35F * t);
                 float sel = (float) Math.toRadians(rng.range(10, 40));
                 Branch b = bend(s, saz, sel, sl, 2, 0.04F, Math.min(radiusAlong(stem, t) * 0.55F, 0.08F), 0.025F, 2, rng,
-                        new int[]{4, 0, 0}, 0);
+                        new int[]{6, 0, 0}, 0);
                 f.branches.add(b);
                 float[] tip = b.points()[2];
                 f.groups.add(new Group(tip[0], tip[1] + 0.1F, tip[2], rng.range(1.2F, 1.4F), true, BROADLEAF, 0, 0));
@@ -456,7 +456,7 @@ public final class TreeForms {
                     float[] ss = along(b, 0.5F);
                     float sa = saz + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(35, 60));
                     Branch twig = bend(ss, sa, sel + (float) Math.toRadians(rng.range(5, 20)), rng.range(1.4F, 2.0F) * size, 2, 0.04F,
-                            Math.min(radiusAlong(b, 0.5F) * 0.6F, 0.045F), 0.02F, 2, rng, new int[]{4, 0, 0}, 0);
+                            Math.min(radiusAlong(b, 0.5F) * 0.6F, 0.045F), 0.02F, 2, rng, new int[]{6, 0, 0}, 0);
                     f.branches.add(twig);
                     float[] tt = twig.points()[2];
                     f.groups.add(new Group(tt[0], tt[1] + 0.1F, tt[2], rng.range(1.1F, 1.3F), true, BROADLEAF, 0, 0));
@@ -504,7 +504,7 @@ public final class TreeForms {
             tr[i] = (r0 - 0.05F * u) * stemShare * (1 - 0.8F * above) + (y < 0.5F ? 0.12F * size * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
         }
         tr[rings] = 0.03F;
-        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{18, 8, 4}, Integer.MAX_VALUE, false));
         f.trunkTop = fork;
         Branch trunk = f.branches.get(0);
         var leaders = new ArrayList<Branch>();
@@ -514,7 +514,7 @@ public final class TreeForms {
             float y0 = fork + rng.range(-0.2F, 0.3F);
             float el = (float) Math.toRadians(90 - rng.range(18, 30));
             Branch stem = bend(at(trunk, y0), az, el, (height - y0) * rng.range(0.78F, 0.9F), 4, 0.01F,
-                    Math.min(radiusAt(trunk, y0) * 0.85F, 0.19F * size), 0.03F, 1, rng, new int[]{8, 4, 3}, 3);
+                    Math.min(radiusAt(trunk, y0) * 0.85F, 0.19F * size), 0.03F, 1, rng, new int[]{12, 6, 3}, 3);
             f.branches.add(stem);
             leaders.add(stem);
         }
@@ -527,7 +527,7 @@ public final class TreeForms {
                 float y0 = fork - 0.2F + 1.4F * i / limbs;
                 float el = (float) Math.toRadians(rng.range(40, 55));
                 Branch limb = bend(at(trunk, y0), az, el, rng.range(5.4F, 6.6F) * size, 3, 0.02F,
-                        Math.min(radiusAt(trunk, y0) * 0.7F, 0.15F * size), 0.04F, 1, rng, new int[]{6, 3, 3}, 2);
+                        Math.min(radiusAt(trunk, y0) * 0.7F, 0.15F * size), 0.04F, 1, rng, new int[]{10, 4, 3}, 2);
                 f.branches.add(limb);
                 leaders.add(limb);
             }
@@ -546,7 +546,7 @@ public final class TreeForms {
                 float sl = rng.range(3.0F, 4.4F) * size * (1 - 0.4F * t);
                 float sel = (float) Math.toRadians(rng.range(25, 45));
                 Branch b = bend(s, saz, sel, sl, 2, 0.04F, Math.min(radiusAlong(stem, t) * 0.55F, 0.08F), 0.025F, 2, rng,
-                        new int[]{4, 0, 0}, 0);
+                        new int[]{6, 0, 0}, 0);
                 f.branches.add(b);
                 float[] tip = b.points()[2];
                 f.groups.add(new Group(tip[0], tip[1] + 0.1F, tip[2], rng.range(1.2F, 1.4F), true, BROADLEAF, 0, 0));
@@ -556,7 +556,7 @@ public final class TreeForms {
                     float[] ss = along(b, 0.45F);
                     float sa = saz + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(30, 55));
                     Branch twig = bend(ss, sa, sel + (float) Math.toRadians(rng.range(5, 20)), rng.range(1.4F, 2.2F) * size, 2, 0.04F,
-                            Math.min(radiusAlong(b, 0.45F) * 0.6F, 0.045F), 0.02F, 2, rng, new int[]{4, 0, 0}, 0);
+                            Math.min(radiusAlong(b, 0.45F) * 0.6F, 0.045F), 0.02F, 2, rng, new int[]{6, 0, 0}, 0);
                     f.branches.add(twig);
                     float[] tt = twig.points()[2];
                     f.groups.add(new Group(tt[0], tt[1] + 0.1F, tt[2], rng.range(1.1F, 1.3F), true, BROADLEAF, 0, 0));
@@ -601,7 +601,7 @@ public final class TreeForms {
             tr[i] = r0 * (float) Math.pow(1 - u, 0.95) + 0.025F + (y < 0.5F ? 0.12F * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
         }
         tr[rings] = 0.015F;
-        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{18, 8, 4}, Integer.MAX_VALUE, false));
         Branch trunk = f.branches.get(0);
         f.trunkTop = height;
         float crownBase = Math.max(2.4F, rng.range(0.08F, 0.2F) * height);
@@ -620,7 +620,7 @@ public final class TreeForms {
                 float rb = Math.min(radiusAt(trunk, h) * 0.45F, 0.025F + 0.012F * len);
                 int segs = len > 2.8F ? 3 : 2;
                 Branch b = bend(at(trunk, h), az, el, len, segs, rise, rb, 0.02F, 1, rng,
-                        new int[]{3, rb >= 0.07F && u < 0.4F ? 3 : 0, 0}, 0);
+                        new int[]{4, rb >= 0.07F && u < 0.4F ? 3 : 0, 0}, 0);
                 f.branches.add(b);
                 float dx = (float) Math.cos(az), dz = (float) Math.sin(az);
                 float t0 = Math.max(0.15F, 1 - 3.2F / len);

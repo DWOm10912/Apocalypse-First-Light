@@ -56,7 +56,7 @@ public final class FallingTreeRenderer extends EntityRenderer<FallingTree> {
     static Mesh mesh(FallingTree e) {
         if (e.mesh instanceof Mesh m) return m;
         var cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        int level = TreeClient.level(Math.hypot(e.getX() - cam.x, e.getZ() - cam.z), -1);
+        int level = TreeClient.level(Math.hypot(e.getX() - cam.x, e.getZ() - cam.z));
         var layout = e.layout();
         var all = new java.util.ArrayList<TreeShape.Quad>();
         for (var c : TreeShape.ordered(layout)) all.addAll(c.quads[level]);

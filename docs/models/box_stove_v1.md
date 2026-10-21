@@ -302,7 +302,7 @@ node tools/afl_minecraft_mcp/forest_home_b_m1.mjs stove
   - `node tools/build-box-stove-v1.mjs` 写出全部；
   - `--check` 核对输出是否最新，也审查手改的数据：标签、等级、噪声、重量、搬运、语言、燃料标签、温度热源。当前 `CHECK OK (100 outputs)`（2026-10-15，多了炉门网格）。
 - 输出：
-  - 贴图：`textures/block/stove/*.png`（`cast_iron`、`cast_iron_edge`、`soot`、`nickel`、`firebrick`、`ash`、`firewood_bark`、`firewood_end`、`heat_shield`、`ceramic`、`flagstone_top_0..8`），每张带 `_s` / `_n`（LabPBR）。
+  - 贴图：`textures/block/stove/*.png`（`cast_iron`、`cast_iron_edge`、`soot`、`nickel`、`firebrick`、`ash`、`firewood_bark`、`firewood_end`、`heat_shield`、`ceramic`、`flagstone_top_0..8`），每张带 `_s` / `_n`（LabPBR）。2026-10-20 起 `firewood_bark`、`firewood_end` 的颜色取自 CC0 实拍：北方红栎树皮和带树皮边的截面（`tools/wood-photo/firewood_*_240.png`，由 `tools/build-wood-photo-v1.mjs` 写出，`tools/wood-photo/sample.mjs` 取色），树皮上照旧加一点烧黑；先跑照片脚本，再跑这个生成器（[木材贴图重做 V1](wood_texture_rework_v1_plan.md) 4.3 节）。用户 2026-10-20 实机 PASS。
   - 拼块：
     - `cabin_mesh/stove/`：`body` 698 个四边形，`door_closed` 334（只给物品图标用），`load_1..3`；
   - 炉门网格：`geo/`、`meshes/`、`block_mesh_profiles/` 下的 `box_stove_door`，图集 `textures/block/stove/box_stove_door{,_s,_n}.png`，可编辑源 `src/main/blockbench/stove/box_stove_door.bbmodel`（生成器写出）；
