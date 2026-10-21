@@ -75,6 +75,9 @@ public final class TownCheck {
             };
             RoadWorks works = new RoadWorks(RoadNetworkJson.designs(withTowns), water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(back),
                     Driveway.EMPTY, RoadWorks.Ground.of(terrain.plan));
+            // the map concept pictures (docs/ui/afl_map_v1_plan.md)
+            String mapDir = System.getProperty("afl.mapConcept");
+            if (mapDir != null) MapConcept.draw(s, terrain, roads, works, back, new java.io.File(mapDir));
             for (com.antaurora.apofirstlight.worldgen.network.town.TownPlan p : back) {
                 double hmin = Double.POSITIVE_INFINITY, hmax = Double.NEGATIVE_INFINITY, steep = 0;
                 for (com.antaurora.apofirstlight.worldgen.network.town.TownPlan.Node n : p.nodes) { hmin = Math.min(hmin, n.h()); hmax = Math.max(hmax, n.h()); }

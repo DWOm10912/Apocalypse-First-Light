@@ -22,12 +22,21 @@ import java.util.List;
 public final class AflSettingsScreen extends Screen {
     private static final float PANEL_W = 300, PAD = 14, ROW_H = 22, GAP = 6, BUTTON_H = 20, LABEL_W = 96;
 
-    /** One setting: its name and its choices (config value, lang key). */
-    private record Row(String key, ForgeConfigSpec.EnumValue<?> value, List<Enum<?>> choices) {}
+    /** One setting: its section's heading, its name and its choices (config value, lang key). */
+    private record Row(String section, String key, ForgeConfigSpec.EnumValue<?> value, List<Enum<?>> choices) {}
 
     private static final List<Row> ROWS = List.of(
-            new Row("dash_style", FirstPersonBodyConfig.DASH_STYLE, List.of(FirstPersonBodyConfig.DashStyle.values())),
-            new Row("speed_unit", FirstPersonBodyConfig.SPEED_UNIT, List.of(FirstPersonBodyConfig.SpeedUnit.values())));
+            new Row("vehicles", "dash_style", FirstPersonBodyConfig.DASH_STYLE, List.of(FirstPersonBodyConfig.DashStyle.values())),
+            new Row("vehicles", "speed_unit", FirstPersonBodyConfig.SPEED_UNIT, List.of(FirstPersonBodyConfig.SpeedUnit.values())),
+            new Row("map", "minimap_turn", FirstPersonBodyConfig.MINIMAP_TURN, List.of(FirstPersonBodyConfig.MinimapTurn.values())),
+            new Row("map", "compass", FirstPersonBodyConfig.COMPASS, List.of(FirstPersonBodyConfig.CompassBar.values())));
+
+    private static int sections() {
+        int n = 0;
+        String last = null;
+        for (Row r : ROWS) if (!r.section().equals(last)) { n++; last = r.section(); }
+        return n;
+    }
 
     private final Screen parent;
     private float panelX, rowsY, buttonY, innerW;
@@ -49,17 +58,21 @@ public final class AflSettingsScreen extends Screen {
         g.fillGradient(0, 0, width, height, AflUiStyle.argb(0x0A0B0C, 0.55F), AflUiStyle.argb(0x0A0B0C, 0.80F));
         float panelW = Math.min(PANEL_W, width - 32);
         innerW = panelW - 2 * PAD;
-        float panelH = 2 * PAD + font.lineHeight + 10 + font.lineHeight + 6 + ROWS.size() * (ROW_H + GAP) + 8 + BUTTON_H;
+        float panelH = 2 * PAD + font.lineHeight + 10 + sections() * (font.lineHeight + 6) + ROWS.size() * (ROW_H + GAP) + 8 + BUTTON_H;
         panelX = (width - panelW) / 2;
         float y = Math.max(8, (height - panelH) / 2);
         AflUiDraw.panel(g, panelX, y, panelW, panelH, 1.0F);
         y += PAD;
         AflUiDraw.centred(g, font, title, width / 2.0F, y, AflUiStyle.TEXT, 1.0F);
         y += font.lineHeight + 10;
-        AflUiDraw.text(g, font, Component.translatable("screen.apocalypse_firstlight.settings.vehicles"), panelX + PAD, y, AflUiStyle.TEXT_DIM, 1.0F);
-        y += font.lineHeight + 6;
         rowsY = y;
+        String section = null;
         for (Row row : ROWS) {
+            if (!row.section().equals(section)) {
+                section = row.section();
+                AflUiDraw.text(g, font, Component.translatable("screen.apocalypse_firstlight.settings." + section), panelX + PAD, y, AflUiStyle.TEXT_DIM, 1.0F);
+                y += font.lineHeight + 6;
+            }
             row(g, row, y, mouseX, mouseY);
             y += ROW_H + GAP;
         }
@@ -97,7 +110,12 @@ public final class AflSettingsScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
         float y = rowsY;
+        String section = null;
         for (Row row : ROWS) {
+            if (!row.section().equals(section)) {
+                section = row.section();
+                y += font.lineHeight + 6;
+            }
             float x = panelX + PAD + LABEL_W, w = (innerW - LABEL_W - (row.choices().size() - 1) * 4) / row.choices().size();
             for (Enum<?> choice : row.choices()) {
                 if (inside(mouseX, mouseY, x, y, w, ROW_H)) {

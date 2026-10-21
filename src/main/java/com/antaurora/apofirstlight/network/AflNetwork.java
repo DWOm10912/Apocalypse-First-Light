@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "58";
+    private static final String PROTOCOL = "59";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -145,6 +145,13 @@ public final class AflNetwork {
         // Vehicle physics V0-b package 1: the driver's truck state and its sync to the watchers (protocol 49; 48 is D's
         // external grid, which takes 50 when it merges)
         nextId = com.antaurora.apofirstlight.vehicle.VehiclePackets.register(channel, nextId);
+        // AFL Map V1: a carried map's record, to its player (protocol 59 on C's branch; master is at 60, so it takes 61 when it merges)
+        nextId = com.antaurora.apofirstlight.map.MapPackets.register(channel, nextId);
+    }
+
+    /** AFL Map V1: a map's record, to the player carrying it. */
+    public static void mapToPlayer(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Vehicle physics (client): the driven truck's state. */

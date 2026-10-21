@@ -520,6 +520,13 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    // AFL Map V1 (docs/ui/afl_map_v1_plan.md 5): carried anywhere, it records the ground the player walks past; used in
+    // hand it unfolds into the world map
+    public static final RegistryObject<Item> MAP = ITEMS.register("map",
+            () -> new com.antaurora.apofirstlight.item.AflMapItem(new Item.Properties().stacksTo(1)));
+    // Clips (docs/gameplay/equipment_slots_v1.md, user 2026-10-21): in the hand or clipped on, it shows the compass bar
+    public static final RegistryObject<Item> COMPASS = ITEMS.register("compass",
+            () -> new Item(new Item.Properties().stacksTo(1)));
     // Thirst V1 (docs/gameplay/thirst_system_v1.md): filled at a water source (dirty); boiled, it becomes purified water
     // when it carries no radiation and boiled water (still radioactive) when it does
     public static final RegistryObject<Item> DIRTY_WATER_BOTTLE = ITEMS.register("dirty_water_bottle",
@@ -535,10 +542,10 @@ public final class AflItems {
     public static final RegistryObject<Item> WRIST_THERMOMETER = ITEMS.register("wrist_thermometer",
             () -> new com.antaurora.apofirstlight.temperature.WristThermometerItem(new Item.Properties().stacksTo(1)));
     // Grid Inventory V0 test gear (docs/ui/afl_inventory_grid_v0_plan.md 7): a rig with four separate pouches, a 5x6
-    // backpack, and a 6x10 one that makes the right column scroll; placeholder icons, nothing drawn on the body
+    // backpack, and a 6x10 one that makes the right column scroll; the rig has two clips on its straps (RigClips)
     public static final RegistryObject<Item> FIELD_CHEST_RIG = ITEMS.register("field_chest_rig",
             () -> new com.antaurora.apofirstlight.inventory.grid.GridGearItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.RIG,
-                    com.antaurora.apofirstlight.inventory.grid.GridLayout.of(1, 2, 1, 2, 1, 2, 2, 2), new Item.Properties()));
+                    com.antaurora.apofirstlight.inventory.grid.GridLayout.of(1, 2, 1, 2, 1, 2, 2, 2), 2, new Item.Properties()));
     public static final RegistryObject<Item> CANVAS_BACKPACK = ITEMS.register("canvas_backpack",
             () -> new com.antaurora.apofirstlight.inventory.grid.GridGearItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BACK,
                     com.antaurora.apofirstlight.inventory.grid.GridLayout.of(5, 6), new Item.Properties()));

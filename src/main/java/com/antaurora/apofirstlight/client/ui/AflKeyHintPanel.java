@@ -34,16 +34,18 @@ public final class AflKeyHintPanel {
         render(g, screenWidth, next, visible, 1);
     }
 
+    /**
+     * GUI pixels the panel moves down from the top right: the minimap's height when it is shown there (AFL Map V1,
+     * docs/ui/afl_map_v1_plan.md 6; set by MinimapHud every frame).
+     */
+    public static float topInset;
+
     /** As above, the whole panel (margins too) scaled by k about the screen's top right corner. */
     public void render(GuiGraphics g, int screenWidth, List<Row> next, boolean visible, float k) {
-        if (k == 1) {
-            draw(g, screenWidth, next, visible);
-            return;
-        }
         g.pose().pushPose();
-        g.pose().translate(screenWidth, 0, 0);
-        g.pose().scale(k, k, 1);
-        draw(g, 0, next, visible);
+        g.pose().translate(k == 1 ? 0 : screenWidth, AflUiTween.snap(topInset), 0);
+        if (k != 1) g.pose().scale(k, k, 1);
+        draw(g, k == 1 ? screenWidth : 0, next, visible);
         g.pose().popPose();
     }
 

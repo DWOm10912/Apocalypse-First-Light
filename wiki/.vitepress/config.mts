@@ -37,7 +37,8 @@ function sidebar(loc: 'zh' | 'en') {
         { text: t('操作按键', 'Controls'), link: `${p}/guide/controls` },
         { text: t('生存状态', 'Survival Stats'), link: `${p}/guide/survival` },
         { text: t('背包与负重', 'Inventory & Weight'), link: `${p}/guide/inventory` },
-        { text: t('辐射', 'Radiation'), link: `${p}/guide/radiation` }
+        { text: t('辐射', 'Radiation'), link: `${p}/guide/radiation` },
+        { text: t('地图', 'Map'), link: `${p}/guide/map` }
       ] }
     ],
     [`${p}/arms/`]: [

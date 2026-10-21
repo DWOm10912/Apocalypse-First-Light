@@ -285,6 +285,14 @@
       "unit_mass_kg": 0.33,
       "estimated": true
     },
+    "apocalypse_firstlight:map": {
+      "unit_mass_kg": 0.08,
+      "estimated": true
+    },
+    "apocalypse_firstlight:compass": {
+      "unit_mass_kg": 0.06,
+      "estimated": true
+    },
     "apocalypse_firstlight:dirty_water_bottle": {
       "unit_mass_kg": 0.5,
       "estimated": true

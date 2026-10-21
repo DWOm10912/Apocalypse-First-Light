@@ -20,6 +20,14 @@ public final class FirstPersonBodyConfig {
     public static final ForgeConfigSpec.EnumValue<SpeedUnit> SPEED_UNIT;
     /** The driving key hints at the top right (toggled in game with the hints key, VehicleDriving.HINTS). */
     public static final ForgeConfigSpec.BooleanValue KEY_HINTS;
+    /** The minimap (AFL Map V1, docs/ui/afl_map_v1_plan.md 6): turning with the view (the default) or north up. */
+    public enum MinimapTurn { VIEW, NORTH }
+    public static final ForgeConfigSpec.EnumValue<MinimapTurn> MINIMAP_TURN;
+    /** The minimap shown (its key, unbound by default, flips it). */
+    public static final ForgeConfigSpec.BooleanValue MINIMAP;
+    /** The compass bar at the top centre (docs/ui/afl_map_v1_plan.md 6.1). */
+    public enum CompassBar { SHOWN, HIDDEN }
+    public static final ForgeConfigSpec.EnumValue<CompassBar> COMPASS;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -39,6 +47,12 @@ public final class FirstPersonBodyConfig {
                 .defineEnum("style", DashStyle.RING);
         SPEED_UNIT = builder.comment("The speed on the dashboard: MPH or KMH.").defineEnum("speed_unit", SpeedUnit.MPH);
         KEY_HINTS = builder.comment("Show the driving keys at the top right (Caps Lock by default toggles it while driving).").define("key_hints", true);
+        builder.pop();
+        builder.push("map");
+        MINIMAP = builder.comment("Show the minimap at the top right.").define("minimap", true);
+        MINIMAP_TURN = builder.comment("The minimap turns with your view (VIEW: where you look is up) or keeps north up (NORTH).")
+                .defineEnum("minimap_turn", MinimapTurn.VIEW);
+        COMPASS = builder.comment("The compass bar at the top centre: SHOWN or HIDDEN.").defineEnum("compass", CompassBar.SHOWN);
         builder.pop();
         SPEC = builder.build();
     }
@@ -61,6 +75,25 @@ public final class FirstPersonBodyConfig {
 
     public static boolean keyHints() {
         return !SPEC.isLoaded() || KEY_HINTS.get();
+    }
+
+    public static MinimapTurn minimapTurn() {
+        return SPEC.isLoaded() ? MINIMAP_TURN.get() : MinimapTurn.VIEW;
+    }
+
+    public static boolean minimap() {
+        return !SPEC.isLoaded() || MINIMAP.get();
+    }
+
+    public static boolean compass() {
+        return !SPEC.isLoaded() || COMPASS.get() == CompassBar.SHOWN;
+    }
+
+    /** Flips the minimap and saves the choice. */
+    public static void toggleMinimap() {
+        if (!SPEC.isLoaded()) return;
+        MINIMAP.set(!MINIMAP.get());
+        MINIMAP.save();
     }
 
     /** Flips the driving key hints and saves the choice. */
