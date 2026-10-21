@@ -215,6 +215,7 @@ V2 的整体设计（11 部位、出血、骨折、药物等）在 [survival_hea
 - 旧"体弱"满血玩家升级后是 90/100（见第 2 节）。
 - 抓伤只来自感染者近战；感染者传染、其他来源以后接 `Wounds.scratch`。
 - 留在身上的纱布：尸体（布娃娃，`SkeletonBodyRenderer`）上不画；原版第一人称空手不画；骨骼关闭时包扎只按时间缠、没有布带。
+- 合并后的 master（d2406ca0）用户 2026-10-21 实机 PASS。
 - 网络协议：分支上 58 → 60（2026-10-20 骨折和部位改了 `HealthPackets.State`、加了 `Marks`）；master 当时是 59，合并时取 60（2026-10-21）。
 - `FirstPersonBody`、`PlayerSkeleton` 和 master `b2a62541`（"P9 低头交给身体"）的冲突：master 2026-10-20 已经照本分支做了普通物品的 `itemHandOver`，合并时（2026-10-21）用 master 那套（枪和物品同一个帧计数、同样 25° / 45° / 3°，再加 `FirstPersonActionView` 的动作交接），保留本分支坐在地上时的 `GroundSitClient.cameraOnBody` 和纱布绘制。
 - Wiki：合并时（2026-10-21）状态标签改成 verified（2026-10-20），`src/test/.../StatusBadgeIcons` 补上"恢复中"、三种伤口和骨折（未固定 / 已固定）并重画了状态图标。绷带、医用酒精、夹板的 3D 物品图标 2026-10-21 由 Main 在 Blockbench 里渲染（D 先关掉了没保存的 `medical_bandage_wrap` 工程），随合并后的第一次部署上线。
