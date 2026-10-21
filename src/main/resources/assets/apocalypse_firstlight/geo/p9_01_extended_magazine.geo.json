@@ -4,8 +4,8 @@
     {
       "description": {
         "identifier": "geometry.p9_01_extended_magazine",
-        "texture_width": 512,
-        "texture_height": 512,
+        "texture_width": 2048,
+        "texture_height": 2048,
         "visible_bounds_width": 2,
         "visible_bounds_height": 2,
         "visible_bounds_offset": [

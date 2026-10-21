@@ -47,7 +47,7 @@ import java.util.Map;
  * <li>A column of round badges above the body module, bottom left, only while a state applies: a filled circle in its
  * kind's colour (green good, brown bad, blue cold / wet, red dangerous), a white pictogram, a light rim. Most urgent
  * nearest the module (danger, bad, cold / wet, good). A timed one (a stomach bug, fuel on the body) shows the time left
- * as a light arc round it and as a number beside it; dehydration counts down to the point where it starts to hurt.</li>
+ * as a light arc round it and as a number beside it; dehydration shows the water left before it hurts as the arc alone.</li>
  * <li>Gaining a state (or a worse stage of it): its rim flashes and its name and effect slide out beside it for 4 s.</li>
  * <li>Holding the status key (Left Alt, rebindable): a card above the module with the body's numbers and every state with
  * its effect and time left; the slide-out labels step aside meanwhile. Off for now ({@link #DETAILS_CARD}).</li>
@@ -78,7 +78,7 @@ public final class StatusBadgeHud {
     }
 
     /** One state as shown: key (stable), stage (a higher stage of the same key re-announces it), kind, icon, name, effect;
-     *  fraction of a timed state left (NaN: untimed) and the text beside the badge (time left, a countdown), or null. */
+     *  fraction of a timed state left (NaN: untimed) and the text beside the badge (time left), or null. */
     record Status(String key, int stage, Kind kind, AflRingIcon.Glyph icon, Component name, Component effect, double left, String aside) {}
 
     private static final class Seen {
@@ -86,7 +86,7 @@ public final class StatusBadgeHud {
         double labelUntil, flashUntil, slot = Double.NaN, maxTicks;
     }
     private static final Map<String, Seen> SEEN = new HashMap<>();
-    private static double card, chatLift, thirstRate, thirstValue = Double.NaN, thirstAt;
+    private static double card, chatLift, thirstShown = Double.NaN, thirstAt;
     private static int shownBadges;
     private static boolean drawn;
     private static long lastNanos;
@@ -233,26 +233,26 @@ public final class StatusBadgeHud {
         list.add(new Status(key, 1, Kind.BAD, icon, t(key), t(key + ".effect"), left, ticks > 0 ? clock(ticks / 20.0) : null));
     }
 
-    /** Thirsty / dehydrated / out of water; while dehydrated, the time until it starts to hurt (from the observed rate). */
+    /**
+     * Thirsty / dehydrated / out of water. While dehydrated the badge's light arc is the water left before it starts to
+     * hurt, with no number (user 2026-10-20: a countdown kept jumping while sprinting, since exertion changes how fast the
+     * water goes; "用圆环渐变也行"). The arc eases towards each synced value (every 0.5 s) so it drains smoothly; a drink
+     * fills it at once.
+     */
     private static void thirst(List<Status> list, double now) {
         var state = ClientThirst.state();
-        if (state == null || state.max() <= 0) { thirstValue = Double.NaN; return; }
+        if (state == null || state.max() <= 0) { thirstShown = Double.NaN; return; }
         var c = ThirstConfig.get();
-        double value = state.value();
-        if (Double.isNaN(thirstValue) || value > thirstValue + 1e-3) { thirstValue = value; thirstAt = now; thirstRate = 0; }
-        else if (value < thirstValue - 1e-3) {   // a new, lower value: the rate since the last one, smoothed
-            double rate = (thirstValue - value) / Math.max(0.05, now - thirstAt);
-            thirstRate = thirstRate <= 0 ? rate : thirstRate + (rate - thirstRate) * 0.3;
-            thirstValue = value; thirstAt = now;
-        }
+        double value = state.value(), dt = Math.max(0, Math.min(0.25, now - thirstAt));
+        thirstAt = now;
+        if (Double.isNaN(thirstShown) || value > thirstShown + 1) thirstShown = value;
+        else thirstShown += (value - thirstShown) * Math.min(1, dt * 3);
         if (value <= 0) list.add(new Status("thirst", 3, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.3"),
                 t("thirst.3.effect", (int)Math.round(c.damageIntervalSeconds)), Double.NaN, null));
-        else if (value < c.dehydratedBelow) {
-            double seconds = thirstRate > 1e-5 ? value / thirstRate - (now - thirstAt) : Double.NaN;
-            list.add(new Status("thirst", 2, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.2"),
-                    t("thirst.2.effect", Math.round(c.staminaRegenDehydrated * 100)), Double.NaN,
-                    Double.isNaN(seconds) || seconds > 3600 ? null : clock(seconds)));
-        } else if (value < c.thirstyBelow) list.add(new Status("thirst", 1, Kind.BAD, ClientThirstHud.WATER_DROP, t("thirst.1"),
+        else if (value < c.dehydratedBelow) list.add(new Status("thirst", 2, Kind.DANGER, ClientThirstHud.WATER_DROP, t("thirst.2"),
+                t("thirst.2.effect", Math.round(c.staminaRegenDehydrated * 100)),
+                Math.max(0, Math.min(1, thirstShown / c.dehydratedBelow)), null));
+        else if (value < c.thirstyBelow) list.add(new Status("thirst", 1, Kind.BAD, ClientThirstHud.WATER_DROP, t("thirst.1"),
                 t("thirst.1.effect", Math.round(c.staminaRegenThirsty * 100)), Double.NaN, null));
     }
 
@@ -265,7 +265,7 @@ public final class StatusBadgeHud {
         lastNanos = nanos;
         drawn = false;
         LocalPlayer player = mc.player;
-        if (player == null) { SEEN.clear(); thirstValue = Double.NaN; return; }
+        if (player == null) { SEEN.clear(); thirstShown = Double.NaN; return; }
         if (mc.options.hideGui || !gui.shouldDrawSurvivalElements() || FieldAttachmentViewState.isActive()) return;
         drawn = true;
         List<Status> states = new ArrayList<>(collect(player, now));
@@ -311,7 +311,7 @@ public final class StatusBadgeHud {
         return new AflGauge.Glyph(icon, r * 1.18, WHITE, alpha);
     }
 
-    /** Beside a badge: the sliding label (name and effect) while `slide` > 0, otherwise its time or countdown, if any. */
+    /** Beside a badge: the sliding label (name and effect) while `slide` > 0, otherwise its time left, if any. */
     private static void aside(GuiGraphics graphics, Font font, Status s, double x, double y, double slide, double alpha) {
         boolean danger = s.kind() == Kind.DANGER;
         Component name = s.aside() == null ? s.name() : s.name().copy().append(" " + s.aside());
@@ -326,7 +326,7 @@ public final class StatusBadgeHud {
             return;
         }
         if (s.aside() == null || alpha < 0.01) return;
-        Component text = Double.isNaN(s.left()) ? name : Component.literal(s.aside());   // a countdown keeps its name, a timer is just the time
+        Component text = Double.isNaN(s.left()) ? name : Component.literal(s.aside());   // a timer is just the time
         double w = AflHudText.labelWidth(font, text) + 8;
         AflUiShapes.box(graphics, (float)x, (float)top, (float)w, (float)h, (float)(h / 2), AflUiStyle.BACK, (float)(0.55 * alpha),
                 AflUiStyle.LINE, 0, 0, 0);

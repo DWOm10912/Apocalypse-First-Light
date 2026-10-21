@@ -24,7 +24,7 @@ internal: true
 | 电力（只有一家，国营） | Federal Power Authority | 联邦电力局 | V1 锁定 | 变电站、电线杆编号牌、电表箱铭牌、停电通知 |
 | 自来水（只有一家，国营） | Federal Water Authority | 联邦水务局 | V1 锁定 | 水塔、消防栓、水表井盖、账单 |
 | 电话（只有一家，私营） | Kittredge Telephone & Telegraph | 基特里奇电话电报公司 | V1 锁定 | 电话亭、电话簿 |
-| 汽车 | Halstead Motor Company | 霍尔斯特德汽车公司 | 已冻结 | 游戏里：Tamarack T15 |
+| 汽车 | Halstead Motor Company 等 8 个品牌 | 霍尔斯特德汽车公司等 | 已冻结 / V1 锁定 | 游戏里：Tamarack T15；其他车厂见下面"车厂" |
 | 重卡、客车 | Ironwood Truck Company | 铁木卡车公司 | V1 锁定 | 牵引车头、校车 |
 | 发动机、发电机组 | Kincaid Engine Company | 金凯德发动机公司 | 已冻结 | 发电机（现在不印品牌） |
 | 公路货运 | Calloway Freight Lines | 卡洛韦货运 | V1 锁定 | 半挂车、货场 |
@@ -48,6 +48,25 @@ internal: true
 
 - 2026-10-20 撤销：**月桂谷电力合作社**（Laurel Valley Electric Cooperative），因为电力只能有一家，旧名字也不保留。**马雷港炼油公司**（Port Marais Refining Company）不再是公司，改成 PRAIRIE 在 Port Marais 的炼油厂：PRAIRIE Port Marais Refinery，普雷里马雷港炼油厂
 - 水电国营，联邦政府瓦解以后就没人管了，停水停电本身就说得通。不写它们怎么取得垄断
+
+## 车厂
+
+几家车厂各有强项，没有哪一家过半。企业名称用户 2026-10-20 批准（V1 锁定）；下表"定位"一列和各家造型还是候选。游戏里现在只有 Halstead 的 Tamarack T15
+
+| 企业 | 中文 | 状态 | 定位（候选） |
+|---|---|---|---|
+| Halstead Motor Company | 霍尔斯特德汽车公司 | 已冻结 | 卡车起家：皮卡、大型 SUV、厢式货车。车型用树种命名 |
+| Pemberton Motors | 彭伯顿汽车 | V1 锁定 | 卖得最多的家用车厂：轿车、旅行车、小型车、城市 SUV |
+| Aldridge | 奥尔德里奇 | V1 锁定 | 彭伯顿的豪华子品牌：豪华轿车、豪华 SUV |
+| Garrick Motor Company | 加里克汽车公司 | V1 锁定 | 以跑车和大马力车出名 |
+| Tolland Four Wheel Drive Company | 托兰四驱公司 | V1 锁定 | 中等规模的四驱专业厂：短轴距越野车 |
+| Dalton Motorcycle Works | 多尔顿摩托车厂 | V1 锁定 | 全国最大的摩托车厂：大排量公路摩托、警用摩托 |
+| Vireo Motors | 绿鹃汽车 | V1 锁定 | 新起的电动车公司 |
+| Devereux Motor Works | 德弗罗汽车工坊 | V1 锁定 | 手工小批量的超级跑车厂 |
+
+- 重卡和客车是铁木卡车公司（上表）
+- 车标、车尾字样、铭牌都是英文；车型名不译
+- 只有国内车厂。联邦以外有没有进口车还没定
 
 ## 第一批
 

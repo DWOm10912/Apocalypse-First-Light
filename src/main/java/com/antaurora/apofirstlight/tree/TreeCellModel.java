@@ -241,21 +241,25 @@ final class TreeCellModel implements IDynamicBakedModel {
     static Map<Integer, Cell> baked(TreeShape.Layout layout, int stage, int shade) {
         if (stage % TreeClient.STEPS == 0) return level(layout, stage / TreeClient.STEPS, shade);
         int key = (((layout.species.ordinal() * TreeShape.VARIANTS + layout.variant) * 4 + layout.turns) * TreeClient.STAGES + stage) * 2 + shade;
-        return BAKED.computeIfAbsent(key, k -> {
-            int a = stage / TreeClient.STEPS;
-            float t = (stage % TreeClient.STEPS) / (float) TreeClient.STEPS;
-            var near = level(layout, a, shade);
-            var far = level(layout, a + 1, shade);
-            var out = new java.util.HashMap<Integer, Cell>();
-            for (var cell : layout.cells.values()) {
-                int ck = TreeShape.key(cell.x, cell.y, cell.z);
-                var list = new ArrayList<BakedQuad>();
-                pick(cell, a, near.get(ck), t, false, list);
-                pick(cell, a + 1, far.get(ck), t, true, list);
-                if (!list.isEmpty()) out.put(ck, new Cell(List.copyOf(list), false));
-            }
-            return Map.copyOf(out);
-        });
+        var done = BAKED.get(key);
+        if (done != null) return done;
+        // the two levels first, outside: level() writes BAKED too, and a computeIfAbsent inside another one on the same
+        // map throws "Recursive update" when the map resizes meanwhile (a chunk build failing now and then)
+        int a = stage / TreeClient.STEPS;
+        float t = (stage % TreeClient.STEPS) / (float) TreeClient.STEPS;
+        var near = level(layout, a, shade);
+        var far = level(layout, a + 1, shade);
+        var out = new java.util.HashMap<Integer, Cell>();
+        for (var cell : layout.cells.values()) {
+            int ck = TreeShape.key(cell.x, cell.y, cell.z);
+            var list = new ArrayList<BakedQuad>();
+            pick(cell, a, near.get(ck), t, false, list);
+            pick(cell, a + 1, far.get(ck), t, true, list);
+            if (!list.isEmpty()) out.put(ck, new Cell(List.copyOf(list), false));
+        }
+        var made = Map.copyOf(out);
+        var raced = BAKED.putIfAbsent(key, made);
+        return raced != null ? raced : made;
     }
 
     /** A level's baked quads of a cell kept at blend share t: the nearer level (farther false) keeps what the farther drops. */

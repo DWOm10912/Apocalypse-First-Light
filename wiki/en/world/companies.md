@@ -24,7 +24,7 @@ Water, power, fuel and the telephone each have a single company. Guns have sever
 | Power (only one, state run) | Federal Power Authority | 联邦电力局 | V1 locked | Substations, pole tags, meter box plates, outage notices |
 | Water (only one, state run) | Federal Water Authority | 联邦水务局 | V1 locked | Water towers, hydrants, meter covers, bills |
 | Telephone (only one, private) | Kittredge Telephone & Telegraph | 基特里奇电话电报公司 | V1 locked | Phone booths, directories |
-| Cars | Halstead Motor Company | 霍尔斯特德汽车公司 | Frozen | In the game: Tamarack T15 |
+| Cars | Halstead Motor Company and 7 other brands | 霍尔斯特德汽车公司等 | Frozen / V1 locked | In the game: Tamarack T15; other makers under "Car makers" below |
 | Heavy trucks, buses | Ironwood Truck Company | 铁木卡车公司 | V1 locked | Tractor units, school buses |
 | Engines, generator sets | Kincaid Engine Company | 金凯德发动机公司 | Frozen | Generators (no brand printed yet) |
 | Road freight | Calloway Freight Lines | 卡洛韦货运 | V1 locked | Semi-trailers, freight yards |
@@ -48,6 +48,25 @@ Water, power, fuel and the telephone each have a single company. Guns have sever
 
 - Withdrawn on 2026-10-20: **Laurel Valley Electric Cooperative**, because there is only one power company, not even as an old name. **Port Marais Refining Company** is no longer a company: it is PRAIRIE's refinery in Port Marais, PRAIRIE Port Marais Refinery
 - The state-run water and power companies explain the outages on their own: when the federal government fell apart, nobody ran them. No story about how they got their monopoly is written
+
+## Car makers
+
+Several car makers, each with its own strengths, none with more than half the market. The names were approved by the user on 2026-10-20 (V1 locked); the "role" column and each maker's styling are still candidates. The only car in the game so far is Halstead's Tamarack T15
+
+| Company | Chinese | Status | Role (candidate) |
+|---|---|---|---|
+| Halstead Motor Company | 霍尔斯特德汽车公司 | Frozen | Started with trucks: pickups, large SUVs, vans. Models named after trees |
+| Pemberton Motors | 彭伯顿汽车 | V1 locked | The best-selling family car maker: sedans, wagons, small cars, city SUVs |
+| Aldridge | 奥尔德里奇 | V1 locked | Pemberton's luxury brand: luxury sedans and SUVs |
+| Garrick Motor Company | 加里克汽车公司 | V1 locked | Known for sports cars and big engines |
+| Tolland Four Wheel Drive Company | 托兰四驱公司 | V1 locked | A mid-sized four-wheel-drive specialist: short-wheelbase off-roaders |
+| Dalton Motorcycle Works | 多尔顿摩托车厂 | V1 locked | The country's largest motorcycle maker: big road bikes, police bikes |
+| Vireo Motors | 绿鹃汽车 | V1 locked | A young electric car company |
+| Devereux Motor Works | 德弗罗汽车工坊 | V1 locked | Hand-built supercars in small numbers |
+
+- Heavy trucks and buses are Ironwood Truck Company (table above)
+- Badges, tailgate lettering and nameplates are English; model names are never translated
+- Domestic makers only. Whether anything is imported from outside the Federation is not decided
 
 ## First batch
 

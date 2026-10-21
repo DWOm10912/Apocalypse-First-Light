@@ -16,9 +16,10 @@ public final class NativeMagazineItem extends Item implements NativeAttachment {
     private final boolean subtree;
     private final float itemLift, itemTilt;
     private final String textureAsset;
-    /** P9-01 28-round Extended Magazine V2: replaces the V2 rig's loaded, reload (mag_out) and dropped magazine bones;
-     * the Pure Mesh asset bakes the 22 deg grip tilt, which the standalone item presentation takes back out. */
-    public NativeMagazineItem(){this("p9_01",28,java.util.Set.of("magazine","reload_magazine","empty_old_mag"),false,3.58f,22f);}
+    /** P9-01 28-round Extended Magazine V3: the V3 standard magazine lengthened (tools/build-p9-01-extended-magazine.mjs),
+     * drawn with the gun's texture; replaces the rig's loaded, reload (mag_out) and dropped magazine bones. The mesh bakes
+     * the 22 deg grip tilt, which the standalone item presentation takes back out. */
+    public NativeMagazineItem(){this("p9_01",28,java.util.Set.of("magazine","reload_magazine","empty_old_mag"),false,3.41f,22f,"p9_01_v3_native");}
     public NativeMagazineItem(String gunId,int rounds,java.util.Set<String> bones,boolean subtree,float itemLift){this(gunId,rounds,bones,subtree,itemLift,0);}
     public NativeMagazineItem(String gunId,int rounds,java.util.Set<String> bones,boolean subtree,float itemLift,float itemTilt){
         this(gunId,rounds,bones,subtree,itemLift,itemTilt,null);

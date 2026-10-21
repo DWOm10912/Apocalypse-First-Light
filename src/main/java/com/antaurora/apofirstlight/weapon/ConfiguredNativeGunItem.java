@@ -35,9 +35,14 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     }
     @Override public String inspectClip(ItemStack stack) {
         String fallback = inspectClip();
-        if (fallback != null && stack != null && NativeGunAmmo.read(stack, definition()) <= 0
-                && profile.clips().contains("inspect_empty")
-                && NativeGunAnimations.hasClip(profile.id(), "inspect_empty")) return "inspect_empty";
+        if (fallback == null || stack == null) return fallback;
+        boolean empty = NativeGunAmmo.read(stack, definition()) <= 0;
+        // no magazine in the gun (user 2026-10-20): the inspect without the magazine check, where the gun has one
+        if (NativeMagazines.system(definition()) && NativeMagazines.fitted(stack, definition()).isEmpty()) {
+            String noMag = empty ? "inspect_empty_no_mag" : "inspect_no_mag";
+            if (supportsClip(noMag)) return noMag;
+        }
+        if (empty && supportsClip("inspect_empty")) return "inspect_empty";
         return fallback;
     }
     @Override public String fireClip(boolean last) { return "shoot"; }

@@ -31,7 +31,7 @@ public final class AflItems {
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("p9_01_v3_native", "static_idle",
                             java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty",
                                     "reload_tactical_ads", "reload_empty_ads", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty",
-                                    "unload", "unload_empty"),
+                                    "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty"),
                             java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->

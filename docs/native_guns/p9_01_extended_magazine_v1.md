@@ -1,4 +1,4 @@
-# P9-01 28-Round Extended Magazine V2
+# P9-01 28-Round Extended Magazine V3
 
 > **2026-10-19 起按弹匣系统算**（[magazine_system_v1.md](magazine_system_v1.md)，未提交，没进游戏看过）：
 > - 扩容弹匣是装子弹的物品，弹数存在它自己身上；
@@ -8,7 +8,48 @@
 >
 > 下文容量 28、"excess ammo return" 的描述以这里为准。
 
-## V2 现状（2026-09-27，已实现，未实机验收）
+## V3 现状（2026-10-20，已实现，没进游戏看过）
+
+用户 2026-10-20：扩容弹匣的风格和 V3 原装弹匣不一样，同意"按 V3 原装弹匣重做加长弹匣"。原因：V2 扩容弹匣是 2026-09-27 给 V2 枪做的，P9 改 V3 时只重做了原装弹匣。
+
+| 项目 | 当前值 / 行为 |
+| --- | --- |
+| 名称 / ID | P9-01 28 发扩容弹匣 / `apocalypse_firstlight:p9_01_extended_magazine`（ID 不变） |
+| 容量 | 28 发，装上后 28+1（[弹匣系统](magazine_system_v1.md)） |
+| 外观 | 就是 V3 原装 17 发弹匣加长：同一个黑色聚合物弹身、同一个底板、同一个托弹板，同一张 2048 贴图；底板前端多一个楔形小指勾，是除了长度以外唯一的区别 |
+| 去掉的 | V2 的握把延长套、底板两侧的黄褐识别件、单独的 512 贴图 |
+
+### 做法
+
+- 生成器 `tools/build-p9-01-extended-magazine.mjs`（`--check` 只校验），从枪的游戏网格 `meshes/p9_01_v3_native.aflmesh.json` 取 `part_mag_base`、`part_mag_body`、`part_mag_follower`，和 `build-p9-01-magazine.mjs` 切 17 发弹匣用的是同一组部件。
+- 坐标和 17 发弹匣一样：原点是枪的弹匣枢轴 [0, 3.5992, 1.647]，22° 握把倾角烘在顶点里。生成器先绕 x 转 +22° 竖起来（弹匣轴 = +y，单位 px），改完再转回去。
+- 弹身：V3 弹身是一整段等截面直筒（竖直后 y −4.165 … 0.107，中间没有别的环）。y < −2.0 的顶点全部往下移 2.5 px，长侧面跟着拉长。这些面的颜色沿长度是均匀的；`_n` 里烘的 AO 有缓慢渐变，拉长后只是变得更缓。
+- 底板：整个往下移 2.5 px，形状不变。
+- 指勾：底板前端（−z 是枪口方向）一个楔形小块，根部宽 0.60、高 0.16 px，前端宽 0.48、高 0.07 px，伸出底板约 0.12 px。贴图取底板底面最大那个面的中心 3×3 texel。
+- 托弹板：枪自己的 `follower` 骨骼是 `magazine` 的子骨骼，扩容弹匣只替换 `magazine` 这一块，所以装在枪上时托弹板还是枪画。网格里这份托弹板放在枪装满时托弹板的位置（`static_idle` 偏移 [0, −0.4172, 0.1686] px），再往下 0.06 px，所以一直藏在枪自己那块下面，不会叠在一起闪。换弹时的新旧弹匣和物品本身没有枪的托弹板，就显示这一份。
+- 长度：17 发弹匣竖直后 4.71 px（约 128 mm，≈ 27 mm/px）；9 mm 双排弹匣每多一发约长 6 mm，+11 发 ≈ +66 mm → 加长 2.5 px，总长 7.21 px，是 17 发的 1.53 倍。
+- 网格：format 3，和枪一样 `crease_angle` 35 / `area`。三角面当量：弹身 334、底板 164、托弹板 108、指勾 10。
+- 编辑源 `src/main/blockbench/p9_01_extended_magazine_mesh.bbmodel` 由生成器一起写出（Free Model，贴图按相对路径用 `textures/p9_01_v3_native.png`），wiki 图标也用它。生成器每次把它过一遍 `export-afl-mesh.mjs` 的转换器，和运行时网格逐个角点比对（偏差 < 2e-5，现在 2.5e-11）。
+
+### 运行时
+
+- `NativeMagazineItem` 默认构造（P9 扩容弹匣）：容量 28，替换 `magazine` / `reload_magazine` / `empty_old_mag`，`itemTilt` 22，`itemLift` 3.58 → **3.41**（竖直后包围盒中心），新加 `textureAsset` = `p9_01_v3_native`（用枪的贴图和 `_s` / `_n`）。
+- `models/item/p9_01_extended_magazine.json` 的粒子贴图改成 `item/p9_01_v3_native`。
+- 物品说明（en_us / zh_cn）去掉"握把延长套""加固底板"，改成和 17 发弹匣同样的口吻。
+- 渲染路径、换弹动画、维护台都没改。
+
+### 检查和没确认的
+
+- 离线：生成器 `--check` 通过；编辑源回读和运行时网格一致；`compileJava` 通过（编译时游戏没开）；Blockbench 渲染的 wiki 图标看过，和 17 发弹匣同一种黑色，指勾在底板前端。
+- **没进游戏看过**：装在枪上、第一 / 第三人称、换弹、维护台、手里拿着和地上的样子；托弹板在装满 / 打空时是否都正常。
+- 2026-10-20 用户实机发现：和 17 发弹匣一起扔在地上时，扩容弹匣（连手里那只）网格破碎，还有一条线连过去。原因不在弹匣，是地上物品的录制器把开光影时的三角形流按四边形截断了，已修（[render_performance_v1.md](../dev/render_performance_v1.md) "2026-10-20 修复"），编译通过，没进游戏复查。
+- 物品本身（不在枪里）和打空的旧弹匣显示的托弹板在"装满"的位置，比 17 发弹匣空着时深约 0.5 px（约 13 mm）。
+- 手里的弹匣用的是 17 发弹匣的道具点（`player_props/p9_01_magazine.json`），扩容弹匣更长，左手握底板的点落在弹身中段；V2 也是这样，这次没改。
+- 旧的 V2 贴图 `textures/item/p9_01_extended_magazine{,_s,_n}.png` 和 `src/main/blockbench/textures/p9_01_extended_magazine{,_s,_n}.png` 已经不用了，还没删。
+
+## V2（2026-09-27，已被 V3 取代，只作历史）
+
+> 下面是 V2 的外观、网格、贴图和文件，现在都已不是当前状态；当前见上面 V3 一节。
 
 旧的 24 发 23-cube 扩容匣属于已退役 rig，已被本节的 Pure Mesh 重建版取代。下文"V1"各节只作历史记录，不再描述当前资产、容量或骨骼。
 
@@ -75,7 +116,7 @@
 
 ### 文件
 
-- 生成器：`tools/build-p9-01-extended-magazine.mjs`（加 `--check` 为只校验；附带贴合检查）。
+- 生成器：`tools/build-p9-01-extended-magazine.mjs`（V2 版本在 2026-10-20 之前的 git 历史里；现在同名文件是 V3 生成器）。
 - 编辑源：`src/main/blockbench/p9_01_extended_magazine_mesh.bbmodel`（Free Model，5 个 Mesh，内嵌 Base Color）。
   - 源贴图：`src/main/blockbench/textures/p9_01_extended_magazine{,_s,_n}.png`。
 - 运行时：`geo/p9_01_extended_magazine.geo.json`（仅 `magazine_root` 骨骼）、`meshes/p9_01_extended_magazine.aflmesh.json`（V2）、`textures/item/p9_01_extended_magazine{,_s,_n}.png`。

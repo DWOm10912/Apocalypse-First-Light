@@ -58,6 +58,9 @@ public final class NativeGunHud {
         NativeDynamicCrosshair.shot(slot, gunId);
     }
 
+    /** The one prompt drawn without the reload key cap: pressing the key does nothing there. */
+    private static final String NO_KEY_PROMPT = "magazine_in_backpack";
+
     public static final IGuiOverlay OVERLAY = (gui, graphics, partialTick, width, height) -> {
         Minecraft mc = Minecraft.getInstance();
         if (FieldAttachmentViewState.isActive() || mc.player == null || mc.options.hideGui || mc.player.isSpectator()
@@ -65,10 +68,12 @@ public final class NativeGunHud {
         ItemStack stack = mc.player.getMainHandItem();
         String reserve = reserve(stack);
         var definition = ((NativeGunItem) stack.getItem()).definition();
-        // the empty gun's prompt: "Reload", or for a magazine-item gun with no fuller spare "Remove magazine" (the same key)
+        // the empty gun's prompt: "Reload", or for a magazine-item gun with no fuller spare "Remove magazine" (the same key);
+        // a fuller one only in the backpack: "Magazine in backpack", without the key (the key does not reach it)
         String prompt;
         if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition))
             prompt = com.antaurora.apofirstlight.weapon.NativeMagazines.canReload(mc.player, stack, definition) ? "reload"
+                    : com.antaurora.apofirstlight.weapon.NativeMagazines.inBackpack(mc.player, stack, definition) ? NO_KEY_PROMPT
                     : com.antaurora.apofirstlight.weapon.NativeMagazines.ejectable(mc.player, stack, definition) ? "unload_magazine" : null;
         else prompt = "0".equals(reserve) ? null : "reload";
         render(graphics, width, height, NativeGunHudConfigManager.get(), stack, reserve, prompt, reloadProgress(mc, stack, partialTick));
@@ -195,11 +200,13 @@ public final class NativeGunHud {
                     float wordW = font.width(word) * PROMPT, capW = cap.width(font) * CAP, mid = -countH / 2;
                     float x = countRight - w - 5 - wordW;
                     text(g, font, word, x, mid - 4 * PROMPT, PROMPT, AflUiStyle.TEXT, 1);
-                    g.pose().pushPose();
-                    g.pose().translate(x - 2.5F - capW, mid - AflKeyHint.HEIGHT * CAP / 2, 0);
-                    g.pose().scale(CAP, CAP, 1);
-                    cap.draw(g, font, 0, 0, 1, System.nanoTime());
-                    g.pose().popPose();
+                    if (!NO_KEY_PROMPT.equals(prompt)) {
+                        g.pose().pushPose();
+                        g.pose().translate(x - 2.5F - capW, mid - AflKeyHint.HEIGHT * CAP / 2, 0);
+                        g.pose().scale(CAP, CAP, 1);
+                        cap.draw(g, font, 0, 0, 1, System.nanoTime());
+                        g.pose().popPose();
+                    }
                 }
             }
 

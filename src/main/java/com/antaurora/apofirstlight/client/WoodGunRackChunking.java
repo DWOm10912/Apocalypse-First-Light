@@ -9,6 +9,7 @@ import com.antaurora.vextris.client.VextrisMeshes;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -241,12 +242,9 @@ public final class WoodGunRackChunking {
     private static Replay replay(Recorder recorder) {
         var parts = new ArrayList<Leftover>();
         for (var e : recorder.streams.entrySet()) {
-            Stream st = e.getValue();
-            int count = st.count - st.count % 4;
-            if (count == 0) continue;
             Kind kind = kind(e.getKey());
-            parts.add(new Leftover(e.getKey(), kind.chunk() || kind.shadow(), java.util.Arrays.copyOf(st.v, count * 8),
-                    java.util.Arrays.copyOf(st.color, count), java.util.Arrays.copyOf(st.light, count)));
+            Leftover whole = whole(e.getKey(), e.getValue(), kind.chunk() || kind.shadow());
+            if (whole != null) parts.add(whole);
         }
         return new Replay(parts.toArray(Leftover[]::new), VextrisMeshes.generation());
     }
@@ -415,6 +413,12 @@ public final class WoodGunRackChunking {
     private static void split(RenderType type, Stream s, List<int[]> quads, List<TextureAtlasSprite> sprites, List<Leftover> kept,
                               boolean cell) {
         Kind kind = kind(type);
+        if (type.mode() != VertexFormat.Mode.QUADS) {
+            // triangles (or lines) never go to the chunk: kept whole, in their own primitive size
+            Leftover whole = whole(type, s, kind.shadow());
+            if (whole != null) kept.add(whole);
+            return;
+        }
         var leftV = new ArrayList<float[]>();
         var leftC = new ArrayList<int[]>();
         var leftL = new ArrayList<int[]>();
@@ -450,6 +454,18 @@ public final class WoodGunRackChunking {
             System.arraycopy(leftL.get(i), 0, l, i * 4, 4);
         }
         kept.add(new Leftover(type, kind.shadow(), v, c, l));
+    }
+
+    /**
+     * A stream as one leftover, cut to whole primitives of its type's mode (QUADS 4, TRIANGLES 3 vertices): a cut to 4 on a
+     * TRIANGLES stream left a broken triangle at the end, and the next draw of that type in the same batch (another ground
+     * mesh with the same texture, the held item) started mid-triangle, torn, with a strip back to this one. Null when empty.
+     */
+    private static @Nullable Leftover whole(RenderType type, Stream s, boolean shadow) {
+        int count = s.count - s.count % type.mode().primitiveLength;
+        if (count == 0) return null;
+        return new Leftover(type, shadow, java.util.Arrays.copyOf(s.v, count * 8), java.util.Arrays.copyOf(s.color, count),
+                java.util.Arrays.copyOf(s.light, count));
     }
 
     /** The quad starting at vertex q stays near the cell (if held to one) and inside its texture. */
@@ -527,7 +543,7 @@ public final class WoodGunRackChunking {
         public void closedFaces(boolean closed) { this.closed = closed; }
     }
 
-    /** The vertices of one render type (quads, 4 per face): {x, y, z, u, v, nx, ny, nz}, ARGB colour, packed light. */
+    /** The vertices of one render type (in its mode's primitives: quads 4, triangles 3): {x, y, z, u, v, nx, ny, nz}, ARGB colour, packed light. */
     private static final class Stream implements VertexConsumer {
         private final Recorder owner;
         float[] v = new float[8 * 1024];

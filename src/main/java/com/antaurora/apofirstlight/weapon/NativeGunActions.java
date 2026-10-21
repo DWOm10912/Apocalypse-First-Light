@@ -156,6 +156,8 @@ public final class NativeGunActions {
             if (NativeMagazines.system(definition)) {
                 if (!NativeMagazines.canReload(player, held, definition)) {
                     if (NativeMagazines.ejectable(player, held, definition)) unload(player, held, item, slot);
+                    else if (NativeMagazines.inBackpack(player, held, definition))
+                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("hud.apocalypse_firstlight.gun.magazine_in_backpack"), true);
                     return;
                 }
             } else if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)
@@ -392,7 +394,7 @@ public final class NativeGunActions {
     }
 
     private static boolean isInspect(String clip) {
-        return "inspect".equals(clip) || "inspect_empty".equals(clip);
+        return clip != null && clip.startsWith("inspect");   // inspect, inspect_empty and their _no_mag variants
     }
 
     private static void syncInventory(ServerPlayer player) {

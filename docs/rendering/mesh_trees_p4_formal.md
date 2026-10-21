@@ -648,6 +648,7 @@ Java 里的 UV 和分辨率无关，只换了贴图文件。
 - 倒下的树（`FallingTreeRenderer`）开始倒时取最近的纯级别，不做过渡。
 - `/afl dev mesh_tree status`：显示每级多少棵树、其中多少棵在过渡，过渡带距离和步数；"stage changes" 按 9 个阶段计数。
 - `/afl dev mesh_tree lod 0|1|2` 强制级别时不过渡。
+- 2026-10-20 修复（B 在 AFL-Workbench 上发现并修好；Main 照同样的改法先修了 master）：进世界约 2 秒后客户端偶尔卡在"未响应"，日志报区块构建失败 `IllegalStateException: Recursive update`（`TreeCellModel.baked` → `level`）。原因是过渡阶段的 `baked()` 在 `BAKED.computeIfAbsent` 里面又调 `level()`，`level()` 也对同一个 `BAKED` 调 `computeIfAbsent`，map 正好扩容时就抛异常。现在 `baked()` 先在外面取好前后两级，拼好后用 `putIfAbsent` 放进去，结果不变。master 上编译通过（游戏关了以后编的），用户 2026-10-21 实机 PASS（"上面的内容PASS"）。
 
 ### X4. 代价（估算，没实测）
 

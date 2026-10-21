@@ -2,7 +2,7 @@
   "parent": "builtin/entity",
   "gui_light": "side",
   "textures": {
-    "particle": "apocalypse_firstlight:item/p9_01_extended_magazine"
+    "particle": "apocalypse_firstlight:item/p9_01_v3_native"
   },
   "display": {
     "gui": {

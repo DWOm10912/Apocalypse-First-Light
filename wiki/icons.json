@@ -95,6 +95,14 @@
     "bbmodel": "src/main/blockbench/generator_inlet_box_v1.bbmodel"
   },
   "gun_maintenance_bench": {},
+  "p9_01_extended_magazine": {
+    "bbmodel": "src/main/blockbench/p9_01_extended_magazine_mesh.bbmodel",
+    "rot": [
+      170.257,
+      40.967,
+      -159.464
+    ]
+  },
   "p9_01_magazine": {
     "bbmodel": "src/main/blockbench/p9_01_v3_native.bbmodel",
     "rot": [

@@ -25,7 +25,9 @@ import net.minecraftforge.registries.ForgeRegistries;
  * rounds and goes where the new one was (the same item), else by the pickup order, else on the ground. Creative plays by
  * the same rules (2026-10-20: it used to fill the fitted magazine, so no magazine ever came out).</li>
  * <li>With no fuller magazine to swap in, the reload key takes the fitted magazine out into the hand ({@link #eject}),
- * to be loaded there (NativeMagazineLoading); the chambered round stays in the gun.</li>
+ * to be loaded there (NativeMagazineLoading); the chambered round stays in the gun. Not while a fuller one is in the
+ * backpack ({@link #inBackpack}): the key then only says so (user 2026-10-20, two layers: quick actions take from the rig
+ * and the pockets, the backpack only through the inventory screen).</li>
  * </ul>
  */
 public final class NativeMagazines {
@@ -207,6 +209,19 @@ public final class NativeMagazines {
         return new int[]{count, total};
     }
 
+    /**
+     * A fuller compatible magazine than the fitted one is in the backpack (client: its synced copy; the HUD): the reload key
+     * never reaches it, the player moves it to the rig or the pockets in the inventory screen.
+     */
+    public static boolean inBackpack(Player player, ItemStack gun, NativeGunDefinition definition) {
+        GridStorage storage = PlayerGrids.view(player).get(PlayerGrids.Target.BACKPACK);
+        if (storage == null) return false;
+        int than = fitted(gun, definition).isEmpty() ? 0 : magazineRounds(gun, definition);
+        for (GridStorage.Entry entry : storage.entries())
+            if (fits(entry.stack(), definition) && rounds(entry.stack()) > than) return true;
+        return false;
+    }
+
     /** A reload would change something: a fuller spare than the fitted magazine in the rig or the pockets (creative too). */
     public static boolean canReload(Player player, ItemStack gun, NativeGunDefinition definition) {
         return best(PlayerGrids.view(player), definition, fitted(gun, definition).isEmpty() ? 0 : magazineRounds(gun, definition)) != null;
@@ -214,12 +229,12 @@ public final class NativeMagazines {
 
     /**
      * The reload key would take the fitted magazine out into the hand instead (user 2026-10-20): no fuller spare to swap
-     * in, and the fitted one is not full (a full one stays in: nothing to load).
+     * in, none in the backpack either ({@link #inBackpack}), and the fitted one is not full (a full one stays in: nothing to load).
      */
     public static boolean ejectable(Player player, ItemStack gun, NativeGunDefinition definition) {
         ItemStack fitted = fitted(gun, definition);
         return !fitted.isEmpty() && fitted.getItem() instanceof NativeMagazineItem m && magazineRounds(gun, definition) < m.capacity()
-                && !canReload(player, gun, definition);
+                && !canReload(player, gun, definition) && !inBackpack(player, gun, definition);
     }
 
     /**

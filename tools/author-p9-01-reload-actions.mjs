@@ -2,6 +2,7 @@
 //   player_props/p9_01_mag.json, p9_01_mag_old.json   the magazines out of the gun (drawn by the gun's own mag_out /
 //                                                      empty_old_mag bones: SkeletonGunStance, NativeAnimatedWeaponRenderer)
 //   player_actions/gun/p9_01_reload_tactical.json, p9_01_reload_empty.json, p9_01_inspect.json, p9_01_inspect_empty.json,
+//   p9_01_inspect_no_mag.json, p9_01_inspect_empty_no_mag.json (no magazine in the gun: no magazine check),
 //   p9_01_reload_tactical_ads.json, p9_01_reload_empty_ads.json (reloads started while aiming: the gun stays near the eye
 //   line in the view frame, dips and cants; the action is shorter than the clip and blends out into the aim)
 // Same beats and lengths as the first-person clips (tools/author-p9-01-v3-native-animations.mjs), played from the clip's
@@ -192,6 +193,31 @@ function inspect(empty) {
     return [id, json];
 }
 
+// inspect with no magazine in the gun (user 2026-10-20): the same left and right side, then the gun tips up to show the empty
+// magwell and goes home; the support hand stays off it and comes back to the grip on the way. Same beats and length as the
+// first-person clip (tools/author-p9-01-v3-native-animations.mjs inspect noMag, NO_MAG_LENGTH 4.6; empty 4.5).
+function inspectNoMag(empty) {
+    const len = empty ? 4.5 : 4.6, f = len / 4.6, t = n => n * f;
+    const id = empty ? 'p9_01_inspect_empty_no_mag' : 'p9_01_inspect_no_mag';
+    const json = base(id, `P9 ${empty ? 'empty ' : ''}inspect with no magazine in the gun (gun/${id}; docs/dev/p9_reload_inspect_v1.md 2.4-2.5, 3):`
+        + ' the support hand lets go, the gun shows its left side, turns to show its right side' + (empty ? ' (the open chamber)' : '')
+        + ', then tips up to show the empty magwell; back to the chest ready, the support hand regrips on the way. Same beats and length'
+        + ' as the first-person clip. Written by tools/author-p9-01-reload-actions.mjs.', len);
+    const CHECK = gun([-0.5, 1.6, -9.6], 30, 10, -22);
+    json.props = [
+        {id: 'p9_01', keys: [k(0, CHEST_READY, 0), k(0.02, SHOW_L, t(0.58)), k(t(1.7), SHOW_R(empty ? 40 : 28), t(0.7)), k(t(3.0), CHECK, t(0.3)),
+            k(t(3.75), CHEST_READY, t(0.48))]},
+    ];
+    json.hands = {
+        right: [{at: 0, target: 'prop:p9_01:grip_r', blend: 0, roll: 0, pole: POLE_R}],
+        left: [{at: 0, target: 'prop:p9_01:grip_l', blend: 0, roll: 0, pole: POLE_L},
+            {at: 0.02, target: 'pose', blend: 0.3, roll: 0},
+            {at: t(3.85), target: 'prop:p9_01:grip_l', blend: t(0.3), roll: 0, pole: POLE_L}],
+    };
+    json.events = [];
+    return [id, json];
+}
+
 // unload (docs/native_guns/magazine_system_v1.md 3.1): no fuller spare, the R key takes the fitted magazine out into the hand. Same
 // beats as the first-person clip (tools/author-p9-01-v3-native-animations.mjs UNLOAD): the gun comes up as for the magazine check,
 // the thumb releases the magazine into the support hand, which keeps it and goes low; the gun goes back to the chest ready. The
@@ -224,7 +250,7 @@ function unload(empty) {
 const text = o => JSON.stringify(o, null, 2) + '\n';
 const outputs = [
     ['player_props/p9_01_mag.json', MAG], ['player_props/p9_01_mag_old.json', OLD],
-    ...[reload(false), reload(true), inspect(false), inspect(true), reload(false, true), reload(true, true), unload(false), unload(true)].map(([id, json]) => ['player_actions/gun/' + id + '.json', json]),
+    ...[reload(false), reload(true), inspect(false), inspect(true), inspectNoMag(false), inspectNoMag(true), reload(false, true), reload(true, true), unload(false), unload(true)].map(([id, json]) => ['player_actions/gun/' + id + '.json', json]),
 ];
 const check = process.argv.includes('--check');
 let differ = 0;

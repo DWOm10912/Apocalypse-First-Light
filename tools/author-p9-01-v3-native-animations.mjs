@@ -361,9 +361,15 @@ const FOREARM_VIEW = (process.env.P9_FOREARM || '0.35,-0.6,1').split(',').map(Nu
 const bentRight = rot => solve(RP, HP)(RH_POINT, E(levelArm(mv(T3(E(rot)), norm(FOREARM_VIEW)))));
 const MAG_CHECK = {pos: [0.3, 3.2, 2.0], rot: [24, 36, -22]};
 const MAG_SHOW = {pos: [-5.5, 0.5, 6.5], rot: [60, -20, 12]};
-function inspect(empty) {
-    const k = empty ? 5.3 / 5.4 : 1, T = Object.fromEntries(Object.entries({up: 0.6, turn: 1.7, turned: 2.4, check: 3.0, checked: 3.3,
-        release: 3.3, drop: 3.32, out: 3.5, show: 3.75, showEnd: 4.0, align: 4.12, seat: 4.45, back: 4.52, backEnd: 5.0, regrip: 4.82}).map(([n, v]) => [n, v * k]));
+// noMag (user 2026-10-20: an inspect without a magazine still pulled and seated one): the same left and right side, then
+// the gun tips up to look into the empty magwell, the support hand stays down (no release, no seat, no magazine sounds)
+// and comes back to the grip on the way home; shorter by the magazine work (NO_MAG_LENGTH).
+export const NO_MAG_LENGTH = 4.6;
+function inspect(empty, noMag = false) {
+    const k = noMag ? (empty ? 4.5 : NO_MAG_LENGTH) / NO_MAG_LENGTH : empty ? 5.3 / 5.4 : 1;
+    const T = Object.fromEntries(Object.entries(noMag ? {up: 0.6, turn: 1.7, turned: 2.4, check: 3.0, checked: 3.3, back: 3.75, backEnd: 4.23, regrip: 4.05}
+        : {up: 0.6, turn: 1.7, turned: 2.4, check: 3.0, checked: 3.3, release: 3.3, drop: 3.32, out: 3.5, show: 3.75, showEnd: 4.0, align: 4.12,
+            seat: 4.45, back: 4.52, backEnd: 5.0, regrip: 4.82}).map(([n, v]) => [n, v * k]));
     const path = legs([
         [0.02, T.up, SHOW_L, {antic: 0.04, over: 0.05, per: 0.24, tau: 0.09}],
         [T.turn, T.turned, empty ? SHOW_R_EMPTY : SHOW_R, {antic: 0.03, over: 0.05, per: 0.22, tau: 0.08}],
@@ -371,9 +377,10 @@ function inspect(empty) {
         [T.back, T.backEnd, IDLE, {antic: 0.03, over: 0.08, per: 0.24, tau: 0.09}]]);
     const check = t => go(t, T.check, T.checked, {antic: 0, over: 0}) - go(t, T.back, T.backEnd, {antic: 0, over: 0});
     const look = t => sum(drift(t, T.up - 0.1, T.turn + 0.05, [2.4, 4.2, -2.0], 1.5), drift(t, T.turned - 0.1, T.check + 0.05, [2.0, -2.6, 3.2], 1.2),
-        drift(t, T.checked, T.seat, [0.8, -0.8, 1.0], 0.9));
-    const hits = t => sum(jolt(t, T.release, [-0.6, 0, 0.4]), jolt(t, T.out, [0.5, 0, -0.25]), jolt(t, T.seat, [2.6, -0.5, 1.2]),
-        jolt(t, T.backEnd, [0.6, 0, -0.25], {per: 0.2, tau: 0.08}));
+        drift(t, T.checked, noMag ? T.back : T.seat, [0.8, -0.8, 1.0], 0.9));
+    const hits = t => noMag ? jolt(t, T.backEnd, [0.6, 0, -0.25], {per: 0.2, tau: 0.08})
+        : sum(jolt(t, T.release, [-0.6, 0, 0.4]), jolt(t, T.out, [0.5, 0, -0.25]), jolt(t, T.seat, [2.6, -0.5, 1.2]),
+            jolt(t, T.backEnd, [0.6, 0, -0.25], {per: 0.2, tau: 0.08}));
     const slip = t => SLIP * clamp01(check(t));
     const H = t => { const p = path(t), rot = sum(p.rot, look(t), hits(t));
         return {rot, pos: sum(p.pos, mv(E(rot), mul(GRIP_SLIDE, slip(t))), mul([0, 0.1, 0], hits(t)[0]))}; };
@@ -383,6 +390,7 @@ function inspect(empty) {
     // the magazine slides down into the cupped support hand, is tipped toward the eye, then slapped home
     const axial = t => MAG_CLEAR * clamp01(go(t, T.drop, T.out, {antic: 0, over: 0}));
     const held = t => {
+        if (noMag) return magInGun(H(t), 0);   // nothing drawn there: no magazine in the gun hides its bones
         if (t < T.out) return magInGun(H(t), axial(t));
         if (t < T.showEnd) {
             const a = magInGun(H(T.out), MAG_CLEAR), s = go(t, T.out + 0.03, T.show, {antic: 0, over: 0.05});
@@ -396,6 +404,8 @@ function inspect(empty) {
         return magInGun(H(t), Math.max(0, seatDepth(t, T.align, T.seat)));
     };
     const LH = t => {
+        if (noMag) return t < T.back ? mixT(leftOnGun(H(t)), LOW_LEFT, go(t, 0.0, 0.32, {antic: 0, over: 0}))
+            : mixT(LOW_LEFT, leftOnGun(H(t)), go(t, T.back, T.regrip, {antic: 0.02, over: 0.04}));
         if (t < T.check - 0.2) return mixT(leftOnGun(H(t)), LOW_LEFT, go(t, 0.0, 0.32, {antic: 0, over: 0}));
         if (t < T.drop) return mixT(LOW_LEFT, onMag(held(t), 0.5), clamp01(go(t, T.check - 0.2, T.release - 0.02, {antic: 0, over: 0})));
         if (t < T.seat + 0.06) return onMag(held(Math.min(t, T.seat)), t < T.out ? 0.5 * (1 - clamp01((t - T.drop) / (T.out - T.drop))) : slapGap(t, T.seat));
@@ -403,24 +413,26 @@ function inspect(empty) {
     };
     const camera = t => sum(mul([-1.0, 1.6, 1.2], go(t, 0.02, T.up, {antic: 0, over: 0}) - go(t, T.turn, T.turned, {antic: 0, over: 0})),
         mul([-1.0, -1.2, -1.4], go(t, T.turn, T.turned, {antic: 0, over: 0}) - go(t, T.check, T.checked, {antic: 0, over: 0})),
-        mul([-1.0, 1.2, 1.5], check(t)), mul(look(t), 0.25), mul(hits(t), 0.35), jolt(t, T.seat, [1.0, 0, 0.35]));
+        mul([-1.0, 1.2, 1.5], check(t)), mul(look(t), 0.25), mul(hits(t), 0.35), noMag ? Z : jolt(t, T.seat, [1.0, 0, 0.35]));
     const tracks = {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
-        magazine: {scale: t => (t >= T.drop && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
+        magazine: {scale: t => !noMag && t >= T.drop && t < T.seat ? [0, 0, 0] : [1, 1, 1], step: true},
         follower: {position: () => empty ? Z : FOLLOWER_LOADED},
         mag_out: {position: t => held(t).pos, rotation: t => held(t).rot},
-        reload_magazine: {scale: t => (t >= T.drop && t < T.seat) ? [1, 1, 1] : [0, 0, 0], step: true},
+        reload_magazine: {scale: t => !noMag && t >= T.drop && t < T.seat ? [1, 1, 1] : [0, 0, 0], step: true},
         empty_old_mag: {scale: () => [0, 0, 0], step: true},
         righthand: {position: t => RH(t).pos, rotation: t => RH(t).rot},
         lefthand: lhTracks(LH),
         slide: {position: () => [0, 0, empty ? SLIDE_LOCK : 0]},
         camera: {rotation: camera},
     };
-    const sounds = [[T.release - 0.01, 'magazine_release'], [T.release + 0.03, 'magazine_out'], [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat']];
+    const sounds = noMag ? [] : [[T.release - 0.01, 'magazine_release'], [T.release + 0.03, 'magazine_out'], [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat']];
     return {tracks, sounds, timing: T};
 }
 clips.push(clip('inspect', 5.4, 'once', () => inspect(false)));
 clips.push(clip('inspect_empty', 5.3, 'once', () => inspect(true)));
+clips.push(clip('inspect_no_mag', NO_MAG_LENGTH, 'once', () => inspect(false, true)));
+clips.push(clip('inspect_empty_no_mag', 4.5, 'once', () => inspect(true, true)));
 
 // Unload (docs/native_guns/magazine_system_v1.md 3.1, user 2026-10-20): the reload key with no fuller magazine on the rig
 // or in the pockets takes the magazine out to be loaded by hand. The inspect's magazine check up to the catch: the gun comes

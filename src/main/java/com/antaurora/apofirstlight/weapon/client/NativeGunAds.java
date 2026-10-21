@@ -44,8 +44,8 @@ public final class NativeGunAds {
                 || c.getCurrentAnimation()==null) return "";
         String clip=c.getCurrentAnimation().animation().name();
         if(clip.endsWith(NativeGunActions.ADS_SUFFIX))return "";   // an ADS reload keeps the aim (docs/dev/p9_reload_inspect_v1.md 2.7)
-        return clip.contains("reload")||clip.contains("draw")||clip.equals("put_away")||clip.equals("inspect")
-                ||clip.equals("inspect_empty")||clip.startsWith("unload")?clip:"";
+        return clip.contains("reload")||clip.contains("draw")||clip.equals("put_away")||clip.startsWith("inspect")
+                ||clip.startsWith("unload")?clip:"";
     }
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e) {
         if(e.phase!=TickEvent.Phase.END)return;

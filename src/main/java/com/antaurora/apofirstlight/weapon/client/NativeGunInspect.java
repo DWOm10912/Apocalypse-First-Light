@@ -8,7 +8,7 @@ import software.bernie.geckolib.animatable.GeoItem;
 /** Input intent only. Playback, duration, lock and sync remain in NativeGunActions/GeckoLib. */
 public final class NativeGunInspect {
     private static boolean isInspect(String action) {
-        return "inspect".equals(action) || "inspect_empty".equals(action);
+        return action != null && action.startsWith("inspect");   // inspect, inspect_empty and their _no_mag variants
     }
     private static boolean pending, requireUseRelease;
     private static int awaitingTrigger, slot;

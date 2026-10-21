@@ -96,6 +96,15 @@
 - 拿出来的弹匣是空的（托弹板在最上面）；
 - 结尾仍是空仓挂机状态（和 `empty_idle` 一致）。
 
+### 2.9 没装弹匣时的检视 `inspect_no_mag` / `inspect_empty_no_mag`（2026-10-20）
+
+- 用户 2026-10-20（截图）："这把枪没有弹匣的时候检视，还是会播放插拔弹匣的动画，算是一个逻辑问题"。以前没装弹匣时，弹匣骨骼本来就不画，四个弹匣声也不放（`NativeGunActions#magazineCues`），但左手还在空比划取下、装回。
+- 选片段（`ConfiguredNativeGunItem#inspectClip(ItemStack)`）：弹匣系统的枪、枪里没有弹匣时，有子弹（膛里一发）放 `inspect_no_mag`，没有放 `inspect_empty_no_mag`；其余照旧 `inspect` / `inspect_empty`。
+- 同一个生成器（`inspect(empty, noMag)`）、同一套节拍：0.6 s 给左侧面、1.7–2.4 s 转到右侧面、3.0–3.3 s 枪往上翻看空的弹匣井（握把照样从拳里滑出一点露出弹匣井），3.75–4.23 s 回到预备位；左手 0.02–0.32 s 松开垂到画面外，一直不出现，3.75–4.05 s 回到握把。长度 4.6 s（`NO_MAG_LENGTH`）；空仓版时间整体乘 4.5 / 4.6，套筒停在后方，长度 4.5 s。没有声音，没有按卡笋、弹匣拔出、插到底的那几下抖动。
+- 第三人称 `gun/p9_01_inspect_no_mag` / `gun/p9_01_inspect_empty_no_mag`（`tools/author-p9-01-reload-actions.mjs` 的 `inspectNoMag`）：枪的节拍同上，没有弹匣道具；左手 0.02 s 松开（`pose`），3.85 s 起 0.3 s 握回。逐帧检查：3.75 s 起握回时前臂扭转到 35°（超过 30°），推到 3.85 s 以后降到 26°，和原来的检视一样，没有超限帧。
+- 认得这两个名字的地方：`AflItems`（P9 的片段列表）、`NativeCameraBoneConsumer`（镜头骨骼）；`NativeGunAds`、`NativeGunInspect`、`NativeGunActions#isInspect` 改成按 `inspect` 前缀认（`SkeletonGunStance` 本来就是）。
+- 离线：重新生成后，原有 14 段第一人称片段和 6 个第三人称动作与改之前逐字一致，只多了这两段。编译通过，用户 2026-10-21 实机 PASS（"上面的内容PASS"）。
+
 ### 2.6 第一人称的限制（旧视图模型，方块手臂）
 
 - 两只手是没有手腕的方块（[gun_handling_reference_v1.md](gun_handling_reference_v1.md)、`NativePlayerArmRenderer`），所以：

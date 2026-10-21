@@ -27,7 +27,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `thirst/WaterBoilingRecipes.java` | 煮沸配方（没有辐射出纯净水，有辐射出带同样等级的煮沸水）和它们的序列化器 |
 | `thirst/ThirstTooltip.java`、`thirst/ClientThirstTooltip.java` | 饮品提示里的水滴图标行 |
 | `thirst/GastroenteritisEffect.java` | 肠胃感染效果（只做标记，症状由 PlayerThirst 施加；牛奶治不好） |
-| `thirst/ThirstPackets.java` | 本人口渴值（S2C）、空手喝一口（C2S） |
+| `thirst/ThirstPackets.java` | 本人口渴值和上限（S2C）、空手喝一口（C2S） |
 | `thirst/ClientThirst.java` | 客户端：本人口渴值、空手喝水的输入、往饮品提示里插水滴行 |
 | `thirst/ClientThirstHud.java` | 三种水瓶的液体颜色、水滴图形 `WATER_DROP`（HUD 口渴小圆、徽章、提示共用）、注册提示组件（2026-10-17 起不再画 HUD） |
 | `thirst/ThirstCommands.java` | `/aflthirst` 调试命令 |
@@ -35,7 +35,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `mixin/FoodDataThirstMixin.java` | 脱水时不自然回血（体温 V1 也复用它：C2 / H2 起不自然回血） |
 | `stamina/PlayerStamina.java` | 把花掉的耐力交给口渴（`consumeSpent`），恢复速度乘口渴倍率 |
 | `registry/AflItems`、`AflMobEffects`、`AflRecipes`、`AflCreativeTabs` | 注册 |
-| `network/AflNetwork.java` | 注册两种包，协议 36 |
+| `network/AflNetwork.java` | 注册两种包（协议号是整个 AFL 频道共用的） |
 
 资源：
 - 物品模型 `models/item/{dirty,boiled,purified}_water_bottle.json`：沿用原版药水瓶的两层贴图，液体层按物品着色；煮沸水多一层 `textures/item/boiled_water_specks.png`（液体里 3 个黄绿色小点，不着色）；
@@ -136,7 +136,8 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 HUD V2（2026-10-17，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6 节，没有实机验证）：
 
 - **口渴小圆**：左下身体组件右上方三个需求小圆的中间一个（`client/SurvivalVitalsHud`，角度 52°），水滴图标。平时小而淡；口渴值低于 `thirstyBelow`（30）时变大并带百分比数字，低于 `dehydratedBelow`（15）时变红。原来屏幕底部中间的水滴半环 ")" 已去掉。
-- **徽章**（`client/StatusBadgeHud`）：口渴（< 30，棕）、脱水（< 15，红，旁边是到 0 的倒计时，按客户端观察到的下降速度估算）、严重脱水（0，红，效果写"每 10 秒掉 1 点血"）。效果文字里的耐力恢复百分比取自配置。
+- **徽章**（`client/StatusBadgeHud`）：口渴（< 30，棕）、脱水（< 15，红，外圈一条细白弧是到 0 之前还剩的水，不带数字）、严重脱水（0，红，效果写"每 10 秒掉 1 点血"）。效果文字里的耐力恢复百分比取自配置。
+  - 脱水不再显示倒计时（2026-10-20 改）：用户截图"为啥脱水的倒计时会一直跳来跳去"。原来客户端拿"两次同步之间口渴值少了多少 ÷ 两个包到达隔了多久"估速度，包每 0.5 s 一次、到达有抖动，疾跑、跳跃花的体力也扣水（每 100 体力 3 点），一跑起来秒数就变。先试过服务端发不算体力消耗的流失速度、按它倒数，用户反馈"只要我在跑步就会一直跳"：秒数是对以后的猜测，玩家一跑一停它就得变。用户提出"用圆环渐变也行"，于是改成徽章外圈的白弧 = 当前口渴值 ÷ 15（脱水线），满圈刚进脱水、空了开始掉血；弧在每次同步之间往新值缓动（每秒约追 3 成差值），喝水一次加 1 点以上时直接涨满到新值。只是客户端显示，服务端和包都没改（试的那版撤回了，协议号仍是 59）。编译通过，用户 2026-10-21 实机 PASS（"上面的内容PASS"）。
 - 状态卡片（按住左 Alt）里有一行口渴百分比。**2026-10-17 起卡片关掉了**（等生命监测仪，[hud_v2_research.md](../ui/hud_v2_research.md) 第 6.4 节）。
 
 ## 调试
