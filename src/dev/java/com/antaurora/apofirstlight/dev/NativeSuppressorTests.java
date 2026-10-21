@@ -49,7 +49,7 @@ public final class NativeSuppressorTests {
         h.assertTrue(!LegacyAttachmentFixture.requestMatches(p,slot,requested,off),"replay rejected");
         h.assertTrue(!NativeAttachments.activeSight(gun).isEmpty()&&!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"both slots");
         var resolved=NativeGunNoise.resolve(gun,d);
-        h.assertTrue(resolved.radius()==3&&resolved.suppressed()&&!d.gunshotTinnitus(),"suppressed radius and no tinnitus");
+        h.assertTrue(resolved.radius()==3&&resolved.suppressed(),"suppressed radius");
         h.assertTrue(resolved.fireSound((NativeGunItem)gun.getItem())==AflSounds.P9_01_SUPPRESSED.get(),"suppressed sound");
         // Actual native raycast reaches the real NoiseSystem, not a test-side radius substitution.
         NativeGunShot.execute(p,d);

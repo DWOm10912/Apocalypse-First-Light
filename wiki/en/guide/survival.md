@@ -114,6 +114,28 @@ Fractures are judged by the health the fall actually took, so armour and landing
 - <StatusTag s="verified" d="2026-10-20" /> Falling over makes a thump as your hand hits the ground, heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
 - A broken arm does not slow reloading yet (later)
 
+## Tinnitus
+
+- <StatusTag s="test" /> Tinnitus V2: a negative state. Checked in game on its branch on 2026-10-21, waiting to be merged
+
+Gunshots, explosions and lightning close by build up a hearing load, and past a point your ears start ringing. While you have tinnitus your ears ring now and then, in the left ear, the right or both; the higher the stage, the more often, and the quieter the sounds around you
+
+| State | Hearing load | Between spells | Each spell | Sounds around you |
+|---|---|---|---|---|
+| Mild tinnitus | ≥ <V d="hearing/tinnitus_v2#stages.0" /> | <V d="hearing/tinnitus_v2#interval.0.0" />–<V d="hearing/tinnitus_v2#interval.0.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.0.0" />–<V d="hearing/tinnitus_v2#length.0.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.0" /> |
+| Tinnitus | ≥ <V d="hearing/tinnitus_v2#stages.1" /> | <V d="hearing/tinnitus_v2#interval.1.0" />–<V d="hearing/tinnitus_v2#interval.1.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.1.0" />–<V d="hearing/tinnitus_v2#length.1.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.1" /> |
+| Severe tinnitus | ≥ <V d="hearing/tinnitus_v2#stages.2" /> | <V d="hearing/tinnitus_v2#interval.2.0" />–<V d="hearing/tinnitus_v2#interval.2.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.2.0" />–<V d="hearing/tinnitus_v2#length.2.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.2" /> |
+
+The hearing load tops out at <V d="hearing/tinnitus_v2#max_load" />. Each time the stage goes up, your ears ring at once
+
+- **Gunshots**: each shot's load = 10^((level at the ear − <V d="hearing/tinnitus_v2#reference_db" />) ÷ 10). The level at the ear is in each gun page's stats, for example 170 dB is 1 a shot and 160 dB 0.1. A suppressor takes off <V d="hearing/tinnitus_v2#suppressor_db" u="dB" />. Other people's shots fall off with the square of the distance and do not count beyond <V d="hearing/tinnitus_v2#range" u="格" ue="blocks" />
+- **Explosions**: load = <V d="hearing/tinnitus_v2#blast" /> × (blast radius ÷ <V d="hearing/tinnitus_v2#blast_radius" />)² ÷ distance², ignored below <V d="hearing/tinnitus_v2#blast_min" />. A lightning strike counts as a blast of radius <V d="hearing/tinnitus_v2#lightning_radius" />
+- With no sky over your head (indoors) the load is ×<V d="hearing/tinnitus_v2#indoor" />
+- Wearing [Simple Hearing Protection](../arms/equipment#tools), every load is ×<V j="SimpleHearingProtectionItem.IMPULSE" />; survivor traits can change the tinnitus multiplier too
+- **Jolt**: a single load of <V d="hearing/tinnitus_v2#jolt_from" /> or more rings at once and drops the sounds around you to ×<V d="hearing/tinnitus_v2#jolt_hearing" />, coming back over <V d="hearing/tinnitus_v2#jolt_recover.0" />–<V d="hearing/tinnitus_v2#jolt_recover.1" u="秒" ue="s" />; the bigger the load, the slower
+- **Recovery**: the hearing load halves every <V d="hearing/tinnitus_v2#half_life_ticks" x="0.05" u="秒" ue="s" />, <V d="hearing/tinnitus_v2#sleep" /> times faster asleep, and only counts while you are online. Death clears it
+- The badge's ring shows how bad your ears are: gunfire and blasts fill it, and it shrinks as they recover. There is no countdown
+
 ## Stamina
 
 Maximum <V d="stamina/stamina_v1#max" />. After <V d="stamina/stamina_v1#delay_seconds" u="s" /> at rest it regenerates <V d="stamina/stamina_v1#regen" /> per second (<V d="stamina/stamina_v1#exhausted_delay_seconds" u="s" /> after running out)

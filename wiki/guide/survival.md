@@ -114,6 +114,28 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 - <StatusTag s="verified" d="2026-10-20" /> 摔倒时手撑地那一下有身体着地的声音，附近 <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> 格内听得到
 - 换弹不会因为手臂骨折变慢（以后再做）
 
+## 耳鸣
+
+- <StatusTag s="test" /> 耳鸣 V2：负面状态。用户 2026-10-21 在分支上实机通过，等合并进主线
+
+近处的枪声、爆炸和雷击会累积听力负荷，负荷到一定程度就会耳鸣。耳鸣时耳朵会不时响起来，随机在左耳、右耳或两耳；档位越高，响得越频繁，周围的声音也越小
+
+| 状态 | 听力负荷 | 两次耳鸣间隔 | 每次持续 | 周围声音 |
+|---|---|---|---|---|
+| 轻度耳鸣 | ≥ <V d="hearing/tinnitus_v2#stages.0" /> | <V d="hearing/tinnitus_v2#interval.0.0" />–<V d="hearing/tinnitus_v2#interval.0.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.0.0" />–<V d="hearing/tinnitus_v2#length.0.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.0" /> |
+| 耳鸣 | ≥ <V d="hearing/tinnitus_v2#stages.1" /> | <V d="hearing/tinnitus_v2#interval.1.0" />–<V d="hearing/tinnitus_v2#interval.1.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.1.0" />–<V d="hearing/tinnitus_v2#length.1.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.1" /> |
+| 严重耳鸣 | ≥ <V d="hearing/tinnitus_v2#stages.2" /> | <V d="hearing/tinnitus_v2#interval.2.0" />–<V d="hearing/tinnitus_v2#interval.2.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.2.0" />–<V d="hearing/tinnitus_v2#length.2.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.2" /> |
+
+听力负荷最多 <V d="hearing/tinnitus_v2#max_load" />。档位升高时立刻耳鸣一次
+
+- **枪声**：每发的负荷 = 10^((耳边声压 − <V d="hearing/tinnitus_v2#reference_db" />) ÷ 10)。耳边声压见各枪械页的数据表，例如 170 dB 每发 1，160 dB 每发 0.1。装消音器减 <V d="hearing/tinnitus_v2#suppressor_db" u="dB" />。别人开枪按距离的平方衰减，<V d="hearing/tinnitus_v2#range" u="格" ue="blocks" /> 以外不算
+- **爆炸**：负荷 = <V d="hearing/tinnitus_v2#blast" /> ×（爆炸半径 ÷ <V d="hearing/tinnitus_v2#blast_radius" />）² ÷ 距离²，低于 <V d="hearing/tinnitus_v2#blast_min" /> 不算。落雷按半径 <V d="hearing/tinnitus_v2#lightning_radius" /> 的爆炸算
+- 头顶看不到天（室内）时负荷 ×<V d="hearing/tinnitus_v2#indoor" />
+- 戴 [简易护耳罩](../arms/equipment#工具) 时每份负荷 ×<V j="SimpleHearingProtectionItem.IMPULSE" />；幸存者特质也会改变耳鸣倍率
+- **震耳**：一次负荷达到 <V d="hearing/tinnitus_v2#jolt_from" /> 会立刻耳鸣，周围的声音降到 ×<V d="hearing/tinnitus_v2#jolt_hearing" />，<V d="hearing/tinnitus_v2#jolt_recover.0" />–<V d="hearing/tinnitus_v2#jolt_recover.1" u="秒" ue="s" /> 内恢复，负荷越大恢复越慢
+- **恢复**：听力负荷每 <V d="hearing/tinnitus_v2#half_life_ticks" x="0.05" u="秒" ue="s" /> 减半，睡觉时快 <V d="hearing/tinnitus_v2#sleep" /> 倍，只在在线时计时。死亡后清空
+- 状态徽章外圈显示耳鸣有多重：开枪、爆炸会让它变满，之后随恢复慢慢变短，不显示倒计时
+
 ## 耐力
 
 上限 <V d="stamina/stamina_v1#max" />，停止活动 <V d="stamina/stamina_v1#delay_seconds" u="秒" /> 后每秒恢复 <V d="stamina/stamina_v1#regen" />（耗尽后需等待 <V d="stamina/stamina_v1#exhausted_delay_seconds" u="秒" />）

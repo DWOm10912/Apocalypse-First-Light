@@ -32,7 +32,7 @@
 | accuracy.ads_spread_degrees（可选） | 0–45°瞄准锥形半角，缺省等于 base_spread_degrees；Silverwood 为1.65°，腰射2.25°；仍乘现有姿态系数 |
 | fire.pellets_per_shot（可选） | 1–64，缺省1；Silverwood 为8，服务端每颗独立抽样、追踪、算伤害，然后按目标汇总以避免同tick受伤保护丢失弹丸；每颗实际停止点也用于各自的视觉轨迹 |
 | reload.tactical_seconds / empty_seconds | 非负秒，向上取整到服务端tick |
-| noise.radius / tinnitus | 非负半径；是否参与现有耳鸣累积系统 |
+| noise.radius / ear_db | 非负半径；开枪人耳边的声压（dB，0–250），耳鸣 V2 每发剂量 10^((ear_db − 170) / 10)（2026-10-21 取代布尔 `tinnitus`，见 `../gameplay/tinnitus_v2_plan.md`） |
 | ads.time_seconds / fov_multiplier | 非负进入/退出时长；正数FOV倍率 |
 | sight_slot（可选） | anchor 名称、mount_offset 局部 xyz、ads_center 模型 xyz、accepts 兼容 SIGHT 物品 ID 数组；没有此字段即不支持。可选 `mount_interface`（2026-09-28）：accepts 中声明了接口的瞄具（`data/<ns>/native_attachments/<id>.json` 的 `mount_interface`）必须与之一致，否则拒绝加载；accepts 仍是运行时兼容依据。当前 BR51 与 HR55 为 `rifle_optic_rail`（导轨顶面原点，见 [步枪红点 Pure Mesh V1](attachments/rifle_red_dot_01_pure_mesh_v1.md)），P9 不声明。详见 [手枪红点 V1](pistol_red_dot_v1.md) |
 | recoil | NativeRecoilProfile同名数值字段，见下文 |

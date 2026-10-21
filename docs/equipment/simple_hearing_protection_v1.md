@@ -4,7 +4,7 @@
 
 **2026-10-03 改为耳部栏（用户要求，见 `../gameplay/equipment_slots_v1.md`）**：耳罩不再戴在头盔栏，改戴在 Curios 的耳部栏（`ears`，显示在原版物品栏人物模型右边），所以可以和头盔一起戴。右键戴到耳部栏（耳部栏原来有东西就交换），装备音不变。人物身上的画法和以前一样（头部姿态 + `ItemDisplayContext.HEAD`），只是改由耳部栏的 Curios 渲染器来画。下文提到的“HEAD 防护”现在指“戴着的防护”：先看耳部栏，没有再看头盔栏（旧存档里戴在头上的耳罩仍然有效，也可以从头盔栏取下）。耳部栏的改动没有实机验证。
 
-耳鸣 severity 衰减和本轮新增的播放音量减半尚未实机听感验收；不运行客户端、GameTest 或截图。
+**2026-10-21 耳鸣 V2（D 分支 `feature/tinnitus-v2`，见 `../gameplay/tinnitus_v2_plan.md`）**：耳罩对耳鸣的作用改成每份听力剂量 ×`SimpleHearingProtectionItem.IMPULSE` = 0.10（原 0.50）；世界声音仍 ×`WORLD_SOUND` = 0.50。耳鸣声本身不再被耳罩压低。物品说明改成"挡住枪声和爆炸对耳朵的大部分伤害，但周围的声音也会变小"。用户 2026-10-21 实机 PASS（耳鸣 V2 整体），等 Main 合并。下文写到 `effectiveTinnitusSeverity`、`sendTinnitusImpulse`、`GunshotExposureTracker`、`ExplosionTinnitus*`、`tinnitusVolumeMultiplier` 的部分都已删除，只是历史记录。没有进游戏验证。
 
 ## 物品与装备
 

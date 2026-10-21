@@ -92,6 +92,13 @@
       "apocalypse_firstlight:explosion_tinnitus"
     ]
   },
+  "tinnitus": {
+    "subtitle": "subtitles.apocalypse_firstlight.tinnitus",
+    "sounds": [
+      "apocalypse_firstlight:hearing/tinnitus_1",
+      "apocalypse_firstlight:hearing/tinnitus_2"
+    ]
+  },
   "geiger_low": {
     "sounds": [{"name": "apocalypse_firstlight:gieger_low", "stream": true}]
   },

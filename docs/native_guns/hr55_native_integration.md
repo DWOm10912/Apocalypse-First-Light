@@ -17,7 +17,7 @@ Its gameplay definition is `src/main/resources/data/apocalypse_firstlight/native
 - tactical / empty reload: 3.88 / 4.29 seconds;
 - ammo transfers at ticks 48 / 59 respectively, matching the visible magazine-settle phase;
 - ADS: 0.20 seconds, 0.92 FOV multiplier;
-- noise radius: 128 blocks, with tinnitus enabled.
+- noise radius: 128 blocks; `ear_db` 170 (tinnitus V2, 2026-10-21; was `tinnitus: true`).
 
 ## Visual and sound assets
 

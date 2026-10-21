@@ -26,7 +26,7 @@
   },
   "noise": {
     "radius": 6,
-    "tinnitus": false
+    "ear_db": 134
   },
   "ads": {
     "time_seconds": 0.18,

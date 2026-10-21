@@ -150,9 +150,7 @@ public final class NativeGunShot {
         var noise=NativeGunNoise.resolve(shooter.getMainHandItem(),d);
         NoiseSystem.emit(new NoiseEvent(shooter, start, NoiseType.GUNSHOT, shooter.level().getGameTime(),
                 d.id(), noise.radius()), shooter.serverLevel());
-        if (d.gunshotTinnitus())
-            com.antaurora.apofirstlight.tinnitus.GunshotExposureTracker.onGunshot(
-                    shooter.serverLevel(), shooter, start, noise.radius(), noise.suppressed());
+        com.antaurora.apofirstlight.hearing.HearingExposure.gunshot(shooter, start, d.earDb(), noise.suppressed());
         return new ShotResult(representative, endpoints);
     }
 }

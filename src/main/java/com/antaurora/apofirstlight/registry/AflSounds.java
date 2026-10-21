@@ -15,6 +15,11 @@ public final class AflSounds {
             SOUND_EVENTS.register("explosion_tinnitus",
                     () -> SoundEvent.createVariableRangeEvent(
                             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "explosion_tinnitus")));
+    /** Tinnitus V2 ringing (sounds/hearing/tinnitus_1..2, mono, one picked per spell). */
+    public static final RegistryObject<SoundEvent> TINNITUS =
+            SOUND_EVENTS.register("tinnitus",
+                    () -> SoundEvent.createVariableRangeEvent(
+                            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "tinnitus")));
 
     public static final RegistryObject<SoundEvent> GEIGER_LOW = SOUND_EVENTS.register("geiger_low",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_low")));

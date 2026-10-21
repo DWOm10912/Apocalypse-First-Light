@@ -51,7 +51,7 @@
   },
   "noise": {
     "radius": 64,
-    "tinnitus": false
+    "ear_db": 159
   },
   "ads": {
     "time_seconds": 0.15,

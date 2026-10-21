@@ -242,6 +242,23 @@ public final class StatusBadgeHud {
     static final AflRingIcon.Glyph BONE = StatusBadgeHud::bone;
     static final AflRingIcon.Glyph BONE_SPLINTED = (x, y) -> Math.min(bone(x, y), Math.min(
             AflRingIcon.segment(x, y, 0.441, 0.841, 0.841, 0.441), AflRingIcon.segment(x, y, 0.159, 0.559, 0.559, 0.159)) - 0.036);
+    // tinnitus (tinnitus V2, docs/gameplay/tinnitus_v2_plan.md 3.5): an ear seen from the side, two sound arcs in front of it
+    private static double arc(double x, double y, double cx, double cy, double r, double a0, double a1, double w) {
+        double a = Math.toDegrees(Math.atan2(y - cy, x - cx));
+        while (a < a0) a += 360;
+        if (a <= a1) return Math.abs(Math.hypot(x - cx, y - cy) - r) - w;
+        double b0 = Math.toRadians(a0), b1 = Math.toRadians(a1);
+        return Math.min(Math.hypot(x - cx - r * Math.cos(b0), y - cy - r * Math.sin(b0)),
+                Math.hypot(x - cx - r * Math.cos(b1), y - cy - r * Math.sin(b1))) - w;
+    }
+    static final AflRingIcon.Glyph EAR = (x, y) -> {
+        double d = arc(x, y, 0.40, 0.40, 0.24, 160, 420, 0.055);
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.52, 0.608, 0.44, 0.80) - 0.055);
+        d = Math.min(d, arc(x, y, 0.37, 0.80, 0.07, 0, 150, 0.055));
+        d = Math.min(d, arc(x, y, 0.41, 0.43, 0.10, 180, 400, 0.04));
+        d = Math.min(d, arc(x, y, 0.62, 0.42, 0.20, -40, 40, 0.035));
+        return Math.min(d, arc(x, y, 0.62, 0.42, 0.31, -35, 35, 0.035));
+    };
     static final AflRingIcon.Glyph THERMOMETER = (x, y) -> Math.min(AflRingIcon.segment(x, y, 0.5, 0.12, 0.5, 0.62) - 0.09,
             Math.hypot(x - 0.5, y - 0.74) - 0.17);
 
@@ -289,6 +306,10 @@ public final class StatusBadgeHud {
         else if (food <= 6) list.add(new Status("hunger", 1, Kind.BAD, SurvivalVitalsHud.DRUMSTICK, t("hunger.1"), t("hunger.1.effect"), Double.NaN, null));
         wounds(list);
         fractures(list, player);
+        int tinnitus = TinnitusClient.stage();
+        if (tinnitus > 0)
+            list.add(new Status("tinnitus", tinnitus, Kind.BAD, EAR, t("tinnitus." + tinnitus), t("tinnitus." + tinnitus + ".effect"),
+                    TinnitusClient.left(), null));
         // good: healing (health V1a: the server says whether natural regeneration runs, awake or resting)
         var regen = ClientHealth.regen();
         if (regen == PlayerHealth.Regen.AWAKE || regen == PlayerHealth.Regen.REST)

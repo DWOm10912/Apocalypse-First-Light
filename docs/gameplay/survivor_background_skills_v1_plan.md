@@ -372,7 +372,7 @@ C 对两个场景的答复（2026-10-15）：
 | | `body_temp_rate` | 乘（…10） | `tau_worsen` 300 s（和浸水的） | `PlayerTemperature`：变坏的时间常数 ÷ 它（最少 0.1），恢复不变 |
 | 动静 | `footstep_noise` | 乘（…10） | 潜行 2、走 4、跑 8 格，落地 5–12 格 | `MovementNoiseEvents`；脚步声的听见距离跟着变，落地声音的没跟 |
 | | `visibility` | 乘（…10） | 每 tick 确认 1/20 | `InfectedVisionSystem` |
-| | `tinnitus` | 乘（…10） | 每发的暴露量 | `GunshotExposureTracker` |
+| | `tinnitus` | 乘（…10） | 每份听力剂量（枪声、爆炸、落雷；耳鸣 V2） | `hearing/HearingLoad.add` |
 | | `hearing` | 乘（…4） | 世界声音音量 | `HearingProtectionAudio`（客户端，和耳罩相乘，不超过 1） |
 | 手上 | `search_speed` | 乘（…10，越大越快） | 每格 40 tick | `AflContainerSearchSpeed.playerMultiplier`（最少 0.1） |
 | | `qte_window` | 乘（…3） | 所有 QTE 的绿区 | `PortableGeneratorPull.zoneWidth`（现在只有拉绳） |
