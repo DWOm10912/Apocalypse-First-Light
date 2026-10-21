@@ -5,6 +5,8 @@
 // normal, the glass over a dark cab; rendered 16x larger and box-filtered down. Needs ffmpeg (PNG in and out).
 //
 //   node tools/pickup-t15/render-icon.mjs            -> src/main/resources/assets/apocalypse_firstlight/textures/item/pickup_t15.png
+//   node tools/pickup-t15/render-icon.mjs --wiki     -> design/wiki/icons/raw/pickup_t15.png (512 px, for the wiki icon until
+//                                                    Blockbench renders it; wiki/scripts/icons.mjs builds the webp)
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,8 +16,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const BB = path.join(ROOT, 'src/main/blockbench/vehicles');
 const ATLASES = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/entity/vehicle');
-const OUT = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/item/pickup_t15.png');
-const SIZE = 64, SS = 16, MARGIN = 1;
+const WIKI = process.argv.includes('--wiki');
+const OUT = path.join(ROOT, WIKI ? 'design/wiki/icons/raw/pickup_t15.png' : 'src/main/resources/assets/apocalypse_firstlight/textures/item/pickup_t15.png');
+const SIZE = WIKI ? 512 : 64, SS = WIKI ? 4 : 16, MARGIN = WIKI ? 8 : 1;
 const PAINT = 0x7B1E1A, PAINT2 = 0x7B1E1A;   // deep red (VehicleSpawnerItem.PAINTS)
 const CAB_DARK = [22, 25, 28];
 // wheel hubs (pickup_t15.rig.json, blocks); left wheels are the mesh turned 180 deg about Y
