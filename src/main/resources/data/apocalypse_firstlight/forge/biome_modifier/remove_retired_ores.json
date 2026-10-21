@@ -1,0 +1,19 @@
+{
+  "type": "forge:remove_features",
+  "biomes": {
+    "type": "forge:any"
+  },
+  "features": [
+    "minecraft:ore_lapis",
+    "minecraft:ore_lapis_buried",
+    "minecraft:ore_redstone",
+    "minecraft:ore_redstone_lower",
+    "minecraft:ore_diamond",
+    "minecraft:ore_diamond_large",
+    "minecraft:ore_diamond_buried",
+    "minecraft:ore_emerald"
+  ],
+  "steps": [
+    "underground_ores"
+  ]
+}

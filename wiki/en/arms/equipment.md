@@ -53,6 +53,8 @@ See [Inventory and Weight](../guide/inventory)
   - Shields cannot be raised
   - Armor gives no armor points, toughness, knockback resistance or warmth
   - Enchantments have no effect; leather boots no longer walk on powder snow, leather armor no longer stops freezing, and the turtle shell gives no water breathing
-- Enchanting tables, anvils, brewing stands, grindstones, smithing tables and ender chests cannot be used in survival or crafted; enchanted books and bottles o' enchanting cannot be obtained
+- Enchanting tables, anvils, brewing stands, grindstones, smithing tables and ender chests cannot be used in survival or obtained; enchanted books and bottles o' enchanting cannot be obtained
 - The creative inventory no longer lists this gear; `/give` still hands it out, and it does nothing in any game mode
 - Development switch: `vanilla_retirement.enabled` in `config/apocalypse_firstlight-common.toml`; `false` brings the vanilla rules back
+- Vanilla wood and wooden items (crafting tables and torches included) can no longer be obtained either; see [Forests](../world/forests#vanilla-wood)
+- Vanilla bows, crossbows, arrows, tridents, totems of undying and all vanilla tools can no longer be obtained either; see [Vanilla content](../world/#vanilla-content)

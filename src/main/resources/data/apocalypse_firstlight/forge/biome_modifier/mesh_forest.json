@@ -11,7 +11,9 @@
     "apocalypse_firstlight:riparian_forest",
     "apocalypse_firstlight:coastal_swamp_forest",
     "apocalypse_firstlight:montane_conifer_forest",
-    "apocalypse_firstlight:lakeshore_mixed_forest"
+    "apocalypse_firstlight:lakeshore_mixed_forest",
+    "apocalypse_firstlight:alpine_meadow",
+    "apocalypse_firstlight:lake_fen"
   ],
   "remove": [
     "apocalypse_firstlight:eco_trees_grassland",
@@ -24,7 +26,9 @@
     "apocalypse_firstlight:eco_trees_riparian",
     "minecraft:trees_swamp",
     "apocalypse_firstlight:eco_trees_montane",
-    "apocalypse_firstlight:eco_trees_lakeshore"
+    "apocalypse_firstlight:eco_trees_lakeshore",
+    "apocalypse_firstlight:eco_trees_alpine",
+    "apocalypse_firstlight:eco_trees_fen"
   ],
   "feature": "apocalypse_firstlight:mesh_forest"
 }

@@ -94,7 +94,10 @@ CREATURES.update({
     'steppe': [SP('minecraft:rabbit', 6, 2, 3), SP('minecraft:horse', 4, 2, 6), SP('minecraft:cow', 4, 2, 4)],
     'canyon': [SP('minecraft:rabbit', 4, 2, 3)],
 })
-MESH_TREES = {'montane_conifer_forest': 'eco_trees_montane', 'lakeshore_mixed_forest': 'eco_trees_lakeshore'}   # ForestPlan stands
+# ForestPlan stands; the alpine meadow and the fen joined 2026-10-20 (vanilla tree species retired: their vanilla stand-ins
+# never grow while the mesh forest is on)
+MESH_TREES = {'montane_conifer_forest': 'eco_trees_montane', 'lakeshore_mixed_forest': 'eco_trees_lakeshore',
+              'alpine_meadow': 'eco_trees_alpine', 'lake_fen': 'eco_trees_fen'}
 
 
 def tree_files():

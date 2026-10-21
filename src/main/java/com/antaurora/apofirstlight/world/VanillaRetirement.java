@@ -5,6 +5,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -34,6 +35,8 @@ public final class VanillaRetirement {
     public static final TagKey<Item> CREATIVE_HIDDEN = item("retired/creative_hidden");
     /** Vanilla blocks whose use is refused in survival / adventure (enchanting, anvils, brewing, ...). */
     public static final TagKey<Block> WORKSTATIONS = TagKey.create(Registries.BLOCK, id("retired/workstations"));
+    /** V1.2: vanilla mobs that no longer enter the world (every vanilla mob except minecraft:zombie, AFL's infected). */
+    public static final TagKey<EntityType<?>> MOBS = TagKey.create(Registries.ENTITY_TYPE, id("retired/mobs"));
 
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.BooleanValue ENABLED;
@@ -41,7 +44,7 @@ public final class VanillaRetirement {
     static {
         var b = new ForgeConfigSpec.Builder();
         b.push("vanilla_retirement");
-        ENABLED = b.comment("Retire vanilla gear, enchanting, brewing, experience, the Nether and the End (AFL rules).",
+        ENABLED = b.comment("Retire vanilla gear, enchanting, brewing, experience, vanilla mobs, the Nether and the End (AFL rules).",
                         "false restores the vanilla rules for development: recipes after /reload or a restart, the creative",
                         "tabs and worn gear after re-entering the world. Nothing is deleted either way.")
                 .define("enabled", true);
@@ -81,6 +84,10 @@ public final class VanillaRetirement {
 
     public static boolean isUnobtainable(ItemStack stack) {
         return !stack.isEmpty() && enabled() && stack.is(UNOBTAINABLE);
+    }
+
+    public static boolean isRetiredMob(EntityType<?> type) {
+        return enabled() && type.is(MOBS);
     }
 
     /** Creative and spectator players may still open retired workstations to check old builds. */

@@ -3,7 +3,9 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.world.VanillaRetirement;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -46,8 +48,15 @@ public final class VanillaRetirementClient {
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public static void onBuildTab(BuildCreativeModeTabContentsEvent event) {
             if (!VanillaRetirement.enabled()) return;
+            // the vanilla combat and redstone tabs only had leftovers (snowball, egg; wool, string) that the ingredients
+            // and colored blocks tabs also hold: their vanilla entries go, so the empty tabs hide themselves
+            boolean leftoversOnly = event.getTabKey() == CreativeModeTabs.COMBAT || event.getTabKey() == CreativeModeTabs.REDSTONE_BLOCKS;
             var it = event.getEntries().iterator();
-            while (it.hasNext()) if (it.next().getKey().is(VanillaRetirement.CREATIVE_HIDDEN)) it.remove();
+            while (it.hasNext()) {
+                var stack = it.next().getKey();
+                if (stack.is(VanillaRetirement.CREATIVE_HIDDEN)
+                        || leftoversOnly && "minecraft".equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).getNamespace())) it.remove();
+            }
         }
     }
 }

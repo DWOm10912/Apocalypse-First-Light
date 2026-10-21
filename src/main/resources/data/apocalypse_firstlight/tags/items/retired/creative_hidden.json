@@ -1,6 +1,32 @@
 {
   "replace": false,
   "values": [
-    "#apocalypse_firstlight:retired/gear"
+    "#apocalypse_firstlight:retired/gear",
+    "minecraft:experience_bottle",
+    "minecraft:enchanted_book",
+    "#apocalypse_firstlight:retired/wood",
+    "#apocalypse_firstlight:retired/wood_products",
+    "#apocalypse_firstlight:retired/nether",
+    "#apocalypse_firstlight:retired/end",
+    "#apocalypse_firstlight:retired/shulker_boxes",
+    "#apocalypse_firstlight:retired/prismarine",
+    "#apocalypse_firstlight:retired/lapis",
+    "#apocalypse_firstlight:retired/redstone",
+    "#apocalypse_firstlight:retired/sculk",
+    "#apocalypse_firstlight:retired/functional",
+    "#apocalypse_firstlight:retired/ranged",
+    "#apocalypse_firstlight:retired/spawn_eggs",
+    "#apocalypse_firstlight:retired/misc_blocks",
+    "#apocalypse_firstlight:retired/amethyst",
+    "#apocalypse_firstlight:retired/tools",
+    "#apocalypse_firstlight:retired/food",
+    "#apocalypse_firstlight:retired/masonry",
+    "#apocalypse_firstlight:retired/copper_blocks",
+    "#apocalypse_firstlight:retired/gems",
+    "#apocalypse_firstlight:retired/mob_drops",
+    "#apocalypse_firstlight:retired/archaeology",
+    "#apocalypse_firstlight:retired/nature",
+    "#apocalypse_firstlight:retired/storage_blocks",
+    "#apocalypse_firstlight:retired/decor_blocks"
   ]
 }

@@ -76,10 +76,28 @@ public final class VanillaRetirementGameTests {
     private static final List<String> RETIRED_RECIPES = List.of("anvil", "enchanting_table", "brewing_stand", "grindstone",
             "smithing_table", "ender_chest", "shield_decoration", "armor_dye", "shield", "iron_sword", "diamond_sword",
             "wooden_sword", "leather_chestplate", "iron_helmet", "diamond_boots", "golden_leggings", "netherite_sword_smithing",
-            "netherite_chestplate_smithing", "turtle_helmet");
-    private static final List<String> KEPT_RECIPES = List.of("minecraft:crafting_table", "minecraft:oak_planks", "minecraft:stick",
-            "minecraft:wooden_pickaxe", "minecraft:stone_axe", "minecraft:iron_pickaxe", "minecraft:iron_shovel", "minecraft:iron_hoe",
-            "minecraft:furnace", "minecraft:iron_ingot_from_smelting_raw_iron", "minecraft:netherite_pickaxe_smithing",
+            "netherite_chestplate_smithing", "turtle_helmet",
+            // vanilla wood retired 2026-10-20 (docs/gameplay/vanilla_survival_rework_v1.md 4.6): species and wood products
+            "oak_planks", "spruce_stairs", "birch_door", "oak_boat", "stick", "crafting_table", "chest", "torch", "wooden_pickaxe",
+            "ladder", "white_bed", "bookshelf",
+            // V1.2 (2026-10-20, 4.7): nether / end / ocean blocks, lapis, redstone, rails, functional blocks, bows
+            "furnace", "smoker", "blast_furnace", "campfire", "lantern", "beacon", "stonecutter", "cauldron", "redstone_block",
+            "piston", "hopper", "rail", "minecart", "lapis_block", "quartz_block", "purpur_block", "prismarine", "shulker_box",
+            "bow", "crossbow", "arrow", "white_banner", "candle", "netherite_pickaxe_smithing",
+            // V1.3 (2026-10-20, 4.8): tools, food, TNT, iron door / trapdoor, chain, lightning rod, tinted glass, amethyst
+            "stone_axe", "iron_pickaxe", "iron_shovel", "iron_hoe", "diamond_pickaxe", "shears", "compass", "clock", "fishing_rod",
+            "spyglass", "lead", "bread", "cake", "cookie", "golden_apple", "cooked_beef", "tnt", "iron_door", "iron_trapdoor",
+            "chain", "lightning_rod", "tinted_glass", "amethyst_block", "firework_rocket_simple", "bone_meal",
+            // V1.4 (2026-10-20, 4.9): bricks, sandstone, mud bricks, deepslate building blocks, copper blocks, diamond, emerald
+            "bricks", "sandstone", "red_sandstone", "packed_mud", "mud_bricks", "polished_deepslate", "cut_copper", "raw_copper_block",
+            "diamond_block", "emerald_block",
+            // V1.5 (2026-10-20, 4.10): mob drops, storage blocks, slime / honey blocks, blue ice, glazed terracotta, sponge
+            "blaze_powder", "magma_cream", "slime_ball", "iron_block", "gold_block", "coal_block", "raw_iron_block",
+            "raw_gold_block", "slime_block", "honey_block", "blue_ice", "white_glazed_terracotta", "sponge",
+            // V1.6 (2026-10-20, 4.11): iron bars
+            "iron_bars");
+    private static final List<String> KEPT_RECIPES = List.of("minecraft:iron_ingot_from_smelting_raw_iron",
+            "minecraft:glass_bottle", "minecraft:glass_pane", "minecraft:copper_ingot_from_smelting_raw_copper",
             "apocalypse_firstlight:steel_billet_alloying");
 
     private VanillaRetirementGameTests() {
@@ -116,6 +134,7 @@ public final class VanillaRetirementGameTests {
             check(VanillaRetirement.isClosed(Level.NETHER) && VanillaRetirement.isClosed(Level.END) && !VanillaRetirement.isClosed(Level.OVERWORLD),
                     "closed dimensions wrong");
             industrialFurnace(level);
+            mobs(helper, true);
 
             VanillaRetirement.setTestOverrideOff(true);
             gear(level, player, false);
@@ -123,12 +142,14 @@ public final class VanillaRetirementGameTests {
             trades(helper, false);
             check(!MinecraftForge.EVENT_BUS.post(new PotionBrewEvent.Pre(net.minecraft.core.NonNullList.withSize(5, ItemStack.EMPTY))), "brewing cancelled with the switch off");
             check(!VanillaRetirement.isClosed(Level.NETHER), "Nether closed with the switch off");
+            mobs(helper, false);
             VanillaRetirement.setTestOverrideOff(false);
 
-            ApocalypseFirstLight.LOGGER.info("[AFL VANILLA RETIREMENT TEST] PASS recipes (retired gone, wood/tools/furnace/iron/steel kept), "
+            ApocalypseFirstLight.LOGGER.info("[AFL VANILLA RETIREMENT TEST] PASS recipes (retired gone incl. vanilla wood, furnaces, redstone, bows, tools, food; iron/bars/glass/steel kept), "
                     + "attributes incl. NBT, enchantments (damage, protection, level) with NBT untouched, no sweep, shield not raised, "
                     + "sword mines like a hand, leather freeze and powder snow, warmth 0, survival workstations refused and creative allowed, "
-                    + "loot filter, trades filter, brewing, closed dimensions, industrial furnace keeps contamination, switch off restores");
+                    + "loot filter, trades filter, brewing, closed dimensions, industrial furnace keeps contamination, vanilla mobs refused but "
+                    + "zombies spawn, switch off restores");
             helper.succeed();
         } catch (Throwable t) {
             VanillaRetirement.setTestOverrideOff(false);
@@ -231,12 +252,13 @@ public final class VanillaRetirementGameTests {
         for (var item : List.of(Items.GOLDEN_SWORD, Items.IRON_HELMET, Items.SHIELD, Items.ENCHANTED_BOOK, Items.EXPERIENCE_BOTTLE, Items.IRON_INGOT, Items.BREAD))
             roll.add(new ItemStack(item));
         var left = modifier.apply(roll, null);
-        check(left.size() == (retired ? 2 : 7), "loot left " + left + ", retired=" + retired);
+        check(left.size() == (retired ? 1 : 7), "loot left " + left + ", retired=" + retired);
     }
 
     /** Every armorer, weaponsmith and librarian listing, rolled a few times: no retired result with the switch on. */
     private static void trades(GameTestHelper helper, boolean retired) {
-        Villager villager = helper.spawnWithNoFreeWill(EntityType.VILLAGER, new BlockPos(2, 1, 2));
+        // Not added to the level: villagers are retired mobs (V1.2); the listings only need an entity to roll against.
+        Villager villager = EntityType.VILLAGER.create(helper.getLevel());
         RandomSource random = RandomSource.create(20261019L);
         int offers = 0, retiredOffers = 0;
         for (VillagerProfession profession : List.of(VillagerProfession.ARMORER, VillagerProfession.WEAPONSMITH, VillagerProfession.LIBRARIAN)) {
@@ -254,6 +276,16 @@ public final class VanillaRetirementGameTests {
         villager.discard();
         check(offers > 0, "no trades at all");
         check((retiredOffers == 0) == retired, "retired trades " + retiredOffers + ", retired=" + retired);
+    }
+
+    /** V1.2: a fresh cow is refused with the switch on and joins with it off; minecraft:zombie (the infected) always joins. */
+    private static void mobs(GameTestHelper helper, boolean retired) {
+        var cow = helper.spawn(EntityType.COW, new BlockPos(1, 1, 1));
+        var zombie = helper.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(2, 1, 1));
+        check(cow.isAddedToWorld() != retired, "cow added=" + cow.isAddedToWorld() + ", retired=" + retired);
+        check(zombie.isAddedToWorld(), "zombie refused, retired=" + retired);
+        cow.discard();
+        zombie.discard();
     }
 
     /** Industrial furnace takes vanilla-type results through assemble: contaminated dirty water boils to contaminated water. */

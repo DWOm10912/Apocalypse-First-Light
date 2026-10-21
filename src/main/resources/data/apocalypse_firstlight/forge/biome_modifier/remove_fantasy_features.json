@@ -1,0 +1,25 @@
+{
+  "type": "forge:remove_features",
+  "biomes": {
+    "type": "forge:any"
+  },
+  "features": [
+    "minecraft:glow_lichen",
+    "minecraft:spore_blossom",
+    "minecraft:lush_caves_clay",
+    "minecraft:warm_ocean_vegetation",
+    "minecraft:sea_pickle",
+    "minecraft:mushroom_island_vegetation",
+    "minecraft:flower_cherry",
+    "minecraft:fossil_upper",
+    "minecraft:fossil_lower",
+    "minecraft:iceberg_blue",
+    "minecraft:blue_ice"
+  ],
+  "steps": [
+    "local_modifications",
+    "underground_structures",
+    "surface_structures",
+    "vegetal_decoration"
+  ]
+}

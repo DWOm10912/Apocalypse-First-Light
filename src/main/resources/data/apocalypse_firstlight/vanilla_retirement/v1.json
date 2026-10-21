@@ -7,7 +7,18 @@
     "minecraft:smithing_table",
     "minecraft:ender_chest",
     "minecraft:shield_decoration",
-    "minecraft:armor_dye"
+    "minecraft:armor_dye",
+    "minecraft:banner_duplicate",
+    "minecraft:book_cloning",
+    "minecraft:decorated_pot",
+    "minecraft:firework_rocket",
+    "minecraft:firework_star",
+    "minecraft:firework_star_fade",
+    "minecraft:map_cloning",
+    "minecraft:map_extending",
+    "minecraft:shulker_box_coloring",
+    "minecraft:suspicious_stew",
+    "minecraft:tipped_arrow"
   ],
   "remove_recipe_types": [
     "minecraft:smithing_trim"

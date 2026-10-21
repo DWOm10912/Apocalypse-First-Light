@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:iron_bars",
+    "minecraft:tnt",
+    "minecraft:iron_door",
+    "minecraft:iron_trapdoor",
+    "minecraft:lightning_rod",
+    "minecraft:tinted_glass",
+    "minecraft:chain"
+  ]
+}

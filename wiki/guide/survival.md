@@ -66,6 +66,6 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 ## 饥饿
 
-饥饿沿用原版系统，AFL 目前还没有自己的食物。饥饿值 ≤ <V d="stamina/stamina_v1#low_food_level" /> 时耐力恢复 ×<V d="stamina/stamina_v1#regen_low_food" />；肠胃感染和冷 2 及以上会额外消耗饥饿值
+饥饿沿用原版系统，AFL 目前还没有自己的食物；原版食物也已无法获得（<StatusTag s="test" />），新世界里暂时没有吃的。饥饿值 ≤ <V d="stamina/stamina_v1#low_food_level" /> 时耐力恢复 ×<V d="stamina/stamina_v1#regen_low_food" />；肠胃感染和冷 2 及以上会额外消耗饥饿值
 
 <StatusTag s="planned" /> 食物腐败和储存

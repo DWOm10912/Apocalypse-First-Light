@@ -96,6 +96,16 @@ public final class ForestPlan {
         STANDS[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.LAKESHORE_FOREST] = new Stand(
                 "northern mixed forest, interim hemlock - white pine - red maple (sugar maple, birch pending)", 7.0, 1.5,
                 mix(0.05, 0.30, 0.15, 0, 0.25, 0.25), 0.5, 0);
+        // 2026-10-20 (vanilla tree species retired, docs/gameplay/vanilla_survival_rework_v1.md 4.6): the two federal biomes
+        // that still grew vanilla stand-ins get INTERIM sparse stands at about their old rates (alpine 0.2, fen 0.3 trees a
+        // chunk): stunted conifers at the meadows' lower edge; tamarack / black spruce pending, so pine, hemlock, red maple
+        // scattered over the fen
+        STANDS[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.ALPINE_MEADOW] = new Stand(
+                "alpine meadow edge, interim scattered white pine - hemlock (krummholz spruce-fir pending)", 2.0, 0.15,
+                mix(0, 0.60, 0, 0, 0, 0.40), 0.8, 0.6);
+        STANDS[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.LAKE_FEN] = new Stand(
+                "fen, interim scattered red maple - hemlock - white pine (tamarack, black spruce pending)", 2.0, 0.25,
+                mix(0, 0.30, 0, 0, 0.40, 0.30), 0.8, 0.5);
     }
 
     /** Some biome keeps its vanilla trees (P3: none; the buffer rule stays for later species that are not mesh yet). */

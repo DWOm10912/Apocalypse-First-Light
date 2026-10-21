@@ -19,7 +19,7 @@
     "client.DynamicLightProgramMixin", "client.DynamicLightShaderApplyMixin", "client.DynamicLightEmbeddiumShaderMixin",
     "client.DynamicLightEmbeddiumStateMixin", "client.DynamicLightBlockChangeMixin",
     "client.RainVanillaMixin", "client.LightningBoltClientMixin",
-    "client.AflCjkLineBreakMixin"],
+    "client.AflCjkLineBreakMixin", "client.CreativeTabLayoutMixin"],
   "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "BiomeSourceFederalMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkMacroWaterMixin", "WorldCarverStabilityMixin", "LakeFeatureStabilityMixin", "NoiseFillRiverMixin", "RandomStateSeedMixin", "WorldgenLockSaveMixin", "DedicatedServerFederalDefaultMixin", "SurfaceSystemStartupBiomeMixin", "BiomeManagerStartupSurfaceMixin", "ZombieSunlightMixin", "EntityIndustrialWasteSoundMixin", "ExplosionAccessor", "LockedInventoryMixin", "LockedInventorySlotMixin", "LockedInventoryMenuMixin", "LockedInventoryWrapperMixin", "LockedInventoryRecipeMixin", "InventoryGridMixin", "ItemEntityAccessor", "FoodDataThirstMixin", "InventoryMenuEquipmentMixin", "LivingEntityFuelSlipMixin", "FoodDataSurvivorStatsMixin", "PlayerHungerRateMixin",
     "TerrainSmoothBlockStateMixin", "TerrainSmoothBlockCollisionsMixin", "TerrainSmoothLevelMixin", "TerrainSmoothServerLevelMixin", "TerrainSmoothLevelChunkMixin",
     "TerrainSmoothMoveControlMixin", "TerrainSmoothPathNavigationMixin",
