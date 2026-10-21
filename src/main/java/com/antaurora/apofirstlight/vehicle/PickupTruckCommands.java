@@ -30,7 +30,11 @@ import java.util.Map;
  * <ul><li>{@code /afl dev vehicle spawn [colour]}: a truck 5 blocks ahead on the ground, broadside to the player;</li>
  * <li>{@code /afl dev vehicle paint <colour> [second] [wear]}, {@code wear <0..1>}, {@code hood}, {@code tailgate},
  * {@code door <left|right>}, {@code filler}, {@code fuel <litres>}, {@code cargo add} (the held stack goes into the
- * bed's grid: a test until the cargo grid opens), {@code cargo clear}: the nearest truck within 16 blocks.</li></ul>
+ * bed's grid: a test until the cargo grid opens), {@code cargo clear}: the nearest truck within 16 blocks.</li>
+ * <li>{@code /afl dev vehicle key <ignition|seat|glovebox|ashtray|visor_l|visor_r|elsewhere|random>}: puts the nearest
+ * truck's key there (random: as a found truck, mostly elsewhere); {@code key give}: a copy of its key into the inventory
+ * (docs/vehicles/t15_hotwire_v1_design.md section 9). A spawned truck has its key in the ignition (a test truck drives at
+ * once).</li></ul>
  * A colour is a preset name (white, silver, deep_red, forest_green, navy, tan, light_blue, dark_grey) or RRGGBB hex.
  * forest_green alone brings its beige lower band (the two-tone factory option).
  */
@@ -39,17 +43,12 @@ public final class PickupTruckCommands {
     private static final double REACH = 16;
     private static final SimpleCommandExceptionType NO_TRUCK = new SimpleCommandExceptionType(Component.literal("No T15 truck within 16 blocks"));
     private static final SimpleCommandExceptionType BAD_COLOUR = new SimpleCommandExceptionType(Component.literal("Colour: a preset name or RRGGBB hex"));
+    private static final SimpleCommandExceptionType BAD_SPOT = new SimpleCommandExceptionType(Component.literal("Key: ignition, seat, glovebox, ashtray, visor_l, visor_r, elsewhere or random"));
     /** Factory colours (design doc section 2.1): main, second (the lower band; the same for one colour). */
     private static final Map<String, int[]> PRESETS = new LinkedHashMap<>();
     static {
-        PRESETS.put("white", new int[]{0xE9E7E1, 0xE9E7E1});
-        PRESETS.put("silver", new int[]{0xA8ACAF, 0xA8ACAF});
-        PRESETS.put("deep_red", new int[]{0x7B1E1A, 0x7B1E1A});
-        PRESETS.put("forest_green", new int[]{0x2F4A35, 0xCFC19F});
-        PRESETS.put("navy", new int[]{0x1F2C45, 0x1F2C45});
-        PRESETS.put("tan", new int[]{0x8A6A45, 0x8A6A45});
-        PRESETS.put("light_blue", new int[]{0x7D9FB8, 0x7D9FB8});
-        PRESETS.put("dark_grey", new int[]{0x3D3F41, 0x3D3F41});
+        // the factory colours, shared with the Creative spawner
+        for (VehicleSpawnerItem.Paint paint : VehicleSpawnerItem.PAINTS) PRESETS.put(paint.id(), new int[]{paint.main(), paint.second()});
     }
     private static final SuggestionProvider<CommandSourceStack> COLOURS = (c, b) -> SharedSuggestionProvider.suggest(PRESETS.keySet(), b);
 
@@ -111,6 +110,23 @@ public final class PickupTruckCommands {
                             truck.cargoChanged();
                             return report(c.getSource(), truck);
                         })))
+                .then(Commands.literal("key")
+                        .then(Commands.literal("give").executes(c -> {
+                            PickupTruckEntity truck = nearest(c.getSource());
+                            c.getSource().getPlayerOrException().getInventory().add(VehicleKeyItem.forVehicle(truck.getUUID(), "pickup_t15"));
+                            return report(c.getSource(), truck);
+                        }))
+                        .then(Commands.argument("spot", StringArgumentType.word())
+                                .suggests((c, b) -> SharedSuggestionProvider.suggest(java.util.stream.Stream.concat(
+                                        java.util.Arrays.stream(CabStowage.KeySpot.values()).map(s -> s.name().toLowerCase(Locale.ROOT)), java.util.stream.Stream.of("random")), b))
+                                .executes(c -> {
+                                    PickupTruckEntity truck = nearest(c.getSource());
+                                    String name = StringArgumentType.getString(c, "spot");
+                                    CabStowage.KeySpot spot = "random".equalsIgnoreCase(name) ? CabStowage.KeySpot.random(truck.level().getRandom()) : CabStowage.KeySpot.byName(name);
+                                    if (spot == null) throw BAD_SPOT.create();
+                                    truck.setKeySpot(spot);
+                                    return report(c.getSource(), truck);
+                                })))
                 .then(Commands.literal("door")
                         .then(Commands.literal("left").executes(c -> door(c.getSource(), false)))
                         .then(Commands.literal("right").executes(c -> door(c.getSource(), true)))))));
@@ -166,10 +182,11 @@ public final class PickupTruckCommands {
     }
 
     private static int report(CommandSourceStack source, PickupTruckEntity truck) {
-        String text = String.format(Locale.ROOT, "T15 #%d paint=%06X/%06X wear=%.2f hood=%s doors=%s/%s tailgate=%s filler=%s fuel=%d/%d L cargo=%d", truck.getId(),
+        String text = String.format(Locale.ROOT, "T15 #%d paint=%06X/%06X wear=%.2f hood=%s doors=%s/%s tailgate=%s filler=%s fuel=%d/%d L cargo=%d key=%s", truck.getId(),
                 truck.paint(), truck.secondPaint(), truck.wear(), truck.hoodOpen() ? "open" : "shut",
                 truck.doorOpen(false) ? "open" : "shut", truck.doorOpen(true) ? "open" : "shut", truck.tailgateOpen() ? "open" : "shut",
-                truck.fillerOpen() ? "open" : "shut", truck.fuel(), PickupTruckEntity.TANK, truck.cargo().entries().size());
+                truck.fillerOpen() ? "open" : "shut", truck.fuel(), PickupTruckEntity.TANK, truck.cargo().entries().size(),
+                truck.keySpot().name().toLowerCase(Locale.ROOT));
         source.sendSuccess(() -> Component.literal(text), false);
         return 1;
     }

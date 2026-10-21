@@ -9,6 +9,7 @@ import {FX as FRX, FY, FZ, slab, rbox, abox, obox, loftSolid, loftRings, sweep, 
   thicken, rotAbout, splitAtY, triangulate, offsetLoop, circle, clamp, smoothstep, add, sub, mul, norm, cross, dot} from '../vehicle-mesh-kit.mjs';
 import {HW, FX, RX, AY, AR, YB, BELT, ROOF, HF, FX0, CB, BED_F, BED_R, BED_TOP, BED_FL, SPLIT, WS0, WS1, DOOR_R, DOOR_F,
   ROOF_W, sideZ, hy, wsX, HOOD_X0, HOOD_Z, P, sym, WIPERS, GLASS_UP, GLASS_OUT} from './common.mjs';
+import {pineBadge, wordmark} from '../halstead-badge.mjs';
 
 // the outside is two meshes (each inside the Vextris per-mesh limits): 'front' (front clip, hood, cowl) and 'ext' (the rest)
 let MESH = 'ext';
@@ -88,14 +89,16 @@ function frontEnd() {
   const panel = fillet([[-(HW - 0.004), 0.60], [HW - 0.004, 0.60], [HW - 0.004, yTop], [-(HW - 0.004), yTop]], [0.02, 0.02, 0.012, 0.012], 3);
   const gHole = fillet([[-0.455, 0.67], [0.455, 0.67], [0.455, 0.94], [-0.455, 0.94]], 0.012, 2);
   slab(E(B, 'paint'), FRX, panel, [gHole], FX0 - 0.024, FX0 - 0.004, {r0: 0.002, r1: 0.008});
-  // grille: chrome surround, recessed black grid, three chrome bars, a plain centre plate
+  // grille: chrome surround, recessed black grid, three chrome bars, the Halstead badge (B, the three-bar pine keystone,
+  // 2026-10-21) in chrome on a black plate that breaks the bars
   const gOut = fillet([[-0.472, 0.655], [0.472, 0.655], [0.472, 0.955], [-0.472, 0.955]], 0.02, 3);
   slab(E(B, 'chrome'), FRX, gOut, [gHole], FX0 - 0.006, FX0 + 0.024, {r0: 0.002, r1: 0.006});
   slab(E(B, 'trim'), FRX, gHole.map(([z, y]) => [z * 1.002, y]), [], FX0 - 0.03, FX0 - 0.024, {r0: 0});   // dark backing frame edge
   for (let i = 1; i < 12; i++) { const z = -0.455 + 0.91 * i / 12; abox(E(B, 'trim'), FX0 - 0.02, FX0 + 0.008, 0.67, 0.94, z - 0.004, z + 0.004, 0.0015, {rc: 0}); }
   for (let j = 1; j < 6; j++) { const y = 0.67 + 0.27 * j / 6; abox(E(B, 'trim'), FX0 - 0.02, FX0 + 0.006, y - 0.003, y + 0.003, -0.455, 0.455, 0.0015, {rc: 0}); }
   for (const y of [0.733, 0.805, 0.877]) rbox(E(B, 'chrome'), FRX, -0.455, 0.455, y - 0.011, y + 0.011, FX0 + 0.004, FX0 + 0.02, 0.005, {rc: 0.008});
-  rbox(E(B, 'chrome'), FRX, -0.085, 0.085, 0.785, 0.825, FX0 + 0.02, FX0 + 0.03, 0.004, {rc: 0.01});
+  rbox(E(B, 'trim'), FRX, -0.088, 0.088, 0.695, 0.915, FX0 + 0.012, FX0 + 0.026, 0.003, {rc: 0.016});
+  pineBadge(E(B, 'chrome'), FRX, 0, 0.805, 0.105, FX0 + 0.024, FX0 + 0.034, 0.0015);
   // four square headlamps: chrome housings, sealed-beam lenses; amber turn lamps under them
   sym(s => {
     const hz0 = 0.485, hz1 = 0.832, y0 = 0.725, y1 = 0.895;
@@ -458,6 +461,9 @@ function tailgate() {
 export function buildExterior() {
   MESH = 'front';
   fenders(); frontEnd(); hood(); cowl();
+  // HALSTEAD (badge A, 2026-10-21) stamped into the tailgate skin between the split and the crease, 4 mm proud; read from
+  // behind the truck, +z runs left to right. On the tailgate bone but in this mesh: 'ext' has no room under the Vextris limit
+  wordmark(E('tailgate', 'paint'), FRX, 'HALSTEAD', 0, 0.885, 0.09, BED_R - 0.004, BED_R + 0.002);
   // antenna on the right fender ahead of the A pillar
   tube(E('body', 'chrome'), [[WS0 + 0.06, hy(WS0 + 0.06) - 0.004, HW - 0.065], [WS0 + 0.06, hy(WS0 + 0.06) + 0.76, HW - 0.065]], 0.0028, 5);
   lathe(E('body', 'trim'), [WS0 + 0.06, hy(WS0 + 0.06) - 0.004, HW - 0.065], [0, 1, 0], [[0, 0], [0, 0.012], [0.012, 0.007], [0.02, 0]], 10);

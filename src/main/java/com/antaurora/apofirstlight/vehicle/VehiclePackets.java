@@ -36,6 +36,12 @@ public final class VehiclePackets {
     /** Driver's client -> server: the light switch or the high beam (PickupTruckEntity#SWITCH_*). */
     public record Lamps(int entity, int action) {}
 
+    /**
+     * Client -> server: the vehicle spawner's choice (VehicleSpawnerItem): where (the clicked point; floor: a block's top),
+     * the paint (VehicleSpawnerItem#PAINTS), wear 0..1, litres, the key's spot (VehicleSpawnerItem#KEY_SPOTS, or random).
+     */
+    public record Spawn(double x, double y, double z, boolean floor, int paint, float wear, int fuel, int key) {}
+
     /** The client's handling of a {@link Sync} (client/vehicle/VehicleDriving, set at client setup). */
     public static volatile Consumer<Sync> clientSync = s -> {};
 
@@ -60,6 +66,22 @@ public final class VehiclePackets {
             b.writeVarInt(p.entity());
             b.writeVarInt(p.action());
         }, b -> new Lamps(b.readVarInt(), b.readVarInt()), VehiclePackets::onLamps, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(id++, Spawn.class, (p, b) -> {
+            b.writeDouble(p.x());
+            b.writeDouble(p.y());
+            b.writeDouble(p.z());
+            b.writeBoolean(p.floor());
+            b.writeVarInt(p.paint());
+            b.writeFloat(p.wear());
+            b.writeVarInt(p.fuel());
+            b.writeVarInt(p.key());
+        }, b -> new Spawn(b.readDouble(), b.readDouble(), b.readDouble(), b.readBoolean(), b.readVarInt(), b.readFloat(), b.readVarInt(), b.readVarInt()),
+                (p, s) -> {
+                    NetworkEvent.Context context = s.get();
+                    ServerPlayer player = context.getSender();
+                    if (player != null) context.enqueueWork(() -> VehicleSpawnerItem.spawn(player, p));
+                    context.setPacketHandled(true);
+                }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         return id;
     }
 
@@ -68,7 +90,7 @@ public final class VehiclePackets {
         ServerPlayer player = context.getSender();
         if (player != null) context.enqueueWork(() -> {
             if (player.level().getEntity(packet.entity()) instanceof PickupTruckEntity truck && truck.getControllingPassenger() == player)
-                truck.lampSwitch(packet.action());
+                truck.lampSwitch(packet.action(), player);
         });
         context.setPacketHandled(true);
     }

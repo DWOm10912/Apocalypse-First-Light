@@ -69,7 +69,6 @@ public final class WorldInteractionHint {
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
         else if(seatedPrompt(mc)) target=new Target(Component.translatable("hint.apocalypse_firstlight.pickup_t15.get_out"),null);
         else if(riderDoor(mc)!=null) target=riderDoor(mc);
-        else if(drivingPrompt(mc)!=null) target=new Target(Component.translatable(drivingPrompt(mc)),null);
         else if(ground!=null) target=new Target(ground.label(),ground.anchor());
         // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
         else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
@@ -141,26 +140,21 @@ public final class WorldInteractionHint {
         return entity instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Part part?part.getParent():null;
     }
 
-    /**
-     * In the driver's seat (design doc 8.5): "start" while the engine is off (the ignition key, held), "into gear" while
-     * it runs in neutral at a standstill (shift up); nothing once driving.
-     */
-    private static String drivingPrompt(Minecraft mc) {
-        if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity truck)||truck.getControllingPassenger()!=mc.player) return null;
-        if(!truck.engineRunning()) return truck.ignitionPhase()==com.antaurora.apofirstlight.vehicle.physics.Drivetrain.KEY_OFF?"hint.apocalypse_firstlight.pickup_t15.start":null;
-        if(truck.gear()==0&&truck.shiftProgress()>=1&&truck.speedometer(1)<1) return "hint.apocalypse_firstlight.pickup_t15.in_gear";
-        return null;
-    }
-
     /** When the player got onto a truck seat (System.nanoTime), or 0: "get out" shows for the first seconds there. */
     private static long seatedAt;
     private static final long SEATED_PROMPT_NANOS=4_000_000_000L;
 
-    /** A cab rider looking out toward its own open door: shut it (PickupTruckEntity#actionFor; before the driving prompts). */
+    /**
+     * A cab rider looking out toward its own open door (shut it), or at a visor, the glovebox, the ashtray or the key
+     * (CabStowage, 2026-10-21): PickupTruckEntity#actionFor, before the driving prompts.
+     */
     private static Target riderDoor(Minecraft mc) {
         if(!(mc.player.getVehicle() instanceof com.antaurora.apofirstlight.vehicle.PickupTruckEntity truck)) return null;
         var offer=truck.actionFor(mc.player);
-        return offer!=null&&offer.action()==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.CLOSE_DOOR
+        var a=offer==null?null:offer.action();
+        return offer!=null&&(a==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.CLOSE_DOOR||a==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.OPEN_DOOR||offer.compartment()!=null
+                ||a==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.TAKE_KEY||a==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.PUT_KEY_IN
+                ||a==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.NO_KEY||a==com.antaurora.apofirstlight.vehicle.PickupTruckEntity.Action.GRIP_WHEEL)
                 ?new Target(Component.translatable(offer.action().key()),offer.anchor()):null;
     }
 
@@ -180,11 +174,9 @@ public final class WorldInteractionHint {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
         if(key.contains(".ground_item.")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
-        if(key.endsWith(".pickup_t15.start")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(com.antaurora.apofirstlight.client.vehicle.VehicleDriving.IGNITION));
-        if(key.endsWith(".pickup_t15.in_gear")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(com.antaurora.apofirstlight.client.vehicle.VehicleDriving.SHIFT_UP));
         if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
-        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
+        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")||key.endsWith(".pickup_t15.no_key")) return java.util.List.of();
         if(key.endsWith(".tunnel_fixture.dismantle")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyAttack));
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);

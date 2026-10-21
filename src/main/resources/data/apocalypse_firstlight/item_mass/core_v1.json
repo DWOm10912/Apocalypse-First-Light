@@ -155,6 +155,10 @@
       "unit_mass_kg": 0.35,
       "estimated": true
     },
+    "apocalypse_firstlight:vehicle_key": {
+      "unit_mass_kg": 0.015,
+      "estimated": true
+    },
     "apocalypse_firstlight:medical_alcohol": {
       "unit_mass_kg": 0.13,
       "estimated": true

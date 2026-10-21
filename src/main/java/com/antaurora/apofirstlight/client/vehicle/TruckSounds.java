@@ -120,7 +120,7 @@ public final class TruckSounds {
         final PickupTruckEntity truck;
         final Loop idle, mid, load, coast, crank, wind, horn, tyreWet, rain;
         final Loop[] tyres = new Loop[4];
-        boolean running, open[] = new boolean[2], hood, filler, handbrake, hazard, flashLit, first = true;
+        boolean running, open[] = new boolean[2], hood, filler, handbrake, leverWas, hazard, flashLit, first = true;
         int ignition, signal, transfer, sinceCatch = 1000, glowAt = -1, age, crashWait, scrapeWait, skidWait, bumpWait;
         float[] doorAngle = new float[2], travel = new float[4];
         float hoodAngle, tailgateAngle;
@@ -163,6 +163,10 @@ public final class TruckSounds {
                     once(AflSounds.TRUCK_KEY, truck.point(0.55, -0.35, 1.05), 1, 1);
                     glowAt = age + 4;
                 }
+                // the engine stops with the key in: the key turns back to OFF (PickupTruckEntity#keyTurn), the same
+                // key sound the other way (user 2026-10-21)
+                if (!run && running && truck.keyInIgnition())
+                    once(AflSounds.TRUCK_KEY, truck.point(0.55, -0.35, 1.05), 1, 0.94F);
                 if (run && !running) {
                     once(AflSounds.TRUCK_CATCH, truck.point(1.7, 0, 0.8), 1, 1);
                     sinceCatch = 0;
@@ -288,9 +292,13 @@ public final class TruckSounds {
             // into or out of the low range: the lever's longer, heavier throw
             if (!first && mode != transfer) once(AflSounds.TRUCK_TRANSFER, lever, 1, mode == 2 || transfer == 2 ? 0.88F : 1);
             transfer = mode;
-            boolean hb = seat == PickupTruckLayout.DRIVER && PickupTruckEntity.clientInput.get().handbrake();
-            if (!first && hb != handbrake) once(hb ? AflSounds.TRUCK_HANDBRAKE_PULL : AflSounds.TRUCK_HANDBRAKE_RELEASE, lever, 1, 1);
+            // only the driver's own lever (jump, hands on the wheel): getting in or out, or taking hold of the wheel and
+            // letting go, changes the parked handbrake silently (user 2026-10-21)
+            boolean atLever = seat == PickupTruckLayout.DRIVER && truck.wheelHeld();
+            boolean hb = atLever && mc.player.input.jumping;
+            if (!first && atLever && leverWas && hb != handbrake) once(hb ? AflSounds.TRUCK_HANDBRAKE_PULL : AflSounds.TRUCK_HANDBRAKE_RELEASE, lever, 1, 1);
             handbrake = hb;
+            leverWas = atLever;
             horn.set(truck.horn() ? 1 : 0, 1);
             horn.attack = 1;
             horn.release = 0.5F;

@@ -81,7 +81,8 @@ import java.util.function.Supplier;
  * other damage does nothing.
  * <p>Collision ({@link VehicleColliders}): the layout's boxes turned to the heading; who rides it goes through.
  * <p>Seats: the passengers' seats are synced (one entity id per seat). Driver and passenger get in through an open door
- * (it shuts behind them) and out the same side (the door opens; it shuts again), else the other side, the bed, the roof.
+ * and get out only through their own door opened first (user 2026-10-21: a stray sneak no longer drops them out; the
+ * door stays open), else the other side, the bed, the roof.
  * The seats for the player skeleton ({@link SeatedRiderHost}, docs/dev/seated_rider_v1_plan.md): the full orientation,
  * the hands on the steering wheel turning with it, the door's points swinging with the door.
  * <p>Frame: the model's front is -Z (rendered turned by 180 - yaw), so the truck's front points along its look direction.
@@ -115,11 +116,33 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
      * the left / right turn signal (on, or off when it already blinks) and the hazard switch.
      */
     public static final int SWITCH_LIGHTS = 0, SWITCH_HIGH = 1, HORN_ON = 2, HORN_OFF = 3, SIGNAL_LEFT = 4, SIGNAL_RIGHT = 5, SWITCH_HAZARD = 6,
-            SWITCH_WIPER = 7, SWITCH_CLIMATE = 8;
+            SWITCH_WIPER = 7, SWITCH_CLIMATE = 8, INSERT_KEY = 9, RELEASE_WHEEL = 10, KEY_HAND_ON = 11, KEY_HAND_OFF = 12,
+            KEY_HAND_PULL = 13, TAKE_KEY_OUT = 14;
+    /** The driver's key hand ({@link #KEY_HAND}): resting, reaching (and turning, or bringing the key in), pulling the key out. */
+    public static final byte HAND_OFF = 0, HAND_REACH = 1, HAND_PULL = 2;
     /** The wiper switch (WiperSystem.OFF .. HIGH; the stalk right of the column), set on the server from the driver's key. */
     private static final EntityDataAccessor<Byte> WIPER = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
     /** The heater panel's switch (CabClimate.OFF, HEAT, COOL), set on the server from the driver's key. */
     private static final EntityDataAccessor<Byte> CLIMATE = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
+    /**
+     * The key's place (CabStowage.KeySpot ordinal) and the open cab compartments (CabStowage.Compartment bits: visors,
+     * glovebox, ashtray), set on the server (docs/vehicles/t15_hotwire_v1_design.md section 9; 2026-10-21).
+     */
+    private static final EntityDataAccessor<Byte> KEY = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> STOWAGE = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
+    /**
+     * The driver's hands on the steering wheel (user 2026-10-21): seated, the hands rest in the lap and the driver can use
+     * what they hold; a click on the wheel takes hold of it (only then the truck drives: pedals, steering, gears), a click
+     * anywhere lets go. Set on the server; not saved (a driver sits down with the hands free).
+     */
+    private static final EntityDataAccessor<Boolean> WHEEL = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BOOLEAN);
+    /**
+     * The driver's right hand on the ignition key (user 2026-10-21: holding G takes the key out, puts it in and turns it;
+     * a click on the keyhole puts it in or pulls it out, client/vehicle/VehicleDriving): HAND_OFF, HAND_REACH or HAND_PULL,
+     * set on the server from the driver's KEY_HAND_ON / KEY_HAND_PULL / KEY_HAND_OFF so others see the reach; the driver's
+     * own client goes by its own state ({@link #localKeyHand}). Not saved.
+     */
+    private static final EntityDataAccessor<Byte> KEY_HAND = SynchedEntityData.defineId(PickupTruckEntity.class, EntityDataSerializers.BYTE);
     /** Flasher: one flash cycle (ticks; 90 a minute, inside the US 60-120) and its lit share. */
     public static final float BLINK_PERIOD = 20 * 60 / 90.0F, BLINK_ON = 0.5F;
     /**
@@ -166,6 +189,32 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     private final Part front = new Part(this, "front", 1.8F, 1.3F, 1.60), bed = new Part(this, "bed", 1.8F, 1.2F, -1.45);
     private final Part[] parts = {front, bed};
     private float hood, hoodO, tailgate, tailgateO, doorL, doorLO, doorR, doorRO, filler, fillerO;
+    /** Client: the visors, glovebox lid (deg), ashtray drawer (0..1), key turn, turn stalk and light knob (deg) as drawn. */
+    private float visorL, visorLO, visorR, visorRO, glovebox, gloveboxO, ashtray, ashtrayO, keyTurn, keyTurnO, stalk, stalkO, knob, knobO;
+    /** The driver's hands on their way between the lap (0) and the wheel (1). */
+    private float wheelHold, wheelHoldO;
+    /** Ticks the hands take from the lap to the wheel or back (and the right hand to the key and back). */
+    private static final float WHEEL_REACH_TICKS = 7.0F;
+    /** Client: the right hand on its way to the ignition key (0) and on it (1); ticks since it went for it (-1 none). */
+    private float keyReach, keyReachO;
+    private int keyHandTicks = -1;
+    private boolean keyHandWas, keyInserting, keyPulling;
+    /** Client: the local driver's own key hand (ahead of the synced KEY_HAND), -1 for everyone else. */
+    private int localKeyHand = -1;
+    /**
+     * The key on its way in (model frame, the key bone's origin): from beside the right thigh (where the hand took it from
+     * the pocket) to {@link #KEY_APPROACH} in front of the cylinder by {@link #KEY_PATH_OUT} ticks, then in by
+     * {@link #KEY_PATH_IN}. The hand holds its bow {@link #KEY_GRIP_OUT} out along the key (the fist's end on the bow).
+     */
+    private static final double[] KEY_POCKET = {-0.27, 0.95, -0.24};
+    private static final double KEY_APPROACH = 0.07, KEY_GRIP_OUT = 0.085;
+    public static final int KEY_PATH_OUT = 8, KEY_PATH_IN = 12;
+    /**
+     * The key on its way out (a click on the keyhole, or getting out with the engine off; user 2026-10-21): the hand is on
+     * the bow at {@link #KEY_PULL_AT}, draws it clear of the cylinder by {@link #KEY_PULL_OUT} and has it by the right
+     * thigh (the pocket) at {@link #KEY_PULL_END}. The way in, backwards.
+     */
+    public static final int KEY_PULL_AT = 8, KEY_PULL_OUT = 12, KEY_PULL_END = 20;
     private final FluidTank tank = new FluidTank(TANK, f -> f.getFluid().isSame(AflFluids.DIESEL.get())) {
         @Override
         protected void onContentsChanged() {
@@ -328,6 +377,186 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     /** Client: a door's opening angle this frame (degrees, outward). */
     public float doorAngle(boolean right, float partialTick) { return right ? Mth.lerp(partialTick, doorRO, doorR) : Mth.lerp(partialTick, doorLO, doorL); }
 
+    // ---- key and cab compartments (docs/vehicles/t15_hotwire_v1_design.md section 9; CabStowage) ----
+
+    /** Where the truck's key is (synced). */
+    public CabStowage.KeySpot keySpot() { return CabStowage.KeySpot.of(entityData.get(KEY)); }
+
+    /** Server: puts the truck's key there (ELSEWHERE: not in the truck). */
+    public void setKeySpot(CabStowage.KeySpot spot) { entityData.set(KEY, (byte) spot.ordinal()); }
+
+    /** The key is in the ignition: the engine starts with the ignition key (G). */
+    public boolean keyInIgnition() { return keySpot() == CabStowage.KeySpot.IGNITION; }
+
+    /** The driver holds the steering wheel (synced): only then the truck drives. */
+    public boolean wheelHeld() { return entityData.get(WHEEL); }
+
+    /** Server: the driver takes hold of the wheel or lets go. */
+    public void setWheelHeld(boolean held) { entityData.set(WHEEL, held); }
+
+    /** Client, this frame: the driver's hands from the lap (0) to the wheel (1), eased. */
+    public float wheelHold(float partialTick) {
+        float t = Mth.lerp(partialTick, wheelHoldO, wheelHold);
+        return t * t * (3 - 2 * t);
+    }
+
+    /** The driver's right hand is on (or going for) the ignition key: the local driver's own state, else the synced one. */
+    public boolean keyHand() {
+        return keyHandMode() != HAND_OFF;
+    }
+
+    /** HAND_OFF, HAND_REACH or HAND_PULL: the local driver's own state, else the synced one. */
+    public int keyHandMode() {
+        return localKeyHand >= 0 ? localKeyHand : entityData.get(KEY_HAND);
+    }
+
+    /** Client, the local driver (VehicleDriving): what its hand does (HAND_OFF, HAND_REACH, HAND_PULL). */
+    public void setLocalKeyHand(int mode) { localKeyHand = mode; }
+
+    /** Client, this frame: the right hand from where it was (0) to the key (1), eased. */
+    public float keyReach(float partialTick) {
+        float t = Mth.lerp(partialTick, keyReachO, keyReach);
+        return t * t * (3 - 2 * t);
+    }
+
+    /** Client: ticks since the hand went for the key (-1: it is not on its way or there), and whether it brings the key. */
+    public int keyHandTicks() { return keyHandTicks; }
+
+    public boolean keyInserting() { return keyInserting; }
+
+    public boolean keyPulling() { return keyPulling; }
+
+    @Override
+    public boolean handBusy(Entity rider) {
+        return seatOf(rider) == PickupTruckLayout.DRIVER && (keyHand() || keyReach > 0);
+    }
+
+    /** Client, this frame: the key bone's origin (model frame) on its way in from the pocket or out to it, or the cylinder's. */
+    private double[] keyAt(float partialTick) {
+        float[] k = CabStowage.KEY_PIVOT;
+        if (!keyInserting && !keyPulling || keyHandTicks < 0) return new double[]{k[0], k[1], k[2]};
+        double t = keyHandTicks + (keyHand() ? partialTick : 0);
+        double[] approach = {k[0], k[1], k[2] + KEY_APPROACH};
+        if (keyPulling) {
+            if (t <= KEY_PULL_AT) return new double[]{k[0], k[1], k[2]};
+            if (t <= KEY_PULL_OUT) return lerp(new double[]{k[0], k[1], k[2]}, approach, SeatPose.smooth((float) ((t - KEY_PULL_AT) / (KEY_PULL_OUT - KEY_PULL_AT))));
+            return lerp(approach, KEY_POCKET, SeatPose.smooth((float) Math.min(1, (t - KEY_PULL_OUT) / (KEY_PULL_END - KEY_PULL_OUT))));
+        }
+        if (t >= KEY_PATH_IN) return new double[]{k[0], k[1], k[2]};
+        if (t >= KEY_PATH_OUT) return lerp(approach, new double[]{k[0], k[1], k[2]}, SeatPose.smooth((float) ((t - KEY_PATH_OUT) / (KEY_PATH_IN - KEY_PATH_OUT))));
+        return lerp(KEY_POCKET, approach, SeatPose.smooth((float) (t / KEY_PATH_OUT)));
+    }
+
+    private static double[] lerp(double[] a, double[] b, double w) {
+        return new double[]{a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w};
+    }
+
+    /**
+     * Client, this frame: the key in the driver's hand on its way in or out (the key bone's offset from the cylinder,
+     * model frame), or null: not carried (in the cylinder, elsewhere, the hand not bringing it or not there yet; pulled
+     * out, it is in the pocket once the hand lets go).
+     */
+    @Nullable
+    public float[] keyCarry(float partialTick) {
+        boolean carried = keyPulling ? keyHandTicks >= KEY_PULL_AT : keyInserting && !keyInIgnition() && keyReach(partialTick) >= 0.5F;
+        if (!carried || !keyHand() || keyHandTicks < 0) return null;
+        double[] at = keyAt(partialTick);
+        float[] k = CabStowage.KEY_PIVOT;
+        return new float[]{(float) (at[0] - k[0]), (float) (at[1] - k[1]), (float) (at[2] - k[2])};
+    }
+
+    public boolean compartmentOpen(CabStowage.Compartment c) { return (entityData.get(STOWAGE) & c.bit()) != 0; }
+
+    public void setCompartmentOpen(CabStowage.Compartment c, boolean open) {
+        int bits = entityData.get(STOWAGE);
+        entityData.set(STOWAGE, (byte) (open ? bits | c.bit() : bits & ~c.bit()));
+    }
+
+    /** Client, this frame: a visor's turn down (deg), the glovebox lid's (deg), the ashtray drawer out (0..1). */
+    public float visorAngle(boolean right, float partialTick) { return right ? Mth.lerp(partialTick, visorRO, visorR) : Mth.lerp(partialTick, visorLO, visorL); }
+    public float gloveboxAngle(float partialTick) { return Mth.lerp(partialTick, gloveboxO, glovebox); }
+    public float ashtrayOut(float partialTick) { return Mth.lerp(partialTick, ashtrayO, ashtray); }
+    /** Client, this frame: the key's turn in the cylinder, the turn stalk's and the light knob's (deg; CabStowage). */
+    public float keyTurn(float partialTick) { return Mth.lerp(partialTick, keyTurnO, keyTurn); }
+    public float stalkTurn(float partialTick) { return Mth.lerp(partialTick, stalkO, stalk); }
+    public float knobTurn(float partialTick) { return Mth.lerp(partialTick, knobO, knob); }
+
+    /** Each tick: the compartments, the key in the cylinder (OFF, ON with the electrics, START cranking), the stalk and knob ease to their settings. */
+    private void stowageTick() {
+        visorLO = visorL;
+        visorRO = visorR;
+        gloveboxO = glovebox;
+        ashtrayO = ashtray;
+        keyTurnO = keyTurn;
+        wheelHoldO = wheelHold;
+        wheelHold += Mth.clamp((wheelHeld() ? 1 : 0) - wheelHold, -1 / WHEEL_REACH_TICKS, 1 / WHEEL_REACH_TICKS);
+        // the right hand to the key: a new reach starts its path (bringing the key when it is not in yet)
+        keyReachO = keyReach;
+        boolean hand = keyHand();
+        if (hand && !keyHandWas) {
+            keyHandTicks = 0;
+            keyPulling = keyHandMode() == HAND_PULL;
+            keyInserting = !keyPulling && !keyInIgnition();
+        } else if (hand) {
+            keyHandTicks++;
+        } else if (keyReach <= 0) {
+            keyHandTicks = -1;
+        }
+        keyHandWas = hand;
+        keyReach += Mth.clamp((hand ? 1 : 0) - keyReach, -1 / WHEEL_REACH_TICKS, 1 / WHEEL_REACH_TICKS);
+        stalkO = stalk;
+        knobO = knob;
+        visorL = approach(visorL, compartmentOpen(CabStowage.Compartment.VISOR_L) ? CabStowage.VISOR_OPEN : 0, CabStowage.VISOR_OPEN);
+        visorR = approach(visorR, compartmentOpen(CabStowage.Compartment.VISOR_R) ? CabStowage.VISOR_OPEN : 0, CabStowage.VISOR_OPEN);
+        glovebox = approach(glovebox, compartmentOpen(CabStowage.Compartment.GLOVEBOX) ? CabStowage.GLOVEBOX_OPEN : 0, CabStowage.GLOVEBOX_OPEN);
+        ashtray += Mth.clamp((compartmentOpen(CabStowage.Compartment.ASHTRAY) ? 1 : 0) - ashtray, -0.25F, 0.25F);
+        Drivetrain d = drivetrain();
+        float key = d == null || !keyInIgnition() ? 0 : d.ignition == Drivetrain.CRANK ? CabStowage.KEY_START
+                : d.running || d.ignition == Drivetrain.PREHEAT ? CabStowage.KEY_ON : 0;
+        keyTurn += Mth.clamp(key - keyTurn, -20, 20);
+        stalk += Mth.clamp(turnSignal() * CabStowage.STALK_TURN - stalk, -4, 4);
+        knob += Mth.clamp((headlights() ? CabStowage.KNOB_ON : 0) - knob, -20, 20);
+    }
+
+    /** Server: the key goes to the player (the grids, in Creative the inventory); false when there is no room. */
+    private boolean giveKey(ServerPlayer player) {
+        if (!VehicleKeyItem.give(player, VehicleKeyItem.forVehicle(getUUID(), "pickup_t15"))) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("hint.apocalypse_firstlight.pickup_t15.key_no_room"), true);
+            return false;
+        }
+        setKeySpot(CabStowage.KeySpot.ELSEWHERE);
+        cabSound(point(0.55, -0.20, 0.98), com.antaurora.apofirstlight.registry.AflSounds.TRUCK_KEY.get(), 0.6F, 1.15F);
+        return true;
+    }
+
+    /** Server: the player's key for this truck into the ignition, if they carry it and it is not in yet. */
+    private void insertKey(ServerPlayer player) {
+        if (!keyInIgnition() && VehicleKeyItem.take(player, getUUID())) {
+            setKeySpot(CabStowage.KeySpot.IGNITION);
+            cabSound(point(0.55, -0.20, 0.98), com.antaurora.apofirstlight.registry.AflSounds.TRUCK_KEY.get(), 0.6F, 1.0F);
+        }
+    }
+
+    /** Server: a sound in the cab, heard by everyone near. */
+    private void cabSound(Vec3 at, net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
+        level().playSound(null, at.x, at.y, at.z, sound, SoundSource.NEUTRAL, volume, pitch);
+    }
+
+    /** Server: a compartment opened or shut, with a placeholder click (the latch's recording; own takes to be recorded). */
+    private void toggleCompartment(CabStowage.Compartment c) {
+        boolean open = !compartmentOpen(c);
+        setCompartmentOpen(c, open);
+        boolean visor = c == CabStowage.Compartment.VISOR_L || c == CabStowage.Compartment.VISOR_R;
+        Vec3 at = switch (c) {
+            case VISOR_L -> point(0.30, -0.40, 1.78);
+            case VISOR_R -> point(0.30, 0.40, 1.78);
+            case GLOVEBOX -> point(0.58, 0.41, 0.90);
+            case ASHTRAY -> point(0.58, 0, 0.81);
+        };
+        cabSound(at, com.antaurora.apofirstlight.registry.AflSounds.DISTRIBUTION_PANEL_LATCH.get(),
+                visor ? 0.25F : 0.5F, visor ? 0.8F : open ? 1.25F : 1.1F);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -341,6 +570,7 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         doorL = approach(doorL, doorOpen(false) ? DOOR_OPEN : 0.0F, DOOR_OPEN);
         doorR = approach(doorR, doorOpen(true) ? DOOR_OPEN : 0.0F, DOOR_OPEN);
         filler = approach(filler, fillerOpen() ? FILLER_OPEN : 0.0F, FILLER_OPEN);
+        stowageTick();
         float[] setting = HVAC[climateMode()];
         for (int i = 0; i < hvac.length; i++) {
             hvacO[i] = hvac[i];
@@ -429,7 +659,27 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
      * The turn signal keys (user 2026-10-16: one press on, the same again off; the other side's key moves it over) and the
      * hazard switch (on / off; flashes both sides over a turn signal, which comes back when the hazards go off).
      */
-    void lampSwitch(int action) {
+    void lampSwitch(int action, ServerPlayer driver) {
+        if (action == INSERT_KEY) {
+            // the driver's ignition key with the key on them and not yet in: it goes in (VehicleDriving asks once per press)
+            insertKey(driver);
+            return;
+        }
+        if (action == RELEASE_WHEEL) {
+            // the driver's click while holding the wheel: the hands go back to the lap
+            setWheelHeld(false);
+            return;
+        }
+        if (action == TAKE_KEY_OUT) {
+            // the driver's hand drawing the key out of the cylinder (a click on the keyhole, or getting out): with the engine off
+            if (keyInIgnition() && !engineRunning()) giveKey(driver);
+            return;
+        }
+        if (action == KEY_HAND_ON || action == KEY_HAND_PULL || action == KEY_HAND_OFF) {
+            // the driver's hand going for the ignition key, pulling it, or back (VehicleDriving): for everyone else to see
+            entityData.set(KEY_HAND, action == KEY_HAND_ON ? HAND_REACH : action == KEY_HAND_PULL ? HAND_PULL : HAND_OFF);
+            return;
+        }
         int lamps = lamps();
         if (action == SWITCH_LIGHTS) lamps = (lamps & LAMP_HEAD) != 0 ? lamps & ~(LAMP_HEAD | LAMP_HIGH) : (lamps | LAMP_HEAD) & ~LAMP_HIGH;
         else if (action == SWITCH_HIGH) lamps = (lamps & LAMP_HEAD) == 0 ? lamps | LAMP_HEAD | LAMP_HIGH : lamps ^ LAMP_HIGH;
@@ -692,12 +942,16 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
                 ease();
             }
         } else if (local) {
-            // no driver: the server runs it, parked, until it rests; asleep, it looks at its ground now and then
-            if (physics.asleep && tickCount % SLEEP_CHECK == 0 && physics.groundChanged(world)) physics.wake();
+            // no driver: the server runs it, parked, until it rests; asleep, it looks at its ground now and then. An engine
+            // left running idles on (user 2026-10-21), burning fuel, and keeps it awake until it runs dry
+            boolean idling = physics.drivetrain.running && fuel() > 0;
+            if (physics.asleep && (idling || tickCount % SLEEP_CHECK == 0 && physics.groundChanged(world))) physics.wake();
             if (!physics.asleep) {
-                physics.tick(VehicleInput.PARKED, world);
+                physics.tick(idling ? VehicleInput.IDLING : VehicleInput.PARKED, world);
                 place();
-                VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), physics.capture(), false));
+                VehicleState state = physics.capture();
+                if (idling) burn(state.drive());
+                VehiclePackets.toTracking(this, new VehiclePackets.Sync(getId(), state, false));
             }
         }
         wasLocal = local;
@@ -1002,7 +1256,12 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     public enum Action {
         OPEN_HOOD("open"), CLOSE_HOOD("close"), OPEN_DOOR("open_door"), CLOSE_DOOR("close_door"), GET_IN("get_in"),
         OPEN_TAILGATE("lower"), CLOSE_TAILGATE("close"), OPEN_FILLER("open"), CLOSE_FILLER("close"), REFUEL("refuel"),
-        STOP_POUR("stop"), SIT("sit"), CARGO("open"), MOVE_OVER("move_over");
+        STOP_POUR("stop"), SIT("sit"), CARGO("open"), MOVE_OVER("move_over"),
+        // the cab's compartments and the key (2026-10-21; CabStowage)
+        VISOR_DOWN("visor_down"), VISOR_UP("visor_up"), OPEN_GLOVEBOX("open_glovebox"), CLOSE_GLOVEBOX("close_glovebox"),
+        OPEN_ASHTRAY("open_ashtray"), CLOSE_ASHTRAY("close_ashtray"), TAKE_KEY("take_key"),
+        // the keyhole without the key in: it goes in (carried) or "no key" (a prompt only); the steering wheel (2026-10-21)
+        PUT_KEY_IN("insert_key"), NO_KEY("no_key"), GRIP_WHEEL("grip_wheel");
 
         public final String hint;
 
@@ -1013,7 +1272,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     }
 
     /** An action and where its prompt sits (world). */
-    public record Offer(Action action, Vec3 anchor, Pick pick) {}
+    public record Offer(Action action, Vec3 anchor, Pick pick, @Nullable CabStowage.Compartment compartment) {
+        public Offer(Action action, Vec3 anchor, Pick pick) { this(action, anchor, pick, null); }
+    }
 
     /** The part a player looks at (their eyes and view), or null. */
     @Nullable
@@ -1028,8 +1289,11 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     public Offer actionFor(Player player) {
         if (player.isSpectator()) return null;
         if (player.getRootVehicle() == this) {
-            Offer close = closeOwnDoorFor(player);
-            return close != null ? close : moveOverFor(player);
+            Offer close = ownDoorFor(player, true);
+            if (close != null) return close;
+            Offer cab = stowageFor(player);
+            if (cab == null) cab = ownDoorFor(player, false);
+            return cab != null ? cab : moveOverFor(player);
         }
         Pick pick = pick(player);
         if (pick == null) return null;
@@ -1056,18 +1320,86 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         return action == null ? null : new Offer(action, anchor(pick), pick);
     }
 
-    /** A cab rider looking out toward its own open door: shut it (the doors stay as left; user 2026-10-16). */
+    /**
+     * A cab rider looking out toward its own door: shut it when open (the doors stay as left; user 2026-10-16), open it
+     * when shut (user 2026-10-21: the way out, #mayGetOut). {@code open}: the open door's offer, else the shut door's.
+     */
     @Nullable
-    private Offer closeOwnDoorFor(Player player) {
+    private Offer ownDoorFor(Player player, boolean open) {
         int seat = seatOf(player);
         if (seat != PickupTruckLayout.DRIVER && seat != PickupTruckLayout.PASSENGER) return null;
         boolean right = PickupTruckLayout.SEATS[seat].right();
-        if (!doorOpen(right)) return null;
+        if (doorOpen(right) != open) return null;
         double[] d = PickupTruckLayout.localDir(getYRot(), player.getViewVector(1.0F));
         if ((right ? d[1] : -d[1]) < CLOSE_LOOK) return null;
         Pick pick = new Pick(right ? Zone.DOOR_R : Zone.DOOR_L, 0, seat);
-        return new Offer(Action.CLOSE_DOOR, anchor(pick), pick);
+        return new Offer(open ? Action.CLOSE_DOOR : Action.OPEN_DOOR, anchor(pick), pick);
     }
+
+    /**
+     * Whether this rider may get out now (the sneak key, VehicleDriving.Keys#input): from a cab seat only with its own door
+     * open (user 2026-10-21), from the bed always.
+     */
+    public boolean mayGetOut(Entity rider) {
+        int seat = seatOf(rider);
+        if (seat != PickupTruckLayout.DRIVER && seat != PickupTruckLayout.PASSENGER) return true;
+        return doorOpen(PickupTruckLayout.SEATS[seat].right());
+    }
+
+    /**
+     * A cab rider looking at a compartment (a visor, the glovebox, the ashtray: open or shut it; open with the key in it:
+     * take the key), at the key lying on the seat, or at the key in the ignition with the engine off (take it). The
+     * nearest along the look wins.
+     */
+    @Nullable
+    private Offer stowageFor(Player player) {
+        int seat = seatOf(player);
+        if (seat != PickupTruckLayout.DRIVER && seat != PickupTruckLayout.PASSENGER) return null;
+        double[] o = PickupTruckLayout.local(position(), getYRot(), player.getEyePosition()), d = PickupTruckLayout.localDir(getYRot(), player.getViewVector(1.0F));
+        CabStowage.KeySpot key = keySpot();
+        Offer best = null;
+        double near = STOWAGE_REACH;
+        for (CabStowage.Compartment c : CabStowage.Compartment.values()) {
+            double t = CabStowage.box(c).hit(o, d, near);
+            if (t < 0) continue;
+            boolean open = compartmentOpen(c);
+            Action a = open && key.in == c ? Action.TAKE_KEY : switch (c) {
+                case VISOR_L, VISOR_R -> open ? Action.VISOR_UP : Action.VISOR_DOWN;
+                case GLOVEBOX -> open ? Action.CLOSE_GLOVEBOX : Action.OPEN_GLOVEBOX;
+                case ASHTRAY -> open ? Action.CLOSE_ASHTRAY : Action.OPEN_ASHTRAY;
+            };
+            near = t;
+            best = new Offer(a, player.getEyePosition().add(player.getViewVector(1.0F).scale(t)), new Pick(Zone.SEAT, t, seat), c);
+        }
+        // the driver's steering wheel while the hands are free: take hold of it
+        if (seat == PickupTruckLayout.DRIVER && !wheelHeld()) {
+            double t = CabStowage.wheelHit(o, d, near);
+            if (t >= 0) {
+                near = t;
+                best = new Offer(Action.GRIP_WHEEL, player.getEyePosition().add(player.getViewVector(1.0F).scale(t)), new Pick(Zone.SEAT, t, seat), null);
+            }
+        }
+        // a key lying in the open (on the seat)
+        if (key.box != null) {
+            double t = key.box.hit(o, d, near);
+            if (t >= 0) {
+                near = t;
+                best = new Offer(Action.TAKE_KEY, player.getEyePosition().add(player.getViewVector(1.0F).scale(t)), new Pick(Zone.SEAT, t, seat), null);
+            }
+        }
+        // the keyhole, seen through the wheel's gap (it wins over the wheel around it): take the key out with the engine off,
+        // put it in when carried, else "no key"; nothing while the engine runs
+        double t = CabStowage.IGNITION_BOX.hit(o, d, STOWAGE_REACH);
+        if (t >= 0) {
+            Action a = key == CabStowage.KeySpot.IGNITION ? (engineRunning() ? null : Action.TAKE_KEY)
+                    : VehicleKeyItem.carries(player, getUUID()) ? Action.PUT_KEY_IN : Action.NO_KEY;
+            if (a != null) best = new Offer(a, player.getEyePosition().add(player.getViewVector(1.0F).scale(t)), new Pick(Zone.SEAT, t, seat), null);
+        }
+        return best;
+    }
+
+    /** How far a cab rider reaches into the cab (blocks along the look). */
+    private static final double STOWAGE_REACH = 1.6;
 
     /**
      * A cab rider looking at the other cab seat while it is free and the truck (nearly) stands: move over to it (across
@@ -1128,6 +1460,17 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             case OPEN_TAILGATE, CLOSE_TAILGATE -> setTailgateOpen(!tailgateOpen());
             case SIT -> sit(player, offer.pick().seat());
             case MOVE_OVER -> moveOver(player, offer.pick().seat());
+            case VISOR_DOWN, VISOR_UP, OPEN_GLOVEBOX, CLOSE_GLOVEBOX, OPEN_ASHTRAY, CLOSE_ASHTRAY -> toggleCompartment(offer.compartment());
+            case TAKE_KEY -> {
+                if (player instanceof ServerPlayer server) giveKey(server);
+            }
+            case PUT_KEY_IN -> {
+                if (player instanceof ServerPlayer server) insertKey(server);
+            }
+            case GRIP_WHEEL -> {
+                if (getControllingPassenger() == player) setWheelHeld(true);
+            }
+            case NO_KEY -> {}
             case CARGO -> {}
         }
         return offer.action() == Action.REFUEL || offer.action() == Action.STOP_POUR ? InteractionResult.CONSUME : InteractionResult.SUCCESS;
@@ -1173,11 +1516,14 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
     public boolean seated(int seat) { return entityData.get(SEAT[seat]) >= 0; }
 
     /**
-     * Whether the player drives a T15 (its driver's seat): hands on the wheel and the gear lever, so no weapon in hand
-     * (Loadout puts one away, client.inventory.GridClient and the weapon wheel mixin block switching to one; 2026-10-17).
+     * Whether the player drives a T15: in its driver's seat with the hands on the wheel and the gear lever, so no weapon in
+     * hand (Loadout puts one away, client.inventory.GridClient and the weapon wheel mixin block switching to one; 2026-10-17).
+     * Seated with the hands free (2026-10-21) the driver holds and uses things like a passenger; reaching for the ignition
+     * key (G) counts as driving too (a gun goes away, nothing else is used meanwhile).
      */
     public static boolean driving(Entity player) {
-        return player.getVehicle() instanceof PickupTruckEntity truck && truck.getControllingPassenger() == player;
+        return player.getVehicle() instanceof PickupTruckEntity truck && truck.getControllingPassenger() == player
+                && (truck.wheelHeld() || truck.keyHand());
     }
 
     /** The seat this entity rides on, or -1. */
@@ -1267,7 +1613,9 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         int side = cab ? (s.right() ? 1 : -1) : 0;
         float angle = cab ? doorAngle(s.right(), partialTick) : 0F;
         Map<String, Vec3> anchors = new HashMap<>();
-        RiderSeat seat = new RiderSeat(kind, cushion, frame, side, angle / DOOR_OPEN, anchors);
+        boolean driver = kind == RiderSeat.Kind.DRIVER;
+        RiderSeat seat = new RiderSeat(kind, cushion, frame, side, angle / DOOR_OPEN, anchors, driver ? wheelHold(partialTick) : 1F,
+                driver ? keyReach(partialTick) : 0F);
         double ahead = cab ? 0.40 : 0.30;
         anchors.put("floor_l", seat.local(-0.10, floor - s.cushion(), -ahead));
         anchors.put("floor_r", seat.local(0.10, floor - s.cushion(), -ahead));
@@ -1288,6 +1636,12 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
             anchors.put("wheel_rim", model(origin, q, PickupTruckLayout.grip(true, 0, 0)));
             anchors.put("shift_knob", model(origin, q, PickupTruckLayout.knob(lever.fore, lever.across)));
             anchors.put("transfer_knob", model(origin, q, PickupTruckLayout.transferKnob(transferLever.fore)));
+            // the right hand on the ignition key's bow (on its way in, or in the cylinder turning: CabStowage, about +Z)
+            double[] key = keyAt(partialTick);
+            double turn = Math.toRadians(keyInserting && !keyInIgnition() ? 0 : keyTurn(partialTick));
+            anchors.put("key_r", model(origin, q, key[0], key[1], key[2] + KEY_GRIP_OUT));
+            anchors.put("key_axis", model(origin, q, key[0], key[1], key[2] + KEY_GRIP_OUT - 0.1));
+            anchors.put("key_up", model(origin, q, key[0] - 0.1 * Math.sin(turn), key[1] + 0.1 * Math.cos(turn), key[2] + KEY_GRIP_OUT));
         }
         if (side != 0) {
             anchors.put("door_pull", model(origin, q, PickupTruckLayout.door(side, PickupTruckLayout.PULL, angle)));
@@ -1352,14 +1706,24 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         lastSeat.remove(passenger.getId());
         slides.remove(passenger.getId());
         super.removePassenger(passenger);
+        if (seat == PickupTruckLayout.DRIVER) localKeyHand = -1;
         if (level().isClientSide || seat < 0) return;
         entityData.set(SEAT[seat], -1);
+        // the driver takes the key out and along (a full grid leaves it in the ignition; design doc section 9); not on the
+        // way out of the game: the player and the truck are already saved, the key stays in. Not with the engine running:
+        // it idles on with the key at RUN (user 2026-10-21)
+        if (seat == PickupTruckLayout.DRIVER && keyInIgnition() && !engineRunning() && passenger instanceof ServerPlayer player
+                && player.isAlive() && !player.hasDisconnected()) giveKey(player);
+        if (seat == PickupTruckLayout.DRIVER) {
+            setWheelHeld(false);
+            entityData.set(KEY_HAND, HAND_OFF);
+        }
         leftId = passenger.getId();
         leftSeat = seat;
     }
 
     /**
-     * Out of the cab: this side's door opens and they stand outside it (it shuts again), else the other side's, else in
+     * Out of the cab (through the own door the rider opened, VehicleDriving.Keys#input): they stand outside it, else the other side's (it opens), else in
      * the bed, else on the roof. Off a bed seat: on the bed floor beside it, else over the side.
      */
     @Override
@@ -1521,6 +1885,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.define(LAMPS, (byte) 0);
         entityData.define(WIPER, (byte) WiperSystem.OFF);
         entityData.define(CLIMATE, (byte) CabClimate.OFF);
+        entityData.define(KEY, (byte) CabStowage.KeySpot.IGNITION.ordinal());
+        entityData.define(STOWAGE, (byte) 0);
+        entityData.define(WHEEL, false);
+        entityData.define(KEY_HAND, HAND_OFF);
         for (EntityDataAccessor<Integer> seat : SEAT) entityData.define(seat, -1);
     }
 
@@ -1540,6 +1908,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         entityData.set(WIPER, (byte) Math.floorMod(tag.getByte("Wipers"), WiperSystem.MODES));
         entityData.set(CLIMATE, (byte) Math.floorMod(tag.getByte("Climate"), CabClimate.MODES));
         cabAir = tag.contains("CabAir") ? tag.getDouble("CabAir") : Double.NaN;
+        // a truck saved before keys (2026-10-21) keeps its key in the ignition
+        CabStowage.KeySpot spot = tag.contains("Key") ? CabStowage.KeySpot.byName(tag.getString("Key")) : null;
+        setKeySpot(spot != null ? spot : CabStowage.KeySpot.IGNITION);
+        entityData.set(STOWAGE, tag.getByte("Stowage"));
         ListTag seats = tag.getList("Seats", Tag.TAG_COMPOUND);
         for (int i = 0; i < seats.size(); i++) {
             CompoundTag seat = seats.getCompound(i);
@@ -1554,6 +1926,10 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         doorL = doorLO = doorOpen(false) ? DOOR_OPEN : 0.0F;
         doorR = doorRO = doorOpen(true) ? DOOR_OPEN : 0.0F;
         filler = fillerO = fillerOpen() ? FILLER_OPEN : 0.0F;
+        visorL = visorLO = compartmentOpen(CabStowage.Compartment.VISOR_L) ? CabStowage.VISOR_OPEN : 0.0F;
+        visorR = visorRO = compartmentOpen(CabStowage.Compartment.VISOR_R) ? CabStowage.VISOR_OPEN : 0.0F;
+        glovebox = gloveboxO = compartmentOpen(CabStowage.Compartment.GLOVEBOX) ? CabStowage.GLOVEBOX_OPEN : 0.0F;
+        ashtray = ashtrayO = compartmentOpen(CabStowage.Compartment.ASHTRAY) ? 1.0F : 0.0F;
         savedGear = Mth.clamp(tag.getInt("Gear"), -1, 5);
         savedFour = tag.getBoolean("FourWheel");
         savedLow = tag.getBoolean("LowRange");
@@ -1585,6 +1961,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         tag.putBoolean("Hazard", hazard());
         tag.putByte("Wipers", (byte) wiperMode());
         tag.putByte("Climate", (byte) climateMode());
+        tag.putString("Key", keySpot().name());
+        tag.putByte("Stowage", entityData.get(STOWAGE));
         if (!Double.isNaN(cabAir)) tag.putDouble("CabAir", cabAir);
         ListTag seats = new ListTag();
         for (Entity p : getPassengers()) {

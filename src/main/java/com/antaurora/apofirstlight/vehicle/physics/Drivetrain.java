@@ -148,7 +148,8 @@ public final class Drivetrain {
     public void controls(VehicleInput in, double forwardSpeed, double wheelOmega) {
         fuelUsed = 0;
         if (!in.driver()) {
-            running = false;
+            // nobody at the wheel: a running engine idles on while it has fuel (VehicleInput#IDLING)
+            if (!in.fuel()) running = false;
             ignition = KEY_OFF;
             keyHeld = keyLatch = false;
         } else {

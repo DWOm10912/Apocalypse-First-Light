@@ -44,12 +44,13 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 
 | Key | Action |
 |---|---|
-| W / S / A D | Throttle / brake / steer |
-| Space | Handbrake |
-| Sneak | Get out (stop first) |
-| G (hold) | Ignition |
-| R / F | Shift up / down |
-| X | Transfer case: 2H / 4H / 4L |
+| Use (on the steering wheel) | Take hold of the wheel; holding it, Use lets go |
+| W / S / A D | Throttle / brake / steer (holding the wheel) |
+| Space | Handbrake (holding the wheel) |
+| Sneak | Get out (stop first; from a front seat, open your door first) |
+| G (hold) | Start the engine; with it running, switch it off |
+| R / F | Shift up / down (holding the wheel) |
+| X | Transfer case: 2H / 4H / 4L (holding the wheel) |
 | H | Headlights; hold for high beam |
 | Y (hold) | Horn |
 | ← / → | Left / right turn signal |
@@ -58,4 +59,4 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | V | Climate: off / heat / A/C |
 | Caps Lock | Hide / show the key hints at the top right (remembered) |
 
-While you drive, these keys lend out their usual actions
+In the driver's seat these keys lend out their usual actions; R, F and X only while you hold the wheel

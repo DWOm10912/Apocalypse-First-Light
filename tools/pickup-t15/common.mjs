@@ -43,6 +43,18 @@ export const GLASS_OUT = [GLASS_UP[1], -GLASS_UP[0], 0];
 export const WIPERS = (() => { const x = WS0 + 0.042, y = hy(HOOD_X0 - 0.004) - 0.002;
   return {l: {pivot: [x, y, -0.47], arm: 0.49, blade: 0.49, sweep: 105}, r: {pivot: [x, y, 0.03], arm: 0.465, blade: 0.45, sweep: 92}}; })();
 export const HOOD_Z = HW - 0.112;                  // hood half width
+/** The key cylinder's centre on the right side of the column shroud (its axis +z; cab.mjs steering(); 2026-10-21). */
+// the key cylinder (2026-10-21): in the panel face right of the column, its axis toward the driver (-x). On the shroud's
+// right side the horn pad hid it from the driver's eye (user: "我压根就找不到钥匙孔"); here it shows between the right
+// spoke and the rim, left of the centre vents.
+export const KEY_CYL = [0.5725, 0.975, -0.17];
+/**
+ * Where the truck's key lies when it is hidden in the cab (docs/vehicles/t15_hotwire_v1_design.md section 9; 2026-10-21):
+ * the key's origin (its cylinder centre) and its bone it rides on; the renderer lays it flat there (vehicle/PickupTruckLayout
+ * KEY_SPOTS, model frame).
+ */
+export const KEY_SPOTS = {seat: [[0.05, 0.838, 0.18], 'body'], glovebox: [[0.70, 0.848, 0.45], 'glovebox'], ashtray: [[0.62, 0.808, 0], 'ashtray'],
+  visor_l: [[0.29, 1.784, -0.40], 'visor_l'], visor_r: [[0.29, 1.784, 0.40], 'visor_r']};
 
 // bone pivots (concept frame); runtime turns: hood +X 58 deg, tailgate +X 90 deg, doors about Y
 export const PIVOTS = {
@@ -65,6 +77,15 @@ export const PIVOTS = {
   tach: [0.6205, 1.066, -0.445], speedo: [0.6205, 1.066, -0.335], fuel_gauge: [0.6205, 1.08, -0.54], temp_gauge: [0.6205, 1.08, -0.24],
   // heater sliders: each knob at its slot's left end (cab.mjs, heater control panel)
   hvac_mode: [0.558, 0.901, -0.115], hvac_temp: [0.558, 0.901, -0.035], hvac_fan: [0.558, 0.901, 0.045],
+  // keys, stalks, shroud, visors, glovebox, ashtray (2026-10-21, cab.mjs; docs/vehicles/t15_hotwire_v1_design.md): the key turns
+  // about the cylinder axis; the turn stalk like the wiper stalk about the column through its root; the light knob about
+  // the stalk's end; the visors about their rods; the glovebox lid about its bottom edge; the ashtray slides out
+  key: KEY_CYL,
+  turn_stalk: [0.40 + 0.10 * Math.cos(27 * Math.PI / 180), 1.125 - 0.10 * Math.sin(27 * Math.PI / 180), -0.41],
+  light_knob: [0.40 + 0.10 * Math.cos(27 * Math.PI / 180) - 0.05, 1.125 - 0.10 * Math.sin(27 * Math.PI / 180) - 0.024, -0.54],
+  shroud_low: [0.40 + 0.18 * Math.cos(27 * Math.PI / 180) - 0.026 * Math.sin(27 * Math.PI / 180), 1.125 - 0.18 * Math.sin(27 * Math.PI / 180) - 0.026 * Math.cos(27 * Math.PI / 180), -0.37],
+  visor_l: [WS1 - 0.06, ROOF - 0.073, -0.72], visor_r: [WS1 - 0.06, ROOF - 0.073, 0.72],
+  glovebox: [0.577, 0.835, 0.41], ashtray: [0.5775, 0.81, 0],
   wheel: [0, 0, 0],
 };
 export const STEER_TILT = 27;
@@ -88,6 +109,14 @@ export const HINGES = {
   hvac_mode: {axis: [0, 0, 1], open: 0, note: 'heater slider: slides along +z (across, to the right) 0 - 0.06 m; face, bi-level, foot, foot-defrost, defrost'},
   hvac_temp: {axis: [0, 0, 1], open: 0, note: 'heater slider: slides along +z 0 - 0.06 m; cold (left) to hot (right)'},
   hvac_fan: {axis: [0, 0, 1], open: 0, note: 'heater slider: slides along +z 0 - 0.06 m; off (left) to 4 (right)'},
+  key: {axis: [-1, 0, 0], open: -90, note: 'key about the cylinder axis (toward the driver), clockwise as the driver sees it: OFF 0, ACC +25 (back), ON -60, START -90; drawn at a hidden spot (KEY_SPOTS) or not at all when it is elsewhere'},
+  turn_stalk: {axis: [Math.cos(27 * Math.PI / 180), -Math.sin(27 * Math.PI / 180), 0], open: 12, note: 'the column axis through its root: + lifts the (left) stalk: right turn +12, left -12 deg'},
+  light_knob: {axis: [-0.24, -0.144, -0.96], open: 80, note: 'about the stalk end (after the turn stalk): off 0, parking lamps 40, headlamps 80 deg'},
+  shroud_low: {axis: [0, 0, 1], open: 0, note: 'lower column shroud: pried off and hidden by the hotwire (round 3)'},
+  visor_l: {axis: [0, 0, 1], open: 80, note: 'about the rod: + flips the visor down'},
+  visor_r: {axis: [0, 0, 1], open: 80, note: 'about the rod: + flips the visor down'},
+  glovebox: {axis: [0, 0, 1], open: 75, note: 'about the bottom edge: + drops the lid toward the seat'},
+  ashtray: {axis: [-1, 0, 0], open: 0, note: 'drawer: slides toward the cab (-x) 0 - 0.07 m'},
 };
 // interaction / attachment anchors (concept frame, on a bone): seats and eye points for the player skeleton, hands on the
 // wheel, pedals and levers for IK, handles for interaction, lamps for light sources, filler and exhaust for effects
@@ -181,10 +210,10 @@ export const PAINTED = new Set(['paint', 'paint2']);
 // bay (drawn while the hood is open); chassis: frame, axles, running gear, radiator (drawn near).
 export const MESHES = {
   ext: {id: 'pickup_t15', bones: ['body', 'door_l', 'door_r', 'tailgate', 'fuel_door'], atlas: 'ext'},
-  front: {id: 'pickup_t15_front', bones: ['body', 'hood', 'wiper_l', 'wiper_r'], atlas: 'ext'},
+  front: {id: 'pickup_t15_front', bones: ['body', 'hood', 'wiper_l', 'wiper_r', 'tailgate'], atlas: 'ext'},
   wheel: {id: 'pickup_t15_wheel', bones: ['wheel'], atlas: 'ext'},
   cab: {id: 'pickup_t15_cab', bones: ['body', 'door_l', 'door_r', 'steering', 'shift', 'transfer', 'wiper_stalk', 'tach', 'speedo', 'fuel_gauge', 'temp_gauge',
-    'hvac_mode', 'hvac_temp', 'hvac_fan'], atlas: 'cab'},
+    'hvac_mode', 'hvac_temp', 'hvac_fan', 'key', 'turn_stalk', 'light_knob', 'shroud_low', 'visor_l', 'visor_r', 'glovebox', 'ashtray'], atlas: 'cab'},
   seat: {id: 'pickup_t15_seat', bones: ['body'], atlas: 'cab'},
   engine: {id: 'pickup_t15_engine', bones: ['body'], atlas: 'under'},
   chassis: {id: 'pickup_t15_chassis', bones: ['body'], atlas: 'under'},

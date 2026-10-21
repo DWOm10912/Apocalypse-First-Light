@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.client.GroundItemRenderer;
 import com.antaurora.apofirstlight.client.LiquidRenderTypes;
 import com.antaurora.apofirstlight.client.blockmesh.AflMovingGlass;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
+import com.antaurora.apofirstlight.vehicle.CabStowage;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.physics.VehiclePhysics;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
@@ -144,7 +145,9 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     /** The pose of one frame: bone turns (the steering wheel in rad, the wipers and their stalk in deg) and paint. */
     private record State(float hood, float tailgate, float doorL, float doorR, float filler, float steering, float[] main, float[] second, int light,
                          float tach, float speedo, float fuel, float temp, float leverFore, float leverAcross, float transfer,
-                         float wiperL, float wiperR, float wiperStalk, float[] hvac, float[] glow) {}
+                         float wiperL, float wiperR, float wiperStalk, float[] hvac, float[] glow,
+                         CabStowage.KeySpot keySpot, float key, float stalk, float knob, float visorL, float visorR, float glovebox, float ashtray,
+                         float[] keyCarry) {}
     /** The heater sliders' travel (blocks, to the right: model +X; tools/pickup-t15/cab.mjs). */
     private static final float HVAC_TRAVEL = 0.06F;
     /**
@@ -195,6 +198,12 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     /** The bed floor's top (the ribs) and the cargo cell size (blocks): 9 cells along the bed from its front wall, 7 across. */
     private static final float CARGO_FLOOR = 0.772F, CELL_ALONG = 0.20F, CELL_ACROSS = 0.216F, BED_FRONT = 0.40F, BED_HALF = 0.757F;
 
+    /**
+     * Drawing into a screen (VehicleSpawnerScreen's preview), not the world: every part on the CPU, the glass as entity
+     * translucent (the moving-glass queue belongs to the world's terrain pass), no lamp glow, cargo or shadow pass.
+     */
+    public static boolean preview;
+
     public PickupTruckRenderer(EntityRendererProvider.Context context) {
         super(context);
         shadowRadius = 1.6F;
@@ -217,12 +226,15 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
                 truck.leverFore(partialTick), truck.leverAcross(partialTick), truck.transferFore(partialTick),
                 wipers.left(), wipers.right(), wipers.stalk(),
                 new float[]{truck.hvacSlider(0, partialTick), truck.hvacSlider(1, partialTick), truck.hvacSlider(2, partialTick)},
-                glow(truck, doorL, doorR, partialTick));
+                glow(truck, doorL, doorR, partialTick),
+                truck.keySpot(), truck.keyTurn(partialTick), truck.stalkTurn(partialTick), truck.knobTurn(partialTick),
+                truck.visorAngle(false, partialTick), truck.visorAngle(true, partialTick), truck.gloveboxAngle(partialTick), truck.ashtrayOut(partialTick),
+                truck.keyCarry(partialTick));
         double distance = entityRenderDispatcher.distanceToSqr(truck);
         // shadow pass: the outer shell and the road wheels only (the cab, chassis, spare and wear add nothing to the
         // shadow the shell and wheels already cast)
-        boolean shadow = AflShaderCompat.activeShadowPass();
-        boolean interior = !shadow && distance < INTERIOR_RANGE * INTERIOR_RANGE, under = !shadow && distance < UNDER_RANGE * UNDER_RANGE;
+        boolean shadow = !preview && AflShaderCompat.activeShadowPass();
+        boolean interior = preview || !shadow && distance < INTERIOR_RANGE * INTERIOR_RANGE, under = preview || !shadow && distance < UNDER_RANGE * UNDER_RANGE;
         pose.pushPose();
         pose.mulPose(truck.orientation(partialTick, new Quaternionf()));
         // passes 1 and 2 from the GPU cache, sent when the batch closes (a CPU fallback goes to buffers as before)
@@ -246,17 +258,17 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
                 draw(FRONT, pose, buffers, s, MeshLayer.CUTOUT, WEAR[level]);
             }
         }
-        if (distance < INTERIOR_RANGE * INTERIOR_RANGE) drawCargo(truck, pose, buffers, light);
+        if (!preview && distance < INTERIOR_RANGE * INTERIOR_RANGE) drawCargo(truck, pose, buffers, light);
         if (!shadow) {
             // pass 3: glass, queued as terrain glass (after the translucent terrain, so after every entity) with or without a
             // shader pack: entity glass is flushed as soon as the next entity asks for another render type, writing its depth
             // before the passengers are drawn, and a rider behind a shut window vanished (user 2026-10-16, no shader pack)
-            TextureAtlasSprite glass = AflStaticMeshModel.atlasSprite(BLOCK_GLASS);
+            TextureAtlasSprite glass = preview ? null : AflStaticMeshModel.atlasSprite(BLOCK_GLASS);
             glass(EXT, pose, buffers, s, glass);
             glass(FRONT, pose, buffers, s, glass);
             if (interior) glass(CAB, pose, buffers, s, glass);
             // pass 4, without a shader pack (no bloom there): the lit lenses once more, added onto themselves
-            if (!AflShaderCompat.shaderPackInUse()) {
+            if (!AflShaderCompat.shaderPackInUse() && !preview) {
                 lampGlow(EXT, pose, buffers, s);
                 lampGlow(FRONT, pose, buffers, s);
                 if (interior) lampGlow(CAB, pose, buffers, s);
@@ -274,7 +286,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         MeshModel mesh = VextrisMeshes.byGeometry(piece.geometry());
         if (mesh == null || layer == MeshLayer.TRANSLUCENT && !mesh.hasTranslucent()) return;
         ResourceLocation texture = overlay != null ? overlay : piece.texture();
-        if (layer == MeshLayer.CUTOUT && MeshGpuCache.enabled()) {
+        if (layer == MeshLayer.CUTOUT && MeshGpuCache.enabled() && !preview) {
             cached(mesh, pose, buffers, s, texture, overlay != null);
             return;
         }
@@ -295,7 +307,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
      */
     private static void cached(MeshModel mesh, PoseStack pose, MultiBufferSource buffers, State s, ResourceLocation texture, boolean wear) {
         for (MeshBone bone : mesh.roots()) {
-            if (bone.neverRender() || mesh.parts(bone.name(), MeshLayer.CUTOUT).isEmpty()) continue;
+            if (bone.neverRender() || hidden(bone.name(), s) || mesh.parts(bone.name(), MeshLayer.CUTOUT).isEmpty()) continue;
             pose.pushPose();
             pose.translate(bone.pivotX(), bone.pivotY(), bone.pivotZ());
             hinge(pose, bone.name(), s);
@@ -332,7 +344,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
     private static void drawParts(MeshModel mesh, PoseStack pose, VertexConsumer out, State s, MeshLayer layer, boolean wear,
                                   MeshRenderer.PartFilter filter, MeshRenderer.Topology topology) {
         for (MeshBone bone : mesh.roots()) {
-            if (bone.neverRender()) continue;
+            if (bone.neverRender() || hidden(bone.name(), s)) continue;
             List<MeshPart> parts = mesh.parts(bone.name(), layer);
             if (parts.isEmpty()) continue;
             pose.pushPose();
@@ -363,7 +375,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         if (mesh == null) return;
         VertexConsumer out = null;
         for (MeshBone bone : mesh.roots()) {
-            if (bone.neverRender()) continue;
+            if (bone.neverRender() || hidden(bone.name(), s)) continue;
             boolean pushed = false;
             for (MeshPart part : mesh.parts(bone.name(), MeshLayer.CUTOUT)) {
                 Lamp lamp = lamp(part);
@@ -391,7 +403,7 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
         if (sprite != null) {
             boolean queued = true;
             for (MeshBone bone : mesh.roots()) {
-                if (bone.neverRender()) continue;
+                if (bone.neverRender() || hidden(bone.name(), s)) continue;
                 List<MeshPart> parts = mesh.parts(bone.name(), MeshLayer.TRANSLUCENT);
                 if (parts.isEmpty()) continue;
                 pose.pushPose();
@@ -403,6 +415,49 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             if (queued) return;
         }
         draw(piece, pose, buffers, s, MeshLayer.TRANSLUCENT, null);
+    }
+
+    /** Bones not drawn this frame: the key when it is not in the truck (nor in the driver's hand on its way in). */
+    private static boolean hidden(String bone, State s) {
+        return bone.equals("key") && s.keySpot() == CabStowage.KeySpot.ELSEWHERE && s.keyCarry() == null;
+    }
+
+    /**
+     * The key (pose at its pivot, the cylinder centre): in the ignition turned to OFF / ON / START; elsewhere in the cab
+     * lying flat at its spot, riding with the compartment it is in (vehicle/CabStowage); in the driver's hand on its way
+     * in (G, PickupTruckEntity#keyCarry) pointing at the cylinder.
+     */
+    private static void keyPose(PoseStack pose, State s) {
+        if (s.keyCarry() != null) {
+            pose.translate(s.keyCarry()[0], s.keyCarry()[1], s.keyCarry()[2]);
+            return;
+        }
+        CabStowage.KeySpot spot = s.keySpot();
+        if (spot.at == null) {
+            pose.mulPose(Axis.ZP.rotationDegrees(s.key()));
+            return;
+        }
+        float[] k = CabStowage.KEY_PIVOT;
+        pose.translate(-k[0], -k[1], -k[2]);
+        if (spot.in != null) {
+            float[] c = switch (spot.in) {
+                case VISOR_L -> CabStowage.VISOR_L_PIVOT;
+                case VISOR_R -> CabStowage.VISOR_R_PIVOT;
+                case GLOVEBOX -> CabStowage.GLOVEBOX_PIVOT;
+                case ASHTRAY -> CabStowage.ASHTRAY_PIVOT;
+            };
+            pose.translate(c[0], c[1], c[2]);
+            switch (spot.in) {
+                case VISOR_L -> pose.mulPose(Axis.XP.rotationDegrees(s.visorL()));
+                case VISOR_R -> pose.mulPose(Axis.XP.rotationDegrees(s.visorR()));
+                case GLOVEBOX -> pose.mulPose(Axis.XP.rotationDegrees(s.glovebox()));
+                case ASHTRAY -> pose.translate(0, 0, s.ashtray() * CabStowage.ASHTRAY_OUT);
+            }
+            pose.translate(-c[0], -c[1], -c[2]);
+        }
+        pose.translate(spot.at[0], spot.at[1], spot.at[2]);
+        pose.mulPose(Axis.YP.rotationDegrees(spot.yaw + CabStowage.KEY_FLAT_YAW));
+        pose.mulPose(Axis.ZP.rotationDegrees(CabStowage.KEY_FLAT_ROLL));
     }
 
     /** A bone's hinge turn (hood and tailgate about +X, doors about Y, outward). */
@@ -427,6 +482,21 @@ public final class PickupTruckRenderer extends EntityRenderer<PickupTruckEntity>
             case "hvac_mode" -> pose.translate(s.hvac()[0] * HVAC_TRAVEL, 0, 0);
             case "hvac_temp" -> pose.translate(s.hvac()[1] * HVAC_TRAVEL, 0, 0);
             case "hvac_fan" -> pose.translate(s.hvac()[2] * HVAC_TRAVEL, 0, 0);
+            // the cab's key, stalk, knob and compartments (2026-10-21; vehicle/CabStowage, tools/pickup-t15 PIVOTS / HINGES)
+            case "turn_stalk" -> pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.stalk()), 0.0F, COLUMN_Y, COLUMN_Z));
+            case "light_knob" -> {
+                // with the turn stalk about its root, then about the stalk's end
+                float[] p = CabStowage.STALK_PIVOT, k = CabStowage.KNOB_PIVOT, a = CabStowage.KNOB_AXIS;
+                pose.translate(p[0] - k[0], p[1] - k[1], p[2] - k[2]);
+                pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.stalk()), 0.0F, COLUMN_Y, COLUMN_Z));
+                pose.translate(k[0] - p[0], k[1] - p[1], k[2] - p[2]);
+                pose.mulPose(new Quaternionf().rotationAxis((float) Math.toRadians(s.knob()), a[0], a[1], a[2]));
+            }
+            case "visor_l" -> pose.mulPose(Axis.XP.rotationDegrees(s.visorL()));
+            case "visor_r" -> pose.mulPose(Axis.XP.rotationDegrees(s.visorR()));
+            case "glovebox" -> pose.mulPose(Axis.XP.rotationDegrees(s.glovebox()));
+            case "ashtray" -> pose.translate(0, 0, s.ashtray() * CabStowage.ASHTRAY_OUT);
+            case "key" -> keyPose(pose, s);
             default -> { }
         }
     }

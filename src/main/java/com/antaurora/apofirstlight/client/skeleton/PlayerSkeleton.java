@@ -365,8 +365,11 @@ public final class PlayerSkeleton {
      */
     public static boolean ownsHeldItem(LivingEntity entity, ItemStack stack) {
         Draw d = DRAWS.peek();
-        return d != null && d.player == entity && d.solved != null && d.solved.hold != null
-                && (stack == d.solved.hold.stack() || stack == d.player.getMainHandItem());
+        if (d == null || d.player != entity) return false;
+        // a seated hand busy with the vehicle's controls (the T15's key, SeatedRiderHost#handBusy): its item is put by
+        if (stack == d.player.getMainHandItem() && entity.getVehicle() instanceof com.antaurora.apofirstlight.skeleton.seat.SeatedRiderHost host
+                && host.handBusy(entity)) return true;
+        return d.solved != null && d.solved.hold != null && (stack == d.solved.hold.stack() || stack == d.player.getMainHandItem());
     }
 
     /**
@@ -657,6 +660,8 @@ public final class PlayerSkeleton {
                 rs.frame().transform(new Vector3f(0, 0, 1)), toModel));
         s.doorSide = rs.doorSide();
         s.door = rs.door();
+        s.hold = rs.hold();
+        s.reach = rs.reach();
         for (var e : rs.anchors().entrySet()) s.anchors.put(e.getKey(), model(e.getValue(), origin, toModel));
         return s;
     }
@@ -693,6 +698,8 @@ public final class PlayerSkeleton {
         if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
         // the own one once the held item's view model has slid out of view (FirstPersonActionView), the two never at once
         if (SkeletonActions.drawsFirstPerson(p) && (p != Minecraft.getInstance().player || FirstPersonActionView.bodyHands())) return true;
+        // a seated hand on the vehicle's controls (the T15's key): the body's arms show it
+        if (p.getVehicle() instanceof com.antaurora.apofirstlight.skeleton.seat.SeatedRiderHost host && host.handBusy(p)) return true;
         if (p.isUsingItem()) return false;
         return p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty();
     }

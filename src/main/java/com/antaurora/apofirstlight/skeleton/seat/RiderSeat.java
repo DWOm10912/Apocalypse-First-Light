@@ -26,13 +26,31 @@ import java.util.Map;
  *                  <li>{@code shift_knob}: the gear lever's knob, moved with the lever (while shifting the host puts
  *                  {@code grip_r} on it);</li>
  *                  <li>{@code transfer_knob}: the transfer case lever's knob (the same while it is moved);</li>
+ *                  <li>{@code key_r}, {@code key_axis}, {@code key_up}: DRIVER, the right hand's hold on the ignition key (on
+ *                  its way from the lap, in, turning), a point further in along the key and one along the key's blade as
+ *                  it is turned now (the wrist turns with it), as far as {@link #reach};</li>
  *                  <li>planned: {@code pedal_clutch}, {@code pedal_brake}, {@code pedal_accel} (out of the seated legs'
  *                  reach in the T15: docs/dev/seated_rider_v1_plan.md 13).</li>
  *                  </ul>
+ * @param hold      DRIVER: the hands from the lap (0) to the wheel's grips (1), eased by the host (the T15: the driver takes
+ *                  hold of the wheel to drive, user 2026-10-21); 1 for other seats
+ * @param reach     DRIVER: the right hand from wherever it is (0) to the ignition key ({@code key_r}, 1), eased by the
+ *                  host (the T15's start, user 2026-10-21); 0 for other seats
  */
-public record RiderSeat(Kind kind, Vec3 cushion, Quaternionf frame, int doorSide, float door, Map<String, Vec3> anchors) {
+public record RiderSeat(Kind kind, Vec3 cushion, Quaternionf frame, int doorSide, float door, Map<String, Vec3> anchors, float hold,
+                        float reach) {
+    /** A seat whose driver always holds the wheel. */
+    public RiderSeat(Kind kind, Vec3 cushion, Quaternionf frame, int doorSide, float door, Map<String, Vec3> anchors) {
+        this(kind, cushion, frame, doorSide, door, anchors, 1F, 0F);
+    }
+
+    /** A seat whose driver does not reach for a key. */
+    public RiderSeat(Kind kind, Vec3 cushion, Quaternionf frame, int doorSide, float door, Map<String, Vec3> anchors, float hold) {
+        this(kind, cushion, frame, doorSide, door, anchors, hold, 0F);
+    }
+
     public enum Kind {
-        /** Hands on the wheel. */
+        /** Hands on the wheel (as far as {@link #hold}; in the lap the rest of the way). */
         DRIVER,
         /** A seat in a cab: hands in the lap. */
         PASSENGER,

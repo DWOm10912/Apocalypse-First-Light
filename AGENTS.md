@@ -96,3 +96,10 @@ For AFL building, structure, WorldEdit, NBT, `minecraft-builder-skill`, city, fa
 `docs/authoring/afl_industrial_palette_v1.md`
 
 Use the current repository Registry IDs and BlockState definitions as the source of truth. Do not substitute vanilla blocks for documented AFL structure blocks unless the task explicitly requires it. If a custom block orientation is visually uncertain, build a small in-game test before large-scale construction.
+
+# Mesh Items In Hand
+
+Every new Mesh item must be fitted for first-person and third-person hands in the same task (user 2026-10-21). The
+item must sit in the hand, never float above it. Never ship the material bake's default block-style held transforms.
+Compute the held `display` from the item's grip point. The method and the reference grip are in
+`docs/models/equipment_meshes_v1.md`, section "手持适配规则". Check the numbers offline before the in-game check.

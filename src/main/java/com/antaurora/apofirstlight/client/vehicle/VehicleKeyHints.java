@@ -21,7 +21,8 @@ import java.util.List;
 /**
  * The driving keys in the key hint panel, top right (user 2026-10-17; design doc 8.12): in the driver's seat, one row
  * per vehicle key as bound now (AflKeyHint shows the player's own binding and lights up on a press). The start key only
- * while the key is off, get out only while slow enough (PickupTruckEntity#GET_OUT_SPEED), 2H / 4H only on a vehicle with a
+ * while the key is off (the same key "switch off" while the engine runs, user 2026-10-21), get out only while slow enough
+ * (PickupTruckEntity#GET_OUT_SPEED) and with the own door open (PickupTruckEntity#mayGetOut), 2H / 4H only on a vehicle with a
  * transfer case. Movement keys (throttle, brake, steering) are left out: they are the walking keys. The hints key (Caps Lock,
  * VehicleDriving.HINTS) fades the panel out and back in (user 2026-10-18), remembered in the client config; its own row
  * comes last so a player finds it.
@@ -52,19 +53,28 @@ public final class VehicleKeyHints {
     };
 
     private static void rows(PickupTruckEntity truck, Minecraft mc, List<AflKeyHintPanel.Row> rows) {
-        if (!truck.engineRunning() && truck.ignitionPhase() == Drivetrain.KEY_OFF)
+        if (!truck.engineRunning() && truck.ignitionPhase() == Drivetrain.KEY_OFF
+                && (truck.keyInIgnition() || com.antaurora.apofirstlight.vehicle.VehicleKeyItem.carries(mc.player, truck.getUUID())))
             rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.IGNITION), t("start")));
-        rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.SHIFT_UP), t("shift_up")));
-        rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.SHIFT_DOWN), t("shift_down")));
-        rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyJump), t("handbrake")));
+        else if (truck.engineRunning() && truck.keyInIgnition())
+            rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.IGNITION), t("stop_engine")));
+        // the hands on the wheel (user 2026-10-21): the levers and the handbrake with them; free, a click on the wheel
+        if (truck.wheelHeld()) {
+            rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyUse), t("release_wheel")));
+            rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.SHIFT_UP), t("shift_up")));
+            rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.SHIFT_DOWN), t("shift_down")));
+            rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyJump), t("handbrake")));
+        } else {
+            rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyUse), t("grip_wheel")));
+        }
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.LIGHTS), t("lights")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.SIGNAL_LEFT), AflKeyHint.of(VehicleDriving.SIGNAL_RIGHT), t("signals")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.HAZARD), t("hazard")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.WIPERS), t("wipers")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.CLIMATE), t("climate")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.HORN), t("horn")));
-        if (VehicleSpec.T15.fourWheelSpeed > 0) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.TRANSFER), t("transfer")));
-        if (truck.speed() <= PickupTruckEntity.GET_OUT_SPEED) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyShift), t("get_out")));
+        if (VehicleSpec.T15.fourWheelSpeed > 0 && truck.wheelHeld()) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.TRANSFER), t("transfer")));
+        if (truck.speed() <= PickupTruckEntity.GET_OUT_SPEED && truck.mayGetOut(mc.player)) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyShift), t("get_out")));
         rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(VehicleDriving.HINTS), t("hide_hints")));
     }
 

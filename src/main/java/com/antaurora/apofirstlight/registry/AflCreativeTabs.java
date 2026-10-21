@@ -270,7 +270,8 @@ public final class AflCreativeTabs {
             AflItems.CANVAS_BACKPACK,
             AflItems.HIKING_BACKPACK,
             AflItems.GUN_SLING,
-            AflItems.PISTOL_HOLSTER);
+            AflItems.PISTOL_HOLSTER,
+            AflItems.VEHICLE_KEY);
 
     // Thirst V1: water first; later drinks, food and medicine
     public static final RegistryObject<CreativeModeTab> SURVIVAL_SUPPLIES = tab("survival_supplies", MELEE_AND_EQUIPMENT,
@@ -283,6 +284,10 @@ public final class AflCreativeTabs {
             AflItems.BANDAGE,
             AflItems.MEDICAL_ALCOHOL,
             AflItems.SPLINT);
+
+    // Vehicles (2026-10-21): each one a spawner (VehicleSpawnerItem), its icon a small side view
+    public static final RegistryObject<CreativeModeTab> VEHICLES = tab("vehicles", SURVIVAL_SUPPLIES, AflItems.PICKUP_T15,
+            AflItems.PICKUP_T15);
 
     /** Title key itemGroup.apocalypse_firstlight.&lt;id&gt;; placed after {@code after} when given. */
     @SafeVarargs

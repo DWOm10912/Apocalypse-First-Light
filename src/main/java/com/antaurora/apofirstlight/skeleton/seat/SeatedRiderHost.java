@@ -21,4 +21,10 @@ public interface SeatedRiderHost {
     /** Client: a seat as it is this frame, or null when there is no such seat. */
     @Nullable
     RiderSeat riderSeat(int seat, float partialTick);
+
+    /**
+     * Client: this rider's hand is busy with the vehicle's controls (the T15's ignition key): the first-person body's arms
+     * show it, the item in that hand is not drawn.
+     */
+    default boolean handBusy(Entity rider) { return false; }
 }

@@ -55,7 +55,8 @@
     "body",
     "hood",
     "wiper_l",
-    "wiper_r"
+    "wiper_r",
+    "tailgate"
    ],
    "parts": [
     "body_paint2",
@@ -74,7 +75,8 @@
     "wiper_l_trim",
     "wiper_l_rubber",
     "wiper_r_trim",
-    "wiper_r_rubber"
+    "wiper_r_rubber",
+    "tailgate_paint"
    ]
   },
   "pickup_t15_wheel": {
@@ -106,7 +108,15 @@
     "temp_gauge",
     "hvac_mode",
     "hvac_temp",
-    "hvac_fan"
+    "hvac_fan",
+    "key",
+    "turn_stalk",
+    "light_knob",
+    "shroud_low",
+    "visor_l",
+    "visor_r",
+    "glovebox",
+    "ashtray"
    ],
    "parts": [
     "body_dash",
@@ -117,6 +127,13 @@
     "hvac_temp_vinyl",
     "hvac_fan_vinyl",
     "body_vinyl",
+    "ashtray_dash",
+    "ashtray_trim",
+    "ashtray_steel",
+    "glovebox_dash",
+    "glovebox_trim",
+    "glovebox_panel",
+    "body_felt",
     "body_steel",
     "body_dial",
     "tach_needle",
@@ -124,10 +141,16 @@
     "fuel_gauge_needle",
     "temp_gauge_needle",
     "body_glass",
+    "shroud_low_dash",
     "body_under",
     "body_chrome",
+    "key_steel",
+    "key_trim",
     "wiper_stalk_dash",
     "wiper_stalk_trim",
+    "turn_stalk_dash",
+    "light_knob_trim",
+    "light_knob_headliner",
     "steering_vinyl",
     "steering_trim",
     "body_mat",
@@ -146,6 +169,8 @@
     "body_paint",
     "body_headliner",
     "body_lamp_dome",
+    "visor_r_headliner",
+    "visor_l_headliner",
     "body_mirror"
    ]
   },
@@ -481,6 +506,126 @@
    ],
    "open_deg": 0,
    "note": "heater slider: slides along +z 0 - 0.06 m; off (left) to 4 (right)"
+  },
+  "key": {
+   "parent": "body",
+   "pivot": [
+    -0.17,
+    0.975,
+    -0.5725
+   ],
+   "axis": [
+    0,
+    0,
+    1
+   ],
+   "open_deg": -90,
+   "note": "key about the cylinder axis (toward the driver), clockwise as the driver sees it: OFF 0, ACC +25 (back), ON -60, START -90; drawn at a hidden spot (KEY_SPOTS) or not at all when it is elsewhere"
+  },
+  "turn_stalk": {
+   "parent": "body",
+   "pivot": [
+    -0.41,
+    1.079601,
+    -0.489101
+   ],
+   "axis": [
+    0,
+    -0.45399,
+    -0.891007
+   ],
+   "open_deg": 12,
+   "note": "the column axis through its root: + lifts the (left) stalk: right turn +12, left -12 deg"
+  },
+  "light_knob": {
+   "parent": "body",
+   "pivot": [
+    -0.54,
+    1.055601,
+    -0.439101
+   ],
+   "axis": [
+    -0.96,
+    -0.144,
+    0.24
+   ],
+   "open_deg": 80,
+   "note": "about the stalk end (after the turn stalk): off 0, parking lamps 40, headlamps 80 deg"
+  },
+  "shroud_low": {
+   "parent": "body",
+   "pivot": [
+    -0.37,
+    1.020116,
+    -0.548577
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 0,
+   "note": "lower column shroud: pried off and hidden by the hotwire (round 3)"
+  },
+  "visor_l": {
+   "parent": "body",
+   "pivot": [
+    -0.72,
+    1.772,
+    -0.36
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 80,
+   "note": "about the rod: + flips the visor down"
+  },
+  "visor_r": {
+   "parent": "body",
+   "pivot": [
+    0.72,
+    1.772,
+    -0.36
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 80,
+   "note": "about the rod: + flips the visor down"
+  },
+  "glovebox": {
+   "parent": "body",
+   "pivot": [
+    0.41,
+    0.835,
+    -0.577
+   ],
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "open_deg": 75,
+   "note": "about the bottom edge: + drops the lid toward the seat"
+  },
+  "ashtray": {
+   "parent": "body",
+   "pivot": [
+    0,
+    0.81,
+    -0.5775
+   ],
+   "axis": [
+    0,
+    0,
+    1
+   ],
+   "open_deg": 0,
+   "note": "drawer: slides toward the cab (-x) 0 - 0.07 m"
   },
   "wheel": {
    "parent": null,

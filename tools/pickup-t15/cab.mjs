@@ -1,4 +1,5 @@
-// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering, the shift and transfer levers, the four gauge needles and the three heater sliders). Structure per the reference drawings (design
+// T15 cab interior (mesh pickup_t15_cab; bones body, door_l, door_r, steering, the shift and transfer levers, the four gauge needles, the three heater sliders,
+// and since 2026-10-21 the key, the turn stalk and its light knob, the lower column shroud, both sun visors, the glovebox lid and the ashtray drawer). Structure per the reference drawings (design
 // doc 2.4, Hilux LN106 instrument panel / seat / door trim groups): instrument panel with a padded top and a meter hood over
 // the driver's cluster; round side vents, centre vents, defroster grilles; heater control panel above the radio, ashtray
 // below; glovebox; tilt column with a two-piece square shroud, two stalks and the key cylinder; two-spoke wheel with a
@@ -9,7 +10,7 @@
 // sun visors, rear-view mirror, assist grip, outboard belts and centre buckles; painted door jambs and hinges.
 // Left-hand drive: the driver sits at -z. Concept frame (metres, x forward, y up, z right).
 import {FX as FRX, FY, FZ, frame, slab, rbox, abox, obox, loftSolid, sweep, tube, lathe, roundPath, fillet, circle, cross, norm, add, mul, sub} from '../vehicle-mesh-kit.mjs';
-import {HW, YB, BELT, ROOF, CB, WS1, DOOR_R, DOOR_F, ROOF_W, sideZ, wsX, PIVOTS, STEER_TILT, P, sym} from './common.mjs';
+import {HW, YB, BELT, ROOF, CB, WS1, DOOR_R, DOOR_F, ROOF_W, sideZ, wsX, PIVOTS, STEER_TILT, KEY_CYL, P, sym} from './common.mjs';
 
 // two meshes on the cab atlas (per-mesh limits): 'cab' (panel, column, wheel, floor, trims, lining) and 'seat' (bench seat, belts)
 let MESH = 'cab';
@@ -17,6 +18,7 @@ const C = (bone, mat) => P(MESH, bone, mat);
 const B = 'body';
 const zr = (s, a, b) => s > 0 ? [a, b] : [-b, -a];
 const FLOOR = 0.535, DZ = 0.742;                     // floor pan top; dash half width (inboard of the door trims)
+const GB_Z0 = 0.20, GB_Z1 = 0.62;                    // the glovebox lid across (its cavity in the panel behind it)
 const D2R = Math.PI / 180;
 /** Gauge dials (centre, radius, sweep start / end in degrees about the dial, measured from +z toward +y in the face plane;
  *  major / minor tick counts over the sweep): read by the dial shading for the tick marks. */
@@ -28,7 +30,11 @@ function dash() {
   // where the driver sees it through the upper half of the wheel.
   const plain = fillet([[0.975, 0.78], [0.975, 1.04], [0.60, 1.015], [0.566, 0.995], [0.575, 0.95], [0.60, 0.80], [0.66, 0.78]], [0, 0, 0.01, 0.012, 0.02, 0.03, 0.01], 3);
   const zc0 = -0.62, zc1 = -0.14;
-  slab(C(B, 'dash'), FZ, plain, [], -DZ, DZ, {r0: 0.012, r1: 0.012});
+  // three pieces across: the middle one (behind the glovebox lid) has the glovebox's cavity in its section (2026-10-21)
+  slab(C(B, 'dash'), FZ, plain, [], -DZ, GB_Z0, {r0: 0.012, r1: 0});
+  slab(C(B, 'dash'), FZ, fillet([[0.975, 0.78], [0.975, 1.04], [0.60, 1.015], [0.566, 0.995], [0.575, 0.95], [0.576, 0.944], [0.86, 0.944], [0.86, 0.842], [0.593, 0.842],
+    [0.60, 0.80], [0.66, 0.78]], [0, 0, 0.01, 0.012, 0, 0, 0.008, 0.008, 0, 0.03, 0.01], 3), [], GB_Z0, GB_Z1, {r0: 0, r1: 0});
+  slab(C(B, 'dash'), FZ, plain, [], GB_Z1, DZ, {r0: 0, r1: 0.012});
   // padded top: rolls over the rear edge, rises toward the glass
   const pad = fillet([[0.553, 0.993], [0.60, 1.006], [0.95, 1.045], [0.957, 1.062], [0.80, 1.077], [0.62, 1.064], [0.558, 1.036]], [0.008, 0, 0, 0.004, 0.02, 0.02, 0.016], 3);
   slab(C(B, 'pad'), FZ, pad, [], -DZ + 0.004, zc0 + 0.01, {r0: 0.014, r1: 0.004});
@@ -73,14 +79,21 @@ function dash() {
   rbox(C(B, 'trim'), FRX, -0.092, 0.092, 0.826, 0.871, 0.562, 0.578, 0.003, {rc: 0.004});
   rbox(C(B, 'liner'), FRX, -0.05, 0.05, 0.84, 0.855, 0.559, 0.562, 0, {rc: 0});
   for (const z of [-0.072, 0.072]) lathe(C(B, 'vinyl'), [0.562, 0.8485, z], [-1, 0, 0], [[0, 0], [0, 0.009], [0.012, 0.0085], [0.014, 0.007], [0.014, 0]], 12);
-  // ashtray drawer below
-  rbox(C(B, 'dash'), FRX, -0.08, 0.08, 0.80, 0.82, 0.57, 0.585, 0.003, {rc: 0.004});
-  rbox(C(B, 'trim'), FRX, -0.03, 0.03, 0.806, 0.814, 0.566, 0.57, 0.001, {rc: 0.003});
+  // ashtray drawer below (bone ashtray, 2026-10-21): front with its pull and the steel tray behind it, inside the panel until
+  // the renderer slides it out toward the cab (ASHTRAY_TRAVEL)
+  rbox(C('ashtray', 'dash'), FRX, -0.08, 0.08, 0.80, 0.82, 0.57, 0.585, 0.003, {rc: 0.004});
+  rbox(C('ashtray', 'trim'), FRX, -0.03, 0.03, 0.806, 0.814, 0.566, 0.57, 0.001, {rc: 0.003});
+  abox(C('ashtray', 'steel'), 0.585, 0.66, 0.802, 0.805, -0.072, 0.072, 0.001);
+  sym(s => abox(C('ashtray', 'steel'), 0.585, 0.66, 0.805, 0.818, s * 0.0705 - 0.0015, s * 0.0705 + 0.0015, 0.0008));
+  abox(C('ashtray', 'steel'), 0.657, 0.66, 0.805, 0.818, -0.069, 0.069, 0.0008);
   // centre lower panel down to the tunnel
   slab(C(B, 'dash'), FRX, fillet([[-0.16, 0.66], [0.16, 0.66], [0.16, 0.80], [-0.16, 0.80]], 0.02, 2), [], 0.60, 0.70, {r0: 0.012, r1: 0});
-  // glovebox door (passenger side) and its latch
-  rbox(C(B, 'dash'), FRX, 0.20, 0.62, 0.835, 0.95, 0.572, 0.582, 0.005, {rc: 0.012});
-  rbox(C(B, 'trim'), FRX, 0.38, 0.44, 0.925, 0.94, 0.567, 0.572, 0.002, {rc: 0.004});
+  // glovebox lid (passenger side, bone glovebox: hinged along its bottom edge, drops toward the seat) and its latch; the
+  // cavity behind it is in the panel's middle piece above, lined with a felt floor
+  rbox(C('glovebox', 'dash'), FRX, GB_Z0, GB_Z1, 0.835, 0.95, 0.572, 0.582, 0.005, {rc: 0.012});
+  rbox(C('glovebox', 'trim'), FRX, 0.38, 0.44, 0.925, 0.94, 0.567, 0.572, 0.002, {rc: 0.004});
+  rbox(C('glovebox', 'panel'), FRX, GB_Z0 + 0.02, GB_Z1 - 0.02, 0.85, 0.93, 0.582, 0.586, 0.002, {rc: 0.01});   // inner face moulding
+  abox(C(B, 'felt'), 0.60, 0.855, 0.842, 0.845, GB_Z0 + 0.002, GB_Z1 - 0.002, 0);
   // driver's knee panel cover with the hood release, T-handle parking brake under the panel
   rbox(C(B, 'dash'), FRX, -0.62, -0.18, 0.80, 0.905, 0.585, 0.598, 0.005, {rc: 0.01});
   tube(C(B, 'steel'), [[0.62, 0.79, -0.13], [0.56, 0.79, -0.13]], 0.005, 8);
@@ -122,15 +135,26 @@ function steering() {
   const z = [0, 0, 1], at = k => add(c, mul(d, k));
   // column shroud: upper and lower halves of a square cover, the column tube into the panel
   obox(C(B, 'dash'), add(at(0.17), mul(up, 0.022)), d, z, 0.085, 0.042, 0.024, 0.008, {rc: 0.014});
-  obox(C(B, 'dash'), add(at(0.18), mul(up, -0.026)), d, z, 0.09, 0.044, 0.026, 0.008, {rc: 0.014});
+  // the lower half on its own bone (shroud_low): the hotwire pries it off (docs/vehicles/t15_hotwire_v1_design.md)
+  obox(C('shroud_low', 'dash'), add(at(0.18), mul(up, -0.026)), d, z, 0.09, 0.044, 0.026, 0.008, {rc: 0.014});
   tube(C(B, 'under'), [at(0.27), at(0.36)], 0.022, 10);
-  // key cylinder on the right of the shroud, stalks either side
-  lathe(C(B, 'chrome'), add(at(0.13), [0, -0.01, 0.044]), [0, 0, 1], [[0, 0], [0, 0.012], [0.006, 0.012], [0.009, 0.009], [0.009, 0]], 12);
+  // key cylinder in the panel face right of the column (common.mjs KEY_CYL), its key slot upright at OFF; stalks either side
+  const kc = KEY_CYL, kOut = [-1, 0, 0], kUp = [0, 1, 0], kSide = cross(kOut, kUp);
+  lathe(C(B, 'chrome'), kc, kOut, [[0, 0], [0, 0.012], [0.006, 0.012], [0.009, 0.009], [0.009, 0]], 12);
+  obox(C(B, 'liner'), add(kc, mul(kOut, 0.0088)), kUp, kSide, 0.0052, 0.0011, 0.0006, 0);
+  key(kc, kUp, kSide, kOut);
   // (the right one, the wiper stalk, is bone wiper_stalk: it steps down about the column axis through its root)
   sym(s => {
-    const p0 = add(at(0.10), [0, 0, s * 0.04]), b = s > 0 ? 'wiper_stalk' : B;
-    tube(C(b, 'dash'), [p0, add(p0, [-0.03, -0.012, s * 0.07]), add(p0, [-0.05, -0.024, s * 0.13])], 0.0065, 8);
-    tube(C(b, 'trim'), [add(p0, [-0.05, -0.024, s * 0.13]), add(p0, [-0.055, -0.027, s * 0.15])], 0.008, 8);
+    // the left one, the turn signal stalk (bone turn_stalk), carries the light switch: its end turns (bone light_knob)
+    const p0 = add(at(0.10), [0, 0, s * 0.04]), b = s > 0 ? 'wiper_stalk' : 'turn_stalk', e0 = add(p0, [-0.05, -0.024, s * 0.13]), e1 = add(p0, [-0.055, -0.027, s * 0.15]);
+    tube(C(b, 'dash'), [p0, add(p0, [-0.03, -0.012, s * 0.07]), e0], 0.0065, 8);
+    tube(C(s > 0 ? b : 'light_knob', 'trim'), [e0, e1], 0.008, 8);
+    if (s < 0) {
+      // a ridge across the knob's end and a white mark, so its turn shows
+      const ax = norm(sub(e1, e0)), r = norm(cross(ax, [0, 1, 0]));
+      obox(C('light_knob', 'trim'), add(e1, mul(ax, -0.004)), ax, cross(r, ax), 0.004, 0.0085, 0.0018, 0.0008);
+      obox(C('light_knob', 'headliner'), add(e0, mul(ax, 0.006)), ax, cross(r, ax), 0.0035, 0.0012, 0.0084, 0);
+    }
   });
   // the wheel itself (bone steering): rim, two spokes dipping toward the hub, horn pad, hub boss
   const S = C('steering', 'vinyl'), Rr = 0.19, nd = mul(d, -1);
@@ -145,6 +169,19 @@ function steering() {
   const F = frame(add(c, mul(d, 0.05)), z, up, nd);
   slab(C('steering', 'vinyl'), F, fillet([[-0.105, -0.085], [0.105, -0.085], [0.095, 0.05], [-0.095, 0.05]], [0.03, 0.03, 0.035, 0.035], 4), [], 0, 0.034, {r0: 0, r1: 0.014});
   lathe(C('steering', 'trim'), add(c, mul(d, 0.05)), d, [[0, 0], [0, 0.045], [0.05, 0.035], [0.05, 0]], 16);
+}
+
+/**
+ * The truck's key (bone key, 2026-10-21) in the cylinder at OFF: the blade (in the lock as far as the shroud) with its cuts
+ * on the up side, and the black plastic head with a ring hole, its flat sides upright at OFF. kc: the cylinder centre;
+ * up: the slot's way at OFF; side: across it; out: the cylinder axis, toward the driver.
+ */
+function key(kc, up, side, out) {
+  const F = frame(kc, up, out, side);
+  slab(C('key', 'steel'), F, [[-0.0042, 0.016], [-0.0042, -0.019], [-0.0012, -0.023], [0.0042, -0.021], [0.0042, -0.017], [0.0024, -0.014], [0.0042, -0.010],
+    [0.0024, -0.006], [0.0042, -0.002], [0.0042, 0.016]], [], -0.001, 0.001);
+  const head = fillet([[-0.012, 0.014], [0.012, 0.014], [0.012, 0.042], [-0.012, 0.042]], [0.004, 0.004, 0.009, 0.009], 4);
+  slab(C('key', 'trim'), F, head, [circle(1, 12).map(([a, b]) => [a * 0.0032, 0.034 + b * 0.0032])], -0.0028, 0.0028, {r0: 0.0015, r1: 0.0015});
 }
 
 // ================================================================ floor, tunnel, pedals, levers
@@ -289,7 +326,8 @@ function roofLining() {
     // sun visors folded up under the headliner, behind the glass top (wsX(ROOF - 0.08) = WS1 + 0.026): they were 4-20 cm
     // forward of WS1, out in front of the windshield, a dark band seen through it from the cab (2026-10-18)
     const [z0, z1] = zr(s, 0.12, 0.70);
-    rbox(C(B, 'headliner'), FY, WS1 - 0.20, WS1 - 0.04, z0, z1, y - 0.04, y - 0.022, 0.008, {rc: 0.03});
+    // each on its bone (visor_l / visor_r, 2026-10-21): it flips down about the rod at its outer end
+    rbox(C(s > 0 ? 'visor_r' : 'visor_l', 'headliner'), FY, WS1 - 0.20, WS1 - 0.04, z0, z1, y - 0.04, y - 0.022, 0.008, {rc: 0.03});
     tube(C(B, 'steel'), [[WS1 - 0.06, y - 0.031, s * 0.70], [WS1 - 0.06, y - 0.031, s * 0.74]], 0.004, 6);
   });
   tube(C(B, 'dash'), [[WS1 + 0.06, y - 0.012, 0], [WS1 + 0.05, y - 0.06, 0]], 0.007, 8);

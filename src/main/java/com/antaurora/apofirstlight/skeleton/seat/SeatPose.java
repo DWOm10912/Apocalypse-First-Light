@@ -84,6 +84,10 @@ public final class SeatPose {
         public final Quaternionf turn = new Quaternionf();
         public int doorSide;
         public float door;
+        /** DRIVER: the hands from the lap (0) to the wheel (1) (RiderSeat#hold); the body leans in to the wheel with them. */
+        public float hold = 1F;
+        /** DRIVER: the right hand on the ignition key (RiderSeat#reach, anchors key_r / key_axis / key_up). */
+        public float reach;
         public final Map<String, Vector3f> anchors = new HashMap<>();
 
         public Vector3f up() { return turn.transform(new Vector3f(0, -1, 0)); }
@@ -196,16 +200,19 @@ public final class SeatPose {
         else in.torsoDirect = 1F + (torso - 1F) * m.seated;
         // chest: leaning back a little in a cab seat, upright on a bench; a twist with the look, smaller at the wheel
         boolean driver = seat.kind == RiderSeat.Kind.DRIVER;
-        float recline = seat.kind == RiderSeat.Kind.BENCH ? 4F : driver ? 0F : -8F;
+        // a driver with the hands in the lap sits like a passenger; at the wheel upright, shoulders forward, the look turning
+        // the head more than the chest
+        float drive = driver ? seat.hold : 0F;
+        float recline = seat.kind == RiderSeat.Kind.BENCH ? 4F : -8F * (1 - drive);
         in.chestPitch = in.chestPitch + (recline - in.chestPitch) * m.seated;
         // under a cab's roof the head tips back only so far (the camera still looks up)
         if (seat.doorSide != 0) in.viewPitch = Math.max(in.viewPitch, -12F * m.seated + in.viewPitch * (1 - m.seated));
-        if (driver) in.protraction = 2F;
-        float share = driver ? 0.1F : 0.35F, limit = driver ? 6F : 30F;
+        if (driver) in.protraction = in.protraction + (2F - in.protraction) * drive;
+        float share = 0.35F + (0.1F - 0.35F) * drive, limit = 30F + (6F - 30F) * drive;
         float look = Math.max(-limit, Math.min(limit, in.viewYaw * share));
         // a driver looking back past the neck's turn: the shoulders follow a little (the hands stay on the wheel)
         float over = Math.abs(in.viewYaw - look) - NECK_TURN;
-        if (driver && over > 0) look += Math.copySign(Math.min(over, DRIVER_LOOK_BACK), in.viewYaw);
+        if (driver && over > 0) look += Math.copySign(Math.min(over, DRIVER_LOOK_BACK), in.viewYaw) * drive;
         float twist = look - seat.doorSide * m.lean;
         in.chestYaw = in.chestYaw + (twist - in.chestYaw) * m.seated;
         // legs: from under the standing hips to the floor rests, the inner leg (away from the door) first, lifted between
@@ -240,14 +247,21 @@ public final class SeatPose {
         boolean pushRight = outer != null && outer.x < 0;
         for (boolean right : new boolean[]{true, false}) {
             boolean doorHand = seat.doorSide != 0 && right == doorRight;
-            Matrix4f goal = goal(in, pose, poser, seat, right);
-            float wGoal = doorHand ? m.doorHandGoal : m.otherHandGoal;
+            // a hand that holds something (or uses it) is not laid in the lap: it holds it as standing (vanilla's arm), so a
+            // seated rider uses things; on the wheel it goes as far as the driver holds it (user 2026-10-21)
+            boolean holding = (right ? in.right : in.left) == HumanoidPoser.ArmMode.VANILLA;
+            Vector3f grip = seat.kind == RiderSeat.Kind.DRIVER ? seat.anchors.get(right ? "grip_r" : "grip_l") : null;
+            float hold = grip != null ? seat.hold : 0F, rest = holding ? 0F : 1F;
+            Matrix4f lap = rest > 0 ? lap(in, pose, poser, right) : null;
+            Matrix4f wheel = hold > 0 ? wheel(in, pose, poser, seat, right, grip) : null;
+            Matrix4f goal = wheel == null ? lap : lap == null || hold >= 1 ? wheel : blend(lap, wheel, hold, rig);
+            float wGoal = (doorHand ? m.doorHandGoal : m.otherHandGoal) * (rest + (1 - rest) * hold);
             Matrix4f target = goal;
-            float w = wGoal;
+            float w = goal == null ? 0F : wGoal;
             Vector3f pull = seat.anchors.get("door_pull");
             if (doorHand && pull != null && m.pull > 0) {
                 Matrix4f t = contact(in, pose, poser, right, pull);
-                target = w > 0 ? blend(goal, t, m.pull, rig) : t;
+                target = w > 0 ? blend(target, t, m.pull, rig) : t;
                 w = w + (1 - w) * m.pull;
             }
             if (outer != null && right == pushRight && m.push > 0) {
@@ -255,20 +269,25 @@ public final class SeatPose {
                 target = w > 0 ? blend(target, t, m.push, rig) : t;
                 w = w + (1 - w) * m.push;
             }
+            // the driver's right hand on the ignition key (over whatever it held or did; the host hides a held item)
+            Vector3f key = right ? seat.anchors.get("key_r") : null;
+            float reach = key != null ? seat.reach : 0F;
+            if (reach > 0) {
+                Matrix4f t = key(in, pose, poser, seat, key);
+                target = w > 0 ? blend(target, t, reach, rig) : t;
+                w = w + (1 - w) * reach;
+            }
             if (w <= 0) continue;
             (right ? in.targetRight : in.targetLeft).set(target);
             if (right) { in.right = HumanoidPoser.ArmMode.IK; in.ikRightWeight = w; }
             else { in.left = HumanoidPoser.ArmMode.IK; in.ikLeftWeight = w; }
-            if (seat.kind == RiderSeat.Kind.DRIVER && seat.anchors.containsKey(right ? "grip_r" : "grip_l"))
-                (right ? in.poleRight : in.poleLeft).set(right ? -0.6F : 0.6F, 1F, 0.25F);
+            if (hold >= 0.5F || reach >= 0.5F) (right ? in.poleRight : in.poleLeft).set(right ? -0.6F : 0.6F, 1F, 0.25F);
         }
     }
 
-    /** A hand's seated place: its grip on the wheel, else the lap (on the thigh, a little short of the knee). */
-    private static Matrix4f goal(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Seat seat, boolean right) {
+    /** A hand's place in the lap: on the thigh, a little short of the knee. */
+    private static Matrix4f lap(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, boolean right) {
         SkeletonRig rig = pose.rig;
-        Vector3f grip = seat.kind == RiderSeat.Kind.DRIVER ? seat.anchors.get(right ? "grip_r" : "grip_l") : null;
-        if (grip != null) return wheel(in, pose, poser, seat, right, grip);
         int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL;
         Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f()), knee = pose.point(shin, rig.pivot[shin], new Vector3f());
         Vector3f up = pose.rotation(rig.pelvis, new Quaternionf()).transform(new Vector3f(0, -1, 0));
@@ -310,6 +329,31 @@ public final class SeatPose {
             q.rotateY(turn * along * WHEEL_ROLL * on);
         }
         return frame(pose.rig, right, wrist, q);
+    }
+
+    /**
+     * The right hand on the ignition key: {@link #contact} on {@code key_r}, turned about the forearm by the key's turn
+     * from upright ({@code key_up} against the seat's up, about {@code key_axis}), as the wheel's rim turns the wrists.
+     */
+    private static Matrix4f key(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Seat seat, Vector3f key) {
+        Vector3f axisPoint = seat.anchors.get("key_axis"), upPoint = seat.anchors.get("key_up");
+        Vector3f wrist = new Vector3f(key);
+        Quaternionf q = new Quaternionf();
+        for (int i = 0; i < 2; i++) {
+            q = poser.forearm(in, pose, true, wrist);
+            wrist.set(key).sub(q.transform(new Vector3f(0, 1, 0)).mul(PALM));
+        }
+        if (axisPoint != null && upPoint != null) {
+            Vector3f axis = new Vector3f(axisPoint).sub(key).normalize();
+            Vector3f rest = new Vector3f(seat.up()), now = new Vector3f(upPoint).sub(key);
+            rest.sub(new Vector3f(axis).mul(rest.dot(axis)));
+            now.sub(new Vector3f(axis).mul(now.dot(axis)));
+            if (rest.lengthSquared() > 1e-6F && now.lengthSquared() > 1e-6F) {
+                float turn = (float) Math.atan2(new Vector3f(rest).cross(now).dot(axis), rest.dot(now));
+                q.rotateY(turn * axis.dot(q.transform(new Vector3f(0, 1, 0))));
+            }
+        }
+        return frame(pose.rig, true, wrist, q);
     }
 
     /**
