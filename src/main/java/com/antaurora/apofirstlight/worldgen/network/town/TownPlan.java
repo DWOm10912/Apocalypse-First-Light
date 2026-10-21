@@ -12,9 +12,11 @@ import java.util.Map;
  * zones, no buildings. Pure Java, plain data; TownPlanner lays it out at network build, the built network's JSON carries
  * it (section "towns", appended after the routes), the server's works and every client read it back (#read).
  * <p>
- * Town coordinates: s along the axis (the interstate's tangent at the exit crossing), v across it, positive on the town's
- * side; (0, 0) is the crossing. Every street, block and lot is axis-aligned in them: parallel streets at constant v,
- * cross streets at constant s. World x = ox + s ax + v bx, z = oz + s az + v bz.
+ * Town coordinates: s along the axis, v across it, positive on the town's side; since 2026-10-19 the axes are world axes
+ * (the one nearest the interstate's tangent at the exit crossing, TownGrid) and (0, 0) the block corner nearest the
+ * crossing, so every street, block and lot is axis-aligned in the world too (before, the axis was the tangent itself and
+ * (0, 0) the crossing). Parallel streets at constant v, cross streets at constant s. World x = ox + s ax + v bx,
+ * z = oz + s az + v bz.
  */
 public final class TownPlan {
     /** An intersection: town coordinates, the street datum there (crown height). */
@@ -37,6 +39,9 @@ public final class TownPlan {
     public record Lot(double s0, double s1, double v0, double v1, String zone, int face, double pad) {}
 
     public static final int FACE_V0 = 0, FACE_V1 = 1;
+
+    /** A landmark's zone: this prefix and its id (TownSites#landmarks), a whole block's one lot. */
+    public static final String LANDMARK = "landmark/";
 
     /**
      * A county road's entry (G3, docs/worldgen/county_road_g3.md): the outer intersection it runs into, the arm it comes
@@ -63,7 +68,8 @@ public final class TownPlan {
      * <ul>
      *   <li>one, at a side line (the lot's s0 or s1 by its place, never the one at the block's end): a house, a mobile home,
      *   civic, industry;</li>
-     *   <li>one at a quarter of the frontage: a lot as wide as its block (a school: its middle may be a cross street);</li>
+     *   <li>one at a quarter of the frontage: a lot as wide as its block (a school: its middle may be a cross street; a
+     *   landmark);</li>
      *   <li>two, at a quarter and three quarters of the frontage: highway commerce, a parking lot;</li>
      *   <li>none: downtown (its lots park on the street and take the alley), a park.</li>
      * </ul>
@@ -80,7 +86,10 @@ public final class TownPlan {
             case "ind" -> w = DRIVE_IND;
             case "hwy" -> { w = DRIVE_HWY; count = 2; }
             case "park_lot" -> { w = DRIVE_TWO_WAY; count = 2; }
-            default -> { return new double[0][]; }
+            default -> {
+                if (!l.zone().startsWith(LANDMARK)) return new double[0][];
+                w = DRIVE_TWO_WAY;
+            }
         }
         double lo = Math.max(l.s0() + DRIVE_SIDE, blockS0 + DRIVE_CORNER), hi = Math.min(l.s1() - DRIVE_SIDE, blockS1 - DRIVE_CORNER);
         if (hi - lo < w * count) return new double[0][];

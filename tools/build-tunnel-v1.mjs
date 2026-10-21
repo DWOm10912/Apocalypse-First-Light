@@ -239,11 +239,17 @@ R.plaque = [306, 1908, 108, 108];                                               
 // C3.3b group 2 ramp terminals (RoadSigns)
 R.do_not_enter = [960, 1816, 180, 180];                                                   // R5-1 0.75 m
 R.wrong_way = [1140, 1816, 216, 144];                                                     // R5-1a 0.9 x 0.6 m
+// Town Framework V1 (2026-10-19, TownSigns): the town speed limit and the all-way plaque under a town STOP
+R.speed_limit = [1356, 1840, 144, 180];                                                   // R2-1 0.6 x 0.75 m
+R.all_way = [1500, 1840, 108, 36];                                                        // R1-3P 0.45 x 0.15 m
 /**
  * Sign sizes as RoadSigns: STOP across the flats, the diamond corner to corner, the plaque, DO NOT ENTER, WRONG WAY wide
  * and high; the faces' bottoms, m.
  */
-const SIGNS = {stop: 0.75, diamond: 0.9 * Math.SQRT2, plaque: 0.45, doNotEnter: 0.75, wrongWay: [0.9, 0.6], bottom: 1.5, curveBottom: 1.5 + 0.45 + 0.05};
+const SIGNS = {stop: 0.75, diamond: 0.9 * Math.SQRT2, plaque: 0.45, doNotEnter: 0.75, wrongWay: [0.9, 0.6], bottom: 1.5, curveBottom: 1.5 + 0.45 + 0.05,
+  // Town Framework V1: a town STOP's bottom (7 ft, where people walk), the ALL WAY plaque (18 x 6 in) and its gap under the
+  // STOP, the speed limit (24 x 30 in) at the roadside's 5 ft
+  townBottom: 2.1, allWay: [0.45, 0.15], allWayGap: 0.05, speedLimit: [0.6, 0.75]};
 
 /** R1-1 for a w x w region: the red octagon, its white border (3/4 in on 30 in) inset from a thin red rim, STOP. */
 function stopFace(w) {
@@ -347,6 +353,10 @@ function sheet() {
   // C3.3b group 2: R5-1 and R5-1a (36 x 24 in: WRONG over WAY, 5 in caps, a white border on red)
   paint('do_not_enter', doNotEnterFace(180));
   paint('wrong_way', signFace(216, 144, ['WRONG', 'WAY'], {cap: 30, margin: 18, fg: SIGN.white, bg: SIGN.red, border: 4, bw: 4, gapLines: 0.5}));
+  // Town Framework V1: R2-1 (SPEED LIMIT 4 in over the 10 in numerals, a black border on white) and R1-3P (ALL WAY 4 in, the older wording: the sign font has no hyphen;
+  // a white border on red)
+  paint('speed_limit', signFace(144, 180, ['SPEED', 'LIMIT', '30'], {cap: [24, 24, 60], margin: 14, fg: SIGN.black, bg: SIGN.white, border: 4, bw: 4, gapLines: 0.55}));
+  paint('all_way', signFace(108, 36, ['ALL WAY'], {cap: 20, margin: 7, fg: SIGN.white, bg: SIGN.red, border: 2, bw: 2}));
   // dark LED faces: black boards with unlit LED dots (lane signal 12 x 12 at 5 cm, message sign 120 x 36 at 5 cm)
   const dots = (pitch, r) => (x, y) => {
     const cx = (Math.floor(x / pitch) + 0.5) * pitch, cy = (Math.floor(y / pitch) + 0.5) * pitch, d = Math.hypot(x - cx, y - cy);
@@ -571,11 +581,18 @@ export function meshes() {
       y = b;
     }
   };
-  // STOP (R1-1), flat top
-  { const m = mesh('stop_sign'), w = SIGNS.stop, y0 = SIGNS.bottom, q = w / (1 + Math.SQRT2);
-    post(m.part('post'), y0 + w - 0.1, [[y0, y0 + w - 0.1]]);
-    plate(m.part('face'), [[-q / 2, y0], [q / 2, y0], [w / 2, y0 + (w - q) / 2], [w / 2, y0 + (w + q) / 2], [q / 2, y0 + w], [-q / 2, y0 + w],
-      [-w / 2, y0 + (w + q) / 2], [-w / 2, y0 + (w - q) / 2]], FZ0, FZ1, 'stop', [-w / 2, y0, w / 2, y0 + w]); }
+  // STOP (R1-1), flat top: the rural junctions' (root, 5 ft); a town's (bone town, 7 ft) and with the ALL WAY plaque under
+  // it (bone all_way, Town Framework V1)
+  { const m = mesh('stop_sign'), w = SIGNS.stop, q = w / (1 + Math.SQRT2);
+    const octagon = y0 => [[-q / 2, y0], [q / 2, y0], [w / 2, y0 + (w - q) / 2], [w / 2, y0 + (w + q) / 2], [q / 2, y0 + w], [-q / 2, y0 + w],
+      [-w / 2, y0 + (w + q) / 2], [-w / 2, y0 + (w - q) / 2]];
+    for (const b of ['root', 'town', 'all_way']) {
+      const y0 = b === 'root' ? SIGNS.bottom : SIGNS.townBottom, pre = b === 'root' ? '' : b + '_';
+      const [pw, ph] = SIGNS.allWay, py1 = y0 - SIGNS.allWayGap, py0 = py1 - ph;
+      post(m.part(pre + 'post', b), y0 + w - 0.1, b === 'all_way' ? [[py0, py1], [y0, y0 + w - 0.1]] : [[y0, y0 + w - 0.1]]);
+      plate(m.part(pre + 'face', b), octagon(y0), FZ0, FZ1, 'stop', [-w / 2, y0, w / 2, y0 + w]);
+      if (b === 'all_way') plate(m.part('all_way_plaque', b), [[-pw / 2, py0], [pw / 2, py0], [pw / 2, py1], [-pw / 2, py1]], FZ0, FZ1, 'all_way', [-pw / 2, py0, pw / 2, py1]);
+    } }
   // side road (W2-2): bone r the side road on the right, l mirrored
   { const m = mesh('side_road_sign'), d = SIGNS.diamond, y0 = SIGNS.bottom;
     for (const b of ['l', 'r']) {
@@ -596,6 +613,10 @@ export function meshes() {
   { const m = mesh('wrong_way_sign'), [w, h] = SIGNS.wrongWay, y0 = SIGNS.bottom;
     post(m.part('post'), y0 + h - 0.1, [[y0, y0 + h - 0.1]]);
     plate(m.part('face'), [[-w / 2, y0], [w / 2, y0], [w / 2, y0 + h], [-w / 2, y0 + h]], FZ0, FZ1, 'wrong_way', [-w / 2, y0, w / 2, y0 + h]); }
+  // Town Framework V1: the town's speed limit (R2-1) on its roads in, past the limit sign
+  { const m = mesh('speed_limit_sign'), [w, h] = SIGNS.speedLimit, y0 = SIGNS.bottom;
+    post(m.part('post'), y0 + h - 0.1, [[y0, y0 + h - 0.1]]);
+    plate(m.part('face'), [[-w / 2, y0], [w / 2, y0], [w / 2, y0 + h], [-w / 2, y0 + h]], FZ0, FZ1, 'speed_limit', [-w / 2, y0, w / 2, y0 + h]); }
   return M;
 }
 

@@ -38,6 +38,16 @@ public final class CrossSection {
     public static final double MEDIAN_DEPTH = 0.8;
     /** roadside template: 1:4 foreslope into the ditch, round bottom, 1:3 backslope; on fill 1:4 for the clear zone, then 1:3 */
     public static final double FORESLOPE = 0.25, BACKSLOPE = 1.0 / 3, FILL_STEEP = 1.0 / 3, ROUNDING = 0.4;
+    /**
+     * Rock cut (2026-10-19, docs/worldgen/federal_highways_c3.md 11.16): a cut deeper than the 1:3 backslope can reach the
+     * ground within the works (#cutCapacity) climbs from the ditch in rock lifts of ROCK_LIFT m at ROCK_FACE (rise per run:
+     * 0.25H:1V, a presplit face) with a ROCK_BENCH m bench after each lift (#rockCut). The cut template turns into it with
+     * the ground's height over the shoulder hinge where the works start blending into the ground (the height the slope
+     * must reach), from ROCK_FROM to ROCK_FULL times the capacity, so every cut the 1:3 slope reached before keeps it (it
+     * ended in a wall at the works' edge beyond that: user, 2026-10-19). One weight for the whole roadside of a station,
+     * so the profile only climbs outward.
+     */
+    public static final double ROCK_FACE = 4, ROCK_LIFT = 10, ROCK_BENCH = 4, ROCK_FROM = 0.8, ROCK_FULL = 1.2;
 
     /**
      * R4: superelevation for 110 km/h, emax 6 % (Rmin 560 m); runoff with the lane edge 7.5 m from the axis of rotation
@@ -253,14 +263,47 @@ public final class CrossSection {
      * turf at the shoulder edge), for ground g (also relative to h0): max(fill template, min(cut template, ground)),
      * rounded. Continuous in g: a shallow cut digs the ditch into the ground, a fill buries it, a deep cut keeps it.
      */
-    public double roadside(double d, double g) {
+    public double roadside(double d, double g) { return roadside(d, g, g); }
+
+    /**
+     * #roadside where the ground at the works' blending edge stands need over the hinge (#ROCK_FROM): a deeper cut turns into
+     * the rock cut.
+     */
+    public double roadside(double d, double g, double need) {
         double fill = d <= clearZone ? -FORESLOPE * d : -FORESLOPE * clearZone - FILL_STEEP * (d - clearZone);
         double toDitch = ditchDepth / FORESLOPE;
         double cut = d <= toDitch ? -FORESLOPE * d : d <= toDitch + ditchBottom ? -ditchDepth : -ditchDepth + BACKSLOPE * (d - toDitch - ditchBottom);
+        // a deep cut: toward the rock cut with the height the slope must reach (continuous in it)
+        double cap = cutCapacity();
+        if (cap > 0) {
+            double w = smooth((need - ROCK_FROM * cap) / ((ROCK_FULL - ROCK_FROM) * cap));
+            if (w > 0) cut += (rockCut(d) - cut) * w;
+        }
         // the rounding grows from zero at the hinge, which stays exactly on the formation edge, and never exceeds the gap
         // between the two templates (fill <= cut; on the common 1:4 foreslope they coincide and the surface is exact)
         double k = Math.min(ROUNDING * Math.min(1, d), cut - fill);
         return smax(fill, smin(cut, g, k), k);
+    }
+
+    /**
+     * The height over the shoulder hinge that the 1:3 backslope reaches where the works start blending into the ground
+     * (RoadWorks.MAX_HALF_WIDTH - BLEND from the centreline), m: deeper cuts turn into the rock cut (#roadside).
+     */
+    public double cutCapacity() {
+        return -ditchDepth + BACKSLOPE * (RoadWorks.MAX_HALF_WIDTH - RoadWorks.BLEND - edge - ditchDepth / FORESLOPE - ditchBottom);
+    }
+
+    /**
+     * The rock cut's surface beyond the outer shoulder edge (d >= 0) relative to the shoulder hinge: the foreslope and the
+     * ditch as the cut template, then from the ditch's far edge lifts of ROCK_LIFT at ROCK_FACE, each followed by a level
+     * ROCK_BENCH bench.
+     */
+    public double rockCut(double d) {
+        double toDitch = ditchDepth / FORESLOPE, t = d - toDitch - ditchBottom;
+        if (t <= 0) return d <= toDitch ? -FORESLOPE * d : -ditchDepth;
+        double run = ROCK_LIFT / ROCK_FACE, cycle = run + ROCK_BENCH;
+        double n = Math.floor(t / cycle), m = t - n * cycle;
+        return -ditchDepth + n * ROCK_LIFT + Math.min(m * ROCK_FACE, ROCK_LIFT);
     }
 
     /** Polynomial smooth min / max (radius k): equal to min / max when the two differ by more than k. */

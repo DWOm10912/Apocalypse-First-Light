@@ -151,7 +151,8 @@ public final class RoadNetworkRuntime {
             home = null;
         }
         com.antaurora.apofirstlight.worldgen.network.road.Driveway drive = com.antaurora.apofirstlight.worldgen.network.road.Driveway.of(home);
-        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(towns), drive),
+        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water, new com.antaurora.apofirstlight.worldgen.network.town.TownWorks(towns), drive,
+                RoadWorks.Ground.of(plan)),
                 plan, home);
         CACHE.put(plan, n);
         return n;

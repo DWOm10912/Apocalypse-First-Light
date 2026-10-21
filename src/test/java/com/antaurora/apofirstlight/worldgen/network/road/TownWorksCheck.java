@@ -93,7 +93,9 @@ final class TownWorksCheck {
                 if (l.s0() >= b.s0() - 0.01 && l.s1() <= b.s1() + 0.01 && l.v0() >= b.v0() - 0.01 && l.v1() <= b.v1() + 0.01) { blk = b; break; }
             if (blk == null) continue;
             double vEdge = l.face() == TownPlan.FACE_V0 ? l.v0() : l.v1(), dir = l.face() == TownPlan.FACE_V0 ? -1 : 1;
-            double[][] dw = TownPlan.driveways(l, blk.s0(), blk.s1());
+            // Fuel Stop A1's lot: the template's main entrance (TownWorks#fuelStop; its side one, TownBuildingsCheck)
+            com.antaurora.apofirstlight.worldgen.network.town.TownBuildings.FuelStop fs = tw.fuelStop(p);
+            double[][] dw = fs != null && p.lots.get(fs.lot()) == l ? new double[][]{fs.main()} : TownPlan.driveways(l, blk.s0(), blk.s1());
             for (double[] d : dw) {
                 drives++;
                 byZone.merge(l.zone(), 1, Integer::sum);
@@ -109,17 +111,19 @@ final class TownWorksCheck {
             boolean whole = l.s0() - blk.s0() < 0.5 && blk.s1() - l.s1() < 0.5;
             if (whole) continue;
             padded++;
+            // A1's lot lies at the template's surface (its floor), not at the lot's pad (2026-10-20)
+            double pad = fs != null && p.lots.get(fs.lot()) == l ? fs.site().floorY() : l.pad();
             double[] mid = p.world((l.s0() + l.s1()) / 2, (l.v0() + l.v1()) / 2);
             TownWorks.Spot ms = tw.spot(mid[0], mid[1]);
-            if (ms == null || Math.abs(ms.h() - l.pad()) > 0.01) {
+            if (ms == null || Math.abs(ms.h() - pad) > 0.01) {
                 offPad++;
                 if (firstUncut == null) firstUncut = String.format(Locale.ROOT, "off pad: %s lot %.0f x %.0f at s %.1f v %.1f, %s %.2f vs pad %.2f", l.zone(), l.s1() - l.s0(), l.v1() - l.v0(),
-                        (l.s0() + l.s1()) / 2, (l.v0() + l.v1()) / 2, ms == null ? "-" : ms.part(), ms == null ? Double.NaN : ms.h(), l.pad());
+                        (l.s0() + l.s1()) / 2, (l.v0() + l.v1()) / 2, ms == null ? "-" : ms.part(), ms == null ? Double.NaN : ms.h(), pad);
             }
             if (dw.length > 0) {
                 double[] w = p.world((dw[0][0] + dw[0][1]) / 2, vEdge + dir * 0.25);
                 TownWorks.Spot sw = tw.spot(w[0], w[1]);
-                if (sw != null) { padRise = Math.max(padRise, l.pad() - sw.h()); padDrop = Math.min(padDrop, l.pad() - sw.h()); }
+                if (sw != null) { padRise = Math.max(padRise, pad - sw.h()); padDrop = Math.min(padDrop, pad - sw.h()); }
             }
         }
         System.out.printf(Locale.ROOT, "    driveways %d %s, not cut %d%s; lots on a pad %d (off their pad at the middle %d), pad over the sidewalk at the driveway %+.2f .. %+.2f m%n",
@@ -129,7 +133,7 @@ final class TownWorksCheck {
         // at its height, asphalt or concrete as it is, no steeper than 15 %
         RoadSurfaceQuery.Out out = new RoadSurfaceQuery.Out();
         int qn = 0, qMiss = 0, qOff = 0, qKind = 0, qSteep = 0;
-        double qWorst = 0;
+        double qWorst = 0, a1Steep = 0;
         String qFirst = null;
         double minNy = 1 / Math.sqrt(1 + 0.15 * 0.15);
         for (double qs = p.limit[0]; qs <= p.limit[1]; qs += 1)
@@ -147,11 +151,13 @@ final class TownWorksCheck {
                 qWorst = Math.max(qWorst, d);
                 if (d > 1e-6) qOff++;
                 if ((out.surface == RoadSurfaceQuery.Surface.ASPHALT) != (sp.part() == TownWorks.Part.ASPHALT) && d <= 1e-6) qKind++;
+                // Fuel Stop A1's aprons climb up to a metre across the sidewalk (2026-10-20): reported apart, at most 25 %
+                if (tw.onFuelStopApron(w[0], w[1])) { a1Steep = Math.max(a1Steep, Math.sqrt(1 / (out.ny * out.ny) - 1)); continue; }
                 if (out.ny < minNy) { qSteep++; if (qFirst == null) qFirst = String.format(Locale.ROOT, "steep %s at s %.1f v %.1f (ny %.3f)", sp.part(), qs, qv, out.ny); }
             }
-        System.out.printf(Locale.ROOT, "    ground query on the pavement: %d points, missed %d, another height %d (a road's, worst %.3f m), wrong material %d, steeper than 15 %% %d%s%n",
-                qn, qMiss, qOff, qWorst, qKind, qSteep, qFirst == null ? "" : " (" + qFirst + ")");
-        if (qMiss > 0 || qKind > 0 || qSteep > 0) ok = false;
+        System.out.printf(Locale.ROOT, "    ground query on the pavement: %d points, missed %d, another height %d (a road's, worst %.3f m), wrong material %d, steeper than 15 %% %d%s; Fuel Stop A1's aprons at most %.0f %%%n",
+                qn, qMiss, qOff, qWorst, qKind, qSteep, qFirst == null ? "" : " (" + qFirst + ")", a1Steep * 100);
+        if (qMiss > 0 || qKind > 0 || qSteep > 0 || a1Steep > 0.25) ok = false;
         // where the lots are steepest: the ground across that point both ways, and what it is
         int li = TownWorks.Part.LOT.ordinal();
         if (at[li][li] != null) {

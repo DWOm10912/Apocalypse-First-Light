@@ -91,9 +91,13 @@ public final class RoadCounty {
     static final double AVOID_ROAD = 40, AVOID_TOWN = 10;
     /** The search reach round H and the longest county road kept, m. */
     static final double MAX_REACH = 5000, MAX_LENGTH = 10000;
-    /** Town entries: the approach point beyond the limit, the Bezier blends tried into the arm's line, the end beyond the box, m. */
+    /**
+     * Town entries: the approach point beyond the limit, the Bezier blends tried into the arm's line (400 and 480 added
+     * 2026-10-19: with the town grid on the block grid a line can reach the approach point well off the arm's line), the
+     * end beyond the box, m.
+     */
     static final double APPROACH_OUT = 60, END_OUT = 2;
-    static final double[] BLEND = {150, 200, 260, 320};
+    static final double[] BLEND = {150, 200, 260, 320, 400, 480};
     /** The town end's landing: its length and largest grade. */
     static final double TOWN_LANDING = 20, TOWN_LANDING_GRADE = 0.03;
     /** A road with no town at either end counts this much longer, m. */
@@ -278,7 +282,7 @@ public final class RoadCounty {
         long tb = System.nanoTime();
         boolean[] band = band(g, designs, towns);
         List<Way> ways = new ArrayList<>();
-        for (TownPlan p : towns) ways.addAll(ways(p, g, band));
+        for (TownPlan p : towns) ways.addAll(ways(p, g, band, designs));
         report.add(String.format(Locale.ROOT, "county road: route grid %d ms, road band %d ms", (tb - tg) / 1_000_000, (System.nanoTime() - tb) / 1_000_000));
         Option best = null;
         for (int k = 0; k < sites.size(); k++) {
@@ -517,9 +521,9 @@ public final class RoadCounty {
     /**
      * The ways into a town: every outer intersection's free arm out of the town (no street on it and no node beyond it on
      * its line; never -v, toward the interstate; never an exit's corner), its approach point APPROACH_OUT beyond the limit
-     * on open ground.
+     * on open ground, the stretch from there into the arm clear of every road (#armClear).
      */
-    private static List<Way> ways(TownPlan p, RouteGrid g, boolean[] band) {
+    private static List<Way> ways(TownPlan p, RouteGrid g, boolean[] band, List<RoadDesign> designs) {
         int n = p.nodes.size();
         boolean[][] arm = new boolean[n][4];
         double[] extS = new double[n], extV = new double[n];
@@ -564,11 +568,30 @@ public final class RoadCounty {
                 double out2 = toLimit + APPROACH_OUT;
                 double[] end = par ? p.world(endAlong, q.v()) : p.world(q.s(), endAlong);
                 double[] ap = p.world(q.s() + u[0] * out2, q.v() + u[1] * out2);
-                if (band[g.cellOf(ap[0], ap[1])]) continue;
+                if (band[g.cellOf(ap[0], ap[1])] || !armClear(ap, end, designs)) continue;
                 out.add(new Way(p, i, dir, end, endAlong, ap));
             }
         }
         return out;
+    }
+
+    /**
+     * Whether the straight from a way's approach point to its end keeps the county road's clearance (#clear) from every
+     * road. Since the town grid runs on the block grid (2026-10-19) an outer arm at the town's front can head toward the
+     * interstate slanting past the town; the route grid only reaches the approach point, so a way like that failed every
+     * leg that took it (seed 11823271242869393782: the home had no road).
+     */
+    private static boolean armClear(double[] ap, double[] end, List<RoadDesign> designs) {
+        double reach = CrossSection.C2.edge + 2 + CLEAR, len = Math.hypot(end[0] - ap[0], end[1] - ap[1]);
+        for (RoadDesign q : designs) {
+            double need = q.section.edge + reach + 2;
+            for (double d = 0; d <= len + 1e-9; d += 4) {
+                double t = len < 1e-9 ? 0 : Math.min(1, d / len), x = ap[0] + (end[0] - ap[0]) * t, z = ap[1] + (end[1] - ap[1]) * t;
+                double[] l = q.local(x, z, need);
+                if (l != null && Math.abs(l[1]) <= need) return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -760,7 +783,9 @@ public final class RoadCounty {
         if (e.kind().equals("town")) {
             line = intoArm(line, e.way());
             if (line == null) {
-                report.add(what + ": " + e.way().town().name + " node " + e.way().node() + ": no blend into the arm keeps the radius");
+                Way w = e.way();
+                report.add(String.format(Locale.ROOT, "%s: %s node %d: no blend into the arm keeps the radius (arm %d, approach %.0f %.0f)",
+                        what, w.town().name, w.node(), w.dir(), w.approach()[0], w.approach()[1]));
                 return null;
             }
         }

@@ -629,6 +629,10 @@
       "unit_mass_kg": 12,
       "estimated": true
     },
+    "apocalypse_firstlight:road_speed_limit_sign": {
+      "unit_mass_kg": 11,
+      "estimated": true
+    },
     "apocalypse_firstlight:road_guide_sign": {
       "unit_mass_kg": 120,
       "estimated": true

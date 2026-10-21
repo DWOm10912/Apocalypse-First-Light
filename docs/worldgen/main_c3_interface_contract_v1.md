@@ -6,6 +6,7 @@
 - 2026-10-19 Main 把 `feature/county-road-g3` 合并进 master（`ce81f51a`），合并后编译和 `countyCheck` 6 个种子 PASS。下一步 Main 把 `ForestHomeRuntime` 改成读 `home.reservation()`。
 - 2026-10-19 Main 接上了（[M4 第二轮](forest_home_b_m4_round2.md)，在 master 上未提交，未进游戏）：`ForestHomeRuntime` 读 `home.reservation()`；`AFL_HOME_` 前缀换成 `start_area` 开关（Main 登记在 `WorldgenRules`）；大门和信箱由 Main 按 `gate` / `mailbox` 在区块装饰末尾写入（第 4 节的"Main 提供放置"改成 Main 自己放，C 不用调用）；车道路面种类 `GRAVEL`。C 同日答应在两个锚点做整格平台（分支 `feature/county-road-g3-pads`）。
 - 2026-10-19 C 提交平台（`f12c1df2`，RULES g3.4，`surface22`，`road_works#12`），Main 同日合并进 master `3e67b2c5`（用户批准，未推送）：锚点的 `y` 是平台的整数高度，Main 的放法不用改。
+- 2026-10-19 C 做了公路开局的路边锚点（9.1 节，分支 `feature/linden-markings`，未提交、未合并）：给 D 的 `afl:roadside` 用。
 - Main 起草（2026-10-14），按用户同日批准的分工写；
 - Claude C 同日回复两次：同意规划顺序、"契约类型放 Main"、G3 退路、形状和索引放 `contract`，提的具体条件都写进了下面各节；
 - 用户同日批准这份接口规划，定了实施顺序（第 12 节）。以后接口细节 Main 和 C 直接商量，定了就改这份文档；默认开局和正式世界生成规则的重大改变交用户确认。
@@ -41,6 +42,8 @@ Main 和 C 会同时改世界生成，下面四件事必须只有一份：
 - 路牌模型以后再做；C 先提供安装锚点（第 9 节）。
 - 两边都不改对方的文件和工作区。
 - 2026-10-15 改分工：用户 2026-10-15："谁来修最有效率就归谁"。C 已经有选线、地形施工、Mesh 路面底座和区块写入，车道只是最低一级的一条路；Main 来修只能在 C 的底座上再包一层。所以私人车道归 C（第 4 节）。
+- 2026-10-19 改分工：用户 2026-10-19："做房子和商业建筑……我觉得可以让你这边做，因为 main 和 D 都有自己的事情要做"。镇里（Linden 等框架城镇）的住宅和商业建筑归 C：建筑本身、在镇地块上的放置和整平。C 本来就有镇的规划、地块和地形施工（[城镇框架 V1](federal_towns_v1.md)）。Main 照旧负责溪谷老宅；路边搜刮建筑（A1 加油站等）的地块和放置这次没提到，仍按上表归 Main，要改再问用户。
+- 2026-10-19 再改：用户 2026-10-19："你这边专门管地形/高速/建筑/城市生成，以后这个对话就这样"。C 的范围是地形、公路（州际、州道、县道）、建筑、城市（镇）生成。Main 照旧负责溪谷老宅和已有的东西；新的建筑和城镇生成从这天起都归 C。
 
 ## 2. 规划顺序（一次算完，和区块无关）
 
@@ -229,6 +232,31 @@ G3 给出的沿路地块 `FrontageLot`：
 - 种类：`SIGN_GUIDE` / `SIGN_SPEED` / `SIGN_STATE_WELCOME` / `LIGHT` / `GUARDRAIL_RUN` / `DRAIN_INLET`……
 
 以后加牌子、护栏、路灯，只读锚点放资产，不用重新规划道路（用户对 C3 的要求）。老宅计划里原来的"MILLBROOK 4 km"绿牌（R4）也走这里：模型以后做，位置用 C 的锚点。
+
+上面这个通用的 `RoadsideAnchor` 还没做。已经做了的是下面这一种。
+
+### 9.1 公路开局的路肩点（`RoadsideStart`，2026-10-19）
+
+用户 2026-10-19："顺带公路开局的路边锚点"。按 C 2026-10-15 给 D 的答复做（[幸存者开局](../gameplay/survivor_background_skills_v1_plan.md) 第 8 节）。代码 `worldgen/network/road/RoadsideStart.java`，分支 `feature/linden-markings`，未提交。
+
+- 调用：
+  - `RoadsideStart.find(ServerLevel level, double x, double z, int count)`：用这个世界绑定的路网（`RoadNetworkRuntime.bound(level)`）；
+  - `RoadsideStart.find(RoadWorks works, double x, double z, int count)`：纯函数，给离线检查用。
+  - 返回 `Anchor(road, s, side, u, points)`，`points` 是 `count` 个 `Point(x, y, z, yaw)`。没有路网（开关关着、领养的旧世界、非联邦世界）或者没有合格的路肩时返回 `null`，调用方退回 `wilderness_ring`。
+- 不加载区块：路网在第一个区块之前就绑定了，高度是 `RoadDesign#pavementY`，区块按同一个函数施工，所以点的高度就是建出来的路肩高度。查询一次 1–5 ms（离线检查量的）。
+- 只在州道（R2，不含镇的出口横街 `town_*`）外侧路肩的正中：离路中线 `lane + outer / 2` = 3.65 + 1.2 = 4.85 m，不在车道上，不在州际、匝道、县道上。
+- 整段点前后各留 `RUN_CLEAR` 20 m，每 2 m 查一次，要求：
+  - 离路的两端至少 `END_CLEAR` 150 m（含截断端头）；
+  - 离这条路参加的每个路口（作为主路是路口中线处，作为支路是它的端头，立交匝道也算）至少 `JUNCTION_CLEAR` 150 m，不在路口面上；
+  - 离桥至少 `SPAN_CLEAR` 30 m，离涵洞至少 `CULVERT_CLEAR` 30 m，离隧道洞口至少 `TUNNEL_CLEAR` 60 m，上方没有跨线桥；
+  - 不在禁止超车区（视距差的地方）；
+  - 两边车道都是正常路拱（横坡 2 %，差 0.001 以内），也就是不在超高弯道和它的渐变段上；
+  - 离每座镇的边界至少 `TOWN_CLEAR` 150 m；
+  - 这一点的路面查询（`RoadWorks#hit`）是这条路自己的，没有别的路占着。
+- 选哪一段：沿每条州道每 `SCAN` 10 m 一个候选，取中间那个点离 `(x, z)` 最近的；路肩取离 `(x, z)` 近的那一边。同一个世界、同一个参考点永远得到同一个结果。参考点由调用方给（比如世界出生点）。
+- 多人：同一侧路肩上每隔 `STEP` 3 m 一个点，顺着那一侧的车流方向排；`yaw`（Minecraft 角度）朝车流方向。`y` 是路肩的铺装高度，人站在它上面那一格。
+- 检查：`./gradlew roadsideStartCheck`（`RoadsideStartCheck`）。每个种子从老宅和原点各找 8 个点：每个点的路面查询是这条州道、横向在外侧路肩上、那一列是 `PAVED` 而且铺装高度对得上、相邻两点 3 m、朝向顺着路；整段重新跑一遍 `clear` 要通过；算两次结果一样；空路网返回 `null`。2026-10-19 默认 6 个种子 **PASS**：每个种子 8–11 条州道，都找到了点；离老宅 463–3,590 m，离原点 1,126–3,137 m；查询一次 1–5 ms。没进游戏看过。
+- 还没做：D 把 `afl:roadside` 接上（`SurvivorScenes` 里它现在 `connected = false`）；第 9 节通用的 `RoadsideAnchor`（牌子、护栏、路灯）。
 
 ## 10. 版本锁
 

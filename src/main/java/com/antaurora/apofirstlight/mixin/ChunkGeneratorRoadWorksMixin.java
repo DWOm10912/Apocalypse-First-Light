@@ -12,7 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * C3.2 (docs/worldgen/federal_highways_c3.md, 10.4): the road's chunk pass runs at the start of the chunk's feature
- * step, before structures and features, on the chunk's own columns only (RoadChunkPass). Worlds without a bound road
+ * step, before structures and features, on the chunk's own columns only (RoadChunkPass), then the town buildings
+ * (TownBuildingPass). Worlds without a bound road
  * network (every world but federal ones created with the road gates) return at once.
  */
 @Mixin(ChunkGenerator.class)
@@ -20,5 +21,7 @@ public abstract class ChunkGeneratorRoadWorksMixin {
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void apocalypse$roadWorks(WorldGenLevel level, ChunkAccess chunk, StructureManager structures, CallbackInfo ci) {
         RoadChunkPass.apply(level, chunk);
+        // the town buildings on their lots, over the finished works (Town buildings V1, 2026-10-19)
+        com.antaurora.apofirstlight.worldgen.building.TownBuildingPass.apply(level, chunk);
     }
 }

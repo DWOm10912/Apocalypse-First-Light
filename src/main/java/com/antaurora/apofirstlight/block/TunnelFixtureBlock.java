@@ -63,7 +63,7 @@ public final class TunnelFixtureBlock extends Block implements EntityBlock {
         EMERGENCY_CABINET("emergency_cabinet", Mount.WALL, 4), HANDRAIL("handrail", Mount.FLOOR, 2),
         STOP_SIGN("stop_sign", Mount.FLOOR, 3), SIDE_ROAD_SIGN("side_road_sign", Mount.FLOOR, 3), CURVE_SIGN("curve_sign", Mount.FLOOR, 4),
         DO_NOT_ENTER_SIGN("do_not_enter_sign", Mount.FLOOR, 3), WRONG_WAY_SIGN("wrong_way_sign", Mount.FLOOR, 3),
-        GUIDE_SIGN("guide_sign", Mount.FLOOR, 8);
+        GUIDE_SIGN("guide_sign", Mount.FLOOR, 8), SPEED_LIMIT_SIGN("speed_limit_sign", Mount.FLOOR, 3);
 
         public final String mesh;
         public final Mount mount;
@@ -81,7 +81,7 @@ public final class TunnelFixtureBlock extends Block implements EntityBlock {
         /** A junction, town corner or ramp terminal sign (C3.3b), not a tunnel's part. */
         public boolean roadSign() {
             return this == STOP_SIGN || this == SIDE_ROAD_SIGN || this == CURVE_SIGN || this == DO_NOT_ENTER_SIGN || this == WRONG_WAY_SIGN
-                    || this == GUIDE_SIGN;
+                    || this == GUIDE_SIGN || this == SPEED_LIMIT_SIGN;
         }
 
         /** Whether it drops itself as an item (else materials). */

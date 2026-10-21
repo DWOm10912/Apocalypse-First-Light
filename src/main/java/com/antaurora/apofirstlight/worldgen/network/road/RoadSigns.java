@@ -42,6 +42,11 @@ public final class RoadSigns {
     public static final double OFFSET = 2, SIDE_ROAD = 150, SIDE_ROAD_MIN = 80, CURVE = 120, CURVE_MIN = 60, STEP = 10;
     /** R5-1 DO NOT ENTER across (30 in), R5-1a WRONG WAY wide and high (36 x 24 in), m. */
     public static final double DO_NOT_ENTER = 0.75, WRONG_WAY_W = 0.9, WRONG_WAY_H = 0.6;
+    /**
+     * Town Framework V1 (TownSigns, 2026-10-19): a town STOP's face bottom over the foot (7 ft, where people walk), the ALL
+     * WAY plaque R1-3P (18 x 6 in) and its gap under the STOP, the speed limit R2-1 (24 x 30 in, the roadside's 5 ft), m.
+     */
+    public static final double TOWN_BOTTOM = 2.1, ALL_WAY_W = 0.45, ALL_WAY_H = 0.15, ALL_WAY_GAP = 0.05, SPEED_W = 0.6, SPEED_H = 0.75;
     /** WRONG WAY: its distance down the exit ramp from the DO NOT ENTER sign, its shortest, m. */
     public static final double WRONG_WAY = 60, WRONG_WAY_MIN = 30;
     /** A town corner's curve starts where its curvature first exceeds this, 1/m. */
@@ -158,7 +163,7 @@ public final class RoadSigns {
      * A warning on the right of road d's traffic travelling k at station s, OFFSET beyond the paved edge on the
      * foreslope, facing that traffic; null off the road's stations or where the place is not clear.
      */
-    private static TunnelMesh.Placement roadside(RoadWorks works, RoadWorks.Ground ground, RoadDesign d, double s, int k, String mesh, String bone) {
+    static TunnelMesh.Placement roadside(RoadWorks works, RoadWorks.Ground ground, RoadDesign d, double s, int k, String mesh, String bone) {
         if (s < 0 || s > d.length) return null;
         if (d.span(s) != null || d.tunnel(s, STRUCTURE_CLEAR) != null) return null;
         for (double q : new double[]{-STRUCTURE_CLEAR, STRUCTURE_CLEAR}) if (d.span(Math.max(0, Math.min(d.length, s + q))) != null) return null;

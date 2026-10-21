@@ -136,7 +136,7 @@ final class C3RoadProbe {
 
     /** The tunnel parts standing on the ground beside the road (their feet are checked). */
     private static final java.util.Set<String> FOOTED = java.util.Set.of("portal_signal", "headlight_sign", "closure_gate", "cms_gantry",
-            "stop_sign", "side_road_sign", "curve_sign", "do_not_enter_sign", "wrong_way_sign", "guide_sign");
+            "stop_sign", "side_road_sign", "curve_sign", "do_not_enter_sign", "wrong_way_sign", "guide_sign", "speed_limit_sign");
 
     /** A footed part's feet (x, y, z): a guide sign's at its two posts, any other part's at its origin. */
     private static List<double[]> feet(TunnelMesh.Placement pl) {

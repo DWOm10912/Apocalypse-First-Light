@@ -2,7 +2,13 @@
 
 > 状态：**Linden（valley_town）的框架已实现，2026-10-18 已提交到分支，未合并 master；用户 2026-10-17 到 18 日在游戏里看过各轮，都 PASS（第 8 节最后一条）**。2026-10-17 出了四张概念图，用户同日定稿（"可以就这样定"），同日开工（"可以，开始做linden吧"）。建了：街道、路口、人行道、街区、地块（带分区）、地块整平、F-40 出口接进镇、城界牌和街名牌、`/afl worldgen town`。没建：房子、下穿、车道线、其他 15 座城镇（第 8 节）。实现和概念图不同的地方见第 7 节开头。
 >
-> 分支：`feature/federal-junctions-c3.3b`（C 的 worktree），2026-10-18 已提交到分支，未合并 master。新世界的版本：`road_network` … `#surface19`，`terrain_works` = `road_works#9`（[版本锁](worldgen_version_lock_v1.md)）。
+> 2026-10-19 起（分支 `feature/linden-markings`，未提交）：路口控制和街道标线（停止线、人行横道、双黄中心线）、STOP 牌（主街和出口横街的路口是全向停车）、城界牌的人口行、进镇限速牌、街名牌的门牌号段，见 7.8 节。用户实机 PASS（2026-10-19 告知）。
+>
+> 2026-10-19 同一分支，未提交，**没进游戏看过**：镇的街网改成对齐方块网格（出口横街过了 F-40 拐成网格方向，7.9 节），地块上放白模房子（[城镇建筑放置 V1](town_buildings_v1.md)）。新世界里 Linden 的位置和摆法会变（`road_works#15`、`#surface24`、新开关 `town_buildings`）。
+>
+> 2026-10-20 同一分支，未提交，**用户 2026-10-20 实机 PASS**：每座镇都必须生成，剧情只放在标志性建筑上（用户 2026-10-20）。镇照旧围着出口长；每座镇的标志性建筑预留一整个街区；正常范围找不到能建镇的出口时，用兜底搜索（7.10 节）。2026-10-19 到 20 日试过的"固定镇图、镇先占地"已撤回。版本 `#surface27`、`road_works#18`。
+>
+> 分支：`feature/federal-junctions-c3.3b`（C 的 worktree），2026-10-18 已提交到分支，未合并 master。新世界的版本：`road_network` … `#surface19`，`terrain_works` = `road_works#9`（[版本锁](worldgen_version_lock_v1.md)）；2026-10-19 分支 `feature/linden-markings` 是 `#surface23`、`road_works#13`，2026-10-20 同一分支是 `#surface27`、`road_works#18`。
 
 ## 0. 为什么先做框架
 
@@ -195,7 +201,7 @@ r1 种子下每座城镇连着哪些路：`design/worldgen/federal_towns/source/
 
 ### 7.2 规划（建网时，`TownPlanner`）
 
-城镇坐标：s 沿出口处 F-40 的切线，v 朝镇；出口横街和 F-40 中线的交点是 (0, 0)。
+城镇坐标：s 沿出口处 F-40 的切线，v 朝镇；出口横街和 F-40 中线的交点是 (0, 0)。2026-10-19 起 s、v 是离 F-40 切线最近的两条世界轴，原点是离交点最近的整数方块角，出口横街的 s 和 Front St 的 v 每侧各自算（7.9 节）；本节下面说的"s = 0"、"v = ±150"是改之前的。
 
 - **网格**：横街每 150 m（`CROSS`），出口横街在 s = 0；平行街从 v = ±150（`FRONT`，Front St）起，每两条之间一个街区：两排 32 m 深的地背对背，中间 6 m 后巷（70 m，`ROWS`）。镇那侧最多 4 排街区，另一侧 2 排（`BANDS`、`FAR_BANDS`）。
 - **哪些格子能建**：不在水里、地面起伏 ≤ 20 m（`MAX_RELIEF`）、离别的路铺装边 ≥ 45 m（`ROAD_CLEAR`）。从出口两侧 Front St 角上的两格起，按沿街走过去的远近取，最多 44 个（`MAX_BLOCKS`）。
@@ -260,8 +266,8 @@ r1 种子下每座城镇连着哪些路：`design/worldgen/federal_towns/source/
 
 ### 7.4 牌子（`TownSigns`，部件方块 `road_guide_sign`）
 
-- **城界牌**（`GuideSigns.Type.LIMIT`）：出口横街上，进镇方向的右边，离 Front St 路口 25 m（放不下就往镇外每次挪 10 m，最多 40 m）。牌面两行：镇名 / `CITY LIMIT`，绿底白字，牌宽至少 1.6 m，用低一档的牌底高度。人口小牌和进镇限速牌没做。
-- **街名牌**（`GuideSigns.Type.STREET`）：每个路口一根柱子，两块刀片牌叠着：下面一块是平行街的名字（牌面朝横街），上面一块是横街，转 90°。刀片牌 0.32 m 高、至少 0.9 m 宽，底边离地 2.3 m，牌面两面都有字。柱子在路口盒背向州际那一角的人行道上，离角 1 m；那一角不是人行道就换一角。门牌号段（`600`）没画。
+- **城界牌**（`GuideSigns.Type.LIMIT`）：出口横街上，进镇方向的右边，离 Front St 路口 25 m（放不下就往镇外每次挪 10 m，最多 40 m）。牌面两行：镇名 / `CITY LIMIT`，绿底白字，牌宽至少 1.6 m，用低一档的牌底高度。2026-10-19 起第三行是人口（`POP 4300`，7.8 节），城界牌往镇里 8 m 有限速牌（7.8 节）。
+- **街名牌**（`GuideSigns.Type.STREET`）：每个路口一根柱子，两块刀片牌叠着：下面一块是平行街的名字（牌面朝横街），上面一块是横街，转 90°。刀片牌 0.32 m 高、至少 0.9 m 宽，底边离地 2.3 m，牌面两面都有字。柱子在路口盒背向州际那一角的人行道上，离角 1 m；那一角不是人行道就换一角。2026-10-19 起平行街的那块在街名后面用小字写门牌号段（`600`，7.8 节）。
 - 2026-10-17 修：街名牌只有一根柱子，客户端的牌子网格（`GuideSignParts.build`）算贴图范围时读了第二根柱子的柱脚（`feet()[1]`），一看到街名牌、或者渲染它的物品就崩溃（`ArrayIndexOutOfBoundsException`，用户第三个新世界，崩溃报告 `crash-2026-10-17_22.55.51-client.txt`）。改成取所有柱脚里最低的。离线检查和 GameTest 只跑服务端，没碰到客户端网格，所以没发现；现在 `townCheck` 对每块城镇牌子跑一遍这段网格代码。
 - 2026-10-17 修：街名牌的字上有斜条纹（用户截图）。原因是重叠的面：街名牌用了高速路牌的边框（离边 0.035 m、宽 0.05 m），0.32 m 高的刀片牌上，字的格子压到边框上，两者在同一个平面（牌面 `FACE` 0.004 m）。改法：
   - 刀片牌用自己的细边框，离边 0.012 m、宽 0.016 m（`GuideSigns.BLADE_BORDER_INSET`、`BLADE_BORDER`）；
@@ -315,25 +321,98 @@ r1 种子下每座城镇连着哪些路：`design/worldgen/federal_towns/source/
 
 **编译**：`compileJava compileTestJava compileDevJava` 通过。
 
+### 7.8 路口控制、标线和进镇的牌子（2026-10-19，`TownControl`）
+
+用户 2026-10-19："开新分支，先做 Linden 街道标线和路口标志"。照北美小镇的做法（MUTCD 2B.04、2B.05、3B.01、3B.16、3B.18）。规划是纯几何：`TownControl.of` 读镇的路口（`TownWorks.NodeX`），结果按镇缓存（`TownWorks#control`）；`TownMesh` 画标线，`TownSigns` 立 STOP 牌。
+
+- **街的等级**：Main St 和出口横街（C14 断面，加上出口横街从州道接进来的那一头）是 2 级，其他街 1 级，县道进镇的口（G3）是 0 级。
+- **谁停车**（3 条以上的臂才管）：
+  - T 字路口：没有对面那条臂的"竖"停车；
+  - 十字路口：等级低的那一对停车（两向停车）；两对一样高时横街（编号街，s 不变的那一对）停车；两对都是 2 级（Main St 和出口横街交叉）时四个方向都停车（全向停车，STOP 牌下面挂 ALL WAY 小牌）；
+  - 县道进镇的口总是停车。
+- **人行横道**（横向两条白线，MUTCD 3B.18）：有 2 级臂的路口（Main St 和出口横街上，人多的地方），每条臂上都画，位置对着横过来那条街的人行道，宽度取人行道宽和 `WALK` 2.4 m 中大的，两条线各 `LINE_WALK` 0.3 m 宽，从路缘画到路缘（跟着路缘转角的圆弧走）。
+- **停止线**（白线，`BAR` 0.6 m 深）：横过进路口那半边，从离中线 `STOP_IN` 0.2 m 画到路缘；在人行横道外 `STOP_GAP` 1.2 m，没有人行横道时在路缘转角圆弧结束以后 1.2 m。
+- **中心线**：C14 的街画双黄线（每条 `LINE` 0.15 m，内边离中线 `CENTRE_GAP` 0.05 m，和公路一样），从这头路口的标线画到那头路口的标线；住宅街不画中心线（MUTCD 3B.01：地方街道）。
+- 标线离路缘面 `CURB_GAP` 0.08 m；在出口横街和县道的口，标线不能越过路的端头，放不下就不画。
+- **画法**（`TownMesh#paint`）：标线按路面同样的 1 m 方格（有路缘的格是 0.25 m 细格）切开，每块按那一格路面的两个三角面的平面取高度，所以和路面共面（标线材质有深度偏移，和公路的标线一样）。贴图沿长边每 4 m 一张（`RoadMesh.TEXTURE`），白线、黄线用公路的 `paint_white` / `paint_yellow`。
+- **STOP 牌**（`road_stop_sign`）：每个停车的方向一块，在停止线那里、进路口车流的右边，立在绿化带里离沥青边 `STOP_OUT` 2.0 m；那里是车道口的喇叭口就离路口再远 1 m，最多 6 m；绿化带放不下就放在人行道上（离沥青边 4 m）。镇里的 STOP 牌底边离地 `TOWN_BOTTOM` 2.1 m（7 ft，有行人的地方，部件 bone `town`）；全向停车时下面挂 ALL WAY 小牌（R1-3P，0.45 × 0.15 m，bone `all_way`）。公路路口的 STOP 牌（bone 空）不变。
+- **城界牌的人口**：第三行 `POP 4300`。按地块算：住宅每块 2.5 人、拖车营地每块 2.3 人、市中心每块 1.2 人（店铺楼上），取到十位，至少 10。牌子字体没有逗号，所以不写千位分隔。
+- **进镇限速牌**（新部件 `road_speed_limit_sign`，R2-1，0.6 × 0.75 m，`SPEED LIMIT 30`，`TownSigns.SPEED_LIMIT` = 30 mph，牌底 1.5 m）：出口横街和县道进镇的口上，城界牌往镇里 `SPEED_IN` 8 m，同一边；放不下每次往里挪 6 m，最多 20 m，还放不下就不放。用撬棍拆，3 s，11 kg（估计），和别的路牌一样没有掉落表、不进挖掘标签。
+- **街名牌的门牌号段**：平行街那块刀片牌在街名后面加小字（`BLADE_BLOCK_CAP` 0.1 m 高，隔 0.1 m），是横街编号乘 100（`6th St` → `600`）。横街不是编号街（Front St、Main St 相交处）时不写。
+- 网格：`tools/build-tunnel-v1.mjs` 画了 `speed_limit` 和 `all_way` 两块牌面，`stop_sign` 网格多了 `town`、`all_way` 两个 bone，新网格 `speed_limit_sign`；Blockbench 源文件 `src/main/blockbench/tunnel_equipment_v1.bbmodel` 一起重新生成。
+- 版本：`road_network` 的 `surface23`（[版本锁](worldgen_version_lock_v1.md)）。
+- 检查（`townCheck`）：每个标线的四角和中点都要在沥青上；画出来的标线面积要等于标线面积（差 1 % + 1 m² 以内）；STOP 牌数要等于停车的方向数，立在绿化带或人行道上、高度对、bone 对；每座镇至少一块限速牌。2026-10-19 默认 6 个种子 **PASS**：每座镇 20–30 条黄线、125–202 条白线，标线面积 852–1,239 m²，画出来的面积和标线面积一致（取整到 1 m² 相同），0 个角落在沥青外；STOP 牌 47–90 块，等于停车方向数，全部在绿化带或人行道上，每座镇 4 块是全向停车（Main St 和出口横街交叉那个路口）；限速牌每个进镇口一块（1–3 块）；街名牌一半带门牌号段。`countyCheck`、`roadsideStartCheck` 6 个种子 PASS；`node tools/build-tunnel-v1.mjs --check` OK；GameTest（`runGameTestServer -PaflWithoutShaders -I src/dev/tunnel-fixture-gametest.init.gradle`，加了限速牌和全向 STOP 的放置、碰撞格、撬棍 3 s、掉自己）PASS。第一次跑 GameTest 时风机拆下后的材料掉落是空的，基线和第二次都过了，算偶发。
+- 2026-10-19 同时修了县道进镇口的台阶（G3 带进来的）：检查发现两个种子在县道进镇口各有 5 个路面顶面陡过 15 %（17–18 %）。原因：那个路口对面是 12 m 宽的街，中心方框按 6 m 半宽做横向路拱，县道那条臂按 3.9 m 半宽，两者在方框边上差 3–4 cm。改成方框里的横向路拱半宽从中心处的值线性过渡到这一侧臂的值（`TownWorks#node`），两头连续。普通路口两边臂一样宽，不受影响。`terrain_works` 升到 `road_works#13`。改完 6 个种子路面最陡 12–14 %。`townCheck` 现在打印最陡顶面所在的城镇坐标、最近的路口和周围 2 m 的高度。
+
+### 7.9 街网对齐方块网格（2026-10-19）
+
+用户 2026-10-19 定的（三种做法里选了"街网对齐方块"）：房子要用方块搭，而镇的街网原来顺着出口处 F-40 的切线排，和方块网格差 3.5°–38.6°（9 个种子；用户的 `New World (5)` 是 25.2°）。
+
+- **网格**（`TownGrid`）：镇的 s 轴取离 F-40 切线最近的世界轴（`axis`），v 轴是它转 90° 朝镇的那一边；原点是交点取整到方块角（`origin`）。所以街、街区、地块的边都和 x / z 轴平行。
+- **出口横街**（`TownGrid.path`）：从交点沿 F-40 的法线直走 180 m（`STRAIGHT`，立交要求跨线路在交点前后 160 m 内是直的：`RoadInterchanges` 的 D 90 + APPROACH 70），再用 200 m 半径（`RADIUS`）的圆弧拐到网格的 v 方向，然后直走到 Front St。镇那侧和另一侧各算一条，拼成跨线路（`TownExits.stub`）。
+- **Front St** = 拐正之后再留 25 m（`FRONT_CLEAR`），至少 150 m，取整到 1 m（`frontOf`）。每侧单独算。
+- **出口横街的 s**：拐正以后横街不再在 s = 0。镇规划器在建好的跨线路上量（`TownPlanner.straight`：连续 40 m 偏离网格方向不超过 0.004），每侧一个，网格的横街从那里起每 150 m 一条。量不出来（跨线路在网格方向上没有直段）就不摆镇，报告写"never runs straight on the block grid"；另一侧量不出来就只有镇那侧。
+- **立交**（`RoadInterchanges.approach`）：镇的跨线路在 qp 处已经沿法线（0.5 m、0.5° 以内）时原样保留，不再用 Bezier 重新拉直。`RoadCurve` 是均匀三次 B 样条，共线的控制点画出来就是直的。
+- **出口选址**（`TownExits.reach`）：数街区时也按新网格摆（世界轴、拐正后的 Front St）。
+- 版本：`terrain_works` = `road_works#15`，`road_network` 的 `#surface24`（[版本锁](worldgen_version_lock_v1.md)）。之前用旧版本建的世界打开时会被版本锁拦下（HARD），新建的世界里 Linden 的位置和摆法会变。
+
+离线结果（2026-10-19，`townCheck`，7 个种子全部 PASS）：
+
+| 种子 | 离方块网格 | Front St | 街区 / 地块 | 说明 |
+|---|---|---|---|---|
+| 4 | 2.7° | 229 m | 22 / 191 | |
+| 18151365494840402103（r1） | 30.8° | 295 m | 39 / 339 | 两侧出口横街在 s −120 / +121 |
+| 10132636411566409605 | 16° | 268 m | 36 | |
+| 10164326571583364449 | 40.2° | 304 m | 37 | 网格轴 (0, −1) |
+| 11823271242869393782 | 24.1° | 283 m | 44 | |
+| 16060040187792812410 | 6.7° | 238 m | 43 | |
+| 9699458680326603148（用户 `New World (5)`） | 16.8° | 269 m | 37 / 319 | 出口从 F-40 的 s 12280 挪到 s 14400，镇在州际左边 |
+
+- 路面、标线、牌子的检查每个种子都干净（坡度超过 15 % 的顶面 0 个、画两次的竖面 0 个、标线 0 个角落在沥青外）。
+- 县道（G3）跟着变：老宅选址和县道走法在新世界里会不同；种子 11823… 的老宅没有县道了（[县道 G3](county_road_g3.md) 第 9 节）。`countyCheck`、`roadsideStartCheck`、`roadRockCheck` 7 个种子 PASS，`forestHomeStartCheck` 7 个里 1 个 FAIL（就是这个）。
+- 用户世界的图（`TownPng`）看过：网格横平竖直，F-40 斜着过去，出口横街过了立交拐成 5th St。
+- 没进游戏看过。`road_works#15`、`#surface24` 是 HARD 变化：用这个分支之前的版本建的世界（包括用户的 `New World (5)`）打开时会被版本锁拦下，要看新摆法得新建世界。
+
+### 7.10 标志性建筑和兜底：每座镇都生成（2026-10-20）
+
+**方向**：用户 2026-10-20："我原计划所有城市都必须生成"；剧情只放在标志性建筑上（一座镇可能就一栋），普通房子随机摆就行。选了"会长的镇 + 地标"。
+
+**撤回的做法**：2026-10-19 到 20 日试过"固定镇图、镇先占地"：Linden 每个世界同一张图（29 个街区），路网规划之前选地，F-40 在镇前走直线，出口固定在 6th St。离线 7/7 个种子建成了，但城市点 2 km 内找不到地方时就没有 Linden，而且每座镇都要手写镇图、公路要迁就镇。版本 `surface25`、`surface26`、`road_works#16`、`#17` 只在离线检查里用过，代码已删除。
+
+**现在的做法**：
+- **镇照旧围着出口长**（第 2–5 节、7.9 节）：街名和分区规则每个世界一样，大小和形状随地形变化。
+- **标志性建筑**（`TownSites#landmarks`）：每座镇声明自己的标志性建筑（id 和位置）。规划器排好分区以后、选学校之前，给每栋占一整个街区（分区 `landmark/<id>`，一块地，朝近州际那条街）。位置 `main` 排序：镇这侧 Main St 和 Oak St 之间那排优先，再往后一排，再到 Front St 那排；同一排里离广场越近越好；公路商业、市中心、广场的街区排在最后。位置 `edge` 取离出口最远的街区。镇只有一个街区时也给它（占掉广场）。Linden 现在有一栋 `linden_landmark`（`main`），是什么建筑还没定，房子是 40 × 30 m 的白模（[城镇建筑放置 V1](town_buildings_v1.md)）。
+- **兜底**：
+  - 镇规划器先只用起伏 ≤ 20 m 的街区；长出来的不到 4 个街区（`TownExits.MIN_BLOCKS`）时，再放进起伏 ≤ 35 m 的街区（`FALLBACK_RELIEF`，地块整平更深）重长一遍。
+  - 正常的出口搜索（镇点前后 1500 m，再到 3000 m）没有一个出口能建成带镇的立交时，`RoadNetworkBuild#townExits` 再跑一轮兜底搜索（`TownExits#site` 的 fallback）：沿州际到 6000 m（`FALLBACK_SEARCH`），街区起伏放宽到 35 m，1 个街区就算。还不行才没有镇，报告里写 `town …: NOT BUILT`。
+- 版本：`#surface27`、`road_works#18`、`town_buildings#2#1`（HARD）。2026-10-20 放加油站 A1 以后是 `#surface28`、`road_works#19`、`town_buildings#3#1`（[城镇建筑放置](town_buildings_v1.md) 第 8 节）；同一天改了 A1 四周的地面以后是 `#surface29`、`road_works#20`、`town_buildings#4#1`（第 8.1 节），再补电缆是 `town_buildings#5#1`、`#6#1`（第 8.2 节）。
+
+离线结果（2026-10-20，`townCheck` 默认的 6 个种子：4、18151365494840402103（用户的 r1 种子）、10132…、10164…、11823…、16060…）：
+- 6 个种子都建成了 Linden，43–44 个街区，都是第一个出口选项就建成，没有用到兜底；
+- 标志性建筑都落在 Main St 那排、广场旁边（5 个种子在 1/−4，1 个在 1/3），一块 128 × 70 m 的地；
+- 路面、地面查询、车道口、平台的检查和之前一样干净（坡度超过 15 % 的顶面 0 个、画两次的面 0 个、地面查询漏掉 0 个）。
+- 兜底这一轮的代码路径在这些种子里没有跑到，只编译过。
+- 用户 2026-10-20 在新世界里看过：**PASS**。
+
 ## 8. 没做的 / 已知问题
 
 - **只有 Linden**（`TownSites.FRAMEWORK`）；其他 15 座只有路网节点。
+- 兜底（7.10 节）只在有州际经过镇点时管用：州际没修到镇点（路网层面的失败）时仍然没有镇，报告里写 `NOT BUILT`，游戏里看不出原因。兜底搜索的镇可能离镇点 3–6 km、街区起伏到 35 m（地块整平更深），离线检查的种子里还没有用到兜底的。
+- 标志性建筑：框架做了（每栋一整个街区，白模），Linden 的那栋是什么、剧情是什么还没定；其他城镇还没有。
 - 镇只在 F-40 的一侧（加另一侧最多 2 排）；**下穿没做**，所以 F-40 另一侧过来只有出口横街一条路。
 - 出口用的是附近已有的州道立交时（种子 4），镇只铺在州道那一侧。
-- **街上没有车道线**、停车线、人行横道；路口没有 STOP 牌或红绿灯。
-- **地块上放建筑还没做**。车道口 2026-10-18 做了（7.3），但只到人行道为止，地块里没有车道。以加油站 A1（`gas_station_01`，64 × 64 整块 NBT，[资产文档](gas_station_01_asset_v1.md)）为例，2026-10-17 用户问过会不会冲突：
+- 街上有了停止线、人行横道、Main St 和出口横街的双黄中心线和 STOP 牌（7.8 节，2026-10-19，用户实机 PASS）。没有：红绿灯、住宅街的中心线、车道分隔线、停车位线、学校区的标志和限速。
+- **地块上的建筑只有白模**（2026-10-19，[城镇建筑放置 V1](town_buildings_v1.md)）：每块地按分区放一个占位盒子，真正的房子（小住宅、Main St 两段式商业楼）还没做。车道口 2026-10-18 做了（7.3），但只到人行道为止，地块里没有车道。以加油站 A1（`gas_station_01`，64 × 64 整块 NBT，[资产文档](gas_station_01_asset_v1.md)）为例，2026-10-17 用户问过会不会冲突：
   - 不重叠：A1 模板里的沥青、草、路缘、灯杆都在它自己 64 × 64 的范围里；镇的路缘、绿化带、人行道都在街道红线里，在地块外面。`hwy` 分区第一块地 64 m 深、拉伸后约 72 m 宽（之前这里写"正好 64 m 宽"不对，2026-10-18 量过改正），A1 放得下，旁边还有约 8 m，所以 A1 保留自带的边缘，镇不在地块里铺路缘。
-  - 放的时候要补：
-    - 车道口：公路商业地块现在按通用规则开两个 9 m 的口（临街面 1/4 和 3/4 处），A1 的两个 `DRIVEWAY` 接口不一定对得上（主入口在 64 m 边上 51 m 处；侧入口在另一条街上，而地块只在一条街上开口）。放 A1 时要么按接口改这块地的车道口，要么摆 A1 时对齐。
-    - 平台：2026-10-18 起公路商业地块有平台，高度 = 第一个车道口处的街高 + 0.3 m，比人行道高约 0.23 m。A1 模板的地面高度要按这个对。
-    - A1 的主入口和侧入口要分别朝向 Front St 和出口横街，所以只能放在出口两侧 Front St 的角上，按角转方向。
+  - 2026-10-20 已经放进去了（[城镇建筑放置](town_buildings_v1.md) 第 8 节，用户 2026-10-20 实机 PASS）：每座镇一座，放在右手边是横街的转角公路地块上，两个候选里取四周地面高差小的那个；这块地的车道口换成 A1 的两个入口（侧入口开在横街上）；模板地面对齐主入口外的人行道，取整。四周：沿街草带放坡接人行道，车道坡接到模板地面，背面和侧面地面接平（第 8.1、8.2 节）。
+  - 2026-10-17 写的三件要补的事（车道口对不上、平台高度、只能放在角上）就是按上面这样处理的。
 - I12 按 R12 的宽度铺。
 - 地面上看不出地块的边界（没有围栏、树篱或车道），所以地图上一整个街区（128 × 70 m）看着像一块地。实际上里面是两排背对背的地块，住宅一块 24 × 32 m（五块里一块 32 m 宽），一个街区 10 栋房子。2026-10-17 用户问地块是不是太大了；2026-10-18 用户决定尺寸不缩，只把规划器和 T3 表对齐（第 4 节）。改动不大，用户直接标了 PASS，没进游戏看。公共地块 37–48 m，宽深都超过 `BIG_LOT`，也没有平台。
 - 和整个街区一样宽的地块（公园、学校、停车场）没有平台；地块之间的缓坡最陡约 68 %（山坡种子 8551 的公路商业地块旁边），建房子时可能要再整平。
 - 地块整平是 2 m 网格插值，地块边上的坡在方块里是斜面草皮，不是台阶。
 - `RoadSurfaceQuery`（车辆用的地面查询）2026-10-18 起认镇里的铺装（沥青、路缘、人行道、车道口），见 [道路接地查询](road_surface_query_v1.md)；镇里那一支每次调用会分配几个小对象，没测过对帧时间的影响。
-- 城界牌没有人口小牌和限速牌；街名牌没有门牌号段。
-- F-40 在镇点前后 3000 m 内（两段都算）找不到既能建立交、旁边又能摆下镇的位置时，没有出口，也就没有镇。现在只在报告里写一行，游戏里看不出原因。
+- 城界牌的人口按地块数估算（7.8 节），不跟着游戏里的房子变；限速牌只有进镇方向的一块，出镇方向没有恢复限速的牌子；门牌号段只写在平行街那块刀片牌上，横街那块不写（横街的门牌号要沿 Front St 往外数，现在没有这个编号）。
+- F-40 在镇点前后 3000 m 内（两段都算）找不到既能建立交、旁边又能摆下镇的位置时，2026-10-20 起用兜底搜索（7.10 节）；兜底也找不到才没有镇。
 - 山坡上的镇（种子 8551748880472503666、17562082749081586204）街区少、地块填挖大（平均 3–4 m，最深 17 m），路口高差 35–45 m。
 - F-40 在 Linden 折回时（种子 4011162851698480664），F-40 从节点旁边 2.6 km 处绕过，Linden 建在绕行线上，不在原来的谷里。通往 Linden 的州道还是接到原来的节点（谷里），和新 Linden 的街不相连。
 - 和 Main 的分工（第 6 节）2026-10-17 已通知，2026-10-18 Main 原则上接受。C 侧（带禁区的 G2、县道进镇）2026-10-18 在分支 `feature/county-road-g3` 做了，见 [县道 G3](county_road_g3.md)；Main 的 `ForestHomeRuntime` 还没改，房子还落在它自己选的点上。
@@ -347,8 +426,12 @@ r1 种子下每座城镇连着哪些路：`design/worldgen/federal_towns/source/
 
 - `town/TownSites.java`（有框架的城镇）、`town/TownExits.java`（出口选址）、`town/TownPlanner.java`（网格、街区、地块、分区、街名、高程）、`town/TownPlan.java`（结果和 JSON）、`town/TownStreets.java`（街道断面）、`town/TownWorks.java`（施工：部件、高度、街区整平、镇外放坡）。
 - `road/RoadNetworkBuild.java`（建网时找出口、摆镇）、`road/RoadWorks.java`（镇和道路的土方合并、镇的列）、`road/TownMesh.java`（镇的路面网格）、`road/JunctionMesh.java`（接进路面网格）、`road/TownSigns.java` + `road/GuideSigns.java`（LIMIT、STREET）+ `client/road/GuideSignParts.java`（刀片牌两面字、单柱）、`road/RoadSigns.java`（接进牌子）。
-- `RoadNetworkRuntime.java`（服务端带上镇）、`client/road/RoadClient.java`（客户端读镇）、`RoadNetworkCommand.java`（`/afl worldgen town`）、`road/RoadNetworkStage.java`（`WORKS_VERSION` 9、`SURFACE_VERSION` 19）。
-- 检查：`src/test/.../road/TownCheck.java`、`TownWorksCheck.java`、`TownPng.java`；探针 `src/dev/.../dev/worldgen/C3RoadProbe.java`（`only=towns`）。
+- `RoadNetworkRuntime.java`（服务端带上镇）、`client/road/RoadClient.java`（客户端读镇）、`RoadNetworkCommand.java`（`/afl worldgen town`）、`road/RoadNetworkStage.java`（`WORKS_VERSION` 9、`SURFACE_VERSION` 19；2026-10-19 起 `WORKS_VERSION` 13、`SURFACE_VERSION` 23）。
+- 路口控制和标线（2026-10-19）：`town/TownControl.java`（规划）、`road/TownMesh.java`（`paint`）、`road/TownSigns.java`（STOP、限速、人口、门牌号段）、`road/RoadSigns.java`（镇 STOP 牌和限速牌尺寸）、`road/TunnelFixtures.java`（碰撞盒）、`block/TunnelFixtureBlock.java`（`SPEED_LIMIT_SIGN`）、`tools/build-tunnel-v1.mjs`（网格和牌面）。
+- 街网对齐方块（2026-10-19）：`town/TownGrid.java`（网格轴、出口横街的路径、Front St）、`town/TownExits.java`、`town/TownPlanner.java`（`straight`、每侧的 `shift`）、`road/RoadInterchanges.java`（镇跨线路原样保留）；`road/RoadNetworkStage.java` 升到 `WORKS_VERSION` 15、`SURFACE_VERSION` 24。
+- 建筑（2026-10-19）：`town/TownBuildings.java`，`worldgen/building/`（见 [城镇建筑放置 V1](town_buildings_v1.md)）。
+- 标志性建筑和兜底（2026-10-20）：`town/TownSites.java`（`Landmark`、`landmarks`）、`town/TownPlanner.java`（`landmarkRank`、`FALLBACK_RELIEF`、两遍生长）、`town/TownPlan.java`（`LANDMARK` 分区前缀、车道口）、`town/TownBuildings.java` + `worldgen/building/BuildingKits.java`（`landmark` 白模）、`town/TownExits.java`（`site` 的 fallback、`FALLBACK_SEARCH`）、`road/RoadNetworkBuild.java`（`townExits` 两轮）；`road/RoadNetworkStage.java` 升到 `WORKS_VERSION` 18、`SURFACE_VERSION` 27。2026-10-19 到 20 日试过的固定镇图代码（`TownLayout`、`FixedTownSite`、`RoadNetworkPlan#pins`、`FixedTownSiteCheck`）已删除。
+- 检查：`src/test/.../road/TownCheck.java`、`TownWorksCheck.java`、`TownBuildingsCheck.java`、`TownPng.java`；探针 `src/dev/.../dev/worldgen/C3RoadProbe.java`（`only=towns`）。
 
 概念阶段：
 

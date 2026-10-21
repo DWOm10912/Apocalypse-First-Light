@@ -1,6 +1,8 @@
 # gas_station_01（Fuel Stop A1 正式资产）V1
 
-状态（2026-10-10）：**NBT 已导出并导入项目，schema 1 元数据已写，两个 GameTest PASS**（四向放置都跑过，见"验证"）。还没进任何城市生成池，也没有在游戏里旋转放置后用眼睛看过。
+状态（2026-10-10）：**NBT 已导出并导入项目，schema 1 元数据已写，两个 GameTest PASS**（四向放置都跑过，见"验证"）。
+
+2026-10-20：**改成暗线 4 路，重新导出换进项目**（见"暗线"），**放进城镇的公路地块**（见"放置"），分支 `feature/linden-markings`，2026-10-20 已提交到分支、未合并 master，放进镇里的样子用户 2026-10-20 实机 PASS。新 NBT 没有重跑 GameTest。
 
 **名字**：导出时的 ID 是 `gas_station_02`。2026-10-10 用户定为 `gas_station_01`："这个其实是第一栋加油站"；以前那个 `gas_station_01` 的旧加油站已经删掉了。项目里的 NBT 和元数据用新名字，`run/afl_authoring_exports/` 下的导出原件保留原名。
 
@@ -10,7 +12,7 @@
 
 | 什么 | 路径 |
 |---|---|
-| NBT | `src/main/resources/data/apocalypse_firstlight/structures/gas_station_01.nbt`（192 KB，SHA-256 前缀 `befb52f3ee10e9da`，和 `run/afl_authoring_exports/gas_station_02.nbt` 一样） |
+| NBT | `src/main/resources/data/apocalypse_firstlight/structures/gas_station_01.nbt`（2026-10-20 暗线版，193,867 字节，SHA-256 前缀 `717e6d01420c71d0`，和 C worktree 的 `run/afl_authoring_exports/gas_station_01.nbt` 一样；2026-10-10 的版本是 `befb52f3ee10e9da`） |
 | 正式元数据 | `src/main/resources/data/apocalypse_firstlight/afl_worldgen/structures/gas_station_01.json`（`StructureDefinition` schema 1） |
 | 不用的 | 导出器写的 `run/afl_authoring_exports/gas_station_02.json`：旧格式，写着 `front=SOUTH`。没有导入 `small_city/buildings/`，免得出现两份互相矛盾的元数据（统一规范 §7） |
 
@@ -19,6 +21,13 @@
 - 2026-10-10 00:10，用户在开发存档"新的世界 (1)"里 `/afl_author resume gas_station_02 -113 -56 411 64 64 16 5` → `configure COMMERCIAL "COMMERCIAL,MIXED,EDGE" true true` → `validate` → `export`。
 - 整片导出，不按 [城市接口](fuel_stop_a1_city_interface_v1.md) §5.2 拆模块：路面、标线、路缘、灯杆、地下管线电缆都是在世界里建的真方块。
 - 导出时的状态处理（`authoring/ExportState`）：没电、油换成灌油标记、没有进行中的状态，插头保留。见 [small_city_building_authoring_v1.md](small_city_building_authoring_v1.md)"Export state"。
+
+## 暗线（2026-10-20）
+
+- 配电箱从 `LEGACY_AREA`（范围供电）改成 `WIRED`，4 路：营业厅灯和应急灯、后面房间的灯、插座、室外灯和招牌字（光控），加电表箱进线；暗线 295 个节点打包在配电箱里，放下时展开（[暗线 V1](../gameplay/building_wiring_v1.md) 5.4、5.5 节）。
+- 房子只改了两侧眉檐雨棚：各往北多伸一格接到转角墩上，好让线过去。
+- 在新测试世界「AFL Building」里改、重新 validate、export；原来建 A1 的存档没动。
+- 元数据没改（`asset_revision` 还是 2026-10-10 那个，接口、锚点、朝向都没变）。
 
 ## 元数据
 
@@ -61,6 +70,7 @@
 - 灌油：油罐和发电机第一次在服务端加载时按规则掷（`fluid/FuelFill`）。
 - Mirror 固定 NONE（V1 规范）；另一手的转角要另做镜像资产。
 - 2026-10-14 的计划（还没做）：首发路线里 A1 放在 C3 县道的沿路地块上，离老宅的连接节点 `H` 沿路约 0.8–1.5 km，由 Main 选位；`main_entrance`、`side_entrance` 两个 `DRIVEWAY` 接口算出连接节点，交给 C 接路（[Main ↔ C3 接口契约](main_c3_interface_contract_v1.md) 第 8、11 节）。
+- **2026-10-20 放进城镇**：每座镇的出口附近一块公路地块（`hwy`）放一整份 A1，换掉那里的白模（[城镇建筑放置](town_buildings_v1.md) 第 8 节）。整份模板按区块切片写（`TownBuildingPass#placeFuelStop`，带 `AflTemplatePlacer` 的处理器），两个入口就是镇里切开路缘的车道口。用户第一次看过以后（同一天）改了四周：车道坡一直爬到地界处的模板地面；沿街两条 3 格宽的草带（正面 z 0..2、西边 x 0..2，入口除外）用镇的地面放坡接人行道，放模板时这里的空气和草不写，灯杆和价格牌整个抬到地面，竖电缆接上去，脚下和四周一圈填实，电缆包在土里，贴着铺装区路缘的价格牌和灯杆不抬；背面和东边外面的地面接到模板地面（第 8.1 节）。
 
 ## 验证（2026-10-10，GameTest，`-PaflWithoutShaders`：Oculus 不能在专用服务器上加载）
 

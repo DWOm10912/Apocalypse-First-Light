@@ -28,7 +28,7 @@ import java.util.function.Function;
  * everything in worlds without the plan are untouched. Uses the plan grid surface without detail (+-0.5 block).
  * Phase 2b (2026-10-10): also nothing under a river bed, its graded banks or a marsh pool (8 below the lowest
  * water level in reach), so river water never hangs over a carved cave. Tunnel V1 (2026-10-16): nothing in the rock a
- * tunnel keeps round its bores and under its approaches (RoadWorksRef#rock).
+ * tunnel keeps round its bores and under its approaches, under a town or under a road's works (RoadWorksRef#rock).
  */
 @Mixin(WorldCarver.class)
 public abstract class WorldCarverStabilityMixin<C extends CarverConfiguration> {
@@ -43,7 +43,7 @@ public abstract class WorldCarverStabilityMixin<C extends CarverConfiguration> {
         if (plan == null) return;
         // Tunnel V1: nothing carved in the rock a tunnel keeps round its bores and under its approaches
         com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef works = access.apocalypse$roadWorksRef();
-        double[] rock = works == null ? null : works.rock(pos.getX(), pos.getZ());
+        double[] rock = works == null ? null : works.rock(pos.getX(), pos.getZ(), plan);
         if (rock != null && pos.getY() >= rock[0] && pos.getY() <= rock[1]) { cir.setReturnValue(false); return; }
         int stable = plan.stableDepth(pos.getX(), pos.getZ());
         if (stable > 0) {

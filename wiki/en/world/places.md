@@ -10,11 +10,18 @@
 
 ## Fuel stations
 
-<StatusTag s="test" /> A North American roadside station: dispensers, canopy and underground tanks. The equipment works (see [Fuel and Refueling](../vehicles/fuel)) but stations don't generate in the world yet
+<StatusTag s="test" /> A North American roadside station: dispensers, canopy and underground tanks. The equipment works (see [Fuel and Refueling](../vehicles/fuel))
+
+- <StatusTag s="test" /> Every town has one station on a corner highway lot near its F-40 exit, the main entrance on the front street and the side entrance on the cross street. The driveways run up to the station's own ground; the grass along the streets slopes to the sidewalk, and where the street is higher, the light poles and the price sign stand up on the slope. Where the town is hilly, the grass along the street can be a steep 3 m bank and the driveways steep too
+- <StatusTag s="test" /> The station's lights, outlets and channel letters are wired through the walls to the distribution panel on 4 circuits: sales floor, back rooms, outlets, and outside lights with the letters
 
 ## Towns
 
-<StatusTag s="planned" /> The six states have 16 town names and sites decided; streets and buildings are still in progress
+- <StatusTag s="planned" /> The six states have 16 town names and sites decided; only Linden is built so far
+- <StatusTag s="test" /> Linden's streets and lots run square with the blocks
+- <StatusTag s="test" /> Linden's street names and zoning rules are the same in every world, but the town grows around its F-40 exit, so its size and shape follow the terrain. If nothing near its usual exit fits, it searches farther along F-40 and accepts steeper blocks, so that every world gets a Linden
+- <StatusTag s="test" /> The town has one landmark building on a whole block, on Main St near the town square. It is a white box for now; what building it is has not been decided
+- <StatusTag s="test" /> Every lot except the fuel station's has a white-box building (a placeholder box with outer walls, a flat roof and a doorway) facing its street. Houses, shops, highway stores, civic buildings, warehouses and the school each have their own size; parks have none. The real buildings are still being designed
 
 ## Containers
 

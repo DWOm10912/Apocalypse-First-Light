@@ -20,9 +20,12 @@ import java.util.Set;
 
 /**
  * Lays out a framework town round its exit (Town Framework V1, docs/worldgen/federal_towns_v1.md 2-5): a straight grid on
- * the interstate's tangent at the exit crossing, the exit's crossroad as one of its cross streets.
+ * the block grid (TownGrid, 2026-10-19: s along the world axis nearest the interstate's tangent at the exit crossing, v
+ * across it toward the town; before, the grid lay on the tangent itself, up to 45 degrees off the blocks), the exit's
+ * crossroad as one of its cross streets where it runs straight on the grid.
  * <ul>
- *   <li>grid: cross streets every CROSS m (the exit's on s = 0); parallel streets from FRONT off the interstate, a block
+ *   <li>grid: cross streets every CROSS m (the exit's where the crossroad runs on the grid, each side its own: #straight);
+ *   parallel streets from Front St (FRONT_CLEAR beyond the crossroad's turn onto the grid, TownGrid#frontOf), a block
  *   (two LOT_DEPTH rows back to back with an ALLEY, ROWS deep) between each two, on the town's side (the side with the
  *   more buildable land, of the crossroad's town stubs) up to BANDS blocks deep and on the far side (a town stub too) up
  *   to FAR_BANDS;</li>
@@ -46,7 +49,10 @@ import java.util.Set;
 public final class TownPlanner {
     private TownPlanner() {}
 
-    /** Cross street spacing, the first parallel street's offset from the interstate's centreline, m. */
+    /**
+     * Cross street spacing, the first parallel street's least offset from the crossing (TownGrid#frontOf: beyond the
+     * crossroad's turn onto the grid), m.
+     */
     public static final double CROSS = 150, FRONT = 150;
     /** A block's depth between rights of way: two LOT_DEPTH rows and the ALLEY between them, m. */
     public static final double LOT_DEPTH = 32, ALLEY = 6, ROWS = 2 * LOT_DEPTH + ALLEY;
@@ -54,6 +60,11 @@ public final class TownPlanner {
     public static final int MAX_K = 6, BANDS = 4, FAR_BANDS = 2, MAX_BLOCKS = 44;
     /** Ground sampling, the most relief of a buildable cell, the clearance from other roads' paved edges, m. */
     static final double SAMPLE = 8, MAX_RELIEF = 20, ROAD_CLEAR = 45;
+    /**
+     * The fallback's most relief of a buildable cell (2026-10-20: every town is built): a town that grows fewer than
+     * TownExits.MIN_BLOCKS blocks within MAX_RELIEF takes steeper cells too, its lots graded deeper, m.
+     */
+    public static final double FALLBACK_RELIEF = 35;
     /** Intersection heights: the ground disc averaged, the steepest street, relaxation passes; a lot pad over its street, m. */
     static final double NODE_DISC = 12, MAX_GRADE = 0.07, PAD = 0.3;
     static final int RELAX = 400;
@@ -124,13 +135,33 @@ public final class TownPlanner {
         if (!stub[0] && !stub[1]) return null;
         // the right-hand normal of the host (u > 0) is (-tz, tx)
         // the town's side: the more town blocks reachable from the exit (TownExits#reach, the count the exit was chosen by)
-        double landL = stub[0] ? TownExits.reach(hd.curve, sc, -1, terrain) : -1, landR = stub[1] ? TownExits.reach(hd.curve, sc, 1, terrain) : -1;
+        double landL = stub[0] ? TownExits.reach(hd.curve, sc, -1, terrain, MAX_RELIEF) : -1, landR = stub[1] ? TownExits.reach(hd.curve, sc, 1, terrain, MAX_RELIEF) : -1;
+        if (Math.max(landL, landR) < TownExits.MIN_BLOCKS) {
+            // a fallback exit (TownExits#site): its side by the steeper count
+            landL = stub[0] ? TownExits.reach(hd.curve, sc, -1, terrain, FALLBACK_RELIEF) : -1;
+            landR = stub[1] ? TownExits.reach(hd.curve, sc, 1, terrain, FALLBACK_RELIEF) : -1;
+        }
         int uTown = landR > landL ? 1 : -1;
-        double bx = -tz * uTown, bz = tx * uTown;
         boolean farStub = stub[0] && stub[1];
         FederalStateId state = terrain.state(ox, oz);
         if (state == null) state = FederalStateId.S1;
-        Frame fr = new Frame(ox, oz, tx, tz, bx, bz);
+        // the grid on the block grid (TownGrid, 2026-10-19): s along the world axis nearest the tangent, v across it toward
+        // the town, its origin the block corner nearest the crossing; s turns with the town's side, so (s, v) is always a
+        // quarter-turn rotation of the same plan, never its mirror
+        double[] ga = TownGrid.axis(tx, tz), go = TownGrid.origin(ox, oz);
+        double ax = uTown * ga[0], az = uTown * ga[1], bx = -az, bz = ax;
+        Frame fr = new Frame(go[0], go[1], ax, az, bx, bz);
+        // each side's exit cross street and Front St: where the built crossroad runs straight on the grid
+        double[] frontTown = straight(xd, xc - off, fr, 1), frontFar = farStub ? straight(xd, xc - off, fr, -1) : null;
+        if (frontTown == null) {
+            report.add(String.format(Locale.ROOT, "town %s: the exit's crossroad never runs straight on the block grid on the town's side; no town", town));
+            return new Result(null, null, report);
+        }
+        if (farStub && frontFar == null) {
+            report.add(String.format(Locale.ROOT, "town %s: the exit's crossroad never runs straight on the block grid on the far side; no far side", town));
+            farStub = false;
+        }
+        double[] shift = {frontTown[0], frontFar == null ? frontTown[0] : frontFar[0]};   // the exit cross street's s: [town side, far side]
 
         // other roads near the town (the crossroad excepted)
         List<RoadDesign> others = new ArrayList<>();
@@ -141,7 +172,7 @@ public final class TownPlanner {
             if (near) others.add(RoadNetworkJson.design(r));
         }
         // parallel street lines per side: v of each (the town side positive), the rights of way between
-        double[] vTown = lines(BANDS), vFar = lines(FAR_BANDS);
+        double[] vTown = lines(BANDS, frontTown[1]), vFar = lines(FAR_BANDS, frontFar == null ? FRONT : frontFar[1]);
         // cells: buildable?
         Map<Cell, Double> ok = new HashMap<>();
         int[] why = new int[4];   // water, relief, road, out of state
@@ -150,11 +181,12 @@ public final class TownPlanner {
                 for (int k = -MAX_K; k < MAX_K; k++) {
                     double[] vv = side > 0 ? vTown : vFar;
                     double va = side * vv[j], vb = side * vv[j + 1];
-                    double s0 = k * CROSS, s1 = (k + 1) * CROSS, v0 = Math.min(va, vb), v1 = Math.max(va, vb);
+                    double s0 = sh(shift, side) + k * CROSS, s1 = s0 + CROSS, v0 = Math.min(va, vb), v1 = Math.max(va, vb);
                     double r = cell(fr, s0, s1, v0, v1, terrain, others, why);
                     if (r >= 0) ok.put(new Cell(side, j, k), r);
                 }
-        // nearest first from the exit's Front St corners
+        // nearest first from the exit's Front St corners; within MAX_RELIEF first, the steeper cells too (FALLBACK_RELIEF)
+        // when that grows fewer than TownExits.MIN_BLOCKS (2026-10-20: every town is built)
         Map<Cell, Double> dist = new HashMap<>();
         PriorityQueue<Object[]> q = new PriorityQueue<>((a, b) -> {
             int c = Double.compare((Double) a[0], (Double) b[0]);
@@ -162,25 +194,39 @@ public final class TownPlanner {
             Cell x = (Cell) a[1], y = (Cell) b[1];
             return x.side != y.side ? Integer.compare(y.side, x.side) : x.j != y.j ? Integer.compare(x.j, y.j) : Integer.compare(x.k, y.k);
         });
-        for (int side : new int[]{1, -1})
-            for (int k : new int[]{-1, 0}) {
-                Cell c = new Cell(side, 0, k);
-                if (ok.containsKey(c)) q.add(new Object[]{0.0, c});
-            }
         List<Cell> kept = new ArrayList<>();
         Set<Cell> done = new HashSet<>();
-        while (!q.isEmpty() && kept.size() < MAX_BLOCKS) {
-            Object[] e = q.poll();
-            Cell c = (Cell) e[1];
-            if (!done.add(c)) continue;
-            kept.add(c);
-            double d = (Double) e[0];
-            for (Cell n : new Cell[]{new Cell(c.side, c.j, c.k - 1), new Cell(c.side, c.j, c.k + 1), new Cell(c.side, c.j - 1, c.k), new Cell(c.side, c.j + 1, c.k)}) {
-                if (!ok.containsKey(n) || done.contains(n)) continue;
-                // a step across a cross street costs its interval, across a parallel street its band; rough cells cost more
-                double step = (n.k != c.k ? CROSS : ROWS + 22) * (1 + ok.get(n) / MAX_RELIEF);
-                q.add(new Object[]{d + step, n});
+        boolean steep = false;
+        for (int pass = 0; pass < 2; pass++) {
+            double most = pass == 0 ? MAX_RELIEF : FALLBACK_RELIEF;
+            q.clear();
+            kept.clear();
+            done.clear();
+            for (int side : new int[]{1, -1})
+                for (int k : new int[]{-1, 0}) {
+                    Cell c = new Cell(side, 0, k);
+                    if (ok.containsKey(c) && ok.get(c) <= most) q.add(new Object[]{0.0, c});
+                }
+            while (!q.isEmpty() && kept.size() < MAX_BLOCKS) {
+                Object[] e = q.poll();
+                Cell c = (Cell) e[1];
+                if (!done.add(c)) continue;
+                kept.add(c);
+                double d = (Double) e[0];
+                for (Cell n : new Cell[]{new Cell(c.side, c.j, c.k - 1), new Cell(c.side, c.j, c.k + 1), new Cell(c.side, c.j - 1, c.k), new Cell(c.side, c.j + 1, c.k)}) {
+                    if (!ok.containsKey(n) || ok.get(n) > most || done.contains(n)) continue;
+                    // a step across a cross street costs its interval, across a parallel street its band; rough cells cost more
+                    double step = (n.k != c.k ? CROSS : ROWS + 22) * (1 + ok.get(n) / MAX_RELIEF);
+                    q.add(new Object[]{d + step, n});
+                }
             }
+            if (kept.size() >= TownExits.MIN_BLOCKS) break;
+            steep = pass == 0;
+        }
+        if (steep) {
+            // the steeper pass ran: did it take a steeper cell?
+            steep = false;
+            for (Cell c : kept) if (ok.get(c) > MAX_RELIEF) steep = true;
         }
         if (kept.isEmpty()) {
             report.add(String.format(Locale.ROOT, "town %s: nothing buildable at the exit (cells: %d water, %d relief, %d roads)", town, why[0], why[1], why[2]));
@@ -193,7 +239,7 @@ public final class TownPlanner {
         // zones
         int townWest = 0, townEast = 0;
         for (Cell c : kept) if (c.side > 0 && c.j <= 1) { if (c.k < 0) townWest++; else townEast++; }
-        int dir = townEast > townWest ? 1 : -1;           // downtown's direction along s
+        int dir = townEast > townWest ? 1 : -1;   // downtown's direction along s
         int c0 = dir < 0 ? -1 : 0, c1 = dir < 0 ? 0 : -1; // the cells at the exit on downtown's side and the other
         Map<Cell, String[]> zone = new LinkedHashMap<>();  // {near, far} or {whole, null}: whole when far == "*"
         // the town square: the first kept Main St block of SQUARE_AT (downtown's second block first)
@@ -225,6 +271,21 @@ public final class TownPlanner {
             }
             zone.put(c, z);
         }
+        // landmarks (TownSites#landmarks, 2026-10-20): each the whole block its place ranks first (#landmarkRank), before
+        // the school; a town of one block gives it the square's
+        for (TownSites.Landmark lm : TownSites.landmarks(town)) {
+            Cell at = null;
+            double bestRank = Double.POSITIVE_INFINITY;
+            int sqK = square != null ? square.k : c0 + dir;
+            for (Cell c : kept) {
+                if (zone.get(c)[0].startsWith(TownPlan.LANDMARK)) continue;
+                double r = landmarkRank(lm, c, zone.get(c)[0], sqK, c0, dir);
+                if (r < bestRank) { bestRank = r; at = c; }
+            }
+            if (at == null) { report.add(String.format(Locale.ROOT, "town %s: no block left for its landmark %s", town, lm.id())); continue; }
+            zone.put(at, new String[]{TownPlan.LANDMARK + lm.id(), "*"});
+            report.add(String.format(Locale.ROOT, "town %s: landmark %s on block %s/%d/%d (%s)", town, lm.id(), at.side > 0 ? "town" : "far", at.j, at.k, lm.where()));
+        }
         // the school: two neighbouring house blocks two bands out on the town's side, farthest along downtown's side
         Cell schoolA = null;
         for (Cell c : kept) {
@@ -242,8 +303,9 @@ public final class TownPlanner {
         for (Cell c : kept) {
             double[] vv = c.side > 0 ? vTown : vFar;
             int ja = c.j, jb = c.j + 1;
-            int n00 = node(nodeAt, nodePos, c.k, c.side, ja, vv), n10 = node(nodeAt, nodePos, c.k + 1, c.side, ja, vv);
-            int n01 = node(nodeAt, nodePos, c.k, c.side, jb, vv), n11 = node(nodeAt, nodePos, c.k + 1, c.side, jb, vv);
+            double sh = sh(shift, c.side);
+            int n00 = node(nodeAt, nodePos, c.k, c.side, ja, vv, sh), n10 = node(nodeAt, nodePos, c.k + 1, c.side, ja, vv, sh);
+            int n01 = node(nodeAt, nodePos, c.k, c.side, jb, vv, sh), n11 = node(nodeAt, nodePos, c.k + 1, c.side, jb, vv, sh);
             String[] z = zone.get(c);
             boolean schoolInner = schoolA != null && c.side > 0 && c.j == 2 && (c.k == schoolA.k || c.k == schoolA.k + dir);
             seg(segs, segZones, n00, n10, z[0], c.side, ja, 0);
@@ -258,10 +320,15 @@ public final class TownPlanner {
         boolean[] fixed = new boolean[nn];
         double[][] trimAt = new double[2][];   // per side: crossroad station where it ends at the Front St corner, the node
         List<double[]> exitEnds = new ArrayList<>();
+        Set<Integer> corners = new HashSet<>();
+        for (int side : new int[]{1, -1}) {
+            Integer i = nodeAt.get(key(0, side, 0));
+            if (i != null) corners.add(i);
+        }
         for (int i = 0; i < nn; i++) {
             double[] p = nodePos.get(i), w = fr.world(p[0], p[1]);
             h[i] = disc(terrain, w[0], w[1]);
-            if (Math.abs(p[0]) < 1e-6 && Math.abs(Math.abs(p[1]) - FRONT) < 1e-6) {
+            if (corners.contains(i)) {
                 double[] l = xd.local(w[0], w[1], 5);
                 if (l == null) continue;
                 // the crossroad stops at the corner's box (Front St's right of way), on the profile's 2 m lattice short of
@@ -272,7 +339,7 @@ public final class TownPlanner {
                 fixed[i] = true;
                 trimAt[p[1] > 0 ? 0 : 1] = new double[]{te, i};
                 double[] pe = xd.point(te - off, 0);
-                exitEnds.add(new double[]{i, r2((pe[0] - ox) * bx + (pe[1] - oz) * bz)});
+                exitEnds.add(new double[]{i, r2(fr.v(pe))});
             }
         }
         List<int[]> edges = new ArrayList<>(segs.values());
@@ -334,7 +401,8 @@ public final class TownPlanner {
             if (school && c.k != schoolA.k) continue;
             double[] vv = c.side > 0 ? vTown : vFar;
             int k0 = school ? Math.min(c.k, c.k + dir) : c.k, k1 = school ? Math.max(c.k, c.k + dir) + 1 : c.k + 1;
-            double s0 = k0 * CROSS + crossRow(k0, c.side) / 2, s1 = k1 * CROSS - crossRow(k1, c.side) / 2;
+            double sh = sh(shift, c.side);
+            double s0 = sh + k0 * CROSS + crossRow(k0, c.side) / 2, s1 = sh + k1 * CROSS - crossRow(k1, c.side) / 2;
             double vn = vv[c.j] + parRow(c.j, c.side) / 2, vf = vv[c.j + 1] - parRow(c.j + 1, c.side) / 2;
             double v0 = c.side > 0 ? vn : -vf, v1 = c.side > 0 ? vf : -vn;
             String[] z = zone.get(c);
@@ -344,7 +412,7 @@ public final class TownPlanner {
             // the streets along the block's near and far sides: heights at both ends
             int nNear0 = nodeAt.get(key(k0, c.side, c.j)), nNear1 = nodeAt.get(key(k1, c.side, c.j));
             int nFar0 = nodeAt.get(key(k0, c.side, c.j + 1)), nFar1 = nodeAt.get(key(k1, c.side, c.j + 1));
-            double sA = k0 * CROSS, sB = k1 * CROSS;
+            double sA = sh + k0 * CROSS, sB = sh + k1 * CROSS;
             if (whole) {
                 double pad = (h[nNear0] + h[nNear1] + h[nFar0] + h[nFar1]) / 4 + PAD;
                 lots.add(new TownPlan.Lot(r2(s0), r2(s1), r2(v0), r2(v1), near, c.side > 0 ? TownPlan.FACE_V0 : TownPlan.FACE_V1, r2(pad)));
@@ -380,14 +448,30 @@ public final class TownPlanner {
         if (crossroad.trim() == null || tr[0] != crossroad.trim()[0] || tr[1] != crossroad.trim()[1]) x = crossroad.withTrim(tr);
 
         String name = RoadNames.town(town);
-        TownPlan plan = new TownPlan(town, name == null ? town : name, state.key(), r2(ox), r2(oz), tx, tz, bx, bz, crossroad.id(), limit, xd.section.edge, exitEnds, nodes, streets, blocks, lots);
+        TownPlan plan = new TownPlan(town, name == null ? town : name, state.key(), fr.ox, fr.oz, ax, az, bx, bz, crossroad.id(), limit, xd.section.edge, exitEnds, nodes, streets, blocks, lots);
         int far = 0;
         for (Cell c : kept) if (c.side < 0) far++;
         report.add(String.format(Locale.ROOT, "town %s (%s, %s): exit at s %.0f of %s, town on the host's %s; %d blocks (%d far side), %d lots %s, %d streets (C14 %d, I12 %d, R12 %d), %d intersections; %.0f x %.0f m; crossroad kept %.0f .. %.0f of %.0f m",
                 town, plan.name, state.key(), sc, host.id(), uTown < 0 ? "left" : "right", blocks.size(), far, lots.size(), lotZones, streets.size(), classes[0], classes[1], classes[2], nn,
                 limit[1] - limit[0], limit[3] - limit[2], tr[0], tr[1], off + xd.length));
-        report.add(String.format(Locale.ROOT, "town %s: cells not buildable: %d water, %d relief over %.0f m, %d near roads", town, why[0], why[1], MAX_RELIEF, why[2]));
+        report.add(String.format(Locale.ROOT, "town %s: cells not buildable: %d water, %d relief over %.0f m, %d near roads%s", town, why[0], why[1], FALLBACK_RELIEF, why[2],
+                steep ? String.format(Locale.ROOT, "; fewer than %d blocks within %.0f m relief, steeper ones taken", TownExits.MIN_BLOCKS, MAX_RELIEF) : ""));
+        report.add(String.format(Locale.ROOT, "town %s: grid on the block grid, s along (%.0f, %.0f), %.1f degrees off the interstate; exit cross street at s %.2f, Front St %.0f m out (town side)%s",
+                town, ax, az, Math.toDegrees(Math.acos(Math.min(1, Math.abs(ax * tx + az * tz)))), frontTown[0], frontTown[1],
+                frontFar == null ? "" : String.format(Locale.ROOT, ", s %.2f, %.0f m (far side)", frontFar[0], frontFar[1])));
         return new Result(plan, x == crossroad ? null : x, report);
+    }
+
+    /**
+     * A landmark's rank on a kept block, lowest first: "main" by Main St (the town's side, band 1, then 2, then Front St's),
+     * nearest the town square's interval; "edge" the town's farthest block from the exit; a highway, park or downtown
+     * block only when nothing else is left.
+     */
+    static double landmarkRank(TownSites.Landmark lm, Cell c, String zone, int sqK, int c0, int dir) {
+        double taken = switch (zone) { case "park" -> 4000; case "hwy" -> 2000; case "down", "park_lot" -> 1000; default -> 0; };
+        if ("edge".equals(lm.where())) return taken - 10 * Math.abs((c.k - c0) * dir + 0.5) - 20 * c.j + (c.side > 0 ? 0 : 5);
+        double band = c.side < 0 ? 500 : c.j == 1 ? 0 : c.j == 2 ? 100 : c.j == 0 ? 200 : 300;
+        return taken + band + 10 * Math.abs(c.k - sqK);
     }
 
     /** Where the town square goes: Main St blocks by their place from the exit on downtown's side (0 next to it). */
@@ -404,10 +488,10 @@ public final class TownPlanner {
     /** A cross street's right of way: the exit's (k = 0) C14, the others R12. */
     static double crossRow(int k, int side) { return k == 0 ? TownStreets.C14.row() : TownStreets.R12.row(); }
 
-    /** Parallel street centrelines off the interstate, |v|: FRONT, then a block (ROWS) and the rights of way between each two. */
-    static double[] lines(int bands) {
+    /** Parallel street centrelines across the grid, |v|: Front St at front, then a block (ROWS) and the rights of way between each two. */
+    static double[] lines(int bands, double front) {
         double[] v = new double[bands + 1];
-        v[0] = FRONT;
+        v[0] = front;
         for (int j = 1; j <= bands; j++) v[j] = v[j - 1] + parRow(j - 1, 1) / 2 + ROWS + parRow(j, 1) / 2;
         return v;
     }
@@ -462,9 +546,44 @@ public final class TownPlanner {
 
     private static long key(int k, int side, int j) { return ((long) k << 32) ^ ((long) side << 16) ^ j; }
 
-    private static int node(Map<Long, Integer> at, List<double[]> pos, int k, int side, int j, double[] vv) {
+    /** A side's exit cross street s (shift: [town side, far side]). */
+    private static double sh(double[] shift, int side) { return side > 0 ? shift[0] : shift[1]; }
+
+    /** Within this of the grid's v axis (the sine of the angle) the crossroad runs straight on the grid; for at least ALIGNED_RUN m. */
+    static final double ALIGNED = 0.004, ALIGNED_RUN = 40;
+
+    /**
+     * Where the built crossroad xd (its crossing at station tc) runs straight on the grid on side (1 the town's, -1 the
+     * far one; TownGrid#path, 2026-10-19): {s of the crossroad at Front St, |v| of Front St (TownGrid#frontOf from where
+     * it runs straight)}; null when it never does.
+     */
+    static double[] straight(RoadDesign xd, double tc, Frame fr, int side) {
+        double[] p0 = xd.point(Math.max(0, tc - 20), 0), p1 = xd.point(Math.min(xd.length, tc + 20), 0);
+        int dir = (fr.v(p1) - fr.v(p0)) * side > 0 ? 1 : -1;
+        double start = Double.NaN, run = 0;
+        for (double t = tc; dir > 0 ? t <= xd.length : t >= 0; t += dir * 2) {
+            double[] a = xd.point(t - 1, 0), b = xd.point(t + 1, 0);
+            double hx = b[0] - a[0], hz = b[1] - a[1], across = Math.abs(hx * fr.ax + hz * fr.az) / Math.hypot(hx, hz);
+            if (across < ALIGNED) {
+                if (Double.isNaN(start)) start = t;
+                if ((run += 2) >= ALIGNED_RUN) break;
+            } else {
+                start = Double.NaN;
+                run = 0;
+            }
+        }
+        if (Double.isNaN(start) || run < ALIGNED_RUN) return null;
+        double front = TownGrid.frontOf(side * fr.v(xd.point(start, 0)));
+        for (double t = start; dir > 0 ? t <= xd.length : t >= 0; t += dir * 0.25) {
+            double[] p = xd.point(t, 0);
+            if (side * fr.v(p) >= front) return new double[]{r2(fr.s(p)), front};
+        }
+        return null;
+    }
+
+    private static int node(Map<Long, Integer> at, List<double[]> pos, int k, int side, int j, double[] vv, double sh) {
         return at.computeIfAbsent(key(k, side, j), q -> {
-            pos.add(new double[]{k * CROSS, side * vv[j]});
+            pos.add(new double[]{sh + k * CROSS, side * vv[j]});
             return pos.size() - 1;
         });
     }
@@ -494,7 +613,7 @@ public final class TownPlanner {
                     if (l != null && Math.abs(l[1]) <= d.section.edge + ROAD_CLEAR && l[0] >= 0 && l[0] <= d.length) { why[2]++; return -1; }
                 }
             }
-        if (hi - lo > MAX_RELIEF) { why[1]++; return -1; }
+        if (hi - lo > FALLBACK_RELIEF) { why[1]++; return -1; }
         return hi - lo;
     }
 
@@ -522,5 +641,9 @@ public final class TownPlanner {
     /** Town coordinates to the world. */
     private record Frame(double ox, double oz, double ax, double az, double bx, double bz) {
         double[] world(double s, double v) { return new double[]{ox + s * ax + v * bx, oz + s * az + v * bz}; }
+
+        double s(double[] p) { return (p[0] - ox) * ax + (p[1] - oz) * az; }
+
+        double v(double[] p) { return (p[0] - ox) * bx + (p[1] - oz) * bz; }
     }
 }

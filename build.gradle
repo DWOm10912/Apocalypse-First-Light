@@ -597,20 +597,20 @@ tasks.register('townSurvey', JavaExec) {
     if (project.findProperty('townArgs')) args(project.findProperty('townArgs').toString().split(' '))
 }
 
-tasks.register('systemPlans', JavaExec) {
+tasks.register('roadsideStartCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.SystemPlans'
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadsideStartCheck'
     maxHeapSize = '6g'
     if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
 }
 
-// Main, M4 round 2: the forest-home start on G3's site (gate, mailbox, start spots); needs systemPlans' plans
-tasks.register('forestHomeStartCheck', JavaExec) {
+tasks.register('roadRockCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.ForestHomeStartCheck'
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadRockCheck'
     maxHeapSize = '6g'
+    if (project.findProperty('aflProbe')) systemProperty 'afl.probe', project.findProperty('aflProbe').toString()
     if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
 }
 
