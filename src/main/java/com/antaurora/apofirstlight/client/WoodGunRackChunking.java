@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.cabin.CabinMeshModel;
 import com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity;
+import com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.vextris.client.VextrisMeshes;
@@ -65,6 +67,9 @@ import java.util.regex.Pattern;
  * the chunk has had {@link #CONFIRM_FRAMES} frames to show holds the same stack at the same facing, so a gun is never
  * missing (a gun taken down may stay up to a few frames).</li>
  * </ul>
+ * AFL Workbench V1 (2026-10-21): the tools on a workbench's pegs the same way ({@link WorkbenchRenderer#slot}), handed to
+ * its static mesh chunk model with the bench's own resting parts ({@link AflStaticMeshModel}, the same {@link CabinMeshModel#EXTRA}).
+ * <p>
  * Recorded on the client thread when the chunk asks for the model data or the renderer sees the contents changed, never
  * in a shadow pass (a mesh skips its translucent parts there). Off with the development switch {@code static_mesh off}
  * ({@link AflRenderDev}): the renderer then draws everything, as before.
@@ -75,7 +80,7 @@ public final class WoodGunRackChunking {
     /** How far chunk geometry may reach outside its cell (AflStaticMeshModel.REACH: the chunk section frustum margin). */
     private static final float REACH = 1.1F, UV_SLACK = 1e-3F;
     private static final Pattern TEXTURE = Pattern.compile("texture\\[Optional\\[([^\\]]+)\\]");
-    private static final Map<WoodGunRackBlockEntity, Host> HOSTS = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<BlockEntity, Host> HOSTS = Collections.synchronizedMap(new WeakHashMap<>());
     /** Per render type: the texture whose sprite its UVs address (the block atlas itself for atlas types), or null (renderer). */
     private static final Map<RenderType, Kind> KINDS = Collections.synchronizedMap(new IdentityHashMap<>());
     private static final Set<String> WARNED = ConcurrentHashMap.newKeySet();
@@ -292,12 +297,17 @@ public final class WoodGunRackChunking {
         if (event.getLevel().isClientSide()) HOSTS.clear();
     }
 
-    private static Host host(WoodGunRackBlockEntity rack) {
+    private static Host host(BlockEntity rack) {
         return HOSTS.computeIfAbsent(rack, k -> new Host());
     }
 
     /** The rack's model data (WoodGunRackBlockEntity#getModelData): records new contents on the client thread, any thread reads. */
-    public static ModelData modelData(WoodGunRackBlockEntity rack) {
+    public static ModelData modelData(WoodGunRackBlockEntity rack) { return data(rack); }
+
+    /** A workbench's tools, for its model data (WorkbenchBlockEntity#getModelData adds them to the bench's own). */
+    public static ModelData workbenchTools(WorkbenchBlockEntity bench) { return data(bench); }
+
+    private static ModelData data(BlockEntity rack) {
         if (rack.getLevel() == null || !rack.getLevel().isClientSide) return ModelData.EMPTY;
         Host h = host(rack);
         if (RenderSystem.isOnRenderThread() && !AflShaderCompat.activeShadowPass()) refresh(rack, h);
@@ -309,7 +319,7 @@ public final class WoodGunRackChunking {
      * For the renderer, each pass: the copy the chunk shows, or null. In the main pass it also records new contents and
      * asks for a rebuild of the section.
      */
-    static @Nullable Copy shown(WoodGunRackBlockEntity rack, boolean shadowPass) {
+    static @Nullable Copy shown(BlockEntity rack, boolean shadowPass) {
         if (!AflRenderDev.staticMesh()) return null;
         Host h = host(rack);
         if (!shadowPass && refresh(rack, h)) {
@@ -335,7 +345,7 @@ public final class WoodGunRackChunking {
     }
 
     /** Records the contents when they differ from the last recording; true when it did. */
-    private static boolean refresh(WoodGunRackBlockEntity rack, Host h) {
+    private static boolean refresh(BlockEntity rack, Host h) {
         BlockState state = rack.getBlockState();
         long generation = VextrisMeshes.generation();
         Copy old = h.requested;
@@ -346,9 +356,26 @@ public final class WoodGunRackChunking {
         return true;
     }
 
-    private static boolean same(Copy copy, WoodGunRackBlockEntity rack) {
-        for (int k = 0; k < WoodGunRackBlockEntity.SLOTS; k++) if (!sameStack(copy.stacks[k], rack.item(k))) return false;
+    private static boolean same(Copy copy, BlockEntity rack) {
+        if (copy.stacks.length != slots(rack)) return false;
+        for (int k = 0; k < copy.stacks.length; k++) if (!sameStack(copy.stacks[k], item(rack, k))) return false;
         return true;
+    }
+
+    /** The rack's slots (a gun or tool rack) or the workbench's pegs. */
+    private static int slots(BlockEntity be) {
+        return be instanceof WorkbenchBlockEntity ? com.antaurora.apofirstlight.cabin.Workbench.PEGS : WoodGunRackBlockEntity.SLOTS;
+    }
+
+    private static ItemStack item(BlockEntity be, int k) {
+        if (be instanceof WorkbenchBlockEntity bench) return bench.tool(k);
+        return be instanceof WoodGunRackBlockEntity rack ? rack.item(k) : ItemStack.EMPTY;
+    }
+
+    /** The renderer's own drawing of slot k, in block space. */
+    private static void draw(BlockEntity be, int k, ItemStack s, BlockState state, PoseStack pose, MultiBufferSource buffers, int seed) {
+        if (be instanceof WorkbenchBlockEntity) WorkbenchRenderer.slot(k, s, state, pose, buffers, 0, seed);
+        else WoodGunRackRenderer.slot(k, s, state, pose, buffers, 0, seed);
     }
 
     /** Same item, count and tag (what the drawing reads); capabilities left out, a copy's may not compare equal. */
@@ -366,19 +393,19 @@ public final class WoodGunRackChunking {
 
     // ------------------------------------------------------------------------------------------- recording
 
-    private static Copy record(WoodGunRackBlockEntity rack, Host h, long seq, long generation, BlockState state) {
-        var stacks = new ItemStack[WoodGunRackBlockEntity.SLOTS];
-        var leftovers = new Leftover[WoodGunRackBlockEntity.SLOTS][];
+    private static Copy record(BlockEntity rack, Host h, long seq, long generation, BlockState state) {
+        var stacks = new ItemStack[slots(rack)];
+        var leftovers = new Leftover[stacks.length][];
         var quads = new ArrayList<int[]>();
         var sprites = new ArrayList<TextureAtlasSprite>();
         for (int k = 0; k < stacks.length; k++) {
-            ItemStack s = rack.item(k);
+            ItemStack s = item(rack, k);
             stacks[k] = s.copy();
             var kept = new ArrayList<Leftover>();
             if (!s.isEmpty()) {
                 var recorder = new Recorder();
                 // light 0: whatever light a vertex carries afterwards was set by the drawing itself (full bright parts)
-                WoodGunRackRenderer.slot(k, s, state, new PoseStack(), recorder, 0, rack.getBlockPos().hashCode() + k);
+                draw(rack, k, s, state, new PoseStack(), recorder, rack.getBlockPos().hashCode() + k);
                 for (var e : recorder.streams.entrySet()) split(e.getKey(), e.getValue(), quads, sprites, kept, true);
             }
             leftovers[k] = kept.toArray(Leftover[]::new);

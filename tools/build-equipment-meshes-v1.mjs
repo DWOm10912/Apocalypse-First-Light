@@ -765,6 +765,99 @@ function fellingAxe() {
 const tone3 = (c, k) => c.map(v => v * k);
 
 /**
+ * Claw hammer (2026-10-21, the AFL workbench's first hung tool, a test item): an American 16 oz curved claw hammer, 13 inch
+ * overall, a forged head on a hickory handle. Authored at the felling axe's scale (1 px = 1.25 inch, so the two sit right
+ * together on a rack) in its frame: the handle along +Y, the striking face toward -X, the claw curving down toward +X, z
+ * across. The head: rings lofted from the domed round face (1.125 inch) over the bell and the narrow neck into the eye
+ * block, on along the claw's 55 degree curve; from a third of the way down the claw splits into two prongs whose V slot
+ * widens to the tips. The handle: oval sections, the grip swelling to a flared butt, thinning at the shank and flaring into
+ * the eye; its end grain shows 1.3 mm proud of the head's top with the wooden wedge across. Black enamel on the head as
+ * sold, the face and its chamfer ground bright, the slot's faces bare steel; the handle clear-lacquered hickory.
+ */
+export const HAMMER = {eye: 9.96, top: 10.4, pegs: {bench: 1.1, rack: 1.575}};
+function clawHammer() {
+  const B = 'claw_hammer', {eye: EYE, top: TOP, pegs: PEGS} = HAMMER, X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
+  // a superellipse ring of n points (u along the ring's n, v along its b, centred on vc): p 2 a circle, larger p squarer
+  const sring = (h, w, p, n = 16, vc = 0) => Array.from({length: n}, (_, k) => { const a = 2 * Math.PI * k / n, c = Math.cos(a), s = Math.sin(a);
+    return [h * Math.sign(c) * Math.abs(c) ** (2 / p), vc + w * Math.sign(s) * Math.abs(s) ** (2 / p)]; });
+
+  // handle: [y, half width along x, half thickness along z]
+  const handle = new Part('handle', B, 'hickory');
+  const HY = [[0, 0.5, 0.37], [0.08, 0.58, 0.44], [0.22, 0.61, 0.46], [0.6, 0.58, 0.43], [1.5, 0.53, 0.39], [4, 0.5, 0.37],
+    [6.5, 0.44, 0.31], [8.2, 0.37, 0.26], [9.05, 0.41, 0.28], [9.5, 0.4, 0.26], [TOP + 0.04, 0.4, 0.26]];
+  const hc = HY.map(([y]) => [0, y, 0]);
+  loft(handle, HY.map(([y, a, b], i) => ringAt(handle, hc[i], X, Z, sring(a, b, 2, 12))), hc);
+  for (const f of handle.f) if (f.tag === 'cap') f.mat = 'endgrain';
+
+  // head: rings along +X from the face to the claw root, then along the claw's arc (its centre below the root)
+  const head = new Part('head', B, 'enamel');
+  // [x, half height (y), half width (z), squareness]
+  const HS = [[-1.95, 0.36, 0.36, 2], [-1.9, 0.45, 0.45, 2], [-1.7, 0.46, 0.46, 2], [-1.45, 0.4, 0.4, 2.2], [-1.1, 0.34, 0.33, 2.6],
+    [-0.8, 0.37, 0.33, 3.5], [-0.55, 0.44, 0.36, 5], [0.55, 0.44, 0.36, 5], [0.8, 0.4, 0.33, 4.5]];
+  const centres = HS.map(([x]) => [x, EYE, 0]);
+  const rings = HS.map(([, h, w, p], i) => ringAt(head, centres[i], Y, Z, sring(h, w, p)));
+  const R = 1.9, ARC = 55 * Math.PI / 180, ROOT = 0.8, cc = [ROOT, EYE - R, 0];
+  const onArc = f => { const a = ARC * f; return {p: [cc[0] + R * Math.sin(a), cc[1] + R * Math.cos(a), 0], n: [Math.sin(a), Math.cos(a), 0]}; };
+  const clawH = f => 0.4 - 0.31 * f ** 1.15, clawW = f => 0.33 - 0.03 * f;
+  const SPLIT = 0.35;
+  for (const f of [0.12, 0.24, SPLIT + 0.05]) {
+    const {p, n} = onArc(f);
+    centres.push(p); rings.push(ringAt(head, p, n, Z, sring(clawH(f), clawW(f), 4.5)));
+  }
+  loft(head, rings, centres, {mat: i => i === 0 ? 'face' : 'enamel', capMat: 'steel'});
+  // the face: a shallow dome (its cap's centre pushed 0.035 out), ground bright
+  const faceCentre = head.v.findIndex(q => q[0] === HS[0][0] && q[1] === EYE && q[2] === 0);
+  head.v[faceCentre] = [HS[0][0] - 0.035, EYE, 0];
+  for (const f of head.f) if (f.tag === 'cap' && f.ids.includes(faceCentre)) f.mat = 'face';
+
+  // the two prongs: from just inside the split along the rest of the arc, the V slot widening toward the tips
+  const prongs = [];
+  for (const side of [-1, 1]) {
+    const prong = new Part('claw_' + (side < 0 ? 'a' : 'b'), B, 'enamel'), P = [], Rg = [];
+    for (let k = 0; k <= 7; k++) {
+      const f = SPLIT + (1 - SPLIT) * k / 7, {p, n} = onArc(f), g = 0.035 + 0.1 * ((f - SPLIT) / (1 - SPLIT)) ** 1.2, w = clawW(f);
+      const half = (w - g) / 2, vc = side * (g + half);
+      P.push(add3(p, mul3(Z, vc))); Rg.push(ringAt(prong, p, n, Z, sring(clawH(f), half, 3.5, 12, vc)));
+    }
+    loft(prong, Rg, P, {capMat: 'steel'});
+    // the slot's faces (toward the other prong) are bare steel
+    for (const f of prong.f) if (f.tag === 'side' && dot3(unit(newell(f.ids.map(i => prong.v[i]))), mul3(Z, -side)) > 0.6) f.mat = 'steel';
+    prongs.push(prong);
+  }
+
+  // where the head rests on two pegs either side of the handle (workbench 3.5 cm, tool rack 5 cm out): its underside there
+  const under = x => Math.min(...[head, ...prongs].flatMap(pt => pt.v.filter(q => Math.abs(q[0] - x) < 0.15).map(q => q[1])));
+  const hickory = pos => tone3([176, 134, 88], 1 + 0.14 * (fbm3(pos[1] * 0.3, pos[0] * 3, pos[2] * 3) - 0.5) + 0.05 * (vn3(pos[1] * 1.1 + 3.1, pos[0] * 8, pos[2] * 8) - 0.5));
+  // end grain: growth rings across the handle's width, the hardwood wedge a lighter strip along the head's line
+  const endgrain = pos => Math.abs(pos[2]) < 0.045 ? tone3([168, 132, 90], 1)
+    : tone3([128, 92, 58], 1 + 0.05 * Math.sin(pos[0] * 2 * Math.PI / 0.14) + 0.04 * (vn3(pos[0] * 3, pos[2] * 3, 2) - 0.5));
+  return {PARTS: [handle, head, ...prongs], bg: 'enamel', MATS: {
+    enamel: {c: [40, 40, 42], hl: 10, sm: 118, se: 136, f0: 22},     // black enamel over the forged head, satin
+    face: {c: [168, 170, 174], hl: 16, sm: 168, se: 180, f0: 230},    // the ground striking face and its chamfer
+    steel: {c: [128, 130, 134], hl: 12, sm: 120, se: 140, f0: 230},   // bare steel in the slot and on the cut ends
+    hickory: {c: hickory, hl: 6, sm: 150, se: 160, f0: 20},           // clear-lacquered hickory, a soft sheen
+    endgrain: {c: endgrain, hl: 4, sm: 70, se: 80, f0: 20},
+  },
+  // first person (user 2026-10-21: the face down): ready to drive a nail, the handle pitched 50 deg forward and 15 deg
+  // toward the screen's middle, the striking face down and forward (rotation = Ry(15) Rx(-50) Ry(-90) as JOML XYZ); the
+  // grip a third up the handle kept where the upright hold had it. Third person (user 2026-10-21: the face down there too):
+  // the hand's frame has the handle forward, x to the right, z up; turned -90 deg about the handle the face points down
+  // and the claw up, the handle dipped 15 deg against the arm's 18 deg lift (about level), rotation = Ry(-90) Rz(15)
+  display: {
+    firstperson_righthand: {rotation: [0, -75, 50], translation: [0.5, 2.4, -2.3], scale: [1.4, 1.4, 1.4]},
+    firstperson_lefthand: {rotation: [0, 75, -50], translation: [0.5, 2.4, -2.3], scale: [1.4, 1.4, 1.4]},
+    thirdperson_righthand: {rotation: [0, -90, 15], translation: [0, 2.5, 0.5], scale: [1.05, 1.05, 1.05]},
+    thirdperson_lefthand: {rotation: [0, 90, -15], translation: [0, 2.5, 0.5], scale: [1.05, 1.05, 1.05]},
+    ground: {rotation: [0, 0, 90], translation: [0, -1, 0], scale: [0.8, 0.8, 0.8]},
+    fixed: {rotation: [0, 0, -45], translation: [0, 0, 0], scale: [1.1, 1.1, 1.1]},
+  },
+  icon: {view: [0, 0, -45], coverage: 0.3, mat: {enamel: [66, 66, 70], face: [200, 202, 206], steel: [160, 162, 166], hickory: [210, 166, 114], endgrain: [160, 120, 78]}},
+  // the hung hold (client HungToolMeshes): the handle's axis, its top, and the head's underside over each peg
+  points: {axis: [0, 0, 0], top: [0, TOP, 0], eye: [0, EYE, 0],
+    ...Object.fromEntries(Object.entries(PEGS).flatMap(([k, d]) => [['rest_face_' + k, [-d, under(-d), 0]], ['rest_claw_' + k, [d, under(d), 0]]]))}};
+}
+
+/**
  * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
  * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
  * outline; 2x supersampled. spec.hud: screen(p) -> [x right, y up], toward = the direction to the viewer, scale px / unit.
@@ -836,6 +929,7 @@ export const ITEMS = {
   geiger_counter: geigerCounter,
   flip_lighter: flipLighter,
   felling_axe: fellingAxe,
+  claw_hammer: clawHammer,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

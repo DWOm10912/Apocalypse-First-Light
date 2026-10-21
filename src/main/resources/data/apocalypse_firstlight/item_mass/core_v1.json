@@ -155,6 +155,10 @@
       "unit_mass_kg": 2.3,
       "estimated": true
     },
+    "apocalypse_firstlight:claw_hammer": {
+      "unit_mass_kg": 0.68,
+      "estimated": true
+    },
     "apocalypse_firstlight:energy_battery": {
       "unit_mass_kg": 1,
       "estimated": true

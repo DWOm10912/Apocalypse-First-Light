@@ -72,6 +72,10 @@ public final class AflItems {
     // Felling axe (2026-10-20, docs/gameplay/felling_axe_v1.md): fells trees and is a melee weapon; Creative only, no recipe
     public static final RegistryObject<Item> FELLING_AXE = ITEMS.register("felling_axe",
             com.antaurora.apofirstlight.item.FellingAxeItem::new);
+    // Claw hammer (2026-10-21, docs/gameplay/afl_workbench_v1_design.md 14): the workbench's first test tool, hung on its
+    // pegs; a plain tool for now (no use, no melee); Creative only, no recipe
+    public static final RegistryObject<Item> CLAW_HAMMER = ITEMS.register("claw_hammer",
+            () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",

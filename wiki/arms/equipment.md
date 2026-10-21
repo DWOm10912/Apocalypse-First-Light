@@ -26,6 +26,7 @@
 | <ItemIcon id="geiger_counter" /> 盖革计数器 | 显示当前辐射剂量率 | <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> 撬棍 | 近战武器，也能拆下隧道里的部件 | <StatusTag s="creative" /> |
 | <ItemIcon id="felling_axe" /> 伐木斧 | 砍树，也能当近战武器 | <StatusTag s="creative" /> |
+| <ItemIcon id="claw_hammer" /> 羊角锤 | 挂在工作台或工具架上，暂时没有别的用途 | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> 翻盖打火机 | 右键翻盖、打火，点着能照明，也能点燃柴炉、营火、蜡烛和 TNT | <StatusTag s="creative" /> |
 
 ## 伐木斧
@@ -38,6 +39,14 @@
 - 双手握持，挥斧时整个身体跟着转
 - 能挂在木质工具架的木钉上：斧柄朝下，斧头架在两根钉上
 - 不能给木头去皮，不能修理
+- 目前只能从创造模式物品栏获得
+
+## 羊角锤
+
+<StatusTag s="test" /> 涂黑漆的钢锤头，锤面磨亮，山核桃木柄，按真实大小做
+
+- 现在是工作台的第一件测试工具：能挂在工作台和木质工具架的木钉上，锤头架在两根钉上
+- 还不能用来敲东西，也不是近战武器
 - 目前只能从创造模式物品栏获得
 
 ## 翻盖打火机

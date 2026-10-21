@@ -26,6 +26,7 @@ See [Inventory and Weight](../guide/inventory)
 | <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate | <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures | <StatusTag s="creative" /> |
 | <ItemIcon id="felling_axe" /> Felling Axe | Fells trees; also a melee weapon | <StatusTag s="creative" /> |
+| <ItemIcon id="claw_hammer" /> Claw Hammer | Hangs on a workbench or tool rack; no other use yet | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> Flip Lighter | Right click to flip it open and strike it; lit, it gives light and lights stoves, campfires, candles and TNT | <StatusTag s="creative" /> |
 
 ## Felling Axe
@@ -38,6 +39,14 @@ See [Inventory and Weight](../guide/inventory)
 - Held in both hands; the whole body turns into each swing
 - Hangs on the pegs of a wooden tool rack: handle down, the head resting on two pegs
 - It cannot strip bark and cannot be repaired
+- For now it comes only from the creative inventory
+
+## Claw Hammer
+
+<StatusTag s="test" /> A black-painted steel head with a ground bright face on a hickory handle, made at its real size
+
+- For now it is the workbench's first test tool: it hangs on the pegs of a workbench or a wooden tool rack, its head resting on two pegs
+- It cannot drive anything yet and is not a melee weapon
 - For now it comes only from the creative inventory
 
 ## Flip Lighter

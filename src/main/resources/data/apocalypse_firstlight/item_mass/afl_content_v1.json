@@ -999,6 +999,10 @@
       "unit_mass_kg": 30,
       "estimated": true
     },
+    "apocalypse_firstlight:wooden_workbench": {
+      "unit_mass_kg": 70,
+      "estimated": true
+    },
     "apocalypse_firstlight:vintage_chest_freezer": {
       "unit_mass_kg": 75,
       "estimated": true

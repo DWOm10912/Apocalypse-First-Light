@@ -103,5 +103,8 @@
       -159.464
     ],
     "hide": "^(barrel.*|frame.*|part_magrel_.*|part_slidestop|part_takedown_.*|part_trigger|trigger|slide.*|righthand|lefthand|mag_out|empty_old_mag|.*_reference.*)$"
+  },
+  "wooden_workbench": {
+    "bbmodel": "src/main/blockbench/furniture/wooden_workbench.bbmodel"
   }
 }

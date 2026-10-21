@@ -614,6 +614,19 @@ public final class WorldInteractionHint {
             int slot=com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.target(tools,held,aimed);
             return slot<0?null:new Target(Component.translatable(k+(slot<3?"gun_rack.hang":"gun_rack.put")),com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.slotPoint(s,pos,slot));
         }
+        // AFL Workbench V1: the pegs as the tool rack's (the drawers in meshInteraction below)
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.Workbench bench){
+            var region=bench.meshInteraction(s,pos,mc.player);
+            int peg=region==null?-1:com.antaurora.apofirstlight.cabin.Workbench.pegOf(region.region());
+            if(peg<0) return null;
+            var m=com.antaurora.apofirstlight.cabin.Workbench.master(s,pos);
+            if(!(mc.level.getBlockEntity(m) instanceof com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity tools)) return null;
+            var f=s.getValue(com.antaurora.apofirstlight.cabin.Workbench.FACING);
+            var held=mc.player.getMainHandItem();
+            if(held.isEmpty()) return tools.tool(peg).isEmpty()?null:new Target(Component.translatable(k+"gun_rack.take"),com.antaurora.apofirstlight.cabin.Workbench.pegPoint(m,f,peg));
+            int slot=com.antaurora.apofirstlight.cabin.Workbench.target(tools,held,peg);
+            return slot<0?null:new Target(Component.translatable(k+"gun_rack.hang"),com.antaurora.apofirstlight.cabin.Workbench.pegPoint(m,f,slot));
+        }
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack)
                 ||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity rack)) return null;
         var held=mc.player.getMainHandItem();

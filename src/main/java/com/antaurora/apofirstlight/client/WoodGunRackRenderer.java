@@ -43,7 +43,7 @@ import java.util.Map;
  * ({@link WoodToolRackBlockEntity}), drawn here too in its own frame (tools/build-wood-furniture-v2.mjs, moved out onto its
  * pad on round logs): pegs (0..2) hang a tool by its handle, head up, the item sprite's diagonal plumb (its model at
  * {@link WoodFurnitureV2.ToolRack#TOOL_SCALE}); the shelf (3, 4) as the gun rack's.
- * The felling axe hangs as itself instead: its mesh, head on the pegs (2026-10-20).
+ * The felling axe hangs as itself instead: its mesh, head on the pegs (2026-10-20); so does the claw hammer (2026-10-21).
  * <p>Resting items are drawn by the chunk ({@link WoodGunRackChunking}, a recording of this drawing): a slot is drawn here
  * only until the chunk shows it, plus whatever the chunk cannot take.
  */
@@ -162,6 +162,10 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
     private static void tool(ItemStack s, double x, PoseStack pose, MultiBufferSource buffers, int light, int seed) {
         if (s.is(AflItems.FELLING_AXE.get())) {
             fellingAxe(x, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.CLAW_HAMMER.get())) {   // its mesh, the head on the pegs (AFL Workbench V1, 2026-10-21)
+            WorkbenchRenderer.clawHammer(x, WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
             return;
         }
         pose.translate(x, WoodFurnitureV2.ToolRack.TOOL_MID_Y, WoodFurnitureV2.ToolRack.TOOL_Z);

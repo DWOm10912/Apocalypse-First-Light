@@ -60,6 +60,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.CROWBAR.get(), "crowbar", "crowbar_mesh", -0.36419375);
             // Felling axe (equipment meshes, 2026-10-20): 0.5 - 25.92 / 32
             bind(AflItems.FELLING_AXE.get(), "felling_axe", "felling_axe_mesh", -0.31);
+            // Claw hammer (equipment meshes, 2026-10-21): 0.5 - 10.44 / 32
+            bind(AflItems.CLAW_HAMMER.get(), "claw_hammer", "claw_hammer_mesh", 0.17375);
             // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
             bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
             bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);
@@ -98,7 +100,7 @@ public final class AflStaticMeshItemClient {
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/metal_trash_can.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/metal_trash_can.png"), 0.0, 0.0), "metal_trash_can");
             // Furniture Mesh V1 (tools/furniture/furniture-mesh.mjs, 2026-10-15): each piece's mesh and atlas, closed, the lamp unlit; views fitted by the generator
-            for (String id : new String[]{"wooden_kitchen_counter", "wooden_sink_counter", "wooden_wardrobe", "wooden_nightstand", "wooden_storage_chest", "vintage_chest_freezer"})
+            for (String id : new String[]{"wooden_kitchen_counter", "wooden_sink_counter", "wooden_wardrobe", "wooden_nightstand", "wooden_storage_chest", "vintage_chest_freezer", "wooden_workbench"})
                 bind(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(ApocalypseFirstLight.MOD_ID, id)), () -> new AflStaticMeshItemRenderer(
                         new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + id + ".geo.json"),
                         new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/furniture/" + id + ".png"), 0.0, 0.0), id);
