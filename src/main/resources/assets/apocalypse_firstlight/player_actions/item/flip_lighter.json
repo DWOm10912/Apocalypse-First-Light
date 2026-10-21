@@ -1,0 +1,48 @@
+{
+  "format_version": 1,
+  "about": "Flip lighter in the main hand, closed, no act yet (just taken out): held before the belly, eased in. docs/gameplay/flip_lighter_v1.md 4; written by tools/author-flip-lighter-actions.mjs.",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0.25,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "flip_lighter",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3,
+          6.8,
+          -4.2
+        ],
+        "rot": [
+          -4,
+          205,
+          0
+        ],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

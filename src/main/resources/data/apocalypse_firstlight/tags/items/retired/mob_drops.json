@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:blaze_rod",
+    "minecraft:blaze_powder",
+    "minecraft:magma_cream",
+    "minecraft:ghast_tear",
+    "minecraft:phantom_membrane",
+    "minecraft:rabbit_foot",
+    "minecraft:heart_of_the_sea",
+    "minecraft:nautilus_shell",
+    "minecraft:scute",
+    "minecraft:glow_ink_sac",
+    "minecraft:slime_ball"
+  ]
+}

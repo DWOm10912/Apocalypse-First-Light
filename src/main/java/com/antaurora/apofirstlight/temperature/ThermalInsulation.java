@@ -35,6 +35,8 @@ public final class ThermalInsulation {
 
     public static double of(ItemStack stack) {
         if (stack.isEmpty()) return 0;
+        // Vanilla Survival Rework V1: retired vanilla armour gives nothing, warmth included (armor_v1.json stays for the switch off).
+        if (com.antaurora.apofirstlight.world.VanillaRetirement.isRetiredGear(stack)) return 0;
         Double own = items.get(ForgeRegistries.ITEMS.getKey(stack.getItem()));
         if (own != null) return own;
         double best = 0;

@@ -468,6 +468,7 @@
   "item.apocalypse_firstlight.plastic_scrap": "废塑料",
   "item.apocalypse_firstlight.plastic_pellets": "塑料颗粒",
   "item.apocalypse_firstlight.geiger_counter": "盖革计数器",
+  "item.apocalypse_firstlight.flip_lighter": "翻盖打火机",
   "item.apocalypse_firstlight.dirty_water_bottle": "瓶装脏水",
   "item.apocalypse_firstlight.boiled_water_bottle": "瓶装煮沸水",
   "item.apocalypse_firstlight.purified_water_bottle": "瓶装净水",
@@ -571,6 +572,8 @@
   "tooltip.apocalypse_firstlight.fuel_can.empty": "空（容量 %s L）",
   "tooltip.apocalypse_firstlight.fuel_can.holds": "%s：%s / %s L",
   "tooltip.apocalypse_firstlight.fuel_can.use": "对准已打开的卸油口或加油口按右键，蹲下倒油；倒空后自动停止，也可再次按右键停止。潜行时按右键可将油壶放在地上",
+  "tooltip.apocalypse_firstlight.flip_lighter.fuel": "燃油：%s%%",
+  "tooltip.apocalypse_firstlight.flip_lighter.use": "右键翻开、打火；点着时可点燃营火、蜡烛、柴炉和 TNT；潜行按右键合上",
 
   "screen.apocalypse_firstlight.gun_maintenance": "枪械维护",
   "screen.apocalypse_firstlight.maintenance_select": "选择要放置在维护台上的枪械",
@@ -853,6 +856,9 @@
   "subtitles.apocalypse_firstlight.tree_chop": "砍树",
   "subtitles.apocalypse_firstlight.tree_crack": "树干：断裂",
   "subtitles.apocalypse_firstlight.tree_crash": "大树：轰然倒下",
+  "subtitles.apocalypse_firstlight.flip_lighter_open": "打火机：翻开盖子",
+  "subtitles.apocalypse_firstlight.flip_lighter_strike": "打火机：打火",
+  "subtitles.apocalypse_firstlight.flip_lighter_close": "打火机：合上盖子",
   "subtitles.apocalypse_firstlight.p9_01.suppressed": "消音手枪：开火",
   "subtitles.apocalypse_firstlight.p9_01.fire": "手枪：开火",
   "subtitles.apocalypse_firstlight.p9_01.magazine_out": "弹匣：取出",
@@ -1086,6 +1092,8 @@
 
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入",
+  "message.apocalypse_firstlight.retired_workstation": "无法使用",
+  "tooltip.apocalypse_firstlight.retired_gear": "使用或穿戴时没有任何效果",
   "message.apocalypse_firstlight.cat.maintenance_refused": "这只猫貌似不喜欢你这么干",
 
   "message.apocalypse_firstlight.thirst.gastro_symptom": "肚子一阵绞痛",
@@ -1364,6 +1372,7 @@
   "survivor.apocalypse_firstlight.perk.reload_practised.desc": "战术换弹，瞄准时也能换",
 
   "hint.apocalypse_firstlight.break_glass": "打碎玻璃",
+  "hint.apocalypse_firstlight.flip_lighter.light": "点燃",
   "hint.apocalypse_firstlight.locker.open": "打开",
   "hint.apocalypse_firstlight.locker.search": "搜索",
   "hint.apocalypse_firstlight.locker.view": "查看",

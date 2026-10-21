@@ -42,6 +42,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - 效果图标 `textures/mob_effect/gastroenteritis.png`（18×18，浑浊绿色水滴带污点）；
 - 伤害类型 `data/apocalypse_firstlight/damage_type/dehydration.json`，加入 `minecraft:bypasses_armor`、`bypasses_effects`（同原版饥饿）；
 - 配方 `data/apocalypse_firstlight/recipes/purified_water_bottle_from_{smelting,smoking,campfire_cooking}.json`（结果写的是纯净水，有辐射时代码换成煮沸水）。
+- 2026-10-20 原版退役 V1.2（分支 `AFL-Vanilla-Rework`，未合并，`docs/gameplay/vanilla_survival_rework_v1.md` 4.7 节）：熔炉、烟熏炉、营火物品退役，生存里拿不到。三个配方不变；新世界里煮水靠柴炉（走烟熏炉配方）、工业熔炉和结构里已经放下的原版熔炉。
 
 ## 物品
 
@@ -65,7 +66,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | 玻璃瓶对着**水源方块**使用 | 一瓶脏水，带装水处的污染等级。原版的水瓶不再出现（炼药锅装水不受影响）。流动的水装不了，同原版。 |
 | 熔炉（10 秒）/ 烟熏炉（5 秒）/ 营火（30 秒）煮脏水瓶 | 没有辐射的得到纯净水瓶；有辐射的得到煮沸水瓶，保留原来的污染等级。经验 0.1。配方书和 JEI 只显示纯净水那一种。熔炉输出格里放着一种水时，另一种要等取走后才能继续出 |
 | 空手蹲下对着**水源方块**右键 | 直接喝一口：+5，最快每 0.5 秒一口；也按位置判断污染 |
-| 含水的食物 | 西瓜片 +6、苹果 +2、蘑菇煲 / 兔肉煲 / 甜菜汤 / 迷之炖菜 +10、蜂蜜瓶 +5 |
+| 含水的食物 | 西瓜片 +6、苹果 +2、蘑菇煲 / 兔肉煲 / 甜菜汤 / 迷之炖菜 +10、蜂蜜瓶 +5（原版退役 V1.3 起这些食物在生存里拿不到，已有的照常算） |
 
 牛奶桶 2026-10-04 起去掉：原版桶的合成已禁用（AFL 液体统一 1 mB = 1 升，原版桶在淘汰中），对牛、哞菇、山羊用桶没反应（`thirst/NoMilkingEvents`），`thirst_v1.json` 也不再列牛奶桶。世界里已有的牛奶桶照原版能喝，但不补水。以后做现代的盒装 / 桶装牛奶。
 

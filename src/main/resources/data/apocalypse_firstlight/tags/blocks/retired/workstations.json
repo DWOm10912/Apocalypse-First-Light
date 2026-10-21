@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:enchanting_table",
+    "minecraft:anvil",
+    "minecraft:chipped_anvil",
+    "minecraft:damaged_anvil",
+    "minecraft:brewing_stand",
+    "minecraft:grindstone",
+    "minecraft:smithing_table",
+    "minecraft:ender_chest"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:end_stone",
+    "minecraft:end_stone_bricks",
+    "minecraft:end_stone_brick_slab",
+    "minecraft:end_stone_brick_stairs",
+    "minecraft:end_stone_brick_wall",
+    "minecraft:purpur_block",
+    "minecraft:purpur_pillar",
+    "minecraft:purpur_slab",
+    "minecraft:purpur_stairs",
+    "minecraft:end_rod",
+    "minecraft:chorus_plant",
+    "minecraft:chorus_flower",
+    "minecraft:chorus_fruit",
+    "minecraft:popped_chorus_fruit",
+    "minecraft:end_portal_frame",
+    "minecraft:ender_eye",
+    "minecraft:end_crystal",
+    "minecraft:dragon_egg",
+    "minecraft:dragon_head",
+    "minecraft:dragon_breath",
+    "minecraft:elytra"
+  ]
+}

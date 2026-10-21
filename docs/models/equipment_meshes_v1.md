@@ -178,3 +178,18 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
   - `compileJava --offline` 通过；
   - 离线预览见设计文档第 5 节，没有实机验证。
 
+## 2026-10-20 新增：翻盖打火机 `flip_lighter`
+
+玩法、动作、镜头见 [翻盖打火机 V1](../gameplay/flip_lighter_v1.md)。这里只记生成和渲染。
+
+- **模型**：镀银老式防风打火机，1 px = 5 mm，直立。外壳 7.6 × 2.6 px、圆角 0.75，盖子在 7.32–11.4 px，铰链在 +X 一侧。
+  - 部件：`case`（含顶上一圈和内胆顶板）、`lid`（外壳、内壁、顶板）、5 节铰链（`hinge_0/2/4` 在外壳上，`lid_hinge_1/3` 在盖子上）、防风罩四面（前后各 8 个孔）、`rivet_front/back`、`wheel`（16 面）、`cam`、`wick` + `wick_tip`（烧焦的头）。
+  - 材质：外壳和盖子镀银，内胆不锈钢，轮子深钢色，灯芯棉色。
+- 共面检查 0（第一版外壳铰链叶片顶面和内胆顶板共面 5 处：叶片顶降低 0.08 px、盖子叶片从 x 3.62 起、叶片两端各缩 0.02 px）。
+- 512 贴图集，1740 个三角面，尺寸 8.022 × 11.4 × 2.6 px，`verticalOffset` 0.14375。
+- 生成脚本新加：部件可以带 `points`（烘焙后的坐标随网格一起移动，写进统计）；打火机的 `hinge`、`wheel`、`wick` 烘焙后是 (3.7891, 7.3)、(1.8391, 10.45)、(0.6891, 10.42)。
+- 显示变换：第三人称握持比例 0.3，第一人称 0.32、斜转 25°；GUI 用 2D 图标（视角 [20, 200, 0]）。
+- **渲染**：`client/FlipLighterRenderer`，按部件名分出盖子（`lid*`）、轮子和其余部件；盖子绕铰链、轮子绕轴转，火苗是另画的面片（贴图 `tools/build-lighter-flame-v1.mjs`）。
+- **检查**：
+  - `node tools/build-equipment-meshes-v1.mjs flip_lighter --check` 通过；整体 `--check` 只有 `models/item/geiger_counter.json` 报过期，这是之前就有的，和打火机无关；
+  - `compileJava --offline` 通过；没有实机验证。

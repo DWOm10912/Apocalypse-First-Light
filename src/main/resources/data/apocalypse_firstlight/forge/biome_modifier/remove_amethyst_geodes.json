@@ -1,0 +1,12 @@
+{
+  "type": "forge:remove_features",
+  "biomes": {
+    "type": "forge:any"
+  },
+  "features": [
+    "minecraft:amethyst_geode"
+  ],
+  "steps": [
+    "local_modifications"
+  ]
+}

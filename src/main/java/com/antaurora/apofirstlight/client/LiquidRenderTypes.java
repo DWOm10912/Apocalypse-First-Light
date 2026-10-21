@@ -128,6 +128,18 @@ public final class LiquidRenderTypes extends RenderType {
                     .setWriteMaskState(COLOR_WRITE)
                     .createCompositeState(false));
 
+    /** The flip lighter's flame (FlipLighterRenderer): the lighter flame flipbook, otherwise as BODY_FLAME. */
+    public static final RenderType LIGHTER_FLAME = RenderType.create("apocalypse_firstlight_lighter_flame", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/lighter_flame.png"), false, false))
+                    .setTransparencyState(LIGHTNING_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
     /**
      * Fire smoke (FireFx): the smoke sheet (textures/effect/fire_smoke), the entity-translucent shader (lit by the world),
      * alpha blended, sorted back to front when drawn, no depth writes (overlapping puffs blend, never cut into each other).

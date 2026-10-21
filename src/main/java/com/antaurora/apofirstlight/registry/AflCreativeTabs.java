@@ -265,6 +265,7 @@ public final class AflCreativeTabs {
             AflItems.CROWBAR,
             AflItems.SIMPLE_HEARING_PROTECTION,
             AflItems.GEIGER_COUNTER,
+            AflItems.FLIP_LIGHTER,
             AflItems.FIELD_CHEST_RIG,
             AflItems.CANVAS_BACKPACK,
             AflItems.HIKING_BACKPACK,

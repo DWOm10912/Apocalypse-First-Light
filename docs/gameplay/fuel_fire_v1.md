@@ -85,18 +85,46 @@
 
 ### 火焰贴图
 
-- **来源**：Blender 烟火模拟。文件 `tools/blender/fuel_flame_v1.blend`：
-  - Mantaflow 气体域 1.2 × 1.2 × 2.4 m，分辨率 112，噪声 ×2；
-  - 地上一摊 0.84 × 0.67 m 的燃料，燃料量用移动的云纹贴图，火不会每帧一样；
-  - "flame" 通道 → 色带 → 自发光；
-  - Cycles，正交侧视，黑底。
-- **循环帧**：渲染第 60–107 帧做循环，前 12 帧和第 108–119 帧交叉淡化接上，每帧 256 × 352。存在 `tools/blender/fuel_flame_v1_loop/l00.png … l47.png`。
-- **生成器** `node tools/build-fuel-flame-v1.mjs tools/blender/fuel_flame_v1_loop [--check]` 输出两套贴图：
-  - `assets/apocalypse_firstlight/textures/effect/fuel_flame.png`：512 × 528，8 × 6 帧，每帧 64 × 88，给油斑火焰用。颜色去掉了预乘，透明度按亮度算，底下 5 行渐隐（地面上看不出一条硬边）。
-  - `assets/minecraft/textures/block/fire_0.png`、`fire_1.png`：64 × 3072，48 帧方形，每帧 1 tick（`.mcmeta`），替换原版火。从每帧底部截 0.8 倍高的正方形；原版火是镂空画的，所以透明度是硬的（亮度 > 0.22 就不透明），颜色同样去预乘，没有黑边。`fire_1` 比 `fire_0` 晚半个循环。
+**V3（2026-10-20，重新渲染；已生成，没进游戏看过）**。V1 看起来像一团发光的雾：只要有一点 flame 就发光，颜色是一条平的色带，每帧只有 64 × 88。V3 改了模拟和着色：
+
+- **模拟**：`tools/blender/fuel_flame_v2.blend`，从 V1 复制。
+  - 同一个 Mantaflow 气体域，分辨率 112 → 160；
+  - 涡度 1.0，火焰涡度 3.0，燃烧速度 0.82；
+  - 噪声强度 0.7；
+  - 燃料云纹缩放 0.35。
+  - 火舌分得开，不再是一整团。
+- **着色**：自发光，没有散射。
+  - flame < 0.2 不发光（不起雾）；
+  - 强度 = ((flame − 0.2) / 0.8)^2.5 × 7；
+  - 颜色按 flame 取黑体 900–2100 K：根部亮黄，往上橙，尖端暗红；
+  - 油面上方贴池的一层压暗（生成坐标 z 的 8%），地面上没有一条亮线；
+  - Standard 视图变换，不用 AgX（AgX 会把火冲成白色）。
+- **脚本**：
+  - 烘焙 `tools/blender/fire_bake.py`；
+  - 渲染 `tools/blender/fire_render.py`。
+  - 两份文件头里都写了 V3 用的完整参数。
+  - 模拟缓存有几 GB，不放进仓库，重新渲染前要先烘焙。
+- **循环帧**：
+  - 渲染第 60–119 帧，每帧 512 × 704；
+  - 用 `node tools/blender-loop-crossfade.mjs <渲染目录> tools/blender/fuel_flame_v2_loop 60 48 12` 做成 48 帧循环：前 12 帧和第 108–119 帧交叉淡化。
+  - 交叉淡化时先混合亮度，再按渲染里"亮度 → 平均颜色"的表重新上色。直接混合颜色会让亮黄叠黑变成橄榄色。
+  - 输出 `tools/blender/fuel_flame_v2_loop/l00.png … l47.png`。
+- **生成器** `node tools/build-fuel-flame-v1.mjs tools/blender/fuel_flame_v2_loop [--check]` 输出两套贴图：
+  - `assets/apocalypse_firstlight/textures/effect/fuel_flame.png`：
+    - 768 × 792，8 × 6 帧，每帧 96 × 132，给油斑火焰用；
+    - 颜色去掉了预乘，透明度按亮度算；
+    - 底下 7 行渐隐，地面上看不出一条硬边。
+  - `assets/minecraft/textures/block/fire_0.png`、`fire_1.png`：
+    - 64 × 3072，48 帧方形，每帧 1 tick（`.mcmeta`），替换原版火；
+    - 从每帧底部截 0.8 倍高的正方形；
+    - 原版火是镂空画的，所以透明度是硬的：亮度 > 0.22 就不透明；
+    - 颜色同样去预乘，没有黑边；
+    - `fire_1` 比 `fire_0` 晚半个循环。
   - 两套都有 LabPBR `_s`：有火的地方 alpha 254（自发光），其余 255。
+- 帧的像素尺寸变了，代码不用改：`FuelFlames`、`EntityFlames` 只按 8 × 6 网格算 UV。
 - `fire_0` / `fire_1` 现在只剩粒子和别的模组会用到：原版火方块和着火的生物从 2026-10-05 起改用油斑火焰的画法（见下文"火焰效果 V2"）。
 - **没换的**：灵魂火（`soul_fire_0/1`）、营火的火（`campfire_fire`）、火把、熔炉。
+- V1 的文件（`fuel_flame_v1.blend`、`fuel_flame_v1_loop/`）保留，可以对比。
 
 ### 代码
 
@@ -148,7 +176,17 @@
 ### 3. 着火的生物（`client/EntityFlames`）
 
 - 用 `mixin/client/EntityRenderDispatcherFireMixin` 取消原版 `renderFlame`（把火焰贴图一圈圈叠在身上往上画），改画一套"人在燃烧"的火焰（V2.2，2026-10-05）：
-  - 贴图 `textures/effect/body_flame.png`（512 × 960，8 × 6 帧，每帧 64 × 160，带 LabPBR `_s` 自发光）：在 Blender 里模拟一个人形（腿和躯干、手臂、头，1.76 m）身上着火（`tools/blender/fuel_flame_body_v1.blend` 的 AflBodyFire 场景：同一个油火模拟域改成 1.2 × 1.0 × 3.0 m，燃料从身体表面经一张斑驳的云纹贴图冒出），循环帧存在 `tools/blender/fuel_flame_body_v1_loop/`（128 × 320）。Blender 渲出来的颜色发浑（全身都在发光，层层叠加），所以生成器只取亮度、重新上色：暗处深橙红，往上橙、黄，最亮处淡黄。生成器 `node tools/build-body-flame-v1.mjs [loopDir] [--check]`。重新烘焙要先把模拟域的缓存目录改到本机的位置。
+  - 贴图 `textures/effect/body_flame.png`，带 LabPBR `_s` 自发光。在 Blender 里模拟一个人形（腿和躯干、手臂、头，1.76 m）身上着火：AflBodyFire 场景，同一个油火模拟域改成 1.2 × 1.0 × 3.0 m，燃料从身体表面经一张斑驳的云纹贴图冒出。
+    - **V3（2026-10-20，重新渲染；已生成，没进游戏看过）**：
+      - 文件 `tools/blender/fuel_flame_body_v2.blend`；
+      - 分辨率 160，涡度 1.0，火焰涡度 3.0，燃烧速度 0.9，噪声强度 0.7，云纹缩放 0.18；
+      - 着色和油火 V3 一样（黑体 900–2100 K，flame < 0.2 不发光），材质 `BodyFireMat`，不压暗底部；
+      - 渲染第 60–119 帧，每帧 256 × 640，同样用交叉淡化工具做成 48 帧循环，存在 `tools/blender/fuel_flame_body_v2_loop/`；
+      - 贴图 768 × 1440，8 × 6 帧，每帧 96 × 240；
+      - 生成器用渲染自己的颜色（去预乘），透明度按亮度，底下 8 行渐隐；
+      - 烘焙、渲染命令见上文"火焰贴图"一节的脚本。
+    - V1（`fuel_flame_body_v1.blend`，每帧 64 × 160）：颜色发浑，生成器只取亮度、再按色带重新上色。V3 不再这样做。
+    - 生成器 `node tools/build-body-flame-v1.mjs [loopDir] [--check]`，默认读 `fuel_flame_body_v2_loop`。
   - 用户实机看过，觉得"燃烧的效果蛮不错的"（2026-10-05）。
   - 画法和原版一样转向镜头：一片穿过身体中间（中间被身体挡住，露出身体周围和头顶的火），一片在身体前面、淡一些（盖在身上），两片在循环里的位置错开；大小按碰撞箱（宽 × 2.5、高 × 1.7），满亮度、加法混合（`LiquidRenderTypes.BODY_FLAME`）。
   - 第一版（V2）把油斑火焰一团团放在身体周围，大多藏进了身体里，只从缝里露出一点，用户觉得"生物复用地上的贴图，看起来很奇怪"。

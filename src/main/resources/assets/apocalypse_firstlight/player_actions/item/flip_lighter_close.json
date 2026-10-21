@@ -1,0 +1,64 @@
+{
+  "format_version": 1,
+  "about": "Flip lighter: snapped shut (Act close, from open). The lid shut 0.08-0.18 s, the hand back down before the belly (0.15-0.5 s).",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "flip_lighter",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.6,
+          1.8,
+          -7
+        ],
+        "rot": [
+          -8,
+          200,
+          0
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0.15,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3,
+          6.8,
+          -4.2
+        ],
+        "rot": [
+          -4,
+          205,
+          0
+        ],
+        "blend": 0.35
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

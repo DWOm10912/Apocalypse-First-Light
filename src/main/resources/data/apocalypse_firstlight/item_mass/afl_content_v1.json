@@ -285,6 +285,10 @@
       "unit_mass_kg": 0.33,
       "estimated": true
     },
+    "apocalypse_firstlight:flip_lighter": {
+      "unit_mass_kg": 0.06,
+      "estimated": true
+    },
     "apocalypse_firstlight:dirty_water_bottle": {
       "unit_mass_kg": 0.5,
       "estimated": true

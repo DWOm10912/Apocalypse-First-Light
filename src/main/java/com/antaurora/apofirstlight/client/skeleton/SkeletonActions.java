@@ -51,6 +51,8 @@ import java.util.Map;
  * <li>a jerry can in the main hand (S2): carried, or pouring (item/FuelCanItem's pour tag, synced with the stack); the
  * pour's time runs back twice as fast after it stops, so the can is tipped back and lowered;</li>
  * <li>a magazine being loaded (weapon/NativeMagazineLoading's clock on the stack): {@code gun/<gun>_mag_load};</li>
+ * <li>a flip lighter in the main hand: item/flip_lighter_<act> on the item's own clock (item/FlipLighterItem's Act and
+ * ActAt, synced with the stack);</li>
  * <li>first of all, a gun's draw or put-away (SkeletonGunStance#action: {@code gun/<id>_draw}, {@code gun/<id>_holster};
  * docs/dev/p9_draw_holster_actions_v1.md 2.4), played only with the gun stance (PlayerSkeleton).</li>
  * </ul>
@@ -85,6 +87,7 @@ public final class SkeletonActions {
     }
 
     private static final String CROWBAR = "tool/crowbar_smash", CROWBAR_HOLD = "item/crowbar", JERRY_CAN = "item/jerry_can";
+    private static final String LIGHTER = "item/flip_lighter";
     /** The crowbar hold's swing (s of its time): the melee attack swing's progress (0..1) times this. */
     private static final double CROWBAR_SWING = 0.3;
     /** The pour's time stops here (s), just past the tip's last key, so a stop tips back at once (the stream runs on). */
@@ -315,6 +318,7 @@ public final class SkeletonActions {
             return new Live(CROWBAR, now - smash / 20.0, 0F, a == null ? Map.of() : viewAnchors(a, p, partial), p.getMainArm() == HumanoidArm.LEFT);
         }
         ItemStack main = p.getMainHandItem();
+        if (main.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return lighter(p, main, now);
         if (main.is(AflItems.CROWBAR.get()))   // held; the melee swing's progress runs the hold's swing
             return new Live(CROWBAR_HOLD, now - p.getAttackAnim(partial) * CROWBAR_SWING, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         if (main.is(AflItems.JERRY_CAN.get())) {
@@ -362,6 +366,20 @@ public final class SkeletonActions {
             }
         }
         return null;
+    }
+
+    /**
+     * A flip lighter in the main hand (docs/gameplay/flip_lighter_v1.md 4): item/flip_lighter_<act> on the item's clock (its
+     * tag's Act and ActAt, the server's); without an act yet, the closed hold eased in, or the open / lit hold as an act
+     * long finished.
+     */
+    private static Live lighter(AbstractClientPlayer p, ItemStack stack, double now) {
+        boolean mirror = p.getMainArm() == HumanoidArm.LEFT;
+        String act = com.antaurora.apofirstlight.item.FlipLighterItem.act(stack);
+        if (act != null) return new Live(LIGHTER + "_" + act, com.antaurora.apofirstlight.item.FlipLighterItem.actAt(stack) / 20.0, 0F, Map.of(), mirror);
+        if (com.antaurora.apofirstlight.item.FlipLighterItem.isLit(stack)) return new Live(LIGHTER + "_strike", now - 100, 0F, Map.of(), mirror);
+        if (com.antaurora.apofirstlight.item.FlipLighterItem.isOpen(stack)) return new Live(LIGHTER + "_open", now - 100, 0F, Map.of(), mirror);
+        return new Live(LIGHTER, Double.NaN, 0F, Map.of(), mirror);
     }
 
     /**

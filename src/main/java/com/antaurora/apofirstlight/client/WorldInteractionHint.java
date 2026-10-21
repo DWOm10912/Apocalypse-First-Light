@@ -105,6 +105,7 @@ public final class WorldInteractionHint {
             if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=tunnelFixture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
+            if(target==null) target=lighterFlame(mc,hit);
         }
         // the T15 pickup (docs/vehicles/first_pickup_v0_design.md 8.2): the part looked at, resolved as a click is
         else if(!mc.player.isSpectator() && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit && truckOf(hit.getEntity())!=null) {
@@ -205,6 +206,16 @@ public final class WorldInteractionHint {
         if(com.antaurora.apofirstlight.block.TunnelFixtureBlock.tool(mc.player.getMainHandItem()))
             return new Target(Component.translatable("hint.apocalypse_firstlight.tunnel_fixture.dismantle"),null);
         return mc.options.keyAttack.isDown()?new Target(Component.translatable("hint.apocalypse_firstlight.tunnel_fixture.needs_crowbar"),null):null;
+    }
+
+    /** A lit flip lighter on an unlit campfire, candle or TNT (item/FlipLighterItem#useOn): light it. */
+    private static Target lighterFlame(Minecraft mc,BlockHitResult hit) {
+        var held=mc.player.getMainHandItem();
+        if(!(held.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem)||!com.antaurora.apofirstlight.item.FlipLighterItem.burning(held,mc.level)) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        boolean takes=net.minecraft.world.level.block.CampfireBlock.canLight(s)||net.minecraft.world.level.block.CandleBlock.canLight(s)
+                ||net.minecraft.world.level.block.CandleCakeBlock.canLight(s)||s.getBlock() instanceof net.minecraft.world.level.block.TntBlock;
+        return takes?new Target(Component.translatable("hint.apocalypse_firstlight.flip_lighter.light"),null):null;
     }
 
     private static Target vendingMachine(Minecraft mc,BlockHitResult hit) {

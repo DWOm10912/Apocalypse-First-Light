@@ -468,6 +468,7 @@
   "item.apocalypse_firstlight.plastic_scrap": "Plastic Scrap",
   "item.apocalypse_firstlight.plastic_pellets": "Plastic Pellets",
   "item.apocalypse_firstlight.geiger_counter": "Geiger Counter",
+  "item.apocalypse_firstlight.flip_lighter": "Flip Lighter",
   "item.apocalypse_firstlight.dirty_water_bottle": "Dirty Water Bottle",
   "item.apocalypse_firstlight.boiled_water_bottle": "Boiled Water Bottle",
   "item.apocalypse_firstlight.purified_water_bottle": "Purified Water Bottle",
@@ -571,6 +572,8 @@
   "tooltip.apocalypse_firstlight.fuel_can.empty": "Empty (holds %s L)",
   "tooltip.apocalypse_firstlight.fuel_can.holds": "%s: %s / %s L",
   "tooltip.apocalypse_firstlight.fuel_can.use": "Use on an open fill cover or filler: crouch and pour, stopping when it is empty (use again to stop); sneak + use to set it down",
+  "tooltip.apocalypse_firstlight.flip_lighter.fuel": "Fuel: %s%%",
+  "tooltip.apocalypse_firstlight.flip_lighter.use": "Use to flick it open and strike it; lit, use on a campfire, candle, stove or TNT to light it; sneak + use to snap it shut",
 
   "screen.apocalypse_firstlight.gun_maintenance": "Gun Maintenance",
   "screen.apocalypse_firstlight.maintenance_select": "Pick a gun to put on the bench",
@@ -853,6 +856,9 @@
   "subtitles.apocalypse_firstlight.tree_chop": "Axe chops",
   "subtitles.apocalypse_firstlight.tree_crack": "Tree cracks",
   "subtitles.apocalypse_firstlight.tree_crash": "Tree crashes down",
+  "subtitles.apocalypse_firstlight.flip_lighter_open": "Lighter flips open",
+  "subtitles.apocalypse_firstlight.flip_lighter_strike": "Lighter wheel strikes",
+  "subtitles.apocalypse_firstlight.flip_lighter_close": "Lighter snaps shut",
   "subtitles.apocalypse_firstlight.p9_01.suppressed": "Suppressed pistol fires",
   "subtitles.apocalypse_firstlight.p9_01.fire": "P9-01 Service Pistol fires",
   "subtitles.apocalypse_firstlight.p9_01.magazine_out": "Magazine removed",
@@ -1086,6 +1092,8 @@
 
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible.",
+  "message.apocalypse_firstlight.retired_workstation": "Can't be used",
+  "tooltip.apocalypse_firstlight.retired_gear": "No effect when used or worn",
   "message.apocalypse_firstlight.cat.maintenance_refused": "This cat doesn't seem to like you doing that.",
 
   "message.apocalypse_firstlight.thirst.gastro_symptom": "Your stomach cramps",
@@ -1364,6 +1372,7 @@
   "survivor.apocalypse_firstlight.perk.reload_practised.desc": "Tactical reloads, also while aiming",
 
   "hint.apocalypse_firstlight.break_glass": "Break glass",
+  "hint.apocalypse_firstlight.flip_lighter.light": "Light",
   "hint.apocalypse_firstlight.locker.open": "Open",
   "hint.apocalypse_firstlight.locker.search": "Search",
   "hint.apocalypse_firstlight.locker.view": "View",

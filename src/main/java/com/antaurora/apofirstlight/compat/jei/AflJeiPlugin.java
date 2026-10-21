@@ -100,12 +100,15 @@ public final class AflJeiPlugin implements IModPlugin {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        // the grid side panel of container screens (docs/ui/afl_inventory_grid_v0_plan.md 13): JEI keeps out of it
+        // the grid side panel of container screens (docs/ui/afl_inventory_grid_v0_plan.md 13) and the creative screen's left tab
+        // column (client/CreativeTabLayout): JEI keeps out of them
         registration.addGenericGuiContainerHandler((Class) net.minecraft.client.gui.screens.inventory.AbstractContainerScreen.class,
                 new mezz.jei.api.gui.handlers.IGuiContainerHandler<net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>>() {
                     @Override
                     public List<net.minecraft.client.renderer.Rect2i> getGuiExtraAreas(net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
-                        return com.antaurora.apofirstlight.client.inventory.ContainerGridPanel.extraAreas(screen);
+                        var areas = new java.util.ArrayList<>(com.antaurora.apofirstlight.client.inventory.ContainerGridPanel.extraAreas(screen));
+                        areas.addAll(com.antaurora.apofirstlight.client.CreativeTabLayout.extraAreas(screen));
+                        return areas;
                     }
                 });
         MachineGuiLayout.Element arrow = MachineGuiLayouts.crusher().element("progress_arrow");

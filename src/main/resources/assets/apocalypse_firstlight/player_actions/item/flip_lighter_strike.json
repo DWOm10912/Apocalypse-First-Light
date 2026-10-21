@@ -1,0 +1,116 @@
+{
+  "format_version": 1,
+  "about": "Flip lighter: struck and lit (Act strike). Before the chest, the left hand comes to cup the flame (0-0.15 s), the thumb rolls the wheel down 0.10-0.22 s, the flame catches 0.16 s; the left hand goes 0.45 s, the lit lighter goes out before the chest, right of the view (0.35-0.8 s).",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "flip_lighter",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.6,
+          1.8,
+          -7
+        ],
+        "rot": [
+          -8,
+          200,
+          0
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0.08,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.6,
+          2.2,
+          -7
+        ],
+        "rot": [
+          -6,
+          204,
+          0
+        ],
+        "blend": 0.1
+      },
+      {
+        "at": 0.22,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.6,
+          1.8,
+          -7
+        ],
+        "rot": [
+          -8,
+          200,
+          0
+        ],
+        "blend": 0.1
+      },
+      {
+        "at": 0.35,
+        "frame": "view",
+        "point": "grip",
+        "pos": [
+          -1.8,
+          4.9,
+          -4.9
+        ],
+        "rot": [
+          -4,
+          203,
+          0
+        ],
+        "blend": 0.45
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0,
+        "target": "prop:cup",
+        "blend": 0.15,
+        "roll": 0
+      },
+      {
+        "at": 0.45,
+        "target": "pose",
+        "blend": 0.3,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}
