@@ -22,7 +22,8 @@
     "melee_empty_hand": 3,
     "melee": 5,
     "melee_items": {
-      "apocalypse_firstlight:crowbar": 8
+      "apocalypse_firstlight:crowbar": 8,
+      "apocalypse_firstlight:felling_axe": 10
     },
     "shot": 0.6,
     "shots_by_ammo": {

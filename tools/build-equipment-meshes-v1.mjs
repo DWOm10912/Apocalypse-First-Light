@@ -668,6 +668,102 @@ function flipLighter() {
   points: {hinge: LIGHTER.hinge, wheel: LIGHTER.wheel, wick: LIGHTER.wick}};
 }
 
+// low-frequency value noise for wood grain (the material-mesh lib keeps its own private copy)
+const hash3 = (a, b, c) => { let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 2147483647); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
+const vn3 = (x, y, z) => {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), s = t => t * t * (3 - 2 * t), l = (a, b, t) => a + (b - a) * t;
+  const sx = s(x - xi), sy = s(y - yi), sz = s(z - zi), h = (a, b, c) => hash3(a, b, c * 7919 + 17);
+  return l(l(l(h(xi, yi, zi), h(xi + 1, yi, zi), sx), l(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), sx), sy),
+    l(l(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), sx), l(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), sx), sy), sz);
+};
+const fbm3 = (x, y, z) => 0.6 * vn3(x, y, z) + 0.3 * vn3(x * 2.03 + 7.1, y * 2.03 + 3.3, z * 2.03 + 1.7) + 0.1 * vn3(x * 4.1 + 2.9, y * 4.1 + 8.1, z * 4.1 + 5.3);
+
+/**
+ * Felling axe (2026-10-20): an American Michigan-pattern felling axe, a 3.5 lb forged head on a 32 inch curved hickory
+ * handle. Authored at 1 px = 1.25 inch in the crowbar's frame (handle along +Y, the bit toward -X, z across) so the
+ * crowbar's two-handed hold carries over. The handle: elliptical sections (wide along the bit), a swell and a knob (fawn's
+ * foot) hooking toward the bit at the bottom, a slight bow toward the poll in the middle, through the eye and 0.18 px out
+ * of the top, its end grain with the wedge. The head: vertical lens sections lofted from the flat poll to the edge, the
+ * height flaring from the eye toward the bit (the beard drops further than the top rises), convex cheeks thinning to a
+ * 0.58 px ground bevel, the edge curved out. Black enamel on the head as sold; the bevel ground bright and the poll face
+ * worn to bare steel.
+ */
+export const AXE = {eye: 24.4, top: 25.5, edge: -4.08, bulge: 0.14};
+function fellingAxe() {
+  const B = 'felling_axe', {eye: EYE, top: TOP, edge: XE, bulge: BULGE} = AXE, X = [1, 0, 0], Z = [0, 0, 1];
+  // handle: [y, half width along x, half thickness along z], linear between
+  const SEC = [[0, 0.72, 0.5], [0.6, 0.72, 0.5], [1.5, 0.62, 0.43], [3, 0.5, 0.36], [12, 0.5, 0.36], [20, 0.48, 0.34], [22.5, 0.62, 0.33], [23.4, 0.7, 0.3], [TOP, 0.7, 0.3]];
+  const sec = y => { let i = 0; while (i < SEC.length - 2 && y > SEC[i + 1][0]) i++;
+    const [y0, a0, b0] = SEC[i], [y1, a1, b1] = SEC[i + 1], t = Math.max(0, Math.min(1, (y - y0) / (y1 - y0))); return [a0 + (a1 - a0) * t, b0 + (b1 - b0) * t]; };
+  // centreline: bowed 0.25 toward the poll mid-length, the knob hooking 0.3 toward the bit; straight through the eye
+  const mid = y => 0.25 * Math.sin(Math.PI * Math.max(0, Math.min(21, y - 2)) / 21) - (y < 3 ? 0.3 * (1 - y / 3) ** 2 : 0);
+  const handle = new Part('handle', B, 'hickory');
+  const HY = [[0, 0.8], [0.12, 0.95], [0.3, 1], 0.6, 1.0, 1.5, 2.2, 3, 4.5, 6, 8, 10, 12, 14, 16, 18, 20, 21.3, 22.5, 23.4, EYE, 25.0, [TOP - 0.08, 1], [TOP, 0.86]]
+    .map(q => Array.isArray(q) ? q : [q, 1]);
+  const hc = HY.map(([y]) => [mid(y), y, 0]);
+  const hr = HY.map(([y, s], i) => { const [a, b] = sec(y); return ringAt(handle, hc[i], X, Z, Array.from({length: 12}, (_, k) => [a * s * Math.cos(k * Math.PI / 6), b * s * Math.sin(k * Math.PI / 6)])); });
+  loft(handle, hr, hc);
+  for (const f of handle.f.slice(-12)) f.mat = 'endgrain';   // the top cap (loft adds it last)
+
+  // head: vertical sections at x stations, each 8 points down the +z cheek and back up the -z cheek
+  const head = new Part('head', B, 'enamel');
+  const XS = [1.52, 1.4, 0.75, 0.6, 0, -0.6, -0.7, -1.2, -1.8, -2.4, -3.0, -3.5, -3.8, -4.0], X0 = -0.7, BEV = -3.5;
+  const tOf = x => Math.max(0, Math.min(1, (X0 - x) / (X0 - XE)));
+  const T = t => 0.92 + 0.6 * t ** 1.6, Bt = t => -(0.92 + 1.16 * t ** 1.4);
+  const half = x => x > 0.75 ? 0.5 : x >= X0 ? 0.52 : x >= BEV ? 0.09 + 0.43 * (1 - ((X0 - x) / (X0 - BEV)) ** 1.6) : 0.09 - 0.082 * (BEV - x) / (BEV - XE);
+  const levels = (t, c) => { const top = T(t), bot = Bt(t), ys = [top, top - c]; for (let j = 1; j <= 4; j++) ys.push(top - c - (top - bot - 2 * c) * j / 5); ys.push(bot + c, bot); return ys; };
+  const bend = (y, t) => -BULGE * Math.sin(Math.PI * (y - Bt(t)) / (T(t) - Bt(t))) * t ** 4;   // the curved edge, fading out toward the eye
+  const ring = (x, sy, sz) => { const t = tOf(x), h = half(x), ys = levels(t, 0.1), zs = ys.map((_, k) => (k === 0 || k === 7 ? 0.78 : 1) * h);
+    const side = ys.map((y, k) => [x + bend(y, t), EYE + y * sy, zs[k] * sz]);
+    return [...side, ...side.slice().reverse().map(([a, b, c]) => [a, b, -c])].map(p => head.vtx(p)); };
+  const rings = XS.map((x, i) => i === 0 ? ring(x, 0.86, 0.8) : ring(x, 1, 1));   // the poll face chamfered
+  const edgeIds = levels(1, 0.1).map(y => head.vtx([XE + bend(y, 1), EYE + y, 0]));
+  const centre = (x, t) => [x, EYE + (T(t) + Bt(t)) / 2, 0];
+  const quad = (ids, c, mat) => head.face(ids, sub3(mul3(ids.reduce((s, id) => add3(s, head.v[id]), [0, 0, 0]), 1 / ids.length), c), 'side', mat);
+  for (let i = 0; i + 1 < XS.length; i++) {
+    const mat = i === 0 ? 'poll' : XS[i + 1] <= BEV ? 'bit' : 'enamel', c = centre((XS[i] + XS[i + 1]) / 2, tOf((XS[i] + XS[i + 1]) / 2));
+    for (let j = 0; j < 16; j++) quad([rings[i][j], rings[i][(j + 1) % 16], rings[i + 1][(j + 1) % 16], rings[i + 1][j]], c, mat);
+  }
+  // last section to the edge line: both cheeks close onto it (the top and bottom ends as triangles)
+  const last = rings[rings.length - 1], m = j => j < 8 ? j : 15 - j, ce = centre((XS[XS.length - 1] + XE) / 2, 1);
+  for (let j = 0; j < 16; j++) { const k = (j + 1) % 16;
+    quad(m(j) === m(k) ? [last[j], last[k], edgeIds[m(j)]] : [last[j], last[k], edgeIds[m(k)], edgeIds[m(j)]], ce, 'bit'); }
+  const pc = head.vtx([XS[0], EYE, 0]);
+  for (let j = 0; j < 16; j++) head.face([pc, rings[0][j], rings[0][(j + 1) % 16]], X, 'cap', 'poll');
+
+  // hickory: long streaks along the handle (+-8 %), a finer second scale (+-3 %); oiled, satin
+  const hickory = pos => tone3([158, 122, 82], 1 + 0.16 * (fbm3(pos[1] * 0.22, pos[0] * 2.6, pos[2] * 2.6) - 0.5) + 0.06 * (vn3(pos[1] * 0.9 + 3.1, pos[0] * 7, pos[2] * 7) - 0.5));
+  // end grain: darker, growth rings running parallel to the bit (lines along x), the wedge a lighter strip across the middle
+  const endgrain = pos => Math.abs(pos[2]) < 0.06 ? tone3([150, 116, 78], 1)
+    : tone3([118, 84, 52], 1 + 0.05 * Math.sin(pos[2] * 2 * Math.PI / 0.16) + 0.04 * (vn3(pos[0] * 3, pos[2] * 3, 1) - 0.5));
+  const yEdge = levels(1, 0.1)[3];
+  return {PARTS: [handle, head], bg: 'enamel', MATS: {
+    enamel: {c: [46, 46, 48], hl: 10, sm: 112, se: 132, f0: 22},     // black enamel over the forged head, satin
+    bit: {c: [150, 152, 156], hl: 14, sm: 140, se: 160, f0: 230},     // the ground bevel, bright steel
+    poll: {c: [108, 110, 112], hl: 12, sm: 96, se: 118, f0: 230},     // poll face, the enamel worn off
+    hickory: {c: hickory, hl: 6, sm: 108, se: 120, f0: 20},
+    endgrain: {c: endgrain, hl: 4, sm: 70, se: 80, f0: 20},
+  },
+  // the crowbar's transforms, the hands' ones 1.48 times (the skeleton prop's scale 0.75 vs a real axe's 0.508, user
+  // 2026-10-20: too small in the hand); they show only without the skeleton (gui is the 2D icon)
+  display: {
+    firstperson_righthand: {rotation: [0, -18, -12], translation: [1.25, 1.5, -0.5], scale: [1.1, 1.1, 1.1]},
+    firstperson_lefthand: {rotation: [0, 18, 12], translation: [1.25, 1.5, -0.5], scale: [1.1, 1.1, 1.1]},
+    thirdperson_righthand: {rotation: [0, 0, -8], translation: [0, 2, 0], scale: [1.03, 1.03, 1.03]},
+    thirdperson_lefthand: {rotation: [0, 0, 8], translation: [0, 2, 0], scale: [1.03, 1.03, 1.03]},
+    ground: {rotation: [0, 0, 90], translation: [0, -2, 0], scale: [0.52, 0.52, 0.52]},
+    fixed: {rotation: [0, -90, -30], translation: [0, 0, 0], scale: [0.55, 0.55, 0.55]},
+  },
+  atlas: 512, icon: {view: [0, 0, -45], coverage: 0.3, mat: {enamel: [70, 70, 74], bit: [190, 192, 196], poll: [150, 152, 156], hickory: [196, 152, 104], endgrain: [150, 110, 70]}},
+  // HUD weapon list: side view, the head to the left, the bit up (as the crowbar's claw)
+  hud: {screen: p => [-p[1], -p[0]], toward: [0, 0, -1], scale: 40},
+  // skeleton prop points (px; player_props/felling_axe.json is written by tools/author-felling-axe-actions.mjs, keep in
+  // step): the left hand just above the knob, the right next to it or up the handle (4 px hands at prop scale 0.75)
+  points: {grip_end: [mid(2.8), 2.8, 0], grip: [mid(8.3), 8.3, 0], grip_high: [mid(13.1), 13.1, 0], end: [mid(0), 0, 0],
+    top: [0, TOP, 0], eye: [0, EYE, 0], edge: [XE - BULGE, EYE + yEdge, 0], poll: [XS[0], EYE, 0]}};
+}
+const tone3 = (c, k) => c.map(v => v * k);
+
 /**
  * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
  * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
@@ -739,6 +835,7 @@ export const ITEMS = {
   simple_hearing_protection: simpleHearingProtection,
   geiger_counter: geigerCounter,
   flip_lighter: flipLighter,
+  felling_axe: fellingAxe,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

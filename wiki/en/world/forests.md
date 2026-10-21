@@ -9,8 +9,10 @@ Six species: white oak, red oak, shagbark hickory, red maple, white pine and eas
 ## Felling
 
 - You need an axe; bare hands won't do
-  - <StatusTag s="test" /> Vanilla axes can no longer be obtained and AFL has no axe of its own yet, so trees cannot be felled in new worlds for now
-- Each chop takes <V j="FellingRules.CHOP_TICKS" x="0.05" u="s" />; after <V j="FellingRules.STAGES" /> chops the tree falls
+  - <StatusTag s="test" /> Vanilla axes can no longer be obtained; the AFL [Felling Axe](../arms/equipment) comes only from the creative inventory for now
+- Each swing takes <V j="FellingRules.CHOP_TICKS" x="0.05" u="s" />; a chop counts when the axe bites into the wood
+- The cut deepens in <V j="FellingRules.STAGES" /> steps and the tree falls once you have chopped enough; thicker trees and harder wood take more chops
+- The cut opens on the side you chop from, and follows you if you move round
 - Trees fall away from the cut, and **a falling tree hurts**
 - Each chop costs <V d="stamina/stamina_v1#costs.chop" /> stamina, and infected nearby can hear it
 

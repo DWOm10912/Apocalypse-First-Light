@@ -25,7 +25,20 @@ See [Inventory and Weight](../guide/inventory)
 | <ItemIcon id="clinical_thermometer" /> Clinical Thermometer | Hold right click for about 3 s to take your temperature | <StatusTag s="creative" /> |
 | <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate | <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures | <StatusTag s="creative" /> |
+| <ItemIcon id="felling_axe" /> Felling Axe | Fells trees; also a melee weapon | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> Flip Lighter | Right click to flip it open and strike it; lit, it gives light and lights stoves, campfires, candles and TNT | <StatusTag s="creative" /> |
+
+## Felling Axe
+
+<StatusTag s="test" /> An American felling axe with a curved hickory handle, a black-painted head and a ground bright edge
+
+- Left click the foot of a trunk to swing; hold the button to keep chopping, one swing after another. A chop counts when the axe bites into the wood, and the tree falls once you have chopped enough. Every chop wears the axe
+- The cut opens on the side you chop from. Move round and it follows you; the work already done is kept
+- Also a melee weapon: it hits harder than the crowbar but swings slower. A melee swing is quicker than a chop
+- Held in both hands; the whole body turns into each swing
+- Hangs on the pegs of a wooden tool rack: handle down, the head resting on two pegs
+- It cannot strip bark and cannot be repaired
+- For now it comes only from the creative inventory
 
 ## Flip Lighter
 

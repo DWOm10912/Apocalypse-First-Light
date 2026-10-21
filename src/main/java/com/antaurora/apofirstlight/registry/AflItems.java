@@ -69,6 +69,9 @@ public final class AflItems {
                             "muzzle_anchor", "ejection_disabled")));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
+    // Felling axe (2026-10-20, docs/gameplay/felling_axe_v1.md): fells trees and is a melee weapon; Creative only, no recipe
+    public static final RegistryObject<Item> FELLING_AXE = ITEMS.register("felling_axe",
+            com.antaurora.apofirstlight.item.FellingAxeItem::new);
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",

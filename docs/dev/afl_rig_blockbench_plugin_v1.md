@@ -11,6 +11,7 @@
   - 一个动作多个道具；
   - 换挂点（弹匣从枪上到左手、到弹匣包、再回枪上）；
   - 道具关键帧的 `hidden`。
+  - 道具关键帧的 `ease`（2026-10-20）：预览按它插值；编辑界面不显示、不写回（[player_actions_v1_plan.md](player_actions_v1_plan.md)）。
   - 运行时（Java）和插件都改了，两边对拍一致。
 - 枪道具（第 11 节，2026-10-17）：枪接进动作系统，`carry` 坐标系（枪在枪套里）、握把锁手（`grips`）、枪的游戏网格当外观。第一批用它做的正式动作是 P9 掏枪、收枪（[p9_draw_holster_actions_v1.md](p9_draw_holster_actions_v1.md)），由插件导出。
 - 姿势循环和跟视线（第 12 节，2026-10-17）：循环设置（`loop`、`length`）；`view` 坐标系；「腰射」「侧身」「视线俯仰」三个设置。用它做的是 P9 的 CS2 式待机（[p9_stance_loops_v1.md](p9_stance_loops_v1.md)），由插件导出，**没进游戏看过**。

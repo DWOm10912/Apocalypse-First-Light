@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "about": "Felling axe in the main hand, first and third person alike (client/skeleton/SkeletonActions, 2026-10-20; written by tools/author-felling-axe-actions.mjs). A still two-handed hold, the crowbar's rest pose: the left hand low on the handle just above the knob, at the left of the belly, the handle slanting up to the right and ahead, the right hand up it at the right of the chest, the head ahead over the right shoulder. A chop or a melee swing is tool/felling_axe_chop, which starts and ends in this hold. docs/gameplay/felling_axe_v1.md",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "felling_axe",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [6.5, 7.62, -5.39],
+        "rot": [-90, -60.6, -113.5],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip_high",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_end",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

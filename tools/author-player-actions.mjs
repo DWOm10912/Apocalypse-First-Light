@@ -85,6 +85,13 @@ groups.tool['tool.crowbar_smash'] = keyed(1.65, {
   upper_arm_l: {rotation: {0: [0, 0, 0], 0.4: [-35, 0, -10], 0.6: [-20, 0, -5], 1.3: [0, 0, 0], 1.65: [0, 0, 0]}},
 });
 
+// Felling axe chop (tool/felling_axe_chop, tools/author-felling-axe-actions.mjs: wind-up top 0.40 s, impact 0.55 s, back in
+// the hold at 1.0 s): the chest turns right and leans back as the axe goes up over the right shoulder, turns through to the
+// left and bends forward into the cut, stays down with the bite, and comes back up.
+groups.tool['tool.felling_axe_chop'] = keyed(1.0, {
+  chest: {rotation: {0: [0, 0, 0], 0.4: [-6, 32, 0], 0.55: [14, -12, 0], 0.62: [15, -13, 0], 0.75: [10, -7, 0], 1.0: [0, 0, 0]}},
+});
+
 const outputs = Object.entries(groups).map(([group, clips]) => [
   path.join(assets, `animations/player/${group}.animation.json`),
   JSON.stringify({format_version: '1.8.0', animations: clips}, null, 1).replace(/\[\s+(\S+),\s+(\S+),\s+(\S+)\s+\]/g, '[$1, $2, $3]') + '\n',

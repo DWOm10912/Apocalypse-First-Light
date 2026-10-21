@@ -25,7 +25,20 @@
 | <ItemIcon id="clinical_thermometer" /> 体温计 | 按住右键约 3 秒测量体温 | <StatusTag s="creative" /> |
 | <ItemIcon id="geiger_counter" /> 盖革计数器 | 显示当前辐射剂量率 | <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> 撬棍 | 近战武器，也能拆下隧道里的部件 | <StatusTag s="creative" /> |
+| <ItemIcon id="felling_axe" /> 伐木斧 | 砍树，也能当近战武器 | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> 翻盖打火机 | 右键翻盖、打火，点着能照明，也能点燃柴炉、营火、蜡烛和 TNT | <StatusTag s="creative" /> |
+
+## 伐木斧
+
+<StatusTag s="test" /> 美式伐木斧，弯曲的山核桃木柄，斧头涂黑漆，刃口磨亮
+
+- 对着树干底部左键挥斧，按住不放就一斧接一斧地砍；斧头砍进树里才算一下，砍够了树会倒；每砍一下都消耗耐久
+- 砍口开在你砍的那一面；换个方向砍，砍口跟过去，已经砍的不会白费
+- 也是近战武器，比撬棍伤害高、出手慢；打人时挥得比砍树快
+- 双手握持，挥斧时整个身体跟着转
+- 能挂在木质工具架的木钉上：斧柄朝下，斧头架在两根钉上
+- 不能给木头去皮，不能修理
+- 目前只能从创造模式物品栏获得
 
 ## 翻盖打火机
 

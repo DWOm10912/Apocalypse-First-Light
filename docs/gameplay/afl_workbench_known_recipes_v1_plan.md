@@ -1,6 +1,7 @@
 # AFL 工作台与已知配方 V1：计划
 
 - **状态（2026-10-20）：** 只有计划，没有代码、模型和配方。原来的 6 个工作台配方已按用户要求删除（第 4 节）。等用户确认第 5 节的问题后再动手。
+- **后续（2026-10-20）：** 用户让 B 接着设计工作台本身（"类似非生物因素的那种"），设计稿见 [`afl_workbench_v1_design.md`](afl_workbench_v1_design.md)，分支 `AFL-Workbench`。
 - **负责：** Main（老宅、开局物资、工作台方块和界面）。背景数据在 D 的幸存者系统里（`survivor_backgrounds/`），加字段时要通知 D。
 - **起因：** 原版退役 V1.1（B 分支 `AFL-Vanilla-Rework` 的 `docs/gameplay/vanilla_survival_rework_v1.md`，还没合并到 master）把原版工作台也退役了，新世界开局没有工作台，3×3 配方（体温计、腕式温度计、简易护耳罩）都做不了。
 

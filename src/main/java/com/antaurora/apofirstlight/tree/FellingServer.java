@@ -19,7 +19,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -56,10 +55,12 @@ import java.util.concurrent.atomic.LongAdder;
  * with another tree's trunk belongs to the tree whose trunk column it is.</li>
  * <li>Vanilla breaking stays out: the cells are unbreakable in survival; a creative left click with an axe on them is
  * cancelled here and on the client, so no cell is ever broken by hand.</li>
- * <li>Chop (the client's ChopMsg): a player, in reach, with an axe (Forge's AXE_DIG action: any axe, modded included),
- * at least MIN_CHOP_TICKS after their last chop. Work = the tool's power (FellingRules#power; winded x stamina's
- * winded.dig_speed), into the ledger; the root's cut stage and notch side follow it in its block state; wood sound,
- * chips at the notch, one durability, stamina's costs.chop (2026-10-12).</li>
+ * <li>Swing (the client's Chop message, 2026-10-20): a player, in reach, with an axe (Forge's AXE_DIG action: any axe,
+ * modded included), no swing of theirs on its way; the tracking players are told, and it lands IMPACT_TICKS later.</li>
+ * <li>Chop (the swing landing): checked again, at least MIN_CHOP_TICKS after their last chop. Work = the tool's power
+ * (FellingRules#power; winded x stamina's winded.dig_speed), into the ledger; the root's cut stage follows it in its
+ * block state, its notch side is where this swing meets the trunk (FellingRules#hitSide); wood sound, chips at the
+ * notch, one durability, stamina's costs.chop (2026-10-12).</li>
  * <li>Last chop: FellingRules#direction picks the fall direction, FellingRules#restAngle the angle it comes to rest at
  * on the ground there; the falling tree entity is added first (if it cannot be, the tree stays and the work too); then
  * the tree's cells go: each keeps what another tree has there (FellingRules#keeper), else empties (a development
@@ -158,7 +159,59 @@ public final class FellingServer {
 
     // --------------------------------------------------------------------------------------------------- chop
 
-    /** A chop from a client (server thread). */
+    /** A swing on its way to its impact: the trunk cell aimed at, the level, the tick it lands. */
+    private record Swing(BlockPos pos, ServerLevel level, long impact) {}
+
+    private static final Map<UUID, Swing> SWINGS = new HashMap<>();
+    private static final Map<UUID, Long> LAST_SWING = new HashMap<>();
+
+    /**
+     * A swing from a client (server thread, 2026-10-20): checked as a chop is, then the players tracking the swinger are told
+     * (they play it), and it lands {@link FellingRules#IMPACT_TICKS} later ({@link #land}). One at a time per player, none
+     * closer than {@link FellingRules#MIN_SWING_TICKS} after the last.
+     */
+    static void swing(ServerPlayer player, BlockPos pos) {
+        if (player == null || !TreeBlocks.ready() || !FellingRegistry.ready() || player.isSpectator()) return;
+        if (!(player.level() instanceof ServerLevel level)) return;
+        if (!level.isLoaded(pos) || !player.canReach(pos, 1.0) || choppable(level, pos, TreeIndex.SERVER) == null) return;
+        if (!axe(player.getMainHandItem())) { refuse(player, "need_axe"); return; }
+        long now = level.getGameTime();
+        Long last = LAST_SWING.get(player.getUUID());
+        if (SWINGS.containsKey(player.getUUID()) || last != null && now - last < FellingRules.MIN_SWING_TICKS && now >= last) { IGNORED.increment(); return; }
+        LAST_SWING.put(player.getUUID(), now);
+        SWINGS.put(player.getUUID(), new Swing(pos.immutable(), level, now + FellingRules.IMPACT_TICKS));
+        TreeNetwork.swingStarted(player);
+    }
+
+    /** The swings that land this tick: a chop, if the swinger is still here with an axe (else it lands on nothing). */
+    @SubscribeEvent
+    public static void land(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || SWINGS.isEmpty()) return;
+        var due = new ArrayList<Map.Entry<UUID, Swing>>();
+        for (var e : SWINGS.entrySet()) if (e.getValue().level().getGameTime() >= e.getValue().impact()) due.add(e);
+        for (var e : due) {
+            SWINGS.remove(e.getKey());
+            ServerPlayer player = event.getServer().getPlayerList().getPlayer(e.getKey());
+            if (player == null || player.isRemoved() || player.level() != e.getValue().level() || !axe(player.getMainHandItem())) continue;
+            chop(player, e.getValue().pos());
+        }
+    }
+
+    @SubscribeEvent
+    public static void loggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        SWINGS.remove(event.getEntity().getUUID());
+        LAST_SWING.remove(event.getEntity().getUUID());
+    }
+
+    /** The trunk's axis at the cut (world x, z): the form's trunk point there, turned with the layout (as the crown's lean). */
+    static double[] trunkCentre(TreeIndex.Root r, TreeForms.Form form, float cut) {
+        float[] a = TreeForms.at(form.branches.get(0), cut);
+        double ox = a[0] - 0.5, oz = a[2] - 0.5;
+        for (int k = 0; k < r.layout.turns; k++) { double t = ox; ox = -oz; oz = t; }
+        return new double[]{r.x + 0.5 + ox, r.z + 0.5 + oz};
+    }
+
+    /** A swing landing on a trunk (server thread; {@link #land}). */
     static void chop(ServerPlayer player, BlockPos pos) {
         if (player == null || !TreeBlocks.ready() || !FellingRegistry.ready() || player.isSpectator()) return;
         if (!(player.level() instanceof ServerLevel level)) return;
@@ -187,14 +240,15 @@ public final class FellingServer {
         CHOPS.increment();
         PlayerStamina.spend(player, StaminaConfig.get().costs.chop, false);
         com.antaurora.apofirstlight.survivor.SurvivorGrowth.chop(player);
-        double cx = r.x + 0.5, cy = r.y + cut, cz = r.z + 0.5;
-        // the notch faces the first chopper; its stage follows the work
-        int side = c.stageBefore() == 0 && rootState.getValue(TreeBlocks.CHOP) == 0
-                ? FellingRules.side(player.getX() - cx, player.getZ() - cz) : rootState.getValue(TreeBlocks.CUT);
+        double[] centre = trunkCentre(r, form, cut);
+        double cx = centre[0], cy = r.y + cut, cz = centre[1], rad = FellingRules.trunkRadius(form, cut);
+        // the notch on the side this swing meets the trunk, every chop (2026-10-20, user: it follows the player; the work
+        // done stays); its stage follows the work. Before: the first chopper's side, kept.
+        var look = player.getLookAngle();
+        int side = FellingRules.hitSide(player.getX() - cx, player.getZ() - cz, look.x, look.z, rad);
         tool.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(EquipmentSlot.MAINHAND));
         player.causeFoodExhaustion(0.02F);
-        player.swing(InteractionHand.MAIN_HAND, false);
-        double sa = FellingRules.sideAngle(side), rad = FellingRules.trunkRadius(form, cut);
+        double sa = FellingRules.sideAngle(side);
         double px = cx + Math.cos(sa) * rad, pz = cz + Math.sin(sa) * rad;
         com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(level, player, new net.minecraft.world.phys.Vec3(px, cy, pz), com.antaurora.apofirstlight.registry.AflSounds.TREE_CHOP.get(), CHOP_RADIUS,
                 0.96F + 0.08F * level.random.nextFloat(), com.antaurora.apofirstlight.noise.NoiseType.BLOCK_BREAK, null);

@@ -1,0 +1,116 @@
+{
+  "format_version": 1,
+  "about": "One swing of the felling axe, first and third person alike (client/skeleton/SkeletonActions; written by tools/author-felling-axe-actions.mjs). A chop at a tree (tree/FellingSwingClient: seconds since the swing started, the server lands it at 0.55 s = FellingRules IMPACT_TICKS) or a melee swing (the vanilla attack, played 2.2 times as fast). Starts and ends in item/felling_axe's hold: up over the right shoulder by 0.40 s (the chest turned right), down from the right into the cut by 0.55 s (from rest, fastest at the cut; the right hand slides down next to the left), the bite, pulled out, back in the hold at 1.0 s. docs/gameplay/felling_axe_v1.md",
+  "clip": "tool.felling_axe_chop",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.3
+  },
+  "prop": {
+    "id": "felling_axe",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [6.5, 7.62, -5.39],
+        "rot": [-90, -60.6, -113.5],
+        "blend": 0
+      },
+      {
+        "at": 0.001,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [0.4, 0.6, -5.2],
+        "rot": [-78.82, -30.47, -75.61],
+        "blend": 0.199,
+        "ease": "in"
+      },
+      {
+        "at": 0.2,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [-1.2, -1.8, -5],
+        "rot": [-75.23, -41.07, -42.14],
+        "blend": 0.2,
+        "ease": "out"
+      },
+      {
+        "at": 0.4,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [3, 4, -3.7],
+        "rot": [-75.23, -41.07, 165.48],
+        "blend": 0.15,
+        "ease": "in"
+      },
+      {
+        "at": 0.55,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [3, 4.1, -3.7],
+        "rot": [-75.23, -41.07, 161.48],
+        "blend": 0.05
+      },
+      {
+        "at": 0.6,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [2.6, 3.4, -3.8],
+        "rot": [-75.23, -41.07, 179.48],
+        "blend": 0.15
+      },
+      {
+        "at": 0.75,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [6.5, 7.62, -5.39],
+        "rot": [-90, -60.6, -113.5],
+        "blend": 0.25
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip_high",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.001,
+        "target": "prop:grip_high",
+        "blend": 0.399,
+        "pole": [-1, -0.6, 0.3],
+        "roll": 0
+      },
+      {
+        "at": 0.42,
+        "target": "prop:grip",
+        "blend": 0.12,
+        "pole": [-0.6, 1, 0.3],
+        "roll": 0
+      },
+      {
+        "at": 0.85,
+        "target": "prop:grip_high",
+        "blend": 0.15,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_end",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

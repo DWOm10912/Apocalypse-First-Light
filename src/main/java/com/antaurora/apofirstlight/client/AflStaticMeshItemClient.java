@@ -58,6 +58,8 @@ public final class AflStaticMeshItemClient {
             // Crowbar mesh (2026-10-14, equipment meshes): authored in the V1 cuboid model's frame, whose origin the bake moves
             // up 5.0271 px; (-0.8 - 5.0271) / 16 keeps the bar where the V1 model held it (its display transforms are kept)
             bind(AflItems.CROWBAR.get(), "crowbar", "crowbar_mesh", -0.36419375);
+            // Felling axe (equipment meshes, 2026-10-20): 0.5 - 25.92 / 32
+            bind(AflItems.FELLING_AXE.get(), "felling_axe", "felling_axe_mesh", -0.31);
             // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
             bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
             bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);

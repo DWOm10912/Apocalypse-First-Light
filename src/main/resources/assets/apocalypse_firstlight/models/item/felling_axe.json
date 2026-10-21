@@ -1,0 +1,125 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/felling_axe"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/felling_axe"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          0,
+          -8
+        ],
+        "translation": [
+          0,
+          2,
+          0
+        ],
+        "scale": [
+          1.03,
+          1.03,
+          1.03
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -18,
+          -12
+        ],
+        "translation": [
+          1.25,
+          1.5,
+          -0.5
+        ],
+        "scale": [
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "translation": [
+          0,
+          -2,
+          0
+        ],
+        "scale": [
+          0.52,
+          0.52,
+          0.52
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          -90,
+          -30
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.55,
+          0.55,
+          0.55
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          18,
+          12
+        ],
+        "translation": [
+          1.25,
+          1.5,
+          -0.5
+        ],
+        "scale": [
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          0,
+          8
+        ],
+        "translation": [
+          0,
+          2,
+          0
+        ],
+        "scale": [
+          1.03,
+          1.03,
+          1.03
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/felling_axe"
+      }
+    }
+  }
+}

@@ -29,7 +29,7 @@
 | 可编辑源 | `src/main/blockbench/<id>.bbmodel`、`src/main/blockbench/textures/<id>_mesh{,_s,_n}.png` |
 | geo / Mesh | `geo/<id>.geo.json`、`meshes/<id>.aflmesh.json` |
 | 贴图 | `textures/item/<id>_mesh{,_s,_n}.png`（256，LabPBR） |
-| 物品栏图标 | `textures/item/<id>.png`：16×16，由生成器从 Mesh 画出（见下文"物品栏图标"） |
+| 物品栏图标 | `textures/item/<id>.png`：256×256，由生成器从 Mesh 渲染（2026-10-20 前是 16×16 像素画，见下文"物品栏图标"） |
 | 物品模型 | `models/item/<id>.json`：`forge:separate_transforms`。`perspectives.gui` 是 `item/generated` 加 2D 图标；`base` 是 `builtin/entity` 加世界视角的 `display`（第三人称、第一人称、掉落物、展示框），交给 Mesh 渲染器。外层 `gui_light: front`，2D 图标用平光。粒子用 2D 图标 |
 
 - 单 bone，名字与 ID 相同，pivot [0,0,0]。Mesh 在 X/Z 上居中，底面在 y = 0。
@@ -93,6 +93,8 @@
 其中 k = 12 / 最长边。左手沿用右手（原版会镜像）。这些值都没有在游戏里看过，是最需要实机调整的部分。
 
 ## 物品栏图标
+
+> 2026-10-20：图标改成 256×256 的 3D 渲染（带贴图集颜色、光照、抗锯齿），和枪的物品栏图标一个画法，原因和做法见 [装备网格](equipment_meshes_v1.md)“2026-10-20 新增”。下面的视角和缩放照旧；“画法”“覆盖阈值”“同一件压在自己前面”“图标专用颜色”这几条是 16×16 像素画的做法，**已经不用**。
 
 材料页全部是 2D 像素图标，和原版、其余材料统一（原版三叉戟、望远镜也是物品栏 2D、手里 3D）。图标从同一个 Mesh 画出，保证拿在手里和放进背包是同一个东西：
 

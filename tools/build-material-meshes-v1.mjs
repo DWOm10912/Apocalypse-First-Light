@@ -227,55 +227,66 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
 };
 
 /**
- * 16x16 inventory icon drawn from the mesh in the inventory view (the item model's GUI perspective shows this sprite, the
- * mesh is only used in the world): flat tone per face (top brightest, screen-left side lighter than screen-right, like
- * vanilla block icons), each pixel takes the face that covers most of it (no anti-aliasing), a darker seam where one part
- * passes in front of another, then a vanilla rim (darker silhouette pixels at the bottom / right).
- * icon: {mat: {name: other material name or [r, g, b]}} (icon-only colours: pixel art wants more contrast between pieces
- * than the PBR base colours), coverage: fraction of a pixel a part must cover to be drawn (thin wires need less),
- * xray: material names drawn only where nothing else is behind them (glass: what is inside shows through it),
- * seamless: part names that get no darker seam around them (a one-pixel needle would leave a dark cross),
- * depthSeam: icon px; a part passing in front of itself by more than this also gets the seam (the turns of a coil).
- * hide: part names left out of the icon and its fit (straps of worn gear that wrap a body the icon does not show).
+ * Inventory icon (2026-10-20, replaces the 16x16 pixel-art icon): the mesh rendered offline in the inventory view into a
+ * 256x256 picture, the same size and look as the gun inventory icons (textures/item/<gun>_inventory.png). The grid
+ * inventory scales an icon up by whole cells (a 2x3 backpack draws it at 2x), where a 16x16 sprite fell apart into big
+ * pixels. Each sample takes the nearest face (2x2 supersampled, so the outline is anti-aliased through alpha), coloured
+ * from the baked Base Color atlas at its UV, lit from the top left (top brightest, screen-left side lighter than
+ * screen-right, as before) plus a soft highlight scaled by the material's smoothness (stronger on metals).
+ * icon: {xray: material names (glass) blended over what is behind them by their alpha; hide: part names left out}.
+ * The old pixel-art options (mat, coverage, seamless, depthSeam) are still accepted and ignored.
  */
-function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5, xray = [], seamless = [], depthSeam = Infinity} = {}) {
-  // centreY: the mesh is drawn centred like the item renderer does (rests on y = 0, offset by half its height)
-  const N = 16, SS = 6, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation, tris = [];
-  const colourOf = m => { const o = iconMat[m]; return Array.isArray(o) ? o : MATS[o ?? m].c; };
-  for (const p of PARTS) for (const f of p.f) {
-    const P = f.ids.map(i => { const q = rot(p.v[i]).map(v => v * s); return [8 + q[0] + tr[0], 8 - q[1] - tr[1], q[2]]; });
-    const n3 = norm(newell(f.ids.map(i => rot(p.v[i]))));
-    if (n3[2] <= 0) continue;                                            // faces turned away are always behind others
-    const tone = 0.66 + 0.33 * Math.max(0, n3[1]) - 0.12 * n3[0], c = colourOf(f.mat).map(v => v * tone);
-    for (let q = 1; q + 1 < P.length; q++) tris.push({P: [P[0], P[q], P[q + 1]], c, part: p, glass: xray.includes(f.mat)});
-  }
-  const px = new Array(N * N).fill(null);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const votes = new Map();
-    for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
-      const X = x + (sx + 0.5) / SS, Y = y + (sy + 0.5) / SS; let best = null, bz = -Infinity, glass = null, gz = -Infinity;
-      for (const tri of tris) {
-        const [A, B, C] = tri.P, den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-12) continue;
-        const l1 = ((B[1] - C[1]) * (X - C[0]) + (C[0] - B[0]) * (Y - C[1])) / den, l2 = ((C[1] - A[1]) * (X - C[0]) + (A[0] - C[0]) * (Y - C[1])) / den, l3 = 1 - l1 - l2;
-        if (l1 < 0 || l2 < 0 || l3 < 0) continue;
-        const z = l1 * A[2] + l2 * B[2] + l3 * C[2];
-        if (tri.glass) { if (z > gz) { gz = z; glass = {tri, z}; } } else if (z > bz) { bz = z; best = {tri, z}; }
-      }
-      if (!best) best = glass;
-      if (best) { const v = votes.get(best.tri.c) || {n: 0, part: best.tri.part, z: 0}; v.n++; v.z += best.z; votes.set(best.tri.c, v); }
+const ICON = 256, ICON_SS = 2;
+function drawIcon(PARTS, MATS, view, centreY, {xray = []} = {}, {img, faceUV}) {
+  const N = ICON * ICON_SS, k = N / 16, R = R3(view.rotation), sc = view.scale[0], tr = view.translation;
+  const rot = v => R([v[0], v[1] - centreY, v[2]]);
+  const L = norm([-0.35, 0.8, 0.5]), H = norm(add(L, [0, 0, 1]));
+  const depth = new Float64Array(N * N).fill(-Infinity), col = new Float64Array(N * N * 3);
+  const gDepth = new Float64Array(N * N).fill(-Infinity), gCol = new Float64Array(N * N * 3), gA = new Float64Array(N * N);
+  const texel = (u, v) => { const x = Math.max(0, Math.min(img.w - 1, Math.floor(u))), y = Math.max(0, Math.min(img.h - 1, Math.floor(v))), o = (y * img.w + x) * img.bpp;
+    return [img.px[o], img.px[o + 1], img.px[o + 2]]; };
+  const raster = (A, B, C, UA, UB, UC, shade, glass, alpha) => {
+    const den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-12) return;
+    const x0 = Math.max(0, Math.floor(Math.min(A[0], B[0], C[0]))), x1 = Math.min(N - 1, Math.ceil(Math.max(A[0], B[0], C[0])));
+    const y0 = Math.max(0, Math.floor(Math.min(A[1], B[1], C[1]))), y1 = Math.min(N - 1, Math.ceil(Math.max(A[1], B[1], C[1])));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const X = x + 0.5, Y = y + 0.5;
+      const l1 = ((B[1] - C[1]) * (X - C[0]) + (C[0] - B[0]) * (Y - C[1])) / den, l2 = ((C[1] - A[1]) * (X - C[0]) + (A[0] - C[0]) * (Y - C[1])) / den, l3 = 1 - l1 - l2;
+      if (l1 < -1e-9 || l2 < -1e-9 || l3 < -1e-9) continue;
+      const z = l1 * A[2] + l2 * B[2] + l3 * C[2], i = y * N + x;
+      if (glass ? z <= gDepth[i] : z <= depth[i]) continue;
+      const c = shade(texel(l1 * UA[0] + l2 * UB[0] + l3 * UC[0], l1 * UA[1] + l2 * UB[1] + l3 * UC[1]));
+      if (glass) { gDepth[i] = z; gA[i] = alpha; gCol.set(c, i * 3); } else { depth[i] = z; col.set(c, i * 3); }
     }
-    let win = null, total = 0; for (const [c, v] of votes) { total += v.n; if (!win || v.n > win.v.n) win = {c, v}; }
-    if (win && total >= coverage * SS * SS) px[y * N + x] = {c: win.c, part: win.v.part, z: win.v.z / win.v.n};
+  };
+  for (const p of PARTS) { const fu = faceUV.get(p);
+    for (const f of p.f) {
+      const P = f.ids.map(i => { const q = rot(p.v[i]).map(v => v * sc); return [(8 + q[0] + tr[0]) * k, (8 - q[1] - tr[1]) * k, q[2]]; });
+      const n = norm(newell(f.ids.map(i => rot(p.v[i]))));
+      if (n[2] <= 0) continue;                                            // faces turned away are always behind others
+      const m = MATS[f.mat], tone = 0.58 + 0.45 * Math.max(0, dot(n, L));
+      const spec = 255 * (m.f0 >= 230 ? 0.4 : 0.1) * ((m.sm ?? 100) / 255) ** 1.5 * Math.max(0, dot(n, H)) ** 12;
+      const shade = t => t.map(v => v * tone + spec), glass = xray.includes(f.mat), U = fu.get(f);
+      for (let q = 1; q + 1 < P.length; q++) raster(P[0], P[q], P[q + 1], U[0], U[q], U[q + 1], shade, glass, (m.alpha ?? 255) / 255);
+    }
   }
-  const out = Buffer.alloc(N * N * 4), at = (x, y) => x < 0 || y < 0 || x >= N || y >= N ? null : px[y * N + x];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const p = at(x, y); if (!p) continue;
-    let c = p.c;
-    if (!at(x + 1, y) || !at(x, y + 1)) c = c.map(v => v * 0.62); else if (!at(x - 1, y) || !at(x, y - 1)) c = c.map(v => v * 0.86);
-    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part ? q.z > p.z && !seamless.includes(q.part.name) : q.z > p.z + depthSeam; })) c = c.map(v => v * 0.74);
-    out.set([...c.map(v => Math.max(0, Math.min(255, Math.round(v)))), 255], (y * N + x) * 4);
+  const out = Buffer.alloc(ICON * ICON * 4);
+  for (let y = 0; y < ICON; y++) for (let x = 0; x < ICON; x++) {
+    let r = 0, g = 0, b = 0, a = 0;
+    for (let sy = 0; sy < ICON_SS; sy++) for (let sx = 0; sx < ICON_SS; sx++) {
+      const i = (y * ICON_SS + sy) * N + x * ICON_SS + sx, solid = depth[i] > -Infinity, front = gDepth[i] > depth[i];
+      let c = null, w = 0;
+      if (solid) { c = [col[i * 3], col[i * 3 + 1], col[i * 3 + 2]]; w = 1; }
+      if (front) { const ga = gA[i], gc = [gCol[i * 3], gCol[i * 3 + 1], gCol[i * 3 + 2]];
+        c = solid ? c.map((v, j) => v * (1 - ga) + gc[j] * ga) : gc; w = solid ? 1 : ga; }
+      if (!c) continue;
+      r += c[0] * w; g += c[1] * w; b += c[2] * w; a += w;
+    }
+    if (!a) continue;
+    const o = (y * ICON + x) * 4, cl = v => Math.max(0, Math.min(255, Math.round(v)));
+    out.set([cl(r / a), cl(g / a), cl(b / a), cl(255 * a / (ICON_SS * ICON_SS))], o);
   }
-  return png(out, N, N);
+  return png(out, ICON, ICON);
 }
 
 // inventory icon view: vanilla block-item angle, no roll; an item may pick its own (icon.view), still without roll
@@ -353,7 +364,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     ...displayOverrides,
   };
   const iconView = {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)};
-  // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
+  // inventory: the 256x256 rendered icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
   const icon = `apocalypse_firstlight:item/${id}`;
   const itemModel = {loader: 'forge:separate_transforms', gui_light: 'front', textures: {particle: icon},
     base: {parent: 'builtin/entity', textures: {particle: icon}, display},
@@ -366,7 +377,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     [path.join(ASSETS, `meshes/${id}.aflmesh.json`), serializeCompact(sidecar)],
     // meshOnly: a mesh drawn by code only (no item: no item model, no icon)
     ...(meshOnly ? [] : [[path.join(ASSETS, `models/item/${id}.json`), JSON.stringify(itemModel, null, 2) + '\n'],
-      [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(iconParts, MATS, iconView, size[1] / 2, iconOpts)]]),
+      [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(iconParts, MATS, iconView, size[1] / 2, iconOpts, {img: readPng(PNGS[0]), faceUV: UV.faceUV})]]),
     ...['', '_s', '_n'].flatMap((x, i) => [[path.join(BB, `textures/${atlasName}${x}.png`), PNGS[i]], [path.join(ASSETS, `textures/item/${atlasName}${x}.png`), PNGS[i]]]),
   ];
   const zf = zFightLevels(PARTS, new Map());

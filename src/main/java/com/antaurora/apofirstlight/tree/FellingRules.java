@@ -12,8 +12,13 @@ import com.antaurora.apofirstlight.tree.TreeForms.Species;
 public final class FellingRules {
     /** Visible cut stages before the fall (the root's {@code chop} block state 0..4) and notch directions. */
     public static final int STAGES = 4, SIDES = 8;
-    /** Ticks between chops a client sends while the attack key is held; the server accepts no closer than MIN. */
-    public static final int CHOP_TICKS = 10, MIN_CHOP_TICKS = 8;
+    /**
+     * One swing of the axe (2026-10-20, the felling axe's chop animation, tool/felling_axe_chop): a client starts the next
+     * while the attack key is held when the last is over, the server lands it IMPACT_TICKS after the start (the axe in the
+     * wood at 0.55 s); it starts no swing closer than MIN_SWING_TICKS after the last and the ledger takes no chop closer
+     * than MIN_CHOP_TICKS. Before: a chop every 10 ticks, no swing.
+     */
+    public static final int CHOP_TICKS = 20, IMPACT_TICKS = 11, MIN_SWING_TICKS = 18, MIN_CHOP_TICKS = 16;
     /** Upright after the last chop, lying after the contact, the rebound after the contact. */
     public static final int PAUSE_TICKS = 4, LIE_TICKS = 20, BOUNCE_TICKS = 10;
     public static final float MAX_REST_DEG = 105;
@@ -109,6 +114,24 @@ public final class FellingRules {
     }
 
     public static double sideAngle(int side) { return side * Math.PI / 4; }
+
+    /**
+     * Where a swing meets the trunk (2026-10-20, user: the notch on the side the player chops, following the player): the
+     * notch direction (as {@link #side}) of the point the look, level, first meets the trunk's circle of this radius;
+     * looking past it, the point of the circle nearest the look; looking straight down at its centre, toward the player.
+     * {@code ex, ez}: the eye from the trunk's centre; {@code lx, lz}: the look.
+     */
+    public static int hitSide(double ex, double ez, double lx, double lz, double radius) {
+        double l = Math.hypot(lx, lz);
+        if (l < 1e-4) return side(ex, ez);
+        lx /= l;
+        lz /= l;
+        double b = ex * lx + ez * lz, c = ex * ex + ez * ez - radius * radius, disc = b * b - c;
+        double t = disc >= 0 ? -b - Math.sqrt(disc) : -b;   // the first meeting, or the nearest approach
+        if (t < 0) t = 0;
+        double hx = ex + lx * t, hz = ez + lz * t;
+        return Math.hypot(hx, hz) < 1e-4 ? side(ex, ez) : side(hx, hz);
+    }
 
     // ---------------------------------------------------------------------------------------------- the fall
 

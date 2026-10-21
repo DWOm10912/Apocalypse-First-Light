@@ -80,7 +80,7 @@
 | 物品 | `white_oak_leaves`、`white_pine_needles`、`red_oak_leaves`、`shagbark_hickory_leaves`、`red_maple_leaves`、`eastern_hemlock_needles` | 叶材 |
 | 实体 | `falling_tree` | 正在倒下的树，一棵树只在倒的过程中存在 |
 | 特性 / 修改器序列化器 / 生成数据 | `mesh_forest` | 自然森林 |
-| 网络通道 | `apocalypse_firstlight:mesh_tree`，协议 4 | 树根变化、砍伐、诊断 |
+| 网络通道 | `apocalypse_firstlight:mesh_tree`，协议 5（2026-10-20 加了挥斧消息 `SWING`；之前 4） | 树根变化、砍伐、挥斧、诊断 |
 | 存档数据 | `afl_mesh_tree_felling` | 砍伐账本（防重复结算） |
 | 存档数据 | `afl_mesh_forest` | 这个世界生长的森林版本 |
 | 配置 | `serverconfig/apocalypse_firstlight-trees.toml` 里的 `meshForestEnabled` | 森林开关 |
@@ -207,7 +207,7 @@ P1 的规则没有改动，离线检查（`ForestCheck`）每次都验证：
   - 掉落结算；树桩（方块）。
 - **客户端只做两件事**：
   - 按树根索引画树；
-  - 按住攻击键时每 10 tick 发一次砍伐，服务端最少隔 8 tick 才接受。
+  - 按住攻击键时挥斧：上一斧挥完才发下一斧，客户端当场开始播放（2026-10-20 起一斧 20 tick，服务端在第 11 tick 结算这一刀；之前每 10 tick 发一次砍伐，服务端最少隔 8 tick 才接受）。
 - **生命周期**：
   - 服务端树根索引跟着主世界区块加载 / 卸载，服务器停止时清空；
   - 树根变化通知追踪这个区块的玩家；客户端重新登录时清空并重建自己的索引。
@@ -410,7 +410,7 @@ P1 的规则没有改动，离线检查（`ForestCheck`）每次都验证：
 - **力竭**：每一下的功 × `winded.dig_speed`（0.8，和挖掘同一个值），砍倒一棵树要多砍几下。
 - **不叠加挖掘消耗**：斧头点立着的树时，原版的破坏方块被取消了，"挖掘 2 / 秒"不会同时扣。
 - **为什么是 4**：
-  - 连续砍大约每 0.5 秒一下，每秒约 8 点，和疾跑一样累；
+  - 连续砍大约每 0.5 秒一下，每秒约 8 点，和疾跑一样累（2026-10-20 起一斧 1 秒，连续砍每秒约 4 点；每刀的耐力没改）；
   - 每一下都打断恢复，所以连续砍的时候体力不回；
   - 铁斧一棵树 7–14 下（28–56 点）；
   - 木斧砍裂皮山核桃最多 28 下（约 112 点），中途会力竭一次。
@@ -662,3 +662,9 @@ Java 里的 UV 和分辨率无关，只换了贴图文件。
 - `compileJava` 通过（编译前确认游戏客户端没开）。
 - 用户 2026-10-20 实机看过：没提棱角和过渡的问题，"也不卡"。帧时间没用 F3 / JFR 量过。
 
+
+### X6. 已修：过渡阶段的缓存偶尔让区块构建崩掉（2026-10-20，分支 `AFL-Workbench`）
+
+- 现象：B 的分支进世界约 2 秒后，客户端卡在“未响应”。日志里区块构建失败，`IllegalStateException: Recursive update`，出错位置是 `TreeCellModel.baked` 里嵌套调用的 `level`。
+- 原因：`baked` 在 `BAKED.computeIfAbsent` 里面又对同一个 `BAKED` 调 `computeIfAbsent`（过渡阶段要先拿到前后两级）。这时候 map 正好扩容，Java 就会抛这个异常。是否触发取决于缓存的填充顺序，所以只是偶尔出现。master 里也是同样的代码。
+- 修法：先在外面取好前后两级（`level`），拼好以后用 `putIfAbsent` 放进去；两个区块线程同时算出来时，用先放进去的那一份，两份内容相同。只改了 `TreeCellModel.baked`。`compileJava` 通过，还没进游戏验证。

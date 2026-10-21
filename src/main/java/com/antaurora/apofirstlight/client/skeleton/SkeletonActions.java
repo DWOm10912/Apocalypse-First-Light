@@ -87,6 +87,16 @@ public final class SkeletonActions {
     }
 
     private static final String CROWBAR = "tool/crowbar_smash", CROWBAR_HOLD = "item/crowbar", JERRY_CAN = "item/jerry_can";
+    /**
+     * The felling axe (2026-10-20, docs/gameplay/felling_axe_v1.md 5): its still two-handed hold, and one swing, a chop at a
+     * tree (tree/FellingSwingClient's clock) or a melee swing (the vanilla attack swing starting, played this much faster;
+     * not within this long of a chop's end, s, as the hold's attack swings go on between chops).
+     */
+    private static final String FELLING_AXE_HOLD = "item/felling_axe", FELLING_AXE_CHOP = "tool/felling_axe_chop";
+    private static final float AXE_MELEE_SPEED = 2.2F;
+    private static final double AXE_MELEE_AFTER_CHOP = 0.3;
+    /** Entity id -> the start (s, the action clock) of the felling axe's melee swing playing. */
+    private static final Map<Integer, Double> AXE_MELEE = new HashMap<>();
     private static final String LIGHTER = "item/flip_lighter";
     /** The crowbar hold's swing (s of its time): the melee attack swing's progress (0..1) times this. */
     private static final double CROWBAR_SWING = 0.3;
@@ -321,6 +331,8 @@ public final class SkeletonActions {
         if (main.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return lighter(p, main, now);
         if (main.is(AflItems.CROWBAR.get()))   // held; the melee swing's progress runs the hold's swing
             return new Live(CROWBAR_HOLD, now - p.getAttackAnim(partial) * CROWBAR_SWING, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
+        if (main.is(AflItems.FELLING_AXE.get())) return fellingAxe(p, partial, now);
+        AXE_MELEE.remove(p.getId());
         if (main.is(AflItems.JERRY_CAN.get())) {
             double[] pour = POURS.computeIfAbsent(p.getId(), k -> new double[]{0, now});
             long ticks = FuelCanItem.pourTicks(main, p.level());
@@ -383,6 +395,29 @@ public final class SkeletonActions {
     }
 
     /**
+     * The felling axe in the main hand: a swing at a tree (its own clock, started on this client or by the server's word),
+     * else a melee swing (from the vanilla attack swing's start, played faster, to its end), else the still hold. Both
+     * swings are tool/felling_axe_chop, which starts and ends in the hold.
+     */
+    private static Live fellingAxe(AbstractClientPlayer p, float partial, double now) {
+        boolean mirror = p.getMainArm() == HumanoidArm.LEFT;
+        double chop = com.antaurora.apofirstlight.tree.FellingSwingClient.seconds(p, partial);
+        if (chop >= 0) {
+            AXE_MELEE.remove(p.getId());
+            return new Live(FELLING_AXE_CHOP, now - chop, 0F, Map.of(), mirror);
+        }
+        Double melee = AXE_MELEE.get(p.getId());
+        double length = com.antaurora.apofirstlight.tree.FellingRules.CHOP_TICKS / 20.0;   // the action's (1.0 s)
+        if (melee != null && ((now - melee) * AXE_MELEE_SPEED >= length || now < melee)) AXE_MELEE.remove(p.getId());
+        if (!AXE_MELEE.containsKey(p.getId()) && p.swinging && p.swingTime <= 1
+                && com.antaurora.apofirstlight.tree.FellingSwingClient.sinceEnd(p, partial) > AXE_MELEE_AFTER_CHOP)
+            AXE_MELEE.put(p.getId(), now - (Math.max(0, p.swingTime) + partial) / 20.0);
+        melee = AXE_MELEE.get(p.getId());
+        if (melee != null) return new Live(FELLING_AXE_CHOP, melee, 0F, Map.of(), mirror, AXE_MELEE_SPEED, false);
+        return new Live(FELLING_AXE_HOLD, now, 0F, Map.of(), mirror);
+    }
+
+    /**
      * How high over the feet the jerry can's spout is held over a fill opening this high over them (blocks): over it, but
      * no lower than a hand reaches (the anchor {@code spout}).
      */
@@ -440,6 +475,7 @@ public final class SkeletonActions {
         TRACKS.clear();
         POURS.clear();
         OPENINGS.clear();
+        AXE_MELEE.clear();
         PROP_POINTS.clear();
         PROP_FRAMES.clear();
         STEPS.clear();

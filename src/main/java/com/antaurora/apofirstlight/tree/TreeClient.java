@@ -143,6 +143,7 @@ public final class TreeClient {
                 say("Mesh tree LOD: " + (m.value() < 0 ? "auto (distance)" : m.value() == PROXY ? "voxel proxy (what Voxy and maps see)" : "LOD" + m.value() + " for every tree"));
             }
             case TreeNetwork.STATUS -> status();
+            case TreeNetwork.SWING -> FellingSwingClient.remote(m.value());
             default -> {}
         }
     }

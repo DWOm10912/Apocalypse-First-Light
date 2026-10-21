@@ -1,0 +1,20 @@
+{
+  "about": "The felling axe as the skeleton holds it, first and third person (docs/gameplay/felling_axe_v1.md 4; written by tools/author-felling-axe-actions.mjs). Points, bounds: item block units of the axe mesh as client/AflStaticMeshItemClient draws it (meshes/felling_axe.aflmesh.json + (0.5, -0.31, 0.5); y up the handle, the bit to -x at the top). Scale 0.75 (2026-10-20, the user: too small in the hand at a real 32 inch axe's 0.508): the 25.5 px handle is 1.2 blocks, the head about the size of the hand. Grips: grip_end the left hand just above the knob, grip the right hand next to it (the chop), grip_high the right hand up the handle (the hold, the wind-up).",
+  "items": ["felling_axe"],
+  "scale": 0.75,
+  "bounds": [
+    [0.3208, -0.31, 0.4675],
+    [0.6792, 1.31, 0.5325]
+  ],
+  "symmetry": "z",
+  "points": {
+    "grip_end": [0.586, -0.135, 0.5],
+    "grip": [0.5968, 0.2088, 0.5],
+    "grip_high": [0.5997, 0.5088, 0.5],
+    "end": [0.5654, -0.31, 0.5],
+    "top": [0.5842, 1.2838, 0.5],
+    "eye": [0.5842, 1.215, 0.5],
+    "edge": [0.3204, 1.2188, 0.5],
+    "poll": [0.6792, 1.215, 0.5]
+  }
+}

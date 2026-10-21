@@ -350,7 +350,7 @@ public final class ActionPose {
         PlayerAction.PropKey cur = keys.get(k), prev = k > 0 ? keys.get(k - 1) : null;
         if (track < m.propHidden.length) m.propHidden[track] = cur.hidden();
         if (to == null || prev == null) return to;
-        float p = cur.blend() <= 0 ? 1F : GunStance.smooth((m.seconds - cur.at()) / cur.blend());
+        float p = cur.blend() <= 0 ? 1F : keyEase(cur.ease(), (m.seconds - cur.at()) / cur.blend());
         if (p >= 1F) return to;
         Matrix4f from = place(pose, prop, prev, m);
         if (from == null) return to;
@@ -442,6 +442,16 @@ public final class ActionPose {
         PlayerProps.Carry c = prop.carry();
         int bone = c == null ? -1 : pose.rig.find(c.bone());
         return bone < 0 ? null : new Matrix4f(pose.world[bone]).mul(c.rest());
+    }
+
+    /** A prop key's blend at this fraction of it (PlayerAction.PropKey#ease): smooth, in (x squared), out. */
+    private static float keyEase(String ease, float x) {
+        x = Math.max(0F, Math.min(1F, x));
+        return switch (ease) {
+            case "in" -> x * x;
+            case "out" -> 1F - (1F - x) * (1F - x);
+            default -> GunStance.smooth(x);
+        };
     }
 
     /** A prop key's turn (deg): about z, then y, then x. */

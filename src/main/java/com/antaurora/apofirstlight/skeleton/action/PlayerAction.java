@@ -84,9 +84,11 @@ public final class PlayerAction {
      * about the key's point in that frame, normally 0. The hands reach for it with {@code prop:} targets. {@code view}
      * (docs/dev/p9_stance_loops_v1.md): pos px from the eye (the camera's), turned as the view (yaw and pitch, with the first
      * person's sway and recoil), axes as the rest model's: a pistol held out before the view (ActionPose.Moment#view). {@code hidden}:
-     * from this key on the prop is not drawn (its placement still counts: hands, props riding on it).
+     * from this key on the prop is not drawn (its placement still counts: hands, props riding on it). {@code ease} (2026-10-20,
+     * the felling axe's chop): how the blend runs, {@code smooth} (default: slow, fast, slow), {@code in} (from rest, fastest
+     * at the key: a swing that lands at full speed) or {@code out} (fastest at the start, settling on the key).
      */
-    public record PropKey(float at, String frame, String point, Vector3f pos, Vector3f rot, float blend, boolean hidden) {}
+    public record PropKey(float at, String frame, String point, Vector3f pos, Vector3f rot, float blend, boolean hidden, String ease) {}
 
     /** One prop of the action: its PlayerProps id, placement timeline, and the second from which it is drawn open (NaN). */
     public record PropTrack(String id, List<PropKey> keys, float openFrom) {}
@@ -277,8 +279,10 @@ public final class PlayerAction {
                     || frame.startsWith("prop:") && before.stream().anyMatch(t -> t.id().equals(frame.substring(5)));
             if (!known) throw new IllegalArgumentException("player action " + id + ": prop frame " + frame
                     + (frame.startsWith("prop:") ? " (a prop listed before this one)" : ""));
+            String ease = k.has("ease") ? k.get("ease").getAsString() : "smooth";
+            if (!List.of("smooth", "in", "out").contains(ease)) throw new IllegalArgumentException("player action " + id + ": prop key ease " + ease);
             out.add(new PropKey(at, frame, k.get("point").getAsString(), vector(k, "pos"), vector(k, "rot"),
-                    k.has("blend") ? k.get("blend").getAsFloat() : 0.3F, k.has("hidden") && k.get("hidden").getAsBoolean()));
+                    k.has("blend") ? k.get("blend").getAsFloat() : 0.3F, k.has("hidden") && k.get("hidden").getAsBoolean(), ease));
         }
         if (out.isEmpty()) throw new IllegalArgumentException("player action " + id + ": a prop without keys");
         return new PropTrack(propId, List.copyOf(out), prop.has("open_from") ? prop.get("open_from").getAsFloat() : Float.NaN);

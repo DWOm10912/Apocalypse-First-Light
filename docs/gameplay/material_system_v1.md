@@ -130,7 +130,7 @@
 
 ## 贴图
 
-钢坯、铅砖、电解镍、钨丝、硬质合金坯件、钢废料在世界里是 3D Mesh，在物品栏里是由同一个 Mesh 画出的 16×16 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
+钢坯、铅砖、电解镍、钨丝、硬质合金坯件、钢废料在世界里是 3D Mesh，在物品栏里是由同一个 Mesh 渲染的图标（2026-10-20 起 256×256，原来 16×16），见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
 
 其余两张是 16×16 贴图，生成器 `tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致），没有噪点、污渍或文字。物品图标用小的几何体生成（轴测棱柱，超采样填充，原版风格的深色描边）；方块贴图按钢块的画法：大块形状、1 px 倒角（上、左亮，下、右暗）、平缓的明暗，没有 1 px 的重复小细节。同一个生成器也画钢制板材（`block/steel_plate`，见 [工业钢结构 Palette](../authoring/afl_industrial_palette_v1.md)）。
 
