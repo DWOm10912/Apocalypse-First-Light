@@ -1,0 +1,108 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/iron_knob"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/iron_knob"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          -0.2021,
+          1.488,
+          1.1292
+        ],
+        "scale": [
+          2.2,
+          2.2,
+          2.2
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          30,
+          6
+        ],
+        "translation": [
+          1.2469,
+          1.2071,
+          2.5719
+        ],
+        "scale": [
+          2,
+          2,
+          2
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          2.875,
+          2.875,
+          2.875
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          5.032,
+          5.032,
+          5.032
+        ]
+      },
+      "gui": {
+        "rotation": [
+          20,
+          35,
+          0
+        ],
+        "translation": [
+          0,
+          -0.31,
+          0
+        ],
+        "scale": [
+          8.372,
+          8.372,
+          8.372
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/iron_knob"
+      }
+    }
+  }
+}

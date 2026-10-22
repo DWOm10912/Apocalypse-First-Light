@@ -33,6 +33,28 @@ AFL 的电能以 FE（Forge Energy）计量。发电机把柴油、煤或岩浆�
 - 其他分类还是灰的；未学会的配方不会显示
 - <StatusTag s="planned" /> 配方：从生活经验、动手摸索、书籍和图纸学会，书籍以后在城市里能搜到；制作时从工作台抽屉、身上和附近的箱子里扣材料
 
+### 木家具材料
+
+<StatusTag s="test" /> 第一批木家具要用的材料已经有了，都只在创造模式"材料"栏里。家具本身的配方还没有：做一件家具要 20 到 60 秒，这段时间在台前做什么还在设计。
+
+| 物品 | 怎么来 | 质量 |
+|---|---|---|
+| <ItemIcon id="white_oak_board" /> 板材（6 个树种：白栎、白松、北方红栎、裂皮山核桃、红枫、加拿大铁杉） | 工作台上锯原木 | 白栎 <V d="item_mass/core_v1#items.apocalypse_firstlight:white_oak_board.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wood_finish_can" /> 胡桃木色木器漆 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wood_finish_can.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="nail_box" /> 圆钉 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="cabinet_hinge" /> 合页 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="iron_knob" /> 铁拉手 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wooden_knob" /> 木拉手 | 工作台上用板材做 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="keyhole_escutcheon" /> 锁眼盖 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:keyhole_escutcheon.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="furniture_hardware_box" /> 家具配件盒 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:furniture_hardware_box.unit_mass_kg" u="kg" /> |
+
+- <StatusTag s="test" /> 板材是 1.2 米长的长条板，不是木板方块。在工作台上用手锯锯原木：同树种原木 × <V d="workbench_recipes/woodwork/white_oak_boards#materials.0.count" /> 出 <V d="workbench_recipes/woodwork/white_oak_boards#result.count" /> 块，每次 <V d="workbench_recipes/woodwork/white_oak_boards#seconds" u="秒" />，和横梁一样在桌面上锯，桌上摆的是你锯的那种原木。林区住户一开始就会
+- <StatusTag s="test" /> 木拉手：任意树种的板材 × <V d="workbench_recipes/woodwork/wooden_knob#materials.0.count" /> 加手锯，做出 <V d="workbench_recipes/woodwork/wooden_knob#result.count" /> 个，<V d="workbench_recipes/woodwork/wooden_knob#seconds" u="秒" />，现在只有进度条。家具上的拉手用铁拉手、木拉手都行，做出来的家具看起来一样
+- 合页和锁眼盖做不出来，只能找到，以后拆旧家具也能拆出来
+- 木器漆一罐 1 升，圆钉一盒 180 根，用多少扣多少，剩下的写在物品提示里，不满时物品格下面有一条进度条。这两样不叠放
+- <StatusTag s="test" /> 家具配件盒：拿在手里按使用键打开，随机出 <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.min" /> 到 <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.max" /> 件合页、铁拉手和锁眼盖，盒子用掉。开盒声暂时用原版的
+- <StatusTag s="planned" /> 家具配方（用量已定，见开发文档 `docs/gameplay/furniture_recipes_v1.md`）、制作时台前的动作、拆旧家具
+
 ## 机器一览
 
 | 机器 | 储能 | 工作功耗 |

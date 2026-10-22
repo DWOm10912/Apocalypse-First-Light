@@ -230,7 +230,20 @@ public final class AflCreativeTabs {
             AflItems.SILVER_SCRAP,
             AflItems.CONCRETE_RUBBLE,
             AflItems.PLASTIC_SCRAP,
-            AflItems.PLASTIC_PELLETS);
+            AflItems.PLASTIC_PELLETS,
+            AflItems.WHITE_OAK_BOARD,
+            AflItems.WHITE_PINE_BOARD,
+            AflItems.RED_OAK_BOARD,
+            AflItems.SHAGBARK_HICKORY_BOARD,
+            AflItems.RED_MAPLE_BOARD,
+            AflItems.EASTERN_HEMLOCK_BOARD,
+            AflItems.WOOD_FINISH_CAN,
+            AflItems.NAIL_BOX,
+            AflItems.CABINET_HINGE,
+            AflItems.IRON_KNOB,
+            AflItems.WOODEN_KNOB,
+            AflItems.KEYHOLE_ESCUTCHEON,
+            AflItems.FURNITURE_HARDWARE_BOX);
 
     // Pistols, then rifles, then shotguns.
     public static final RegistryObject<CreativeModeTab> FIREARMS = tab("firearms", MATERIALS, AflItems.BR51_01,
@@ -270,6 +283,7 @@ public final class AflCreativeTabs {
             AflItems.PEBBLE,
             AflItems.FLINT,
             AflItems.FELLING_AXE,
+            AflItems.FOLDING_KNIFE,
             AflItems.CLAW_HAMMER,
             AflItems.BUILDING_HAMMER,
             AflItems.HAND_SAW,

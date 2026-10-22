@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.workbench;
 
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -23,8 +24,25 @@ public record WorkbenchRecipeView(ResourceLocation id, Category category, ItemSt
         public String key() { return "screen.apocalypse_firstlight.workbench.category." + name().toLowerCase(java.util.Locale.ROOT); }
     }
 
-    /** One material line: how many, and the items that count for it (the first one names and draws it). */
+    /** One material line: how many, and the items that count for it (the first one stands for it where one is enough). */
     public record Material(List<ItemStack> options, int count) {
         public ItemStack shown() { return options.get(0); }
+
+        /** The option drawn at this moment: several take turns, a second each, so every one that counts is seen. */
+        public ItemStack shown(long millis) { return options.get((int) (millis / 1000 % options.size())); }
+
+        /**
+         * The line's name: with several options, the name of an item tag every option carries, when the lang file names
+         * it ({@code tag.item.<namespace>.<path>}, e.g. "板材" for any species' board), else the first option's name.
+         */
+        public Component name() {
+            if (options.size() > 1) {
+                for (var tag : (Iterable<net.minecraft.tags.TagKey<net.minecraft.world.item.Item>>) options.get(0).getTags()::iterator) {
+                    String key = "tag.item." + tag.location().getNamespace() + "." + tag.location().getPath().replace('/', '.');
+                    if (I18n.exists(key) && options.stream().allMatch(o -> o.is(tag))) return Component.translatable(key);
+                }
+            }
+            return shown().getHoverName();
+        }
     }
 }

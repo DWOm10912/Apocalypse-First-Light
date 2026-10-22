@@ -1,0 +1,96 @@
+{
+  "format_version": 1,
+  "about": "Folding knife: a stab (the melee attack, played from the vanilla swing's start: client/skeleton/SkeletonActions). From the ready hold low before the chest, the fist dropped back to the hip with the tip up (0-0.09 s), then driven ahead and up from below to a belly's height before the player (0.1-0.2 s), held a moment, back to the ready hold by 0.5 s (the attack's 10-tick recharge).",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "folding_knife",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3.4,
+          4.5,
+          -6.4
+        ],
+        "rot": [
+          180,
+          -81.47,
+          118.54
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0.001,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -4.4,
+          8.8,
+          -2.8
+        ],
+        "rot": [
+          -180,
+          -84.29,
+          131.85
+        ],
+        "blend": 0.09
+      },
+      {
+        "at": 0.1,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -2.2,
+          3,
+          -7.6
+        ],
+        "rot": [
+          -180,
+          -87.14,
+          109.27
+        ],
+        "blend": 0.1
+      },
+      {
+        "at": 0.24,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3.4,
+          4.5,
+          -6.4
+        ],
+        "rot": [
+          180,
+          -81.47,
+          118.54
+        ],
+        "blend": 0.26
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

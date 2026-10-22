@@ -28,6 +28,7 @@
 | 地图 | 带在身上时画下走过的地方，拿在手里按右键翻开，见 [地图](../guide/map) | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> 撬棍 | 近战武器，也能拆下隧道里的部件；能用鹅颈钩挂在工具架或工作台的木钉上 | <StatusTag s="creative" /> |
 | <ItemIcon id="felling_axe" /> 伐木斧 | 砍树，也能当近战武器 | <StatusTag s="creative" /> |
+| <ItemIcon id="folding_knife" /> 折刀 | 右键用两只手打开，打开锁住后是轻型近战武器；潜行右键收起 | <StatusTag s="creative" /> |
 | <ItemIcon id="claw_hammer" /> 羊角锤 | 挂在工作台或工具架上，暂时没有别的用途 | <StatusTag s="creative" /> |
 | <ItemIcon id="building_hammer" /> 建筑锤 | 在编辑模式下安装和拆除在工作台做好的建筑构件 | <StatusTag s="creative" /> |
 | <ItemIcon id="hand_saw" /> 手锯 | 在工作台上把原木锯成白栎横梁 | <StatusTag s="creative" /> |
@@ -44,6 +45,20 @@
 - 双手握持，挥斧时整个身体跟着转
 - 能挂在木质工具架的木钉上：斧柄朝下，斧头架在两根钉上
 - 不能给木头去皮，不能修理
+- 目前只能从创造模式物品栏获得
+
+## 折刀
+
+<StatusTag s="test" /> 老式背锁折刀：斜切尖刀刃，胡桃木柄，前后黄铜枕
+
+- 右键：收着时用两只手打开，左手指甲勾住刀身上的槽拉出来，落锁时“咔”一声，大约 2 秒
+- 潜行右键：按下刀背上的锁片把刀收起
+- 第一人称下开刀、收刀时，视线会低头看着手里的刀，这时不能转视角
+- 打开锁住后才是近战武器：伤害 4，每秒能刺 2 下，比撬棍快、伤害低；每刺中一下消耗 1 点耐久，共 600 点，不能修理
+- 打开后刀握在胸口下方，手肘收在身侧，刀尖朝前偏上；左键时先沉到腰侧，再从下往前上方捅出
+- 收着时打人和空手一样；开刀、收刀的过程中不能攻击
+- 可以放在近战栏（3 键），开着、收着都行；换到别的格子或丢出去时刀会自己合上
+- 开刀、收刀、刀尖戳到金属、石头、木头的声音能被附近 <V j="FoldingKnifeItem.SOUND_RADIUS" /> 格内的感染者听到，刺中生物的声音传到 <V j="FoldingKnifeItem.STAB_RADIUS" /> 格
 - 目前只能从创造模式物品栏获得
 
 ## 羊角锤

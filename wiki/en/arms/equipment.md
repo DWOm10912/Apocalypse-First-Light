@@ -28,6 +28,7 @@ See [Inventory and Weight](../guide/inventory)
 | Map | Draws in where you go while carried; right click it in hand to unfold it, see [Map](../guide/map) | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
 | <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures; hangs by its gooseneck on the pegs of a tool rack or workbench | <StatusTag s="creative" /> |
 | <ItemIcon id="felling_axe" /> Felling Axe | Fells trees; also a melee weapon | <StatusTag s="creative" /> |
+| <ItemIcon id="folding_knife" /> Folding Knife | Right click to open it with both hands; open and locked, it is a light melee weapon. Sneak + right click folds it | <StatusTag s="creative" /> |
 | <ItemIcon id="claw_hammer" /> Claw Hammer | Hangs on a workbench or tool rack; no other use yet | <StatusTag s="creative" /> |
 | <ItemIcon id="building_hammer" /> Building Hammer | In edit mode, installs and takes down building pieces made at the workbench | <StatusTag s="creative" /> |
 | <ItemIcon id="hand_saw" /> Hand Saw | Rips logs into white oak beams at the workbench | <StatusTag s="creative" /> |
@@ -44,6 +45,20 @@ See [Inventory and Weight](../guide/inventory)
 - Held in both hands; the whole body turns into each swing
 - Hangs on the pegs of a wooden tool rack: handle down, the head resting on two pegs
 - It cannot strip bark and cannot be repaired
+- For now it comes only from the creative inventory
+
+## Folding Knife
+
+<StatusTag s="test" /> An old lockback folding knife: clip-point blade, walnut scales, brass bolsters
+
+- Right click: closed, you open it with both hands, the left thumbnail drawing the blade out by its nail nick until the lock clicks; about 2 seconds
+- Sneak + right click: press the lock bar on the back and fold it
+- In first person the view glances down at the knife while you open or fold it, and you cannot turn the view meanwhile
+- Only open and locked is it a melee weapon: 4 damage, 2 stabs a second, faster than the crowbar but weaker; each hit uses 1 of its 600 durability, and it cannot be repaired
+- Open, the knife is held low before the chest, the elbow tucked in at the side and the tip forward and a little up; a left click drops it to the hip, then drives it forward and up from below
+- Closed, it hits like a bare fist; you cannot attack while opening or folding it
+- It goes in the melee slot (key 3), open or closed; switching to another slot or dropping it folds it
+- Infected within <V j="FoldingKnifeItem.SOUND_RADIUS" /> blocks can hear it open, fold, and its tip striking metal, stone or wood; a stab into flesh carries <V j="FoldingKnifeItem.STAB_RADIUS" /> blocks
 - For now it comes only from the creative inventory
 
 ## Claw Hammer

@@ -782,6 +782,42 @@
     "subtitle": "subtitles.apocalypse_firstlight.hand_saw",
     "sounds": [{"name": "apocalypse_firstlight:hand_saw/pull_1"}, {"name": "apocalypse_firstlight:hand_saw/pull_2"}]
   },
+  "folding_knife_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_open",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/open_1"}]
+  },
+  "folding_knife_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_close",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/close_1"}]
+  },
+  "folding_knife_swing": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_swing",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/swing_1"}, {"name": "apocalypse_firstlight:folding_knife/swing_2"}, {"name": "apocalypse_firstlight:folding_knife/swing_3"}]
+  },
+  "folding_knife_stab": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_stab",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/stab_flesh_1"}, {"name": "apocalypse_firstlight:folding_knife/stab_flesh_2"}, {"name": "apocalypse_firstlight:folding_knife/stab_flesh_3"}, {"name": "apocalypse_firstlight:folding_knife/stab_flesh_4"}]
+  },
+  "folding_knife_hit_metal": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_hit",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/hit_metal_1"}]
+  },
+  "folding_knife_hit_stone": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_hit",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/hit_stone_1"}, {"name": "apocalypse_firstlight:folding_knife/hit_stone_2"}, {"name": "apocalypse_firstlight:folding_knife/hit_stone_3"}, {"name": "apocalypse_firstlight:folding_knife/hit_stone_4"}]
+  },
+  "folding_knife_hit_wood": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_hit",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/hit_wood_1"}, {"name": "apocalypse_firstlight:folding_knife/hit_wood_2"}, {"name": "apocalypse_firstlight:folding_knife/hit_wood_3"}, {"name": "apocalypse_firstlight:folding_knife/hit_wood_4"}]
+  },
+  "folding_knife_whittle": {
+    "subtitle": "subtitles.apocalypse_firstlight.folding_knife_whittle",
+    "sounds": [{"name": "apocalypse_firstlight:folding_knife/whittle_1"}, {"name": "apocalypse_firstlight:folding_knife/whittle_2"}, {"name": "apocalypse_firstlight:folding_knife/whittle_3"}, {"name": "apocalypse_firstlight:folding_knife/whittle_4"}, {"name": "apocalypse_firstlight:folding_knife/whittle_5"}, {"name": "apocalypse_firstlight:folding_knife/whittle_6"}]
+  },
+  "workbench_tool_down": {
+    "subtitle": "subtitles.apocalypse_firstlight.workbench_tool_down",
+    "sounds": [{"name": "apocalypse_firstlight:workbench/tool_down_1"}]
+  },
   "tree_crack": {
     "subtitle": "subtitles.apocalypse_firstlight.tree_crack",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/crack", "attenuation_distance": 12}]

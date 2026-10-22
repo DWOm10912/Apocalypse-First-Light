@@ -1,0 +1,108 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/nail_box"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/nail_box"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          -0.0136,
+          1.4476,
+          1.3849
+        ],
+        "scale": [
+          1.3,
+          1.3,
+          1.3
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          30,
+          6
+        ],
+        "translation": [
+          1.1417,
+          1.7412,
+          2.4716
+        ],
+        "scale": [
+          1.2,
+          1.2,
+          1.2
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          1.385,
+          1.385,
+          1.385
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          2.425,
+          2.425,
+          2.425
+        ]
+      },
+      "gui": {
+        "rotation": [
+          20,
+          35,
+          0
+        ],
+        "translation": [
+          0,
+          -0.026,
+          0
+        ],
+        "scale": [
+          3.467,
+          3.467,
+          3.467
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/nail_box"
+      }
+    }
+  }
+}

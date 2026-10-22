@@ -1,0 +1,82 @@
+{
+  "about": "The folding knife as the skeleton holds it, first and third person (docs/gameplay/folding_knife_v1.md 5; written by tools/author-folding-knife-actions.mjs). Points, bounds: item block units of the folding_knife mesh as client/FoldingKnifeRenderer draws it (meshes/folding_knife.aflmesh.json + (0.5, -0.1596, 0.5)); y from the butt up the open blade, the back (spring) on +x, the edge on -x, the nail nick on the +z face. Scale 0.4 (the open knife 8.4 model px, as a real knife to the 4 px fist). grip: the handle's middle in the fist; pivot, tip, butt; nick_180: the nail nick of the closed blade; pull_<deg>: a pinch on the blade's face with the blade turned that far toward closed; release: the lock bar on the back.",
+  "items": [
+    "folding_knife"
+  ],
+  "scale": 0.4,
+  "bounds": [
+    [
+      0.4125,
+      -0.1596,
+      0.4469
+    ],
+    [
+      0.5875,
+      1.1598,
+      0.5531
+    ]
+  ],
+  "symmetry": "z",
+  "points": {
+    "grip": [
+      0.5028,
+      0.1909,
+      0.5
+    ],
+    "pivot": [
+      0.4935,
+      0.5659,
+      0.5
+    ],
+    "tip": [
+      0.4997,
+      1.1596,
+      0.5
+    ],
+    "butt": [
+      0.5028,
+      -0.1591,
+      0.5
+    ],
+    "nick_180": [
+      0.4528,
+      0.4721,
+      0.5094
+    ],
+    "release": [
+      0.5797,
+      0.1784,
+      0.5
+    ],
+    "pull_150": [
+      0.3539,
+      0.3866,
+      0.525
+    ],
+    "pull_120": [
+      0.283,
+      0.4804,
+      0.525
+    ],
+    "pull_90": [
+      0.2685,
+      0.5971,
+      0.525
+    ],
+    "pull_60": [
+      0.3142,
+      0.7054,
+      0.525
+    ],
+    "pull_30": [
+      0.408,
+      0.7763,
+      0.525
+    ],
+    "pull_0": [
+      0.5247,
+      0.7909,
+      0.525
+    ]
+  }
+}

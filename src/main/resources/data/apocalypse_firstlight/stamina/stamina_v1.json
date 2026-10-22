@@ -23,7 +23,8 @@
     "melee": 5,
     "melee_items": {
       "apocalypse_firstlight:crowbar": 8,
-      "apocalypse_firstlight:felling_axe": 10
+      "apocalypse_firstlight:felling_axe": 10,
+      "apocalypse_firstlight:folding_knife": 4
     },
     "shot": 0.6,
     "shots_by_ammo": {

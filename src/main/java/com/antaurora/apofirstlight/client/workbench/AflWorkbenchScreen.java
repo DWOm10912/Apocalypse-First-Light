@@ -10,9 +10,14 @@ import com.antaurora.apofirstlight.inventory.grid.ItemSizes;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.weight.StackMassCalculator;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.block.model.ItemTransform;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
@@ -20,9 +25,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -178,7 +185,7 @@ public final class AflWorkbenchScreen extends Screen {
 
         Hit hover = hitAt(mx, my);
         if (hover != null && recipe != null && optionsOf < 0) {
-            if (hover.kind == Kind.MATERIAL) g.renderTooltip(font, recipe.materials().get(hover.index).shown(), mouseX, mouseY);
+            if (hover.kind == Kind.MATERIAL) g.renderTooltip(font, recipe.materials().get(hover.index).shown(net.minecraft.Util.getMillis()), mouseX, mouseY);
             else if (hover.kind == Kind.TOOL && recipe.tool() != null) g.renderTooltip(font, recipe.tool(), mouseX, mouseY);
         }
     }
@@ -341,10 +348,17 @@ public final class AflWorkbenchScreen extends Screen {
 
     /**
      * The result as a large 3D item: its GUI pose, turned about the model's own upright axis by {@code yaw} (the GUI
-     * pose's x tilt is undone around the turn, so a block spins like on a turntable instead of wobbling).
+     * pose's x tilt is undone around the turn, so a block spins like on a turntable instead of wobbling). A Mesh item's
+     * inventory picture is its 64 px icon (forge:separate_transforms, gui = item/generated), which blown up to this size
+     * reads as pixels: its base model is the mesh, carrying the icon's view as its gui transform
+     * (tools/build-material-meshes-v1.mjs), so that one is drawn instead, front-lit like the icon.
      */
     private void model(GuiGraphics g, ItemStack stack) {
-        var model = minecraft.getItemRenderer().getModel(stack, minecraft.level, minecraft.player, 0);
+        var renderer = minecraft.getItemRenderer();
+        BakedModel model = renderer.getModel(stack, minecraft.level, minecraft.player, 0);
+        BakedModel base = model.applyTransform(ItemDisplayContext.NONE, new PoseStack(), false);
+        boolean mesh = base != model && base.isCustomRenderer() && base.getTransforms().gui != ItemTransform.NO_TRANSFORM;
+        if (mesh) model = base;
         float tilt = model.getTransforms().gui.rotation.x();
         float k = PREVIEW_SIZE / 16;
         var pose = g.pose();
@@ -355,7 +369,18 @@ public final class AflWorkbenchScreen extends Screen {
         pose.mulPose(Axis.XP.rotationDegrees(tilt));
         pose.scale(k, k, k);
         pose.translate(0, 0, -150);   // renderItem pushes 150 forward: keep the turn about the centre
-        g.renderItem(stack, -8, -8);
+        if (mesh) {
+            // GuiGraphics.renderItem(stack, -8, -8) with the base model in place of the icon
+            pose.translate(0, 0, 150);
+            pose.mulPoseMatrix(new Matrix4f().scaling(1, -1, 1));
+            pose.scale(16, 16, 16);
+            Lighting.setupForFlatItems();
+            renderer.render(stack, ItemDisplayContext.GUI, false, pose, g.bufferSource(), 0xF000F0, OverlayTexture.NO_OVERLAY, model);
+            g.flush();
+            Lighting.setupFor3DItems();
+        } else {
+            g.renderItem(stack, -8, -8);
+        }
         pose.popPose();
     }
 
@@ -377,12 +402,12 @@ public final class AflWorkbenchScreen extends Screen {
             var m = r.materials().get(i);
             int have = WorkbenchRecipes.carried(player, m);
             boolean ok = have >= m.count();
-            if (!ok) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench.missing_item", m.shown().getHoverName(), m.count() - have));
+            if (!ok) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench.missing_item", m.name(), m.count() - have));
             boolean hover = in(mx, my, x - 2, y - 1, R_W - 8, 18);
             if (hover) AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 18, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.5F);
             slot(g, x, y, 16);
-            icon(g, m.shown(), x + 2, y + 2, 12);
-            text(g, m.shown().getHoverName(), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
+            icon(g, m.shown(net.minecraft.Util.getMillis()), x + 2, y + 2, 12);
+            text(g, m.name(), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
             if (m.options().size() > 1)
                 text(g, Component.translatable("screen.apocalypse_firstlight.workbench.options_count", m.options().size()), x + 21, y + 10.5F, 4.2F, AflUiStyle.TEXT_DISABLED, 1);
             Component count = Component.literal(have + " / " + m.count());

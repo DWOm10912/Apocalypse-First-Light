@@ -33,6 +33,28 @@ AFL measures power in FE (Forge Energy). Generators turn diesel, coal or lava in
 - The other categories are still greyed out; recipes not yet learned are never shown
 - <StatusTag s="planned" /> Recipes: learned from life experience, trial and error, books and blueprints; books will turn up in towns. Crafting will take materials from the bench's drawers, from what you carry and from nearby chests
 
+### Wooden furniture materials
+
+<StatusTag s="test" /> The materials for the first wooden furniture are in, all in the creative Materials tab for now. The furniture recipes themselves are not: a piece takes 20 to 60 seconds to make, and what you do at the bench in that time is still being designed.
+
+| Item | Where it comes from | Mass |
+|---|---|---|
+| <ItemIcon id="white_oak_board" /> Boards (6 species: white oak, white pine, red oak, shagbark hickory, red maple, eastern hemlock) | Sawn from logs at the workbench | White oak <V d="item_mass/core_v1#items.apocalypse_firstlight:white_oak_board.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wood_finish_can" /> Walnut Wood Finish | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:wood_finish_can.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="nail_box" /> Box of Nails | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="cabinet_hinge" /> Hinge | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="iron_knob" /> Iron Knob | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wooden_knob" /> Wooden Knob | Made from a board at the workbench | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="keyhole_escutcheon" /> Keyhole Escutcheon | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:keyhole_escutcheon.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="furniture_hardware_box" /> Furniture Hardware Box | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:furniture_hardware_box.unit_mass_kg" u="kg" /> |
+
+- <StatusTag s="test" /> A board is a long 1.2 m plank, not the planks block. Rip logs into boards with the hand saw at the workbench: <V d="workbench_recipes/woodwork/white_oak_boards#materials.0.count" /> log of a species gives <V d="workbench_recipes/woodwork/white_oak_boards#result.count" /> boards of it, <V d="workbench_recipes/woodwork/white_oak_boards#seconds" u="s" /> each, sawn on the bench top like the beam, with the log you are sawing lying on the bench. Forest residents know it from the start
+- <StatusTag s="test" /> Wooden knob: <V d="workbench_recipes/woodwork/wooden_knob#materials.0.count" /> board of any species and the hand saw make <V d="workbench_recipes/woodwork/wooden_knob#result.count" />, in <V d="workbench_recipes/woodwork/wooden_knob#seconds" u="s" />, with only the progress bar for now. Furniture takes an iron or a wooden knob alike, and looks the same either way
+- Hinges and keyhole escutcheons cannot be made, only found; later they will also come from taking old furniture apart
+- A can of finish holds 1 litre and a box of nails 180; what is used comes off, the rest shows in the tooltip, with a bar under the slot once some is gone. Neither stacks
+- <StatusTag s="test" /> Furniture hardware box: hold it and press use to open it; it gives <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.min" /> to <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.max" /> hinges, iron knobs and keyhole escutcheons at random, and the box is gone. It opens with a vanilla sound for now
+- <StatusTag s="planned" /> Furniture recipes (the amounts are set, see the dev doc `docs/gameplay/furniture_recipes_v1.md`), the bench actions while making them, taking old furniture apart
+
 ## Machines
 
 | Machine | Storage | Power while working |

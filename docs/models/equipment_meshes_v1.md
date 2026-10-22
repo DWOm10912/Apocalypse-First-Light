@@ -94,7 +94,7 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
   - 躯干：原点在身体的轴点（脖子，躯干顶面中心），+X 是玩家的左边，+Y 向上（躯干 y -12..0），+Z 向前（躯干 z -2..2）。Java 里是 `body.translateAndRotate` 再 `scale(1, -1, -1)`。
   - 右腿：原点在髋关节，+X 朝外（玩家右边），+Y 向上（腿 y -12..0），+Z 向后。Java 里是 `rightLeg.translateAndRotate` 再绕 Z 转 180°。
   - 头：原点在头的轴点（脖子），+X 玩家左边，+Y 向上（头 y 0..8），+Z 向前；和躯干一样转。
-- **HUD 剪影**（`hud`）：从网格正交投影画一张武器列表用的侧视剪影，写到 `textures/gui/melee/<id>_hud.png`。配色照枪的 `textures/gui/gun/*_hud.png`：平涂灰色、左上方来光，外轮廓一圈稍暗，2 倍超采样抗锯齿。`hud: {screen, toward, scale}`：网格坐标到屏幕的映射、朝向观察者的方向、每个网格像素画多少屏幕像素。
+- **HUD 剪影**（`hud`）：从网格正交投影画一张武器列表用的侧视剪影，写到 `textures/gui/melee/<id>_hud.png`。配色照枪的 `textures/gui/gun/*_hud.png`：平涂灰色、左上方来光，外轮廓一圈稍暗，2 倍超采样抗锯齿。`hud: {screen, toward, scale, aspect}`：网格坐标到屏幕的映射、朝向观察者的方向、每个网格像素画多少屏幕像素；`aspect` 可选，图片宽高比的上限，细长的武器上下补透明行，武器列表（按行高画）里就不会比手枪剪影长。
 
 ### 撬棍 `crowbar`（替换 V1 方块模型）
 
@@ -408,3 +408,39 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - **源图**：`design/items/field_survival_guide_v1/fsg_game_assets.py` + `fsg_game_assets.cjs` 生成 `src/main/blockbench/textures/field_survival_guide_cover_src.png`（1180 × 900）和 `field_survival_guide_edges_src.png`（512 × 128）。
 - **输出**：`src/main/blockbench/field_survival_guide.bbmodel` 和 `textures/field_survival_guide_mesh{,_n,_s}.png`；`geo/field_survival_guide.geo.json`、`meshes/field_survival_guide.aflmesh.json`、`models/item/field_survival_guide.json`、`textures/item/field_survival_guide.png`（图标）、`textures/item/field_survival_guide_mesh{,_n,_s}.png`。渲染：`AflStaticMeshItemClient.bind(FIELD_SURVIVAL_GUIDE, "field_survival_guide", "field_survival_guide_mesh", 0.322835)`。
 - **检查**：握点数值离线核对过；手锯、建筑锤、羊角锤的 `--check` 仍为 CHECK OK；`compileJava --offline` 通过；书的第一轮用户 2026-10-22 实机 PASS。
+
+## 2026-10-22 新增：折刀 `folding_knife`
+
+玩法、动作、音效见 [折刀 V1](../gameplay/folding_knife_v1.md) 第 5 节。这里只记生成和渲染。
+
+- **生成脚本** `foldingKnife()`（导出常量 `KNIFE`：`butt`、`pivot`、`grip`、`tip`、`nick`，烘焙前坐标）：A 版传统背锁，1 px = 1 cm，打开 21.1 cm、收起 12.6 cm。刀柄沿 +Y，从刀尾 y 0 到刀轴 y 11.6，刀身继续往 +Y；刀背（背簧）在 +X，刃在 −X，Z 是厚度。
+  - 部件：`liners`（黄铜衬板，整条轮廓，z ±0.155–0.205）、`bolster_front` / `bolster_rear`（黄铜枕，倒角 0.12）、`scales`（胡桃木贴片，轮廓内缩 0.012、两头压在枕下 0.05）、`backspring`、`lock_release`（锁片）、`spacer`（刀尾垫片）、`pivot_pin` / `rear_pin` / `rivet_front` / `rivet_rear`（12 段圆头钉）、`blade`。
+  - 刀身：8 点截面（刀背、磨线、次刃、刃口，左右对称）沿 69 个站位放样；斜切尖，平磨从刀根 0.9 cm 处开始（0.5 cm 过渡），刀根下缘倒圆；远端减薄到 55%，刀尖收成一个点，刀根端封口。面材质：刀面 `steel`、刃口三面 `edge`。
+  - 材质：`steel`（缎面纹，+z 面上有指甲槽的暗色月牙）、`edge`（更亮更光滑）、`spring`（暗钢）、`brass`、`walnut`（fbm 木纹）。
+- 3648 个三角面，共面检查 0；尺寸 2.65 × 21.107 × 1.69 px，`verticalOffset` −0.1596；图集 512，`texelsPerPx` 24（实际 20）。点（烘焙后）：`pivot` (−0.1048, 11.6072)、`grip` (0.0452, 5.6072)、`tip`、`nick`、`butt`、`release`。
+- **收起时的样子**：刀身绕刀轴转 180°，刀背在刀柄下沿外侧约 −1.25 px，和刀柄下沿基本齐平；刃口和背簧区域重叠，但夹在两片衬板中间看不见。
+- **手持**：第一人称 `fitHeld(grip, [0, −75, 85], 0.5)`，第三人称 `fitHeld(grip, [0, −90, 10], 0.42)`；掉落 [90, 0, 0] 缩放 0.36；展示框 [0, 0, −45] 缩放 0.62。骨骼道具（`tools/author-folding-knife-actions.mjs`）缩放 0.4。
+- **图标**：模型渲染图（视角 [0, 0, −45]），`icon.live`：物品模型是 `builtin/entity`，物品栏里也由渲染器画（这样收起和打开都对）；近战栏剪影 `textures/gui/melee/folding_knife_hud.png`（侧视，刀头朝左，1018 × 566：刀本身 1018 × 132，`aspect` 1.8 上下补空，近战栏里画出来和 P9-01（36 × 22）差不多长；用户 2026-10-22 第一轮说原来拉满 52 宽太大）。
+- **渲染**：`client/FoldingKnifeRenderer`，`blade` 绕刀轴转（`FoldingKnifeItem.bladeDegrees`），收着时在物品栏里上移放大 1.45 倍。`AflStaticMeshItemClient.bind(FOLDING_KNIFE, FoldingKnifeRenderer::new, "folding_knife")`。
+- **输出**：`src/main/blockbench/folding_knife.bbmodel` 和 `textures/folding_knife_mesh{,_n,_s}.png`；`geo/folding_knife.geo.json`、`meshes/folding_knife.aflmesh.json`、`models/item/folding_knife.json`、`textures/item/folding_knife.png`、`textures/item/folding_knife_mesh{,_n,_s}.png`、`textures/gui/melee/folding_knife_hud.png`。
+- **检查**：`node tools/build-equipment-meshes-v1.mjs folding_knife --check` 和动作脚本 `--check` 都是 CHECK OK；`compileJava --offline` 通过；没有实机验证。
+
+## 2026-10-22 新增：家具材料（板材 6 种、木器漆、圆钉、合页、铁拉手、木拉手、锁眼盖、家具配件盒）
+
+玩法见 [木家具配方 V1](../gameplay/furniture_recipes_v1.md)。
+
+- **生成脚本** `tools/build-furniture-materials-v1.mjs`（单独一个，借 `build-material-meshes-v1.mjs` 的 `bake` 和 `build-equipment-meshes-v1.mjs` 导出的 `fitHeld`、`rotXYZ`、`meshCentre`、`vn3`、`fbm3`）：按厘米写，`K = 0.8 / 2.54`（1 px = 1.25 英寸）。`node tools/build-furniture-materials-v1.mjs [id ...]` 写出，`--check` 只核对输出是否最新。
+- **板材** `<树种>_board`（6 个，同一个形状）：120 × 20 × 2.5 cm 长条板，60 个三角面，6.299 × 37.795 × 0.787 px，`verticalOffset` −0.681102。大面和侧边按盒投影采样各树种的 `<树种>_timber_side`，两头采样 `_timber_end`，每米 240 像素（7.62 texel / px），图集 512，每个面从贴图不同位置截，六块板的纹理不重复。
+  - 第三人称：握在靠近一头 2.5 cm、板宽一侧的边上，旋转 [0, −90, 15]，缩放 0.7，板侧立、前端略低：近端落在 (0, −12.5, 2.57)，远端 (0, 13.0, −4.28)；
+  - 第一人称：握在长度 1/5 处，旋转 [0, −80, 90]，缩放 0.6，板子顺着视线往前伸、往屏幕中间偏：近端 z 3.75，远端 z −18.6；
+  - 掉落 [90, 0, 0] 缩放 0.4，展示框 [0, 0, −45] 缩放 0.35，图标视角 [20, 30, −45]。
+- **木器漆** `wood_finish_can`：1 夸脱圆铁罐（半径 5.4、高 12.1 cm），卷边、标签、提梁耳和钢丝提梁，1128 个三角面，`verticalOffset` 0.342224。第三人称提着提梁顶，旋转 [90, 90, 0]，缩放 1.0，罐子挂在手下（罐底在提梁顶下 5.0 px）；第一人称旋转 [0, −30, 0]，缩放 1.2。
+- **圆钉** `nail_box`：6.5 × 11 × 4.5 cm 牛皮纸盒，盒盖、插舌、标签，192 个三角面，`verticalOffset` 0.391732。小件统一用"捏住"握法（`pinch`，和石子一样：第三人称落在拳心下方，第一人称落在 (1.13, −0.46, 2.46)）。
+- **家具配件盒** `furniture_hardware_box`：20 × 8 × 14 cm 纸箱，盖舌、胶带、标签，196 个三角面，`verticalOffset` 0.420866。第三人称抓住近侧顶边，旋转 [90, 90, 0]，缩放 0.8；第一人称旋转 [0, −20, 0]，缩放 0.9。
+- **合页** `cabinet_hinge`：3 英寸合页，两片页板各 3 个沉头孔、5 节轴、轴销两头，铁材质，952 个三角面，`verticalOffset` 0.420276，捏住，缩放 2.0。
+- **铁拉手** `iron_knob`：蘑菇头圆钮、底座和螺丝，432 个三角面，`verticalOffset` 0.447835，捏住，缩放 2.2。
+- **木拉手** `wooden_knob`：8 面、带随机起伏的车削圆钮（看得出是手削的），带榫头；底色 `plate` + 程序化木纹材质，160 个三角面，`verticalOffset` 0.459646，捏住，缩放 2.2。
+- **锁眼盖** `keyhole_escutcheon`：2.8 × 4.5 × 0.15 cm 椭圆铁片，锁眼和 2 个钉孔，252 个三角面，`verticalOffset` 0.455709，捏住，缩放 2.4。
+- **输出**（每个 id）：`src/main/blockbench/<id>.bbmodel` 和 `textures/<id>_mesh{,_n,_s}.png`；`geo/<id>.geo.json`、`meshes/<id>.aflmesh.json`、`models/item/<id>.json`、`textures/item/<id>.png`（64 px 模型渲染图标）、`textures/item/<id>_mesh{,_n,_s}.png`。渲染：`AflStaticMeshItemClient` 里 13 行 `bind`，偏移就是上面的 `verticalOffset`。
+- **工作台大图**：基础模型带图标视角的 `gui` 变换，制作页大图画的是 3D 网格（2026-10-22 用户发现板材和木拉手的大图是放大的像素图标，改后编译通过、未实机）。
+- **检查**：握点和落点数值离线核对过，图标拼图看过；`--check` CHECK OK；`compileJava --offline` 见本轮报告；**没有实机看过**手持和图标。

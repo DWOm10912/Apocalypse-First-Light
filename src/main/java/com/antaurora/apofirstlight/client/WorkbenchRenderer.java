@@ -62,7 +62,7 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
         float work = WorkbenchWork.workpiece(entity.getBlockPos(), partialTick);
         if (work >= 0) {
             pose.pushPose();
-            workpiece(work, state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
+            workpiece(work, WorkbenchWork.workLog(entity.getBlockPos(), partialTick), state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
             pose.popPose();
         }
         if (entity.noTools()) return;
@@ -81,12 +81,11 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
     }
 
     /**
-     * The work on the top (WorkbenchWork, the bench's north frame): a white oak log along the bench's depth over the drawers,
+     * The work on the top (WorkbenchWork, the bench's north frame): the recipe's log (WorkbenchWork#workLog) along the bench's depth over the drawers,
      * its front end over the edge, and the kerf sawn into it so far, a dark line down its top from the front end and down
      * the end grain as deep as the saw's slope has gone (the toe 20 deg down).
      */
-    private static void workpiece(float progress, BlockState bench, PoseStack pose, MultiBufferSource buffers, int light) {
-        BlockState log = WorkbenchWork.logState();
+    private static void workpiece(float progress, @org.jetbrains.annotations.Nullable BlockState log, BlockState bench, PoseStack pose, MultiBufferSource buffers, int light) {
         if (log == null) return;
         log = log.setValue(RotatedPillarBlock.AXIS, Direction.Axis.Z);
         pose.translate(0.5, 0, 0.5);

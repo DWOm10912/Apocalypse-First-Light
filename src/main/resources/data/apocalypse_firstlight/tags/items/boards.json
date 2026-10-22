@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:white_oak_board",
+    "apocalypse_firstlight:white_pine_board",
+    "apocalypse_firstlight:red_oak_board",
+    "apocalypse_firstlight:shagbark_hickory_board",
+    "apocalypse_firstlight:red_maple_board",
+    "apocalypse_firstlight:eastern_hemlock_board"
+  ]
+}

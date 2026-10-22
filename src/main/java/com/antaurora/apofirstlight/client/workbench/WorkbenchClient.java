@@ -106,7 +106,7 @@ public final class WorkbenchClient {
         var short_ = new java.util.ArrayList<Boolean>();
         for (var m : recipe.materials()) {
             int have = WorkbenchRecipes.carried(player, m);
-            lines.add(m.shown().getHoverName());
+            lines.add(m.name());
             counts.add(Component.literal(have + " / " + m.count()));
             short_.add(have < m.count());
             w = Math.max(w, 14 + (font.width(lines.get(lines.size() - 1)) + 10 + font.width(counts.get(counts.size() - 1))) * small);

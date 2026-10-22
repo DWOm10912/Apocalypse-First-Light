@@ -193,8 +193,11 @@ public final class WorkbenchWork {
 
     // ------------------------------------------------------------------------------------------------ looks
 
-    /** A player's work as the looks need it: the bench, its facing, the loop action, the start (game time), the item's progress. */
-    private record Job(BlockPos bench, Direction facing, String work, long started, float progress) {}
+    /**
+     * A player's work as the looks need it: the bench, its facing, the loop action, the start (game time), the item's progress,
+     * the recipe (the log on the bench top is its log).
+     */
+    private record Job(BlockPos bench, Direction facing, String work, long started, float progress, ResourceLocation recipe) {}
 
     @Nullable
     private static Job job(Player p, float partial) {
@@ -203,12 +206,14 @@ public final class WorkbenchWork {
         String work;
         long started;
         float progress;
+        ResourceLocation recipe;
         double now = level.getGameTime() + partial;
         Session s = own;
         if (p == Minecraft.getInstance().player) {
             if (s == null || s.recipe.work() == null) return null;
             bench = s.bench;
             work = s.recipe.work();
+            recipe = s.recipe.id();
             started = s.started;
             progress = (float) Math.max(0, Math.min(1, (now - s.itemStarted) / Math.max(1, s.recipe.ticks())));
         } else {
@@ -217,6 +222,7 @@ public final class WorkbenchWork {
             // the action and time come with WorkOf: whoever watches may not know the recipe
             bench = r.work().bench();
             work = r.work().action();
+            recipe = r.work().recipe();
             started = r.started();
             // the others' item clock is not sent: the recipe's time, round and round from the first stroke
             double since = now - started - (STARTS.containsKey(work) ? SET * 20 : 0);
@@ -225,7 +231,7 @@ public final class WorkbenchWork {
         }
         BlockState state = level.getBlockState(bench);
         if (!(state.getBlock() instanceof Workbench)) return null;
-        return new Job(bench, state.getValue(Workbench.FACING), work, started, progress);
+        return new Job(bench, state.getValue(Workbench.FACING), work, started, progress, recipe);
     }
 
     /** SkeletonActions: what this player plays at a bench now, or null. */
@@ -257,26 +263,37 @@ public final class WorkbenchWork {
 
     /** WorkbenchRenderer: the progress of the item being made on this bench's top (0..1; the log and its kerf), or -1. */
     public static float workpiece(BlockPos master, float partial) {
+        Job j = jobAt(master, partial);
+        return j == null ? -1 : j.progress();
+    }
+
+    /** WorkbenchRenderer: the log being sawn on this bench's top (#logState of its recipe), or null. */
+    @Nullable
+    public static BlockState workLog(BlockPos master, float partial) {
+        Job j = jobAt(master, partial);
+        return j == null ? null : logState(j.recipe());
+    }
+
+    @Nullable
+    private static Job jobAt(BlockPos master, float partial) {
         var mc = Minecraft.getInstance();
-        if (mc.level == null) return -1;
+        if (mc.level == null) return null;
         if (own != null && own.bench.equals(master) && mc.player != null) {
             Job j = job(mc.player, partial);
-            if (j != null) return j.progress();
+            if (j != null) return j;
         }
         for (var e : REMOTE.entrySet()) {
             if (!e.getValue().work().bench().equals(master)) continue;
             if (mc.level.getEntity(e.getKey()) instanceof Player p) {
                 Job j = job(p, partial);
-                if (j != null) return j.progress();
+                if (j != null) return j;
             }
         }
-        return -1;
+        return null;
     }
 
     /** Sawdust on the push of each stroke: out of the kerf under the log's front end, now and then off its top. */
     private static void dust(Level level) {
-        BlockState log = logState();
-        if (log == null) return;
         var mc = Minecraft.getInstance();
         RandomSource random = level.random;
         java.util.List<Player> working = new java.util.ArrayList<>();
@@ -287,6 +304,8 @@ public final class WorkbenchWork {
             if (j == null) continue;
             double since = (level.getGameTime() - j.started()) / 20.0 - (STARTS.containsKey(j.work()) ? SET : 0);
             if (since < 0 || since % STROKE >= STROKE / 2 || random.nextFloat() > 0.6F) continue;
+            BlockState log = logState(j.recipe());
+            if (log == null) continue;
             double kerf = kerfZ(j.progress());
             BlockParticleOption dust = new BlockParticleOption(ParticleTypes.FALLING_DUST, log);
             Vec3 under = Workbench.local(j.bench(), j.facing(), LOG_X + (random.nextDouble() - 0.5) * 0.03, TOP - 0.01,
@@ -328,9 +347,18 @@ public final class WorkbenchWork {
         }
     }
 
-    /** The white oak log standing (its end grain's colour for the dust), or null where it is not registered. */
+    /**
+     * The log a recipe saws, standing (its end grain's colour for the dust): the recipe's first log material when this
+     * client knows the recipe (a species' boards saw that species' log); else, or for a recipe without a log, the white oak
+     * log; null where none is registered.
+     */
     @Nullable
-    public static BlockState logState() {
+    public static BlockState logState(@Nullable ResourceLocation recipe) {
+        var mc = Minecraft.getInstance();
+        WorkbenchRecipeView view = mc.player == null ? null : WorkbenchRecipes.find(mc.player, recipe);
+        if (view != null) for (var m : view.materials())
+            if (m.shown().getItem() instanceof net.minecraft.world.item.BlockItem b && b.getBlock() instanceof RotatedPillarBlock)
+                return b.getBlock().defaultBlockState();
         var block = ForgeRegistries.BLOCKS.getValue(LOG);
         if (!(block instanceof RotatedPillarBlock)) return null;
         return block.defaultBlockState();

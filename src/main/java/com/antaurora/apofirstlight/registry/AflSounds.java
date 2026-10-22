@@ -221,6 +221,17 @@ public final class AflSounds {
     // Sawing at the workbench (client/workbench/WorkbenchWork): a push and a pull per stroke, cut from one Firefly take
     public static final RegistryObject<SoundEvent> HAND_SAW_PUSH = simple("hand_saw_push");
     public static final RegistryObject<SoundEvent> HAND_SAW_PULL = simple("hand_saw_pull");
+    // Folding knife V1 (docs/gameplay/folding_knife_v1.md 4.2, design/items/folding_knife_v1/fk_cut_sounds.py): the user's
+    // Firefly takes cut into pieces; item/FoldingKnifeItem plays them (the swing in the air: client/FoldingKnifeClient)
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_OPEN = simple("folding_knife_open");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_CLOSE = simple("folding_knife_close");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_SWING = simple("folding_knife_swing");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_STAB = simple("folding_knife_stab");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_METAL = simple("folding_knife_hit_metal");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_STONE = simple("folding_knife_hit_stone");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_WOOD = simple("folding_knife_hit_wood");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_WHITTLE = simple("folding_knife_whittle");
+    public static final RegistryObject<SoundEvent> WORKBENCH_TOOL_DOWN = simple("workbench_tool_down");
     // Flip lighter V1: placeholders on vanilla events in sounds.json until the user records them (Firefly)
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_OPEN = simple("flip_lighter_open");
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_STRIKE = simple("flip_lighter_strike");

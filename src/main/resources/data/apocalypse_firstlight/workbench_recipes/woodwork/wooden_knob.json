@@ -1,0 +1,21 @@
+{
+  "format_version": 1,
+  "result": {
+    "item": "apocalypse_firstlight:wooden_knob",
+    "count": 6
+  },
+  "materials": [
+    {
+      "tag": "apocalypse_firstlight:boards",
+      "count": 1
+    }
+  ],
+  "tool": "apocalypse_firstlight:hand_saw",
+  "seconds": 10,
+  "unlock": [
+    {
+      "type": "background",
+      "background": "forest_resident"
+    }
+  ]
+}

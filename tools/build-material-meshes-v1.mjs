@@ -380,14 +380,16 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     ...displayOverrides,
   };
   const iconView = {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)};
-  // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
+  // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity).
+  // The base also carries the icon's view as its gui transform: the workbench's large result preview draws the mesh in it
+  // (AflWorkbenchScreen.model; the inventory never reaches the base's gui, the perspective wins)
   const icon = `apocalypse_firstlight:item/${id}`;
   // icon.live: the mesh in the inventory too, in the icon's view (its renderer draws moving parts there, like a vanilla
   // compass); the 2D icon is still written (particles, wiki)
   const itemModel = iconOpts.live
     ? {parent: 'builtin/entity', gui_light: 'front', textures: {particle: icon}, display: {...display, gui: iconView}}
     : {loader: 'forge:separate_transforms', gui_light: 'front', textures: {particle: icon},
-      base: {parent: 'builtin/entity', textures: {particle: icon}, display},
+      base: {parent: 'builtin/entity', textures: {particle: icon}, display: {...display, gui: iconView}},
       perspectives: {gui: {parent: 'minecraft:item/generated', textures: {layer0: icon}}}};
   const offset = r6(0.5 - size[1] / 32);
 

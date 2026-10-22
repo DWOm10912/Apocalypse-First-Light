@@ -120,6 +120,9 @@ public final class WorldInteractionHint {
             target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
         // a magazine in the hand (weapon/NativeMagazineLoading): a click starts loading it from the loose rounds carried, or stops
         if(target==null&&!mc.player.isSpectator()) target=heldMagazine(mc);
+        // a furniture hardware box in the hand (item/FurnitureHardwareBoxItem): a click opens it
+        if(target==null&&!mc.player.isSpectator()&&mc.player.getMainHandItem().is(com.antaurora.apofirstlight.registry.AflItems.FURNITURE_HARDWARE_BOX.get()))
+            target=new Target(Component.translatable("hint.apocalypse_firstlight.furniture_hardware_box.open"),null);
         // the round point shovel at loose ground in its reach (Earthwork A2, client/ShovelClient): dig, pour, or scrape (sneak)
         if(target==null) {var shovel=ShovelClient.hint(mc);if(shovel!=null) target=new Target(shovel,null);}
         // the pick mattock at a boulder in its reach (Rock R1a, client/PickClient): strike; any other hand on a boulder: it needs a pick
