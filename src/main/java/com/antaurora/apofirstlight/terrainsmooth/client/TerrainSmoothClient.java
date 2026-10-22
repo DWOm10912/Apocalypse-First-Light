@@ -2,6 +2,8 @@ package com.antaurora.apofirstlight.terrainsmooth.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
+import com.antaurora.apofirstlight.earthwork.EarthChunk;
+import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothChunkData;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
@@ -13,11 +15,13 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RenderBlockScreenEffectEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -43,6 +47,7 @@ public final class TerrainSmoothClient {
 
     static {
         TerrainSmooth.clientHooks = TerrainSmoothClient::blockChanged;
+        Earthwork.clientHooks = TerrainSmoothClient::earthChanged;
     }
 
     private TerrainSmoothClient() {}
@@ -66,6 +71,33 @@ public final class TerrainSmoothClient {
             LevelChunk chunk = level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, false);
             if (chunk != null) TerrainSmooth.data(level, chunk);
         }
+    }
+
+    /**
+     * First person, vanilla's in-wall screen (the block's texture at a tenth of its brightness, read as black) comes on
+     * when any of 8 points round the eye is in a view-blocking cell; a smoothed or dug top's cell still is one, though its
+     * ground lies lower (Earthwork A2, user 2026-10-21: standing in a dug pit the screen went black now and then). Such a
+     * cell blocks the view only where a point is inside its real shape; every other block keeps the vanilla answer.
+     */
+    @SubscribeEvent
+    public static void blockScreen(RenderBlockScreenEffectEvent e) {
+        if (e.getOverlayType() != RenderBlockScreenEffectEvent.OverlayType.BLOCK) return;
+        var p = e.getPlayer();
+        var level = p.level();
+        if (!TerrainSmooth.notSuffocating(e.getBlockState().getBlock(), level, e.getBlockPos())) return;
+        var pos = new BlockPos.MutableBlockPos();
+        for (int i = 0; i < 8; i++) {   // ScreenEffectRenderer#getViewBlockingState's points
+            double x = p.getX() + ((i & 1) - 0.5) * p.getBbWidth() * 0.8, y = p.getEyeY() + (((i >> 1) & 1) - 0.5) * 0.1,
+                    z = p.getZ() + (((i >> 2) & 1) - 0.5) * p.getBbWidth() * 0.8;
+            BlockState state = level.getBlockState(pos.set(x, y, z));
+            if (state.getRenderShape() == RenderShape.INVISIBLE || !state.isViewBlocking(level, pos)) continue;
+            if (!TerrainSmooth.notSuffocating(state.getBlock(), level, pos)) return;   // a real full block
+            var shape = TerrainSmooth.shape(state.getBlock(), level, pos, true);
+            if (shape == null) return;
+            for (var box : shape.toAabbs())
+                if (box.move(pos).contains(x, y, z)) return;   // the eye really is in the ground
+        }
+        e.setCanceled(true);
     }
 
     /** Development refresh: make all data again and re-mesh. */
@@ -118,16 +150,23 @@ public final class TerrainSmoothClient {
         private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         @Override
-        public int cell(int x, int y, int z) { return TerrainSmooth.cell(region.getBlockState(pos.set(x, y, z))); }
+        public int cell(int x, int y, int z) {
+            int t = Earthwork.editedTop(level, x, z);   // an edited column reads as it was (Earthwork)
+            if (t != Integer.MIN_VALUE) return y <= t ? SmoothRules.NATURAL : SmoothRules.AIR;
+            return TerrainSmooth.cell(region.getBlockState(pos.set(x, y, z)));
+        }
 
         @Override
         public float turf(int x, int y, int z, int k) {
+            if (Earthwork.editedTop(level, x, z) != Integer.MIN_VALUE) return Float.NaN;
             net.minecraft.world.level.block.state.BlockState s = region.getBlockState(pos.set(x, y, z));
             return s != null && s.getBlock() instanceof com.antaurora.apofirstlight.block.GradedTurfBlock ? y + com.antaurora.apofirstlight.block.GradedTurfBlock.corners(s)[k] : Float.NaN;
         }
 
         @Override
         public int surface(int x, int z) {
+            int t = Earthwork.editedTop(level, x, z);
+            if (t != Integer.MIN_VALUE) return t;
             LevelChunk c = level.getChunkSource().getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false);
             if (c == null) return SmoothRules.NO_SURFACE;
             SmoothChunkData d = TerrainSmooth.peek(c, TerrainSmooth.CLIENT);
@@ -147,6 +186,7 @@ public final class TerrainSmoothClient {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || !TerrainSmooth.CLIENT.enabled() || !TerrainSmooth.applies(level)) return -1;
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
+        if (Earthwork.editedTop(level, x, z) != Integer.MIN_VALUE) return -1;   // the earthwork's skin (EarthSkin), never sloped
         c.region = region;
         c.level = level;
         try {
@@ -209,6 +249,17 @@ public final class TerrainSmoothClient {
         return mask | (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 4;
     }
 
+    /**
+     * Rock R1b loose stones (boulder/LooseStonesModel, render threads): the drawn top of their support block above its floor
+     * as SmoothRules#corners, the road's graded turf's corners, or null where the top is the flat block top.
+     */
+    public static float[] groundCorners(BlockAndTintGetter region, BlockPos support) {
+        BlockState ground = region.getBlockState(support);
+        if (ground.getBlock() instanceof GradedTurfBlock) return GradedTurfBlock.corners(ground);
+        long g = supportGeometry(region, support);
+        return g < 0 ? null : SmoothRules.corners(g);
+    }
+
     /** Geometry of a plant's or a snow layer's support block (render threads), -1 = none or flat; does not touch the AO hand-over. */
     static long supportGeometry(BlockAndTintGetter region, BlockPos support) {
         RegionCells c = REGION.get();
@@ -226,6 +277,25 @@ public final class TerrainSmoothClient {
      * right before, on the same thread, for the same block (checked in both, 2026-10-11).
      */
     static boolean slopedNow(BlockState state) { return REGION.get().slopedState == state; }
+
+    /** The same hand-over for an edited column's skin cell (EarthSkin; null: the block is not one). */
+    static void markSloped(BlockState state) { REGION.get().slopedState = state; }
+
+    /** Earthwork.ClientHooks: a chunk's new copy. Re-mesh what reads it (its columns and the next ones), drop slopes cached around it. */
+    static void earthChanged(int cx, int cz, EarthChunk before, EarthChunk after) {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+        for (EarthChunk e : new EarthChunk[]{before, after}) {
+            int[] r = e == null ? null : e.yRange();
+            if (r == null) continue;
+            lo = Math.min(lo, r[0]);
+            hi = Math.max(hi, r[1]);
+        }
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) TerrainSmooth.forget(mc.level, cx + dx, cz + dz);
+        if (lo > hi) return;
+        markDirty(cx * 16 - 1, cz * 16 - 1, cx * 16 + 16, cz * 16 + 16, lo, hi + 2);   // + plants standing on the tops
+    }
 
     // ------------------------------------------------------------------------------------------------- events
 

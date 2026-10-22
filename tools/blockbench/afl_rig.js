@@ -1099,7 +1099,7 @@
         inp.chestYaw = o.chestYaw !== undefined ? o.chestYaw : (o.action && o.action.chestTwist) || 0;
         inp.eyeTarget = [0, eyeModelY(o.crouch), 0];
         let m = o.action ? {action: o.action, seconds: o.seconds || 0, stopped: -1, age: NaN, param: o.param || 0, mirror: false,
-            anchors: () => null, prop: null, props: [], propHidden: [], view: viewFrame(inp.eyeTarget, inp.viewYaw, inp.viewPitch)} : null;
+            anchors: o.anchors || (() => null), prop: null, props: [], propHidden: [], view: viewFrame(inp.eyeTarget, inp.viewYaw, inp.viewPitch)} : null;
         inp.headClip = o.headClip || 0;
         if (o.free) inp.eyeTarget = null;
         if (m && !actionBody(inp, rig, m)) m = null;

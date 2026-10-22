@@ -19,6 +19,7 @@ import java.util.function.Function;
 public final class StackMassCalculator {
     private static final Map<ResourceLocation, Function<ItemStack, Iterable<ItemStack>>> CONTENTS = new HashMap<>();
     private static final Map<ResourceLocation, Function<ItemStack, Iterable<FluidStack>>> FLUIDS = new HashMap<>();
+    private static final Map<ResourceLocation, java.util.function.ToLongFunction<ItemStack>> BULK = new HashMap<>();
     private static final int MAX_DEPTH = 8, MAX_ELEMENTS = 512;
     private StackMassCalculator() {}
 
@@ -30,6 +31,10 @@ public final class StackMassCalculator {
     /** Register during common setup. The fluid ONE outer item keeps (a broken tank's); read-only. See {@link #fluid}. */
     public static void registerFluidContents(ResourceLocation item, Function<ItemStack, Iterable<FluidStack>> provider) {
         if (FLUIDS.putIfAbsent(item, provider) != null) throw new IllegalArgumentException("Duplicate fluid provider " + item);
+    }
+    /** Register during common setup. The loose earth ONE outer item carries, in grams (a shovel's load); read-only. */
+    public static void registerBulkContents(ResourceLocation item, java.util.function.ToLongFunction<ItemStack> grams) {
+        if (BULK.putIfAbsent(item, grams) != null) throw new IllegalArgumentException("Duplicate bulk provider " + item);
     }
     public static MassResult mass(ItemStack stack) { return mass(stack, ItemMassData.snapshot()); }
     public static MassResult mass(ItemStack stack, ItemMassData.Snapshot data) { return calculate(stack, data, 0, new int[]{0}); }
@@ -107,6 +112,8 @@ public final class StackMassCalculator {
             }
             var fluids = FLUIDS.get(id);
             if (fluids != null) for (var fluid : fluids.apply(stack)) fluid(out, fluid, data);
+            var bulk = BULK.get(id);
+            if (bulk != null) { long g = bulk.applyAsLong(stack); if (g > 0) out.add("bulk", g); }
         } catch (RuntimeException ex) {
             var failed = new MassResult.Builder();
             failed.add("unresolved", MassResult.multiply(data.policy().fallbackGrams(), stack.getCount()));

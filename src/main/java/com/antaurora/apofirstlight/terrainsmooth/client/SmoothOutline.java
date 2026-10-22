@@ -1,60 +1,49 @@
 package com.antaurora.apofirstlight.terrainsmooth.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHighlightEvent;
+import net.minecraftforge.common.Tags;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Terrain Smooth V1, client: the selection outline of a sloped natural surface top follows its drawn top (the four corners
- * and the fold along the nw-se diagonal, down to the floor) instead of the box steps of its selection shape or the vanilla
- * cube. Only while collision and selection follow the slopes; otherwise vanilla draws its outline.
+ * Ground draws no selection outline (user 2026-10-21): natural ground and rock are a continuous surface that the dig and
+ * mining systems work on as a volume, not a grid of blocks, so no box (and no outline of the old Terrain Smooth slope or
+ * earthwork skin, docs/worldgen/earthwork_a1.md 4.3) is drawn on them; the same for the road's ground, its graded turf
+ * slopes and its pavement (user 2026-10-21, after the A1 check). The crosshair is the target; the breaking cracks stay.
+ * Placed blocks, bridges and other structures keep their outlines. First of all outline handlers (MeshHitPicking...): a
+ * cancelled event reaches none of them.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class SmoothOutline {
     private SmoothOutline() {}
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void outline(RenderHighlightEvent.Block event) {
         var level = Minecraft.getInstance().level;
-        if (level == null || !TerrainSmooth.CLIENT.collides() || !TerrainSmooth.applies(level)) return;
-        BlockPos pos = event.getTarget().getBlockPos();
-        if (!TerrainSmooth.ground(level.getBlockState(pos).getBlock())) return;
-        LevelChunk chunk = level.getChunkSource().getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, false);
-        if (chunk == null) return;
-        long g = TerrainSmooth.geometry(level, chunk, pos.getX(), pos.getY(), pos.getZ());
-        if (g < 0) return;
-        event.setCanceled(true);
-        float[] k = SmoothRules.corners(g);   // nw, ne, sw, se
-        float[] nw = {0, k[0], 0}, ne = {1, k[1], 0}, sw = {0, k[2], 1}, se = {1, k[3], 1};
-        Vec3 cam = event.getCamera().getPosition();
-        double ox = pos.getX() - cam.x, oy = pos.getY() - cam.y, oz = pos.getZ() - cam.z;
-        VertexConsumer out = event.getMultiBufferSource().getBuffer(RenderType.lines());
-        PoseStack.Pose pose = event.getPoseStack().last();
-        float[][][] edges = {
-                {nw, ne}, {ne, se}, {se, sw}, {sw, nw}, {nw, se},                                   // top and its fold
-                {{0, 0, 0}, nw}, {{1, 0, 0}, ne}, {{0, 0, 1}, sw}, {{1, 0, 1}, se},                 // corners down to the floor
-                {{0, 0, 0}, {1, 0, 0}}, {{1, 0, 0}, {1, 0, 1}}, {{1, 0, 1}, {0, 0, 1}}, {{0, 0, 1}, {0, 0, 0}}};
-        for (float[][] e : edges) line(out, pose, ox, oy, oz, e[0], e[1]);
+        if (level != null && ground(level.getBlockState(event.getTarget().getBlockPos()))) event.setCanceled(true);
     }
 
-    private static void line(VertexConsumer out, PoseStack.Pose pose, double ox, double oy, double oz, float[] a, float[] b) {
-        float dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
-        float l = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (l < 1e-6F) return;
-        dx /= l; dy /= l; dz /= l;
-        out.vertex(pose.pose(), (float) (ox + a[0]), (float) (oy + a[1]), (float) (oz + a[2])).color(0, 0, 0, 0.4F).normal(pose.normal(), dx, dy, dz).endVertex();
-        out.vertex(pose.pose(), (float) (ox + b[0]), (float) (oy + b[1]), (float) (oz + b[2])).color(0, 0, 0, 0.4F).normal(pose.normal(), dx, dy, dz).endVertex();
+    /**
+     * Terrain Smooth's ground, overworld base stone (stone, granite, deepslate...), ores (vanilla's and AFL's), and the
+     * road's graded turf and pavement, the boulders (Rock R1a) and loose stones (R1b).
+     */
+    static boolean ground(BlockState s) {
+        Block b = s.getBlock();
+        if (TerrainSmooth.ground(b) || s.is(BlockTags.BASE_STONE_OVERWORLD) || s.is(Tags.Blocks.ORES)) return true;
+        if (b == AflBlocks.GRADED_TURF.get() || b == AflBlocks.ROAD_SURFACE.get()) return true;
+        if (com.antaurora.apofirstlight.boulder.BoulderBlocks.isBoulder(s)) return true;      // Rock R1a: boulders are ground
+        if (com.antaurora.apofirstlight.boulder.LooseStones.is(s)) return true;               // Rock R1b: and the stones lying on it
+        var id = ForgeRegistries.BLOCKS.getKey(b);
+        return id != null && id.getNamespace().equals(ApocalypseFirstLight.MOD_ID) && id.getPath().endsWith("_ore");
     }
 }

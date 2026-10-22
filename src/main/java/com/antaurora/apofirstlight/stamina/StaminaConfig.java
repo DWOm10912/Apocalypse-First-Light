@@ -32,6 +32,10 @@ public final class StaminaConfig {
         public double chop = 4;
         /** One quarter turn of a hand crank (the emergency radio, 2026-10-14; a step every 4 ticks of holding: 2 a second). */
         public double crank = 0.4;
+        /** One shovel stroke (Earthwork A2, 2026-10-21): a scoop into the ground, a pour, a scrape. */
+        public double shovelDig = 5, shovelPour = 2, shovelScrape = 4;
+        /** One pick mattock strike that lands on a boulder (Rock R1a, 2026-10-21): a 3.3 kg tool swung from the shoulder. */
+        public double pickStrike = 6;
         /** item id → cost per swing */
         public Map<String, Double> meleeItems = Map.of("apocalypse_firstlight:crowbar", 8.0);
         /** ammo item id → cost per shot */

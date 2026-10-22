@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.mixin;
 
+import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
@@ -38,5 +39,12 @@ public abstract class TerrainSmoothBlockStateMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockBehaviour$StatePredicate;test(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Z"))
     private boolean afl$smoothSuffocating(BlockBehaviour.StatePredicate predicate, BlockState state, BlockGetter level, BlockPos pos) {
         return !TerrainSmooth.notSuffocating(state.getBlock(), level, pos) && predicate.test(state, level, pos);
+    }
+
+    /** Earthwork A1.1: an edited column's skin cell darkens no neighbour's smooth lighting (Earthwork#clientSkinCell). */
+    @Redirect(method = "getShadeBrightness(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;getShadeBrightness(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F"))
+    private float afl$earthShade(Block block, BlockState state, BlockGetter level, BlockPos pos) {
+        return Earthwork.clientSkinCell(block, pos.getX(), pos.getY(), pos.getZ()) ? 1.0F : block.getShadeBrightness(state, level, pos);
     }
 }

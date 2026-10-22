@@ -1,0 +1,10 @@
+{
+  "density_kg_m3": 1900,
+  "repose_deg": 20,
+  "excavation_deg": 30,
+  "block": "minecraft:mud",
+  "grip": 0.35,
+  "sources": [
+    "minecraft:mud"
+  ]
+}

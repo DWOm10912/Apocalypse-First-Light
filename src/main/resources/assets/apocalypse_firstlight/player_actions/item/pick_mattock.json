@@ -1,0 +1,56 @@
+{
+  "format_version": 1,
+  "about": "Pick mattock in the main hand, first and third person alike (Rock R1a). Carried two-handed across the body as a pick is carried to the work: the right hand at the end of the handle at the right hip, the left up the handle ahead of the belly, the head up and out ahead to the left, the pick ahead. A strike (tool/pick_strike_low, pick_strike, pick_strike_high) starts and ends in this hold. Written by tools/author-pick-actions-r1a.cjs. docs/gameplay/rock_r1_stones_boulders_design.md 11.2",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "pick_mattock",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [1.53, 8.06, -3.67],
+        "rot": [-97.6, 34.1, 134.9],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_mid",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.4,
+        "target": "prop:grip_close",
+        "blend": 0.2,
+        "roll": 0
+      },
+      {
+        "at": 0.9,
+        "target": "prop:grip_mid",
+        "blend": 0.2,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

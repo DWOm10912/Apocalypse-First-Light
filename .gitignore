@@ -30,6 +30,8 @@ build/
 # ==============================
 run/
 run-pure-forge/
+run-server/
+run-client2/
 logs/
 crash-reports/
 

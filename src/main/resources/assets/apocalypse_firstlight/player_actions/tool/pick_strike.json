@@ -1,0 +1,107 @@
+{
+  "format_version": 1,
+  "about": "Pick mattock, Strike (boulder/BoulderStrike: 22 ticks, the hit lands at 12 = 0.6 s) at a rock point from the waist to the belt, bent into it: from the hold the head comes up ahead of the right shoulder (0.2 s) and out to its right with the chest turned up and the left hand slid down to the right (0.4 s), comes over and down along the look so the pick bites the rock point (0.6 s), is levered back on the stuck point (0.75 s), pulled out (0.9 s) and back into the hold. First and third person alike; the own first person sits on the posed eye (it goes down with the hips) and looks down to 15 deg at least. Written by tools/author-pick-actions-r1a.cjs. docs/gameplay/rock_r1_stones_boulders_design.md 11.2",
+  "clip": "tool.pick_strike",
+  "layer": "action",
+  "mask": "full",
+  "priority": 60,
+  "first_person": "body",
+  "first_person_pitch": 15,
+  "first_person_eye": true,
+  "blend": {
+    "in": 0,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "pick_mattock",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [1.53, 8.06, -3.67],
+        "rot": [-97.6, 34.1, 134.9],
+        "blend": 0
+      },
+      {
+        "at": 0.001,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [7.95, 4.67, -4.91],
+        "rot": [60.5, 18.6, -12.9],
+        "blend": 0.199
+      },
+      {
+        "at": 0.2,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [4.55, 3.72, -3.34],
+        "rot": [105.2, 24.1, -99.3],
+        "blend": 0.2
+      },
+      {
+        "at": 0.4,
+        "frame": "anchor:strike",
+        "point": "tip",
+        "pos": [0, 0, 0],
+        "rot": [89.2, -20.4, -20.6],
+        "blend": 0.2
+      },
+      {
+        "at": 0.6,
+        "frame": "anchor:strike",
+        "point": "tip",
+        "pos": [0, -0.5, 0.5],
+        "rot": [93.4, 10.4, -9.3],
+        "blend": 0.15
+      },
+      {
+        "at": 0.75,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [5.42, 3.75, -4.33],
+        "rot": [62.9, 5.1, 12.2],
+        "blend": 0.15
+      },
+      {
+        "at": 0.9,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [1.53, 8.06, -3.67],
+        "rot": [-97.6, 34.1, 134.9],
+        "blend": 0.2
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_mid",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.4,
+        "target": "prop:grip_close",
+        "blend": 0.2,
+        "roll": 0
+      },
+      {
+        "at": 0.9,
+        "target": "prop:grip_mid",
+        "blend": 0.2,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

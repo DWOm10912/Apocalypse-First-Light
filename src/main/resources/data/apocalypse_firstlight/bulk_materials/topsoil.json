@@ -1,0 +1,13 @@
+{
+  "density_kg_m3": 1300,
+  "repose_deg": 35,
+  "excavation_deg": 63,
+  "block": "minecraft:dirt",
+  "grip": 0.6,
+  "sources": [
+    "minecraft:grass_block",
+    "minecraft:dirt",
+    "minecraft:coarse_dirt",
+    "minecraft:podzol"
+  ]
+}

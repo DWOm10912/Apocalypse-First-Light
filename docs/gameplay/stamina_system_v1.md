@@ -46,6 +46,8 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | 换弹 | 1；HR55 2 | 是 | 服务端接受的换弹 |
 | 拉起动绳 | 6（`costs.recoil_pull`） | 是 | 便携式柴油发电机的拉绳 QTE，服务端接受的每一下（2026-10-09，[portable_diesel_generator_v1.md](../machines/portable_diesel_generator_v1.md)） |
 | 砍树 | 4（`costs.chop`） | 是 | Mesh 树木：斧头砍立着的树，服务端接受的每一下，冷却内被忽略的不算（2026-10-12，[mesh_trees_p4_formal.md](../rendering/mesh_trees_p4_formal.md) V1 节） |
+| 铲子 | 挖 5（`costs.shovelDig`）、倒 2（`costs.shovelPour`）、刮平 4（`costs.shovelScrape`） | 是 | 圆头铲：服务端提交的每一铲，真正动了土才扣；耐力用光时不能开始（2026-10-21，土方 A2 分支，[earthwork_a2.md](../worldgen/earthwork_a2.md) 第 5 节） |
+| 鹤嘴锄 | 凿 6（`costs.pickStrike`） | 是 | 鹤嘴锄落在巨石上的每一下扣一次，没凿中不扣；耐力用光时不能开始（2026-10-21，岩石 R1a，土方分支，[rock_r1_stones_boulders_design.md](rock_r1_stones_boulders_design.md) 第 3.4、11.2 节） |
 | 摇手摇柄 | 0.4（`costs.crank`） | 是 | 手摇应急收音机：按住右键时每 4 tick 转四分之一圈，服务端接受的每一下；连续摇每秒 2 点，和挖掘一样（2026-10-14，[emergency_radio_v1.md](../models/emergency_radio_v1.md)） |
 
 骑乘时不算移动消耗（坐骑自己出力），办公椅例外：坐着滑行是用脚蹬，算低强度活动（上表），坐着不动不扣、照常恢复，也不产生运动热。

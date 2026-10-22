@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.terrainsmooth;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
@@ -152,7 +153,10 @@ public final class TerrainSmooth {
         // a bridge's invisible collision (road_structure, under the client's mesh) covers the ground like a plant: the ground
         // under it is its column's surface and smooths with its neighbours, so where a skewed wall leaves part of a cell
         // uncovered that ground meets the ground in front without a block step (docs/worldgen/federal_highways_c3.md 10.11)
-        if (b instanceof BushBlock || b instanceof SnowLayerBlock || b instanceof RoadStructureBlock) return COVER;
+        // a boulder's cells (Rock R1a) too: the rock sits in the ground, which keeps smoothing under and around it; and loose
+        // stones (R1b), which lie on it as a plant stands
+        if (b instanceof BushBlock || b instanceof SnowLayerBlock || b instanceof RoadStructureBlock
+                || com.antaurora.apofirstlight.boulder.BoulderBlocks.isBoulder(s) || com.antaurora.apofirstlight.boulder.LooseStones.is(s)) return COVER;
         if (ground(b)) return NATURAL;
         if (s.is(BlockTags.LEAVES)) return LEAF;
         if (s.is(BlockTags.LOGS) || b instanceof VineBlock || b instanceof HugeMushroomBlock || b == Blocks.COCOA || b == Blocks.BEE_NEST) return TREE;
@@ -226,22 +230,34 @@ public final class TerrainSmooth {
             return last = level.getChunkSource().getChunkNow(cx, cz);
         }
 
+        /** an edited column's first top (Earthwork: read as it was, so the slopes around it stay), else MIN_VALUE */
+        private int edited(LevelChunk c, int x, int z) {
+            return Earthwork.none(level) ? Integer.MIN_VALUE : Earthwork.editedTop(Earthwork.get(level, c), x, z);
+        }
+
         @Override
         public int cell(int x, int y, int z) {
             LevelChunk c = chunk(x >> 4, z >> 4);
-            return c == null ? UNKNOWN : TerrainSmooth.cell(c.getBlockState(pos.set(x, y, z)));
+            if (c == null) return UNKNOWN;
+            int t = edited(c, x, z);
+            if (t != Integer.MIN_VALUE) return y <= t ? NATURAL : AIR;
+            return TerrainSmooth.cell(c.getBlockState(pos.set(x, y, z)));
         }
 
         @Override
         public float turf(int x, int y, int z, int k) {
-            BlockState s = chunk(x >> 4, z >> 4) == null ? null : chunk(x >> 4, z >> 4).getBlockState(pos.set(x, y, z));
-            return s != null && s.getBlock() instanceof GradedTurfBlock ? y + GradedTurfBlock.corners(s)[k] : Float.NaN;
+            LevelChunk c = chunk(x >> 4, z >> 4);
+            if (c == null || edited(c, x, z) != Integer.MIN_VALUE) return Float.NaN;
+            BlockState s = c.getBlockState(pos.set(x, y, z));
+            return s.getBlock() instanceof GradedTurfBlock ? y + GradedTurfBlock.corners(s)[k] : Float.NaN;
         }
 
         @Override
         public int surface(int x, int z) {
             LevelChunk c = chunk(x >> 4, z >> 4);
             if (c == null) return NO_SURFACE;
+            int t = edited(c, x, z);
+            if (t != Integer.MIN_VALUE) return t;
             SmoothChunkData d = owner ? data(level, c) : peek(c, side(level));
             return d == null ? NO_SURFACE : d.surface(x, z);
         }
@@ -261,6 +277,8 @@ public final class TerrainSmooth {
         boolean owner = owner(level);
         SmoothChunkData d = owner ? data(level, chunk) : peek(chunk, side);
         if (d == null || d.surface(x, z) != y) return -1;   // not its column's natural surface: nearly every query ends here
+        // an edited column is the earthwork's (its skin), never sloped here
+        if (!Earthwork.none(level) && Earthwork.editedTop(Earthwork.get(level, chunk), x, z) != Integer.MIN_VALUE) return -1;
         side.queries.increment();
         int key = SmoothChunkData.key(x, y, z);
         if (owner) {
@@ -300,6 +318,41 @@ public final class TerrainSmooth {
         }
     }
 
+    /** Free corners of column (x, z) whose natural surface block is at y (SmoothRules#freeCorners; Earthwork, main thread). */
+    public static boolean freeCorners(Level level, int x, int y, int z) {
+        return notFree(level, x, y, z) == null;
+    }
+
+    /** Why the corners are not free (SmoothRules#notFree, development output), null when they are. */
+    public static String notFree(Level level, int x, int y, int z) {
+        LevelCells c = CELLS.get();
+        c.level = level;
+        c.owner = owner(level);
+        try {
+            return SmoothRules.notFree(c, MODE, x, y, z);
+        } finally {
+            c.reset();
+        }
+    }
+
+    /** Drop a chunk's cached slopes (Earthwork: a column's edited state changed). */
+    public static void forget(Level level, int cx, int cz) {
+        clearGeometry(level, side(level), cx, cz);
+    }
+
+    /** The level of a shape query (a level, or the chunk the block is in), null for render, pathfinding and worldgen regions. */
+    private static Level levelOf(BlockGetter getter) {
+        if (getter instanceof LevelChunk c) return c.getLevel();
+        return getter instanceof Level l ? l : null;
+    }
+
+    /** An edited column's skin cell shape (Earthwork#shape) when shapes follow the slopes there, else null. */
+    private static VoxelShape earth(Block block, BlockGetter getter, BlockPos pos, boolean collision) {
+        Level level = levelOf(getter);
+        if (level == null || !side(level).collides() || !applies(level)) return null;
+        return Earthwork.shape(level, pos, block, collision);
+    }
+
     /** Geometry for a shape query on a level, or on the chunk the block is in (the suffocation test passes that); -1 = cube. */
     static long sloped(BlockGetter getter, BlockPos pos) {
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
@@ -321,6 +374,8 @@ public final class TerrainSmooth {
     /** Hook (BlockStateBase#getCollisionShape, collision true / #getShape): the slope boxes, or null for the vanilla shape. */
     public static VoxelShape shape(Block block, BlockGetter getter, BlockPos pos, boolean collision) {
         if (!anyCollides || !ground(block)) return null;
+        VoxelShape e = earth(block, getter, pos, collision);
+        if (e != null) return e;
         long g = sloped(getter, pos);
         return g < 0 ? null : collision ? collision(block, g) : SmoothShapes.shape(g, false);
     }
@@ -333,9 +388,10 @@ public final class TerrainSmooth {
      */
     public static double standingTop(Block block, BlockGetter getter, BlockPos pos, double fx, double fz) {
         if (!anyCollides || !ground(block)) return Double.NaN;
-        long g = sloped(getter, pos);
+        VoxelShape e = earth(block, getter, pos, true);
+        long g = e != null ? 0 : sloped(getter, pos);
         if (g < 0) return Double.NaN;
-        double top = collision(block, g).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
+        double top = (e != null ? e : collision(block, g)).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
         return Double.isInfinite(top) ? Double.NaN : top;
     }
 
@@ -345,7 +401,7 @@ public final class TerrainSmooth {
      * buried ground included, keeps the vanilla answer.
      */
     public static boolean notSuffocating(Block block, BlockGetter getter, BlockPos pos) {
-        return anyCollides && ground(block) && sloped(getter, pos) >= 0;
+        return anyCollides && ground(block) && (sloped(getter, pos) >= 0 || earth(block, getter, pos, true) != null);
     }
 
     /**
@@ -370,6 +426,11 @@ public final class TerrainSmooth {
                 for (int y = feet - 2; y <= feet + 1; y++) {   // tops reach up to 2 above their floor
                     Block block = chunk.getBlockState(pos.set(x, y, z)).getBlock();
                     if (!ground(block)) continue;
+                    VoxelShape e = Earthwork.shape(level, pos, block, true);
+                    if (e != null) {
+                        tops.add(e.move(x, y, z));
+                        continue;
+                    }
                     long g = geometry(level, chunk, x, y, z);
                     if (g >= 0) tops.add(collision(block, g).move(x, y, z));
                 }
@@ -384,6 +445,7 @@ public final class TerrainSmooth {
      * without calling it): keep the column's natural surface current and drop the cached slopes that read the column.
      */
     public static void changed(Level level, BlockPos pos) {
+        Earthwork.blockChanged(level, pos);
         Side side = side(level);
         if (!side.enabled() || !applies(level)) return;
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();

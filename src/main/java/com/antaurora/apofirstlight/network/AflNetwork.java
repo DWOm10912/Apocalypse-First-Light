@@ -106,6 +106,13 @@ public final class AflNetwork {
                 CrowbarSmashPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, CrowbarSmashPacket.Cancel.class,CrowbarSmashPacket.Cancel::encode,CrowbarSmashPacket.Cancel::decode,
                 CrowbarSmashPacket.Cancel::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        // Earthwork A2 (docs/worldgen/earthwork_a2.md 5): the shovel's strokes
+        channel.registerMessage(nextId++, ShovelPacket.class, ShovelPacket::encode, ShovelPacket::decode,
+                ShovelPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, ShovelPacket.Start.class, ShovelPacket.Start::encode, ShovelPacket.Start::decode,
+                ShovelPacket.Start::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, ShovelPacket.Cancel.class, ShovelPacket.Cancel::encode, ShovelPacket.Cancel::decode,
+                ShovelPacket.Cancel::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++,FieldAttachmentPacket.class,FieldAttachmentPacket::encode,FieldAttachmentPacket::decode,
                 FieldAttachmentPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++,FieldAttachmentCancel.class,FieldAttachmentCancel::encode,FieldAttachmentCancel::decode,
@@ -132,6 +139,17 @@ public final class AflNetwork {
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        // Earthwork A1 (docs/worldgen/earthwork_a1.md 5): one chunk's height field
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.earthwork.EarthChunkPacket.class,
+                com.antaurora.apofirstlight.earthwork.EarthChunkPacket::encode, com.antaurora.apofirstlight.earthwork.EarthChunkPacket::decode,
+                com.antaurora.apofirstlight.earthwork.EarthChunkPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        // Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 11.2): boulder roots and the pick mattock's strikes (protocol 66)
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket.class,
+                com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket::encode, com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket::decode,
+                com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        nextId = com.antaurora.apofirstlight.boulder.PickPacket.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.wiring.WiringPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.survivor.SurvivorPackets.register(channel, nextId);
         // C3.2 road network: the built routes, for the client's pavement mesh
@@ -237,6 +255,21 @@ public final class AflNetwork {
 
     /** Terrain Smooth V1: the server's state (collision must agree on both sides). */
     public static void sendTerrainSmooth(ServerPlayer player, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Rock R1a: a boulder root change to every player tracking its chunk. */
+    public static void sendTrackingChunk(net.minecraft.world.level.chunk.LevelChunk chunk, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
+    }
+
+    /** Earthwork A1: a chunk's height field to every player tracking the chunk. */
+    public static void sendEarth(net.minecraft.world.level.chunk.LevelChunk chunk, com.antaurora.apofirstlight.earthwork.EarthChunkPacket packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
+    }
+
+    /** Earthwork A1: a chunk's height field to one player (it starts tracking the chunk). */
+    public static void sendEarth(ServerPlayer player, com.antaurora.apofirstlight.earthwork.EarthChunkPacket packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
@@ -346,6 +379,19 @@ public final class AflNetwork {
     }
     public static void cancelCrowbarSmash(java.util.UUID action) {
         if(channel!=null)channel.sendToServer(new CrowbarSmashPacket.Cancel(action));
+    }
+
+    /** Earthwork A2: a shovel stroke's phase to the player and everyone tracking them. */
+    public static void shovel(ServerPlayer player, java.util.UUID action, int mode, int phase, net.minecraft.world.phys.Vec3 target) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new ShovelPacket(player.getUUID(), action, mode, phase, target));
+    }
+
+    public static void startShovel(int mode) {
+        if (channel != null) channel.sendToServer(new ShovelPacket.Start(mode));
+    }
+
+    public static void cancelShovel(java.util.UUID action) {
+        if (channel != null) channel.sendToServer(new ShovelPacket.Cancel(action));
     }
 
     public static void requestMaintenance(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){

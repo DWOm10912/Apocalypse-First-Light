@@ -178,6 +178,48 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
   - `compileJava --offline` 通过；
   - 离线预览见设计文档第 5 节，没有实机验证。
 
+## 2026-10-21 新增：圆头铲 `round_point_shovel`（土方 A2 分支）
+
+玩法、动作、材料见 [土方 A2：铲子](../worldgen/earthwork_a2.md)。这里只记生成和渲染。
+
+- **生成**：`tools/build-round-point-shovel-v1.mjs`（走 `build-material-meshes-v1.mjs` 的 `bake`），真实尺寸，1 px = 62.5 mm：全长 1.52 m（24.042 px），铲头 0.34 × 0.42 m（大号圆头铲：用户 2026-10-21 嫌原来 0.22 × 0.30 m 的像园艺铲），和把的夹角 25°，40 mm 白蜡木把。
+  - 部件：`blade`（带凹弧的冲压钢铲头）、`step_l` / `step_r`（踩脚折边）、`frog`（背面加强脊）、`socket`、`rivet`、`handle`，加上 4 档土堆 `load_1` .. `load_4`。
+  - 1813 个三角面，共面 0，每像素 18 个纹素，`verticalOffset` -0.251321（`ShovelItemRenderer.VERTICAL_OFFSET` 同步）；LabPBR 贴图集 `round_point_shovel_mesh` + `_s` + `_n`。
+  - 可编辑源 `src/main/blockbench/round_point_shovel.bbmodel`。
+- **手持**：按"手持适配规则"从握点 `grip` 算 `display`：第三人称右手比例 1.0，第一人称 0.85、斜转 20°（原来 0.9 / 0.55）。脚本离线打印铲尖和把顶相对拳头握点的位置。
+- **图标**：同一个模型渲染（不带土堆），GUI 视角斜 45°。
+- **渲染**：`client/ShovelItemRenderer` 画网格，再按装的量画一档土堆，按材料上色。
+- **检查**：`node tools/build-round-point-shovel-v1.mjs --check` 通过；`compileJava` 通过；用户 2026-10-21 实机 PASS（随 A2）。
+
+## 2026-10-21 新增：鹤嘴锄 `pick_mattock`、石块 `field_stone`（Rock R1a，土方分支）
+
+玩法、动作、凿击见 [Rock R1 设计稿](../gameplay/rock_r1_stones_boulders_design.md) 第 4 节和 11.2 节。这里只记生成和渲染。
+
+- **鹤嘴锄生成**：`tools/build-pick-mattock-v1.mjs`（走 `bake`），真实尺寸，1 px = 62.5 mm：5 磅锻造锄头，镐尖到锄刃 0.46 m，刃宽 76 mm，36 英寸（0.91 m）山核桃木把，顶端在锄眼处加粗。两头都略向下弯。
+  - 1128 个三角面，共面 0，每像素 40 个纹素，`verticalOffset` 0.0442（`AflStaticMeshItemClient` 同步）。
+  - 可编辑源 `src/main/blockbench/pick_mattock.bbmodel`。
+- **鹤嘴锄手持**：按"手持适配规则"从握点 `grip` 算 `display`。第三人称和第一人称的握点都落在扳手认可的握点上（第一人称 [1.13, -0.46, 2.46]）。脚本离线打印镐尖、锄刃、把尾相对握点的位置。
+- **石块生成**：`tools/boulders/build-field-stone.mjs`（走 `bake`，用新加的 `textures` 参数直接给贴图集）。形状和巨石一样由 `boulder-shapes.mjs` 的 `rock()` 生成，更圆，3 个磨圆的断面，约 16.9 × 11.3 × 16.3 cm（4 kg）。
+  - 贴图：从巨石的花岗岩精灵图（`textures/block/boulder/granite*.png`，CC0 照片，每米 128 纹素）按三个轴向盒投影裁进 64 贴图集，`_s` 和 `_n` 同样裁。
+  - 1280 个三角面，每像素 8 个纹素，`verticalOffset` 0.443338。
+  - 可编辑源 `src/main/blockbench/field_stone.bbmodel`。R1a 只有一种形状、单手拿。
+- **石块手持**：攥在拳头里，不是放在拳头上。第三人称转 [20, 35, -10]、比例 2.2，靠手心的一面压进拳头 1 px；第一人称转 [-8, 40, 6]、比例 1.7，下沿落在扳手的握点上。脚本离线打印手里的包围盒。
+- **图标**：两件都从自己的模型渲染。
+- **检查**：两个脚本 `--check` 通过；`compileJava` 通过；用户 2026-10-21 实机 PASS（随 R1a）。
+
+## 2026-10-21 新增：石子 `pebble`、燧石 `flint`（Rock R1b，土方分支）
+
+玩法见 [Rock R1 设计稿](../gameplay/rock_r1_stones_boulders_design.md) 2.1、2.4 和 11.3 节。
+
+- **生成**：`tools/boulders/build-field-stone.mjs` 改成一次做三件（石块、石子、燧石），石块的输出没变。
+  - 石子和燧石用散石生成器 `tools/boulders/build-loose-stones.mjs` 里同名石头的参数，网格更细一级。
+  - 石子：田野石子第 1 种，约 5.7 × 3.7 × 5.3 cm，320 个三角面，`verticalOffset` 0.481284；
+  - 燧石：敲开一面的结核，约 5.2 × 2.8 × 5.0 cm，592 个三角面，`verticalOffset` 0.485968。
+- **贴图**：同石块的盒投影。贴图集第 4 块原来空着，现在放断面：燧石的断面用 `flint` 贴图，其余用 `flint_cortex`（白垩皮）；石子全是 `granite`。
+- **手持**：同石块的做法，攥在拳头里。第三人称比例 2.4，石子压进拳头 0.3 px、燧石 0.4 px；第一人称比例 2.0，下沿落在扳手的握点上。比真实尺寸放大一点，小石头才能从手指间露出来。
+- **图标**：从模型渲染，64 px。
+- **检查**：`--check` 通过，`compileJava` 通过；用户 2026-10-22 实机 PASS（随 R1b）。
+
 ## 2026-10-20 新增：翻盖打火机 `flip_lighter`
 
 玩法、动作、镜头见 [翻盖打火机 V1](../gameplay/flip_lighter_v1.md)。这里只记生成和渲染。

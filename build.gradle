@@ -108,7 +108,19 @@ minecraft {
             property 'mixin.env.refMapRemappingFile', "${buildDir}/createSrgToMcp/output.srg"
         }
 
+        // A second player for multiplayer checks (Earthwork A3): own folder and name, joins the dedicated server below.
+        client2 {
+            parent runs.client
+            workingDirectory project.file('run-client2')
+            property 'forge.enabledGameTestNamespaces', mod_id
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${buildDir}/createSrgToMcp/output.srg"
+            args '--username', 'Dev2'
+        }
+
+        // Dedicated server in its own folder, so it and the clients never share a log or a world.
         server {
+            workingDirectory project.file('run-server')
             property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
         }
@@ -395,6 +407,13 @@ tasks.register('skeletonCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.skeleton.PlayerSkeletonCheck'
+}
+
+// Earthwork A1 (docs/worldgen/earthwork_a1.md 7): the height field's grid math, skin partition and volume conservation.
+tasks.register('earthworkCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.earthwork.EarthworkCheck'
 }
 
 // Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 7): fixed scenes, a body falls and must end still, out of blocks, in limits.

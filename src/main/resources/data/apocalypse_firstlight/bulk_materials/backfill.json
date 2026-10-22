@@ -1,0 +1,8 @@
+{
+  "density_kg_m3": 1500,
+  "repose_deg": 36,
+  "block": "minecraft:dirt",
+  "grip": 0.6,
+  "sources": [],
+  "shade": 0.82
+}

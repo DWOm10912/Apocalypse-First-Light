@@ -74,6 +74,7 @@ public final class WorldInteractionHint {
         else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
+            if(target==null) target=looseStones(mc,hit);
             if(target==null) target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=freezerLid(mc,hit);
@@ -117,6 +118,10 @@ public final class WorldInteractionHint {
             target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
         // a magazine in the hand (weapon/NativeMagazineLoading): a click starts loading it from the loose rounds carried, or stops
         if(target==null&&!mc.player.isSpectator()) target=heldMagazine(mc);
+        // the round point shovel at loose ground in its reach (Earthwork A2, client/ShovelClient): dig, pour, or scrape (sneak)
+        if(target==null) {var shovel=ShovelClient.hint(mc);if(shovel!=null) target=new Target(shovel,null);}
+        // the pick mattock at a boulder in its reach (Rock R1a, client/PickClient): strike; any other hand on a boulder: it needs a pick
+        if(target==null) {var pick=PickClient.hint(mc);if(pick!=null) target=new Target(pick,null);}
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;
@@ -176,8 +181,9 @@ public final class WorldInteractionHint {
         if(key.contains(".ground_item.")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
-        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")||key.endsWith(".pickup_t15.no_key")) return java.util.List.of();
+        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")||key.endsWith(".pickup_t15.no_key")||key.endsWith(".pick.needed")) return java.util.List.of();
         if(key.endsWith(".tunnel_fixture.dismantle")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyAttack));
+        if(key.endsWith(".shovel.scrape")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }
@@ -583,6 +589,12 @@ public final class WorldInteractionHint {
     }
 
     /** Emergency Radio V1: the slide switch (on / off), the crank (its end), as EmergencyRadio.Radio#use. */
+    /** Rock R1b loose stones (boulder/LooseStones): any hand picks one up, but a shovel that can dig there digs (ShovelClient). */
+    private static Target looseStones(Minecraft mc,BlockHitResult hit) {
+        if(!com.antaurora.apofirstlight.boulder.LooseStones.is(mc.level.getBlockState(hit.getBlockPos()))||ShovelClient.hint(mc)!=null) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.loose_stones.pick"),null);
+    }
+
     private static Target emergencyRadio(Minecraft mc,BlockHitResult hit) {
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio)) return null;
