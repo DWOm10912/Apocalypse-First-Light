@@ -8,8 +8,8 @@
 //   obj      forge:obj models: the OBJ file and the texture its .mtl names
 //   extrude  flat item sprites with no 3D model: the sprite extruded one pixel deep, as the game draws it in the hand
 // The view angle is the game's own inventory angle (display.gui rotation) when the model sets one, else a default.
-// icons.json can override the source, the view angle (rot, Minecraft item display rotation in degrees) and
-// which groups/elements to hide.
+// icons.json can override the source, the view angle (rot, Minecraft item display rotation in degrees),
+// which groups/elements to hide, and mirror the finished picture left to right (mirror: true).
 //
 // Usage (from wiki/):
 //   node scripts/icons.mjs jobs      write design/wiki/icons/jobs.json for the ids whose render is missing or stale
@@ -243,12 +243,15 @@ async function main() {
   }
   if (mode === 'build') {
     const sharp = (await import('sharp')).default
+    const overrides = readJson(path.join(WIKI, 'icons.json'), {})
     fs.mkdirSync(OUT, { recursive: true })
     let n = 0
     for (const id of ids) {
       const raw = path.join(RAW, id + '.png')
       if (!fs.existsSync(raw)) continue
-      const trimmed = await sharp(raw).trim({ threshold: 1 }).png().toBuffer({ resolveWithObject: true })
+      // mirror: the render left-right flipped (a mesh whose game rendering mirrors x, so printed text reads backwards
+      // in Blockbench, e.g. the Field Survival Guide's cover)
+      const trimmed = await sharp(raw).flop(!!overrides[id]?.mirror).trim({ threshold: 1 }).png().toBuffer({ resolveWithObject: true })
       const inner = Math.round(ICON_SIZE * 0.92)
       const model = await sharp(trimmed.data).resize(inner, inner, { fit: 'inside', kernel: 'lanczos3' }).png().toBuffer({ resolveWithObject: true })
       await sharp({ create: { width: ICON_SIZE, height: ICON_SIZE, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
@@ -265,7 +268,7 @@ async function main() {
     for (const id of shots) {
       const raw = path.join(RAW, id + '.png')
       if (!fs.existsSync(raw)) continue
-      const trimmed = await sharp(raw).trim({ threshold: 1 }).png().toBuffer({ resolveWithObject: true })
+      const trimmed = await sharp(raw).flop(!!overrides[id]?.mirror).trim({ threshold: 1 }).png().toBuffer({ resolveWithObject: true })
       const model = await sharp(trimmed.data).resize(Math.round(W * 0.84), Math.round(H * 0.8), { fit: 'inside', withoutEnlargement: true, kernel: 'lanczos3' }).png().toBuffer({ resolveWithObject: true })
       await sharp({ create: { width: W, height: H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
         .composite([{ input: model.data, left: Math.round((W - model.info.width) / 2), top: Math.round((H - model.info.height) / 2) }])

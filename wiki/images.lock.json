@@ -12,14 +12,14 @@
   },
   "gun_br51_01": {
     "category": "guns",
-    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_br51_01.1200w.920c6f46902e5d.webp",
-    "key": "afl/wiki/guns/gun_br51_01.1200w.920c6f46902e5d.webp",
-    "sha256": "920c6f46902e5db02f22aa58d270633bca952755cb875b39bc067a505aa1bb4a",
-    "bytes": 30862,
+    "url": "https://img.staticgrove.net/afl/wiki/guns/gun_br51_01.1200w.0cde6c96a060a5.webp",
+    "key": "afl/wiki/guns/gun_br51_01.1200w.0cde6c96a060a5.webp",
+    "sha256": "0cde6c96a060a513f86195ed7853ed523796b3e9564a5a792e5354128a3f35fd",
+    "bytes": 22742,
     "width": 1200,
     "height": 750,
-    "srcSig": "31b39604e47a833032921bba0abaaee05904467324c4d50fde6b18298c6f7225",
-    "uploaded": "2026-10-19T21:11:36.479Z"
+    "srcSig": "9532ae7d3fead1a8f57d51da21ca548c27c4e944d101c88d1084eadf57d82974",
+    "uploaded": "2026-10-22T19:50:12.853Z"
   },
   "gun_cat": {
     "category": "guns",
