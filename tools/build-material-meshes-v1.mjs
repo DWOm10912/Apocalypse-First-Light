@@ -307,8 +307,9 @@ const GUI = [30, 225, 0];
  * meshOnly: no item model and no icon (a mesh drawn only by code, e.g. a strap worn on the body).
  * textures: [Base Color, _s, _n] PNG buffers of the atlas, ready made (a photo sprite, Rock R1a's field stone); nothing is
  * painted, so uv (faceUV per part and face, S texels per px) must map the faces onto them.
+ * texelsPerPx: the auto unwrap's starting density (default 40; a printed surface such as a book cover asks for more).
  */
-export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}, atlas: ATLAS = ATLAS_DEFAULT, meshOnly = false, textures = null}) {
+export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}, atlas: ATLAS = ATLAS_DEFAULT, meshOnly = false, textures = null, texelsPerPx = 40}) {
   const gui = iconOpts.view ?? GUI;
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
@@ -316,7 +317,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
   for (const p of PARTS) transform(p, move(shift));
   const size = sub(hi, lo);
 
-  const UV = uv ?? unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: 40, stepS: 0.25});
+  const UV = uv ?? unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: texelsPerPx, stepS: 0.25});
   for (const p of PARTS) assert(p.f.every(f => UV.faceUV.get(p)?.has(f)), 'unmapped face in ' + id + '/' + p.name);
   const main = MATS[bg ?? PARTS[0].f[0].mat];
   const painted = textures ? {PNG: textures} : paint({PARTS, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas: ATLAS, pad: PAD, MATS, ZONED: new Set(), groupInfo: new Map(),

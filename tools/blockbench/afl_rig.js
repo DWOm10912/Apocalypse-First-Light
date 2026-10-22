@@ -39,6 +39,8 @@
     const clamp01 = v => clamp(v, 0, 1);
     /** GunStance.smooth: smoothstep of t clamped to 0..1. */
     const smooth = t => { t = clamp01(t); return t * t * (3 - 2 * t); };
+    /** ActionPose.keyEase: a prop key's blend (its ease: smooth, in, out). The editor neither shows nor writes ease. */
+    const keyEase = (ease, t) => { t = clamp01(t); return ease === 'in' ? t * t : ease === 'out' ? 1 - (1 - t) * (1 - t) : smooth(t); };
 
     const v3 = {
         add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
@@ -919,7 +921,7 @@
         const cur = keys[k], prev = k > 0 ? keys[k - 1] : null;
         if (m.propHidden) m.propHidden[index] = !!cur.hidden;
         if (!to || !prev) return to;
-        const p = cur.blend <= 0 ? 1 : smooth((m.seconds - cur.at) / cur.blend);
+        const p = cur.blend <= 0 ? 1 : keyEase(cur.ease, (m.seconds - cur.at) / cur.blend);
         if (p >= 1) return to;
         const from = propPlace(pose, def, prev, m);
         if (!from) return to;
@@ -1146,7 +1148,7 @@
     /** One PlayerAction prop key, defaults filled. */
     const propKeyOf = k => ({
         at: k.at || 0, frame: k.frame || 'chest', point: k.point, pos: k.pos || [0, 0, 0], rot: k.rot || [0, 0, 0],
-        blend: k.blend !== undefined ? k.blend : 0.3, hidden: !!k.hidden,
+        blend: k.blend !== undefined ? k.blend : 0.3, hidden: !!k.hidden, ease: k.ease || 'smooth',
     });
 
     /**

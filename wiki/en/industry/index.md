@@ -12,6 +12,27 @@ AFL measures power in FE (Forge Energy). Generators turn diesel, coal or lava in
 | [Building Power](./power) | Distribution panel, hidden wiring, outlets and cords, lights |
 | [Materials and Processing](./materials) | Ores, processing chains, machine power use, timber |
 
+## Workbench
+
+<StatusTag s="test" /> <ItemIcon id="wooden_workbench" /> A wooden workbench 2 blocks long, 1 deep and 2 high: a vise on the left, two drawers under the top on the right, a tool board at the back and a shelf on top
+
+- Right click a drawer front and the drawer slides out; right click it again to push it in. With a drawer out, right click inside it to open it. Each drawer holds <V j="WorkbenchBlockEntity.DRAWER_SLOTS" /> slots of its own
+- The tool board has <V j="Workbench.PEGS" /> pairs of pegs, one tool to a pair: right click a peg pair with a tool to hang it, with an empty hand to take it down, as on the wooden tool rack. The felling axe is too long to hang there
+- <StatusTag s="test" /> The crowbar is too long to hang free on the bench: its hook rides one peg and its chisel end stands on the top, leaning
+- Hung tools are drawn into the chunk with the bench, not redrawn every frame
+- Breaking the bench drops what is in the drawers and on the pegs; an axe breaks it quickest
+- The drawers use the wooden cabinet sounds for now
+- For now it comes only from the creative inventory
+- <StatusTag s="test" /> Crafting screen: right click the top of the bench. Two tabs at the top, Inventory and Crafting; the inventory key switches between them. Learned recipes are listed by category on the left, the item and its description in the middle, materials, tool, quantity and the craft button on the right (click once and wait for the ring to fill; click again to stop). F adds a recipe to the to-do list, which shows the missing materials at the top right of the screen
+- <StatusTag s="test" /> Recipes live in data files, one folder per category, each with its materials, time and how it is learned. The crafting page lists only the recipes your current survivor knows; learned recipes stay with that survivor, and a new survivor learns them again
+- <StatusTag s="test" /> There is one test recipe for now: 1 white oak log, with a <ItemIcon id="hand_saw" /> hand saw on you, makes <ItemIcon id="white_oak_beam" /> 1 white oak beam, under Building. To test the book, you now learn it by reading the bow drill section of the <ItemIcon id="field_survival_guide" /> [Field Survival Guide](../arms/equipment#field-survival-guide) (in survival)
+- <StatusTag s="test" /> The beam is made on the top of the bench: stand at the front of the workbench and click Craft once; the screen closes, you step up to the bench and rip the log on its top along the grain with the hand saw, the kerf creeping in and sawdust falling. Above the hotbar: the item, which one of how many, and the progress. Each one goes straight onto you, and a larger quantity is sawn one after another. Moving, jumping, a left click or opening any screen stops it. Too far away or behind the bench, you are told to stand at its front
+- <StatusTag s="test" /> The saw sounds on each push and pull, in step with your hands, and fades out at <V j="WorkbenchCrafting.SAW_RADIUS" /> blocks. The infected within that range hear it too
+- Materials are taken only from what you carry for now, not from the drawers; too far from the bench, no tool or too few materials and it will not craft, with the reason at the bottom of the screen
+- Put the beams on a house with the [building hammer](../arms/equipment#building-hammer)
+- The other categories are still greyed out; recipes not yet learned are never shown
+- <StatusTag s="planned" /> Recipes: learned from life experience, trial and error, books and blueprints; books will turn up in towns. Crafting will take materials from the bench's drawers, from what you carry and from nearby chests
+
 ## Machines
 
 | Machine | Storage | Power while working |

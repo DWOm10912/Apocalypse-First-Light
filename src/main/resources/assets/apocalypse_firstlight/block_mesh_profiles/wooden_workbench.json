@@ -1,0 +1,75 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/wooden_workbench.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/furniture/wooden_workbench.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.024375,
+    -0.015625,
+    -0.384625,
+    1.975625,
+    1.985625,
+    0.975625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "drawer_left": {
+      "pivot": [
+        0.2935,
+        0.7,
+        -0.43
+      ]
+    },
+    "drawer_right": {
+      "pivot": [
+        -0.135,
+        0.7,
+        -0.43
+      ]
+    }
+  },
+  "animations": {
+    "drawer_left": {
+      "duration_ticks": 8,
+      "easing": "ease_in_out",
+      "transforms": {
+        "drawer_left": {
+          "translation": [
+            0,
+            0,
+            -0.4
+          ]
+        }
+      }
+    },
+    "drawer_right": {
+      "duration_ticks": 8,
+      "easing": "ease_in_out",
+      "transforms": {
+        "drawer_right": {
+          "translation": [
+            0,
+            0,
+            -0.4
+          ]
+        }
+      }
+    }
+  }
+}

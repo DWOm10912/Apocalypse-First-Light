@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "apocalypse_firstlight:crowbar",
+    "apocalypse_firstlight:felling_axe",
     "#minecraft:swords",
     "#minecraft:axes"
   ]

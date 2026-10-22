@@ -78,7 +78,7 @@ public final class CabinBlocks {
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
             "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
             "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "emergency_radio",
-            "wooden_bed", "wooden_wardrobe", "wooden_nightstand", "wooden_tool_rack", "wooden_storage_chest", "vintage_chest_freezer"};
+            "wooden_bed", "wooden_wardrobe", "wooden_nightstand", "wooden_tool_rack", "wooden_storage_chest", "vintage_chest_freezer", "wooden_workbench"};
 
     private CabinBlocks() {}
 
@@ -147,6 +147,8 @@ public final class CabinBlocks {
             case "wooden_storage_chest" -> new WoodFurnitureV2.StorageChest(wood(MapColor.WOOD, 2.5F).noOcclusion());
             case "vintage_chest_freezer" -> new WoodFurnitureV2.VintageFreezer(metal(MapColor.SNOW, SoundType.METAL).strength(3.0F, 6.0F).noOcclusion()
                     .pushReaction(PushReaction.BLOCK));
+            // AFL Workbench V1 (Workbench): two cells across, two high; drawers and tool pegs
+            case "wooden_workbench" -> new Workbench(wood(MapColor.WOOD, 2.5F).noOcclusion().pushReaction(PushReaction.BLOCK));
             default -> throw new IllegalArgumentException(id);
         };
     }
@@ -181,6 +183,7 @@ public final class CabinBlocks {
         BoxStove.register(event);
         EmergencyRadio.register(event);
         WoodFurnitureV2.register(event);
+        Workbench.register(event);
     }
 
     /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack); the last stack. */

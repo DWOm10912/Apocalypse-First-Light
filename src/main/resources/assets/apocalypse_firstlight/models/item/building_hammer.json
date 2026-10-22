@@ -1,0 +1,125 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/building_hammer"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/building_hammer"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          15
+        ],
+        "translation": [
+          0,
+          2.516,
+          0.254
+        ],
+        "scale": [
+          1.05,
+          1.05,
+          1.05
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -75,
+          50
+        ],
+        "translation": [
+          0.427,
+          2.229,
+          -2.571
+        ],
+        "scale": [
+          1.4,
+          1.4,
+          1.4
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "translation": [
+          0,
+          -1,
+          0
+        ],
+        "scale": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          -45
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          75,
+          -50
+        ],
+        "translation": [
+          0.427,
+          2.229,
+          -2.571
+        ],
+        "scale": [
+          1.4,
+          1.4,
+          1.4
+        ]
+      },
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          90,
+          -15
+        ],
+        "translation": [
+          0,
+          2.516,
+          0.254
+        ],
+        "scale": [
+          1.05,
+          1.05,
+          1.05
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/building_hammer"
+      }
+    }
+  }
+}

@@ -88,6 +88,26 @@ public final class AflItems {
             () -> new Item(new Item.Properties().stacksTo(32)));
     public static final RegistryObject<Item> FLINT = ITEMS.register("flint",
             () -> new Item(new Item.Properties().stacksTo(16)));
+    // Felling axe (2026-10-20, docs/gameplay/felling_axe_v1.md): fells trees and is a melee weapon; Creative only, no recipe
+    public static final RegistryObject<Item> FELLING_AXE = ITEMS.register("felling_axe",
+            com.antaurora.apofirstlight.item.FellingAxeItem::new);
+    // Claw hammer (2026-10-21, docs/gameplay/afl_workbench_v1_design.md 14): the workbench's first test tool, hung on its
+    // pegs; a plain tool for now (no use, no melee); Creative only, no recipe
+    public static final RegistryObject<Item> CLAW_HAMMER = ITEMS.register("claw_hammer",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    // Building hammer (2026-10-21, docs/gameplay/building_hammer_b0.md): the building mode's own tool, a double-faced club
+    // hammer; installs and takes down the building catalog's pieces (the claw hammer stays a woodwork tool); Creative only
+    public static final RegistryObject<Item> BUILDING_HAMMER = ITEMS.register("building_hammer",
+            com.antaurora.apofirstlight.building.BuildingHammerItem::new);
+    // Hand saw (2026-10-21, docs/gameplay/afl_workbench_v1_design.md 14): a 26 inch rip saw, the workbench's tool for the
+    // test beam (ripped at the bench, its own animation); hangs on the pegs; a plain tool otherwise; Creative only, no recipe
+    public static final RegistryObject<Item> HAND_SAW = ITEMS.register("hand_saw",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    // Field Survival Guide (2026-10-22, docs/gameplay/field_survival_guide_v1_design.md): a pocket paperback; use opens it
+    // in the reader, its pages from data/apocalypse_firstlight/books/field_survival_guide.json; staying on a page that
+    // teaches a recipe learns it; Creative only, no recipe
+    public static final RegistryObject<Item> FIELD_SURVIVAL_GUIDE = ITEMS.register("field_survival_guide",
+            com.antaurora.apofirstlight.book.GuideBookItem::new);
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",

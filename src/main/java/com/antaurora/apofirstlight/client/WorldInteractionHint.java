@@ -70,8 +70,10 @@ public final class WorldInteractionHint {
         else if(seatedPrompt(mc)) target=new Target(Component.translatable("hint.apocalypse_firstlight.pickup_t15.get_out"),null);
         else if(riderDoor(mc)!=null) target=riderDoor(mc);
         else if(ground!=null) target=new Target(ground.label(),ground.anchor());
-        // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
-        else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
+        // the wiring wrench acts before every block's use (WiringWrenchItem), and the building hammer in edit mode takes the
+        // clicks (client/building/BuildingHammerClient), so no block offers its own action while either is held
+        else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get())
+                && !com.antaurora.apofirstlight.client.building.BuildingHammerClient.editing(mc.player) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
             if(target==null) target=looseStones(mc,hit);
@@ -617,6 +619,19 @@ public final class WorldInteractionHint {
             if(held.isEmpty()) return tools.item(aimed).isEmpty()?null:new Target(Component.translatable(k+"gun_rack.take"),com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.slotPoint(s,pos,aimed));
             int slot=com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.target(tools,held,aimed);
             return slot<0?null:new Target(Component.translatable(k+(slot<3?"gun_rack.hang":"gun_rack.put")),com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.slotPoint(s,pos,slot));
+        }
+        // AFL Workbench V1: the pegs as the tool rack's (the drawers in meshInteraction below)
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.Workbench bench){
+            var region=bench.meshInteraction(s,pos,mc.player);
+            int peg=region==null?-1:com.antaurora.apofirstlight.cabin.Workbench.pegOf(region.region());
+            if(peg<0) return null;
+            var m=com.antaurora.apofirstlight.cabin.Workbench.master(s,pos);
+            if(!(mc.level.getBlockEntity(m) instanceof com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity tools)) return null;
+            var f=s.getValue(com.antaurora.apofirstlight.cabin.Workbench.FACING);
+            var held=mc.player.getMainHandItem();
+            if(held.isEmpty()) return tools.tool(peg).isEmpty()?null:new Target(Component.translatable(k+"gun_rack.take"),com.antaurora.apofirstlight.cabin.Workbench.pegPoint(m,f,peg));
+            int slot=com.antaurora.apofirstlight.cabin.Workbench.target(tools,held,peg);
+            return slot<0?null:new Target(Component.translatable(k+"gun_rack.hang"),com.antaurora.apofirstlight.cabin.Workbench.pegPoint(m,f,slot));
         }
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack)
                 ||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity rack)) return null;

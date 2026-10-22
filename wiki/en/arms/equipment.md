@@ -26,8 +26,70 @@ See [Inventory and Weight](../guide/inventory)
 | <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate. Works in your hand or on a chest rig clip | <StatusTag s="creative" /> |
 | Pocket Compass | In your hand or on a chest rig clip it shows the compass at the top of the screen, see [Map](../guide/map). The card under the glass always points north | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
 | Map | Draws in where you go while carried; right click it in hand to unfold it, see [Map](../guide/map) | <StatusTag s="verified" d="2026-10-21" /> <StatusTag s="creative" /> |
-| <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures | <StatusTag s="creative" /> |
+| <ItemIcon id="crowbar" /> Crowbar | Melee weapon; also removes tunnel fixtures; hangs by its gooseneck on the pegs of a tool rack or workbench | <StatusTag s="creative" /> |
+| <ItemIcon id="felling_axe" /> Felling Axe | Fells trees; also a melee weapon | <StatusTag s="creative" /> |
+| <ItemIcon id="claw_hammer" /> Claw Hammer | Hangs on a workbench or tool rack; no other use yet | <StatusTag s="creative" /> |
+| <ItemIcon id="building_hammer" /> Building Hammer | In edit mode, installs and takes down building pieces made at the workbench | <StatusTag s="creative" /> |
+| <ItemIcon id="hand_saw" /> Hand Saw | Rips logs into white oak beams at the workbench | <StatusTag s="creative" /> |
+| <ItemIcon id="field_survival_guide" /> Field Survival Guide | Right click to read it; stay on a page that shows how to make something and you learn that workbench recipe | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> Flip Lighter | Right click to flip it open and strike it; lit, it gives light and lights stoves, campfires, candles and TNT | <StatusTag s="creative" /> |
+
+## Felling Axe
+
+<StatusTag s="test" /> An American felling axe with a curved hickory handle, a black-painted head and a ground bright edge
+
+- Left click the foot of a trunk to swing; hold the button to keep chopping, one swing after another. A chop counts when the axe bites into the wood, and the tree falls once you have chopped enough. Every chop wears the axe
+- The cut opens on the side you chop from. Move round and it follows you; the work already done is kept
+- Also a melee weapon: it hits harder than the crowbar but swings slower. A melee swing is quicker than a chop
+- Held in both hands; the whole body turns into each swing
+- Hangs on the pegs of a wooden tool rack: handle down, the head resting on two pegs
+- It cannot strip bark and cannot be repaired
+- For now it comes only from the creative inventory
+
+## Claw Hammer
+
+<StatusTag s="test" /> A black-painted steel head with a ground bright face on a hickory handle, made at its real size
+
+- For now it is the workbench's first test tool: it hangs on the pegs of a workbench or a wooden tool rack, its head resting on two pegs
+- It cannot drive anything yet and is not a melee weapon
+- For now it comes only from the creative inventory
+
+## Hand Saw
+
+<StatusTag s="test" /> A 26 inch rip saw: a straight-backed blade, a closed apple-wood handle and three brass saw nuts, made at its real size
+
+- The workbench needs it for the white oak beam: with the saw on you, click Craft on the crafting screen and you step up to the bench and rip the log on its top along the grain (see [Workbench](../industry/#workbench))
+- It hangs on the workbench's pegs (both pegs through the hand hole) and on a wooden tool rack (from one peg)
+- It is not a melee weapon and cannot fell trees
+- For now it comes only from the creative inventory
+
+## Field Survival Guide
+
+<StatusTag s="test" /> A pocket paperback, 11.5 × 18 cm, written by a man who spent twenty-six years as a backcountry ranger. Reading it does not use it up, and you can pass it on
+
+- With the book in your main hand, right click opens it: the cover first, then the contents, then the text. Opened, the cover and pages follow the game language; the book in your hand and in the world has the English cover
+- Turning pages: A / D, the left and right arrow keys, Page Up / Page Down, the mouse wheel, or a click on the left or right page. Tab goes to the contents, and a click on a contents row goes to that chapter. Esc shuts it
+- The game does not pause while you read. Taking damage, sprinting or changing what is in your main hand shuts the book
+- Stay on a section that shows how to make something for about 3 seconds and you learn that workbench recipe; "Recipe learned" shows at the top right, and the recipe lists the book as its source. Creative mode already knows every recipe, so this shows only in survival
+- For now the text is the contents and the first two pages of chapter 3, Fire (the three things to gather, the bow drill). For testing, the bow drill section teaches the white oak beam for now; later it will teach the splint, the bandage and bark cord
+- For now it comes only from the creative inventory
+
+## Building Hammer
+
+<StatusTag s="test" /> A double-faced hammer: a steel head with a face at each end, on a hickory handle. A separate tool from the claw hammer
+
+- The workbench makes building pieces; the building hammer puts them on the house
+- With it in hand, B switches edit mode on and off. Out of edit mode it is a plain tool: it hangs on the pegs of a tool rack or the workbench (the head across two pegs), and picks things up like any item. It is not a digging tool: for mining it counts as a bare hand
+- Everything below is in edit mode, where the blocks' own right-click hints and ground pickups give way
+- Right click opens the Building Pieces catalog: the pieces you carry (even without the recipe) and the pieces the workbench can make, each with how many you carry. Click one to choose it, click it again to put it away
+- With a piece chosen, a see-through copy shows at the crosshair: light green where it fits, light red where it does not, with the reason above the hotbar (too far away, the spot is taken, something is in the way, none carried ...)
+- Right click installs it and takes 1 piece from you; R turns it (beams: along your view, across, upright); Shift + right click opens the catalog again
+- Left click takes a piece down and gives 1 piece back; nothing drops on the ground
+- It only takes down building pieces: machines, dirt and stone, furniture and doors stay, and in edit mode a left click never mines a block
+- Pieces snap to the block grid; there is no free placement
+- In Creative, installing takes nothing and taking down gives nothing back
+- The only piece so far is the white oak beam
+- For now it comes only from the creative inventory
 
 ## Flip Lighter
 

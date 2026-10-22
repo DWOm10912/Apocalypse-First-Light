@@ -18,6 +18,7 @@ public final class CameraSources {
     public static final List<CameraShake.Source> SHAKES = List.of(
             PortableGeneratorPull::cameraShake,        // recoil start: the yank, the rebound, the catch's shudder
             CrowbarFirstPerson::cameraShake,           // crowbar smash: the knock of the impact
+            com.antaurora.apofirstlight.tree.FellingSwingClient::cameraShake,   // axe swing at a tree: the follow, the knock
             JerryCanFirstPerson::cameraShake,          // jerry can view model: its camera bone
             NativeCameraBoneConsumer::cameraShake,     // guns: the clips' camera bone (reload, inspect, draw, put away)
             ClientShiver::cameraShake,                 // cold: shivering bursts

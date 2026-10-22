@@ -24,18 +24,28 @@ const CELL = 256, GUT = 8, TILE = CELL - 2 * GUT;   // a material tile (240 px) 
 const r6 = v => +v.toFixed(6) || 0, r3 = v => +v.toFixed(3) || 0, r12 = v => +v.toFixed(12) || 0;
 const toPx = ([x, y, z]) => [(x - 0.5) * 16, y * 16, (z - 0.5) * 16];
 
-/** One material's colour, specular and normal maps as RGBA buffers (TILE x TILE). */
+/**
+ * One material's colour, specular and normal maps as RGBA buffers (TILE x TILE). An id may end in *r,g,b: its colour map
+ * multiplied by that (the AFL workbench's maple top aged to amber, 2026-10-21); its specular and normal maps unchanged.
+ */
 function material(assets, id) {
-  const [ns, p] = id.split(':');
+  const [base, tint] = id.split('*'), k3 = tint ? tint.split(',').map(Number) : null;
+  const [ns, p] = base.split(':');
   if (ns !== 'apocalypse_firstlight') throw new Error('furniture mesh: texture of another namespace ' + id);
   return ['', '_s', '_n'].map(k => {
     const file = path.join(assets, 'textures', p + k + '.png');
     if (!fs.existsSync(file)) throw new Error('furniture mesh: missing ' + path.relative(assets, file));
     const {w, h, bpp, px} = readPng(fs.readFileSync(file));
     if (w !== TILE || h !== TILE) throw new Error(`furniture mesh: ${id}${k} is ${w}x${h}, not ${TILE}`);
-    if (bpp === 4) return px;
-    const out = Buffer.alloc(w * h * 4);
-    for (let i = 0; i < w * h; i++) { out[i * 4] = px[i * 3]; out[i * 4 + 1] = px[i * 3 + 1]; out[i * 4 + 2] = px[i * 3 + 2]; out[i * 4 + 3] = 255; }
+    let out = px;
+    if (bpp !== 4) {
+      out = Buffer.alloc(w * h * 4);
+      for (let i = 0; i < w * h; i++) { out[i * 4] = px[i * 3]; out[i * 4 + 1] = px[i * 3 + 1]; out[i * 4 + 2] = px[i * 3 + 2]; out[i * 4 + 3] = 255; }
+    }
+    if (k3 && k === '') {
+      out = Buffer.from(out);
+      for (let i = 0; i < w * h; i++) for (let c = 0; c < 3; c++) out[i * 4 + c] = Math.min(255, Math.round(out[i * 4 + c] * k3[c]));
+    }
     return out;
   });
 }
@@ -114,7 +124,7 @@ export function furnitureMesh(root, spec) {
         const ids = pts.map(({p: q}) => { const k = key(nv++); vertices[k] = toPx(q).map(r12); return k; });
         faces['f' + key(nf++)] = {uv: Object.fromEntries(pts.map(({t}, j) => [ids[j], [r12(cx + t[0] * TILE), r12(cy + t[1] * TILE)]])), vertices: ids, texture: 0};
       }
-      const name = `${b.name}_${m.slice(m.lastIndexOf('/') + 1)}`, id = uuid('mesh:' + name);
+      const name = `${b.name}_${m.slice(m.lastIndexOf('/') + 1).replace(/\*.*/, '_tinted')}`, id = uuid('mesh:' + name);
       elements.push({name, color: 0, origin: [0, 0, 0], rotation: [0, 0, 0], shading: 'flat', export: true, visibility: true, locked: false,
         render_order: 'default', scope: 0, allow_mirror_modeling: true, vertices, faces, type: 'mesh', uuid: id});
       node.children.push(id);

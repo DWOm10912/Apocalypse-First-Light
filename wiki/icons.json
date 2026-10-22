@@ -138,5 +138,8 @@
       -159.464
     ],
     "hide": "^mag30.*$"
+  },
+  "wooden_workbench": {
+    "bbmodel": "src/main/blockbench/furniture/wooden_workbench.bbmodel"
   }
 }

@@ -218,6 +218,9 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> TREE_CHOP = simple("tree_chop");
     public static final RegistryObject<SoundEvent> TREE_CRACK = simple("tree_crack");
     public static final RegistryObject<SoundEvent> TREE_CRASH = simple("tree_crash");
+    // Sawing at the workbench (client/workbench/WorkbenchWork): a push and a pull per stroke, cut from one Firefly take
+    public static final RegistryObject<SoundEvent> HAND_SAW_PUSH = simple("hand_saw_push");
+    public static final RegistryObject<SoundEvent> HAND_SAW_PULL = simple("hand_saw_pull");
     // Flip lighter V1: placeholders on vanilla events in sounds.json until the user records them (Firefly)
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_OPEN = simple("flip_lighter_open");
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_STRIKE = simple("flip_lighter_strike");

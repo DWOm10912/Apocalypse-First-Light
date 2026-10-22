@@ -1,11 +1,13 @@
 package com.antaurora.apofirstlight.client;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
 import com.antaurora.apofirstlight.cabin.WoodFurniture;
 import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.cabin.WoodFurnitureV2;
 import com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity;
 import com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity;
+import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -16,6 +18,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -40,6 +43,7 @@ import java.util.Map;
  * ({@link WoodToolRackBlockEntity}), drawn here too in its own frame (tools/build-wood-furniture-v2.mjs, moved out onto its
  * pad on round logs): pegs (0..2) hang a tool by its handle, head up, the item sprite's diagonal plumb (its model at
  * {@link WoodFurnitureV2.ToolRack#TOOL_SCALE}); the shelf (3, 4) as the gun rack's.
+ * The felling axe hangs as itself instead: its mesh, head on the pegs (2026-10-20); so does the claw hammer (2026-10-21).
  * <p>Resting items are drawn by the chunk ({@link WoodGunRackChunking}, a recording of this drawing): a slot is drawn here
  * only until the chunk shows it, plus whatever the chunk cannot take.
  */
@@ -156,11 +160,60 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
      * right) turned plumb, head up, the handle's top resting between the pegs.
      */
     private static void tool(ItemStack s, double x, PoseStack pose, MultiBufferSource buffers, int light, int seed) {
+        if (s.is(AflItems.FELLING_AXE.get())) {
+            fellingAxe(x, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.CLAW_HAMMER.get())) {   // its mesh, the head on the pegs (AFL Workbench V1, 2026-10-21)
+            WorkbenchRenderer.clawHammer(x, WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.BUILDING_HAMMER.get())) {   // the same way (building hammer B0, 2026-10-21)
+            WorkbenchRenderer.buildingHammer(x, WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.HAND_SAW.get())) {
+            // by its hand hole from one peg (2026-10-21); its heel reaches 17 cm to -x at the axe heads' height, so it hangs
+            // 2.5 cm further out on the pegs (2.4 cm thick, the pegs' ends at z 0.86): in the middle slot it passes in front
+            // of the x 0.2 axe's bit (out to x 0.356, its last 3 cm under 0.5 cm thick)
+            WorkbenchRenderer.handSaw(x, WoodFurnitureV2.ToolRack.PEG_Y, WoodFurnitureV2.ToolRack.TOOL_Z - 0.025, true, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.CROWBAR.get())) {   // by its gooseneck from the -x peg, hanging free (2026-10-21)
+            WorkbenchRenderer.crowbar(x, WoodFurnitureV2.ToolRack.PEG_Y, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
+            return;
+        }
         pose.translate(x, WoodFurnitureV2.ToolRack.TOOL_MID_Y, WoodFurnitureV2.ToolRack.TOOL_Z);
         pose.mulPose(Axis.YP.rotationDegrees(180));   // the sprite's face to the room (north, -z)
         pose.mulPose(Axis.ZP.rotationDegrees(-45));
         float scale = (float) WoodFurnitureV2.ToolRack.TOOL_SCALE;
         pose.scale(scale, scale, scale);
         Minecraft.getInstance().getItemRenderer().renderStatic(s, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, pose, buffers, null, seed);
+    }
+
+    /** Felling axe on the rack (docs/gameplay/felling_axe_v1.md 6): its mesh, about 0.96 m overall (a full 36-inch axe). */
+    private static final double AXE_SCALE = 0.59;
+    /** In the baked mesh (blocks): the handle's middle at the eye, and the head's underside over the bit-side peg. */
+    private static final double AXE_EYE_X = 1.3656 / 16, AXE_REST_Y = 23.400 / 16;
+    private static final ResourceLocation AXE_GEO = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/felling_axe.geo.json"),
+            AXE_TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/felling_axe_mesh.png");
+
+    /**
+     * The handle between the pegs, plumb; the head rests on the pegs' tops (the bit's peg touches, the poll's is 3 mm
+     * clear), the handle's knob 11 cm below the cell, its top 1 cm under the shelf. The bit (15.6 cm out from the handle)
+     * points to the rack's middle (user 2026-10-20: on the x 0.2 pegs, bit toward -x, it went through the end bracket):
+     * the outer slots in the plane z TOOL_Z, the middle one (bit toward -x) 2 cm further out on its pegs, so its edge
+     * passes in front of the x 0.2 axe's (the two edges overlap 1.2 cm across). Fixed per slot: the chunk's recording is
+     * per slot, never per neighbour.
+     */
+    private static void fellingAxe(double x, PoseStack pose, MultiBufferSource buffers, int light) {
+        double pegTop = WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS;
+        boolean middle = Math.abs(x - 0.5) < 0.01;
+        pose.translate(x, pegTop, WoodFurnitureV2.ToolRack.TOOL_Z - (middle ? 0.02 : 0));
+        if (x < 0.5 - 0.01) pose.mulPose(Axis.YP.rotationDegrees(180));   // bit toward +x, about the handle
+        float scale = (float) AXE_SCALE;
+        pose.scale(scale, scale, scale);
+        pose.translate(-AXE_EYE_X, -AXE_REST_Y, 0);
+        AflStaticMeshItemRenderer.drawMesh(AXE_GEO, AXE_TEXTURE, pose, buffers, light, OverlayTexture.NO_OVERLAY);
     }
 }

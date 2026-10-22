@@ -84,9 +84,11 @@ public final class PlayerAction {
      * about the key's point in that frame, normally 0. The hands reach for it with {@code prop:} targets. {@code view}
      * (docs/dev/p9_stance_loops_v1.md): pos px from the eye (the camera's), turned as the view (yaw and pitch, with the first
      * person's sway and recoil), axes as the rest model's: a pistol held out before the view (ActionPose.Moment#view). {@code hidden}:
-     * from this key on the prop is not drawn (its placement still counts: hands, props riding on it).
+     * from this key on the prop is not drawn (its placement still counts: hands, props riding on it). {@code ease} (2026-10-20,
+     * the felling axe's chop): how the blend runs, {@code smooth} (default: slow, fast, slow), {@code in} (from rest, fastest
+     * at the key: a swing that lands at full speed) or {@code out} (fastest at the start, settling on the key).
      */
-    public record PropKey(float at, String frame, String point, Vector3f pos, Vector3f rot, float blend, boolean hidden) {}
+    public record PropKey(float at, String frame, String point, Vector3f pos, Vector3f rot, float blend, boolean hidden, String ease) {}
 
     /** One prop of the action: its PlayerProps id, placement timeline, and the second from which it is drawn open (NaN). */
     public record PropTrack(String id, List<PropKey> keys, float openFrom) {}
@@ -151,6 +153,12 @@ public final class PlayerAction {
      * the eye where the arms are too short, as the raised stance is.
      */
     public final boolean hipFire;
+    /**
+     * JSON {@code held_item}: {@code "hidden"} (2026-10-21, work at the workbench: tool/hand_saw_rip): whatever the player
+     * holds is not drawn while the action plays, and the first prop is drawn from its own item (PlayerProps.Prop#items),
+     * as the other props are: the tool the action works with need not be in hand. Default: the first prop is the held item.
+     */
+    public final boolean heldHidden;
     /**
      * JSON {@code view_pitch} [up, down] (deg, - = up), or null: how far up and down its {@code view} frame follows the
      * look's pitch (docs/dev/p9_stance_loops_v1.md: past it the arms cannot hold the gun on the view, it would go into the
@@ -218,6 +226,7 @@ public final class PlayerAction {
         loop = json.has("loop") ? Loop.valueOf(json.get("loop").getAsString().toUpperCase()) : Loop.NONE;
         length = json.has("length") ? json.get("length").getAsFloat() : Float.NaN;
         hipFire = json.has("hip_fire") && json.get("hip_fire").getAsBoolean();
+        heldHidden = json.has("held_item") && json.get("held_item").getAsString().equals("hidden");
         chestTwist = json.has("chest_twist") ? json.get("chest_twist").getAsFloat() : 0F;
         if (json.has("view_pitch")) {
             JsonArray v = json.getAsJsonArray("view_pitch");
@@ -330,8 +339,10 @@ public final class PlayerAction {
                     || frame.startsWith("prop:") && before.stream().anyMatch(t -> t.id().equals(frame.substring(5)));
             if (!known) throw new IllegalArgumentException("player action " + id + ": prop frame " + frame
                     + (frame.startsWith("prop:") ? " (a prop listed before this one)" : ""));
+            String ease = k.has("ease") ? k.get("ease").getAsString() : "smooth";
+            if (!List.of("smooth", "in", "out").contains(ease)) throw new IllegalArgumentException("player action " + id + ": prop key ease " + ease);
             out.add(new PropKey(at, frame, k.get("point").getAsString(), vector(k, "pos"), vector(k, "rot"),
-                    k.has("blend") ? k.get("blend").getAsFloat() : 0.3F, k.has("hidden") && k.get("hidden").getAsBoolean()));
+                    k.has("blend") ? k.get("blend").getAsFloat() : 0.3F, k.has("hidden") && k.get("hidden").getAsBoolean(), ease));
         }
         if (out.isEmpty()) throw new IllegalArgumentException("player action " + id + ": a prop without keys");
         return new PropTrack(propId, List.copyOf(out), prop.has("open_from") ? prop.get("open_from").getAsFloat() : Float.NaN);

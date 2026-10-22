@@ -253,7 +253,7 @@
     - `CabinMeshModel.EXTRA`：方块实体可以经模型数据往小屋方块的区块里加 cutout 层的四边形（现在只有枪架用）。
   - `src/main/java/com/antaurora/apofirstlight/client/`：
     - `WoodGunRackRenderer.java`；
-    - `WoodGunRackChunking.java`（录下挂着的东西交给区块，记账哪一份已经在区块里；2026-10-15 起录制按整个方块状态记，不只按朝向，V2 工具架在原木墙上外移也算进去）；
+    - `WoodGunRackChunking.java`（录下挂着的东西交给区块，记账哪一份已经在区块里；2026-10-15 起录制按整个方块状态记，不只按朝向，V2 工具架在原木墙上外移也算进去；2026-10-21 起也录 AFL 工作台木钉上的工具，交给工作台的 `AflStaticMeshModel`，同一个 `CabinMeshModel.EXTRA`，见 [AFL 工作台 V1](../gameplay/afl_workbench_v1_design.md) 第 14 节）；
     - `MaintenanceGunRendering#renderBindPose`（新加：不带维修台变换画绑定姿态的枪）、`ClosedFaces`（录的时候告诉记录器哪些面属于封闭零件）；
     - `blockmesh/AflStaticMeshModel`：`atlasSprite`、`diffuse`（实体光照系数）改成公开，枪架共用；
     - `AflBlockEntityRenderers`（枪架 BER，座位用 `NoopRenderer`）；

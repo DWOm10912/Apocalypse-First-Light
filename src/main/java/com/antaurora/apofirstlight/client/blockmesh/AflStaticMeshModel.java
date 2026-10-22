@@ -134,12 +134,20 @@ public final class AflStaticMeshModel {
                                                  @NotNull ModelData data, @Nullable RenderType renderType) {
             if (side != null || !AflRenderDev.staticMesh()) return List.of();
             if (renderType != null && renderType != RenderType.cutout() && renderType != RenderType.translucent()) return List.of();
+            // what the block entity adds in the cutout layer (a workbench's hung tools, client WoodGunRackChunking)
+            com.antaurora.apofirstlight.cabin.CabinMeshModel.Extra extra = renderType == RenderType.translucent() ? null : data.get(com.antaurora.apofirstlight.cabin.CabinMeshModel.EXTRA);
+            List<BakedQuad> added = extra == null ? List.of() : extra.meshCutout();
             AflMeshChunking.Snapshot snapshot = data.get(AflMeshChunking.SNAPSHOT);
-            if (snapshot == null || snapshot.variant().empty()) return List.of();
+            if (snapshot == null || snapshot.variant().empty()) return added;
             Built built = built(snapshot.variant());
             // asked once per layer; confirm keeps the first report of a snapshot
             if (!com.antaurora.apofirstlight.client.MirrorReflection.meshing()) AflMeshChunking.confirm(snapshot, built.lo(), built.hi());
-            return renderType == null ? built.all() : renderType == RenderType.cutout() ? built.cutout() : built.translucent();
+            List<BakedQuad> own = renderType == null ? built.all() : renderType == RenderType.cutout() ? built.cutout() : built.translucent();
+            if (added.isEmpty()) return own;
+            List<BakedQuad> both = new ArrayList<>(own.size() + added.size());
+            both.addAll(own);
+            both.addAll(added);
+            return both;
         }
 
         @Override

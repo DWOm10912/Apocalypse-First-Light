@@ -100,6 +100,9 @@ public final class AflBlockEntityRenderers {
         // Furniture Mesh V1 (2026-10-15): the counters, wardrobe, nightstand and storage chest as animated meshes
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.COUNTER,
                 AflBlockEntityRendering.wrap("wood_furniture", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        // AFL Workbench V1 (2026-10-21): the drawers as an animated mesh, the tools on the pegs drawn by the chunk
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.Workbench.TYPE, AflBlockEntityRendering.wrap("wooden_workbench", WorkbenchRenderer::new));
+        com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity.toolsData = WoodGunRackChunking::workbenchTools;
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurnitureV2.CHEST,
                 AflBlockEntityRendering.wrap("wooden_storage_chest", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
         com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity.chunkData = WoodGunRackChunking::modelData;   // resting guns: drawn by the chunk

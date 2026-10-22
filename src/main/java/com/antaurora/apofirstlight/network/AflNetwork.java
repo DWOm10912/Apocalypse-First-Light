@@ -166,11 +166,20 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.vehicle.VehiclePackets.register(channel, nextId);
         // AFL Map V1: a carried map's record, to its player (protocol 59 on C's branch; master is at 60, so it takes 61 when it merges)
         nextId = com.antaurora.apofirstlight.map.MapPackets.register(channel, nextId);
+        // Building hammer B0: install, take down, workbench craft, work at the bench (protocol 60 on B's branch, 68 merged)
+        nextId = com.antaurora.apofirstlight.building.BuildingPackets.register(channel, nextId);
+        // Field Survival Guide: the book files, "read this section", the recipe it taught (the same merge)
+        nextId = com.antaurora.apofirstlight.book.GuideBookPackets.register(channel, nextId);
     }
 
     /** AFL Map V1: a map's record, to the player carrying it. */
     public static void mapToPlayer(ServerPlayer player, Object packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Building hammer B0 / workbench (client): a BuildingPackets request. */
+    public static void buildingToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** Vehicle physics (client): the driven truck's state. */

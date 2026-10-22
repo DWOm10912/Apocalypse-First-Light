@@ -11,6 +11,7 @@
 - **坐地 stance + `hold_body`**（2026-10-20，D 分支，用户实机 PASS）：坐下键的坐姿片段（`body.sit_down` / `body.sit` / `body.stand_up`）放在 stance 层（`HumanoidPoser.Input#stance`），stance 片段可以镜像（`StanceClip#mirror`）；坐着时物品动作的腿和髋留给坐姿（`GroundSitClient#keepLegs`）。动作新字段 `hold_body`：动作期间胸口只按片段扭和弯，视线不叠加（夹板 V2 两个动作用，手按 FK 烘焙）。见 [splint_animation_v2_plan.md](../gameplay/splint_animation_v2_plan.md) 第 6 节。
 - **`first_person_view`**（2026-10-20，D 分支，落地与摔倒 V1，没进游戏）：动作新字段 `[[秒, 度], ...]`，第一人称视线的俯仰随时间变化（关键之间 smoothstep，`PlayerAction#viewAt`）。动作本身不转视线，由来源每帧设玩家的俯仰（`client/skeleton/FallLandingClient#view`，在鼠标转完之后）。`body/fall_over` 用。新的动作来源：落地（`health/FallLanding` 发 `HealthPackets.Landing`，`SkeletonActions#live` 里排在调试播放之后、枪之前）。见 [fall_landing_v1_plan.md](../gameplay/fall_landing_v1_plan.md)。
 - **枪的姿势循环**（2026-10-17，D worktree，未提交）：`gun/<枪>_idle`、`gun/<枪>_sprint` 两个循环动作（字段 `loop`、`length`），权重由持枪状态决定。道具关键帧多了跟视线的坐标系 `view`，动作多了 `view_pitch`、`chest_twist`、`hip_fire` 三个字段。P9 待机是 CS2 式腰射预备。离线检查通过，**还没进游戏验证**。见 [p9_stance_loops_v1.md](p9_stance_loops_v1.md)。
+- **工作台锯木头**（2026-10-21，分支 AFL-Workbench，编译通过，未实机）：`tool/hand_saw_set`（0.7 秒，把锯提到锯缝）和循环 `tool/hand_saw_rip`（0.8 秒一个来回），锚点 `stand` / `face` / `kerf` / `hold` 由 `client/workbench/WorkbenchWork` 按工作台和锯缝进度给，作者脚本 `tools/author-hand-saw-actions.mjs`。动作新字段 `held_item`：写 `"hidden"` 时手里拿的东西在动作期间不画，第一个道具也从它自己的物品（道具的 `items[0]`）画，不要求拿在手上；不写时照旧，第一个道具就是手里的东西。见 [工作台设计稿](../gameplay/afl_workbench_v1_design.md) 第 17 节。
 
 上级文档：[player_skeleton_v1_design.md](player_skeleton_v1_design.md) 第 6 节（动作状态和同步）、第 10 节（人物动画制作工作流）、第 11 节 P2。本文是第 10 节动作层的第一版落地方案，以及第 11 节 P2 里"现有 AFL 手臂动作迁移"的做法。
 
@@ -106,6 +107,7 @@
 **2026-10-16 实际做法不同**（本节下面是原方案，没有实现）：
 - S2 改成"道具摆位"：动作定义的 `prop` 段，见第 10.1 节第 4 条。
 - AFL Rig 插件第二阶段（[afl_rig_blockbench_plugin_v1.md](afl_rig_blockbench_plugin_v1.md) 第 10.1 节）加了多个道具 `props` 和换挂点：每个道具关键帧自己写挂在哪（`bone:`、`socket:`、`prop:<别的道具>` 等），换坐标系的那一刻从道具当时的实际位置过渡过去，不跳；`hidden` 代替 `show` / `hide`。没有单独的 `attach` 事件。
+- 2026-10-20（伐木斧挥砍）：道具关键帧加了 `ease`，管这一段过渡怎么走：`smooth`（默认，慢-快-慢，和以前一样）、`in`（从静止加速，到这个关键帧时最快：斧头全速砍进木头）、`out`（一开始最快，慢慢停在这个关键帧上）。`in` 接 `out` 可以让一个中间关键帧不停顿。游戏（`ActionPose.keyEase`）和 AFL Rig 插件的预览都认；插件的编辑界面不显示、也不写回 `ease`，从 Blockbench 重新导出会丢掉它。
 
 原方案：
 - 动作定义的 `objects` 列出道具，例如油桶盖：`{"id": "cap", "from": "held:cap"}`，表示它本来是手持物品模型上的 `cap` 骨骼。
@@ -262,7 +264,7 @@
    - 站在离锚点 `distance` 格、向自己左边偏 `side` 格的地方，最多离玩家实际位置 `max` 格，并转身正对锚点。
    - 只是画法，玩家实际位置不动。
    - 头按 `pitch` 低头。`pitch` 可以写成 `[参数 0 时, 参数 1 时]`，按动作参数插值。
-   - 圆形影子跟着走近后的身体走（`mixin/client/EntityRenderDispatcherShadowMixin`）：影子取样的位置和画的位置都挪同样的距离，所以落在身体下面的方块上。挪动量由 `SkeletonActions#bodyOffset` 每帧给出，只对这一帧真正走近的玩家生效。2026-10-16 起影子 mixin 改问镜头导演 `CameraDirector#bodyOffset`，走近是它登记的一个身体偏移来源（`client/camera/CameraSources`，[camera_director_v1_plan.md](camera_director_v1_plan.md) D3），效果不变。
+   - 圆形影子跟着走近后的身体走（`mixin/client/EntityRenderDispatcherShadowMixin`）：影子取样的位置和画的位置都挪同样的距离，所以落在身体下面的方块上。挪动量由 `SkeletonActions#bodyOffset` 每帧给出，只对这一帧真正走近的玩家生效。2026-10-16 起影子 mixin 改问镜头导演 `CameraDirector#bodyOffset`，走近是它登记的一个身体偏移来源（`client/camera/CameraSources`，[camera_director_v1_plan.md](camera_director_v1_plan.md) D3），效果不变。2026-10-21 修：挪影子的 `pushPose` 原来在 `renderShadow` 的 RETURN 里弹回，但 Embeddium 的快速影子会在 `renderShadow` 开头取消整个方法，RETURN 走不到，姿态栈留下一层，实体画完就报 “Pose stack not empty” 崩溃（工作台锯木头的走近第一次碰上）。现在改在 `EntityRenderDispatcher#render` 里 `renderShadow` 调用之后弹回，取消与否都会走到。
    - 第一人称时镜头放在姿势里的眼睛上，朝向是身体正面加这个 `pitch`，按动作权重缓入：
      - 镜头：`mixin/client/PortableGeneratorCameraMixin`。
      - 身体照画：`FirstPersonBody.shown` 接受镜头在姿势眼睛上的情况。

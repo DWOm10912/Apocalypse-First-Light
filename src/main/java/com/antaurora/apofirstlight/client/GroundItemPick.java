@@ -61,6 +61,8 @@ public final class GroundItemPick {
     public static Offer offer(Minecraft mc) {
         var player = mc.player;
         if (player == null || mc.level == null || mc.screen != null || player.isSpectator() || PlayerStorageCapacity.unrestricted(player)) return null;
+        // the building hammer in edit mode installs with the use key: nothing on the ground is offered meanwhile
+        if (com.antaurora.apofirstlight.client.building.BuildingHammerClient.editing(player)) return null;
         var item = lookedAt(mc, player);
         return item == null ? null : offer(player, item);
     }

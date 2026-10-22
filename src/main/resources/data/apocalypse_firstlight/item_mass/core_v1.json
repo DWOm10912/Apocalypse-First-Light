@@ -191,6 +191,26 @@
       "unit_mass_kg": 0.2,
       "estimated": true
     },
+    "apocalypse_firstlight:felling_axe": {
+      "unit_mass_kg": 2.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:claw_hammer": {
+      "unit_mass_kg": 0.68,
+      "estimated": true
+    },
+    "apocalypse_firstlight:building_hammer": {
+      "unit_mass_kg": 1.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:hand_saw": {
+      "unit_mass_kg": 0.86,
+      "estimated": true
+    },
+    "apocalypse_firstlight:field_survival_guide": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
     "apocalypse_firstlight:energy_battery": {
       "unit_mass_kg": 1,
       "estimated": true
@@ -220,7 +240,7 @@
       "estimated": true
     },
     "apocalypse_firstlight:lead_brick": {
-      "unit_mass_kg": 0.75,
+      "unit_mass_kg": 0.86,
       "estimated": true
     },
     "apocalypse_firstlight:pentlandite": {

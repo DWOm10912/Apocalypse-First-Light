@@ -24,17 +24,19 @@ import java.util.function.Supplier;
 
 /**
  * Mesh Trees P4 (docs/rendering/mesh_trees_p4_formal.md, K): the trees' own channel {@code apocalypse_firstlight:mesh_tree}
- * (protocol 4; P0-P3 used a development channel). The server is the authority for every tree state; the client only
- * draws.
+ * (protocol 5, 2026-10-20: the swing; P0-P3 used a development channel). The server is the authority for every tree
+ * state; the client only draws.
  * <ul>
  * <li>{@link Msg} server to client: ROOT, a root appeared or went (the client's tree index follows; the block update
- * itself comes with vanilla's packets); LOD and STATUS, diagnostics the development commands send.</li>
- * <li>{@link Chop} client to server: a chop at a trunk cell; FellingServer#chop checks everything again.</li>
+ * itself comes with vanilla's packets); LOD and STATUS, diagnostics the development commands send; SWING, a player
+ * tracked swung an axe at a tree (value: its entity id; FellingSwingClient plays it).</li>
+ * <li>{@link Chop} client to server: a swing at a trunk cell starts; FellingServer#swing checks it, FellingServer#chop
+ * everything again when it lands.</li>
  * </ul>
  */
 public final class TreeNetwork {
-    static final int ROOT = 0, STATUS = 1, LOD = 2;
-    static final String PROTOCOL = "4";
+    static final int ROOT = 0, STATUS = 1, LOD = 2, SWING = 3;
+    static final String PROTOCOL = "5";
 
     private static SimpleChannel channel;
 
@@ -58,7 +60,7 @@ public final class TreeNetwork {
         }
     }
 
-    /** A chop at a trunk cell, client to server (FellingClient sends, FellingServer#chop decides). */
+    /** A swing at a trunk cell, client to server (FellingClient sends, FellingServer#swing and #chop decide). */
     public record Chop(long pos) {
         static void encode(Chop m, FriendlyByteBuf b) { b.writeLong(m.pos); }
 
@@ -67,7 +69,7 @@ public final class TreeNetwork {
         static void handle(Chop m, Supplier<NetworkEvent.Context> supplier) {
             var c = supplier.get();
             ServerPlayer sender = c.getSender();
-            c.enqueueWork(() -> FellingServer.chop(sender, BlockPos.of(m.pos)));
+            c.enqueueWork(() -> FellingServer.swing(sender, BlockPos.of(m.pos)));
             c.setPacketHandled(true);
         }
     }
@@ -84,6 +86,11 @@ public final class TreeNetwork {
 
     static void sendChop(BlockPos pos) {
         if (channel != null) channel.sendToServer(new Chop(pos.asLong()));
+    }
+
+    /** A swing started (server): the players tracking the swinger play it (the swinger already does). */
+    static void swingStarted(ServerPlayer player) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> player), new Msg(SWING, 0, player.getId()));
     }
 
     /** A diagnostic message to one player (the development commands); false without a channel. */

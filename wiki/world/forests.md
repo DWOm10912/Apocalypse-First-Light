@@ -9,8 +9,10 @@ AFL 用自制的树取代了原版的树：树干是圆的，树冠由成片的�
 ## 砍树
 
 - 必须用斧头，空手砍不动
-  - <StatusTag s="test" /> 原版斧头已无法获得，AFL 自己的斧头还没做，新世界里暂时砍不了树
-- 每砍一下需要 <V j="FellingRules.CHOP_TICKS" x="0.05" u="秒" />，砍满 <V j="FellingRules.STAGES" /> 下树就会倒下
+  - <StatusTag s="test" /> 原版斧头已无法获得；AFL 的[伐木斧](../arms/equipment)目前只能从创造模式物品栏拿
+- 每挥一斧需要 <V j="FellingRules.CHOP_TICKS" x="0.05" u="秒" />，斧头砍进树里才算一下
+- 砍口分 <V j="FellingRules.STAGES" /> 档加深，砍够了树就倒下；树越粗、木头越硬，要砍的下数越多
+- 砍口开在你砍的那一面，换个方向砍，砍口跟过去
 - 树朝砍口的反方向倒下，**被砸中会受伤**
 - 每砍一下消耗 <V d="stamina/stamina_v1#costs.chop" /> 点耐力，附近的感染体能听见砍树声
 

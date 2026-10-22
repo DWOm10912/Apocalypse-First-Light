@@ -402,7 +402,7 @@ public final class WoodFurnitureV2 {
     public static final class ToolRack extends BaseEntityBlock implements CabinPieces, LogMount.Padded {
         /** The north frame (tools/build-wood-furniture-v2.mjs): pegs, the tools' plane, the shelf top and places. */
         public static final double[] TOOL_X = {0.2, 0.5, 0.8}, SHELF_X = {0.7, 0.3};
-        public static final double PEG_Y = 0.745, TOOL_Z = 0.925, SHELF_Y = 0.882, SHELF_Z = 0.895, SHELF_FROM = 0.86;
+        public static final double PEG_Y = 0.745, PEG_RADIUS = 0.011, TOOL_Z = 0.925, SHELF_Y = 0.882, SHELF_Z = 0.895, SHELF_FROM = 0.86;
         /** A hung tool: its model's square (the vanilla tool sprite's diagonal hangs plumb) and its middle's height. */
         public static final double TOOL_SCALE = 0.58, TOOL_MID_Y = 0.42;
         private static final VoxelShape[][] OUTLINE = new VoxelShape[2][4], COLLISION = new VoxelShape[2][4];
