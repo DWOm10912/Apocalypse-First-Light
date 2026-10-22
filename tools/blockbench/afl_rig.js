@@ -767,6 +767,7 @@
             inp.chestYaw *= 1 - w;
             inp.chestPitch *= 1 - w;
         }
+        if (a.holdHead) inp.headClip = Math.max(inp.headClip, w);   // PlayerAction#holdHead: the clip's head, not the look
         return true;
     }
 
@@ -1167,6 +1168,7 @@
             viewPitch: Array.isArray(json.view_pitch) ? json.view_pitch : null,
             chestTwist: json.chest_twist || 0,
             holdBody: !!json.hold_body,
+            holdHead: !!json.hold_head,
             props: propsOfJson(json).map(p => ({
                 id: p.id, def: defFor ? defFor(p.id) : null, keys: p.keys.map(propKeyOf),
                 openFrom: p.open_from !== undefined ? p.open_from : NaN,
@@ -1790,6 +1792,7 @@
                 mask: a.mask, blendIn: a.blend_in, blendOut: a.blend_out, clip: clipOf(anim), paramClip: null,
                 right: a.hands.right.map(runtimeKey), left: a.hands.left.map(runtimeKey), props: tracks, problems,
                 viewPitch: a.view_pitch || null, chestTwist: a.chest_twist || 0, holdBody: !!(a.extra && a.extra.hold_body),
+                holdHead: !!(a.extra && a.extra.hold_head),
             };
         }
 
@@ -2153,6 +2156,8 @@
             if (x.first_person_eye) json.first_person_eye = true;
             // the clip alone turns and bends the chest (PlayerAction#holdBody: arms keyed to the body by FK)
             if (x.hold_body) json.hold_body = true;
+            // the clip's head, not the look (PlayerAction#holdHead: wrapping the head)
+            if (x.hold_head) json.hold_head = true;
             // the own view's pitch keyed over the action (PlayerAction#firstPersonView: falling over on a landing)
             if (x.first_person_view) json.first_person_view = x.first_person_view;
             // a gun's stance loop: by the clock or the stride, its time within the animation's length
@@ -2369,7 +2374,7 @@
             const hk = k => ({at: k.at || 0, target: fullTarget(k.target, first), blend: k.blend !== undefined ? k.blend : 0.2, roll: k.roll || 0, pole: k.pole});
             a.hands = {right: ((json.hands || {}).right || []).map(hk), left: ((json.hands || {}).left || []).map(hk)};
             for (const side of ['right', 'left']) for (const k of a.hands[side]) length = Math.max(length, k.at + k.blend);
-            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check', 'first_person_pitch', 'first_person_eye', 'hold_body', 'first_person_view']) if (json[f] !== undefined) a.extra[f] = json[f];
+            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check', 'first_person_pitch', 'first_person_eye', 'hold_body', 'hold_head', 'first_person_view']) if (json[f] !== undefined) a.extra[f] = json[f];
             const rawList = tracksJson.map((t, i) => ({index: i, json: t})).filter(r => raw.has(r.json.id));
             if (rawList.length) a.extra.props_raw = rawList;
             // the file's tracks as the runtime reads them (the project's points): where a prop: frame's earlier prop is

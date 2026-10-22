@@ -33,11 +33,11 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,8 +46,9 @@ import java.util.UUID;
  * fractures and splints V1, 2026-10-20). What a player wears is the server's word (HealthPackets.Marks, sent to everyone
  * tracking the player; the own player's synced wounds too):
  * <ul>
- * <li><b>Gauze</b> on every limb with a bandaged wound (BodyPart: the forearm of an arm, the shin of a leg). A bandaged
- * wound on the head, chest or belly is not drawn in V1.</li>
+ * <li><b>Gauze</b> on every part with a bandaged wound (BodyPart: the forearm of an arm, the shin of a leg; round the head
+ * over the brow, round the chest under the armpits, round the waist: user 2026-10-21, a pad on the wound and turns round
+ * the part, docs/gameplay/medical_actions_by_part_v1.md). The pad is WoundSkin's gauze patch under the turns.</li>
  * <li><b>A splint</b> on every splinted limb: two planed slats on its outer and inner side (the splint item's wood), held by
  * three narrow gauze ties round limb and slats; over a dressing on the same limb when there is one.</li>
  * </ul>
@@ -64,20 +65,18 @@ import java.util.UUID;
  * C-min skin mesh is (SkinMesh: rings at the cuts, half way through the joint's rotation, linear between), so they follow
  * the wrist, elbow, ankle and knee without cutting into the skin or floating off it; the own first-person body too.</li>
  * <li><b>Vanilla body</b> (skeleton off, or poses it does not draw: swimming, sleeping, dying, flying):
- * {@link Layer} on the rigid arm and leg parts.</li>
+ * {@link Layer} on the rigid arm, leg, head and body parts.</li>
  * <li><b>First-person view models</b> (guns, jerry can, crowbar...: weapon/client/NativePlayerArmRenderer
  * calls {@link #drawArm}): on that arm in its own frame.</li>
  * </ul>
- * The bandage's and the medical alcohol's actions work on one forearm, held out and wrapped by the other hand: the arm the
- * wound is on when it is an arm, else the one opposite the main hand ({@link #workedArm}; SkeletonActions mirrors the
- * action for the right forearm). While the bandage is used on a wound on that forearm (4 s), the turns appear one after
- * another round it: progress = clamp((use seconds - {@link #WRAP_FROM}) / {@link #WRAP_SECONDS}, 0, 1), a third of it per
- * turn, so the wrapping runs from 0.6 s to 3.1 s, each turn from the middle of the arm's front. Where the skeleton draws the
- * action's roll, the open turn's end follows the roll round the arm instead (a little behind it) and a band of cloth runs
- * from it to the roll ({@link #strip}). A wound elsewhere (head, chest, belly, a leg) gets its gauze when the use finishes;
- * V1 has no action per part (docs/ui/body_silhouette_v1_plan.md 3). Let go early and the partial wrap goes (unless that limb
- * was already bandaged); a finished use keeps the whole wrap on its part up to 1 s until the server's answer arrives (it
- * normally comes in the same tick).
+ * The bandage's and the medical alcohol's actions go by the part the use started on ({@link #treatedPart}): a forearm is
+ * held out and worked on by the other hand (the wound's arm, else the one opposite the main hand, {@link #workedArm}); a
+ * leg sat on the ground, the head and the trunk have their own actions (SkeletonActions). While the bandage is used, the
+ * turns appear one after another round its part: progress = clamp((use seconds - {@link #wrapFrom}) / {@link #wrapSeconds},
+ * 0, 1), a third of it per turn, each turn from the middle of the part's front. Where the skeleton draws the action's
+ * roll, the open turn's end follows the roll round the part instead (a little behind it) and a band of cloth runs from it
+ * to the roll ({@link #strip}). Let go early and the partial wrap goes (unless that part was already bandaged); a finished
+ * use keeps the whole wrap on its part up to 1 s until the server's answer arrives (it normally comes in the same tick).
  * <p>
  * The splint during its use (SplintItem: a forearm 8 s, a leg 6 s sat on the ground; the V2 actions item/splint_arm and
  * item/splint_leg on the limb SplintItem#target picks, docs/gameplay/splint_animation_v2_plan.md): the slats from
@@ -96,9 +95,28 @@ public final class BandageWrapRenderer {
     public static final float BAND_FROM = 1.5F, BAND_TO = 5.5F;
     /** The same on a shin, back from the sole (above the ankle, below the knee). */
     private static final float[] ARM_BAND = {BAND_FROM, BAND_TO}, LEG_BAND = {2.0F, 6.0F};
+    /**
+     * The head's band up from the chin in its own frame (the brow and the scalp over the ears: the head's rows 0.6..3.4 from
+     * its top, WoundSkin keeps the head's marks in rows 0..3), the chest's and the belly's up from the trunk's lower end
+     * (rows 1..6 and 6.6..11.4 of the body, under the armpits and round the waist); their turns' widths (px).
+     */
+    private static final float[] HEAD_BAND = {4.6F, 7.4F}, CHEST_BAND = {6.0F, 11.0F}, BELLY_BAND = {0.6F, 5.4F};
+    private static final float HEAD_WIDTH = 1.3F, TRUNK_WIDTH = 2.0F;
     public static final int TURNS = 3;
-    /** The wrapping during the use: from this many seconds, over this many. */
+    /**
+     * The wrapping during the use (s): from {@link #wrapFrom}, over {@link #wrapSeconds}, a third of it per turn: the forearm
+     * 0.6 + 2.5, a shin 0.7 + 3.0 (sat), the head 0.8 + 3.0, the chest or belly 0.9 + 4.2 (the actions' turns,
+     * tools/medical-actions-v1a/author_bandage.cjs and author_dress_v1.cjs).
+     */
     public static final float WRAP_FROM = 0.6F, WRAP_SECONDS = 2.5F;
+
+    public static float wrapFrom(BodyPart part) {
+        return part.arm() ? WRAP_FROM : part.leg() ? 0.7F : part == BodyPart.HEAD ? 0.8F : 0.9F;
+    }
+
+    public static float wrapSeconds(BodyPart part) {
+        return part.arm() ? WRAP_SECONDS : part.leg() || part == BodyPart.HEAD ? 3.0F : 4.2F;
+    }
     /**
      * The splint's use (s; the V2 actions, tools/medical-actions-v1a/author_splint_v2.cjs): the slats from here, each tie
      * growing round the limb from these over this long (the strip under and up over the top), forearm and leg.
@@ -114,6 +132,8 @@ public final class BandageWrapRenderer {
     private static final float[] SHADE = {1F, 0.97F, 0.99F};
     /** The second layer's inflate (vanilla 0.25), and how far above the bare limb the turns' walls end. */
     private static final float SLEEVE = 0.25F, INNER = 0.05F;
+    /** The hat layer's inflate (vanilla 0.5): the head's turns go round it. */
+    private static final float HAT = 0.5F;
     private static final int ARC = 3, ROWS = 4;
     /** A flat patch of the bandage mesh's gauze (textures/item/bandage_mesh.png, 256 px: plain gauze, flat _n). */
     private static final float U0 = 8 / 256F, U1 = 88 / 256F, V0 = 8 / 256F, V1 = 44 / 256F;
@@ -138,22 +158,24 @@ public final class BandageWrapRenderer {
     private static final float TRAIL = 30F;
     /** A finished use holds the whole wrap this long (ticks) for the server's answer. */
     private static final int HOLD_TICKS = 20;
-    private static final BodyPart[] LIMBS = {BodyPart.RIGHT_ARM, BodyPart.LEFT_ARM, BodyPart.RIGHT_LEG, BodyPart.LEFT_LEG};
+    private static final BodyPart[] PARTS = {BodyPart.RIGHT_ARM, BodyPart.LEFT_ARM, BodyPart.RIGHT_LEG, BodyPart.LEFT_LEG,
+            BodyPart.HEAD, BodyPart.CHEST, BodyPart.BELLY};
 
     private BandageWrapRenderer() {
     }
 
     // ---------------------------------------------------------------- what to draw
 
+    /**
+     * The part the bandage or the alcohol in use works on: the one its use started on (held for the use, so the action and
+     * the wrap do not jump when the server's answer moves the next target), else the wound that takes it now
+     * (MedicalItem#target), or null.
+     */
     @Nullable
-    private static BodyPart target(Player player, Wounds.Treatment treatment) {
-        if (player == Minecraft.getInstance().player) {
-            List<Wounds.View> wounds = ClientHealth.wounds();
-            int i = Wounds.target(wounds, treatment);
-            return i < 0 ? null : wounds.get(i).part();
-        }
-        var marks = ClientHealth.marks(player.getUUID());
-        return treatment == Wounds.Treatment.BANDAGE ? marks.bandageTargetPart() : marks.cleanTargetPart();
+    public static BodyPart treatedPart(Player player, Wounds.Treatment treatment) {
+        Track t = TRACKS.get(player.getUUID());
+        BodyPart held = t == null ? null : treatment == Wounds.Treatment.BANDAGE ? (t.lastTicks >= 0 ? t.part : null) : t.alcohol;
+        return held != null ? held : MedicalItem.target(player, treatment);
     }
 
     /**
@@ -161,9 +183,18 @@ public final class BandageWrapRenderer {
      * when the treated wound is on an arm, else the one opposite the main hand. Right: SkeletonActions mirrors the action.
      */
     public static BodyPart workedArm(Player player, Wounds.Treatment treatment) {
-        BodyPart t = target(player, treatment);
+        BodyPart t = treatedPart(player, treatment);
         if (t != null && t.arm()) return t;
         return player.getMainArm() == HumanoidArm.LEFT ? BodyPart.RIGHT_ARM : BodyPart.LEFT_ARM;
+    }
+
+    /**
+     * The way the turns on the head, chest and belly go round (SkeletonActions mirrors those actions for a left-handed
+     * player): the right hand carries the roll from the front over the right side (-x) to the back, the left brings it
+     * round the left side to the front; mirrored, the other way.
+     */
+    private static boolean wrapsPlusX(Player player) {
+        return player.getMainArm() == HumanoidArm.LEFT;
     }
 
     private static boolean usingBandage(Player player) {
@@ -171,11 +202,18 @@ public final class BandageWrapRenderer {
                 && item.treatment() == Wounds.Treatment.BANDAGE;
     }
 
+    private static boolean usingAlcohol(Player player) {
+        return player.isUsingItem() && player.getUseItem().getItem() instanceof MedicalItem item
+                && item.treatment() == Wounds.Treatment.ALCOHOL;
+    }
+
     private static final class Track {
         int lastTicks = -1;
         long holdUntil = Long.MIN_VALUE;
         /** The part the bandage in use goes on (its wound's), held after a finished use. */
         BodyPart part;
+        /** The part the alcohol in use goes on, while it is used. */
+        BodyPart alcohol;
         /** The same for a splint in use: ticks used (-1: none), held until, its limb. */
         int splintTicks = -1;
         long splintHold = Long.MIN_VALUE;
@@ -199,12 +237,14 @@ public final class BandageWrapRenderer {
         if (mc.isPaused()) return;
         long now = mc.level.getGameTime();
         for (AbstractClientPlayer p : mc.level.players()) {
-            boolean using = usingBandage(p), splinting = usingSplint(p);
+            boolean using = usingBandage(p), splinting = usingSplint(p), cleaning = usingAlcohol(p);
             Track t = TRACKS.get(p.getUUID());
             if (t == null) {
-                if (!using && !splinting) continue;
+                if (!using && !splinting && !cleaning) continue;
                 TRACKS.put(p.getUUID(), t = new Track());
             }
+            if (!cleaning) t.alcohol = null;
+            else if (t.alcohol == null) t.alcohol = MedicalItem.target(p, Wounds.Treatment.ALCOHOL);
             if (splinting) {
                 if (t.splintTicks < 0) t.splint = SplintItem.target(p);
                 t.splintTicks = SplintItem.usedTicks(p);
@@ -214,15 +254,15 @@ public final class BandageWrapRenderer {
                 t.splintTicks = -1;
             }
             if (using) {
-                if (t.lastTicks < 0) t.part = target(p, Wounds.Treatment.BANDAGE);
+                if (t.lastTicks < 0) t.part = MedicalItem.target(p, Wounds.Treatment.BANDAGE);
                 t.lastTicks = p.getTicksUsingItem();
             } else {
-                // the use ended at (about) its full length: finished, the server's bandaged state is on its way
-                if (t.lastTicks >= MedicalItem.BANDAGE_TICKS - 3) t.holdUntil = now + HOLD_TICKS;
+                // the use ended at (about) its full length on its part: finished, the server's bandaged state is on its way
+                if (t.part != null && t.lastTicks >= MedicalItem.useTicks(Wounds.Treatment.BANDAGE, t.part) - 3) t.holdUntil = now + HOLD_TICKS;
                 t.lastTicks = -1;
             }
         }
-        TRACKS.values().removeIf(t -> t.lastTicks < 0 && t.holdUntil < now && t.splintTicks < 0 && t.splintHold < now);
+        TRACKS.values().removeIf(t -> t.lastTicks < 0 && t.holdUntil < now && t.splintTicks < 0 && t.splintHold < now && t.alcohol == null);
     }
 
     /** Whether the player wears a dressing on this part now: the server's word (the own player's synced wounds too). */
@@ -266,10 +306,10 @@ public final class BandageWrapRenderer {
         if (t == null || t.part != part) return 0F;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.getGameTime() < t.holdUntil) return 1F;
-        // wrapped in view only on the forearm the action works on
-        if (!usingBandage(player) || workedArm(player, Wounds.Treatment.BANDAGE) != part) return 0F;
+        // wrapped in view on the part the action works on, turn after turn by its clock
+        if (!usingBandage(player) || t.lastTicks < 0) return 0F;
         float seconds = (player.getTicksUsingItem() + partial) / 20F;
-        return Mth.clamp((seconds - WRAP_FROM) / WRAP_SECONDS, 0F, 1F);
+        return Mth.clamp((seconds - wrapFrom(part)) / wrapSeconds(part), 0F, 1F);
     }
 
     // ---------------------------------------------------------------- the three ways it is drawn
@@ -292,7 +332,8 @@ public final class BandageWrapRenderer {
             case RIGHT_ARM -> "right_arm";
             case LEFT_ARM -> "left_arm";
             case RIGHT_LEG -> "right_leg";
-            default -> "left_leg";
+            case LEFT_LEG -> "left_leg";
+            default -> "body";
         };
     }
 
@@ -301,7 +342,9 @@ public final class BandageWrapRenderer {
             case RIGHT_ARM -> model.rightArm;
             case LEFT_ARM -> model.leftArm;
             case RIGHT_LEG -> model.rightLeg;
-            default -> model.leftLeg;
+            case LEFT_LEG -> model.leftLeg;
+            case HEAD -> model.head;
+            default -> model.body;
         };
     }
 
@@ -316,46 +359,67 @@ public final class BandageWrapRenderer {
         if (player.isInvisible()) return;
         float partial = Minecraft.getInstance().getFrameTime();
         SkeletonRig rig = pose.rig;
-        for (BodyPart limb : LIMBS) {
+        boolean plusX = wrapsPlusX(player);
+        for (BodyPart limb : PARTS) {
+            boolean limbPart = limb.arm() || limb.leg();
             float cover = coverage(player, limb, partial);
-            float splint = splintSeconds(player, limb, partial);
+            float splint = limbPart ? splintSeconds(player, limb, partial) : Float.NaN;
             if (cover <= 0F && !shows(splint, limb) || !modelPart(model, limb).visible) continue;
-            SkeletonRig.SkinPart part = null;
-            for (SkeletonRig.SkinPart p : rig.skin) if (p.part().equals(skinName(limb))) part = p;
-            if (part == null) continue;
-            SkeletonRig.Box b = part.box(slim);
-            float cx = b.x() + b.w() / 2F, half = b.w() / 2F * (limb.arm() ? thick : 1F);
-            Limb arm = new Limb(cx - half, cx + half, b.z(), b.z() + b.d(), b.y() + b.h(), rig.overlayInflate, !limb.right(), limb.leg());
-            // the skin's rings along the sleeve (SkinMesh#emit: the inflated layer's levels, the cuts' matrices)
-            int[] bones = part.bones();
-            int rings = bones.length + 1;
-            float g = rig.overlayInflate, top = b.y() - g, stretch = (b.h() + 2 * g) / b.h();
-            float[] levels = new float[rings];
-            Matrix4f[] matrices = new Matrix4f[rings];
-            for (int r = 0; r < rings; r++) {
-                int level = r == 0 ? 0 : r == rings - 1 ? b.h() : part.cuts()[r - 1];
-                levels[r] = top + level * stretch;
-                matrices[r] = SkinMesh.ringMatrix(pose, bones, r, new Matrix4f());
-            }
-            Deform deform = (x, y, z, out) -> {
-                int r = 0;
-                while (r < rings - 2 && y > levels[r + 1]) r++;
-                float t = Mth.clamp((y - levels[r]) / (levels[r + 1] - levels[r]), 0F, 1F);
-                Vector3f a = matrices[r].transformPosition(x, levels[r], z, new Vector3f());
-                Vector3f c = matrices[r + 1].transformPosition(x, levels[r + 1], z, new Vector3f());
-                out[0] = a.x + (c.x - a.x) * t;
-                out[1] = a.y + (c.y - a.y) * t;
-                out[2] = a.z + (c.z - a.z) * t;
-            };
-            boolean winding = roll != null && cover > 0F && cover < 1F && usingBandage(player) && limb.arm();
-            if (winding) {
-                // the roll's place round the arm (the arm's rest frame, through the ring under the band's middle)
-                float mid = arm.yEnd - (BAND_FROM + BAND_TO) / 2;
+            Limb arm;
+            Deform deform;
+            // posed (model px) to the part's rest frame through the band's middle, for the roll's place round it
+            Matrix4f restOf;
+            if (limb == BodyPart.HEAD) {
+                // the vanilla head the skeleton draws (PlayerSkeleton#drawSolved), its frame as ModelPart#translateAndRotate
+                ModelPart h = model.head;
+                Matrix4f m = new Matrix4f().translation(h.x, h.y, h.z).rotate(new Quaternionf().rotationZYX(h.zRot, h.yRot, h.xRot));
+                arm = limb(limb, -4F, 4F, -4F, 4F, 0F, HAT, plusX);
+                deform = (x, y, z, out) -> {
+                    Vector3f v = m.transformPosition(x, y, z, new Vector3f());
+                    out[0] = v.x;
+                    out[1] = v.y;
+                    out[2] = v.z;
+                };
+                restOf = new Matrix4f(m).invert();
+            } else {
+                SkeletonRig.SkinPart part = null;
+                for (SkeletonRig.SkinPart p : rig.skin) if (p.part().equals(skinName(limb))) part = p;
+                if (part == null) continue;
+                SkeletonRig.Box b = part.box(slim);
+                float cx = b.x() + b.w() / 2F, half = b.w() / 2F * (limb.arm() ? thick : 1F);
+                arm = limb(limb, cx - half, cx + half, b.z(), b.z() + b.d(), b.y() + b.h(), rig.overlayInflate, plusX);
+                // the skin's rings along the sleeve or the trunk (SkinMesh#emit: the inflated layer's levels, the cuts' matrices)
+                int[] bones = part.bones();
+                int rings = bones.length + 1;
+                float g = rig.overlayInflate, top = b.y() - g, stretch = (b.h() + 2 * g) / b.h();
+                float[] levels = new float[rings];
+                Matrix4f[] matrices = new Matrix4f[rings];
+                for (int r = 0; r < rings; r++) {
+                    int level = r == 0 ? 0 : r == rings - 1 ? b.h() : part.cuts()[r - 1];
+                    levels[r] = top + level * stretch;
+                    matrices[r] = SkinMesh.ringMatrix(pose, bones, r, new Matrix4f());
+                }
+                deform = (x, y, z, out) -> {
+                    int r = 0;
+                    while (r < rings - 2 && y > levels[r + 1]) r++;
+                    float t = Mth.clamp((y - levels[r]) / (levels[r + 1] - levels[r]), 0F, 1F);
+                    Vector3f a = matrices[r].transformPosition(x, levels[r], z, new Vector3f());
+                    Vector3f c = matrices[r + 1].transformPosition(x, levels[r + 1], z, new Vector3f());
+                    out[0] = a.x + (c.x - a.x) * t;
+                    out[1] = a.y + (c.y - a.y) * t;
+                    out[2] = a.z + (c.z - a.z) * t;
+                };
+                float mid = arm.yEnd - (arm.zone[0] + arm.zone[1]) / 2;
                 int r = 0;
                 while (r < rings - 2 && mid > levels[r + 1]) r++;
-                Vector3f rest = new Matrix4f(matrices[r]).invert().transformPosition(roll, new Vector3f());
+                restOf = new Matrix4f(matrices[r]).invert();
+            }
+            boolean winding = roll != null && cover > 0F && cover < 1F && usingBandage(player);
+            if (winding) {
+                // the roll's place round the part (its rest frame)
+                Vector3f rest = restOf.transformPosition(roll, new Vector3f());
                 float dx = rest.x - (arm.x0 + arm.x1) / 2, dz = rest.z - (arm.z0 + arm.z1) / 2;
-                float deg = (float) Math.toDegrees(Math.atan2(dz, limb.right() ? -dx : dx));
+                float deg = (float) Math.toDegrees(Math.atan2(dz, arm.dorsalPlusX ? dx : -dx));
                 float phase = Mth.positiveModulo(deg - START - TRAIL, 360F) / 360F;
                 // the turn the clock says, the place in it the roll says (the two stay within half a turn of each other)
                 float turns = cover * TURNS;
@@ -375,7 +439,7 @@ public final class BandageWrapRenderer {
     private static void strip(Limb a, Deform deform, float cover, Vector3f roll, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
         int turn = Math.min(TURNS - 1, (int) (cover * TURNS));
         float f = Mth.clamp(cover * TURNS - turn, 0F, 1F);
-        strip(a, deform, loop(a, OUT[turn]), f, centre(a, turn), TILT[turn], WIDTH, roll, stack, buffers, light, overlay);
+        strip(a, deform, loop(a, OUT[turn]), f, centre(a, turn), TILT[turn], a.width, roll, stack, buffers, light, overlay);
     }
 
     /** The band off the roll to the open end at {@code f} of loop {@code l} (a turn or a splint tie: its middle c, slant, width). */
@@ -420,21 +484,27 @@ public final class BandageWrapRenderer {
         BodyPart limb = right ? BodyPart.RIGHT_ARM : BodyPart.LEFT_ARM;
         float partial = Minecraft.getInstance().getFrameTime();
         float cover = coverage(player, limb, partial), splint = splintSeconds(player, limb, partial);
-        if (cover > 0F || shows(splint, limb)) drawPart(limb, slim, cover, splint, stack, buffers, light, overlay);
+        if (cover > 0F || shows(splint, limb)) drawPart(limb, slim, false, cover, splint, stack, buffers, light, overlay);
     }
 
     /**
-     * On a vanilla limb part, in its frame (PlayerModel: left arm cube from (-1, -2, -2), right from (-3 / slim -2, -2, -2),
-     * 12 long; legs from (-2, 0, -2), 12 long).
+     * On a vanilla part, in its frame (PlayerModel: left arm cube from (-1, -2, -2), right from (-3 / slim -2, -2, -2),
+     * 12 long; legs from (-2, 0, -2), 12 long; the head's cube from (-4, -8, -4), 8 each way, under the hat; the body's
+     * from (-4, 0, -2), 8 x 12 x 4). {@code plusX}: #wrapsPlusX.
      */
-    private static void drawPart(BodyPart limb, boolean slim, float cover, float splint, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
+    private static void drawPart(BodyPart limb, boolean slim, boolean plusX, float cover, float splint, PoseStack stack,
+                                 MultiBufferSource buffers, int light, int overlay) {
         Limb arm;
         if (limb.arm()) {
             boolean right = limb.right();
             float w = slim ? 3F : 4F, x0 = right ? (slim ? -2F : -3F) : -1F;
             arm = new Limb(x0, x0 + w, -2F, 2F, 10F, SLEEVE, !right, false);
-        } else {
+        } else if (limb.leg()) {
             arm = new Limb(-2F, 2F, -2F, 2F, 12F, SLEEVE, !limb.right(), true);
+        } else if (limb == BodyPart.HEAD) {
+            arm = limb(limb, -4F, 4F, -4F, 4F, 0F, HAT, plusX);
+        } else {
+            arm = limb(limb, -4F, 4F, -2F, 2F, 12F, SLEEVE, plusX);
         }
         Deform rigid = (x, y, z, out) -> { out[0] = x; out[1] = y; out[2] = z; };
         if (cover > 0F) draw(arm, rigid, cover, stack, buffers, light, overlay);
@@ -457,14 +527,16 @@ public final class BandageWrapRenderer {
             if (player.isInvisible()) return;
             boolean slim = "slim".equals(player.getModelName());
             int overlay = LivingEntityRenderer.getOverlayCoords(player, 0F);
-            for (BodyPart limb : LIMBS) {
-                float cover = coverage(player, limb, partialTick), splint = splintSeconds(player, limb, partialTick);
+            boolean plusX = wrapsPlusX(player);
+            for (BodyPart limb : PARTS) {
+                float cover = coverage(player, limb, partialTick);
+                float splint = limb.arm() || limb.leg() ? splintSeconds(player, limb, partialTick) : Float.NaN;
                 if (cover <= 0F && !shows(splint, limb)) continue;
                 ModelPart part = modelPart(getParentModel(), limb);
                 if (!part.visible) continue;
                 pose.pushPose();
                 part.translateAndRotate(pose);
-                drawPart(limb, slim, cover, splint, pose, buffers, light, overlay);
+                drawPart(limb, slim, plusX, cover, splint, pose, buffers, light, overlay);
                 pose.popPose();
             }
         }
@@ -494,22 +566,35 @@ public final class BandageWrapRenderer {
     }
 
     /**
-     * The bare limb's box across (x, z) and its distal end (y, the limb runs +y toward the hand or foot), the sleeve's
-     * inflate, which side is the outside (where the slant leans; +x for the left limbs), and whether it is a leg.
+     * The bare part's box across (x, z) and its distal end (y, the limb runs +y toward the hand or foot; the head's chin,
+     * the trunk's lower end), the second layer's inflate, which way the turns go round and lean (+x for the left limbs;
+     * #wrapsPlusX on the head and trunk), whether it is a leg, the wrapped band (px back from the distal end) and a turn's width.
      */
-    private record Limb(float x0, float x1, float z0, float z1, float yEnd, float g, boolean dorsalPlusX, boolean leg) {
-        float[] band() {
-            return leg ? LEG_BAND : ARM_BAND;
+    private record Limb(float x0, float x1, float z0, float z1, float yEnd, float g, boolean dorsalPlusX, boolean leg,
+                        float[] zone, float width) {
+        Limb(float x0, float x1, float z0, float z1, float yEnd, float g, boolean dorsalPlusX, boolean leg) {
+            this(x0, x1, z0, z1, yEnd, g, dorsalPlusX, leg, leg ? LEG_BAND : ARM_BAND, WIDTH);
         }
+
+        float[] band() {
+            return zone;
+        }
+    }
+
+    /** A part's box: a limb's own way round and band, the head's or trunk's band and width, round as #wrapsPlusX says. */
+    private static Limb limb(BodyPart part, float x0, float x1, float z0, float z1, float yEnd, float g, boolean plusX) {
+        if (part.arm() || part.leg()) return new Limb(x0, x1, z0, z1, yEnd, g, !part.right(), part.leg());
+        float[] zone = part == BodyPart.HEAD ? HEAD_BAND : part == BodyPart.CHEST ? CHEST_BAND : BELLY_BAND;
+        return new Limb(x0, x1, z0, z1, yEnd, g, plusX, false, zone, part == BodyPart.HEAD ? HEAD_WIDTH : TRUNK_WIDTH);
     }
 
     /** A turn's middle, px back from the distal end: the first at the distal end of the band, the last at its near end. */
     private static float centre(Limb a, int turn) {
         float[] band = a.band();
         return switch (turn) {
-            case 0 -> band[0] + WIDTH / 2;
+            case 0 -> band[0] + a.width / 2;
             case 1 -> (band[0] + band[1]) / 2;
-            default -> band[1] - WIDTH / 2;
+            default -> band[1] - a.width / 2;
         };
     }
 
@@ -612,7 +697,7 @@ public final class BandageWrapRenderer {
         for (int turn = 0; turn < TURNS; turn++) {
             float f = Mth.clamp(cover * TURNS - turn, 0F, 1F);
             if (f <= 0.02F) break;
-            ring(e, a, deform, cut(loop(a, OUT[turn]), f), centre(a, turn), WIDTH, TILT[turn], SHADE[turn], f < 1F);
+            ring(e, a, deform, cut(loop(a, OUT[turn]), f), centre(a, turn), a.width, TILT[turn], SHADE[turn], f < 1F);
         }
     }
 

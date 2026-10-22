@@ -52,6 +52,14 @@ public final class Wounds {
         public boolean freshBurn() {
             return stage == Stage.SCRATCH && kind != Kind.SCRATCH;
         }
+
+        /**
+         * Whether the player's own hands reach it to clean and dress it: not the slung gun's burn on the back (the only
+         * mark there; WoundSkin keeps the chest's others on the front and flanks), user 2026-10-21. It heals on its own.
+         */
+        public boolean selfReach() {
+            return !(kind == Kind.DEEP_BURN && part == BodyPart.CHEST);
+        }
     }
 
     static final String KEY = "afl_wounds";
@@ -439,6 +447,7 @@ public final class Wounds {
         int best = -1;
         for (int i = 0; i < wounds.size(); i++) {
             View w = wounds.get(i);
+            if (!w.selfReach()) continue;
             if (treatment == Treatment.ALCOHOL ? w.cleaned() : w.bandaged()) continue;
             if (treatment == Treatment.ALCOHOL && w.freshBurn()) continue;   // a burn is covered, not cleaned with alcohol
             if (treatment == Treatment.BANDAGE && w.stage() == Stage.SUPPURATION && !w.cleaned()) continue;
@@ -448,6 +457,16 @@ public final class Wounds {
             if (byStage > 0 || byStage == 0 && treatment == Treatment.BANDAGE && w.cleaned() && !b.cleaned()) best = i;
         }
         return best;
+    }
+
+    /** Nothing the player reaches takes the treatment, but a wound on the back would: the hint says it is out of reach. */
+    public static boolean outOfReach(List<View> wounds, Treatment treatment) {
+        for (View w : wounds) {
+            if (w.selfReach() || (treatment == Treatment.ALCOHOL ? w.cleaned() : w.bandaged())) continue;
+            if (treatment == Treatment.ALCOHOL && w.freshBurn()) continue;
+            return true;
+        }
+        return false;
     }
 
     /** A bandage found nothing to cover but an uncleaned suppuration: the hint says to clean it first. */

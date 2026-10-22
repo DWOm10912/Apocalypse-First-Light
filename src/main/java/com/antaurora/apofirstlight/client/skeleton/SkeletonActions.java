@@ -404,9 +404,22 @@ public final class SkeletonActions {
             if (action != null) {
                 HumanoidArm arm = p.getUsedItemHand() == InteractionHand.MAIN_HAND ? p.getMainArm() : p.getMainArm().getOpposite();
                 boolean mirror = arm == HumanoidArm.LEFT;
-                // the bandage and the alcohol work on the wound's forearm (the left one as keyed; the right one mirrored)
-                if (stack.getItem() instanceof com.antaurora.apofirstlight.health.MedicalItem medical)
-                    mirror = com.antaurora.apofirstlight.client.BandageWrapRenderer.workedArm(p, medical.treatment()).right();
+                // the bandage and the alcohol by the part their use started on (docs/gameplay/medical_actions_by_part_v1.md):
+                // the wound's forearm (item/bandage_wrap, item/alcohol_clean: the left one as keyed, the right one
+                // mirrored); a leg sat on the ground (_leg, keyed on the left leg); the head, chest and belly (_head,
+                // _chest, _belly: keyed for a right-handed player, mirrored for a left-handed one)
+                if (stack.getItem() instanceof com.antaurora.apofirstlight.health.MedicalItem medical) {
+                    var part = com.antaurora.apofirstlight.client.BandageWrapRenderer.treatedPart(p, medical.treatment());
+                    String kind = medical.treatment() == com.antaurora.apofirstlight.health.Wounds.Treatment.BANDAGE ? "item/bandage_" : "item/alcohol_";
+                    String byPart = part == null || part.arm() ? null
+                            : kind + (part.leg() ? "leg" : part.name().toLowerCase(java.util.Locale.ROOT));
+                    if (byPart != null && PlayerActions.get(byPart) != null) {
+                        action = byPart;
+                        mirror = part.leg() ? part.right() : p.getMainArm() == HumanoidArm.LEFT;
+                    } else {
+                        mirror = com.antaurora.apofirstlight.client.BandageWrapRenderer.workedArm(p, medical.treatment()).right();
+                    }
+                }
                 return new Live(action, now - used / 20.0, 0F, Map.of(), mirror);
             }
         }

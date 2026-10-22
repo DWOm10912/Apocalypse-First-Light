@@ -104,6 +104,9 @@ final class BodySilhouette {
 
     private static Injury wound(Wounds.View w, Carried c) {
         var status = StatusBadgeHud.wound(w);
+        // the slung gun's burn on the back: no hand of the player's own reaches it, it heals by itself (user 2026-10-21)
+        if (!w.selfReach())
+            return new Injury(status, w.stage() == Wounds.Stage.SCRATCH ? 1 : 2, List.of(), t("out_of_reach.back"));
         if (w.freshBurn()) {
             // a burn: a bandage over it keeps it from becoming infected; it heals by itself either way
             boolean deep = w.kind() == Wounds.Kind.DEEP_BURN;

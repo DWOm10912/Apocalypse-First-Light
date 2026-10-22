@@ -1,4 +1,5 @@
-// Checks the health V1a medical actions (bandage_wrap, alcohol_clean) and the fractures V1 splint actions (splint_arm, splint_leg) with the AFL Rig core: palm off its target, wrist,
+// Checks the health V1a medical actions (bandage_wrap, alcohol_clean; by part, docs/gameplay/medical_actions_by_part_v1.md:
+// bandage_ and alcohol_ head / chest / belly / leg) and the fractures V1 splint actions (splint_arm, splint_leg) with the AFL Rig core: palm off its target, wrist,
 // forearm twist, and the palms against the torso box, with their props (player_props/) and the medical clips; and that each
 // action's check.use_ticks is health/MedicalItem's (health/SplintItem's) use time. Run from the D worktree root.
 const fs = require('fs'), path = require('path');
@@ -16,6 +17,11 @@ const java = fs.readFileSync(path.join(root, 'src/main/java/com/antaurora/apofir
 const splintJava = fs.readFileSync(path.join(root, 'src/main/java/com/antaurora/apofirstlight/health/SplintItem.java'), 'utf8');
 const ticks = {bandage_wrap: +/BANDAGE_TICKS = (\d+)/.exec(java)[1], alcohol_clean: +/ALCOHOL_TICKS = (\d+)/.exec(java)[1],
     splint_arm: +/ USE_TICKS = (\d+)/.exec(splintJava)[1], splint_leg: +/LEG_USE_TICKS = (\d+)/.exec(splintJava)[1]};
+for (const [part, key] of [['head', 'BANDAGE_HEAD_TICKS'], ['chest', 'BANDAGE_TORSO_TICKS'], ['belly', 'BANDAGE_TORSO_TICKS'], ['leg', 'BANDAGE_LEG_TICKS']]) {
+    ticks['bandage_' + part] = +new RegExp(key + ' = (\\d+)').exec(java)[1];
+    ticks['alcohol_' + part] = ticks.alcohol_clean;
+}
+const SEATED = n => n === 'splint_leg' || n.endsWith('_leg');
 function outside(p, b) {
     const dx = Math.max(b[0] - p[0], p[0] - b[1]), dy = Math.max(b[2] - p[1], p[1] - b[3]), dz = Math.max(b[4] - p[2], p[2] - b[5]);
     const o = Math.hypot(Math.max(dx, 0), Math.max(dy, 0), Math.max(dz, 0));
@@ -23,14 +29,14 @@ function outside(p, b) {
 }
 const TORSO = [-4, 4, 0, 12, -2, 2];
 const out = {};
-for (const name of ['bandage_wrap', 'alcohol_clean', 'splint_arm', 'splint_leg']) {
+for (const name of Object.keys(ticks)) {
     const json = read(path.join(A, 'player_actions/item', name + '.json'));
     const action = core.actionFromJson(json, propDef, k => clips[k] || null);
     if (json.check.use_ticks !== ticks[name]) throw new Error(name + ': use_ticks ' + json.check.use_ticks + ' but the item has ' + ticks[name]);
     const len = json.check.use_ticks / 20, bad = [];
     let wristMax = 0, twistMax = 0, offMax = 0, reachMax = 0, clearMin = Infinity, clearAt = '';
-    // the leg's splint is done sat on the ground: crouching does not change it (the action poses the whole body)
-    for (const pitch of [0, -30, 30, 60]) for (const crouch of (name === 'splint_leg' ? [false] : [false, true])) for (let t = 0; t <= len + 1e-6; t += 0.05) {
+    // a leg is splinted / dressed sat on the ground: crouching does not change it (the action poses the whole body)
+    for (const pitch of [0, -30, 30, 60]) for (const crouch of (SEATED(name) ? [false] : [false, true])) for (let t = 0; t <= len + 1e-6; t += 0.05) {
         const res = core.solveFrame(poser, {action, seconds: t, time: t, pitch, crouch});
         const ro = core.readouts(res);
         for (const side of ['right', 'left']) {

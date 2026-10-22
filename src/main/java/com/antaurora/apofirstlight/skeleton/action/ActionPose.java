@@ -146,6 +146,8 @@ public final class ActionPose {
             in.chestYaw *= 1F - w;
             in.chestPitch *= 1F - w;
         }
+        // the clip's head, not the look's (hands keyed round the head)
+        if (a.holdHead) in.headClip = Math.max(in.headClip, w);
         if (a.approach != null) {
             Vector3f anchor = m.anchors.apply(a.approach.anchor());
             if (anchor != null) {

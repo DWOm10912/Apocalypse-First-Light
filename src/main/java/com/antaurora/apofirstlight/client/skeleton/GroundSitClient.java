@@ -63,6 +63,8 @@ public final class GroundSitClient {
     /** A leg's splint this far in (ticks, past its action's 0.3 s blend-in) sets which leg the sitting keeps out. */
     private static final int MIRROR_UNDER_TICKS = 8;
     private static final String CAMERA = "afl_ground_sit";
+    /** The item actions done sat that pose the whole body themselves (the leg's splint and dressings). */
+    private static final java.util.Set<String> FULL_BODY = java.util.Set.of("item/splint_leg", "item/bandage_leg", "item/alcohol_leg");
     private static final double CAMERA_OUT = 0.35;
 
     private static final class Track {
@@ -104,7 +106,7 @@ public final class GroundSitClient {
         while (SIT.consumeClick()) {
             if (mc.screen != null || player.isSpectator()) continue;
             if (GroundSit.seat(player) == null) AflNetwork.sitToServer(new GroundSit.Request(true));
-            else if (!GroundSit.splintingLeg(player)) AflNetwork.sitToServer(new GroundSit.Request(false));
+            else if (!GroundSit.treatingLeg(player)) AflNetwork.sitToServer(new GroundSit.Request(false));
         }
         GroundSeat seat = GroundSit.seat(player);
         Track t = TRACKS.get(player.getId());
@@ -125,7 +127,7 @@ public final class GroundSitClient {
             return;
         }
         boolean up = input.jumping || input.shiftKeyDown;
-        if (up && !wasUp && !GroundSit.splintingLeg(player)) AflNetwork.sitToServer(new GroundSit.Request(false));
+        if (up && !wasUp && !GroundSit.treatingLeg(player)) AflNetwork.sitToServer(new GroundSit.Request(false));
         wasUp = up;
         input.forwardImpulse = 0;
         input.leftImpulse = 0;
@@ -150,12 +152,10 @@ public final class GroundSitClient {
                 TRACKS.put(p.getId(), t);
             }
             if (seat.state() == GroundSeat.State.GETTING_UP && Double.isNaN(t.rising)) t.rising = now;
-            // a leg's splint (both legs broken: the second one) keeps that leg out after it: switched under the action once
+            // a leg's splint or dressing (both legs: the second one) keeps that leg out after it: switched under the action once
             // it has blended in (the action poses the whole body), so the swap does not show
-            if (GroundSit.splintingLeg(p) && SplintItem.usedTicks(p) >= MIRROR_UNDER_TICKS) {
-                BodyPart leg = SplintItem.target(p);
-                if (leg != null) t.mirror = leg.right();
-            }
+            BodyPart leg = GroundSit.treatedLeg(p);
+            if (leg != null && p.getTicksUsingItem() >= MIRROR_UNDER_TICKS) t.mirror = leg.right();
         } else if (t != null && Double.isNaN(t.left)) {
             t.left = now;
         }
@@ -200,10 +200,10 @@ public final class GroundSitClient {
 
     /**
      * After ActionPose#body while sitting: an item's action keeps to the upper body (the legs and hips stay the sitting
-     * ones); only the leg splint's action (seated itself) poses the whole body.
+     * ones); only the leg's splint and dressings (seated themselves) pose the whole body.
      */
     static void keepLegs(HumanoidPoser.Input in, SkeletonRig rig, PlayerAction action) {
-        if (in.actionMask == null || action.id.equals("item/splint_leg")) return;
+        if (in.actionMask == null || FULL_BODY.contains(action.id)) return;
         boolean[] m = in.actionMask.clone();
         for (int b : new int[]{rig.root, rig.pelvis, rig.thighR, rig.shinR, rig.footR, rig.thighL, rig.shinL, rig.footL}) m[b] = false;
         in.actionMask = m;
