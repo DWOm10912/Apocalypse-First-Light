@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.block.WallOutletBlock;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.energy.PowerPlugs;
+import com.antaurora.apofirstlight.item.ShovelItem;
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.meshshape.AflOverhangPickBlock;
@@ -491,13 +492,17 @@ public final class WoodFurnitureV2 {
         @Override
         public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new WoodToolRackBlockEntity(pos, state); }
 
-        /** What the pegs take: one item, not a block and not a gun (tools, a crowbar, a fishing rod, a sword). */
+        /**
+         * What the pegs take: one item, not a block and not a gun (tools, a crowbar, a fishing rod, a sword); a shovel only
+         * empty (it hangs by its D grip, blade down: a load would pour out; 2026-10-22).
+         */
         public static boolean longTool(ItemStack s) {
-            return !s.isEmpty() && s.getMaxStackSize() == 1 && !(s.getItem() instanceof BlockItem) && !(s.getItem() instanceof NativeGunItem);
+            return !s.isEmpty() && s.getMaxStackSize() == 1 && !(s.getItem() instanceof BlockItem) && !(s.getItem() instanceof NativeGunItem)
+                    && !(s.getItem() instanceof ShovelItem && ShovelItem.load(s).stored() > 0);
         }
 
-        /** What the shelf takes: anything that is not a block. */
-        public static boolean shelfItem(ItemStack s) { return !s.isEmpty() && !(s.getItem() instanceof BlockItem); }
+        /** What the shelf takes: anything that is not a block, and not a shovel (1.48 m: the pegs only). */
+        public static boolean shelfItem(ItemStack s) { return !s.isEmpty() && !(s.getItem() instanceof BlockItem) && !(s.getItem() instanceof ShovelItem); }
 
         /** A point in the north frame (moved out onto its pad on logs) turned to the facing, world coordinates. */
         static Vec3 local(BlockState state, BlockPos pos, double x, double y, double z) {
@@ -543,7 +548,7 @@ public final class WoodFurnitureV2 {
                 }
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
-            if (!shelfItem(held)) return InteractionResult.PASS;
+            if (!longTool(held) && !shelfItem(held)) return InteractionResult.PASS;   // neither the pegs nor the shelf (a shovel: the pegs only)
             int slot = target(rack, held, aimed);
             if (slot < 0) return InteractionResult.CONSUME;   // full: no use of the item at the rack
             if (!level.isClientSide) {

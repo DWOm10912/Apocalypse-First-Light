@@ -1,5 +1,5 @@
 {
-  "about": "The round point shovel as the skeleton holds it, first and third person (Earthwork A2, docs/worldgen/earthwork_a2.md 6). Points, bounds: item block units of the shovel mesh as client/ShovelItemRenderer draws it (meshes/round_point_shovel.aflmesh.json + (0.5, -0.251321, 0.5); y up the handle, the blade at the bottom, its load face to +z; tools/build-round-point-shovel-v1.mjs prints them). Scale 1: 1.52 m over all, as the real shovel. Held two-handed as a shovel is dug with: the left hand at grip_end (the top of the handle), the right at grip, down the handle; grip_low is the right hand's place for a heavy lift, blade the middle of the blade (it goes into the ground), tip its point.",
+  "about": "The round point shovel as the skeleton holds it, first and third person (Earthwork A2, docs/worldgen/earthwork_a2.md 6). Points, bounds: item block units of the shovel mesh as client/ShovelItemRenderer draws it (meshes/round_point_shovel.aflmesh.json + (0.5, -0.23132, 0.5); y up the handle, the blade at the bottom, its load face to +z; tools/build-round-point-shovel-v1.mjs prints them). Scale 1: 1.48 m over all to the top of its D grip (2026-10-22), as the real shovel. Held two-handed as a shovel is dug with: the left hand at grip_end (the middle of the D grip's crossbar, 2026-10-22), the right at grip, down the handle; grip_low is the right hand's place for a heavy lift, blade the middle of the blade (it goes into the ground), tip its point.",
   "items": [
     "round_point_shovel"
   ],
@@ -7,12 +7,12 @@
   "bounds": [
     [
       0.33,
-      -0.2513,
+      -0.2313,
       0.3154
     ],
     [
       0.67,
-      1.2513,
+      1.2313,
       0.6846
     ]
   ],
@@ -20,37 +20,37 @@
   "points": {
     "grip_end": [
       0.5,
-      1.1951,
+      1.2151,
       0.3468
     ],
     "grip": [
       0.5,
-      0.7945,
+      0.8145,
       0.3468
     ],
     "grip_low": [
       0.5,
-      0.482,
+      0.502,
       0.3468
     ],
     "heel": [
       0.5,
-      0.132,
+      0.152,
       0.3843
     ],
     "blade": [
       0.5,
-      -0.0636,
+      -0.0436,
       0.4617
     ],
     "tip": [
       0.5,
-      -0.2487,
+      -0.2287,
       0.5618
     ],
     "step_r": [
       0.3725,
-      0.1333,
+      0.1533,
       0.3724
     ],
     "grip_high": [

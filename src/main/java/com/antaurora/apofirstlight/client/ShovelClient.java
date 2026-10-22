@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.client;
 
-import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.interaction.ShovelAction;
 import com.antaurora.apofirstlight.item.ShovelItem;
 import com.antaurora.apofirstlight.network.AflNetwork;
@@ -9,9 +8,6 @@ import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -97,11 +93,7 @@ public final class ShovelClient {
     static Vec3 aim(Minecraft mc) {
         var p = mc.player;
         if (p == null || mc.level == null || !p.getMainHandItem().is(AflItems.ROUND_POINT_SHOVEL.get())) return null;
-        Vec3 eye = p.getEyePosition();
-        BlockHitResult hit = mc.level.clip(new ClipContext(eye, eye.add(p.getLookAngle().scale(ShovelAction.REACH)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        if (hit.getType() != HitResult.Type.BLOCK || !Earthwork.soil(mc.level.getBlockState(hit.getBlockPos()).getBlock())) return null;
-        Vec3 at = hit.getLocation();
-        return ShovelAction.near(p, at) ? at : null;
+        return ShovelAction.aimed(mc.level, p);
     }
 
     /** The prompt (WorldInteractionHint): scrape (sneaking), dig (an empty blade), else pour; none during a stroke. */

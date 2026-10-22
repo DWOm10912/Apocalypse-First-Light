@@ -17,6 +17,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -83,11 +85,23 @@ public final class ShovelAction {
     public static boolean active(ServerPlayer p) { return ACTIVE.containsKey(p.getUUID()); }
 
     /** The loose ground the player aims at within reach (the hit point on the skin), or null. */
-    public static Vec3 target(ServerPlayer p) {
-        Vec3 eye = p.getEyePosition();
-        BlockHitResult hit = p.level().clip(new ClipContext(eye, eye.add(p.getLookAngle().scale(REACH)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        if (hit.getType() != HitResult.Type.BLOCK) return null;
-        if (!Earthwork.soil(p.level().getBlockState(hit.getBlockPos()).getBlock())) return null;
+    public static Vec3 target(ServerPlayer p) { return aimed(p.level(), p); }
+
+    /**
+     * The loose ground a player aims the shovel at within reach, or null; both sides (client/ShovelClient#aim). The ground
+     * is found by collision, so grass and flowers let the ray through; but a block the crosshair meets first that has
+     * collision and is not ground screens it (2026-10-22: the wooden tool rack's pegs have none, so aiming at them reached
+     * the dirt under the rack and a right-click dug instead of hanging the shovel; the same for any block one uses).
+     */
+    public static Vec3 aimed(Level level, net.minecraft.world.entity.player.Player p) {
+        Vec3 eye = p.getEyePosition(), end = eye.add(p.getLookAngle().scale(REACH));
+        BlockHitResult hit = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+        if (hit.getType() != HitResult.Type.BLOCK || !Earthwork.soil(level.getBlockState(hit.getBlockPos()).getBlock())) return null;
+        BlockHitResult first = level.clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p));
+        if (first.getType() == HitResult.Type.BLOCK && !first.getBlockPos().equals(hit.getBlockPos())) {
+            BlockState s = level.getBlockState(first.getBlockPos());
+            if (!Earthwork.soil(s.getBlock()) && !s.getCollisionShape(level, first.getBlockPos()).isEmpty()) return null;
+        }
         return near(p, hit.getLocation()) ? hit.getLocation() : null;
     }
 

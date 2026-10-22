@@ -376,6 +376,7 @@
 - 聊天栏 `VALIDATED` / `EXPORTED` 那一行末尾加一段，例如 `暗线 147 个节点 · 配电箱 1 个 · 没打包 0 个`，后面按情况跟"（格子……）""互连 N 路""出界剪掉 N 处"。
 - 开发桥 `authoring_validate` 多返回 `wiring`（这一段文字）、`wiring_nodes`、`wiring_panels`、`wiring_orphans`、`wiring_orphan_cells`、`wiring_joined`、`wiring_clipped`。
 - 导出本来就不许有物品和实体，所以导出的房子里没有物资。
+  - 2026-10-22 起（用户："好像现在的导出不支持挂着的物品"）：摆在明处的东西算布置，跟着模板走：木质枪架和工具架的格子（`Items`）、工作台木钉上的工具（`Tools`）。工作台抽屉、箱子、冰柜、柜子这类容器和战利品表照旧不许有东西（`BuildingAuthoringService.undisplayed`）。放置时方块实体照原样读回去，挂着的东西就在原位。
 
 **放置**：
 - **带 AFL 处理器**（`worldgen/structure/AflBlockEntityProcessor`；`worldgen/structure/AflTemplatePlacer` 和 `/afl dev template place` 都带）：

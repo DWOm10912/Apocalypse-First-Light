@@ -19,6 +19,8 @@ Hold the round point shovel, aim at loose ground and press Use once for one stro
 - Loaded shovel: pours it where you aim, costs <V d="stamina/stamina_v1#costs.shovel_pour" /> stamina
 - Sneaking: scrapes the ground level, costs <V d="stamina/stamina_v1#costs.shovel_scrape" /> stamina
 
+The shovel ends in a D grip. An empty shovel hangs from a peg of the wooden tool rack by it, blade down, reaching into the block below. A loaded one can't be hung
+
 When the blade hits rock it says "Rock here, can't dig". Dig down beside a boulder to bare the part buried in the soil
 
 ## Boulders
@@ -58,4 +60,5 @@ River cobbles in your hand are ordinary pebbles and field stones, and stack with
 None of the three has a use yet
 
 - <StatusTag s="planned" /> Loose stones placed by world generation: forests, fields, riverbeds
-- <StatusTag s="planned" /> Quarrying natural stone with the pick mattock
+- <StatusTag s="test" /> Vanilla stone, cobblestone, stone bricks, andesite, granite and diorite, with their stairs, slabs and walls, can no longer be obtained, and neither can vanilla flint. Mining natural stone drops nothing; gravel drops only gravel
+- <StatusTag s="planned" /> Quarrying natural stone with the pick mattock, for field stones and pebbles

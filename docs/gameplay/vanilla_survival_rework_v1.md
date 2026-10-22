@@ -14,6 +14,8 @@
 
 **V1.6 铁栏杆、附魔书、创造栏标签页（2026-10-20）**：同一分支，见 4.11 节和 7.1 节。原版铁栏杆退役；附魔书、附魔之瓶从创造栏拿掉；原版战斗页、红石页只剩重复的东西，拿掉以后不再显示；创造栏标签页改成 AFL 在前、没有空位、一页 15 个（上 5、左 5、下 5）。`compileJava` 通过；**用户 2026-10-20 实机 PASS**，GameTest 已按新规则改、没跑。
 
+**V1.7 原版石头建材（2026-10-22，Rock R1c，土方分支 `feature/earthwork-a`）**：见 4.12 节。石头、圆石、苔石、石砖全家、平滑石头、安山岩 / 花岗岩 / 闪长岩和磨制版，连同楼梯、台阶、墙，共 44 个物品；同一份清单里还有原版燧石（用户 2026-10-22 定退），砾石改用 AFL 自己的战利品表，只掉砾石。天然石头照常生成，挖了不掉东西。只改了数据，没进游戏。
+
 依据：[V0 审计](vanilla_survival_rework_v0_audit.md)；用户 2026-10-19 的 V1 任务书和 V1a 补充。V2 的配方知识接口另见 [survivor_recipe_knowledge_v2_plan.md](survivor_recipe_knowledge_v2_plan.md)。
 
 ---
@@ -46,6 +48,8 @@
 | `tags/items/retired/misc_blocks.json`、`amethyst.json`、`tools.json`、`food.json` | V1.3 的 4 份清单，共 131 个物品（4.8 节） | 4.8 节 |
 | `tags/items/retired/masonry.json`、`copper_blocks.json`、`gems.json` | V1.4 的 3 份清单，共 91 个物品（4.9 节） | 4.9 节 |
 | `tags/items/retired/mob_drops.json`、`archaeology.json`、`nature.json`、`storage_blocks.json`、`decor_blocks.json` | V1.5 的 5 份清单，共 121 个物品（4.10 节） | 4.10 节 |
+| `tags/items/retired/stone.json` | V1.7：原版石头建材 44 个 + 原版燧石，共 45 个（4.12 节） | 4.12 节 |
+| `data/minecraft/loot_tables/blocks/gravel.json` | V1.7：盖掉原版砾石战利品表，只掉砾石，不再掉燧石（4.12 节） | 4.12 节 |
 | `tags/entity_types/retired/mobs.json` | V1.2：78 种原版生物（除 `minecraft:zombie` 以外全部） | 不再进入世界（4.7 节） |
 | `tags/blocks/retired/workstations.json` | 附魔台、铁砧（三种损坏程度）、酿造台、砂轮、锻造台、末影箱 | 生存 / 冒险模式拒绝交互 |
 | `vanilla_retirement/v1.json` | `remove_recipes`、`remove_recipe_types`、`closed_dimensions` | 配方 ID、配方类型、关闭的维度 |
@@ -300,6 +304,55 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - **战斗页、红石页**：其他东西退役以后，战斗页只剩雪球和鸡蛋，红石页只剩白色羊毛和线，这几样原料页、彩色方块页里本来就有。`client/VanillaRetirementClient.CreativeTabs` 在开关开着时把这两页里的原版物品全部拿掉，空页自己不显示；雪球、鸡蛋、线还在原料页，羊毛还在彩色方块页。其他模组加进这两页的物品不动。
 - 标签页排布见 7.1 节。
 
+### 4.12 原版石头建材（V1.7，Rock R1c，2026-10-22）
+
+来自岩石 R1 设计（`docs/gameplay/rock_r1_stones_boulders_design.md` 第 8.1 节，用户 2026-10-21 批准第 9 节第 1 条）。用户原话："要不要把原版的石头cube删掉，只留石子/石块，然后我们后面再做AFL自己的高清建筑材料"。做法和 V1.4 一样。
+
+**物品清单** `retired/stone.json`（44 个石头建材 + 原版燧石，共 45 个，接进 `unobtainable` 和 `creative_hidden`）：
+
+- 石头、石头楼梯、石头台阶；
+- 圆石、苔石，各带楼梯、台阶、墙；
+- 平滑石头、平滑石台阶；
+- 石砖、苔石砖（各带楼梯、台阶、墙）、裂纹石砖、錾制石砖；
+- 安山岩、花岗岩、闪长岩，各带楼梯、台阶、墙；磨制安山岩、磨制花岗岩、磨制闪长岩，各带楼梯、台阶。
+- 原版燧石 `minecraft:flint`（见本节最后）。
+- 石头按钮、石头压力板（V1.2）和全部虫蚀石头（V1.2）早就退了。
+
+**效果：**
+
+- 这些物品的配方按输出删掉（圆石烧石头、石头烧平滑石头、切石机本来就退了）；创造栏里看不到；战利品和交易里没有。
+- **天然石头挖了什么也不掉**：石头本来掉圆石，安山岩、花岗岩、闪长岩掉自己，这些现在都在退役清单里，被全局战利品修改器拿掉。精准采集也一样（掉的是石头本身）。原版镐 V1.3 起就拿不到了，鹤嘴锄 R1 只凿巨石。
+- 天然石头照常生成（世界生成的方块不受影响），R2 起换成 AFL 的岩石贴图、用鹤嘴锄开采，掉石块和石子。
+- 已经放在世界里、在玩家手里的不动。开发时用 WorldEdit 或命令照样能放。
+
+**没退：** 深板岩（天然）、凝灰岩、方解石、滴水石块，跟地下重做（R3）一起定；砾石照常（挖了掉砾石本身，见下）。
+
+**结构里还在用的原版石头**（2026-10-22 扫描：结构 NBT 的调色板、`src/` 里全部 `Blocks.X` 和 JSON；GameTest 和探针里垫底用的石头不算）：
+
+| 地方 | 用到的 | 看得见吗 | 归谁 |
+|---|---|---|---|
+| 地堡 `structures/bunker.nbt`（`world/bunker/BunkerPlacementManager`） | 石头、平滑石台阶、石砖、石砖台阶、石砖墙、安山岩、安山岩墙、磨制安山岩 | 看得见（地堡里面） | Main |
+| 公路路基 `worldgen/network/RoadChunkPass`（铺装路面往下第 3 格） | 圆石 | 埋在沥青和砾石下面，挖开才看得见 | C |
+| 公路填方 `worldgen/roads/construction/RoadConstructionPlanner`（路肩以外的填方） | 石头 | 埋着；露出来的话像天然岩石 | C |
+| 岩石路堑面 `RoadChunkPass`（`ROCK_CUT`） | 石头 | 看得见，但它就是天然岩面，R2 换皮 | C |
+| 老宅地基下的回填 `worldgen/home/ForestHomeChunkPass`（地表 3 格以下） | 石头 | 埋着，当天然岩石 | Main |
+| 办公楼草稿 `dev/OfficeMidrise01DraftBuilder`、`DetailBuilder`（开发命令） | 石砖、平滑石头、平滑石台阶、磨制安山岩（含楼梯）、苔石砖 | 只在开发命令放出来的样板里 | Main |
+| 农村地形 `dev/.../rural/RuralTerrainAdapter`（开发原型） | 圆石 | 只在开发原型里 | C |
+
+- 老宅 `forest_home_b.nbt`、加油站 `gas_station_01.nbt`、城镇住宅和标志建筑都没有用到。
+- `worldgen/highway/HighwayPalette` 里的 `MEDIAN`、`BASE` 是石头，但没有任何地方用到这两项。
+- 已经放下的方块不会消失，只是还是 16 px 的样子；挖掉什么也不掉。
+
+**原版燧石 `minecraft:flint`（第 9 节第 11 条）**：
+
+- 生存里只剩一个来源：挖砾石，1/10 掉燧石（原版战利品表 `blocks/gravel`，AFL 没改）。用铲子做土方不掉东西，砾石变成散料体积。原版结构、村民交易、猪灵交易都已经关了。
+- 唯一的用途打火石 V1.2 已经退役，AFL 的燧石 `apocalypse_firstlight:flint` 已经有了。
+- 代码里只有网格背包的 GameTest 拿它当普通物品用。
+- **已退役（用户 2026-10-22："原版燧石退役，同时写 AFL 自己的砾石战利品表，挖砾石只掉砾石"）**：加进 `retired/stone.json`。
+- **砾石战利品表** `data/minecraft/loot_tables/blocks/gravel.json` 盖掉原版的：一个池子，只掉 1 个砾石（被炸掉时按原版的爆炸存活判定）。原版是"精准采集掉砾石，否则按时运 1/10 – 1/7 – 1/4 – 必定掉燧石，没掉燧石才掉砾石"，燧石被退役以后那几次会什么也不掉，现在不会了。时运和精准采集对砾石都没有影响。
+- 这张表不看退役开关：开关关掉（动物 GameTest）时砾石也不掉燧石。没有别的东西依赖砾石掉燧石。
+- 以后 AFL 燧石从哪里来，按 R1 设计 2.4 节：散石里捡，R3 以后石灰岩和河砾里。
+
 ## 5. 获取途径覆盖
 
 | 途径 | 处理 | 说明 |
@@ -442,4 +495,5 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - V1.3：`tags/items/retired/misc_blocks.json`、`amethyst.json`、`tools.json`、`food.json`（一次性生成）；`forge/biome_modifier/remove_amethyst_geodes.json`；`vanilla_retirement/v1.json` 加 11 个特殊配方。
 - V1.4：`tags/items/retired/masonry.json`、`copper_blocks.json`、`gems.json`（一次性生成）；`remove_retired_ores.json` 加钻石、绿宝石矿。
 - V1.5：`tags/items/retired/mob_drops.json`、`archaeology.json`、`nature.json`、`storage_blocks.json`、`decor_blocks.json`（一次性生成）；`forge/biome_modifier/remove_fantasy_features.json`。
+- V1.7：`retired/stone.json`（44 个，一次性写出），接进 `unobtainable.json`、`creative_hidden.json`；同日加原版燧石（45 个），新增 `data/minecraft/loot_tables/blocks/gravel.json`（砾石只掉砾石）。
 - V1.6：`retired/misc_blocks.json` 加铁栏杆，`creative_hidden.json` 加附魔书、附魔之瓶；`client/VanillaRetirementClient.CreativeTabs` 拿掉战斗页、红石页的原版物品；`client/CreativeTabLayout`、`mixin/client/CreativeTabLayoutMixin`（标签页排布）；`compat/jei/AflJeiPlugin` 加左侧标签列的额外区域。
