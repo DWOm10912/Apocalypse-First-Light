@@ -1,0 +1,125 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/hand_saw"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/hand_saw"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          35
+        ],
+        "translation": [
+          0,
+          6.405,
+          -3.889
+        ],
+        "scale": [
+          0.7,
+          0.7,
+          0.7
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -75,
+          110
+        ],
+        "translation": [
+          -1.185,
+          -3.024,
+          -8.587
+        ],
+        "scale": [
+          0.85,
+          0.85,
+          0.85
+        ]
+      },
+      "ground": {
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          1,
+          0
+        ],
+        "scale": [
+          0.45,
+          0.45,
+          0.45
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          -45
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.62,
+          0.62,
+          0.62
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          75,
+          -110
+        ],
+        "translation": [
+          -1.185,
+          -3.024,
+          -8.587
+        ],
+        "scale": [
+          0.85,
+          0.85,
+          0.85
+        ]
+      },
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          90,
+          -35
+        ],
+        "translation": [
+          0,
+          6.405,
+          -3.889
+        ],
+        "scale": [
+          0.7,
+          0.7,
+          0.7
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/hand_saw"
+      }
+    }
+  }
+}

@@ -53,6 +53,8 @@ import java.util.Map;
  * <li>a magazine being loaded (weapon/NativeMagazineLoading's clock on the stack): {@code gun/<gun>_mag_load};</li>
  * <li>a flip lighter in the main hand: item/flip_lighter_<act> on the item's own clock (item/FlipLighterItem's Act and
  * ActAt, synced with the stack);</li>
+ * <li>work at the workbench (client/workbench/WorkbenchWork: the own session, the others' from the server's word): the
+ * tool's action at the bench's anchors, before anything held;</li>
  * <li>first of all, a gun's draw or put-away (SkeletonGunStance#action: {@code gun/<id>_draw}, {@code gun/<id>_holster};
  * docs/dev/p9_draw_holster_actions_v1.md 2.4), played only with the gun stance (PlayerSkeleton).</li>
  * </ul>
@@ -308,6 +310,8 @@ public final class SkeletonActions {
     private static Live live(AbstractClientPlayer p, float partial, double now) {
         Minecraft mc = Minecraft.getInstance();
         if (p == mc.player && devAction != null) return dev(p, partial, now);
+        var work = com.antaurora.apofirstlight.client.workbench.WorkbenchWork.at(p, partial);
+        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false);
         SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
         if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed(), true);
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);

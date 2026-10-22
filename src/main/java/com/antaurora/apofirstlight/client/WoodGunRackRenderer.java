@@ -168,6 +168,21 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
             WorkbenchRenderer.clawHammer(x, WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
             return;
         }
+        if (s.is(AflItems.BUILDING_HAMMER.get())) {   // the same way (building hammer B0, 2026-10-21)
+            WorkbenchRenderer.buildingHammer(x, WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.HAND_SAW.get())) {
+            // by its hand hole from one peg (2026-10-21); its heel reaches 17 cm to -x at the axe heads' height, so it hangs
+            // 2.5 cm further out on the pegs (2.4 cm thick, the pegs' ends at z 0.86): in the middle slot it passes in front
+            // of the x 0.2 axe's bit (out to x 0.356, its last 3 cm under 0.5 cm thick)
+            WorkbenchRenderer.handSaw(x, WoodFurnitureV2.ToolRack.PEG_Y, WoodFurnitureV2.ToolRack.TOOL_Z - 0.025, true, pose, buffers, light);
+            return;
+        }
+        if (s.is(AflItems.CROWBAR.get())) {   // by its gooseneck from the -x peg, hanging free (2026-10-21)
+            WorkbenchRenderer.crowbar(x, WoodFurnitureV2.ToolRack.PEG_Y, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
+            return;
+        }
         pose.translate(x, WoodFurnitureV2.ToolRack.TOOL_MID_Y, WoodFurnitureV2.ToolRack.TOOL_Z);
         pose.mulPose(Axis.YP.rotationDegrees(180));   // the sprite's face to the room (north, -z)
         pose.mulPose(Axis.ZP.rotationDegrees(-45));

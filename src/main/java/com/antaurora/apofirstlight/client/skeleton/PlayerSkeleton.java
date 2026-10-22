@@ -202,6 +202,8 @@ public final class PlayerSkeleton {
         PlayerProps.Prop prop;
         final Matrix4f propPose = new Matrix4f();
         boolean propOpen, propHidden;
+        /** The action hides what the player holds (PlayerAction#heldHidden): its first prop is one of the extras. */
+        boolean heldHidden;
         /** The action's other props this frame (AFL Rig phase 2: the pistol's magazines), drawn from their own items. */
         final List<Extra> extras = new java.util.ArrayList<>();
 
@@ -355,10 +357,11 @@ public final class PlayerSkeleton {
     /**
      * ItemInHandLayer#renderArmWithItem HEAD: the held item an action holds as its prop (player actions S2) is drawn where
      * the action placed it, not in the hand, or not at all while its key hides it. True: the action owns it (the vanilla
-     * hand item is skipped).
+     * hand item is skipped). An action that hides the held item (PlayerAction#heldHidden) owns both hands' items.
      */
     public static boolean drawProp(LivingEntity entity, ItemStack stack, PoseStack pose, MultiBufferSource buffers, int light) {
         Draw d = DRAWS.peek();
+        if (d != null && d.player == entity && d.solved != null && d.solved.heldHidden) return true;   // PlayerAction#heldHidden
         if (d == null || d.player != entity || d.solved == null || d.solved.prop == null || stack != d.player.getMainHandItem()) return false;
         net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (id == null || !ApocalypseFirstLight.MOD_ID.equals(id.getNamespace()) || !d.solved.prop.holds(id.getPath())) return false;
@@ -504,6 +507,7 @@ public final class PlayerSkeleton {
         if (seated != null && d.world && seated.move() == SeatPose.Move.NONE) SeatedRiders.solvedTorso(p, report.torso);
         out.hold = null;
         out.prop = null;
+        out.heldHidden = false;
         out.extras.clear();
         if (gun) {
             // the gun hangs on the posed body (its mounts) or the eye; the arms reach for it
@@ -529,7 +533,11 @@ public final class PlayerSkeleton {
             if (seat != null) SeatPose.hands(in, out.pose, poser(), seat, moment);
             if (action != null) {
                 ActionPose.hands(in, out.pose, poser(), action);
-                if (action.prop != null) {
+                if (action.action.heldHidden) {
+                    out.heldHidden = true;
+                    PlayerProps.Prop first = action.prop == null || action.propHidden[0] ? null : PlayerProps.get(action.action.prop);
+                    if (first != null) out.extras.add(new Solved.Extra(first, new Matrix4f(action.prop), action.propOpen));
+                } else if (action.prop != null) {
                     out.prop = PlayerProps.get(action.action.prop);
                     out.propPose.set(action.prop);
                     out.propOpen = action.propOpen;

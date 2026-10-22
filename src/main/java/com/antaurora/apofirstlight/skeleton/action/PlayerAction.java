@@ -128,6 +128,12 @@ public final class PlayerAction {
      */
     public final boolean hipFire;
     /**
+     * JSON {@code held_item}: {@code "hidden"} (2026-10-21, work at the workbench: tool/hand_saw_rip): whatever the player
+     * holds is not drawn while the action plays, and the first prop is drawn from its own item (PlayerProps.Prop#items),
+     * as the other props are: the tool the action works with need not be in hand. Default: the first prop is the held item.
+     */
+    public final boolean heldHidden;
+    /**
      * JSON {@code view_pitch} [up, down] (deg, - = up), or null: how far up and down its {@code view} frame follows the
      * look's pitch (docs/dev/p9_stance_loops_v1.md: past it the arms cannot hold the gun on the view, it would go into the
      * chest); eased over the last ActionPose#VIEW_KNEE.
@@ -180,6 +186,7 @@ public final class PlayerAction {
         loop = json.has("loop") ? Loop.valueOf(json.get("loop").getAsString().toUpperCase()) : Loop.NONE;
         length = json.has("length") ? json.get("length").getAsFloat() : Float.NaN;
         hipFire = json.has("hip_fire") && json.get("hip_fire").getAsBoolean();
+        heldHidden = json.has("held_item") && json.get("held_item").getAsString().equals("hidden");
         chestTwist = json.has("chest_twist") ? json.get("chest_twist").getAsFloat() : 0F;
         if (json.has("view_pitch")) {
             JsonArray v = json.getAsJsonArray("view_pitch");

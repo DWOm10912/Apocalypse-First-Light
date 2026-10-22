@@ -30,6 +30,8 @@ public final class AflUiStyle {
     public static final int TEXT_DISABLED = 0x6C6A66;
     /** The one accent: selection and pressed keys only. */
     public static final int ACCENT = 0xE0A84A;
+    /** Pale red: refusals and what is short (missing materials). */
+    public static final int WARN = 0xD98A72;
 
     public static final int KEY_BACK = 0xE8E4DC;
     public static final float KEY_BACK_ALPHA = 0.92F;

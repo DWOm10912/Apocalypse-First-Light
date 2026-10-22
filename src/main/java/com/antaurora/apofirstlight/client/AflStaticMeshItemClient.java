@@ -62,6 +62,12 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.FELLING_AXE.get(), "felling_axe", "felling_axe_mesh", -0.31);
             // Claw hammer (equipment meshes, 2026-10-21): 0.5 - 10.44 / 32
             bind(AflItems.CLAW_HAMMER.get(), "claw_hammer", "claw_hammer_mesh", 0.17375);
+            // Building hammer (equipment meshes, 2026-10-21): 0.5 - 10.59 / 32
+            bind(AflItems.BUILDING_HAMMER.get(), "building_hammer", "building_hammer_mesh", 0.169062);
+            // Hand saw (equipment meshes, 2026-10-21): 0.5 - 24.76 / 32
+            bind(AflItems.HAND_SAW.get(), "hand_saw", "hand_saw_mesh", -0.27375);
+            // Field Survival Guide (equipment meshes, 2026-10-22): 0.5 - 5.669 / 32
+            bind(AflItems.FIELD_SURVIVAL_GUIDE.get(), "field_survival_guide", "field_survival_guide_mesh", 0.322835);
             // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
             bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
             bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);

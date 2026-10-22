@@ -34,9 +34,14 @@ public abstract class EntityRenderDispatcherShadowMixin {
         pose.translate(afl$shadowShift.x, 0, afl$shadowShift.z);
     }
 
-    @Inject(method = "renderShadow", at = @At("RETURN"))
-    private static void afl$shadowReturn(PoseStack pose, MultiBufferSource buffers, Entity entity, float opacity, float partial,
-                                        LevelReader level, float radius, CallbackInfo ci) {
+    /**
+     * Back after the call in render, not at renderShadow's RETURN: Embeddium's fast shadows cancel renderShadow at its HEAD
+     * (after this push), and a cancelled method never reaches RETURN, so the pose was left pushed ("Pose stack not empty"
+     * after the entities, 2026-10-21, the workbench's sawing approach).
+     */
+    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;renderShadow(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/Entity;FFLnet/minecraft/world/level/LevelReader;F)V"))
+    private void afl$shadowDone(Entity entity, double x, double y, double z, float yaw, float partial, PoseStack pose,
+                                MultiBufferSource buffers, int light, CallbackInfo ci) {
         if (afl$shadowShift == null) return;
         pose.popPose();
         afl$shadowShift = null;

@@ -92,6 +92,16 @@ groups.tool['tool.felling_axe_chop'] = keyed(1.0, {
   chest: {rotation: {0: [0, 0, 0], 0.4: [-6, 32, 0], 0.55: [14, -12, 0], 0.62: [15, -13, 0], 0.75: [10, -7, 0], 1.0: [0, 0, 0]}},
 });
 
+// Hand saw at the workbench (tool/hand_saw_set then the loop tool/hand_saw_rip, tools/author-hand-saw-actions.mjs CHEST: the
+// same numbers): the chest leans over the bench and turns right, the left shoulder toward the log and the right back behind
+// the saw, and rocks a little further into each push (0.4 s of the 0.8 s stroke).
+groups.tool['tool.hand_saw_set'] = keyed(0.7, {
+  chest: {rotation: {0: [0, 0, 0], 0.7: [25, 18, 0]}},
+});
+groups.tool['tool.hand_saw_rip'] = {...keyed(0.8, {
+  chest: {rotation: {0: [25, 18, 0], 0.4: [30, 15, 0], 0.8: [25, 18, 0]}},
+}), loop: true};
+
 const outputs = Object.entries(groups).map(([group, clips]) => [
   path.join(assets, `animations/player/${group}.animation.json`),
   JSON.stringify({format_version: '1.8.0', animations: clips}, null, 1).replace(/\[\s+(\S+),\s+(\S+),\s+(\S+)\s+\]/g, '[$1, $2, $3]') + '\n',

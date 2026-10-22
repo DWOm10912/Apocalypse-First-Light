@@ -14,7 +14,8 @@ import org.lwjgl.glfw.GLFW;
  * controls screen changes the cap at once), or a fixed mouse action. A mapping bound to the left, right or middle mouse
  * button and the fixed mouse actions draw a small mouse with that button marked; any other binding draws its name.
  * Pressing the key (polled from GLFW, so it also works while a screen is open) turns the cap's mark amber and sinks it
- * one GUI pixel, until 80 ms after release.
+ * one GUI pixel, until 80 ms after release. A fixed key ({@link #fixed}, e.g. Esc, which no mapping holds) draws its own
+ * name.
  */
 public final class AflKeyHint {
     public static final int LEFT = 0, RIGHT = 1, MIDDLE = 2, SCROLL = 3;
@@ -25,13 +26,29 @@ public final class AflKeyHint {
     private static long scrolled;
     private static final java.util.Map<KeyMapping, AflKeyHint> BY_MAPPING = new java.util.IdentityHashMap<>();
 
+    private static final java.util.Map<Integer, AflKeyHint> BY_KEY = new java.util.HashMap<>();
+
     @Nullable private final KeyMapping mapping;
     private final int mouse;
+    /** A fixed GLFW key and its cap text, else -1 / null. */
+    private final int fixedKey;
+    @Nullable private final String fixedName;
     private long lastDown;
 
     private AflKeyHint(@Nullable KeyMapping mapping, int mouse) {
+        this(mapping, mouse, -1, null);
+    }
+
+    private AflKeyHint(@Nullable KeyMapping mapping, int mouse, int fixedKey, @Nullable String fixedName) {
         this.mapping = mapping;
         this.mouse = mouse;
+        this.fixedKey = fixedKey;
+        this.fixedName = fixedName;
+    }
+
+    /** A key no mapping holds (Esc closes every screen), by its GLFW code and the cap's text. */
+    public static AflKeyHint fixed(int glfwKey, String name) {
+        return BY_KEY.computeIfAbsent(glfwKey, k -> new AflKeyHint(null, -1, k, name));
     }
 
     /** One cap per mapping, kept so its release timing survives rows rebuilt every frame. */
@@ -46,19 +63,23 @@ public final class AflKeyHint {
 
     /** The mouse button this cap draws (0 left, 1 right, 2 middle, 3 scroll), or -1 for a named key. */
     private int mouseButton() {
+        if (fixedName != null) return -1;
         if (mapping == null) return mouse;
         InputConstants.Key key = mapping.getKey();
         return key.getType() == InputConstants.Type.MOUSE && key.getValue() >= 0 && key.getValue() <= 2 ? key.getValue() : -1;
     }
 
     private Component name() {
+        if (fixedName != null) return Component.literal(fixedName);
         return mapping == null ? Component.empty() : mapping.getTranslatedKeyMessage();
     }
 
     private boolean down(long now) {
         boolean down;
         long window = Minecraft.getInstance().getWindow().getWindow();
-        if (mapping == null) {
+        if (fixedName != null) {
+            down = InputConstants.isKeyDown(window, fixedKey);
+        } else if (mapping == null) {
             down = mouse == SCROLL ? now - scrolled < 150_000_000L : GLFW.glfwGetMouseButton(window, mouse) == GLFW.GLFW_PRESS;
         } else {
             InputConstants.Key key = mapping.getKey();

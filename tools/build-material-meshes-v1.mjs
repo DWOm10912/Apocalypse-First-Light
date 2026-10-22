@@ -298,8 +298,9 @@ const GUI = [30, 225, 0];
  * materials goes to the mesh's translucent layer (AflHybridMeshRendering); the icon draws it through iconOpts.xray.
  * atlas: atlas size in texels (default 256; big worn gear such as backpacks takes 512 to keep the texel density).
  * meshOnly: no item model and no icon (a mesh drawn only by code, e.g. a strap worn on the body).
+ * texelsPerPx: the auto unwrap's starting density (default 40; a printed surface such as a book cover asks for more).
  */
-export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}, atlas: ATLAS = ATLAS_DEFAULT, meshOnly = false}) {
+export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}, atlas: ATLAS = ATLAS_DEFAULT, meshOnly = false, texelsPerPx = 40}) {
   const gui = iconOpts.view ?? GUI;
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
@@ -307,7 +308,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
   for (const p of PARTS) transform(p, move(shift));
   const size = sub(hi, lo);
 
-  const UV = uv ?? unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: 40, stepS: 0.25});
+  const UV = uv ?? unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: texelsPerPx, stepS: 0.25});
   for (const p of PARTS) assert(p.f.every(f => UV.faceUV.get(p)?.has(f)), 'unmapped face in ' + id + '/' + p.name);
   const main = MATS[bg ?? PARTS[0].f[0].mat];
   const painted = paint({PARTS, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas: ATLAS, pad: PAD, MATS, ZONED: new Set(), groupInfo: new Map(),

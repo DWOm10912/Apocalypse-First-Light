@@ -1,0 +1,5 @@
+{
+  "providers": [
+    {"type": "ttf", "file": "apocalypse_firstlight:afl_sans_sc.ttf", "size": 8.5, "oversample": 4, "shift": [0, 7]}
+  ]
+}

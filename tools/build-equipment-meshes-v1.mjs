@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {Part, extrude, revolve, area2, newell, png, triangulate} from './cube-slab-mesh-lib.mjs';
+import {Part, extrude, revolve, area2, newell, png, readPng, triangulate} from './cube-slab-mesh-lib.mjs';
 import {bake} from './build-material-meshes-v1.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -858,6 +858,256 @@ function clawHammer() {
 }
 
 /**
+ * Building hammer (2026-10-21, building hammer B0, docs/gameplay/building_hammer_b0.md): the tool of the building mode, a
+ * traditional double-faced hammer (a 2.5 lb club hammer: a forged steel head 4.6 inch long and 1.6 inch square, both faces
+ * the same, on a 12 inch hickory handle). Authored in the claw hammer's frame and scale (1 px = 1.25 inch, the handle along
+ * +Y, the head along X, z across) with the claw hammer's handle and eye height, so the claw hammer's tested hold carries
+ * over (its grip lands within 0.25 px, checked offline). The head: rings lofted face to face, each end a domed round-
+ * cornered face with a ground chamfer, the body a rounded square that narrows a little either side of the eye block. The
+ * head is dark forged steel with a heat-blued tone (not the claw hammer's black enamel), the faces ground bright; the
+ * handle oiled hickory, darker than the claw hammer's lacquer, its end grain with the wedge proud of the top.
+ */
+export const CLUB = {eye: 9.96, top: 10.4, half: 1.85};
+function buildingHammer() {
+  const B = 'building_hammer', {eye: EYE, top: TOP, half: L} = CLUB, X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
+  const sring = (h, w, p, n = 16) => Array.from({length: n}, (_, k) => { const a = 2 * Math.PI * k / n, c = Math.cos(a), s = Math.sin(a);
+    return [h * Math.sign(c) * Math.abs(c) ** (2 / p), w * Math.sign(s) * Math.abs(s) ** (2 / p)]; });
+
+  // handle: the claw hammer's sections, a touch fuller through the shank (a heavier head)
+  const handle = new Part('handle', B, 'hickory');
+  const HY = [[0, 0.5, 0.37], [0.08, 0.58, 0.44], [0.22, 0.61, 0.46], [0.6, 0.58, 0.43], [1.5, 0.53, 0.39], [4, 0.5, 0.37],
+    [6.5, 0.46, 0.33], [8.2, 0.41, 0.29], [9.05, 0.44, 0.3], [9.4, 0.42, 0.28], [TOP + 0.04, 0.42, 0.28]];
+  const hc = HY.map(([y]) => [0, y, 0]);
+  loft(handle, HY.map(([y, a, b], i) => ringAt(handle, hc[i], X, Z, sring(a, b, 2, 12))), hc);
+  for (const f of handle.f) if (f.tag === 'cap') f.mat = 'endgrain';
+
+  // head: [x, half height (y), half width (z), squareness], face to face along X; symmetric about the eye
+  const side = [[L, 0.5, 0.5, 2.4], [L - 0.06, 0.6, 0.6, 3.2], [L - 0.24, 0.63, 0.63, 5.5], [0.95, 0.6, 0.58, 5.5], [0.55, 0.63, 0.6, 6]];
+  const HS = [...side.map(([x, ...r]) => [-x, ...r]), ...side.slice().reverse().map(([x, ...r]) => [x, ...r])];
+  const head = new Part('head', B, 'forged');
+  const centres = HS.map(([x]) => [x, EYE, 0]);
+  const rings = HS.map(([, h, w, p], i) => ringAt(head, centres[i], Y, Z, sring(h, w, p)));
+  const n = HS.length;
+  loft(head, rings, centres, {mat: i => i === 0 || i === n - 2 ? 'face' : 'forged', capMat: 'face'});
+  // both faces a shallow dome: each cap's centre pushed 0.04 out
+  for (const sgn of [-1, 1]) {
+    const c = head.v.findIndex(q => q[0] === sgn * L && q[1] === EYE && q[2] === 0);
+    if (c >= 0) head.v[c] = [sgn * (L + 0.04), EYE, 0];
+  }
+
+  const hickory = pos => tone3([150, 110, 70], 1 + 0.14 * (fbm3(pos[1] * 0.3, pos[0] * 3, pos[2] * 3) - 0.5) + 0.05 * (vn3(pos[1] * 1.1 + 5.3, pos[0] * 8, pos[2] * 8) - 0.5));
+  const endgrain = pos => Math.abs(pos[2]) < 0.045 ? tone3([160, 124, 84], 1)
+    : tone3([112, 80, 50], 1 + 0.05 * Math.sin(pos[0] * 2 * Math.PI / 0.14) + 0.04 * (vn3(pos[0] * 3, pos[2] * 3, 4) - 0.5));
+  // forged steel: dark with a faint blue-grey temper, low-frequency mottling from the forge scale (+-6 %)
+  const forged = pos => tone3([58, 62, 70], 1 + 0.12 * (fbm3(pos[0] * 1.6 + 2.2, pos[1] * 1.6, pos[2] * 1.6) - 0.5));
+  return {PARTS: [handle, head], bg: 'ground', MATS: {
+    ground: {c: [58, 62, 70], hl: 10, sm: 104, se: 124, f0: 230},    // the atlas background: the forged tone, flat
+    forged: {c: forged, hl: 10, sm: 104, se: 124, f0: 230},          // bare forged steel, oiled: metal, satin-rough
+    face: {c: [170, 172, 176], hl: 16, sm: 168, se: 180, f0: 230},    // the ground striking faces and their chamfers
+    hickory: {c: hickory, hl: 6, sm: 118, se: 128, f0: 20},           // oiled hickory, less sheen than lacquer
+    endgrain: {c: endgrain, hl: 4, sm: 70, se: 80, f0: 20},
+  },
+  // the claw hammer's holds (user PASS 2026-10-21; one face down in first and third person), the translations moved so
+  // the grip (y 3.5 on the handle) lands where the claw hammer's does: the bake centres this head on X (the claw shifted
+  // the claw hammer 0.22 px) and the head is 0.15 px taller (checked offline 2026-10-21: the grip moved 0.33 px in first
+  // person, 0.25 px in third; the faces 9.4 / 7.1 px from the grip)
+  display: {
+    firstperson_righthand: {rotation: [0, -75, 50], translation: [0.427, 2.229, -2.571], scale: [1.4, 1.4, 1.4]},
+    firstperson_lefthand: {rotation: [0, 75, -50], translation: [0.427, 2.229, -2.571], scale: [1.4, 1.4, 1.4]},
+    thirdperson_righthand: {rotation: [0, -90, 15], translation: [0, 2.516, 0.254], scale: [1.05, 1.05, 1.05]},
+    thirdperson_lefthand: {rotation: [0, 90, -15], translation: [0, 2.516, 0.254], scale: [1.05, 1.05, 1.05]},
+    ground: {rotation: [0, 0, 90], translation: [0, -1, 0], scale: [0.8, 0.8, 0.8]},
+    fixed: {rotation: [0, 0, -45], translation: [0, 0, 0], scale: [1.1, 1.1, 1.1]},
+  },
+  icon: {view: [0, 0, -45], coverage: 0.3, mat: {forged: [92, 98, 108], face: [204, 206, 210], hickory: [190, 146, 98], endgrain: [150, 110, 72]}},
+  points: {axis: [0, 0, 0], top: [0, TOP, 0], eye: [0, EYE, 0], grip: [0, 3.5, 0]}};
+}
+
+/**
+ * Held-display fit (docs/models/equipment_meshes_v1.md, 手持适配规则): the translation that puts an item's grip point
+ * (authored px) where the claw hammer's grip sits in that view (the reference, user PASS 2026-10-21), for the item's own
+ * rotation and scale. translation = reference - scale * R * grip, the grip taken about the baked mesh's centre (bake
+ * centres it), R = Rx Ry Rz as the item model's rotation (JOML XYZ, z first).
+ */
+const HELD_REF = {
+  firstperson: {t: [0.5, 2.4, -2.3], s: 1.4, r: [0, -75, 50]},
+  thirdperson: {t: [0, 2.5, 0.5], s: 1.05, r: [0, -90, 15]},
+};
+const HAMMER_GRIP = [-0.223, -1.72, 0];   // the claw hammer's grip, about its baked centre
+export function rotXYZ([a, b, c], [x, y, z]) {
+  const r = d => d * Math.PI / 180, ca = Math.cos(r(a)), sa = Math.sin(r(a)), cb = Math.cos(r(b)), sb = Math.sin(r(b)), cc = Math.cos(r(c)), sc = Math.sin(r(c));
+  [x, y] = [x * cc - y * sc, x * sc + y * cc];   // Rz
+  [x, z] = [x * cb + z * sb, -x * sb + z * cb];   // Ry
+  [y, z] = [y * ca - z * sa, y * sa + z * ca];   // Rx
+  return [x, y, z];
+}
+export const meshCentre = PARTS => { const all = PARTS.flatMap(p => p.v);
+  return [0, 1, 2].map(k => (Math.min(...all.map(q => q[k])) + Math.max(...all.map(q => q[k]))) / 2); };
+function fitHeld(PARTS, grip, view, rotation, scale) {
+  const ref = HELD_REF[view], g = sub3(grip, meshCentre(PARTS));
+  const at = add3(ref.t, mul3(rotXYZ(ref.r, HAMMER_GRIP), ref.s));
+  const t = sub3(at, mul3(rotXYZ(rotation, g), scale)).map(v => +v.toFixed(3));
+  const [rx, ry, rz] = rotation, s = [scale, scale, scale];
+  return {[view + '_righthand']: {rotation, translation: t, scale: s}, [view + '_lefthand']: {rotation: [rx, -ry, -rz], translation: t, scale: s}};
+}
+
+/**
+ * Hand saw (2026-10-21, the workbench's test beam recipe, docs/gameplay/afl_workbench_v1_design.md): an American 26 inch
+ * rip saw of the classic pattern (5 1/2 points per inch, a straight-backed taper-ground blade, a closed apple-wood handle
+ * with three brass saw nuts; plain, no medallion art or etch). Authored at the felling axe's scale (1 px = 1.25 inch) in
+ * the plane of the blade: the blade along +Y (the toe at +Y), the tooth line on x = 0 with the teeth toward -X and the back
+ * toward +X, z across. The blade 0.035 inch thick, 7 1/4 inch wide at the heel, 1.9 at the toe; the teeth a separate strip
+ * (rip teeth: an upright face toward the toe, the back sloping) ground bright; the handle a closed loop around a slanted
+ * hand hole, its edges chamfered, clear-lacquered; the nuts domed both sides.
+ */
+export const SAW = {K: 0.8, heel: 0.4, toe: 26.2, heelWidth: 7.25, toeWidth: 1.9, teethFrom: 1.0, teethTo: 25.8, root: 0.2, tooth: 0.11,
+  hole: {c: [-1.25, 4.6], a: [-0.414, -0.91], length: 3.9, width: 1.35}, grip: [-2.37, 5.1]};
+function handSaw() {
+  const B = 'hand_saw', {K} = SAW, xy = ([s, h]) => [h * K, s * K];
+  const back = s => SAW.heelWidth + (SAW.toeWidth - SAW.heelWidth) * (s - SAW.heel) / (SAW.toe - SAW.heel);
+  const BT = 0.035 * K / 2, HT = 0.95 * K / 2;   // half thickness: the blade, the handle
+
+  // blade: heel (inside the handle) to toe, the back a straight taper, its lower edge where the tooth strip begins
+  const blade = new Part('blade', B, 'steel');
+  const bladeOutline = [[SAW.heel, SAW.root], [SAW.toe, SAW.root], [SAW.toe, SAW.toeWidth], [SAW.heel, SAW.heelWidth]].map(xy);
+  extrude(blade, 'z', {outer: orient(bladeOutline, true), holes: []}, -BT, BT, 0);
+  // teeth: a gullet, the back sloping down to the point, the face back up to the next gullet (rip teeth cut toward the toe)
+  const teeth = new Part('teeth', B, 'teeth'), N = Math.round((SAW.teethTo - SAW.teethFrom) / 0.182), P = (SAW.teethTo - SAW.teethFrom) / N;
+  // the strip: from the blade's lower edge (h = root) down to the gullets (h = tooth) and the points on the tooth line (h = 0)
+  const zig = [[SAW.teethFrom, SAW.root], [SAW.teethFrom, SAW.tooth]];
+  for (let k = 0; k < N; k++) { const s0 = SAW.teethFrom + k * P; zig.push([s0 + P * 0.88, 0], [s0 + P, SAW.tooth]); }
+  zig.push([SAW.teethTo, SAW.root]);
+  extrude(teeth, 'z', {outer: orient(zig.map(xy), true), holes: []}, -BT, BT, 0);
+
+  // handle: [along the blade, up from the tooth line] (inch), the closed loop from the top of the cheek back over the upper
+  // horn (it overhangs the web of the thumb by 0.7 inch), the throat, down the grip's back (parallel to the hand hole, a
+  // little full), out to the lower horn, along the bottom and up the front edge over the blade's heel; 7.75 inch tall
+  const H = [[2.6, back(2.6) + 0.1], [1.8, 7.55], [0.9, 8.0], [0, 8.25], [-0.9, 8.35], [-1.7, 8.3], [-2.4, 8.1], [-2.85, 7.78], [-3.0, 7.45],
+    [-2.85, 7.18], [-2.5, 7.05], [-2.2, 6.79], [-2.55, 6.1], [-2.96, 5.38], [-3.27, 4.65], [-3.53, 3.88], [-3.85, 3.2], [-4.3, 2.5],
+    [-4.65, 1.95], [-4.75, 1.45], [-4.5, 1.05], [-4.1, 0.9], [-3.3, 0.7], [-2.4, 0.6], [-1.5, 0.62], [-0.6, 0.72], [0.2, 0.85],
+    [0.7, 1.05], [1.1, 1.5], [1.45, 2.45], [1.8, 3.6], [2.1, 4.8], [2.35, 5.9]];
+  const {c: hc, a: ha, length: hl, width: hw} = SAW.hole, hr = hw / 2, hs = hl / 2 - hr, hn = [-ha[1], ha[0]];
+  const hole = [];
+  for (const [sgn, a0] of [[1, 0], [-1, Math.PI]]) for (let i = 0; i <= 8; i++) {
+    const a = a0 - Math.PI / 2 + Math.PI * i / 8, e = [Math.cos(a), Math.sin(a)];
+    hole.push([hc[0] + sgn * hs * ha[0] + hr * (e[0] * ha[0] + e[1] * hn[0]), hc[1] + sgn * hs * ha[1] + hr * (e[0] * ha[1] + e[1] * hn[1])]);
+  }
+  const handle = new Part('handle', B, 'apple');
+  extrude(handle, 'z', {outer: orient(H.map(xy), true), holes: [orient(hole.map(xy), false)]}, -HT, HT, 0.18 * K);
+  // three brass saw nuts through the cheeks and the blade, domed on both faces
+  const nuts = [[1.6, 5.6], [1.15, 3.6], [0.7, 2.3]].map(([s, h], i) => {
+    const nut = new Part('nut_' + i, B, 'brass'), r = 0.3 * K, z1 = HT + 0.07 * K, [x, y] = xy([s, h]);
+    revolve(nut, x, y, [[z1, 0], [z1, r * 0.5], [z1 - 0.012, r * 0.8], [z1 - 0.03, r * 0.96], [HT - 0.01, r], [-(HT - 0.01), r],
+      [-(z1 - 0.03), r * 0.96], [-(z1 - 0.012), r * 0.8], [-z1, r * 0.5], [-z1, 0]], 12);
+    return nut;
+  });
+
+  const PARTS = [blade, teeth, handle, ...nuts], grip = [...xy(SAW.grip), 0];
+  // apple wood: close, even grain along the handle's length (+-7 %), a finer second scale; clear lacquer
+  const apple = pos => tone3([138, 82, 50], 1 + 0.14 * (fbm3(pos[1] * 0.4 + 1.3, pos[0] * 2.2, pos[2] * 2.2) - 0.5) + 0.05 * (vn3(pos[1] * 1.3 + 6.1, pos[0] * 7, pos[2] * 7) - 0.5));
+  // blade steel: a faint low-frequency mottle from the taper grinding and age (+-5 %), no marks
+  const steel = pos => tone3([128, 131, 136], 1 + 0.1 * (fbm3(pos[0] * 0.5 + 4.1, pos[1] * 0.25, pos[2] * 0.5) - 0.5));
+  return {PARTS, bg: 'plate', MATS: {
+    plate: {c: [128, 131, 136], hl: 10, sm: 150, se: 166, f0: 230},   // the atlas background: the blade's tone, flat
+    steel: {c: steel, hl: 10, sm: 150, se: 166, f0: 230},              // the blade: bright spring steel, satin from use
+    teeth: {c: [170, 172, 176], hl: 14, sm: 168, se: 180, f0: 230},    // the teeth, freshly filed
+    apple: {c: apple, hl: 6, sm: 150, se: 160, f0: 20},
+    brass: {c: [176, 138, 72], hl: 14, sm: 156, se: 170, f0: 230},
+  },
+  // held by the grip like a pistol, the blade forward from the index finger, the teeth down; the grip lands on the claw
+  // hammer's (fitHeld, checked offline 2026-10-21: within 0.001 px). Third person: Ry(-90) puts the back up, Rz(35) dips
+  // the blade 35 deg in the hand's frame (about 17 below level against the arm's 18 deg lift; 45 put the toe at the
+  // feet), the grip bar 31 deg off the fist's axis. First person: Rz(110) the toe forward and 20 deg down, 14 deg toward
+  // the screen's middle, the teeth down. Scaled about the felling axe's size (the skeleton prop's scale 0.7).
+  display: {
+    ...fitHeld(PARTS, grip, 'firstperson', [0, -75, 110], 0.85),
+    ...fitHeld(PARTS, grip, 'thirdperson', [0, -90, 35], 0.7),
+    ground: {rotation: [90, 0, 0], translation: [0, 1, 0], scale: [0.45, 0.45, 0.45]},
+    fixed: {rotation: [0, 0, -45], translation: [0, 0, 0], scale: [0.62, 0.62, 0.62]},
+  },
+  atlas: 512, icon: {view: [0, 0, -45], coverage: 0.3, mat: {plate: [160, 164, 170], steel: [160, 164, 170], teeth: [196, 198, 202], apple: [168, 104, 64], brass: [210, 170, 92]}},
+  // skeleton prop and hung points (px): the grip (the bar behind the hand hole), the toe and heel on the tooth line, the
+  // middle of the tooth line, the top of the hand hole's far end (where it hangs from a peg)
+  points: {grip, toe: xy([SAW.toe, 0]).concat(0), heel: xy([SAW.heel, 0]).concat(0), teeth_mid: xy([(SAW.teethFrom + SAW.teethTo) / 2, 0]).concat(0),
+    hole_c: xy(hc).concat(0)}};
+}
+
+/**
+ * Field Survival Guide (2026-10-22, docs/gameplay/field_survival_guide_v1_design.md): a perfect-bound pocket paperback,
+ * 11.5 x 18 cm and 6 mm thick (48 pages and a card cover), trimmed flush on three sides like any paperback, so it is
+ * one block: the cover (front, spine, back) printed from the English cover wrap, the three trimmed edges showing the
+ * stacked sheets. The fore-edge corners rounded by wear, the spine corners nearly square, the cover's edges softened.
+ * Authored in cm at the felling axe's scale (1 px = 1.25 inch), already centred on X / Z and resting on y = 0 (so the
+ * bake does not move it): the spine at -X, the front cover facing +Z, the top at +Y. The two images come from
+ * design/items/field_survival_guide_v1 (fsg_game_assets.py): field_survival_guide_cover_src.png is the flat wrap
+ * (back | 6 mm spine | front, outside up), field_survival_guide_edges_src.png the sheets seen edge-on (rows = sheets).
+ */
+export const BOOK = {W: 11.5, H: 18, T: 0.6, corner: 0.22, spineCorner: 0.05, edge: 0.04, K: 0.8 / 2.54};
+function fieldSurvivalGuide() {
+  const B = 'field_survival_guide', {W, H, T, K} = BOOK, cm = v => v * K;
+  const tex = name => readPng(fs.readFileSync(path.join(ROOT, 'src/main/blockbench/textures', name)));
+  const wrap = tex('field_survival_guide_cover_src.png'), sheets = tex('field_survival_guide_edges_src.png');
+  // bilinear sample at (u, v) in 0..1, clamped
+  const sample = (img, u, v) => {
+    const x = Math.max(0, Math.min(img.w - 1.001, u * img.w - 0.5)), y = Math.max(0, Math.min(img.h - 1.001, v * img.h - 0.5));
+    const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, at = (X, Y) => { const o = (Y * img.w + X) * img.bpp; return [img.px[o], img.px[o + 1], img.px[o + 2]]; };
+    const a = at(x0, y0), b = at(x0 + 1, y0), c = at(x0, y0 + 1), d = at(x0 + 1, y0 + 1);
+    return a.map((_, k) => (a[k] * (1 - fx) + b[k] * fx) * (1 - fy) + (c[k] * (1 - fx) + d[k] * fx) * fy);
+  };
+  // the wrap is 1150 | 60 | 1150 design units across (fsg_pages.py: two 11.5 cm boards, the 6 mm spine)
+  const PW = 1150, SW = 60, WW = 2 * PW + SW;
+  const cover = (pos, n) => {
+    const x = pos[0] / K, y = pos[1] / K, z = pos[2] / K, v = 1 - y / H;
+    if (n[0] < -0.6 && Math.abs(n[0]) > Math.abs(n[2])) return sample(wrap, (PW + (z + T / 2) / T * SW) / WW, v);   // the spine
+    if (z >= 0) return sample(wrap, (PW + SW + (x + W / 2) / W * PW) / WW, v);                                  // the front
+    return sample(wrap, ((W / 2 - x) / W * PW) / WW, v);                                                         // the back
+  };
+  // the trimmed edges: along the edge on u, across the sheets on v (the front cover at the top row)
+  const edges = (pos, n) => {
+    const x = pos[0] / K, y = pos[1] / K, z = pos[2] / K, v = (T / 2 - z) / T;
+    return sample(sheets, Math.abs(n[0]) > Math.abs(n[1]) ? y / H : (x + W / 2) / W, v);
+  };
+
+  // the outline in the cover's plane (x, y): the spine side with tight corners, the fore-edge with worn round ones
+  const r = cm(BOOK.corner), rs = cm(BOOK.spineCorner), x0 = cm(-W / 2), x1 = cm(W / 2), y1 = cm(H), arc = (cx, cy, rr, a0) =>
+    Array.from({length: 5}, (_, i) => { const a = (a0 + 90 * i / 4) * Math.PI / 180; return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)]; });
+  const outline = [...arc(x1 - r, r, r, -90), ...arc(x1 - r, y1 - r, r, 0), ...arc(x0 + rs, y1 - rs, rs, 90), ...arc(x0 + rs, rs, rs, 180)];
+  const book = new Part('book', B, 'cover');
+  extrude(book, 'z', {outer: orient(outline, true), holes: []}, cm(-T / 2), cm(T / 2), cm(BOOK.edge));
+  // the cover takes the caps (front and back), the spine wall and every softened edge; the trimmed sides show the sheets
+  for (const f of book.f) {
+    if (f.tag !== 'side') continue;
+    const n = newell(f.ids.map(i => book.v[i])), L = Math.hypot(...n);
+    if (n[0] / L > -0.6) f.mat = 'edges';
+  }
+
+  const PARTS = [book];
+  // First person: held up in the right hand by the fore-edge, thumb on the front cover a third of the way up, the book
+  // reaching toward the screen's middle; Ry(-30) turns the front cover toward the camera and the middle, Rx(-20) leans
+  // the top away, at the claw hammer's scale (the reference). Third person: carried at the side by the spine, the spine
+  // along the fist (forward), the book hanging below it, the front cover facing out (Ry 90), at the hand saw's scale.
+  // Checked offline 2026-10-22: the grip lands on the hammer's; first person the book spans 4.4 px left of the grip and
+  // its cover normal is (-0.50, 0.30, 0.81); third person the fore-edge hangs 2.4 px below the spine.
+  const grip = [x1 - cm(0.6), cm(H * 0.33), 0], carry = [x0 + cm(0.3), cm(H * 0.45), 0];
+  return {PARTS, bg: 'plate', MATS: {
+    plate: {c: [46, 71, 52], hl: 3, sm: 96, se: 110, f0: 20},   // the atlas background: the cover's green, flat
+    // the cover: printed coated card, low gloss
+    cover: {c: cover, hl: 3, sm: 96, se: 110, f0: 20},
+    // the page edges: uncoated paper, matte
+    edges: {c: edges, hl: 2, sm: 40, se: 48, f0: 20},
+  },
+  display: {
+    ...fitHeld(PARTS, grip, 'firstperson', [-20, -30, 0], 1.4),
+    ...fitHeld(PARTS, carry, 'thirdperson', [0, 90, 0], 0.7),
+    ground: {rotation: [-90, 0, 0], translation: [0, 1, 0], scale: [0.5, 0.5, 0.5]},
+    fixed: {rotation: [0, 180, 0], translation: [0, 0, 0], scale: [1.6, 1.6, 1.6]},
+  },
+  // the icon shows the front cover, turned a little to show the spine and the top edge
+  atlas: 512, texelsPerPx: 72, icon: {view: [10, 25, 0]},
+  points: {grip, carry, spine_mid: [x0, cm(H / 2), 0], centre: [0, cm(H / 2), 0]}};
+}
+
+/**
  * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
  * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
  * outline; 2x supersampled. spec.hud: screen(p) -> [x right, y up], toward = the direction to the viewer, scale px / unit.
@@ -930,6 +1180,9 @@ export const ITEMS = {
   flip_lighter: flipLighter,
   felling_axe: fellingAxe,
   claw_hammer: clawHammer,
+  building_hammer: buildingHammer,
+  hand_saw: handSaw,
+  field_survival_guide: fieldSurvivalGuide,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

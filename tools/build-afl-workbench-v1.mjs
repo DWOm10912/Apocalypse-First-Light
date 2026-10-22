@@ -193,7 +193,8 @@ function mesh() {
 // its own frame (the right half one block over), physical and selection boxes cut to the half, the regions over the whole
 // bench. The left (master) half's state names which drawers are open (left_<drawer_left><drawer_right>); the right half
 // never changes. Regions: drawer_left / drawer_right (open or close), interior_left / interior_right while open (the
-// drawer's screen), peg0..peg4 (hang or take a tool). Regions are grown 1 cm so their edges are easy to hit.
+// drawer's screen), peg0..peg4 (hang or take a tool), top (the crafting page). Regions are grown 1 cm so their edges
+// are easy to hit.
 const TABLE = nbox([[0.04, 0.04, 0], [1.96, 0.96, TOP_Z]]), VISE = nbox([[0.2, -0.075, 0.66], [0.6, 0.04, TOP_Z]]);
 const BOARD = nbox([[0.04, 0.82, TOP_Z], [1.96, 0.96, 1.86]]), SHELF = nbox([[0.04, 0.6, 1.86], [1.96, 0.96, 1.97]]);
 const HANG = nbox([[0.07, 0.7, 0.92], [1.93, 0.86, 1.8]]);
@@ -205,6 +206,8 @@ export const pullPoint = (d, out) => N([(d.f0 + d.f1) / 2, 0.034 - out, 0.7]);
 const interiorPoint = d => N([(d.x0 + d.x1) / 2, (0.085 - DRAWER_OUT + 0.04) / 2, 0.79]);
 export const pegPoint = i => N([SLOT_X[i], TOOL_Y, PEG_Z]);
 const pegRegion = i => nbox([[SLOT_X[i] - 0.13, 0.7, 1.0], [SLOT_X[i] + 0.13, 0.86, 1.72]]);
+/** The work surface (the crafting page): the maple top in front of the tool board, a little above and into it. */
+const TOP_REGION = nbox([[0.04, 0.04, TOP_Z - 0.03], [1.96, 0.82, TOP_Z + 0.02]]), TOP_POINT = N([1.0, 0.4, TOP_Z + 0.02]);
 
 function shapes() {
   const cut = ([a, b], c0) => [[Math.max(a[0], c0), a[1], a[2]], [Math.min(b[0], c0 + 1), b[1], b[2]]];
@@ -220,6 +223,7 @@ function shapes() {
       if (open[name]) regions[name.replace('drawer', 'interior')] = [[drawerInterior(d)], interiorPoint(d)];
     }
     SLOT_X.forEach((_, i) => { regions['peg' + i] = [[pegRegion(i)], pegPoint(i)]; });
+    regions.top = [[TOP_REGION], TOP_POINT];
     return state({physical, selection, regions}, dx);
   };
   for (const l of [0, 1]) for (const r of [0, 1]) states[`left_${l}${r}`] = make(0, 0, {drawer_left: l, drawer_right: r});

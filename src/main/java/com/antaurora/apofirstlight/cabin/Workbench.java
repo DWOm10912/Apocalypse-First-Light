@@ -45,9 +45,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * AFL Workbench V1 (docs/gameplay/afl_workbench_v1_design.md 14, 2026-10-21): a wooden workbench two cells across, one
  * deep, two high (tools/build-afl-workbench-v1.mjs, a Furniture Mesh drawn facing north): a vise end on the viewer's left,
- * two drawers under the maple top on the right, a tool board with five peg pairs and a shelf above. No crafting yet (user
- * 2026-10-21: no screen this round); the storage and the pegs work:
+ * two drawers under the maple top on the right, a tool board with five peg pairs and a shelf above:
  * <ul>
+ * <li>The top ({@code top}): the crafting page (client/workbench/AflWorkbenchScreen, design doc 16; no recipes yet).</li>
  * <li>Drawers {@code drawer_left} / {@code drawer_right} (as seen from the front): aim at a drawer front and it slides out
  * 40 cm (8 ticks, eased), aim at it again and it slides in; aim into an open drawer for its 9 slots (a plain chest
  * screen, no search: a placed bench is the player's). Each drawer keeps its own 9 ({@link WorkbenchBlockEntity}).</li>
@@ -257,9 +257,10 @@ public final class Workbench extends BaseEntityBlock implements AflMeshInteracti
 
     // ------------------------------------------------------------------------------------------- interaction
 
-    /** Drawers open / close, an open drawer's inside view; the pegs' prompts are the tool rack's (client WorldInteractionHint). */
+    /** The top: craft; drawers open / close, an open drawer's inside view; the pegs' prompts are the tool rack's (client WorldInteractionHint). */
     @Override
     public @Nullable String interactionHintKey(Level level, BlockState state, BlockPos pos, String region) {
+        if (region.equals("top")) return "hint.apocalypse_firstlight.workbench.craft";
         int side = drawerOf(region);
         if (side < 0) return null;
         boolean open = drawerOpen(level, master(state, pos), side);
@@ -276,6 +277,11 @@ public final class Workbench extends BaseEntityBlock implements AflMeshInteracti
         BlockPos m = master(state, pos);
         if (region == null || !(level.getBlockEntity(m) instanceof WorkbenchBlockEntity bench)) return InteractionResult.PASS;
         String name = region.region();
+        if (name.equals("top")) {
+            if (level.isClientSide) net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.workbench.WorkbenchClient.open(m));
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         int peg = pegOf(name);
         if (peg >= 0) return usePeg(bench, level, m, player, hand, peg);
         int side = drawerOf(name);

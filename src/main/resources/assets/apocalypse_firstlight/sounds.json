@@ -812,6 +812,14 @@
     "subtitle": "subtitles.apocalypse_firstlight.tree_chop",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/chop_1", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:tree_felling/chop_2", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:tree_felling/chop_3", "attenuation_distance": 10}]
   },
+  "hand_saw_push": {
+    "subtitle": "subtitles.apocalypse_firstlight.hand_saw",
+    "sounds": [{"name": "apocalypse_firstlight:hand_saw/push_1"}, {"name": "apocalypse_firstlight:hand_saw/push_2"}, {"name": "apocalypse_firstlight:hand_saw/push_3"}]
+  },
+  "hand_saw_pull": {
+    "subtitle": "subtitles.apocalypse_firstlight.hand_saw",
+    "sounds": [{"name": "apocalypse_firstlight:hand_saw/pull_1"}, {"name": "apocalypse_firstlight:hand_saw/pull_2"}]
+  },
   "tree_crack": {
     "subtitle": "subtitles.apocalypse_firstlight.tree_crack",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/crack", "attenuation_distance": 12}]

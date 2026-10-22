@@ -36,6 +36,7 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - **图标 `depthSeam`**（2026-10-13，给绝缘铜线的线卷加的）：同一个部件前后两段相差超过这个深度时也画接缝，见 [Material Meshes V1](material_meshes_v1.md)「物品栏图标」。
 - **`atlas`**（2026-10-14）：贴图集边长，默认 256；背包、胸挂这类大件用 512，保持贴图密度。
 - **`meshOnly`**（2026-10-14）：不写物品模型和图标，只要网格（没有物品、只由代码画的东西，比如斜挎在身上的枪背带）。
+- **`texelsPerPx`**（2026-10-22）：UV 展开的起始贴图密度，默认 40（不写时输出不变）。很薄、面积小的物品（书）图集只用到一小块时调高，让贴图填满图集。
 - **图标 `hide`**（2026-10-14）：列出的部件不画进图标，图标的取景也不算它们。穿戴装备绕身体的带子（肩带、腰带、腿带）离开身体会变成悬空的圈，图标里只画装备本体。
 
 ## 物品
@@ -103,6 +104,10 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - 588 个三角面，256 贴图集，贴图密度 9.5 texel/像素。烘焙平移 `origin` = `[1.456, 5.0271, 0]`。
 - 物品：`verticalOffset` = (-0.8 - 5.0271) / 16 = -0.36419375，杆的高度和 V1 一样；水平方向比 V1 偏了约 0.46 像素（V1 的杆在物品坐标 x = 9，网格的居中方式到不了），我接受了这点偏差。手持、掉落、展示框沿用 V1 的显示变换；物品栏是网格画的 2D 图标（视角 `[0, 0, -45]`）。
 - HUD 剪影：`textures/gui/melee/crowbar_hud.png`，1107 × 207，每个网格像素画 40 像素，爪在左、向上弯。
+- **挂起来**（2026-10-21，编译通过，未实机）：`WorkbenchRenderer.crowbar`，真实大小（缩放 0.508，全长 86 cm）。按全钢算，网格体积 20.36 立方像素，约 5.1 kg，重心在网格 `(-0.359, 10.434)`。鹅颈钩内径 7.9 cm，钩不住一对钉，只挂一根。
+  - 木质工具架：挂在 -x 那根钉上自由下垂，转 -8°，重心正在钩心下面，往下垂 84 cm。
+  - 工作台：桌面离钉子只有 72 cm，所以挂在 +x 那根钉上，铲口拄在桌面上斜靠，转 -37.75°。
+  - 每种挂法存一个网格点（烘焙后的像素）：这个点落在槽位中间、钉子中心的高度。工具架是 `(1.1419, 26.4254)`，工作台是 `(-1.8002, 25.3175)`。
 
 ### 网格背包的五件装备
 
@@ -212,3 +217,48 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - **检查**：
   - `node tools/build-equipment-meshes-v1.mjs flip_lighter --check` 通过；整体 `--check` 只有 `models/item/geiger_counter.json` 报过期，这是之前就有的，和打火机无关；
   - `compileJava --offline` 通过；没有实机验证。
+
+## 2026-10-21 新增：建筑锤 `building_hammer`（建筑锤 B0）
+
+玩法见 [建筑锤 B0](../gameplay/building_hammer_b0.md)。独立的双面锤，没有复用羊角锤的模型和贴图（羊角锤一个文件都没改）。
+
+- **生成脚本** `buildingHammer()`（`tools/build-equipment-meshes-v1.mjs`）：柄沿用羊角锤的山核桃木柄截面，稍粗；锤头是左右镜像的放样，截面从锤面（圆形，边上倒角）过渡到中间的方形锤身，两端锤面单独用磨亮的 `face` 材质，端盖向外推 0.04 px 成微凸的锤面。材质：锻打的黑钢锤身（`forged`，带噪声）、锤面、山核桃木柄、柄顶端面（`endgrain`）；整体底色 `ground` 是常量色 [58, 62, 70]（`bg` 只能用常量色）。导出常量 `CLUB = {eye: 9.96, top: 10.4, half: 1.85}`。
+- 584 个三角面，尺寸 3.78 × 10.59 × 1.26 px，`verticalOffset` 0.169062，共面 0。
+- **手持**（按"手持适配规则"从握点算，握点 `points.grip` = [0, 3.5, 0]，bake 居中后 [0, −1.795, 0]；参照用户已验收的羊角锤，羊角锤握点 [−0.223, −1.720, 0]）：
+  - 第一人称右 / 左：旋转 [0, ∓75, ±50]，平移 [0.427, 2.229, −2.571]，缩放 1.4；
+  - 第三人称右 / 左：旋转 [0, ∓90, ±15]，平移 [0, 2.516, 0.254]，缩放 1.05；
+  - 握点在手里的位置和羊角锤相比：第一人称差 0.329 px，第三人称差 0.247 px；锤面离握点第一人称 9.41 px、第三人称 7.06 px（锤头在手上方，不悬空）；
+  - 掉落、展示框同羊角锤。
+- **输出**：`src/main/blockbench/building_hammer.bbmodel` 和 `textures/building_hammer_mesh{,_n,_s}.png`；`geo/building_hammer.geo.json`、`meshes/building_hammer.aflmesh.json`、`models/item/building_hammer.json`、`textures/item/building_hammer.png`（256 图标）、`textures/item/building_hammer_mesh{,_n,_s}.png`。
+- **渲染**：`AflStaticMeshItemClient.bind(BUILDING_HAMMER, "building_hammer", "building_hammer_mesh", 0.169062)`。
+- **挂在工具架和工作台上**（2026-10-21）：`WorkbenchRenderer.buildingHammer`，缩放同羊角锤 0.508；锤头平底压在木钉顶上（烘焙网格里工作台木钉处 9.36 px、工具架 9.33 px），锤柄 x = 0 在两钉中间；比羊角锤厚 0.17 px，整把往外挪 0.54 cm，背面和羊角锤同一平面。没进游戏看过。
+- **检查**：看过 256 图标；握点数值离线核对过；`compileJava --offline` 见 B0 文档；**没有实机看过**手持和掉落。
+
+## 2026-10-21 新增：手锯 `hand_saw`（工作台测试横梁的工具）
+
+玩法见 [工作台设计稿](../gameplay/afl_workbench_v1_design.md) 第 14.1、17 节。
+
+- **生成脚本** `handSaw()`（`tools/build-equipment-meshes-v1.mjs`，导出常量 `SAW`）：美式 26 英寸纵切锯，按伐木斧的比例（1 px = 1.25 英寸）在锯片平面里画：锯片沿 +Y（锯尖在 +Y），齿线在 x = 0，齿朝 −X。锯片厚 0.035 英寸、直背锥度（根部 7¼ 英寸宽、锯尖 1.9 英寸），纵切齿单独一条磨亮；苹果木闭口手柄，斜握孔，边缘倒角，清漆；三颗两面圆顶的铜锯钉。材质：`steel`（低频的磨削斑驳 ±5%）、`teeth`、`apple`（顺纹 ±7%）、`brass`，底色 `plate`。
+- 2092 个三角面，尺寸 6.68 × 24.76 × 0.872 px，`verticalOffset` −0.27375，共面 0。点：`grip` 握孔后面的握杆、`toe` / `heel` 齿线两端、`teeth_mid`、`hole_c` 握孔远端顶上（挂钉处）。
+- **手持**（按"手持适配规则"从握点算，握点落在羊角锤的握点上，离线核对差 0.001 px 以内）：像拿手枪一样握着，锯片从食指往前伸，齿朝下。
+  - 第一人称右 / 左：旋转 [0, ∓75, ±110]，缩放 0.85（锯尖往前、往下 20°，往屏幕中间偏 14°）；
+  - 第三人称右 / 左：旋转 [0, ∓90, ±35]，缩放 0.7（锯背朝上，锯片在手里往下压 35°，抵掉手臂抬起的 18° 后约低于水平 17°）；
+  - 掉落 [90, 0, 0] 缩放 0.45；展示框 [0, 0, −45] 缩放 0.62。
+- **骨骼道具**（工作台上锯木头，`tools/author-hand-saw-actions.mjs` 写 `player_props/hand_saw.json`）：真实大小，缩放 0.508；比上面多一个点 `kerf`：齿线上离手柄端 11 px（烘焙网格）的那一点，锯的来回中间正好在锯缝里。
+- **输出**：`src/main/blockbench/hand_saw.bbmodel` 和 `textures/hand_saw_mesh{,_n,_s}.png`；`geo/hand_saw.geo.json`、`meshes/hand_saw.aflmesh.json`、`models/item/hand_saw.json`、`textures/item/hand_saw.png`（图标）、`textures/item/hand_saw_mesh{,_n,_s}.png`。渲染：`AflStaticMeshItemClient.bind(HAND_SAW, "hand_saw", "hand_saw_mesh", -0.27375)`。
+- **挂起来**：`WorkbenchRenderer.handSaw`（工作台两钉穿过握孔，转 160.5°；木质工具架只挂一根钉，转 178.2°，按重心离线算出）。
+- **检查**：握点数值离线核对过；`compileJava --offline` 通过；**没有实机看过**手持、挂起来和台上的锯。
+
+## 2026-10-22 新增：野外求生指南 `field_survival_guide`
+
+玩法见 [野外求生指南设计稿](../gameplay/field_survival_guide_v1_design.md) 第 7 节。
+
+- **生成脚本** `fieldSurvivalGuide()`（`tools/build-equipment-meshes-v1.mjs`，导出常量 `BOOK`）：口袋平装书 11.5 × 18 × 0.6 厘米，厘米到 px 按 `K = 0.8 / 2.54` 换算（1 px = 1.25 英寸，和伐木斧、手锯一样）；一个沿 z 拉伸的实体，切口一侧圆角 0.22 厘米、书脊一侧 0.05 厘米，倒角 0.04 厘米。材质：`cover`（按法线和 z 采样封面整幅图：封底 | 书脊 | 封面）、`edges`（外侧切口面采样书页纹理）、底色 `plate`。
+- 76 个三角面，尺寸 3.622 × 5.669 × 0.189 px，`verticalOffset` 0.322835；图集 512，`texelsPerPx` 72（实际约 62.5）。点：`grip`（切口边、离底 1/3 高）、`carry`（书脊一侧、近中间）、`spine_mid`、`centre`。
+- **手持**（按"手持适配规则"从握点算）：
+  - 第一人称：右手捏住切口边，旋转 [−20, −30, 0]，缩放 1.4；握点落在羊角锤的握点上，书往左伸 4.4 px，封面法线朝向镜头 (−0.50, 0.30, 0.81)；
+  - 第三人称：提着书脊一侧，旋转 [0, 90, 0]，缩放 0.7，切口边垂在手下 2.4 px；
+  - 掉落 [−90, 0, 0] 平放，缩放 0.5；展示框 [0, 180, 0] 缩放 1.6。
+- **源图**：`design/items/field_survival_guide_v1/fsg_game_assets.py` + `fsg_game_assets.cjs` 生成 `src/main/blockbench/textures/field_survival_guide_cover_src.png`（1180 × 900）和 `field_survival_guide_edges_src.png`（512 × 128）。
+- **输出**：`src/main/blockbench/field_survival_guide.bbmodel` 和 `textures/field_survival_guide_mesh{,_n,_s}.png`；`geo/field_survival_guide.geo.json`、`meshes/field_survival_guide.aflmesh.json`、`models/item/field_survival_guide.json`、`textures/item/field_survival_guide.png`（图标）、`textures/item/field_survival_guide_mesh{,_n,_s}.png`。渲染：`AflStaticMeshItemClient.bind(FIELD_SURVIVAL_GUIDE, "field_survival_guide", "field_survival_guide_mesh", 0.322835)`。
+- **检查**：握点数值离线核对过；手锯、建筑锤、羊角锤的 `--check` 仍为 CHECK OK；`compileJava --offline` 通过；书的第一轮用户 2026-10-22 实机 PASS。

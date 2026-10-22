@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "59";
+    // 60: building hammer B0 (install / take down / workbench craft, work at the bench), branch AFL-Workbench; Main
+    // renumbers on merge
+    private static final String PROTOCOL = "60";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -145,6 +147,16 @@ public final class AflNetwork {
         // Vehicle physics V0-b package 1: the driver's truck state and its sync to the watchers (protocol 49; 48 is D's
         // external grid, which takes 50 when it merges)
         nextId = com.antaurora.apofirstlight.vehicle.VehiclePackets.register(channel, nextId);
+        // Building hammer B0: install, take down, workbench craft, work at the bench (protocol 60 on this branch)
+        nextId = com.antaurora.apofirstlight.building.BuildingPackets.register(channel, nextId);
+        // Field Survival Guide: the book files, "read this section", the recipe it taught (still protocol 60 on this
+        // branch; Main renumbers at the merge)
+        nextId = com.antaurora.apofirstlight.book.GuideBookPackets.register(channel, nextId);
+    }
+
+    /** Building hammer B0 / workbench (client): a BuildingPackets request. */
+    public static void buildingToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** Vehicle physics (client): the driven truck's state. */

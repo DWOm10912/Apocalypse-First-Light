@@ -71,8 +71,10 @@ public final class WorldInteractionHint {
         else if(riderDoor(mc)!=null) target=riderDoor(mc);
         else if(drivingPrompt(mc)!=null) target=new Target(Component.translatable(drivingPrompt(mc)),null);
         else if(ground!=null) target=new Target(ground.label(),ground.anchor());
-        // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
-        else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
+        // the wiring wrench acts before every block's use (WiringWrenchItem), and the building hammer in edit mode takes the
+        // clicks (client/building/BuildingHammerClient), so no block offers its own action while either is held
+        else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get())
+                && !com.antaurora.apofirstlight.client.building.BuildingHammerClient.editing(mc.player) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
             if(target==null) target=vendingMachine(mc,hit);

@@ -1,0 +1,62 @@
+{
+  "format_version": 1,
+  "item": "apocalypse_firstlight:field_survival_guide",
+  "lang": "book.apocalypse_firstlight.field_survival_guide",
+  "cover": "apocalypse_firstlight:textures/gui/book/field_survival_guide/cover_{lang}.png",
+  "cover_languages": ["zh_cn", "en_us"],
+  "cover_fallback": "en_us",
+  "paper": "apocalypse_firstlight:textures/gui/book/field_survival_guide/paper.png",
+  "image_size": [736, 1152],
+  "chapters": [
+    {
+      "id": "fire",
+      "label": "fire.label",
+      "title": "fire.title",
+      "toc_label": "fire.toc_label",
+      "running": "fire.running",
+      "sections": [
+        {
+          "id": "fire_ready",
+          "blocks": [
+            { "type": "para", "text": "fire.ready.p1" },
+            { "type": "para", "text": "fire.ready.p2" },
+            { "type": "heading", "text": "fire.ready.three" },
+            { "type": "bullet", "term": "fire.ready.tinder", "text": "fire.ready.tinder.text" },
+            { "type": "bullet", "term": "fire.ready.kindling", "text": "fire.ready.kindling.text" },
+            { "type": "bullet", "term": "fire.ready.fuel", "text": "fire.ready.fuel.text" },
+            { "type": "para", "text": "fire.ready.p3" },
+            { "type": "tip", "title": "fire.ready.rain", "text": "fire.ready.rain.text" }
+          ]
+        },
+        {
+          "id": "bow_drill",
+          "new_page": true,
+          "teaches": ["apocalypse_firstlight:building/white_oak_beam"],
+          "blocks": [
+            { "type": "title", "text": "fire.bow_drill.title" },
+            { "type": "para", "text": "fire.bow_drill.intro" },
+            {
+              "type": "figure",
+              "image": "apocalypse_firstlight:textures/gui/book/field_survival_guide/fig_bow_drill.png",
+              "size": [920, 560],
+              "image_size": [920, 560],
+              "caption": "fire.bow_drill.fig",
+              "labels": [
+                { "text": "fire.bow_drill.fig.bow", "x": 750, "y": 151 },
+                { "text": "fire.bow_drill.fig.spindle", "x": 630, "y": 371 },
+                { "text": "fire.bow_drill.fig.fireboard", "x": 240, "y": 551 },
+                { "text": "fire.bow_drill.fig.handhold", "x": 670, "y": 81 },
+                { "text": "fire.bow_drill.fig.notch", "x": 140, "y": 262, "size": 28, "anchor": "middle" }
+              ]
+            },
+            { "type": "heading", "text": "fire.bow_drill.need" },
+            { "type": "numbered", "term": "fire.bow_drill.bow", "text": "fire.bow_drill.bow.text" },
+            { "type": "numbered", "term": "fire.bow_drill.spindle", "text": "fire.bow_drill.spindle.text" },
+            { "type": "numbered", "term": "fire.bow_drill.fireboard", "text": "fire.bow_drill.fireboard.text" },
+            { "type": "numbered", "term": "fire.bow_drill.handhold", "text": "fire.bow_drill.handhold.text" }
+          ]
+        }
+      ]
+    }
+  ]
+}

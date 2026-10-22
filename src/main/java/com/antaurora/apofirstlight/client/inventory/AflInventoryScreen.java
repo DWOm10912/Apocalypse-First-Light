@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.client.ui.AflKeyHint;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
+import com.antaurora.apofirstlight.client.workbench.WorkbenchClient;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
 import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.inventory.grid.GridActions;
@@ -100,6 +101,9 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     private float charX, charW;
     /** Set when leaving for the character page: the menu stays open (no removed(), which clears the craft result). */
     private boolean toCharacter;
+    /** Opened from a workbench (WorkbenchClient): the "背包 / 制作" tabs in the title row; set when leaving for 制作. */
+    private float craftTabX, craftTabW;
+    private boolean toCrafting;
 
     public AflInventoryScreen(Player player) {
         super(player.inventoryMenu, player.getInventory(), Component.translatable("container.crafting"));
@@ -169,7 +173,22 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
 
     @Override
     public void removed() {
-        if (!toCharacter) super.removed();
+        if (!toCharacter && !toCrafting) super.removed();
+    }
+
+    @Override
+    public void onClose() {
+        WorkbenchClient.unlink();
+        super.onClose();
+    }
+
+    /** Back to the workbench's crafting page (its tab, or the inventory key while linked); not with a stack on the cursor. */
+    private boolean toCrafting() {
+        if (!menu.getCarried().isEmpty() || WorkbenchClient.linked() == null) return false;
+        toCrafting = true;
+        if (WorkbenchClient.toCrafting()) return true;
+        toCrafting = false;
+        return false;
     }
 
     private void title(GuiGraphics g, float mx, float my) {
@@ -181,12 +200,32 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         AflUiDraw.button(g, charX, CHAR_Y, charW, CHAR_H, hover, false, menu.getCarried().isEmpty(), 1);
         text(g, character, charX + 5, CHAR_Y + 2.8F, 7, menu.getCarried().isEmpty() ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         long now = System.nanoTime();
+        if (WorkbenchClient.linked() != null) workbenchTabs(g, mx, my, now);
         float right = 470;
         right = keyCap(g, AflKeyHint.of(minecraft.options.keyInventory), Component.translatable("screen.apocalypse_firstlight.inventory.close"), right, now);
         if (!menu.getCarried().isEmpty())
             keyCap(g, AflKeyHint.of(GridClient.ROTATE), Component.translatable("screen.apocalypse_firstlight.inventory.rotate"), right - 8, now);
         else
             plainCap(g, "4–9", Component.translatable("screen.apocalypse_firstlight.inventory.bind"), right - 8);
+    }
+
+    /** Opened from a workbench: "背包" (this page, the accent underline) and "制作" with the inventory key's cap after it. */
+    private void workbenchTabs(GuiGraphics g, float mx, float my, long now) {
+        Component inv = Component.translatable("screen.apocalypse_firstlight.workbench.tab.inventory");
+        Component craft = Component.translatable("screen.apocalypse_firstlight.workbench.tab.craft");
+        float invW = width(inv, 8), invX = 222 - invW / 2;
+        craftTabW = width(craft, 8);
+        craftTabX = 262 - craftTabW / 2;
+        text(g, inv, invX, 7, 8, AflUiStyle.TEXT, 1);
+        AflUiShapes.fill(g, invX - 1, 16.5F, invW + 2, 1.2F, 0.5F, AflUiStyle.ACCENT, 1);
+        boolean hover = menu.getCarried().isEmpty() && in(mx, my, craftTabX - 4, 3, craftTabW + 8, 16);
+        text(g, craft, craftTabX, 7, 8, hover ? AflUiStyle.TEXT : AflUiStyle.TEXT_DIM, 1);
+        var cap = AflKeyHint.of(minecraft.options.keyInventory);
+        g.pose().pushPose();
+        g.pose().translate(craftTabX + craftTabW + 4, 6.4F, 0);
+        g.pose().scale(0.8F, 0.8F, 1);
+        cap.draw(g, font, 0, 0, 1, now);
+        g.pose().popPose();
     }
 
     /** A key cap with fixed text (a key range) and its action word, right-aligned at {@code right}. */
@@ -705,6 +744,11 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         float mx = vx(mouseX), my = vy(mouseY);
         Hit hit = hitAt(mx, my);
         var carried = menu.getCarried();
+        if (button == 0 && carried.isEmpty() && WorkbenchClient.linked() != null && in(mx, my, craftTabX - 4, 3, craftTabW + 8, 16)) {
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F, 0.35F));
+            toCrafting();
+            return true;
+        }
         if (button == 0 && carried.isEmpty() && in(mx, my, charX, CHAR_Y, charW, CHAR_H)) {
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             toCharacter = true;
@@ -845,6 +889,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
             rotated = !rotated;
             return true;
         }
+        if (minecraft.options.keyInventory.isActiveAndMatches(key) && toCrafting()) return true;
         var mouse = minecraft.mouseHandler;
         double mouseX = mouse.xpos() * width / minecraft.getWindow().getScreenWidth();
         double mouseY = mouse.ypos() * height / minecraft.getWindow().getScreenHeight();
