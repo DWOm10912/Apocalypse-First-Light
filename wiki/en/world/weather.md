@@ -22,6 +22,17 @@
 
 <StatusTag s="planned" /> High places and metal drawing strikes, lightning splitting trees, sheltering from lightning in a car
 
+### Thunder
+
+- <StatusTag s="test" /> Thunder V1: on a branch only, checked in game by the user 2026-10-21
+
+- Thunder comes in four bands by the distance to the nearest point of the channel, each its own recording: within <V j="Thunder.CRACK" u="m" /> a crack right overhead, within <V j="Thunder.CLOSE" u="m" /> a ripping crack that rolls into a boom, within <V j="Thunder.MID" u="m" /> a dull boom and a long roll, beyond that only a low rumble. It gets quieter with distance and you can tell which side it comes from
+- Strikes within <V j="LightningStrikes.FAR_RANGE" u="m" /> are heard, and far ones beyond the view distance are seen too (without a shader pack); strikes farther than <V j="AflLightning.SKY_RANGE" u="m" /> no longer light up the whole sky
+- Indoors, or in the T15's cab with the doors shut, thunder and rain sound muffled, only the low part gets through; with a door open, or near a doorway, it is clearer
+- A strike within <V j="LightningStrikes.NOISE_RADIUS" u="m" /> draws the infected like an explosion; distant thunder does not
+
+<StatusTag s="planned" /> Regional dynamic weather: rain areas moving in from afar, different weather in different places, wind rising before a storm, and later windy days
+
 ## Rain and body temperature
 
 - Rain lowers air temperature by <V d="temperature/temperature_v1#weather.rain" x="-1" u="°C" />, thunderstorms by <V d="temperature/temperature_v1#weather.thunder" x="-1" u="°C" />

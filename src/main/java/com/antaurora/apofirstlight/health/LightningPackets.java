@@ -8,11 +8,12 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
  * Lightning injury V1: the own states (LightningInjury) and the moment of a strike, to the player (client/LightningInjuryClient);
- * why a player lies down, to everyone tracking it.
+ * why a player lies down, to everyone tracking it. Thunder V1: a strike, to every player within 15 km (world/LightningStrikes).
  */
 public final class LightningPackets {
     private LightningPackets() {
@@ -68,12 +69,31 @@ public final class LightningPackets {
         }
     }
 
+    /**
+     * A strike (the bolt's UUID and where), to every player within 15 km: one that does not track the bolt still hears it
+     * and sees it far off (client/lightning/FarLightning).
+     */
+    public record FarStrike(UUID bolt, double x, double y, double z) {
+        static void encode(FarStrike p, FriendlyByteBuf b) {
+            b.writeUUID(p.bolt);
+            b.writeDouble(p.x);
+            b.writeDouble(p.y);
+            b.writeDouble(p.z);
+        }
+
+        static FarStrike decode(FriendlyByteBuf b) {
+            return new FarStrike(b.readUUID(), b.readDouble(), b.readDouble(), b.readDouble());
+        }
+    }
+
     public static int register(SimpleChannel channel, int id) {
         channel.registerMessage(id++, State.class, State::encode, State::decode, LightningPackets::handleState,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Struck.class, Struck::encode, Struck::decode, LightningPackets::handleStruck,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Lying.class, Lying::encode, Lying::decode, LightningPackets::handleLying,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, FarStrike.class, FarStrike::encode, FarStrike::decode, LightningPackets::handleFarStrike,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
@@ -95,6 +115,13 @@ public final class LightningPackets {
         var c = supplier.get();
         c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                 com.antaurora.apofirstlight.client.skeleton.ProneClient.lying(packet.entity(), packet.kind())));
+        c.setPacketHandled(true);
+    }
+
+    private static void handleFarStrike(FarStrike packet, Supplier<NetworkEvent.Context> supplier) {
+        var c = supplier.get();
+        c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                com.antaurora.apofirstlight.client.lightning.FarLightning.strike(packet.bolt(), packet.x(), packet.y(), packet.z())));
         c.setPacketHandled(true);
     }
 }

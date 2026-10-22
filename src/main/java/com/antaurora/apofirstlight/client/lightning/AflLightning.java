@@ -6,10 +6,6 @@ import com.antaurora.apofirstlight.client.light.LightCone;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -25,15 +21,15 @@ import java.util.WeakHashMap;
 /**
  * Lightning V1 (docs/rendering/lightning_v1.md) on the client. The bolt entity's client tick is AFL's
  * (mixin client.LightningBoltClientMixin): its {@link LightningFlash} (the shape from the bolt's UUID, so every player sees
- * the same flash), the sky flash per stroke, thunder that arrives at the speed of sound, the flash lighting the ground
+ * the same flash), the sky flash per stroke (bolts within 1.5 km), thunder that arrives at the speed of sound ({@link Thunder}), the flash lighting the ground
  * (a {@link DynamicLights} light, without a shader pack only), and the bolt gone once its last stroke has faded. Drawn by {@link LightningRenderer}.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class AflLightning {
     /** Sound in air (m/s): thunder from the nearest part of the channel arrives this late. */
     static final double SOUND_SPEED = 343;
-    /** The sky flashes (vanilla's whole-world flash) in a tick whose strokes get this bright. */
-    private static final double SKY_FLASH = 0.3;
+    /** The sky flashes (vanilla's whole-world flash) in a tick whose strokes get this bright, for bolts within SKY_RANGE (m). */
+    private static final double SKY_FLASH = 0.3, SKY_RANGE = 1500;
     /**
      * The flash on the ground: a light from the main channel at this share of its height, pointing down over the whole
      * lower half (no cut-off across, below or above the aim), full light within 20 m, 6 levels at 0.7 of the reach.
@@ -77,7 +73,9 @@ public final class AflLightning {
             thunder(mc, bolt, f);
         }
         double t = f.time(0);
-        if (mc.level != null && f.skyPeak(t, 0.05) > SKY_FLASH) mc.level.setSkyFlashTime(2);
+        Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
+        double dx = bolt.getX() - cam.x, dz = bolt.getZ() - cam.z;
+        if (mc.level != null && f.skyPeak(t, 0.05) > SKY_FLASH && dx * dx + dz * dz < SKY_RANGE * SKY_RANGE) mc.level.setSkyFlashTime(2);
         f.age++;
         if (t > f.end()) {
             bolt.discard();
@@ -85,10 +83,7 @@ public final class AflLightning {
         }
     }
 
-    /**
-     * Thunder (vanilla's sounds for now) from where the channel comes nearest the camera, late by the distance at
-     * {@link #SOUND_SPEED}; the crack of the strike from the strike point.
-     */
+    /** Thunder (client/lightning/Thunder) from where the main channel comes nearest the camera. */
     private static void thunder(Minecraft mc, LightningBolt bolt, LightningFlash f) {
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
         double best = Double.MAX_VALUE, nx = bolt.getX(), ny = bolt.getY(), nz = bolt.getZ();
@@ -105,15 +100,8 @@ public final class AflLightning {
                 }
             }
         }
-        RandomSource r = RandomSource.create(bolt.getUUID().getLeastSignificantBits());
-        int thunderDelay = (int) Math.round(Math.sqrt(best) / SOUND_SPEED * 20);
-        int crackDelay = (int) Math.round(cam.distanceTo(bolt.position()) / SOUND_SPEED * 20);
-        lastThunderDelay = thunderDelay;
-        lastCrackDelay = crackDelay;
-        mc.getSoundManager().playDelayed(new SimpleSoundInstance(SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, 10000.0F,
-                0.8F + r.nextFloat() * 0.2F, RandomSource.create(r.nextLong()), nx, ny, nz), thunderDelay);
-        mc.getSoundManager().playDelayed(new SimpleSoundInstance(SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.WEATHER, 2.0F,
-                0.5F + r.nextFloat() * 0.2F, RandomSource.create(r.nextLong()), bolt.getX(), bolt.getY(), bolt.getZ()), crackDelay);
+        lastThunderDelay = Thunder.play(mc, bolt, cam, nx, ny, nz);
+        lastCrackDelay = (int) Math.round(cam.distanceTo(bolt.position()) / SOUND_SPEED * 20);
     }
 
     /**

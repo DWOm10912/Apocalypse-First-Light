@@ -22,6 +22,17 @@
 
 <StatusTag s="planned" /> 高处和金属更容易引雷、雷击树木、在车内避雷
 
+### 雷声
+
+- <StatusTag s="test" /> 雷声 V1：只在分支上，用户 2026-10-21 实机试过
+
+- 雷声按离闪电通道最近一点的距离分四档，每档是不同的录音：<V j="Thunder.CRACK" u="m" /> 内头顶炸响，<V j="Thunder.CLOSE" u="m" /> 内撕裂一样的一声再轰隆滚开，<V j="Thunder.MID" u="m" /> 内闷的一声接长长的滚雷，再远只剩低沉的隆隆声。越远越小声，能听出从哪边传来
+- <V j="LightningStrikes.FAR_RANGE" u="m" /> 内的落雷都听得到，超过视距的远处闪电也看得到（不开光影时）；<V j="AflLightning.SKY_RANGE" u="m" /> 以外的闪电不会让整片天空一亮
+- 在屋里或关着门的 T15 驾驶室里，雷声和雨声变闷，只剩低沉的部分；门开着、离门口越近越清楚
+- 落点 <V j="LightningStrikes.NOISE_RADIUS" u="m" /> 内的落雷像爆炸一样会引来感染者，远处的雷声不会
+
+<StatusTag s="planned" /> 分地区的动态天气：雨区从远处移过来、各地天气不同、雷暴前先起风，以后还有大风天
+
 ## 雨和体温
 
 - 下雨时气温降低 <V d="temperature/temperature_v1#weather.rain" x="-1" u="°C" />，雷雨时降低 <V d="temperature/temperature_v1#weather.thunder" x="-1" u="°C" />

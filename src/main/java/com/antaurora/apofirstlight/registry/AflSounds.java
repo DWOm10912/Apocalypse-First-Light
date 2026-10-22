@@ -243,6 +243,13 @@ public final class AflSounds {
      *  (health/Fractures#breakLimb) and a body falling over on landing (four variants). */
     public static final RegistryObject<SoundEvent> FRACTURE_CRACK = simple("fracture_crack");
     public static final RegistryObject<SoundEvent> BODY_FALL = simple("body_fall");
+    /** Thunder V1 (docs/audio/thunder_sounds_v1_plan.md, tools/thunder-sounds/cut.py): by the distance to the nearest point
+     *  of the channel (client/lightning/Thunder); the in-cloud roll is for the regional weather's cloud flashes. */
+    public static final RegistryObject<SoundEvent> THUNDER_CRACK = simple("thunder_crack");
+    public static final RegistryObject<SoundEvent> THUNDER_CLOSE = simple("thunder_close");
+    public static final RegistryObject<SoundEvent> THUNDER_MID = simple("thunder_mid");
+    public static final RegistryObject<SoundEvent> THUNDER_FAR = simple("thunder_far");
+    public static final RegistryObject<SoundEvent> THUNDER_CLOUD = simple("thunder_cloud");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
