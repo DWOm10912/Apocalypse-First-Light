@@ -1,0 +1,21 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/town/iron_black"
+  },
+  "item": [
+    [
+      "town/railing_straight",
+      0
+    ],
+    [
+      "town/railing_post_neg_straight",
+      0
+    ],
+    [
+      "town/railing_post_pos_straight",
+      0
+    ]
+  ]
+}

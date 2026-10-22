@@ -115,8 +115,7 @@ public final class TownPlanner {
         List<String> report = new ArrayList<>();
         RoadDesign xd = RoadNetworkJson.design(crossroad), hd = RoadNetworkJson.design(host);
         // stations: the route's (structures, trims) are the design's (from its trim window's start) plus off
-        double off = crossroad.trim() == null ? 0 : crossroad.trim()[0], xc = Double.NaN;
-        for (Structure st : crossroad.structures()) if (st.kind().equals("OVERPASS")) xc = (st.s0() + st.s1()) / 2;
+        double off = crossroad.trim() == null ? 0 : crossroad.trim()[0], xc = RoadNetworkJson.overpass(crossroad);
         if (Double.isNaN(xc)) return null;
         double[] pc = xd.point(xc - off, 0), hl = hd.local(pc[0], pc[1], 30);
         if (hl == null) return null;

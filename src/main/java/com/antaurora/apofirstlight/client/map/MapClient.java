@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
 import com.antaurora.apofirstlight.map.MapGround;
 import com.antaurora.apofirstlight.map.MapPackets;
 import com.antaurora.apofirstlight.map.MapSampler;
+import com.antaurora.apofirstlight.map.MapStore;
 import com.antaurora.apofirstlight.map.MapStyle;
 import com.antaurora.apofirstlight.map.MapTowns;
 import com.antaurora.apofirstlight.registry.AflItems;
@@ -91,6 +92,8 @@ public final class MapClient {
     private static final java.util.List<Integer> palette = new java.util.ArrayList<>();
     private static boolean carrying;
     private static int carryCheck;
+    /** The carried map's pencil marks (StartMap). */
+    private static volatile java.util.List<MapStore.Mark> marks = java.util.List.of();
     private static RoadWorks townsFor;
     private static MapTowns towns = MapTowns.EMPTY;
 
@@ -178,7 +181,15 @@ public final class MapClient {
         recordMap = map;
         palette.clear();
         RECORD.clear();
+        marks = java.util.List.of();
     }
+
+    /** The server: the carried map's pencil marks. */
+    public static void receive(MapPackets.Marks p) {
+        if (p.map() == recordMap) marks = p.marks();
+    }
+
+    public static java.util.List<MapStore.Mark> marks() { return carrying ? marks : java.util.List.of(); }
 
     /** The server: chunks of the carried map's record. */
     public static void receive(MapPackets.Chunks p) {
@@ -217,6 +228,7 @@ public final class MapClient {
         LIVE.clear();
         recordMap = 0;
         palette.clear();
+        marks = java.util.List.of();
         carrying = false;
         townsFor = null;
         towns = MapTowns.EMPTY;

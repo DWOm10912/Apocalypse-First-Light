@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "apocalypse_firstlight:block/town/lap_blue_gray",
+    "top": "apocalypse_firstlight:block/town/plaster",
+    "bottom": "apocalypse_firstlight:block/town/plaster"
+  }
+}

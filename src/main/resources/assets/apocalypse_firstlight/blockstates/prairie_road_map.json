@@ -1,0 +1,79 @@
+{
+  "variants": {
+    "facing=north,surface=floor": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_floor"
+    },
+    "facing=north,surface=table": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_table"
+    },
+    "facing=north,surface=counter": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_counter"
+    },
+    "facing=north,surface=desk": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_desk"
+    },
+    "facing=north,surface=nightstand": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_nightstand"
+    },
+    "facing=east,surface=floor": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_floor",
+      "y": 90
+    },
+    "facing=east,surface=table": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_table",
+      "y": 90
+    },
+    "facing=east,surface=counter": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_counter",
+      "y": 90
+    },
+    "facing=east,surface=desk": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_desk",
+      "y": 90
+    },
+    "facing=east,surface=nightstand": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_nightstand",
+      "y": 90
+    },
+    "facing=south,surface=floor": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_floor",
+      "y": 180
+    },
+    "facing=south,surface=table": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_table",
+      "y": 180
+    },
+    "facing=south,surface=counter": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_counter",
+      "y": 180
+    },
+    "facing=south,surface=desk": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_desk",
+      "y": 180
+    },
+    "facing=south,surface=nightstand": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_nightstand",
+      "y": 180
+    },
+    "facing=west,surface=floor": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_floor",
+      "y": 270
+    },
+    "facing=west,surface=table": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_table",
+      "y": 270
+    },
+    "facing=west,surface=counter": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_counter",
+      "y": 270
+    },
+    "facing=west,surface=desk": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_desk",
+      "y": 270
+    },
+    "facing=west,surface=nightstand": {
+      "model": "apocalypse_firstlight:block/map/prairie_road_map_nightstand",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/plaster_caps"
+      }
+    },
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_siding_cream_side"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/plaster_side"
+      }
+    },
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_siding_cream_side",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/plaster_side",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_siding_cream_side",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/plaster_side",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_siding_cream_side",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/plaster_side",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_corner"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_corner",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_corner",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/lap_corner",
+        "y": 270
+      }
+    }
+  ]
+}

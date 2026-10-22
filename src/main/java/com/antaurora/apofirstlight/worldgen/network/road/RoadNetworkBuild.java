@@ -171,7 +171,7 @@ public final class RoadNetworkBuild {
                     RoadInterchanges.Result ir = RoadInterchanges.build(trial, claims, tr, o.roads()::contains);
                     boolean built = false;
                     for (RouteData r : ir.roads())
-                        if (r.id().contains(corridor + ":")) for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) built = true;
+                        if (r.id().contains(corridor + ":") && !Double.isNaN(RoadNetworkJson.overpass(r))) built = true;
                     if (!built) {
                         String why = "";
                         // the skip line: "interchange skipped (trimmed): <site>: <why per shift>"
@@ -227,13 +227,11 @@ public final class RoadNetworkBuild {
         String corridor = com.antaurora.apofirstlight.worldgen.network.town.TownSites.corridor(town);
         RouteData x = null;
         for (RouteData r : routes) {
-            if (!r.id().contains(corridor + ":")) continue;
-            for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) x = r;
+            if (r.id().contains(corridor + ":") && !Double.isNaN(RoadNetworkJson.overpass(r))) x = r;
         }
         if (x == null) return null;
         RoadDesign xd = RoadNetworkJson.design(x);
-        double off = x.trim() == null ? 0 : x.trim()[0], xc = 0;
-        for (Structure st : x.structures()) if (st.kind().equals("OVERPASS")) xc = (st.s0() + st.s1()) / 2;
+        double off = x.trim() == null ? 0 : x.trim()[0], xc = RoadNetworkJson.overpass(x);
         double[] pc = xd.point(xc - off, 0);
         for (RouteData r : routes)
             if (r.roadClass().equals("interstate") && RoadNetworkJson.design(r).local(pc[0], pc[1], 30) != null) return new RouteData[]{x, r};
@@ -252,15 +250,13 @@ public final class RoadNetworkBuild {
             int xi = -1;
             for (int i = 0; i < out.size(); i++) {
                 RouteData r = out.get(i);
-                if (!r.id().contains(corridor + ":")) continue;
-                for (Structure st : r.structures()) if (st.kind().equals("OVERPASS")) xi = i;
+                if (r.id().contains(corridor + ":") && !Double.isNaN(RoadNetworkJson.overpass(r))) xi = i;
             }
             if (xi < 0) { report.add("town " + town + ": no exit; no street framework"); continue; }
             RouteData x = out.get(xi);
             // the interstate under the overpass
             RoadDesign xd = RoadNetworkJson.design(x);
-            double off = x.trim() == null ? 0 : x.trim()[0], xc = 0;
-            for (Structure st : x.structures()) if (st.kind().equals("OVERPASS")) xc = (st.s0() + st.s1()) / 2;
+            double off = x.trim() == null ? 0 : x.trim()[0], xc = RoadNetworkJson.overpass(x);
             double[] pc = xd.point(xc - off, 0);
             RouteData host = null;
             for (RouteData r : out)

@@ -13,6 +13,17 @@ A folded map and a pencil. Carry it (backpack, hotbar or grid inventory) and the
 - For now only in the Creative tab (Melee & Equipment); no recipe
 - The record belongs to the map and stays when you leave the world and come back. Drop it and pick it up again and the record is still there; a new map starts blank. Lose the map and you lose the record
 
+## The Start Map
+
+- <StatusTag s="test" /> The PRAIRIE road map on the old house's table
+
+In an old-house start, a road map from a PRAIRIE gas station lies open on the dining table by the kitchen wall, a pencil beside it. You shop in Linden often: Linden is circled in pencil, and the way there from the house is traced
+
+- <ItemIcon id="prairie_road_map" /> Right click to pick it up: it becomes a PRAIRIE Road Map that is already drawn. The house and its surroundings, the whole way to Linden (<V j="StartMap.ROUTE_BAND" u="m" /> either side) and all of Linden are on it
+- The pencil line and circle show on the world map only
+- Walk there and the map changes to what you actually see
+- One per world: once taken, it does not come back
+
 ## Minimap
 
 Top right of the screen. It turns with your view, forward is up and the N on the frame points north; the settings can switch it to north up

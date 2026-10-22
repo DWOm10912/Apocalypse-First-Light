@@ -541,6 +541,9 @@ public final class AflItems {
     // hand it unfolds into the world map
     public static final RegistryObject<Item> MAP = ITEMS.register("map",
             () -> new com.antaurora.apofirstlight.item.AflMapItem(new Item.Properties().stacksTo(1)));
+    // Start map (docs/ui/afl_map_v1_plan.md 5.4): the spread sheet on a table; taking it off the table gives the map
+    public static final RegistryObject<Item> PRAIRIE_ROAD_MAP = ITEMS.register("prairie_road_map",
+            () -> new BlockItem(AflBlocks.PRAIRIE_ROAD_MAP.get(), new Item.Properties().stacksTo(1)));
     // Clips (docs/gameplay/equipment_slots_v1.md, user 2026-10-21): in the hand or clipped on, it shows the compass bar
     public static final RegistryObject<Item> COMPASS = ITEMS.register("compass",
             () -> new Item(new Item.Properties().stacksTo(1)));

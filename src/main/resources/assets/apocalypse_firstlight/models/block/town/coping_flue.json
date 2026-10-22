@@ -1,0 +1,70 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/town/limestone",
+    "l": "apocalypse_firstlight:block/town/limestone",
+    "t": "apocalypse_firstlight:block/town/terracotta",
+    "f": "apocalypse_firstlight:block/town/flue_top"
+  },
+  "elements": [
+    {
+      "from": [
+        4.5,
+        2,
+        4.5
+      ],
+      "to": [
+        11.5,
+        5,
+        11.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "east": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "south": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "west": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "up": {
+          "uv": [
+            4.5,
+            4.5,
+            11.5,
+            11.5
+          ],
+          "texture": "#f"
+        }
+      }
+    }
+  ]
+}

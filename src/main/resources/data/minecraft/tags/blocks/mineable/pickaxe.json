@@ -140,6 +140,14 @@
     "apocalypse_firstlight:stove_heat_shield",
     "apocalypse_firstlight:flagstone",
     "apocalypse_firstlight:emergency_radio",
-    "apocalypse_firstlight:woven_wire_fence"
+    "apocalypse_firstlight:woven_wire_fence",
+    "apocalypse_firstlight:wrought_iron_railing",
+    "apocalypse_firstlight:parged_foundation",
+    "apocalypse_firstlight:plaster_partition",
+    "apocalypse_firstlight:plaster_ceiling",
+    "apocalypse_firstlight:red_brick_common",
+    "apocalypse_firstlight:limestone_coping",
+    "apocalypse_firstlight:smooth_concrete",
+    "apocalypse_firstlight:concrete_stoop_steps"
   ]
 }

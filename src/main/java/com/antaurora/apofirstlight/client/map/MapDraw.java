@@ -86,6 +86,49 @@ final class MapDraw {
         for (float[] p : tris) b.vertex(m, p[0], p[1], 0).color(cr, cg, cb, ca).endVertex();
     }
 
+    /**
+     * A pencil stroke through GUI points {x0, y0, x1, y1, ...}: one band width wide, mitred at the bends (no overlap, so
+     * the graphite's alpha stays even), no caps.
+     */
+    static void stroke(GuiGraphics g, float[] p, float width, int rgb, float alpha) {
+        int n = p.length / 2;
+        if (n < 2) return;
+        float[] nx = new float[n], ny = new float[n];
+        for (int i = 0; i < n; i++) {
+            float ax = 0, ay = 0;
+            for (int s = Math.max(0, i - 1); s < Math.min(n - 1, i + 1); s++) {
+                float dx = p[2 * s + 2] - p[2 * s], dy = p[2 * s + 3] - p[2 * s + 1], l = (float) Math.hypot(dx, dy);
+                if (l > 1e-4F) { ax += -dy / l; ay += dx / l; }
+            }
+            float l = (float) Math.hypot(ax, ay);
+            if (l < 1e-4F) continue;
+            ax /= l; ay /= l;
+            // the miter: the band's half width across both neighbouring segments (kept within twice at sharp bends)
+            float dot = 1;
+            if (i > 0 && i < n - 1) {
+                float dx = p[2 * i + 2] - p[2 * i], dy = p[2 * i + 3] - p[2 * i + 1], sl = (float) Math.hypot(dx, dy);
+                if (sl > 1e-4F) dot = Math.max(0.5F, Math.abs(ax * -dy / sl + ay * dx / sl));
+            }
+            nx[i] = ax * width / 2 / dot;
+            ny[i] = ay * width / 2 / dot;
+        }
+        g.flush();
+        Matrix4f m = g.pose().last().pose();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        int cr = rgb >> 16 & 255, cg = rgb >> 8 & 255, cb = rgb & 255, ca = Math.round(alpha * 255);
+        BufferBuilder b = Tesselator.getInstance().getBuilder();
+        b.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        for (int i = 0; i + 1 < n; i++) {
+            b.vertex(m, p[2 * i] + nx[i], p[2 * i + 1] + ny[i], 0).color(cr, cg, cb, ca).endVertex();
+            b.vertex(m, p[2 * i] - nx[i], p[2 * i + 1] - ny[i], 0).color(cr, cg, cb, ca).endVertex();
+            b.vertex(m, p[2 * i + 2] - nx[i + 1], p[2 * i + 3] - ny[i + 1], 0).color(cr, cg, cb, ca).endVertex();
+            b.vertex(m, p[2 * i + 2] + nx[i + 1], p[2 * i + 3] + ny[i + 1], 0).color(cr, cg, cb, ca).endVertex();
+        }
+        BufferUploader.drawWithShader(b.end());
+    }
+
     /** A round dot (rounded box with half its size as the radius). */
     static void disc(GuiGraphics g, float x, float y, float r, int rgb, float a) {
         AflUiShapes.fill(g, x - r, y - r, 2 * r, 2 * r, r, rgb, a);

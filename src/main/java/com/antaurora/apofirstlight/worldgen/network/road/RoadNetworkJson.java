@@ -189,6 +189,16 @@ public final class RoadNetworkJson {
         return out;
     }
 
+    /**
+     * The middle station of the route's OVERPASS inside its trim window, or NaN (a split piece keeps the whole road's
+     * structures, so only one of the pieces holds the overpass).
+     */
+    public static double overpass(RouteData r) {
+        double a = r.trim() == null ? 0 : r.trim()[0], b = r.trim() == null ? Double.POSITIVE_INFINITY : r.trim()[1];
+        for (Structure s : r.structures()) if (s.kind().equals("OVERPASS") && s.s0() >= a && s.s1() <= b) return (s.s0() + s.s1()) / 2;
+        return Double.NaN;
+    }
+
     /** Structure kinds the stage builds (Tunnel V1 adds TUNNEL, C3.3b group 2 OVERPASS). */
     public static final List<String> BUILT_KINDS = List.of("BRIDGE", "VIADUCT", "CULVERT", "DEEP_CUT", "TUNNEL", "OVERPASS");
 
@@ -255,6 +265,8 @@ public final class RoadNetworkJson {
                 }
                 case "DEEP_CUT" -> { }
                 case "OVERPASS" -> {
+                    // a split piece (RoadNetworkBuild#splits) keeps the whole road's structures: one wholly off the window is the other piece's
+                    if (s1 < 0 || s0 > profile.length) continue;
                     if (s0 < 0 || s1 > profile.length) throw new IllegalArgumentException("overpass trimmed on " + r.id());
                     over.add(new RoadDesign.Span(s0, s1, deck, new double[]{(s0 + s1) / 2}, null, true));
                 }

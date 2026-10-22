@@ -293,6 +293,10 @@
       "unit_mass_kg": 0.08,
       "estimated": true
     },
+    "apocalypse_firstlight:prairie_road_map": {
+      "unit_mass_kg": 0.08,
+      "estimated": true
+    },
     "apocalypse_firstlight:compass": {
       "unit_mass_kg": 0.06,
       "estimated": true
@@ -1013,6 +1017,106 @@
     },
     "apocalypse_firstlight:vintage_chest_freezer": {
       "unit_mass_kg": 75,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lap_siding_white": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lap_siding_cream": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lap_siding_sage": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lap_siding_blue_gray": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lap_siding_tan": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:asphalt_shingle_roof_charcoal": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:asphalt_shingle_roof_weathered_brown": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:asphalt_shingle_roof_slate": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steep_asphalt_shingle_roof_charcoal": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steep_asphalt_shingle_roof_weathered_brown": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steep_asphalt_shingle_roof_slate": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_double_hung_window": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_picture_window": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:house_front_door": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:house_back_door": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:interior_panel_door": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wrought_iron_railing": {
+      "unit_mass_kg": 0.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:parged_foundation": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:plaster_partition": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:plaster_ceiling": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:linoleum_floor": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_brick_common": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:limestone_coping": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:smooth_concrete": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:concrete_stoop_steps": {
+      "unit_mass_kg": 0.4,
       "estimated": true
     }
   },

@@ -764,6 +764,11 @@ public final class AflBlocks {
                     .sound(SoundType.STONE)
                     .noCollission()
                     .noOcclusion(), true));
+    // Start map (docs/ui/afl_map_v1_plan.md 5.4, user 2026-10-21): the PRAIRIE road map spread on the forest home's table;
+    // paper, no tool, nothing to drop from a loot table (taking it makes the map)
+    public static final RegistryObject<Block> PRAIRIE_ROAD_MAP = BLOCKS.register("prairie_road_map",
+            () -> new com.antaurora.apofirstlight.block.PrairieRoadMapBlock(BlockBehaviour.Properties.of().instabreak().noCollission()
+                    .noOcclusion().noLootTable().sound(SoundType.WOOL).pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
     private AflBlocks() {
     }
 }

@@ -81,7 +81,7 @@ export const SR = 0.172, SL = 0.27, SC = SR - LS;
 const WALL = 'white_oak_log_wall', ROUND = 'white_oak_log_round', END = 'white_oak_log_end';
 
 /** A polygon whose corners are reordered so its Newell normal points along `out`. */
-function polyOut(pc, t, pts, out, opts = {}) {
+export function polyOut(pc, t, pts, out, opts = {}) {
   if (dot(newell(pts), out) < 0) {
     pts = [...pts].reverse();
     if (Array.isArray(opts.n) && typeof opts.n[0] !== 'number') opts = {...opts, n: [...opts.n].reverse()};
@@ -185,7 +185,7 @@ function logWallPieces() {
 export const RT = 0.2;
 export const SHAPES = ['lower', 'upper', 'ridge'];
 export const ys = (shape, z) => shape === 'lower' ? 0.5 * z : shape === 'upper' ? 0.5 + 0.5 * z : 0.75 - 0.5 * Math.abs(z - 0.5);
-const zsOf = shape => shape === 'ridge' ? [0, 0.5, 1] : [0, 1];
+export const zsOf = shape => shape === 'ridge' ? [0, 0.5, 1] : [0, 1];
 const MATS = {green: 'roof_green', galvanized: 'roof_galvanized', rust: 'roof_rust'};
 const TRIM = 'oak_trim', TRIM_V = 'oak_trim_v';
 // M1.1 corrugation (galvanized, rust): CORRUGATION waves a block across the slope (12.5 cm pitch), CA deep each side of
@@ -217,7 +217,7 @@ function waveBand(pc, t, shape, z, out, top, bottom) {
   }
 }
 /** A strip following the slope from x x0 to x1, offset dy above the surface, between z a and b (facing up / down). */
-function slopeStrip(pc, t, shape, x0, x1, za, zb, dy, up = true) {
+export function slopeStrip(pc, t, shape, x0, x1, za, zb, dy, up = true) {
   const zs = [za, ...zsOf(shape).filter(z => z > za + 1e-9 && z < zb - 1e-9), zb];
   for (let i = 0; i + 1 < zs.length; i++) {
     const a = zs[i], b = zs[i + 1];
@@ -225,7 +225,7 @@ function slopeStrip(pc, t, shape, x0, x1, za, zb, dy, up = true) {
   }
 }
 /** A vertical band at x (facing out along x) between the surface offsets lo and hi, z a..b. */
-function slopeBandX(pc, t, shape, x, out, za, zb, lo, hi) {
+export function slopeBandX(pc, t, shape, x, out, za, zb, lo, hi) {
   const zs = [za, ...zsOf(shape).filter(z => z > za + 1e-9 && z < zb - 1e-9), zb];
   for (let i = 0; i + 1 < zs.length; i++) {
     const a = zs[i], b = zs[i + 1];

@@ -31,8 +31,11 @@ import java.util.Map;
 public final class TownBuildings {
     private TownBuildings() {}
 
-    /** The placement rules' version (the world lock's town_buildings system, with the kits'). */
-    public static final int VERSION = 6;
+    /**
+     * The placement rules' version (the world lock's town_buildings system, with the kits'). 7 (2026-10-21): house_small
+     * 17 deep from a 6.5 m setback (was 16 from 7.5: the house stays where it was, its two-cell stoop steps in front).
+     */
+    public static final int VERSION = 7;
 
     /**
      * A kind of building: its footprint along the street (width) and into the lot (depth), storeys, front setback, the least
@@ -62,7 +65,7 @@ public final class TownBuildings {
 
     /** The kinds by zone (T3 sizes; setbacks after north_american_roads_and_lots_spec_v1.md 5). */
     public static final Map<String, Kind> KINDS = Map.of(
-            "house_small", new Kind("house_small", 14, 16, 1, 7.5, 1.5),
+            "house_small", new Kind("house_small", 14, 17, 1, 6.5, 1.5),
             "house_large", new Kind("house_large", 20, 20, 2, 7.5, 1.5),
             "mobile_home", new Kind("mobile_home", 5, 20, 1, 3, 2),
             "shop", new Kind("shop", 999, 22, 2, 0, 0),

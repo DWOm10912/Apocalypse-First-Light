@@ -23,6 +23,7 @@ import java.util.zip.InflaterInputStream;
  * The map's record from the server to the player carrying it (AFL Map V1, docs/ui/afl_map_v1_plan.md 5.3): Reset says
  * which map the player now carries (0: none) and clears the client's record; Chunks brings samples of that map (the
  * biome as the map's palette index), with the palette entries the client does not have yet. Deflated on the wire.
+ * Marks brings the map's pencil marks (StartMap), all of them each time.
  */
 public final class MapPackets {
     private MapPackets() {}
@@ -30,6 +31,7 @@ public final class MapPackets {
     public static int register(SimpleChannel channel, int id) {
         channel.registerMessage(id++, Reset.class, Reset::encode, Reset::decode, Reset::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Chunks.class, Chunks::encode, Chunks::decode, Chunks::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Marks.class, Marks::encode, Marks::decode, Marks::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
 
@@ -42,6 +44,39 @@ public final class MapPackets {
         static void handle(Reset p, Supplier<NetworkEvent.Context> s) {
             s.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.map.MapClient.reset(p.map)));
+            s.get().setPacketHandled(true);
+        }
+    }
+
+    /** The pencil marks of a map (all of them; none clears them). */
+    public record Marks(int map, List<MapStore.Mark> marks) {
+        static void encode(Marks p, FriendlyByteBuf b) {
+            b.writeVarInt(p.map);
+            b.writeVarInt(p.marks.size());
+            for (MapStore.Mark m : p.marks) {
+                b.writeByte(m.kind());
+                b.writeVarInt(m.points().length);
+                for (float f : m.points()) b.writeFloat(f);
+            }
+        }
+
+        static Marks decode(FriendlyByteBuf b) {
+            int map = b.readVarInt(), n = b.readVarInt();
+            if (n > 64) throw new IllegalStateException("bad map marks packet");
+            List<MapStore.Mark> marks = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                int kind = b.readUnsignedByte(), len = b.readVarInt();
+                if (len > 1 << 16) throw new IllegalStateException("bad map marks packet");
+                float[] f = new float[len];
+                for (int j = 0; j < len; j++) f[j] = b.readFloat();
+                marks.add(new MapStore.Mark(kind, f));
+            }
+            return new Marks(map, marks);
+        }
+
+        static void handle(Marks p, Supplier<NetworkEvent.Context> s) {
+            s.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.map.MapClient.receive(p)));
             s.get().setPacketHandled(true);
         }
     }

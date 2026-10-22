@@ -1,0 +1,219 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "ceiling": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_post_16"
+      }
+    },
+    {
+      "when": {
+        "ceiling": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_16"
+      }
+    },
+    {
+      "when": {
+        "ceiling": "false",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_16",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "ceiling": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_16",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "ceiling": "false",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_16",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "ceiling": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_post_14"
+      }
+    },
+    {
+      "when": {
+        "ceiling": "true",
+        "north": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_14"
+      }
+    },
+    {
+      "when": {
+        "ceiling": "true",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_14",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "ceiling": "true",
+        "south": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_14",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "ceiling": "true",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_side_14",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "ceiling": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_ceiling"
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_post"
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "north": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_side"
+      }
+    },
+    {
+      "when": {
+        "base": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_corner"
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_post",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_side",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "base": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_corner",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_post",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "south": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_side",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "base": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_corner",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_post",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "base": "true",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_side",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "base": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/town/partition_skirting_corner",
+        "y": 270
+      }
+    }
+  ]
+}
