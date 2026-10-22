@@ -30,7 +30,8 @@ final class AflRigParity {
     private static final String[] ACTIONS = {"item/crowbar", "item/thermometer_armpit", "item/jerry_can", "item/nozzle_fill",
             "machine/generator_pull", "tool/crowbar_smash", "afl_rig_test/holster_mag", "gun/p9_01_draw", "gun/p9_01_holster",
             "gun/p9_01_idle", "gun/p9_01_sprint", "gun/p9_01_reload_tactical", "gun/p9_01_reload_empty", "gun/p9_01_inspect",
-            "gun/p9_01_reload_tactical_ads", "gun/p9_01_mag_load", "gun/p9_01_reload_tactical_novice_fumble", "gun/p9_01_reload_empty_experienced"};
+            "gun/p9_01_reload_tactical_ads", "gun/p9_01_mag_load", "gun/p9_01_reload_tactical_novice_fumble", "gun/p9_01_reload_empty_experienced",
+            "gun/p9_01_reload_tactical_experienced_ads"};
     private static final float[] TIMES = {0F, 0.05F, 0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.65F, 0.8F, 0.9F, 1.0F, 1.12F, 1.2F};
     private static final float[] PITCHES = {20F, -30F, 50F};
 

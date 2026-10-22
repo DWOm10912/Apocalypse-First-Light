@@ -17,7 +17,7 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {MP, MAG_TILT} from './build-p9-01-v2-native.mjs';
-import {INSPECT_T, INSPECT_NO_MAG_T, tierTiming, SLIDE_LOCK, SLIDE_TOP_REAR} from './author-p9-01-v3-native-animations.mjs';
+import {INSPECT_T, INSPECT_NO_MAG_T, tierTiming, SLIDE_LOCK, SLIDE_TOP_REAR, CROOKED, BUMP_DEPTH, OUT_DEPTH} from './author-p9-01-v3-native-animations.mjs';
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -290,12 +290,13 @@ function tierReload(empty, tierName, fumble = false) {
     gunKeys.push(k(T.back, CHEST_READY, T.backEnd - T.back));
     // the fresh magazine: from the pouch when the hand gets there, up past the chest, into the magwell
     const atPouch = Math.max(0.28, T.drop - 0.04);
-    const crooked = {rot: [7, 0, 9]};
+    const crooked = {rot: CROOKED};
     const magKeys = [k(0, POUCH, 0, {hidden: true}), k(atPouch, POUCH, 0),
         k(atPouch + 0.02, keyAt(MAG, 'chest', 'base', P.mid, 26, 18, -40), T.enter - atPouch - 0.02),
         k(T.enter + 0.02, inGun(MAG_ENTRY, fumble ? crooked : {}), T.align - T.enter - 0.02)];
-    if (fumble) magKeys.push(k(T.align, inGun(3.0, crooked), T.bump - T.align), k(T.bump + 0.06, inGun(4.7, crooked), T.out - T.bump - 0.06),
-        k(T.out, inGun(MAG_ENTRY), T.again - T.out));
+    // as the first-person fumblePath: crooked in to the edge, it will not go, out, straightened, in again
+    if (fumble) magKeys.push(k(T.align, inGun(BUMP_DEPTH, crooked), T.bump - T.align), k(T.out, inGun(OUT_DEPTH, crooked), 0.16),
+        k(T.out + 0.16, inGun(MAG_ENTRY), T.again - T.out - 0.16));
     const pushFrom = fumble ? T.again : T.align;
     magKeys.push(k(pushFrom, inGun(MAG_PART), T.seat - 0.12 - pushFrom), k(T.seat - 0.04, inGun(0), 0.04), k(T.seat, inGun(0), 0, {hidden: true}));
     json.props = [
@@ -319,13 +320,40 @@ function tierReload(empty, tierName, fumble = false) {
     return [id, json];
 }
 
+// The experienced ADS reload (docs/dev/p9_reload_inspect_v1.md 5.1): the trained ADS action on the experienced ADS beats; every key
+// time goes through the same warp as the first-person keys (trained beat -> experienced beat), blends by their end times.
+const ADS_WARP = {
+    tactical: [[0, 0], [0.22, 0.3], [0.24, 0.33], [0.42, 0.62], [0.62, 0.92], [0.86, 1.2], [1.28, 1.66], [1.7, 2.3]],
+    empty: [[0, 0], [0.22, 0.3], [0.24, 0.32], [0.46, 0.66], [0.66, 0.96], [0.9, 1.24], [1.0, 1.36], [1.44, 1.84], [2.0, 2.7]],
+};
+function warpAt(pairs, t) {
+    for (let i = 1; i < pairs.length; i++) if (t <= pairs[i][0] + 1e-9) {
+        const [a0, b0] = pairs[i - 1], [a1, b1] = pairs[i];
+        return b0 + (b1 - b0) * (t - a0) / (a1 - a0);
+    }
+    return pairs.at(-1)[1];
+}
+function tierAdsReload(empty, tierName) {
+    const W = ADS_WARP[empty ? 'empty' : 'tactical'];
+    const [trainedId, trained] = reload(empty, true);
+    const id = `p9_01_reload_${empty ? 'empty' : 'tactical'}_${tierName}_ads`;
+    const json = JSON.parse(JSON.stringify(trained));
+    const warp = key => { const a = warpAt(W, key.at), b = warpAt(W, key.at + key.blend); key.at = +a.toFixed(4); key.blend = +(b - a).toFixed(4); };
+    for (const prop of json.props) prop.keys.forEach(warp);
+    json.hands.left.forEach(warp);
+    json.about = json.about.replace(`reload while aiming (gun/${trainedId}`, `reload while aiming, ${tierName} tier (gun/${id}`)
+        .replace('2.7, 3)', '2.7, 5.1)').replace('Same beats as the first-person clip', 'The trained ADS action on the slower beats of the first-person clip');
+    json.length = +warpAt(W, trained.length).toFixed(3);   // back on the sights, as the trained action
+    return [id, json];
+}
+
 // ---------- write / check ----------
 const text = o => JSON.stringify(o, null, 2) + '\n';
 const outputs = [
     ['player_props/p9_01_mag.json', MAG], ['player_props/p9_01_mag_old.json', OLD], ['player_props/p9_01_rack.json', RACK],
     ...[reload(false), reload(true), inspect(false), inspect(true), inspectNoMag(false), inspectNoMag(true), reload(false, true), reload(true, true), unload(false), unload(true),
         ...['experienced', 'novice'].flatMap(tier => [tierReload(false, tier), tierReload(true, tier)]),
-        tierReload(false, 'novice', true), tierReload(true, 'novice', true)].map(([id, json]) => ['player_actions/gun/' + id + '.json', json]),
+        tierReload(false, 'novice', true), tierReload(true, 'novice', true), tierAdsReload(false, 'experienced'), tierAdsReload(true, 'experienced')].map(([id, json]) => ['player_actions/gun/' + id + '.json', json]),
 ];
 const check = process.argv.includes('--check');
 let differ = 0;

@@ -210,21 +210,21 @@ public final class NativeGunActions {
                 : item.fireClip(state.lastShot);
         // started while aiming: the clip's ADS variant (<clip>_ads, same length and beats; docs/dev/p9_reload_inspect_v1.md
         // 2.7) when the gun has one, and the client keeps the aim through it (NativeGunAds); from growth Lv 5 (user
-        // 2026-10-18: "ADS换弹应该给到5级"), below it the hip clip plays and the aim drops for it. The ADS clip has no tiers.
+        // 2026-10-18: "ADS换弹应该给到5级"), below it the hip clip plays and the aim drops for it.
         int gunLevel = reload ? com.antaurora.apofirstlight.survivor.SurvivorGrowth.gunLevel(player, definition.weaponClass()) : 0;
-        if (reload && com.antaurora.apofirstlight.skeleton.SkeletonPackets.aiming(player) && item.animationAsset() != null
+        boolean ads = reload && com.antaurora.apofirstlight.skeleton.SkeletonPackets.aiming(player) && item.animationAsset() != null
                 && gunLevel >= com.antaurora.apofirstlight.survivor.SurvivorGrowth.ADS_RELOAD_LEVEL
-                && NativeGunAnimations.hasClip(item.animationAsset(), state.clip + ADS_SUFFIX))
-            state.clip += ADS_SUFFIX;
-        // otherwise below the practised tier: the tier's own slower reload, a novice sometimes fumbling (NativeReloadTiers);
-        // its clip sets the length and the moment the rounds go in
-        else if (reload) {
-            var tiered = NativeReloadTiers.choose(item.animationAsset(), state.clip, gunLevel, player.getRandom());
+                && NativeGunAnimations.hasClip(item.animationAsset(), state.clip + ADS_SUFFIX);
+        // below the practised tier: the tier's own slower reload (an experienced ADS one while aiming), a novice sometimes
+        // fumbling (NativeReloadTiers; docs/dev/p9_reload_inspect_v1.md 5.1); its clip sets the length and the moment the
+        // rounds go in. Without a tier clip the practised one (or its ADS variant) plays.
+        if (reload) {
+            var tiered = NativeReloadTiers.choose(item.animationAsset(), state.clip, gunLevel, player.getRandom(), ads ? ADS_SUFFIX : "");
             if (tiered != null) {
                 state.clip = tiered.clip();
                 state.end = now + tiered.ticks();
                 state.magInTick = tiered.magInTick();
-            }
+            } else if (ads) state.clip += ADS_SUFFIX;
         }
         if (reload && item.animationAsset() != null)
             state.cues.addAll(magazineCues(NativeGunAnimations.cues(item.animationAsset(), state.clip), held, item, state.clip));

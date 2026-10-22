@@ -35,7 +35,11 @@ public final class AflItems {
                                     "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty",
                                     // proficiency tiers (NativeReloadTiers)
                                     "reload_tactical_experienced", "reload_empty_experienced", "reload_tactical_novice", "reload_empty_novice",
-                                    "reload_tactical_novice_fumble", "reload_empty_novice_fumble"),
+                                    "reload_tactical_novice_fumble", "reload_empty_novice_fumble",
+                                    "reload_tactical_experienced_ads", "reload_empty_experienced_ads",
+                                    "reload_tactical_no_mag_experienced", "reload_empty_no_mag_experienced", "reload_tactical_no_mag_novice",
+                                    "reload_empty_no_mag_novice", "reload_tactical_no_mag_novice_fumble", "reload_empty_no_mag_novice_fumble",
+                                    "reload_tactical_no_mag_experienced_ads", "reload_empty_no_mag_experienced_ads"),
                             java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
