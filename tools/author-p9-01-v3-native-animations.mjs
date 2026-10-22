@@ -3,8 +3,11 @@
 // inspects are the trained-tier remake of docs/dev/p9_reload_inspect_v1.md (2026-10-17).
 // Same motion language and solvers as tools/author-blackridge-50-animations.mjs, re-calibrated for the P9 rig;
 // knots below are the editable design; every clip is baked at 60 Hz into linear keys.
+// Hand-keyed clips (HAND_KEYED, 2026-10-22): the listed channels are bezier keys placed by hand in Blockbench and read
+// back from the .bbmodel; the script only solves the rest of the clip from them (magazine in the hand, the insert, the
+// falling magazine, the grip slip) and bakes everything to 60 Hz for the runtime.
 //   node tools/author-p9-01-v3-native-animations.mjs                 -> audit/summary only
-//   --write-source     write the clips into src/main/blockbench/p9_01_v3_native.bbmodel
+//   --write-source     write the clips into src/main/blockbench/p9_01_v3_native.bbmodel (hand keys kept verbatim)
 //   --write-runtime    write assets/.../animations/p9_01_v3_native.animation.json
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,6 +16,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {ARM_HALF, MP, HP, RP, LP, LA, MAG_TILT} from './build-p9-01-v2-native.mjs';
 import {nativePath as sourcePath} from './build-p9-01-v3-native.mjs';
+import {bbChannel} from './bb-keyframes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const runtimePath = path.join(root, 'src/main/resources/assets/apocalypse_firstlight/animations/p9_01_v3_native.animation.json');
@@ -271,6 +275,58 @@ const RELOAD_ADS_MEET = {pos: add(RELOAD_ADS_DIP.pos, [-0.15, -0.2, 0]), rot: ad
 // shaken out; the support hand goes straight down for the new magazine, every beat NO_MAG_CUT s earlier (whole ticks:
 // the game takes the cut from the two clip lengths, length and magazine-in tick alike).
 export const NO_MAG_CUT = 0.1;
+// Hand-keyed tactical reload (hand = Blockbench keys of handling, lefthand and camera; docs/dev/p9_reload_inspect_v1.md
+// 2.11): the keys carry the gun, the camera and the support hand's free travel. Solved from them: the magazine rides in
+// the hand until the align, then the magwell constraint takes over (insert, palm off, slap) with the hand on the
+// baseplate; after the slap the hand blends back onto its keys and lands on the grip of the moving gun.
+const W = (t, a, b) => { const u = clamp01((t - a) / (b - a)); return u * u * (3 - 2 * u); };
+const magOnHand = lh => {                      // inverse of onMag(m, 0): the magazine as held by the support hand
+    const Rh = E(lh.rot), R = mm(Rh, T3(E(HAND_ON_MAG))), point = add(add(lh.pos, LP), mv(Rh, sub(LA, LP)));
+    return {pos: sub(sub(sub(point, mv(R, mul(AX, 0.12))), MP), mv(R, sub(MAG_BOTTOM, MP))), rot: euler(R), R};
+};
+// Empty: the slide stays locked back until the right thumb drops it at `stop`; the left hand regrips after that.
+function reloadKeyed(hand, empty = false) {
+    const T = empty ? {release: 0.22, drop: 0.24, enter: 0.46, align: 0.66, seat: 0.9, stop: 1.0, regrip: 1.34, end: 2.0}
+        : {release: 0.22, drop: 0.24, enter: 0.42, align: 0.62, seat: 0.86, regrip: 1.18, end: 1.7};
+    const hr = hand.ch('handling', 'rotation'), hp = hand.ch('handling', 'position'), cam = hand.ch('camera', 'rotation');
+    const lr = hand.ch('lefthand', 'rotation'), lp = hand.ch('lefthand', 'position'), pre = E(hand.pre);
+    const H = t => ({rot: hr(t), pos: hp(t)});
+    const slip = t => SLIP * clamp01(H(t).rot[1] / RELOAD_UP.rot[1]);   // the gun slips out of the fist as it turns up
+    const keyedLH = t => ({pos: lp(t), rot: euler(mm(E(lr(t)), pre))});
+    const LH = t => {
+        const k = keyedLH(t);
+        if (t < T.align) return mixT(mixT(leftOnGun(H(t)), k, W(t, 0, 0.1)), onMag(magInGun(H(t), MAG_ENTRY)), W(t, T.align - 0.06, T.align));
+        if (t < T.seat + 0.06) return onMag(newMag(t), slapGap(t, T.seat));
+        return mixT(mixT(onMag(newMag(t)), k, W(t, T.seat + 0.06, T.seat + 0.12)), leftOnGun(H(t)), W(t, T.regrip - 0.1, T.regrip));
+    };
+    const newMag = t => t < T.align ? magOnHand(LH(t)) : magInGun(H(t), Math.max(0, seatDepth(t, T.align, T.seat)));
+    const g = 520, t0 = T.drop;
+    const axial = t => t < t0 ? 0 : 0.5 * g * (t - t0) ** 2;
+    const tClear = t0 + Math.sqrt(2 * MAG_CLEAR / g);
+    const inWell = t => magInGun(H(t), axial(t));
+    const vRel = mul(sub(inWell(tClear).pos, inWell(tClear - 0.004).pos), 1 / 0.004);
+    const oldMag = t => {
+        if (t <= tClear) return inWell(t);
+        const base = inWell(tClear), dt = t - tClear;
+        const pos = add(add(base.pos, mul(vRel, dt)), [0, -0.5 * g * dt * dt, 0]);
+        return {pos, rot: euler(mm(base.R, E([-160 * dt, 10 * dt, 70 * dt])))};
+    };
+    const tracks = {
+        handling: {position: hp, rotation: hr},
+        magazine: {scale: t => (t >= t0 && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
+        follower: {position: t => empty && t < t0 ? Z : FOLLOWER_LOADED},   // empty magazine until the swap
+        empty_old_mag: {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
+        mag_out: {position: t => newMag(t).pos, rotation: t => newMag(t).rot},
+        reload_magazine: {scale: t => (t >= T.enter - 0.06 && t < T.seat) ? [1, 1, 1] : [0, 0, 0], step: true},
+        righthand: {position: t => sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rotation: () => RIGHT_REST.rot},
+        lefthand: lhTracks(LH),
+        camera: {rotation: cam},
+    };
+    if (empty) tracks.slide = {position: t => [0, 0, t < T.stop ? SLIDE_LOCK : SLIDE_LOCK * (1 - clamp01((t - T.stop) / 0.025))]};
+    const sounds = [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out'], [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'],
+        ...(empty ? [[T.stop + 0.015, 'slide_release']] : [])];
+    return {tracks, sounds, timing: T};
+}
 function reload(empty, ads = false, noMag = false) {
     const T = empty
         ? {release: 0.22, drop: 0.24, enter: 0.46, align: 0.66, seat: 0.9, stop: 1.0, back: 1.06, backEnd: 1.5, regrip: 1.34, end: 2.0}
@@ -346,8 +402,8 @@ function reload(empty, ads = false, noMag = false) {
         [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'], ...(empty ? [[T.stop + 0.015, 'slide_release']] : [])];
     return {tracks, sounds, timing: T};
 }
-clips.push(clip('reload_tactical', 1.7, 'once', () => reload(false)));
-clips.push(clip('reload_empty', 2.0, 'once', () => reload(true)));
+clips.push(clip('reload_tactical', 1.7, 'once', hand => reloadKeyed(hand)));
+clips.push(clip('reload_empty', 2.0, 'once', hand => reloadKeyed(hand, true)));
 clips.push(clip('reload_tactical_ads', 1.7, 'once', () => reload(false, true)));
 clips.push(clip('reload_empty_ads', 2.0, 'once', () => reload(true, true)));
 clips.push(clip('reload_tactical_no_mag', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', () => reload(false, false, true)));
@@ -492,6 +548,26 @@ function unload(empty) {
 clips.push(clip('unload', UNLOAD.end, 'once', () => unload(false)));
 clips.push(clip('unload_empty', UNLOAD.end, 'once', () => unload(true)));
 
+// ---------- hand-keyed channels ----------
+// Keyed by hand in Blockbench (bezier), read back from the source; lefthand keys are local to the clip's lefthand_pos.
+const RELOAD_HAND = {handling: ['rotation', 'position'], lefthand: ['rotation', 'position'], camera: ['rotation']};
+export const HAND_KEYED = {reload_tactical: RELOAD_HAND, reload_empty: RELOAD_HAND};
+function handKeys(source, name) {
+    const spec = HAND_KEYED[name]; if (!spec) return null;
+    const anim = source.animations?.find(a => a.name === name);
+    const byBone = new Map(Object.values(anim?.animators ?? {}).map(a => [a.name, a]));
+    const kf = {};
+    for (const [bone, chs] of Object.entries(spec)) for (const ch of chs) {
+        const keys = (byBone.get(bone)?.keyframes ?? []).filter(k => k.channel === ch);
+        assert(keys.some(k => k.interpolation === 'bezier'), `${name}: ${bone}.${ch} has no hand keys in the source (seed them in Blockbench first)`);
+        assert(!byBone.get(bone).quaternion_interpolation, `${name}: ${bone} uses quaternion interpolation`);
+        (kf[bone] ??= {})[ch] = keys;
+    }
+    const pre = byBone.get('lefthand_pos')?.keyframes.find(k => k.channel === 'rotation');
+    assert(pre, `${name}: lefthand_pos pre-rotation missing`);
+    return {kf, pre: ['x', 'y', 'z'].map(a => +pre.data_points[0][a]), ch: (bone, ch) => bbChannel(kf[bone][ch])};
+}
+
 // ---------- bake ----------
 const round = v => +v.toFixed(4);
 function bake(fn, length, step, rotRef = null) {
@@ -530,7 +606,8 @@ export function build() {
     idleRot.set('righthand', RIGHT_REST.rot);
     const lhIdle = leftOnGun(IDLE).rot;
     for (const c of clips) {
-        const {tracks, sounds = [], timing} = c.build();
+        const hand = handKeys(source, c.name);
+        const {tracks, sounds = [], timing} = c.build(hand);
         if (timing) timings[c.name] = timing;
         if (!tracks.righthand) tracks.righthand = {position: () => RIGHT_REST.pos, rotation: () => RIGHT_REST.rot};
         if (!tracks.lefthand) tracks.lefthand = lhTracks(() => leftOnGun(IDLE));
@@ -538,7 +615,7 @@ export function build() {
         for (const [bone, ch] of Object.entries(HIDE_HELPERS)) if (!tracks[bone]) tracks[bone] = ch;
         {   // gimbal guard for the support hand: constant per-clip pre-rotation on lefthand_pos
             const solved = tracks.lefthand.solved; let best = null;
-            for (const cand of LH_POS_CANDIDATES) {
+            for (const cand of hand ? [hand.pre] : LH_POS_CANDIDATES) {   // hand keys are local to their pre-rotation
                 const inv = T3(E(cand)), fn = t => euler(mm(E(solved(t)), inv));
                 const keys = bake(fn, c.length, false, euler(mm(E(lhIdle), inv)));
                 let worst = 0; for (let i = 1; i < keys.length; i++) worst = Math.max(worst, ...keys[i][1].map((v, j) => Math.abs(v - keys[i - 1][1][j])));
@@ -560,9 +637,10 @@ export function build() {
                 if (!chs[ch]) continue;
                 const step = ch === 'scale' && chs.step;
                 const ref = ch === 'rotation' ? (chs.ref ?? idleRot.get(bone) ?? Z) : null;
-                const keys = bake(chs[ch], c.length, step, ref), track = {};
+                const keys = bake(chs[ch], c.length, step, ref), track = {}, handCh = hand?.kf[bone]?.[ch];
+                if (handCh) animator.keyframes.push(...handCh);   // the source keeps the hand keys; the runtime gets the bake
                 keys.forEach(([t, v], i) => {
-                    animator.keyframes.push({channel: ch, data_points: [{x: String(v[0]), y: String(v[1]), z: String(v[2])}],
+                    if (!handCh) animator.keyframes.push({channel: ch, data_points: [{x: String(v[0]), y: String(v[1]), z: String(v[2])}],
                         uuid: uuid(`${c.name}:${bone}:${ch}:${t}`), time: t, color: -1, interpolation: step ? 'step' : 'linear'});
                     const sign = ch === 'rotation' ? [-1, -1, 1] : ch === 'position' ? [-1, 1, 1] : [1, 1, 1];
                     const value = {vector: v.map((x, k) => round(x * sign[k]) || 0)};
@@ -585,6 +663,10 @@ export function build() {
     }
     return {bb, runtime, stats, lhChoice, timings};
 }
+
+// rig and solvers, for seeding / checking hand keys from other scripts
+export const RIG = {E, euler, mm, mv, T3, unwrap, slerpRot, levelArm, handAt, leftOnGun, onMag, magInGun, magOnHand, handleWorld,
+    GRIP_SLIDE, RELOAD_UP, RELOAD_MEET, RELOAD_HOLD, OFFSCREEN_MAG, LOW_LEFT, MAG_ENTRY, PART, SLAP_GAP, AX, LP, LA, HP, MP, RP, RIGHT_REST};
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const args = process.argv.slice(2), {bb, runtime, stats, lhChoice} = build();

@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {bbChannel} from './bb-keyframes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = path.join(root, 'src/main/resources/assets/apocalypse_firstlight');
@@ -35,6 +36,7 @@ const sc = (v, s) => v.map(n => n * s);
 function sample(keys, ch, t, def) {
   const ks = keys.filter(k => k.channel === ch).sort((a, b) => a.time - b.time), vec = k => ['x', 'y', 'z'].map(a => +k.data_points[0][a]);
   if (!ks.length) return def;
+  if (ks.some(k => k.interpolation === 'bezier')) return bbChannel(ks)(t);   // hand-keyed channel: Blockbench's own curve
   let i = ks.findIndex(k => k.time >= t);
   if (i === 0) return vec(ks[0]); if (i < 0) return vec(ks.at(-1));
   const a = ks[i - 1], b = ks[i], u = a.interpolation === 'step' && t < b.time ? 0 : (t - a.time) / (b.time - a.time);
