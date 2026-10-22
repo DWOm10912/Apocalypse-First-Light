@@ -17,22 +17,25 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * </ul>
  * initial = true is the preliminary-surface graph (initial_density_without_jaggedness): the land branch is
  * terrain/plan_initial_land, the water branch the plain surface density.
+ * planned_caves = true (U2, the deep preset's final density only): the router cuts the underground plan into its chunks
+ * (RandomStateSeedMixin gives it an UndergroundRef, NoiseChunkUndergroundMixin cuts); the density itself is unchanged.
  */
 public record PlanTerrainDensity(DensityFunction land, DensityFunction terrain, DensityFunction underground,
-                                 boolean initial, TerrainProfile profile, TerrainPlanSurface surface) implements DensityFunction {
+                                 boolean initial, TerrainProfile profile, boolean plannedCaves, TerrainPlanSurface surface) implements DensityFunction {
     public static final KeyDispatchDataCodec<PlanTerrainDensity> CODEC = KeyDispatchDataCodec.of(
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("land").forGetter(PlanTerrainDensity::land),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("terrain").forGetter(PlanTerrainDensity::terrain),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("underground").forGetter(PlanTerrainDensity::underground),
                     Codec.BOOL.optionalFieldOf("initial", false).forGetter(PlanTerrainDensity::initial),
-                    TerrainProfile.CODEC.optionalFieldOf("profile", TerrainProfile.R1).forGetter(PlanTerrainDensity::profile)
-            ).apply(instance, (l, t, u, i, p) -> new PlanTerrainDensity(l, t, u, i, p, null))));
+                    TerrainProfile.CODEC.optionalFieldOf("profile", TerrainProfile.R1).forGetter(PlanTerrainDensity::profile),
+                    Codec.BOOL.optionalFieldOf("planned_caves", false).forGetter(PlanTerrainDensity::plannedCaves)
+            ).apply(instance, (l, t, u, i, p, c) -> new PlanTerrainDensity(l, t, u, i, p, c, null))));
 
     static final double SHORE_BAND = 48;
 
     public PlanTerrainDensity withSeed(long seed) {
-        return new PlanTerrainDensity(land, terrain, underground, initial, profile, TerrainPlanStore.get(profile, seed));
+        return new PlanTerrainDensity(land, terrain, underground, initial, profile, plannedCaves, TerrainPlanStore.get(profile, seed));
     }
 
     @Override public double compute(FunctionContext context) {
@@ -59,7 +62,7 @@ public record PlanTerrainDensity(DensityFunction land, DensityFunction terrain, 
     @Override public void fillArray(double[] values, ContextProvider context) { context.fillAllDirectly(values, this); }
     @Override public DensityFunction mapAll(Visitor visitor) {
         return visitor.apply(new PlanTerrainDensity(land.mapAll(visitor), terrain.mapAll(visitor),
-                underground.mapAll(visitor), initial, profile, surface));
+                underground.mapAll(visitor), initial, profile, plannedCaves, surface));
     }
     @Override public double minValue() {
         return Math.min(land.minValue(), initial ? terrain.minValue() : Math.min(-1, underground.minValue()));

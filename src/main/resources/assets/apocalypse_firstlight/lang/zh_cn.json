@@ -1321,6 +1321,7 @@
   "biome.apocalypse_firstlight.plateau_steppe": "高原干草原",
   "biome.apocalypse_firstlight.canyon_badlands": "峡谷劣地",
   "generator.apocalypse_firstlight.federal_experimental": "AFL 联邦六州",
+  "generator.apocalypse_firstlight.federal_deep_proto": "AFL 联邦深层（U2 原型）",
   "generator.minecraft.normal": "AFL r1（旧地形）",
 
   "effect.apocalypse_firstlight.radiation_sickness": "辐射病",

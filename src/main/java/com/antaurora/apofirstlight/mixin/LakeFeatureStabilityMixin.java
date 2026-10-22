@@ -25,6 +25,9 @@ public abstract class LakeFeatureStabilityMixin {
                                             CallbackInfoReturnable<Boolean> cir) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) context.level().getLevel().getChunkSource().randomState();
         if (!access.apocalypse$hasTerrainPlan()) return;
+        // U2: a deep world has no lava under ground (design section 13.9)
+        if (access.apocalypse$underground() != null && context.config().fluid()
+                .getState(context.random(), context.origin()).is(net.minecraft.world.level.block.Blocks.LAVA)) { cir.setReturnValue(false); return; }
         TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
         if (plan == null) return;
         BlockPos o = context.origin();

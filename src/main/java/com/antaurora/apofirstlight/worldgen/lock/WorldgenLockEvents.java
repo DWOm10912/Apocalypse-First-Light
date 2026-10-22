@@ -88,7 +88,7 @@ public final class WorldgenLockEvents {
             throw block("the world's lock record " + file + " exists but cannot be read; it was left untouched");
         }
         WorldgenLockRecord stored = data == null ? null : data.record();
-        List<WorldgenSystem> rules = WorldgenRules.current(profile, forestEnabled());
+        List<WorldgenSystem> rules = WorldgenRules.current(profile, forestEnabled(), access.apocalypse$underground() != null);
         WorldgenLockPolicy.Verdict v = WorldgenLockPolicy.evaluate(stored, current, rules, initialized, WorldgenLockConfig.acceptToken());
         long now = System.currentTimeMillis();
         String report = WorldgenLockPolicy.describe(v);

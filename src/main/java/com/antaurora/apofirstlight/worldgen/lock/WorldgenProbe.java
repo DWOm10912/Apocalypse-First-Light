@@ -40,7 +40,8 @@ final class WorldgenProbe {
 
     static WorldgenFingerprint current(ServerLevel level, long seed, TerrainPlanSurface plan,
                                        com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile profile) {
-        var rules = WorldgenRules.current(profile, ForestGate.enabled());
+        var rules = WorldgenRules.current(profile, ForestGate.enabled(),
+                ((com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess) (Object) level.getChunkSource().randomState()).apocalypse$underground() != null);
         TerrainPlanFingerprint.Result pf = TerrainPlanFingerprint.of(plan);
         Map<String, String> probes = new LinkedHashMap<>();
         probes.put(WorldgenFingerprint.PROBE_PLAN, pf.queryDigest());

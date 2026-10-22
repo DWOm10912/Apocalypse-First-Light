@@ -303,7 +303,9 @@ public final class AflNewWorldScreen extends Screen {
         if (SetupCanvas.in(mx, my, x, FOOT_Y + 11, SetupCanvas.width(font, SetupCanvas.tr("newworld.vanilla"), 0.6F), 7)) {
             click();
             passThrough = new WeakReference<>(vanilla);
-            Survivors.setCreateScreenScene(null);
+            // the start scene picked here stays (the world type, e.g. the U2 deep world, is only on the vanilla screen);
+            // the title and world-list screens clear it
+            Survivors.setCreateScreenScene(scene);
             SurvivorCreateWorldClient.preset(vanilla, mode);
             minecraft.setScreen(vanilla);
             return true;

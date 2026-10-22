@@ -220,6 +220,9 @@ public final class UndergroundCheck {
         range(bad, "great sinkholes", count(ents, EntranceKind.GREAT_SINKHOLE), 4, 8);
         rangeNote("hillside mouths", count(ents, EntranceKind.HILLSIDE_MOUTH), 30, 80);
         rangeNote("fissures + shafts", count(ents, EntranceKind.FISSURE) + count(ents, EntranceKind.SHAFT), 50, 150);
+        // the states' own ways in (21.10)
+        out("  state entrances: spring mouths %d, karst windows %d, cliff mouths %d, wave-cut caves %d",
+                count(ents, EntranceKind.SPRING_MOUTH), count(ents, EntranceKind.KARST_WINDOW), count(ents, EntranceKind.CLIFF_MOUTH), count(ents, EntranceKind.WAVE_CUT));
         if (u.facility == null) bad.add("no research facility candidate");
 
         // ---- layer air by Monte Carlo (7.2), depth histogram
@@ -347,6 +350,8 @@ public final class UndergroundCheck {
             out("    widest kit stops at: %s", stop);
         }
         if (trapsAll > 0) bad.add(trapsAll + " trap places (in, not out)");
+        String cut = cutCheck(g, u, seed);
+        if (cut != null) bad.add(cut);
         StringBuilder gs = new StringBuilder();
         int giantReach = 0;
         for (Cave c : u.caves) if (c.kind == CaveKind.GIANT || c.kind == CaveKind.CANYON) {
@@ -370,6 +375,65 @@ public final class UndergroundCheck {
         // linked to an entrance is not walkable: a sump on the way needs diving (V3+); the walkable share is the honest figure
         out("  systems walkable in from the surface (no diving): %d/%d (%.0f%%)", walkSys, sysN, pct(walkSys, sysN));
         rangeNote("percent of systems walkable in", (int) Math.round(pct(walkSys, sysN)), 15, 60);
+        // systems by state (C3 per-state caves): depth below the ground, water table below the ground, dry places
+        {
+            Map<FederalStateId, double[]> st = new TreeMap<>();
+            double nearDry = 1e9, nearAny = 1e9;
+            for (Cave c : u.caves) if (c.system() || c.kind == CaveKind.GIANT) {
+                FederalStateId sid = map.stateAt(c.x, c.z);
+                if (sid == null) continue;
+                GeologyModel.Column col = g.column(c.x, c.z);
+                int dry = 0;
+                for (int pl : c.places) if (u.places.get(pl).y() + 1 >= c.waterY) dry++;
+                double[] a = st.computeIfAbsent(sid, q -> new double[6]);
+                a[0]++; a[1] += col.h - c.y; a[2] += col.h - c.waterY; a[3] += c.places.isEmpty() ? 0 : (double) dry / c.places.size();
+                if (dry * 2 >= Math.max(1, c.places.size())) a[4]++;
+                if (c.label.contains("vadose")) a[5]++;
+                double hd = p.homeDistance(c.x, c.z);
+                nearAny = Math.min(nearAny, hd);
+                if (dry * 2 >= Math.max(1, c.places.size())) nearDry = Math.min(nearDry, hd);
+            }
+            out("  systems by state (n, mean depth below ground, water table below ground, dry share of places, mostly dry, vadose):");
+            for (var e : st.entrySet()) {
+                double[] a = e.getValue();
+                out("    %-14s n=%3.0f depth %4.0f m, water table %4.0f m, dry places %3.0f%%, mostly dry %2.0f, vadose %2.0f", e.getKey(), a[0], a[1] / a[0], a[2] / a[0], 100 * a[3] / a[0], a[4], a[5]);
+            }
+            out("  nearest system to the home %.0f m, nearest mostly dry one %.0f m", nearAny, nearDry);
+            // the plan forms by state (21.10): strike S1, branchwork S2, maze S3, small S4, conduit S5
+            Map<FederalStateId, Map<String, Integer>> fm = new TreeMap<>();
+            for (Cave c : u.caves) if (c.system()) {
+                FederalStateId sid = map.stateAt(c.x, c.z);
+                if (sid == null) continue;
+                String f = "plain";
+                for (String q : new String[]{"strike", "branchwork", "maze", "small", "conduit"}) if (c.label.endsWith(q) || c.label.contains(q + " ")) f = q;
+                fm.computeIfAbsent(sid, q -> new TreeMap<>()).merge(f, 1, Integer::sum);
+            }
+            out("  plan forms by state: %s", fm);
+        }
+        // the start dry cave (21.6): a mostly dry natural system within 3 km of the home that a light reaches from the surface
+        {
+            BitSet lit = UndergroundRoutes.reachIn(u, UndergroundPlan.KITS.get(1));
+            double best = 1e9;
+            int bestId = -1, bestIn = 0;
+            for (Cave c : u.caves) {
+                if (!c.system() && c.kind != CaveKind.GIANT) continue;
+                int dry = 0, inLit = 0;
+                for (int pl : c.places) {
+                    if (u.places.get(pl).y() + 1 >= c.waterY) dry++;
+                    if (lit.get(pl)) inLit++;
+                }
+                if (inLit == 0 || dry * 2 < Math.max(1, c.places.size())) continue;
+                double hd = p.homeDistance(c.x, c.z);
+                if (hd < best) { best = hd; bestId = c.id; bestIn = inLit; }
+            }
+            if (bestId < 0) out("  start dry cave: none reached with a light");
+            else {
+                Cave c = u.caves.get(bestId);
+                out("  start dry cave: cave %d %s (%s) %.0f m from the home, %d of %d places reached with a light, %.0f m of passage%s",
+                        bestId, c.kind, c.label, best, bestIn, c.places.size(), c.passageLength, u.startCave == bestId ? "" : " (planner's start cave " + u.startCave + ")");
+            }
+            if (best > 3000) bad.add("no light-only dry cave within 3 km of the home");
+        }
         int entUnreach = 0;
         for (Entrance e : u.entrances) if (e.connected() && e.place() >= 0 && UndergroundRoutes.leastKitIn(u, e.place(), in) < 0) entUnreach++;
         if (entUnreach > 0) bad.add(entUnreach + " connected entrances whose rim is not a surface place");
@@ -633,6 +697,43 @@ public final class UndergroundCheck {
     }
 
     /** ms to answer rock and cave at every block of a 16x16 column from minY to the ground (average of 12 land chunks). */
+    /**
+     * U2: the chunk cut (NoiseChunkUndergroundMixin: one shapesInBox per chunk, caveAmong per block) answers exactly
+     * caveAt, block for block, in 24 chunks through cave shapes (every 2nd block of the column, the cave's height range);
+     * prints the cut's cost per chunk. Null = same everywhere.
+     */
+    static String cutCheck(GeologyModel g, UndergroundPlan u, long seed) {
+        SplittableRandom rnd = new SplittableRandom(seed ^ 0x52C);
+        long diff = 0, cells = 0, inCave = 0, ns = 0;
+        int chunks = 0;
+        for (int tries = 0; chunks < 24 && tries < 2000 && !u.shapes.isEmpty(); tries++) {
+            UndergroundPlan.Shape sh = u.shapes.get(rnd.nextInt(u.shapes.size()));
+            double[] b = sh.bounds();
+            double cx = b[0] + rnd.nextDouble() * (b[3] - b[0]), cz = b[2] + rnd.nextDouble() * (b[5] - b[2]);
+            double x0 = Math.floor(cx / 16) * 16, z0 = Math.floor(cz / 16) * 16;
+            int y0 = (int) Math.floor(b[1]) - 2, y1 = (int) Math.ceil(b[4]) + 2;
+            long a = System.nanoTime();
+            int[] ids = u.shapesInBox(x0, z0, x0 + 16, z0 + 16);
+            int[] got = new int[16 * 16 * ((y1 - y0) / 2 + 1)];
+            int k = 0;
+            for (int dz = 0; dz < 16; dz++) for (int dx = 0; dx < 16; dx++)
+                for (int y = y0; y <= y1; y += 2) got[k++] = u.caveAmong(ids, x0 + dx + 0.5, y + 0.5, z0 + dz + 0.5);
+            ns += System.nanoTime() - a;
+            k = 0;
+            for (int dz = 0; dz < 16; dz++) for (int dx = 0; dx < 16; dx++)
+                for (int y = y0; y <= y1; y += 2) {
+                    int want = u.caveAt(x0 + dx + 0.5, y + 0.5, z0 + dz + 0.5);
+                    if (want != got[k++]) diff++;
+                    if (want >= 0) inCave++;
+                    cells++;
+                }
+            chunks++;
+        }
+        out("  U2 cut: %d chunks, %d cells (%d in caves), %d differ from caveAt; cut %.2f ms per chunk column range",
+                chunks, cells, inCave, diff, chunks == 0 ? 0 : ns / 1e6 / chunks);
+        return diff == 0 ? null : diff + " cut cells differ from caveAt";
+    }
+
     static double chunkCost(GeologyModel g, UndergroundPlan u, long seed) {
         TerrainPlanSurface s = g.surface;
         SplittableRandom rnd = new SplittableRandom(seed ^ 0xC4);
@@ -790,6 +891,10 @@ public final class UndergroundCheck {
                 case DRY_SPRING -> 0x4080FF;
                 case MINE_ADIT, MINE_SHAFT -> 0xFFE040;
                 case FACILITY -> 0xFF2020;
+                case SPRING_MOUTH -> 0x40C0FF;
+                case KARST_WINDOW -> 0xA0FFFF;
+                case CLIFF_MOUTH -> 0xFF80C0;
+                case WAVE_CUT -> 0xC0A0FF;
             };
             gr.setColor(e.connected() ? rgb(col) : new Color(col & 0x7F7F7F));
             double r = e.kind() == EntranceKind.GREAT_SINKHOLE ? Math.max(5, 2 * e.radius() / MPP) : e.connected() ? 4 : 2;

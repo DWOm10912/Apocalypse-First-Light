@@ -18,4 +18,6 @@ public interface RandomStateSeedAccess {
     /** The road network bound to this world (null: no roads generated here). C3.2. */
     com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network apocalypse$roadNetwork();
     void apocalypse$setRoadNetwork(com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network network);
+    /** The planned caves this router cuts into its chunks (U2 deep preset; null: the router has no planned caves). */
+    com.antaurora.apofirstlight.worldgen.underground.UndergroundRef apocalypse$underground();
 }

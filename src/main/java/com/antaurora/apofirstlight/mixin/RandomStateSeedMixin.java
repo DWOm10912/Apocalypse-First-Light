@@ -33,6 +33,8 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     // C3.2 (2026-10-14): the terrain works the plan densities apply, and the road network bound by the version lock
     @Unique private com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef apocalypse$worksRef;
     @Unique private volatile com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network apocalypse$network;
+    // U2 (2026-10-22): the planned caves of a deep world (plan_terrain "planned_caves"), filled by UndergroundRuntime.bind
+    @Unique private com.antaurora.apofirstlight.worldgen.underground.UndergroundRef apocalypse$underground;
 
     /** Expand terrain recipes before vanilla traverses/seeds the resulting spline/noise graph. */
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
@@ -75,6 +77,8 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
                 apocalypse$macroGeography = apocalypse$terrainPlan = true;
                 var bound = terrain.withSeed(seed);
                 apocalypse$bindPlan(bound.profile(), bound.surface());
+                if (bound.plannedCaves() && apocalypse$underground == null)
+                    apocalypse$underground = new com.antaurora.apofirstlight.worldgen.underground.UndergroundRef();
                 return bound;
             }
             if (function instanceof MacroTerrainDensity macro) {
@@ -125,6 +129,8 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     }
 
     @Override public com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network apocalypse$roadNetwork() { return apocalypse$network; }
+
+    @Override public com.antaurora.apofirstlight.worldgen.underground.UndergroundRef apocalypse$underground() { return apocalypse$underground; }
 
     @Override public void apocalypse$setRoadNetwork(com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network network) {
         apocalypse$network = network;

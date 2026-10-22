@@ -38,6 +38,13 @@ public final class FederalPreset {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "federal_experimental"));
     public static final ResourceKey<NoiseGeneratorSettings> NOISE_SETTINGS = ResourceKey.create(Registries.NOISE_SETTINGS,
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "federal_experimental"));
+    /**
+     * U2 (2026-10-22, docs/worldgen/underground_geology_caves_v0_design.md section 20): the deep prototype, the same
+     * federal plan on dimension_type overworld_deep (Y -256..319) with the planned caves instead of vanilla's. Preset
+     * apocalypse_firstlight:federal_deep_proto, listed after the federal preset in the world-type button (#minecraft:normal; decide before merging whether it stays).
+     */
+    public static final ResourceKey<NoiseGeneratorSettings> DEEP_NOISE_SETTINGS = ResourceKey.create(Registries.NOISE_SETTINGS,
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "federal_deep_proto"));
 
     /**
      * True for the create-world screen's own default (CreateWorldScreen#openFresh passes exactly minecraft:normal):
@@ -66,7 +73,7 @@ public final class FederalPreset {
         LevelStem stem = stems.get(LevelStem.OVERWORLD);
         if (stem == null || !(stem.generator() instanceof NoiseBasedChunkGenerator generator)) return null;
         Holder<NoiseGeneratorSettings> settings = generator.generatorSettings();
-        return settings.is(NOISE_SETTINGS) ? settings.value() : null;
+        return settings.is(NOISE_SETTINGS) || settings.is(DEEP_NOISE_SETTINGS) ? settings.value() : null;
     }
 
     /**
