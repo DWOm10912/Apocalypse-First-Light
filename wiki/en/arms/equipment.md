@@ -20,7 +20,7 @@ See [Inventory and Weight](../guide/inventory)
 
 | Item | Effect | How to get |
 |---|---|---|
-| <ItemIcon id="simple_hearing_protection" /> Simple Hearing Protection | Worn on the ears; eases ringing from gunfire and muffles outside sound | <StatusTag s="creative" /> |
+| <ItemIcon id="simple_hearing_protection" /> Simple Hearing Protection | Worn on the ears; blocks most of the ear damage from gunfire and blasts (see [Tinnitus](../guide/survival#tinnitus)), but muffles outside sound | <StatusTag s="creative" /> |
 | <ItemIcon id="wrist_thermometer" /> Wrist Thermometer | Worn on the wrist; always shows air temperature | <StatusTag s="creative" /> |
 | <ItemIcon id="clinical_thermometer" /> Clinical Thermometer | Hold right click for about 3 s to take your temperature | <StatusTag s="creative" /> |
 | <ItemIcon id="geiger_counter" /> Geiger Counter | Shows the current dose rate. Works in your hand or on a chest rig clip | <StatusTag s="creative" /> |

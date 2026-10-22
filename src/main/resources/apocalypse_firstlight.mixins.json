@@ -13,12 +13,12 @@
     "client.InventoryWeaponScrollMixin", "client.AbstractContainerScreenGridMixin",
     "client.LevelRendererFirstPersonBodyMixin", "client.LivingEntityRendererFirstPersonBodyMixin", "client.HumanoidArmorLayerFirstPersonBodyMixin",
     "client.ItemInHandRendererFirstPersonBodyMixin", "client.HumanoidModelFirstPersonBodyMixin",
-    "client.LivingEntityRendererSkeletonMixin", "client.ItemInHandLayerSkeletonMixin",
+    "client.LivingEntityRendererSkeletonMixin", "client.ItemInHandLayerSkeletonMixin", "client.PlayerRendererProneMixin",
     "client.LivingEntityDeathPoofMixin",
     "client.HeadlightLightColorMixin", "client.HeadlightEntityLightMixin", "client.HeadlightWorldSliceMixin",
     "client.DynamicLightProgramMixin", "client.DynamicLightShaderApplyMixin", "client.DynamicLightEmbeddiumShaderMixin",
     "client.DynamicLightEmbeddiumStateMixin", "client.DynamicLightBlockChangeMixin",
-    "client.RainVanillaMixin", "client.LightningBoltClientMixin",
+    "client.RainVanillaMixin", "client.LightningBoltClientMixin", "client.SoundChannelAccessor",
     "client.AflCjkLineBreakMixin", "client.CreativeTabLayoutMixin"],
   "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "BiomeSourceFederalMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkMacroWaterMixin", "WorldCarverStabilityMixin", "LakeFeatureStabilityMixin", "SpringFeatureRoadMixin", "NoiseFillRiverMixin", "RandomStateSeedMixin", "WorldgenLockSaveMixin", "DedicatedServerFederalDefaultMixin", "SurfaceSystemStartupBiomeMixin", "BiomeManagerStartupSurfaceMixin", "ZombieSunlightMixin", "EntityIndustrialWasteSoundMixin", "ExplosionAccessor", "LockedInventoryMixin", "LockedInventorySlotMixin", "LockedInventoryMenuMixin", "LockedInventoryWrapperMixin", "LockedInventoryRecipeMixin", "InventoryGridMixin", "ItemEntityAccessor", "FoodDataThirstMixin", "InventoryMenuEquipmentMixin", "LivingEntityFuelSlipMixin", "PlayerHungerRateMixin",
     "TerrainSmoothBlockStateMixin", "TerrainSmoothBlockCollisionsMixin", "TerrainSmoothLevelMixin", "TerrainSmoothServerLevelMixin", "TerrainSmoothLevelChunkMixin",
@@ -26,7 +26,7 @@
     "WiringLevelChunkMixin", "WiringServerLevelMixin", "SurvivorRespawnGateMixin", "AflDifficultyLockMixin",
     "ChunkGeneratorForestHomeMixin", "WorldGenRegionForestHomeGuardMixin",
     "ChunkGeneratorRoadWorksMixin", "WorldGenRegionRoadGuardMixin", "BushBlockGradedTurfMixin",
-    "EntityVehicleCollisionMixin", "ServerGamePacketListenerVehicleMixin", "PlayerGunRightArmMixin", "LightningBoltLifeMixin",
+    "EntityVehicleCollisionMixin", "ServerGamePacketListenerVehicleMixin", "PlayerGunRightArmMixin", "LightningBoltLifeMixin", "LightningBoltAccessor", "LightningTargetServerLevelMixin", "ServerLevelLightningInvoker", "ServerLevelWeatherMixin", "LevelWeatherMixin", "FireBlockRainMixin",
     "RetiredGearEnchantmentMixin", "RetiredSwordMixin", "RetiredTurtleHelmetMixin", "RetiredFreezeImmunityMixin", "RetiredPowderSnowMixin", "RetiredSpawnGearMixin"],
   "injectors": {"defaultRequire": 1}
 }

@@ -9,26 +9,23 @@ import net.minecraft.sounds.SoundSource;
 
 /** Listener-only filtering. Relative ambient loops are world ambience, unlike forUI sounds. */
 public final class HearingProtectionAudio {
-    private static final ResourceLocation TINNITUS =
-            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "explosion_tinnitus");
+    private static final ResourceLocation TINNITUS = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "tinnitus"),
+            JOLT = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "explosion_tinnitus");
 
     private HearingProtectionAudio() {}
 
-    /** Hearing protection x the survivor attribute hearing. */
+    /** Hearing protection x the survivor attribute hearing x tinnitus (TinnitusClient). */
     public static float listenerMultiplier() {
         var player = Minecraft.getInstance().player;
         return HearingProtectionManager.getWorldSoundMultiplier(player)
-                * (float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.HEARING, 0);
-    }
-
-    public static float tinnitusVolumeMultiplier() {
-        return HearingProtectionManager.getImpulseProtectionMultiplier(Minecraft.getInstance().player);
+                * (float)com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.HEARING, 0)
+                * TinnitusClient.hearingMultiplier();
     }
 
     public static boolean isWorldSound(SoundInstance sound) {
         SoundSource source = sound.getSource();
         if (source == SoundSource.MUSIC || source == SoundSource.RECORDS
-                || TINNITUS.equals(sound.getLocation()) || sound instanceof ExplosionTinnitusSound) {
+                || TINNITUS.equals(sound.getLocation()) || JOLT.equals(sound.getLocation()) || sound instanceof TinnitusClient.Ring) {
             return false;
         }
         // Vanilla UI factory: relative + NONE. Do not assume all MASTER sounds are UI.

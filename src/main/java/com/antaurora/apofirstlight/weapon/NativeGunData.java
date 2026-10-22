@@ -130,7 +130,8 @@ public final class NativeGunData {
                 case "default"->NativeAccuracyProfile.DEFAULT; case "battle_rifle"->NativeAccuracyProfile.BATTLE_RIFLE;
                 default->throw new IllegalArgumentException("accuracy.profile: unknown preset");
             };
-            if(!noise.getAsJsonPrimitive("tinnitus").isBoolean())throw new IllegalArgumentException("noise.tinnitus: expected boolean");
+            // noise.ear_db: the shot at the shooter's ear (dB), the hearing dose (tinnitus V2, docs/gameplay/tinnitus_v2_plan.md 3.2)
+            double earDb=num(noise,"ear_db",0,250);
             if(!o.has("weapon_class"))throw new IllegalArgumentException("weapon_class: required");
             var weaponClass=WeaponClass.parse(o.get("weapon_class").getAsString());
             var presentation=presentation(o,weaponClass,tactical,empty);
@@ -145,7 +146,7 @@ public final class NativeGunData {
                     tactical,presentation.magInTick(),presentation.emptyMagInTick(),integer(f,"interval_ticks"),num(d,"base",0,Double.MAX_VALUE),
                     start,num(d,"effective_range",start,Double.MAX_VALUE),range,num(d,"min_damage_multiplier",0,1),
                     spread,num(noise,"radius",0,Double.MAX_VALUE),rp,presentation.trail(),ap,
-                    noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),
+                    earDb,empty,(float)(num(ads,"time_seconds",0,100000)*20),
                     (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
                     NativeMuzzleMount.parse(o,validate),sound(o,"fire_sound",validate),sound(o,"dry_fire_sound",validate),
                     suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),fire,presentation.hitEffect(),

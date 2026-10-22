@@ -427,7 +427,7 @@
         return {
             slim: false, walkPhase: 0, move: 0, run: 0, crouch: 0, time: 0,
             rootYaw: 0, chestYaw: 0, chestPitch: 0, viewYaw: 0, viewPitch: 0,
-            eyeTarget: null, maxRootShift: 4.27,
+            eyeTarget: null, maxRootShift: 4.27, headClip: 0,
             right: 'CLIP', left: 'CLIP', ikRightWeight: 1, ikLeftWeight: 1,
             vanillaRight: [0, 0, 0, 1], vanillaLeft: [0, 0, 0, 1], vanillaRightWeight: 0, vanillaLeftWeight: 0,
             targetRight: tf.id(), targetLeft: tf.id(),
@@ -508,10 +508,16 @@
             pose.local[rig.thighL] = q4.mul(legBack, pose.local[rig.thighL]);
             pose.local[rig.chest] = q4.mul(q4.mul(q4.y(rad(twist - hip)), q4.x(rad(bend))), chestClip);
             pose.updateAll();
-            // head: the view in model space, relative to the chest as posed
+            // head: the view in model space, relative to the chest as posed; headClip of the way back to the clips' head
+            // (lying out cold: the face on the ground, not where the view looks)
+            const headClip = pose.local[rig.head].slice();
             const view = q4.mul(q4.y(rad(inp.viewYaw)), q4.x(rad(inp.viewPitch)));
             const chestWorld = pose.rotation(rig.chest);
             pose.local[rig.head] = clampEuler(q4.mul(q4.conj(chestWorld), view), rig.limits[rig.head]);
+            if (inp.headClip > 0) {
+                const viewed = pose.local[rig.head];
+                pose.local[rig.head] = q4.slerp(viewed, q4.dot(viewed, headClip) < 0 ? q4.neg(headClip) : headClip, clamp01(inp.headClip));
+            }
             pose.update(rig.head);
             if (inp.eyeTarget) {
                 const eye = rig.sockets.eye;
@@ -761,6 +767,7 @@
             inp.chestYaw *= 1 - w;
             inp.chestPitch *= 1 - w;
         }
+        if (a.holdHead) inp.headClip = Math.max(inp.headClip, w);   // PlayerAction#holdHead: the clip's head, not the look
         return true;
     }
 
@@ -1076,8 +1083,9 @@
 
     /**
      * A standing player (PlayerSkeletonCheck.standing: facing ahead, no chest twist) with an action at o.seconds.
-     * o: {slim, crouch, pitch, yaw, chestYaw, rifle, time, action, seconds, param, fp}. fp: the own first person, a gun action
-     * (one with a gun prop) reaching further (firstPersonReach; client/skeleton/SkeletonGunStance#hold).
+     * o: {slim, crouch, pitch, yaw, chestYaw, rifle, time, action, seconds, param, fp, free, headClip}. fp: the own first
+     * person, a gun action (one with a gun prop) reaching further (firstPersonReach; client/skeleton/SkeletonGunStance#hold).
+     * free: no eye target, the root stays put (lying on the front, client/skeleton/ProneClient); headClip: Input.headClip.
      */
     function solveFrame(poser, o) {
         const rig = poser.rig, inp = newInput();
@@ -1092,6 +1100,8 @@
         inp.eyeTarget = [0, eyeModelY(o.crouch), 0];
         let m = o.action ? {action: o.action, seconds: o.seconds || 0, stopped: -1, age: NaN, param: o.param || 0, mirror: false,
             anchors: () => null, prop: null, props: [], propHidden: [], view: viewFrame(inp.eyeTarget, inp.viewYaw, inp.viewPitch)} : null;
+        inp.headClip = o.headClip || 0;
+        if (o.free) inp.eyeTarget = null;
         if (m && !actionBody(inp, rig, m)) m = null;
         if (m && o.fp && (m.action.props || []).some(p => p.def && p.def.gun)) {
             m.viewAhead = firstPersonReach(inp.viewPitch);
@@ -1158,6 +1168,7 @@
             viewPitch: Array.isArray(json.view_pitch) ? json.view_pitch : null,
             chestTwist: json.chest_twist || 0,
             holdBody: !!json.hold_body,
+            holdHead: !!json.hold_head,
             props: propsOfJson(json).map(p => ({
                 id: p.id, def: defFor ? defFor(p.id) : null, keys: p.keys.map(propKeyOf),
                 openFrom: p.open_from !== undefined ? p.open_from : NaN,
@@ -1781,6 +1792,7 @@
                 mask: a.mask, blendIn: a.blend_in, blendOut: a.blend_out, clip: clipOf(anim), paramClip: null,
                 right: a.hands.right.map(runtimeKey), left: a.hands.left.map(runtimeKey), props: tracks, problems,
                 viewPitch: a.view_pitch || null, chestTwist: a.chest_twist || 0, holdBody: !!(a.extra && a.extra.hold_body),
+                holdHead: !!(a.extra && a.extra.hold_head),
             };
         }
 
@@ -2144,6 +2156,8 @@
             if (x.first_person_eye) json.first_person_eye = true;
             // the clip alone turns and bends the chest (PlayerAction#holdBody: arms keyed to the body by FK)
             if (x.hold_body) json.hold_body = true;
+            // the clip's head, not the look (PlayerAction#holdHead: wrapping the head)
+            if (x.hold_head) json.hold_head = true;
             // the own view's pitch keyed over the action (PlayerAction#firstPersonView: falling over on a landing)
             if (x.first_person_view) json.first_person_view = x.first_person_view;
             // a gun's stance loop: by the clock or the stride, its time within the animation's length
@@ -2360,7 +2374,7 @@
             const hk = k => ({at: k.at || 0, target: fullTarget(k.target, first), blend: k.blend !== undefined ? k.blend : 0.2, roll: k.roll || 0, pole: k.pole});
             a.hands = {right: ((json.hands || {}).right || []).map(hk), left: ((json.hands || {}).left || []).map(hk)};
             for (const side of ['right', 'left']) for (const k of a.hands[side]) length = Math.max(length, k.at + k.blend);
-            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check', 'first_person_pitch', 'first_person_eye', 'hold_body', 'first_person_view']) if (json[f] !== undefined) a.extra[f] = json[f];
+            for (const f of ['param_clip', 'approach', 'view_anchors', 'events', 'check', 'first_person_pitch', 'first_person_eye', 'hold_body', 'hold_head', 'first_person_view']) if (json[f] !== undefined) a.extra[f] = json[f];
             const rawList = tracksJson.map((t, i) => ({index: i, json: t})).filter(r => raw.has(r.json.id));
             if (rawList.length) a.extra.props_raw = rawList;
             // the file's tracks as the runtime reads them (the project's points): where a prop: frame's earlier prop is

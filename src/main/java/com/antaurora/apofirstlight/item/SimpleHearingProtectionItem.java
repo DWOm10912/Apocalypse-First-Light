@@ -25,6 +25,9 @@ import java.util.List;
  * slot by an older save still protects (HearingProtectionManager).
  */
 public final class SimpleHearingProtectionItem extends Item implements ICurioItem, HearingProtection {
+    /** The world's sounds × this while worn; every hearing dose × IMPULSE (tinnitus V2, docs/gameplay/tinnitus_v2_plan.md 3.3). */
+    public static final float WORLD_SOUND = 0.50F, IMPULSE = 0.10F;
+
     public SimpleHearingProtectionItem() {
         super(new Item.Properties().stacksTo(1));
     }
@@ -43,12 +46,12 @@ public final class SimpleHearingProtectionItem extends Item implements ICurioIte
 
     @Override
     public float worldSoundMultiplier(ItemStack stack) {
-        return 0.50F;
+        return WORLD_SOUND;
     }
 
     @Override
     public float impulseProtectionMultiplier(ItemStack stack) {
-        return 0.50F;
+        return IMPULSE;
     }
 
     @Override

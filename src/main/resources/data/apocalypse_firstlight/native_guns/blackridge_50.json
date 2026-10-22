@@ -21,7 +21,7 @@
     "profile": "default"
   },
   "reload": {"tactical_seconds": 2.45, "empty_seconds": 2.70},
-  "noise": {"radius": 88, "tinnitus": true},
+  "noise": {"radius": 88, "ear_db": 165},
   "ads": {
     "time_seconds": 0.18,
     "fov_multiplier": 0.94,

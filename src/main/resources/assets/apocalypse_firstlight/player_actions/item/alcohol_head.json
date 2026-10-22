@@ -1,0 +1,936 @@
+{
+  "format_version": 1,
+  "about": "Medical alcohol by part (docs/gameplay/medical_actions_by_part_v1.md), 4.6 s (MedicalItem.ALCOHOL_TICKS 92) for every part: item/alcohol_clean's cap work at its times (MedicalItem.ALCOHOL_CUES), the pour 2.15..2.85 s (client/MedicalPourJets 2.1..2.9: the stream from the bottle prop's mouth while its axis points down), the cap held aside in the left fingertips while the right hand pours on the head: the head tipped to the left (and the body a little), its right side up; the bottle taken up beside it and poured on above the right ear, the mouth moving back along it. Both hands by IK at run time on the keyed props; the body the clip (hold_body, hold_head). Written by tools/medical-actions-v1a/author_alcohol_parts_v1.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "medical.alcohol_head"
+  },
+  "clip": "medical.alcohol_head",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 50,
+  "first_person": "body",
+  "blend": {
+    "in": 0.3,
+    "out": 0.3
+  },
+  "first_person_pitch": 30,
+  "hold_body": true,
+  "hold_head": true,
+  "props": [
+    {
+      "id": "medical_alcohol",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6,
+            10.5,
+            0
+          ],
+          "rot": [
+            0,
+            16.699,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -1.5,
+            8.5,
+            -6
+          ],
+          "rot": [
+            -21.218,
+            20.45,
+            29.564
+          ],
+          "blend": 0.45
+        },
+        {
+          "at": 0.45,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -1.5,
+            8.5,
+            -6
+          ],
+          "rot": [
+            -21.218,
+            20.45,
+            29.564
+          ],
+          "blend": 1.15
+        },
+        {
+          "at": 1.6,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -7.3737,
+            1.6134,
+            -5.8385
+          ],
+          "rot": [
+            -65.603,
+            38.461,
+            65.74
+          ],
+          "blend": 0.16
+        },
+        {
+          "at": 1.76,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6.2474,
+            -5.2732,
+            -2.6769
+          ],
+          "rot": [
+            -176.838,
+            8.619,
+            115.126
+          ],
+          "blend": 0.16
+        },
+        {
+          "at": 1.92,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6.5349,
+            -6.4847,
+            -2.6085
+          ],
+          "rot": [
+            180,
+            0,
+            70
+          ],
+          "blend": 0.23
+        },
+        {
+          "at": 2.15,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6.2502,
+            -6.9778,
+            -0.4835
+          ],
+          "rot": [
+            180,
+            0,
+            70
+          ],
+          "blend": 0.7
+        },
+        {
+          "at": 2.85,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6.2474,
+            -5.2732,
+            -2.6769
+          ],
+          "rot": [
+            -176.838,
+            8.619,
+            115.126
+          ],
+          "blend": 0.25
+        },
+        {
+          "at": 3.1,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -6.2474,
+            -5.2732,
+            -2.6769
+          ],
+          "rot": [
+            -176.838,
+            8.619,
+            115.126
+          ],
+          "blend": 0.1
+        },
+        {
+          "at": 3.2,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -7.3737,
+            1.6134,
+            -5.8385
+          ],
+          "rot": [
+            -65.603,
+            38.461,
+            65.74
+          ],
+          "blend": 0.125
+        },
+        {
+          "at": 3.325,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -1.5,
+            8.5,
+            -6
+          ],
+          "rot": [
+            -21.218,
+            20.45,
+            29.564
+          ],
+          "blend": 0.125
+        },
+        {
+          "at": 3.45,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -1.5,
+            8.5,
+            -6
+          ],
+          "rot": [
+            -21.218,
+            20.45,
+            29.564
+          ],
+          "blend": 0.91
+        },
+        {
+          "at": 4.36,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [
+            -4.2,
+            9.7,
+            -2.4
+          ],
+          "rot": [
+            -2.577,
+            16.683,
+            8.909
+          ],
+          "blend": 0.24
+        }
+      ]
+    },
+    {
+      "id": "medical_alcohol_cap",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.1098,
+            -4.8
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.1098,
+            -4.8
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 0.5,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.2298,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -50,
+            0
+          ],
+          "blend": 0.2
+        },
+        {
+          "at": 0.7,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.2298,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -50,
+            0
+          ],
+          "blend": 0.1
+        },
+        {
+          "at": 0.8,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.3498,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -100,
+            0
+          ],
+          "blend": 0.2
+        },
+        {
+          "at": 1,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.3498,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -100,
+            0
+          ],
+          "blend": 0.1
+        },
+        {
+          "at": 1.1,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.4698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -150,
+            0
+          ],
+          "blend": 0.2
+        },
+        {
+          "at": 1.3,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.4698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -150,
+            0
+          ],
+          "blend": 0.1
+        },
+        {
+          "at": 1.4,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.5698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -180,
+            0
+          ],
+          "blend": 0.08
+        },
+        {
+          "at": 1.48,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -8.8698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -180,
+            0
+          ],
+          "blend": 0.12
+        },
+        {
+          "at": 1.6,
+          "frame": "chest",
+          "point": "center",
+          "pos": [
+            3.3899,
+            5.0641,
+            -6.622
+          ],
+          "rot": [
+            158.782,
+            -20.45,
+            150.436
+          ],
+          "blend": 0.0001
+        },
+        {
+          "at": 1.6001,
+          "frame": "chest",
+          "point": "center",
+          "pos": [
+            4.1296,
+            3.6669,
+            -6.3755
+          ],
+          "rot": [
+            158.782,
+            -20.45,
+            150.436
+          ],
+          "blend": 0.1499
+        },
+        {
+          "at": 1.75,
+          "frame": "chest",
+          "point": "pinch",
+          "pos": [
+            5.5,
+            7,
+            -4.5
+          ],
+          "rot": [
+            -180,
+            -69.123,
+            -107.568
+          ],
+          "blend": 0.25
+        },
+        {
+          "at": 2,
+          "frame": "chest",
+          "point": "pinch",
+          "pos": [
+            5.5,
+            7,
+            -4.5
+          ],
+          "rot": [
+            -180,
+            -69.123,
+            -107.568
+          ],
+          "blend": 0.9
+        },
+        {
+          "at": 2.9,
+          "frame": "chest",
+          "point": "center",
+          "pos": [
+            4.1296,
+            3.6669,
+            -6.3755
+          ],
+          "rot": [
+            158.782,
+            -20.45,
+            150.436
+          ],
+          "blend": 0.3
+        },
+        {
+          "at": 3.2,
+          "frame": "chest",
+          "point": "center",
+          "pos": [
+            4.1296,
+            3.6669,
+            -6.3755
+          ],
+          "rot": [
+            158.782,
+            -20.45,
+            150.436
+          ],
+          "blend": 0.25
+        },
+        {
+          "at": 3.45,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -10.4698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -180,
+            0
+          ],
+          "blend": 0.0001
+        },
+        {
+          "at": 3.4501,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.5698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -180,
+            0
+          ],
+          "blend": 0.0999
+        },
+        {
+          "at": 3.55,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.4198,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -120,
+            0
+          ],
+          "blend": 0.18
+        },
+        {
+          "at": 3.73,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.4198,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -120,
+            0
+          ],
+          "blend": 0.09
+        },
+        {
+          "at": 3.82,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.2698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -60,
+            0
+          ],
+          "blend": 0.18
+        },
+        {
+          "at": 4,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.2698,
+            -4.8
+          ],
+          "rot": [
+            0,
+            -60,
+            0
+          ],
+          "blend": 0.09
+        },
+        {
+          "at": 4.09,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.1098,
+            -4.8
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.18
+        },
+        {
+          "at": 4.27,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.1098,
+            -4.8
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.09
+        },
+        {
+          "at": 4.36,
+          "frame": "prop:medical_alcohol",
+          "point": "center",
+          "pos": [
+            4.8,
+            -7.1098,
+            -4.8
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.24
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 30,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0.45,
+        "roll": 30,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 1.6,
+        "target": "prop:grip",
+        "blend": 0.32,
+        "roll": -20,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 1.92,
+        "target": "prop:grip",
+        "blend": 0.23,
+        "roll": 30,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 2.15,
+        "target": "prop:grip",
+        "blend": 0.7,
+        "roll": 30,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 2.85,
+        "target": "prop:grip",
+        "blend": 0.25,
+        "roll": -20,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 3.2,
+        "target": "prop:grip",
+        "blend": 0.25,
+        "roll": 30,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      },
+      {
+        "at": 4.36,
+        "target": "prop:grip",
+        "blend": 0.24,
+        "roll": 25,
+        "pole": [
+          -0.8,
+          0.6,
+          0.3
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose",
+        "blend": 0,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 0.2,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.3,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 0.5,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.2,
+        "roll": -22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 0.7,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.1,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 0.8,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.2,
+        "roll": -22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 1,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.1,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 1.1,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.2,
+        "roll": -22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 1.3,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.1,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 1.4,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.08,
+        "roll": -8,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 1.75,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.25,
+        "roll": -30,
+        "pole": [
+          -0.5,
+          1,
+          0.3
+        ]
+      },
+      {
+        "at": 2.9,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.3,
+        "roll": -8,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 3.45,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.1,
+        "roll": -22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 3.55,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.18,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 3.73,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.09,
+        "roll": -22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 3.82,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.18,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 4,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.09,
+        "roll": -22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 4.09,
+        "target": "prop:medical_alcohol_cap:pinch",
+        "blend": 0.18,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      },
+      {
+        "at": 4.36,
+        "target": "pose",
+        "blend": 0.24,
+        "roll": 22,
+        "pole": [
+          1,
+          -0.6,
+          0.25
+        ]
+      }
+    ]
+  },
+  "events": [],
+  "check": {
+    "use_ticks": 92
+  }
+}

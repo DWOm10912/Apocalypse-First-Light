@@ -79,7 +79,7 @@
 
   "noise": {
     "radius": 128,
-    "tinnitus": true
+    "ear_db": 170
   },
 
   "ads": {

@@ -30,6 +30,14 @@ public final class WoundConfig {
         public double healDays = 1.5, healDaysCleaned = 1.25, healDaysBandaged = 1.25, healDaysBoth = 0.75;
     }
 
+    /** Lightning burns (Wounds.Kind BURN, DEEP_BURN): their own slots, one infection roll unless bandaged by then. */
+    public static final class Burn {
+        public int maxBurns = 4;
+        public double checkDays = 0.5, infectChance = 0.1, deepInfectChance = 0.15;
+        /** Gone after this many days (rolled between the two), deep: a metal burn. */
+        public double[] healDays = {1, 3}, deepHealDays = {3, 5};
+    }
+
     /** Local infection and suppuration share the shape: rolls while not cleaned, a recovery once cleaned, the penalties. */
     public static final class Stage {
         public double checkDays = 1;
@@ -50,6 +58,7 @@ public final class WoundConfig {
     public double severityStep = 0.25;
     public Scratch scratch = new Scratch();
     public Stage infection = new Stage(), suppuration = new Stage();
+    public Burn burn = new Burn();
 
     private static final Gson GSON = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
     private static volatile WoundConfig current = new WoundConfig();
@@ -71,6 +80,13 @@ public final class WoundConfig {
                 throw new IllegalArgumentException("invalid wound stage numbers");
         if (!(scratch.checkDays > 0) || !(scratch.healDays > 0) || !(scratch.healDaysBoth > 0))
             throw new IllegalArgumentException("invalid scratch numbers");
+        if (burn == null || burn.maxBurns < 1 || !(burn.checkDays > 0) || burn.infectChance < 0 || burn.infectChance > 1
+                || burn.deepInfectChance < 0 || burn.deepInfectChance > 1 || !range(burn.healDays) || !range(burn.deepHealDays))
+            throw new IllegalArgumentException("invalid burn numbers");
+    }
+
+    private static boolean range(double[] r) {
+        return r != null && r.length == 2 && r[0] > 0 && r[1] >= r[0];
     }
 
     @SubscribeEvent

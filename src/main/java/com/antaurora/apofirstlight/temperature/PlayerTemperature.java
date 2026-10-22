@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.stamina.PlayerStamina;
 import com.antaurora.apofirstlight.vehicle.CabClimate;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
+import com.antaurora.apofirstlight.weather.AflWeather;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -188,8 +189,11 @@ public final class PlayerTemperature {
         }
         boolean fixedTime = level.dimensionType().hasFixedTime();
         double day = fixedTime ? 0 : dayCurve(level.getDayTime());
-        double weather = precipitation * (c.weather.rain * level.getRainLevel(1)
-                + (c.weather.thunder - c.weather.rain) * level.getThunderLevel(1));
+        // the place's weather (regional weather V1: the rain and thunder there, the air mass's own change), or vanilla's
+        double px = feet.getX() + 0.5, pz = feet.getZ() + 0.5;
+        double weather = precipitation * (c.weather.rain * AflWeather.rainLevel(level, px, pz)
+                + (c.weather.thunder - c.weather.rain) * AflWeather.thunderLevel(level, px, pz))
+                + (dimension != null ? 0 : AflWeather.airChange(level, px, pz));
         double altitude = dimension != null ? 0 : c.altitude.perBlock * Math.max(0, y - c.altitude.startY);
         double underground = dimension != null ? 0 : Mth.clamp((c.cave.seaLevel - y) / c.cave.depthFull, 0, 1);
         double rock = c.cave.base + c.cave.perBlockBelowZero * Math.max(0, -y);

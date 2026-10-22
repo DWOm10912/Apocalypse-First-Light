@@ -201,7 +201,7 @@ export function loadGuns() {
       spread: { hip: raw.accuracy?.base_spread_degrees ?? null, ads: raw.accuracy?.ads_spread_degrees ?? null },
       accuracyProfile: raw.accuracy?.profile ?? 'default',
       reload: { tactical: raw.reload?.tactical_seconds ?? null, empty: raw.reload?.empty_seconds ?? null },
-      noise: { radius: raw.noise?.radius ?? null, tinnitus: !!raw.noise?.tinnitus },
+      noise: { radius: raw.noise?.radius ?? null, earDb: raw.noise?.ear_db ?? null },
       ads: { time: raw.ads?.time_seconds ?? null, fov: raw.ads?.fov_multiplier ?? null },
       massKg: m.receiver_mass_kg != null ? +(m.receiver_mass_kg + (m.default_magazine_empty_mass_kg ?? 0)).toFixed(3) : (m.unit_mass_kg ?? null),
       massEstimated: !!m.estimated,

@@ -155,7 +155,7 @@ public final class SkeletonGunStance {
      * docs/dev/p9_stance_loops_v1.md 4.7); a gun without one keeps its view model.
      */
     public static boolean atReady(Player p, float partial) {
-        if (!PlayerSkeleton.supportedPose(p) || !holds(p) || loops(p.getMainHandItem()).idle() == null) return false;
+        if (!PlayerSkeleton.supportedPose(p) || ProneClient.prone(p) || !holds(p) || loops(p.getMainHandItem()).idle() == null) return false;
         Track t = TRACKS.get(p.getId());
         // t.clip is the action clip the last body solve saw (#hold): "" when the gun's action controller is stopped
         if (t == null || t.fresh || !t.ghost.isEmpty() || !t.clip.isEmpty() || !sameGun(t.held, p.getMainHandItem())) return false;

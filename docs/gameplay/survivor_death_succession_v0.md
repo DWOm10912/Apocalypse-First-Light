@@ -192,7 +192,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 | 残留污染 | 清零（原有） | 同上 |
 | 口渴 / 体温 / 体力 | 重置（原有） | `PlayerThirst` / `PlayerTemperature` / `PlayerStamina` 的 Clone 处理 |
 | 饥饿 / 生命 | 原版新玩家默认值 | 原版 `restoreFrom` |
-| 耳鸣 | 清除（原有） | `GunshotExposureTracker.onRespawn`、客户端 `ExplosionTinnitusClientState` |
+| 耳鸣 | 清除 | 耳鸣 V2：`hearing/HearingLoad`（`PlayerEvent.Clone` 死亡时删 `afl_tinnitus`） |
 | 经验 | AFL 原本就不给经验（`VanillaProgressionEvents`） | — |
 | 技能成长 / 伤病 / 疲劳 | 当前不存在这些系统 | — |
 

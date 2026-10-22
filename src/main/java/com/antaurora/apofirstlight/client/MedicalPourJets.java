@@ -33,15 +33,16 @@ import java.util.UUID;
  * thin clear trickle runs from its mouth, a LiquidJet as the jerry can's stream (client/FuelCanPourJets), short-lived
  * (it runs off the arm and is gone), drawn in the fuel stains' world pass. Only a look: the treatment itself is the
  * server's, when the use finishes (health/MedicalItem).
- * <p>Where the mouth is: the player skeleton's bottle prop (player action item/alcohol_clean, player_props/medical_alcohol.json),
+ * <p>Where the mouth is: the player skeleton's bottle prop (player action item/alcohol_clean, or item/alcohol_head, _chest,
+ * _belly, _leg by part, docs/gameplay/medical_actions_by_part_v1.md; all pour in the same window; player_props/medical_alcohol.json),
  * first and third person alike: its point {@code mouth}, the bottle's axis from it to {@code mouth_tip} (1 px further out along
  * the axis), as last drawn (client/skeleton/SkeletonActions#propPoint). It pours through the action's pour,
  * {@link #POUR_FROM} to {@link #POUR_TO} into the use, while that axis points down (world y under {@link #DOWN}); the stream
- * leaves the mouth slowly, so it falls straight onto the held-out forearm under it, and ends about there ({@link #LIFE}).
+ * leaves the mouth slowly, so it falls straight onto the wound under it, and ends about there ({@link #LIFE}).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class MedicalPourJets {
-    /** The pour in the use (s): the action item/alcohol_clean's bottle tipped over the forearm. */
+    /** The pour in the use (s): the alcohol actions' bottle tipped over the wound (2.15..2.85 s in every one). */
     static final double POUR_FROM = 2.1, POUR_TO = 2.9;
     /**
      * Range (blocks), the stream's look (speed, radius, break-up), how fast it leaves the mouth along the axis' level part and

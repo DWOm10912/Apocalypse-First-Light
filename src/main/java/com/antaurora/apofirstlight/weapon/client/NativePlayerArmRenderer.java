@@ -106,6 +106,9 @@ public final class NativePlayerArmRenderer {
         var skin = player.getSkinTextureLocation();
         renderPart(right ? model.rightArm : model.leftArm, pose,
                 buffers.getBuffer(RenderType.entitySolid(skin)), light, overlay);
+        // skin wound marks V1: the arm once more with the wound texture, under the sleeve
+        var wounds = com.antaurora.apofirstlight.client.WoundSkin.consumer(player, player.getModelName().equals("slim"), buffers);
+        if (wounds != null) renderPart(right ? model.rightArm : model.leftArm, pose, wounds, light, overlay);
         if (player.isModelPartShown(right ? PlayerModelPart.RIGHT_SLEEVE : PlayerModelPart.LEFT_SLEEVE))
             renderPart(right ? model.rightSleeve : model.leftSleeve, pose,
                     buffers.getBuffer(RenderType.entityTranslucent(skin)), light, overlay);

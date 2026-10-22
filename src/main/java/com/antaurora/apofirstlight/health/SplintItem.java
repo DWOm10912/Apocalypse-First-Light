@@ -117,10 +117,10 @@ public final class SplintItem extends Item {
     }
 
     /**
-     * Sat down and settled. The client asks for a little more than the server (its seat came later), so it never starts a
+     * Sat down and settled (the leg's dressings too, MedicalItem). The client asks for a little more than the server (its seat came later), so it never starts a
      * use the server refuses.
      */
-    private static boolean legReady(Player player) {
+    static boolean legReady(Player player) {
         GroundSeat seat = GroundSit.seat(player);
         if (seat == null || !GroundSit.settled(player)) return false;
         return !player.level().isClientSide || seat.tickCount >= GroundSit.SIT_TICKS + 2;

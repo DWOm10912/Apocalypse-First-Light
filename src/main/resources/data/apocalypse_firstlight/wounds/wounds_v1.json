@@ -26,6 +26,14 @@
     "health_regen": 1.0,
     "visual": 0.5
   },
+  "burn": {
+    "max_burns": 4,
+    "check_days": 0.5,
+    "infect_chance": 0.1,
+    "deep_infect_chance": 0.15,
+    "heal_days": [1, 3],
+    "deep_heal_days": [3, 5]
+  },
   "suppuration": {
     "check_days": 1.0,
     "ease_chance": 0.1,

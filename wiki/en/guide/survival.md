@@ -61,16 +61,24 @@ A scratch scratched again gets worse and more likely to become infected. The scr
 | Item | Use |
 |---|---|
 | <ItemIcon id="medical_alcohol" /> Medical Alcohol | Hold right-click for <V j="MedicalItem.ALCOHOL_TICKS" x="0.05" u="s" /> to clean one wound (the worst first) |
-| <ItemIcon id="bandage" /> Bandage | Hold right-click for <V j="MedicalItem.BANDAGE_TICKS" x="0.05" u="s" /> to bandage one wound. A festering wound must be cleaned first |
+| <ItemIcon id="bandage" /> Bandage | Hold right-click to bandage one wound: <V j="MedicalItem.BANDAGE_TICKS" x="0.05" u="s" /> on an arm, <V j="MedicalItem.BANDAGE_HEAD_TICKS" x="0.05" u="s" /> on the head, <V j="MedicalItem.BANDAGE_TORSO_TICKS" x="0.05" u="s" /> on the chest or abdomen, <V j="MedicalItem.BANDAGE_LEG_TICKS" x="0.05" u="s" /> on a leg (head, chest, abdomen and leg times <StatusTag s="test" />). A festering wound must be cleaned first |
 | <ItemIcon id="splint" /> Splint | <StatusTag s="verified" d="2026-10-20" /> Sets one fracture (legs first). A leg is splinted sitting on the ground: right-click standing and you sit down first; once sat, hold right-click for <V j="SplintItem.LEG_USE_TICKS" x="0.05" u="s" />, and you stay sitting after. An arm can be splinted standing or sitting: hold right-click for <V j="SplintItem.USE_TICKS" x="0.05" u="s" /> |
 
 One is used per treatment; letting go early uses nothing; Creative uses nothing. Not while swimming, under water or driving
 
-You see the whole treatment, the same moves in first and third person; in first person the view tips down to the arm: for a bandage you hold out your left forearm and wind the roll round it three times, the cloth pulling off the roll onto the arm, then press the end down; for medical alcohol you unscrew the cap and hold it in your left hand, pour the alcohol over your left forearm and screw the cap back on
+You see the whole treatment, the same moves in first and third person; in first person the view tips down to the arm. For a wound on an arm: for a bandage you hold out your left forearm and wind the roll round it three times, the cloth pulling off the roll onto the arm, then press the end down; for medical alcohol you unscrew the cap and hold it in your left hand, pour the alcohol over your left forearm and screw the cap back on
 
 Once bandaged, the gauze stays wrapped round the wounded part, for you and for other players to see. It comes off when no wound is bandaged any more: the wound healed, an infection spoiled the dressing, or you died
 
-<StatusTag s="verified" d="2026-10-20" /> The gauze goes on the wounded arm or leg; wounds on the head, chest or abdomen show no gauze yet. Bandaging and cleaning are still done on one forearm: the wounded one, or else the one not holding the gun
+<StatusTag s="verified" d="2026-10-20" /> The gauze goes on the wounded arm or leg
+
+- <StatusTag s="test" /> A wound elsewhere is treated where it is (mirrored if you are left-handed):
+  - Head: you press a gauze pad on the wound, then pass the roll from hand to hand behind your head, three turns round from the brow to the crown. With alcohol you tilt your head and pour on the side facing up
+  - Chest and abdomen: a pad first, then the roll passed from hand to hand behind your back, three turns round the body. With alcohol you lean back a little and pour on the front
+  - Leg: done sitting on the ground. Right-click standing and you sit down first; once sat, hold right-click, and you stay sitting after. To bandage you raise the knee and pass the roll under the shin; alcohol is poured down the shin
+  - Chest and abdomen wounds are only ever on the front and the sides. The burn a slung gun leaves in a lightning strike is on your back, out of your own reach: you cannot clean or bandage it, it has to heal by itself, and the inventory body chart says so
+
+- <StatusTag s="test" /> Wounds are drawn on the skin one step finer than the skin (4 × 4 to a skin pixel, crisp pixels like the skin itself), each in a fixed place: a scratch is three claw marks tapered at both ends, with beads of blood and scuffed skin, which scab over and leave thin pale lines; an infection turns the skin around it red and swollen; suppuration shows a few creamy beads of pus where the wound is deepest. As a wound heals its colour fades, and it is gone once healed. A bandaged wound on the head, chest or abdomen gets a gauze pad over it, taped at the sides, with a little blood soaking through (yellowish brown when infected); a bandaged arm or leg is still wrapped. The skin's second layer and armour hide what is under them. The inventory body chart shows the marks on the front
 
 ## Fractures
 
@@ -113,6 +121,59 @@ Fractures are judged by the health the fall actually took, so armour and landing
 - <StatusTag s="verified" d="2026-10-20" /> A bone breaking makes an audible snap, heard by anyone within <V j="MovementNoiseEvents.VERY_HEAVY_LANDING_RADIUS" /> blocks
 - <StatusTag s="verified" d="2026-10-20" /> Falling over makes a thump as your hand hits the ground, heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
 - A broken arm does not slow reloading yet (later)
+
+## Tinnitus
+
+- <StatusTag s="test" /> Tinnitus V2: a negative state. Checked in game on its branch on 2026-10-21, waiting to be merged
+
+Gunshots, explosions and lightning close by build up a hearing load, and past a point your ears start ringing. While you have tinnitus your ears ring now and then, in the left ear, the right or both; the higher the stage, the more often, and the quieter the sounds around you
+
+| State | Hearing load | Between spells | Each spell | Sounds around you |
+|---|---|---|---|---|
+| Mild tinnitus | ≥ <V d="hearing/tinnitus_v2#stages.0" /> | <V d="hearing/tinnitus_v2#interval.0.0" />–<V d="hearing/tinnitus_v2#interval.0.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.0.0" />–<V d="hearing/tinnitus_v2#length.0.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.0" /> |
+| Tinnitus | ≥ <V d="hearing/tinnitus_v2#stages.1" /> | <V d="hearing/tinnitus_v2#interval.1.0" />–<V d="hearing/tinnitus_v2#interval.1.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.1.0" />–<V d="hearing/tinnitus_v2#length.1.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.1" /> |
+| Severe tinnitus | ≥ <V d="hearing/tinnitus_v2#stages.2" /> | <V d="hearing/tinnitus_v2#interval.2.0" />–<V d="hearing/tinnitus_v2#interval.2.1" u="秒" ue="s" /> | <V d="hearing/tinnitus_v2#length.2.0" />–<V d="hearing/tinnitus_v2#length.2.1" u="秒" ue="s" /> | ×<V d="hearing/tinnitus_v2#hearing.2" /> |
+
+The hearing load tops out at <V d="hearing/tinnitus_v2#max_load" />. Each time the stage goes up, your ears ring at once
+
+- **Gunshots**: each shot's load = 10^((level at the ear − <V d="hearing/tinnitus_v2#reference_db" />) ÷ 10). The level at the ear is in each gun page's stats, for example 170 dB is 1 a shot and 160 dB 0.1. A suppressor takes off <V d="hearing/tinnitus_v2#suppressor_db" u="dB" />. Other people's shots fall off with the square of the distance and do not count beyond <V d="hearing/tinnitus_v2#range" u="格" ue="blocks" />
+- **Explosions**: load = <V d="hearing/tinnitus_v2#blast" /> × (blast radius ÷ <V d="hearing/tinnitus_v2#blast_radius" />)² ÷ distance², ignored below <V d="hearing/tinnitus_v2#blast_min" />. A lightning strike counts as a blast of radius <V d="hearing/tinnitus_v2#lightning_radius" />
+- With no sky over your head (indoors) the load is ×<V d="hearing/tinnitus_v2#indoor" />
+- Wearing [Simple Hearing Protection](../arms/equipment#tools), every load is ×<V j="SimpleHearingProtectionItem.IMPULSE" />; survivor traits can change the tinnitus multiplier too
+- **Jolt**: a single load of <V d="hearing/tinnitus_v2#jolt_from" /> or more rings at once and drops the sounds around you to ×<V d="hearing/tinnitus_v2#jolt_hearing" />, coming back over <V d="hearing/tinnitus_v2#jolt_recover.0" />–<V d="hearing/tinnitus_v2#jolt_recover.1" u="秒" ue="s" />; the bigger the load, the slower
+- **Recovery**: the hearing load halves every <V d="hearing/tinnitus_v2#half_life_ticks" x="0.05" u="秒" ue="s" />, <V d="hearing/tinnitus_v2#sleep" /> times faster asleep, and only counts while you are online. Death clears it
+- The badge's ring shows how bad your ears are: gunfire and blasts fill it, and it shrinks as they recover. There is no countdown
+
+## Lightning injuries
+
+- <StatusTag s="test" /> Lightning injuries V1: on a branch only, not yet checked in game
+
+Lightning goes for the tallest thing around: a person or creature is only picked when its head is at least as high as every block within <V d="lightning/lightning_injury_v1#target_radius" u="格" ue="blocks" />. Open ground and hilltops are the most dangerous; a taller tree or building nearby takes the strike first. Lightning rods come first
+
+There are three ways to be struck:
+
+| Way | When | Killed outright | Health lost | Unconscious | Legs paralysed | Burst eardrum |
+|---|---|---|---|---|---|---|
+| Direct | Hit dead on | <V d="lightning/lightning_injury_v1#direct.death" pct="true" /> | <V d="lightning/lightning_injury_v1#direct.health.0" />–<V d="lightning/lightning_injury_v1#direct.health.1" /> | <V d="lightning/lightning_injury_v1#direct.unconscious.0" />–<V d="lightning/lightning_injury_v1#direct.unconscious.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#direct.paralysis.0" />–<V d="lightning/lightning_injury_v1#direct.paralysis.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#direct.eardrum" pct="true" /> |
+| Side flash | Within <V d="lightning/lightning_injury_v1#side_range" u="格" ue="blocks" /> of the strike | <V d="lightning/lightning_injury_v1#side.death" pct="true" /> | <V d="lightning/lightning_injury_v1#side.health.0" />–<V d="lightning/lightning_injury_v1#side.health.1" /> | <V d="lightning/lightning_injury_v1#side.unconscious_chance" pct="true" /> chance, <V d="lightning/lightning_injury_v1#side.unconscious.0" />–<V d="lightning/lightning_injury_v1#side.unconscious.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#side.paralysis_chance" pct="true" /> chance, <V d="lightning/lightning_injury_v1#side.paralysis.0" />–<V d="lightning/lightning_injury_v1#side.paralysis.1" u="秒" ue="s" /> | <V d="lightning/lightning_injury_v1#side.eardrum" pct="true" /> |
+| Ground current | Within <V d="lightning/lightning_injury_v1#ground_range" u="格" ue="blocks" /> of the strike, on the ground or in water (<V d="lightning/lightning_injury_v1#water_range" u="格" ue="blocks" /> in water) | Never | <V d="lightning/lightning_injury_v1#ground.health.0" /> (near) – <V d="lightning/lightning_injury_v1#ground.health.1" /> (far) | Never | <V d="lightning/lightning_injury_v1#ground.paralysis_chance" pct="true" /> chance, <V d="lightning/lightning_injury_v1#ground.paralysis.0" />–<V d="lightning/lightning_injury_v1#ground.paralysis.1" u="秒" ue="s" /> | Never |
+
+- Being struck does not set you on fire, and fire the strike lights right around you goes out at once; grass further off can still catch. Direct strikes and side flashes push your tinnitus straight to severe
+- Sitting in a vehicle cab with the doors shut keeps you safe; with no sky over your head you cannot be struck directly or by a side flash
+- The moment you are struck your view goes white. Unconscious, the screen is black and the world sounds far away: no moving, no using items, no inventory. Taking at least <V d="lightning/lightning_injury_v1#wake_damage" u="点伤害" ue="damage" /> wakes you. After waking your view stays blurred for <V d="lightning/lightning_injury_v1#wake_blur" u="秒" ue="s" />
+- **Legs paralysed**: you can only crawl, at ×<V d="lightning/lightning_injury_v1#crawl" />, and cannot jump. When it wears off you get up off the ground, and your legs stay weak for <V d="lightning/lightning_injury_v1#weak_legs.0" />–<V d="lightning/lightning_injury_v1#weak_legs.1" u="秒" ue="s" />: movement ×<V d="lightning/lightning_injury_v1#weak_move" />, no sprinting or jumping, stamina cost ×<V d="lightning/lightning_injury_v1#weak_stamina" />
+- **Burst eardrum**: one ear is muffled, the sounds around you ×<V d="lightning/lightning_injury_v1#eardrum_hearing" />, for <V d="lightning/lightning_injury_v1#eardrum_days" u="天" ue="days" /> (online time), coming back over the second half. Tinnitus mostly rings in that ear
+- **Lightning aftermath**: left by a direct strike, a side flash, or ground current within <V d="lightning/lightning_injury_v1#ground_aftermath" u="格" ue="blocks" /> of the strike, for <V d="lightning/lightning_injury_v1#aftermath_days" u="天" ue="days" />. Now and then a headache blurs your view for a few seconds (every <V d="lightning/lightning_injury_v1#headache_gap.0" />–<V d="lightning/lightning_injury_v1#headache_gap.1" u="秒" ue="s" />), aim sway ×<V d="lightning/lightning_injury_v1#aftermath_sway" />, stamina recovery ×<V d="lightning/lightning_injury_v1#aftermath_stamina_regen" />, health recovery ×<V d="lightning/lightning_injury_v1#aftermath_health_regen" />
+- Asleep, the eardrum and the aftermath heal <V d="lightning/lightning_injury_v1#sleep" /> times faster. Death clears everything
+- Seeing a strike within <V d="lightning/lightning_injury_v1#afterimage_range" u="格" ue="blocks" /> leaves a violet after-image in your eyes for a few seconds; the closer, the longer
+- Other creatures can be struck too: a side flash takes <V d="lightning/lightning_injury_v1#mob_side" pct="true" /> of their maximum health, ground current <V d="lightning/lightning_injury_v1#mob_ground" pct="true" />; for four-legged animals ground current reaches ×<V d="lightning/lightning_injury_v1#animal_ground" /> as far
+- **Crawling**: lying on the ground on land (legs paralysed, squeezing through a one-block gap, unconscious) you really crawl. With paralysed legs you pull yourself forward on your elbows, one after the other, legs dragging; in a gap your knees push along with your elbows. Reaching out you barely move; the pull is the fastest part. You can look around first and your body slowly turns after you. What you hold is put away while you crawl and can be used once you stop. In first person your reaching hand shows at the bottom of the view, and looking down you see both hands taking turns on the ground. Swimming in water is unchanged
+- **Wet**: struck in the rain or standing in water, more of the current runs over your skin: a direct strike kills you outright only <V d="lightning/lightning_injury_v1#direct.wet_death" pct="true" /> of the time, a side flash <V d="lightning/lightning_injury_v1#side.wet_death" pct="true" />, but you get <V d="lightning/lightning_injury_v1#wet_burns" /> more shallow burn
+- **Lightning burns**: where the current went into and out of the body. A direct strike leaves <V d="lightning/lightning_injury_v1#direct.burns" /> (in at the head or an arm, out at a leg), a side flash <V d="lightning/lightning_injury_v1#side.burns" /> (the arm toward the strike, or the chest), ground current within <V d="lightning/lightning_injury_v1#ground_burn_range" u="格" ue="blocks" /> of the strike <V d="lightning/lightning_injury_v1#ground.burns" /> (a leg). They heal on their own in <V d="wounds/wounds_v1#burn.heal_days.0" />–<V d="wounds/wounds_v1#burn.heal_days.1" u="天" ue="days" />; left uncovered, each has a <V d="wounds/wounds_v1#burn.infect_chance" pct="true" /> chance of becoming infected after <V d="wounds/wounds_v1#burn.check_days" u="天" ue="days" />, and a bandage prevents that. At most <V d="wounds/wounds_v1#burn.max_burns" />, apart from scratches; they show on the inventory body chart
+- **Metal burns**: on a direct strike or side flash, a gun on your back (chest), a pistol in the holster (right leg) and magazines in the rig (belly) get hot and each leaves a deeper burn, costing <V d="lightning/lightning_injury_v1#metal_health" /> more health. They take <V d="wounds/wounds_v1#burn.deep_heal_days.0" />–<V d="wounds/wounds_v1#burn.deep_heal_days.1" u="天" ue="days" /> to heal; uncovered, the chance of infection is <V d="wounds/wounds_v1#burn.deep_infect_chance" pct="true" />
+- **What you hold**: on a direct strike or side flash your hand jerks open and what was in it lands <V d="lightning/lightning_injury_v1#drop_range.0" />–<V d="lightning/lightning_injury_v1#drop_range.1" u="格" ue="blocks" /> away
+- **Marks on the skin**: a lightning burn is a small charred, cracked patch ringed with raw red flesh and peeling pale skin, with reddened skin around it; a metal burn has the shape of what burned it (a slanting strip on the back, an upright oblong on the outside of the right thigh, one or two small uprights on the belly), with a sharp edge and a leathery middle. They scab over dark, turn into pink or light brown scars, and disappear. After a direct strike or side flash a red Lichtenberg figure spreads from where the current came in over the shoulder, chest and back: a few main branches that fork again and again, finer and denser outwards, ending in feathery tips, and fades within <V d="lightning/lightning_injury_v1#lichtenberg_days" u="天" ue="days" />; it does not hurt and changes nothing
+- **Batteries drained**: on a direct strike or side flash, each energy battery and charged tool you carry has a <V d="lightning/lightning_injury_v1#drain_chance" pct="true" /> chance of being drained flat; nothing breaks
 
 ## Stamina
 

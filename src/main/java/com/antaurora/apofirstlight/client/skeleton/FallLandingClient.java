@@ -25,14 +25,15 @@ import java.util.Map;
  * body/fall_over, mirrored for the right hand). While the own player falls over it does not move, jump, sprint, sneak, use
  * or hit, keeps the yaw it landed with, and in first person its view follows the action's first_person_view (eased in from
  * the pitch it landed with over {@link #VIEW_IN} s), set each frame after the mouse turned it (RenderTickEvent START, as
- * SkeletonActions#lookDown). The camera sits on the posed eye (the actions' first_person_eye).
+ * SkeletonActions#lookDown). The camera sits on the posed eye (the actions' first_person_eye). Getting up after lying
+ * paralysed (lightning injury V1, body/prone_get_up) is played and held the same way.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class FallLandingClient {
     /** A landing playing: the action, its start (s, the level clock), the right hand down. */
     public record Playing(String id, double started, boolean mirror) {}
 
-    static final String HARD = "body/land_hard", OVER = "body/fall_over";
+    static final String HARD = "body/land_hard", OVER = "body/fall_over", GET_UP = "body/prone_get_up";
     /** The own view eases from the pitch it landed with into the action's over this long (s). */
     private static final double VIEW_IN = 0.1;
     private static final Map<Integer, Playing> PLAYING = new HashMap<>();
@@ -45,8 +46,9 @@ public final class FallLandingClient {
     public static void accept(HealthPackets.Landing packet) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        boolean over = packet.kind() == FallLanding.FALL_OVER;
-        PLAYING.put(packet.entity(), new Playing(over ? OVER : HARD, mc.level.getGameTime() / 20.0, packet.mirror()));
+        boolean over = packet.kind() != FallLanding.HARD;
+        String id = packet.kind() == FallLanding.GET_UP ? GET_UP : over ? OVER : HARD;
+        PLAYING.put(packet.entity(), new Playing(id, mc.level.getGameTime() / 20.0, packet.mirror()));
         LocalPlayer own = mc.player;
         if (own != null && own.getId() == packet.entity() && over) {
             yaw = own.getYRot();
@@ -60,18 +62,18 @@ public final class FallLandingClient {
     static Playing playing(Entity player, double now) {
         Playing p = PLAYING.get(player.getId());
         if (p == null) return null;
-        double length = (p.id().equals(OVER) ? FallLanding.FALL_TICKS : FallLanding.HARD_TICKS) / 20.0;
+        double length = (p.id().equals(OVER) ? FallLanding.FALL_TICKS : p.id().equals(GET_UP) ? FallLanding.GET_UP_TICKS : FallLanding.HARD_TICKS) / 20.0;
         if (now - p.started() < length && now >= p.started() - 1) return p;
         PLAYING.remove(player.getId());
         return null;
     }
 
-    /** Whether the own player is falling over now. */
+    /** Whether the own player is falling over (or getting up) now. */
     public static boolean fallingOver() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return false;
         Playing p = playing(mc.player, mc.level.getGameTime() / 20.0);
-        return p != null && p.id().equals(OVER);
+        return p != null && !p.id().equals(HARD);
     }
 
     @SubscribeEvent
@@ -110,9 +112,9 @@ public final class FallLandingClient {
         player.setYRot(yaw);
         player.yRotO = yaw;
         if (!mc.options.getCameraType().isFirstPerson()) return;
-        PlayerAction action = PlayerActions.get(OVER);
         Playing p = PLAYING.get(player.getId());
-        if (action == null || p == null) return;
+        PlayerAction action = p == null ? null : PlayerActions.get(p.id());
+        if (action == null) return;
         float t = (float) ((mc.level.getGameTime() + event.renderTickTime) / 20.0 - p.started());
         float curve = action.viewAt(t);
         if (Float.isNaN(curve)) return;

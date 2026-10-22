@@ -38,6 +38,11 @@ public final class HumanoidPoser {
         public float rootYaw, chestYaw, chestPitch;
         /** Degrees, vanilla body frame: view yaw (vanilla netHeadYaw) and pitch (down positive). */
         public float viewYaw, viewPitch;
+        /**
+         * 0..1: how far the head goes back from the view to the clips' head (lying out cold: the face on the ground, not
+         * where the view looks; client/skeleton/ProneClient).
+         */
+        public float headClip;
         /** Where the eye socket should be (model px; only x and z are used), or null. */
         public Vector3f eyeTarget;
         public float maxRootShift = 4.27F;
@@ -206,11 +211,13 @@ public final class HumanoidPoser {
         pose.local[rig.thighL].premul(legBack);
         pose.local[rig.chest].rotationY(rad(twist - hip)).rotateX(rad(bend)).mul(chestClip);
         pose.update();
-        // head: the view in model space, relative to the chest as posed
+        // head: the view in model space, relative to the chest as posed; headClip of the way back to the clips' head
+        Quaternionf headClip = in.headClip > 0 ? new Quaternionf(pose.local[rig.head]) : null;
         Quaternionf view = new Quaternionf().rotationY(rad(in.viewYaw)).rotateX(rad(in.viewPitch));
         Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
         pose.local[rig.head].set(new Quaternionf(chestWorld).conjugate().mul(view));
         clampHead(pose.local[rig.head], rig.limits[rig.head]);
+        if (headClip != null) pose.local[rig.head].slerp(headClip, clamp01(in.headClip));
         pose.update(rig.head);
         if (in.eyeTarget != null) {
             SkeletonRig.Socket eye = rig.sockets.get("eye");

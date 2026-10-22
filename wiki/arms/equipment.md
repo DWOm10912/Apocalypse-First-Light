@@ -20,7 +20,7 @@
 
 | 物品 | 作用 | 获取 |
 |---|---|---|
-| <ItemIcon id="simple_hearing_protection" /> 简易护耳罩 | 戴在耳部，减轻枪声引起的耳鸣，但也会让周围的声音变小 | <StatusTag s="creative" /> |
+| <ItemIcon id="simple_hearing_protection" /> 简易护耳罩 | 戴在耳部，挡住枪声和爆炸对耳朵的大部分伤害（见 [耳鸣](../guide/survival#耳鸣)），但也会让周围的声音变小 | <StatusTag s="creative" /> |
 | <ItemIcon id="wrist_thermometer" /> 腕式温度计 | 戴在手腕上，持续显示气温 | <StatusTag s="creative" /> |
 | <ItemIcon id="clinical_thermometer" /> 体温计 | 按住右键约 3 秒测量体温 | <StatusTag s="creative" /> |
 | <ItemIcon id="geiger_counter" /> 盖革计数器 | 显示当前辐射剂量率。拿在手里或挂在胸挂的挂点上都会工作 | <StatusTag s="creative" /> |

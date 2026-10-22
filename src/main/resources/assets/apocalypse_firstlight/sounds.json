@@ -92,6 +92,12 @@
       "apocalypse_firstlight:explosion_tinnitus"
     ]
   },
+  "tinnitus": {
+    "subtitle": "subtitles.apocalypse_firstlight.tinnitus",
+    "sounds": [
+      "apocalypse_firstlight:hearing/tinnitus_2"
+    ]
+  },
   "geiger_low": {
     "sounds": [{"name": "apocalypse_firstlight:gieger_low", "stream": true}]
   },
@@ -860,5 +866,25 @@
       {"name": "apocalypse_firstlight:health/fall_3", "attenuation_distance": 8},
       {"name": "apocalypse_firstlight:health/fall_4", "attenuation_distance": 8}
     ]
+  },
+  "thunder_crack": {
+    "subtitle": "subtitles.apocalypse_firstlight.thunder_crack",
+    "sounds": [{"name": "apocalypse_firstlight:weather/thunder_crack_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_crack_2", "attenuation_distance": 16}]
+  },
+  "thunder_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.thunder_close",
+    "sounds": [{"name": "apocalypse_firstlight:weather/thunder_close_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_close_2", "attenuation_distance": 16}]
+  },
+  "thunder_mid": {
+    "subtitle": "subtitles.apocalypse_firstlight.thunder_mid",
+    "sounds": [{"name": "apocalypse_firstlight:weather/thunder_mid_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_mid_2", "attenuation_distance": 16}]
+  },
+  "thunder_far": {
+    "subtitle": "subtitles.apocalypse_firstlight.thunder_far",
+    "sounds": [{"name": "apocalypse_firstlight:weather/thunder_far_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_far_2", "attenuation_distance": 16}]
+  },
+  "thunder_cloud": {
+    "subtitle": "subtitles.apocalypse_firstlight.thunder_cloud",
+    "sounds": [{"name": "apocalypse_firstlight:weather/thunder_cloud_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_cloud_2", "attenuation_distance": 16}]
   }
 }

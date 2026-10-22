@@ -207,7 +207,7 @@ public final class LightningRenderer extends EntityRenderer<LightningBolt> {
     private static boolean packTried;
 
     /** AFL's type without a shader pack; with one, the same inside the pack's lightning program. */
-    private static RenderType type() {
+    static RenderType type() {
         if (!AflShaderCompat.shaderPackInUse()) return Types.LIGHTNING;
         if (!packTried) {
             packTried = true;

@@ -130,6 +130,12 @@ public final class PlayerAction {
      */
     public final boolean holdBody;
     /**
+     * JSON {@code hold_head}: while the action shows, the head is the clip's, not the look's (HumanoidPoser's headClip): an
+     * action that wraps the head itself, its hands keyed round the head (the bandage on the head,
+     * docs/gameplay/medical_actions_by_part_v1.md).
+     */
+    public final boolean holdHead;
+    /**
      * JSON {@code first_person_view} [[s, pitch], ...] (deg, + = down; times rising), or null: while the action shows, the
      * own view (and so the head, as the others see it) follows this pitch, smooth-stepped between the keys, and keeps its
      * yaw: an action that throws the whole body about (falling over on a landing, docs/gameplay/fall_landing_v1_plan.md).
@@ -197,6 +203,7 @@ public final class PlayerAction {
         firstPersonPitch = json.has("first_person_pitch") ? json.get("first_person_pitch").getAsFloat() : Float.NaN;
         firstPersonEye = json.has("first_person_eye") && json.get("first_person_eye").getAsBoolean();
         holdBody = json.has("hold_body") && json.get("hold_body").getAsBoolean();
+        holdHead = json.has("hold_head") && json.get("hold_head").getAsBoolean();
         if (json.has("first_person_view")) {
             JsonArray v = json.getAsJsonArray("first_person_view");
             firstPersonView = new float[v.size()][];

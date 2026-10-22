@@ -23,6 +23,7 @@ uniform vec3 RainBox;
 uniform vec3 RainOffset;
 uniform vec3 RainWind;
 uniform float RainTime;
+uniform vec3 RainDrift;
 uniform float RainCount;
 uniform float RainAlpha;
 uniform float PixelScale;
@@ -98,8 +99,11 @@ void main() {
     if (w > RainCount) { hide(); return; }
     float w2 = afl_hash(Position.zxy + 0.37);
     float speed = mix(6.2, 9.0, w2);
-    vec3 vel = vec3(RainWind.x, -speed, RainWind.z) * mix(0.9, 1.1, w);
-    vec3 head = mod(Position * RainBox + vel * RainTime - RainOffset, RainBox) - RainBox * 0.5;
+    float f = mix(0.9, 1.1, w);
+    vec3 vel = vec3(RainWind.x, -speed, RainWind.z) * f;
+    // the fall and the drift so far (RainDrift: the wind integrated over time, so a change of wind bends the streaks, never moves the drops)
+    vec3 travel = vec3(RainDrift.x, -speed * RainTime, RainDrift.z) * f;
+    vec3 head = mod(Position * RainBox + travel - RainOffset, RainBox) - RainBox * 0.5;
 
     // the column the drop falls in: its cover height, light and weather
     ivec2 col = ivec2(floor(ColWrap + head.xz)) & 127;

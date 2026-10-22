@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "66";
+    private static final String PROTOCOL = "68";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -68,10 +68,6 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, FuelSprayHitsC2SPacket.class,
                 FuelSprayHitsC2SPacket::encode, FuelSprayHitsC2SPacket::decode, FuelSprayHitsC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
-        channel.registerMessage(nextId++, ExplosionTinnitusS2CPacket.class,
-                ExplosionTinnitusS2CPacket::encode, ExplosionTinnitusS2CPacket::decode,
-                ExplosionTinnitusS2CPacket::handle,
-                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, NativeGunC2SPacket.class,
                 NativeGunC2SPacket::encode, NativeGunC2SPacket::decode, NativeGunC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
@@ -127,6 +123,9 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.thirst.ThirstPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.temperature.TemperaturePackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.health.HealthPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.hearing.HearingPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.health.LightningPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.weather.WeatherPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
@@ -578,43 +577,29 @@ public final class AflNetwork {
         }
     }
 
-    public static void sendExplosionTinnitus(ServerPlayer player, float severity) {
-        sendTinnitusImpulse(player, severity);
+    /** Tinnitus V2: the own hearing load / a jolt (hearing/HearingPackets), to the player. */
+    public static void hearing(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
-    /** Shared one-shot tinnitus impulse used by independent explosion and gunshot server calculations. */
-    public static void sendTinnitusImpulse(ServerPlayer player, float severity) {
-        if (channel == null) {
-            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
-        }
-        float effectiveSeverity = com.antaurora.apofirstlight.equipment.HearingProtectionManager
-                .effectiveTinnitusSeverity(player, severity);
-        channel.sendTo(new ExplosionTinnitusS2CPacket(effectiveSeverity, player.getId(),
-                        player.level().dimension().location()), player.connection.connection,
-                net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    /** Lightning injury V1: the own states / a strike (health/LightningPackets), to the player. */
+    public static void lightning(ServerPlayer player, Object packet) {
+        if (channel != null && player.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
-    public record ExplosionTinnitusS2CPacket(float severity, int playerId, ResourceLocation dimension) {
-        public static void encode(ExplosionTinnitusS2CPacket packet, FriendlyByteBuf buffer) {
-            buffer.writeFloat(packet.severity);
-            buffer.writeVarInt(packet.playerId);
-            buffer.writeResourceLocation(packet.dimension);
-        }
+    /** Regional weather V1: the server's weather (weather/WeatherPackets), to the player. */
+    public static void weather(ServerPlayer player, Object packet) {
+        if (channel != null && player.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
 
-        public static ExplosionTinnitusS2CPacket decode(FriendlyByteBuf buffer) {
-            return new ExplosionTinnitusS2CPacket(buffer.readFloat(), buffer.readVarInt(),
-                    buffer.readResourceLocation());
-        }
+    /** Lightning injury: why a player lies down (health/LightningPackets.Lying), to the players tracking it and itself. */
+    public static void lightningLying(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), packet);
+    }
 
-        public static void handle(ExplosionTinnitusS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            if (context.getDirection() == net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) {
-                context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                        () -> () -> com.antaurora.apofirstlight.client.ExplosionTinnitusClientState
-                                .trigger(packet.severity, packet.playerId, packet.dimension)));
-            }
-            context.setPacketHandled(true);
-        }
+    /** Lightning injury: another player's lying (health/LightningPackets.Lying), to one viewer that starts tracking it. */
+    public static void lightningLyingTo(ServerPlayer viewer, Object packet) {
+        if (channel != null && viewer.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> viewer), packet);
     }
 
     public static void sendRadiation(ServerPlayer player, double finalRadiation) {

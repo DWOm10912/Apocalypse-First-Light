@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.sit;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.health.BodyPart;
+import com.antaurora.apofirstlight.health.MedicalItem;
 import com.antaurora.apofirstlight.health.SplintItem;
 import com.antaurora.apofirstlight.registry.AflEntities;
 import net.minecraft.network.FriendlyByteBuf;
@@ -90,15 +91,22 @@ public final class GroundSit {
     /** Server: gets up (after the sit-down, over {@link #STAND_TICKS}); not while the hands splint a leg. */
     public static void stand(ServerPlayer p) {
         GroundSeat seat = seat(p);
-        if (seat == null || splintingLeg(p)) return;
+        if (seat == null || treatingLeg(p)) return;
         seat.rise();
     }
 
-    /** Splinting a leg (sat on the ground the whole time). */
-    public static boolean splintingLeg(Player p) {
-        if (!p.isUsingItem() || !(p.getUseItem().getItem() instanceof SplintItem)) return false;
-        BodyPart limb = SplintItem.target(p);
-        return limb != null && limb.leg();
+    /** Splinting or dressing a leg (sat on the ground the whole time; health/MedicalItem#onLeg). */
+    public static boolean treatingLeg(Player p) {
+        return treatedLeg(p) != null;
+    }
+
+    /** The leg the hands splint or dress now, or null. */
+    @Nullable
+    public static BodyPart treatedLeg(Player p) {
+        if (!p.isUsingItem()) return null;
+        BodyPart limb = p.getUseItem().getItem() instanceof SplintItem ? SplintItem.target(p)
+                : p.getUseItem().getItem() instanceof MedicalItem item ? MedicalItem.target(p, item.treatment()) : null;
+        return limb != null && limb.leg() ? limb : null;
     }
 
     /** Seated: the lower eye and box (both sides; GroundSeat refreshes the rider's dimensions as it gets on and off). */

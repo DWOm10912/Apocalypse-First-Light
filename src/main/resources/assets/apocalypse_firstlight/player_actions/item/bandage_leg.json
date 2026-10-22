@@ -1,0 +1,1298 @@
+{
+  "format_version": 1,
+  "about": "Bandage by part (docs/gameplay/medical_actions_by_part_v1.md): a shin, sat on the ground (5 s, MedicalItem.BANDAGE_LEG_TICKS 100; MedicalItem sits the player down first and leaves them sat, sit/GroundSit). Keyed on the left leg, mirrored for the right. From the seat (body.sit) it leans well forward, the left knee comes up, its foot flat ahead, the right leg out to the side; three turns round the shin from 0.7 s, 1 s each, ankle to knee: the left hand takes the roll round the outside and under the shin, the right takes it there and brings it up the inside to the front while the left presses the front; the end laid on (3.7 s), torn off (3.9 s), patted twice, back to the seat from 4.4 s. The own first-person camera on the posed eye (first_person_eye). The roll (player_props/bandage) keyed every 0.05 s on a rounded path 1.4 px off the part; both arms solved by IK on it and baked into the clip as FK (hold_body). Written by tools/medical-actions-v1a/author_dress_v1.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "medical.bandage_leg"
+  },
+  "clip": "medical.bandage_leg",
+  "layer": "action",
+  "mask": "full",
+  "priority": 50,
+  "first_person": "body",
+  "blend": {
+    "in": 0.3,
+    "out": 0.3
+  },
+  "first_person_pitch": 85,
+  "first_person_eye": true,
+  "hold_body": true,
+  "prop": {
+    "id": "bandage",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.6,
+          17.2,
+          -1.9
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.5693,
+          17.4454,
+          -2.125
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.05,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.4909,
+          18.0759,
+          -2.6715
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.1,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.3751,
+          18.9135,
+          -3.2778
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.15,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.2045,
+          19.7906,
+          -3.6859
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.2,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          2.9519,
+          20.5573,
+          -3.8087
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.25,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          2.625,
+          21.0668,
+          -3.7411
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.3,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          2.2817,
+          21.2488,
+          -3.6022
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.35,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          2.0092,
+          21.2054,
+          -3.4638
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.4,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.15,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.45,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.15,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.5,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.15,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.55,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.15,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.6,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.15,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.65,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.15,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.7,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.7792,
+          21.119,
+          -3.2967
+        ],
+        "rot": [
+          0,
+          79.508,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.75,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.4481,
+          21.102,
+          -2.9894
+        ],
+        "rot": [
+          0,
+          58.231,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.8,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.8098,
+          21.0968,
+          -2.4803
+        ],
+        "rot": [
+          0,
+          31.769,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.85,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.9462,
+          21.1003,
+          -1.7364
+        ],
+        "rot": [
+          0,
+          10.492,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.9,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.9,
+          21.1083,
+          0
+        ],
+        "rot": [
+          0,
+          0,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 0.95,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.7051,
+          21.1164,
+          1.599
+        ],
+        "rot": [
+          0,
+          -10.492,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.3869,
+          21.1198,
+          2.1198
+        ],
+        "rot": [
+          0,
+          -31.769,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.05,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.9519,
+          21.1147,
+          2.4073
+        ],
+        "rot": [
+          0,
+          -58.231,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.1,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.3562,
+          21.0977,
+          2.5547
+        ],
+        "rot": [
+          0,
+          -79.508,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.15,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          21.0667,
+          2.6
+        ],
+        "rot": [
+          0,
+          -90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.2,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          0.4438,
+          21.021,
+          2.5547
+        ],
+        "rot": [
+          -180,
+          -79.508,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.25,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.1519,
+          20.9614,
+          2.4073
+        ],
+        "rot": [
+          180,
+          -58.231,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.3,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.5869,
+          20.8898,
+          2.1198
+        ],
+        "rot": [
+          180,
+          -31.769,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.35,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.9051,
+          20.8097,
+          1.599
+        ],
+        "rot": [
+          -180,
+          -10.492,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.4,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.1,
+          20.725,
+          0
+        ],
+        "rot": [
+          180,
+          0,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.45,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.1462,
+          20.6403,
+          -1.7364
+        ],
+        "rot": [
+          180,
+          10.492,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.5,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.0098,
+          20.5602,
+          -2.4803
+        ],
+        "rot": [
+          180,
+          31.769,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.55,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.6481,
+          20.4886,
+          -2.9894
+        ],
+        "rot": [
+          180,
+          58.231,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.6,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          0.0208,
+          20.429,
+          -3.2967
+        ],
+        "rot": [
+          -180,
+          79.508,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.65,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          20.3833,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.7,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.7792,
+          20.3523,
+          -3.2967
+        ],
+        "rot": [
+          0,
+          79.508,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.75,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.4481,
+          20.3353,
+          -2.9894
+        ],
+        "rot": [
+          0,
+          58.231,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.8,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.8098,
+          20.3302,
+          -2.4803
+        ],
+        "rot": [
+          0,
+          31.769,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.85,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.9462,
+          20.3336,
+          -1.7364
+        ],
+        "rot": [
+          0,
+          10.492,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.9,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.9,
+          20.3417,
+          0
+        ],
+        "rot": [
+          0,
+          0,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.95,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.7051,
+          20.3497,
+          1.599
+        ],
+        "rot": [
+          0,
+          -10.492,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.3869,
+          20.3532,
+          2.1198
+        ],
+        "rot": [
+          0,
+          -31.769,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.05,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.9519,
+          20.348,
+          2.4073
+        ],
+        "rot": [
+          0,
+          -58.231,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.1,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.3562,
+          20.331,
+          2.5547
+        ],
+        "rot": [
+          0,
+          -79.508,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.15,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          20.3,
+          2.6
+        ],
+        "rot": [
+          0,
+          -90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.2,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          0.4438,
+          20.2543,
+          2.5547
+        ],
+        "rot": [
+          -180,
+          -79.508,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.25,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.1519,
+          20.1947,
+          2.4073
+        ],
+        "rot": [
+          -180,
+          -58.231,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.3,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.5869,
+          20.1232,
+          2.1198
+        ],
+        "rot": [
+          -180,
+          -31.769,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.35,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.9051,
+          20.043,
+          1.599
+        ],
+        "rot": [
+          -180,
+          -10.492,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.4,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.1,
+          19.9583,
+          0
+        ],
+        "rot": [
+          180,
+          0,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.45,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.1462,
+          19.8736,
+          -1.7364
+        ],
+        "rot": [
+          180,
+          10.492,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.5,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.0098,
+          19.7935,
+          -2.4803
+        ],
+        "rot": [
+          180,
+          31.769,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.55,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.6481,
+          19.722,
+          -2.9894
+        ],
+        "rot": [
+          -180,
+          58.231,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.6,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          0.0208,
+          19.6623,
+          -3.2967
+        ],
+        "rot": [
+          180,
+          79.508,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.65,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          19.6167,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.7,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.7792,
+          19.5857,
+          -3.2967
+        ],
+        "rot": [
+          0,
+          79.508,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.75,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.4481,
+          19.5686,
+          -2.9894
+        ],
+        "rot": [
+          0,
+          58.231,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.8,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.8098,
+          19.5635,
+          -2.4803
+        ],
+        "rot": [
+          0,
+          31.769,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.85,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.9462,
+          19.567,
+          -1.7364
+        ],
+        "rot": [
+          0,
+          10.492,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.9,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.9,
+          19.575,
+          0
+        ],
+        "rot": [
+          0,
+          0,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 2.95,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.7051,
+          19.583,
+          1.599
+        ],
+        "rot": [
+          0,
+          -10.492,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.3869,
+          19.5865,
+          2.1198
+        ],
+        "rot": [
+          0,
+          -31.769,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.05,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.9519,
+          19.5814,
+          2.4073
+        ],
+        "rot": [
+          0,
+          -58.231,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.1,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.3562,
+          19.5643,
+          2.5547
+        ],
+        "rot": [
+          0,
+          -79.508,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.15,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          19.5333,
+          2.6
+        ],
+        "rot": [
+          0,
+          -90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.2,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          0.4438,
+          19.4877,
+          2.5547
+        ],
+        "rot": [
+          -180,
+          -79.508,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.25,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.1519,
+          19.428,
+          2.4073
+        ],
+        "rot": [
+          -180,
+          -58.231,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.3,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.5869,
+          19.3565,
+          2.1198
+        ],
+        "rot": [
+          180,
+          -31.769,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.35,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.9051,
+          19.2764,
+          1.599
+        ],
+        "rot": [
+          -180,
+          -10.492,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.4,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.1,
+          19.1917,
+          0
+        ],
+        "rot": [
+          180,
+          0,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.45,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.1462,
+          19.107,
+          -1.7364
+        ],
+        "rot": [
+          -180,
+          10.492,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.5,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -1.0098,
+          19.0268,
+          -2.4803
+        ],
+        "rot": [
+          -180,
+          31.769,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.55,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          -0.6481,
+          18.9553,
+          -2.9894
+        ],
+        "rot": [
+          180,
+          58.231,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.6,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          0.0208,
+          18.8957,
+          -3.2967
+        ],
+        "rot": [
+          -180,
+          79.508,
+          -90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.65,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          1.9,
+          18.85,
+          -3.4
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.7,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          2.9303,
+          18.85,
+          -3.3299
+        ],
+        "rot": [
+          0,
+          88.305,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.75,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          3.6548,
+          18.85,
+          -3.1251
+        ],
+        "rot": [
+          0,
+          79.961,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.8,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.0501,
+          18.85,
+          -2.8567
+        ],
+        "rot": [
+          0,
+          66.908,
+          90
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 3.85,
+        "frame": "bone:shin_l",
+        "point": "center",
+        "pos": [
+          4.172,
+          18.85,
+          -2.7152
+        ],
+        "rot": [
+          0,
+          59.633,
+          90
+        ],
+        "blend": 0.05,
+        "hidden": true
+      }
+    ]
+  },
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": [],
+  "check": {
+    "use_ticks": 100
+  }
+}

@@ -202,7 +202,7 @@ ADS：weapon/client/NativeGunAds.java、NativeAdsProfile.java
 
 动画 cue：weapon/NativeGunAnimations.java
 
-Noise/耳鸣：weapon/NativeGunNoise.java、noise/NoiseSystem.java、tinnitus/GunshotExposureTracker.java
+Noise/耳鸣：weapon/NativeGunNoise.java、noise/NoiseSystem.java、hearing/HearingExposure.java（耳鸣 V2）
 
 维护台：client/MaintenanceGunRendering.java、MaintenanceViewProfile.java、MaintenanceHotspots.java、weapon/MaintenanceAttachmentTransaction.java
 
@@ -657,7 +657,7 @@ NativeGunShot.execute 每次成功射击发布 NoiseType.GUNSHOT，source ID 为
 
 12.3 Tinnitus
 
-只有 JSON noise.tinnitus=true 才调用 GunshotExposureTracker。真消音状态直接返回 0。当前监听范围 16 格；声学半径 64..160 映射 loudness，单发 scale .55，半径 ≥128/160 分别乘 1.25/1.35，单发 exposure 上限 .75；累积阈值 .35/.60/.90，6 tick impulse 冷却。P9 false；BR51 true。耳鸣与感染者听觉共享“附件修正后的半径”，但使用不同算法。
+（2026-10-21 起已过时，见 ../gameplay/tinnitus_v2_plan.md：每把枪写 noise.ear_db，每发都调用 HearingExposure.gunshot，消音器减 25 dB。下面是旧做法。）只有 JSON noise.tinnitus=true 才调用 GunshotExposureTracker。真消音状态直接返回 0。当前监听范围 16 格；声学半径 64..160 映射 loudness，单发 scale .55，半径 ≥128/160 分别乘 1.25/1.35，单发 exposure 上限 .75；累积阈值 .35/.60/.90，6 tick impulse 冷却。P9 false；BR51 true。耳鸣与感染者听觉共享“附件修正后的半径”，但使用不同算法。
 
 13. Maintenance Table Integration
 
@@ -1058,7 +1058,7 @@ Step 11 — Recoil / Handling [CALIBRATE + VERIFY]
 
 Step 12 — Noise / Tinnitus [CALIBRATE + VERIFY]
 
-填裸枪 radius 和 tinnitus bool；确认成功射击发布 GUNSHOT、感染者响应、消音器倍率与 suppressed sound 同时生效。能听到 OGG 不算本步通过。
+填裸枪 radius 和 ear_db（开枪人耳边的 dB，耳鸣 V2）；确认成功射击发布 GUNSHOT、感染者响应、消音器倍率与 suppressed sound 同时生效。能听到 OGG 不算本步通过。
 
 Step 13 — Maintenance Table [NEW + CALIBRATE]
 

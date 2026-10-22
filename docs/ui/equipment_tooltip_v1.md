@@ -40,7 +40,7 @@
 - 空 stack/未注册弹药只显示名称，不画图标，不保留左侧空白。仍可回退现有 caliber/name 翻译；都不可用时显示“未知弹药 / Unknown ammunition”。
 - 不要求存在玩家或世界。第三方如果只取普通文字而不调用 Forge gather，则仍能读到弹药名称。库存、创造背包和 JEI/EMI 的运行/视觉兼容尚待实机验证。
 
-简易隔音耳罩 V1 仅显示 `AflEquipmentTooltip.addDescription` 的灰色非斜体介绍；介绍已同时写明缓解耳鸣和降低外界声音，不再重复追加功能行。Tooltip 不公开精确倍率；没有新增全局属性颜色。物品与防护行为见 [简易隔音耳罩 V1](../equipment/simple_hearing_protection_v1.md)。
+简易隔音耳罩 V1 仅显示 `AflEquipmentTooltip.addDescription` 的灰色非斜体介绍；介绍已同时写明挡住枪声和爆炸对耳朵的伤害和降低外界声音（耳鸣 V2，2026-10-21 改写），不再重复追加功能行。Tooltip 不公开精确倍率；没有新增全局属性颜色。物品与防护行为见 [简易隔音耳罩 V1](../equipment/simple_hearing_protection_v1.md)。
 
 消音器 Tooltip 不再显示噪声百分比；其 gameplay noise 倍率及枪械 Tooltip 中由真实噪声路径算出的有效声音半径均保持不变。
 

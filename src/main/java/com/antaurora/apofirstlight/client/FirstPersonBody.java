@@ -118,6 +118,9 @@ public final class FirstPersonBody {
         LocalPlayer player = minecraft.player;
         if (player == null || camera.getEntity() != player) return false;
         if (player.isSpectator() || player.isInvisible() || player.isSleeping() || player.isDeadOrDying()) return false;
+        // lying on the front out of water (the skeleton's prone clips): on the lying body's own eye
+        if (PlayerSkeleton.enabled() && (com.antaurora.apofirstlight.client.skeleton.ProneClient.cameraOnBody(camera)
+                || com.antaurora.apofirstlight.client.skeleton.ProneClient.ownLying(player))) return true;
         Pose pose = player.getPose();
         if (pose != Pose.STANDING && pose != Pose.CROUCHING) return false;
         if (player.isVisuallySwimming() || player.isFallFlying() || player.isAutoSpinAttack()) return false;

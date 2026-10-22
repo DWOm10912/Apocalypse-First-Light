@@ -17,7 +17,8 @@ public abstract class LocalPlayerWeightSprintMixin {
     @Inject(method = "hasEnoughFoodToStartSprinting", at = @At("HEAD"), cancellable = true)
     private void afl$heavyLoad(CallbackInfoReturnable<Boolean> cir) {
         if (!((LocalPlayer)(Object)this).isPassenger() && (ClientWeightPenalties.sprintBlocked() || com.antaurora.apofirstlight.stamina.ClientStamina.winded()
-                || com.antaurora.apofirstlight.health.ClientHealth.sprintBlocked()))
+                || com.antaurora.apofirstlight.health.ClientHealth.sprintBlocked()
+                || com.antaurora.apofirstlight.health.ClientLightningInjury.sprintBlocked()))
             cir.setReturnValue(false);
     }
 }

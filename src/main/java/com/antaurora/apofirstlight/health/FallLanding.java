@@ -36,27 +36,35 @@ import java.util.UUID;
  * The server decides and tells the player and its trackers (HealthPackets.Landing); the clients play the action
  * (client/skeleton/FallLandingClient), the own one also stops its input and leads its view along the action's
  * first_person_view. The server refuses item use and attacks while the player falls over.
+ * <p>
+ * Lightning injury V1 (health/LightningInjury) uses the same: a strike's ground current knocks a player down
+ * ({@link #knockDown}: body/fall_over, no arm roll), and after lying paralysed it gets up ({@link #getUp}: body/prone_get_up,
+ * 2.6 s from lying on the front to standing; tools/medical-actions-v1a/author_lightning_getup_v1.cjs).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class FallLanding {
-    public static final byte HARD = 0, FALL_OVER = 1;
+    public static final byte HARD = 0, FALL_OVER = 1, GET_UP = 2;
     /** The actions' lengths and the hand meeting the ground (ticks; tools/medical-actions-v1a/author_fall_v1.cjs). */
-    public static final int HARD_TICKS = 12, FALL_TICKS = 56, HAND_HITS = 9;
+    public static final int HARD_TICKS = 12, FALL_TICKS = 56, HAND_HITS = 9, GET_UP_TICKS = 52;
     /** How far the body's thump carries (blocks): a heavy landing's noise. */
     private static final double THUMP_RADIUS = MovementNoiseEvents.HEAVY_LANDING_RADIUS;
     /** How far in from the feet's corners the support is looked for, and how deep under them (blocks). */
     private static final double CORNER_IN = 0.05, CORNER_DEPTH = 0.1;
 
     private static final class Falling {
-        final int start;
+        final int start, length;
         final boolean mirror;
         final double healthLost;
+        /** The hand meeting the ground thumps and may break the arm (a fall, not a knock-down or getting up). */
+        final boolean handHits;
         boolean handDown;
 
-        Falling(int start, boolean mirror, double healthLost) {
+        Falling(int start, int length, boolean mirror, double healthLost, boolean handHits) {
             this.start = start;
+            this.length = length;
             this.mirror = mirror;
             this.healthLost = healthLost;
+            this.handHits = handHits;
         }
     }
 
@@ -79,11 +87,35 @@ public final class FallLanding {
         boolean over = random.nextDouble() < chance;
         boolean mirror = random.nextBoolean();
         if (over) {
-            FALLING.put(player.getUUID(), new Falling(player.server.getTickCount(), mirror, healthLost));
+            FALLING.put(player.getUUID(), new Falling(player.server.getTickCount(), FALL_TICKS, mirror, healthLost, true));
             player.stopUsingItem();
             player.setSprinting(false);
         }
         var packet = new HealthPackets.Landing(player.getId(), over ? FALL_OVER : HARD, mirror);
+        AflNetwork.skeletonTo(player, packet);
+        AflNetwork.skeletonToTracking(player, packet);
+    }
+
+    /** Lightning injury: a strike's current knocks the player over (body/fall_over); the thump, no arm roll. */
+    public static void knockDown(ServerPlayer player) {
+        if (!player.isAlive() || player.isPassenger()) return;
+        boolean mirror = player.getRandom().nextBoolean();
+        play(player, new Falling(player.server.getTickCount(), FALL_TICKS, mirror, 0, false), FALL_OVER);
+        RangedSound.play(player.serverLevel(), player.position(), AflSounds.BODY_FALL.get(), SoundSource.PLAYERS, THUMP_RADIUS,
+                1.0F, 0.95F + player.getRandom().nextFloat() * 0.1F);
+    }
+
+    /** Lightning injury: up from lying on the front (body/prone_get_up); no moving or using things meanwhile. */
+    public static void getUp(ServerPlayer player) {
+        if (!player.isAlive() || player.isPassenger()) return;
+        play(player, new Falling(player.server.getTickCount(), GET_UP_TICKS, false, 0, false), GET_UP);
+    }
+
+    private static void play(ServerPlayer player, Falling f, byte kind) {
+        FALLING.put(player.getUUID(), f);
+        player.stopUsingItem();
+        player.setSprinting(false);
+        var packet = new HealthPackets.Landing(player.getId(), kind, f.mirror);
         AflNetwork.skeletonTo(player, packet);
         AflNetwork.skeletonToTracking(player, packet);
     }
@@ -127,11 +159,11 @@ public final class FallLanding {
         Falling f = FALLING.get(id);
         if (f == null) return;
         int t = player.server.getTickCount() - f.start;
-        if (!player.isAlive() || t >= FALL_TICKS) {
+        if (!player.isAlive() || t >= f.length) {
             FALLING.remove(id);
             return;
         }
-        if (t >= HAND_HITS && !f.handDown) {
+        if (f.handHits && t >= HAND_HITS && !f.handDown) {
             f.handDown = true;
             handHits(player, f);
         }
