@@ -59,7 +59,7 @@ public final class TinnitusClient {
         double s = Mth.clamp(strength, 0, 1);
         joltTotal = joltLeft = (int) Math.round(20 * Mth.lerp(s, c.joltRecover[0], c.joltRecover[1]));
         if (ring != null) ring.cut();
-        ring = new Ring(AflSounds.EXPLOSION_TINNITUS.get(), 0, (float) (0.25 + 0.55 * s), (int) Math.round(20 * (4 + 6 * s)));
+        ring = new Ring(AflSounds.EXPLOSION_TINNITUS.get(), 0, (float) Mth.lerp(s, c.joltVolume[0], c.joltVolume[1]), (int) Math.round(20 * (4 + 6 * s)));
         Minecraft.getInstance().getSoundManager().play(ring);
         if (nextSpell >= 0) nextSpell = Math.max(nextSpell, ticks + joltTotal + 20L * 5);
     }

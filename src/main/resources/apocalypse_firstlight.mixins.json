@@ -26,7 +26,7 @@
     "WiringLevelChunkMixin", "WiringServerLevelMixin", "SurvivorRespawnGateMixin", "AflDifficultyLockMixin",
     "ChunkGeneratorForestHomeMixin", "WorldGenRegionForestHomeGuardMixin",
     "ChunkGeneratorRoadWorksMixin", "WorldGenRegionRoadGuardMixin", "BushBlockGradedTurfMixin",
-    "EntityVehicleCollisionMixin", "ServerGamePacketListenerVehicleMixin", "PlayerGunRightArmMixin", "LightningBoltLifeMixin", "LightningBoltAccessor", "LightningTargetServerLevelMixin",
+    "EntityVehicleCollisionMixin", "ServerGamePacketListenerVehicleMixin", "PlayerGunRightArmMixin", "LightningBoltLifeMixin", "LightningBoltAccessor", "LightningTargetServerLevelMixin", "ServerLevelLightningInvoker", "ServerLevelWeatherMixin", "LevelWeatherMixin", "FireBlockRainMixin",
     "RetiredGearEnchantmentMixin", "RetiredSwordMixin", "RetiredTurtleHelmetMixin", "RetiredFreezeImmunityMixin", "RetiredPowderSnowMixin", "RetiredSpawnGearMixin"],
   "injectors": {"defaultRequire": 1}
 }

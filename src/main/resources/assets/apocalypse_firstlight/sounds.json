@@ -95,7 +95,6 @@
   "tinnitus": {
     "subtitle": "subtitles.apocalypse_firstlight.tinnitus",
     "sounds": [
-      "apocalypse_firstlight:hearing/tinnitus_1",
       "apocalypse_firstlight:hearing/tinnitus_2"
     ]
   },

@@ -31,7 +31,22 @@
 - Indoors, or in the T15's cab with the doors shut, thunder and rain sound muffled, only the low part gets through; with a door open, or near a doorway, it is clearer
 - A strike within <V j="LightningStrikes.NOISE_RADIUS" u="m" /> draws the infected like an explosion; distant thunder does not
 
-<StatusTag s="planned" /> Regional dynamic weather: rain areas moving in from afar, different weather in different places, wind rising before a storm, and later windy days
+## Regional weather
+
+- <StatusTag s="test" /> On a branch only, checked in game by the user 2026-10-22
+
+- The overworld no longer rains or clears everywhere at once. The weather in each place follows from the world seed and the game time; a day is 20 minutes as in vanilla, and there are no seasons
+- The weather comes in regimes lasting half a day to a few days: clear, unstable, front, overcast rain, windy, cold snap and heat wave. Regimes blend over about 6 game hours
+- Rain comes from moving rain cells: showers about 1 km in radius, thunderstorms 1–2.5 km, drifting with the wind. Thunderstorms peak in the afternoon and form more over plains and mountains, less on plateaus and at sea; a front sweeps a line of storms across the whole Federation
+- Terrain shapes the weather: the western plateau is driest, the south hot and wet; mountains and plateaus are windiest, hills the calmest
+- It counts as raining from <V j="RegionalWeather.WET" u="mm/h" />: you get wet and fires go out. The rain and sky you see follow where you stand
+- Thunderstorms strike: nearby strikes are real lightning, far ones are only a flash and thunder
+- Rain and storms lower the air temperature, and cold snaps and heat waves cool or warm a whole region
+- Without shaders the rain's slant and drift follow the local wind
+- Known issues: you can't sleep during a daytime thunderstorm; no snow cover or ice; at the edge of a rain cell the rain doesn't thin out in front of you
+- Dev command: `/afl weather` shows the weather where you are; `regime <regime> [hours]`, `storm`, `shower` and `reset` are for testing
+
+<StatusTag s="planned" /> Wind reaching more things: wind sounds, particles, being pushed on windy days, wind turbines
 
 ## Rain and body temperature
 

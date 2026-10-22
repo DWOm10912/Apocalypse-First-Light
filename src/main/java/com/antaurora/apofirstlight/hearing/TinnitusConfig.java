@@ -50,7 +50,9 @@ public final class TinnitusConfig {
     /** Seconds between episodes and how long one rings, [least, most] per stage; its volume per stage. */
     public double[][] interval = {{90, 180}, {40, 90}, {15, 40}};
     public double[][] length = {{3, 5}, {5, 8}, {6, 10}};
-    public double[] volume = {0.25, 0.4, 0.55};
+    public double[] volume = {0.12, 0.2, 0.28};
+    /** A jolt's ring volume, [weakest, strongest] (user 2026-10-22: the ringing was too loud, halved). */
+    public double[] joltVolume = {0.12, 0.4};
     /** A jolt: the world's sounds drop to jolt_hearing and come back over [weakest, strongest] seconds; its ring lasts as long. */
     public double joltHearing = 0.3;
     public double[] joltRecover = {6, 10};
@@ -82,6 +84,8 @@ public final class TinnitusConfig {
         }
         if (joltRecover == null || joltRecover.length != 2 || !(joltRecover[0] > 0) || !(joltRecover[1] >= joltRecover[0]))
             throw new IllegalArgumentException("jolt_recover: [weakest, strongest] seconds");
+        if (joltVolume == null || joltVolume.length != 2 || !(joltVolume[0] >= 0) || !(joltVolume[1] >= joltVolume[0]) || !(joltVolume[1] <= 1))
+            throw new IllegalArgumentException("jolt_volume: [weakest, strongest] 0..1");
     }
 
     private static boolean perStage(double[] v) {

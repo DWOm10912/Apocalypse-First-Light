@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client.rain;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.weather.ClientWeather;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -65,6 +66,12 @@ public final class RainRenderer {
     public static final com.antaurora.apofirstlight.client.GpuTimer GPU_DROPS = new com.antaurora.apofirstlight.client.GpuTimer(),
             GPU_SPLASHES = new com.antaurora.apofirstlight.client.GpuTimer();
     private static Locations locations;
+    /**
+     * The wind's drift so far (blocks), wrapped at a multiple of both boxes (12, 56), and the time it was taken at: a change
+     * of wind bends the streaks from then on and never moves the drops (regional weather V1, 2026-10-21).
+     */
+    private static final double DRIFT_WRAP = 168 * 60;
+    private static double driftX, driftZ, driftSeconds = Double.NaN;
 
     private RainRenderer() {
     }
@@ -199,15 +206,31 @@ public final class RainRenderer {
 
         float thunder = level.getThunderLevel(pt), density = rain * (0.65F + 0.35F * thunder);
         double seconds = ((level.getGameTime() % 24000) + pt) / 20.0;
-        double windAngle = 0.9 + 0.6 * Math.sin(seconds / 97.0);
-        double windSpeed = (0.8 + 0.5 * Math.sin(seconds / 31.0) + 0.3 * Math.sin(seconds / 7.7)) * (1 + 1.6 * thunder);
+        double wx, wz;
+        if (ClientWeather.active()) {
+            // the wind where the camera is (regional weather V1), a little slower near the ground, gusting
+            double g = 1 + 0.25 * ClientWeather.gust() * (Math.sin(seconds / 7.7) + 0.5 * Math.sin(seconds / 3.1));
+            wx = ClientWeather.windX() * 0.7 * g;
+            wz = ClientWeather.windZ() * 0.7 * g;
+        } else {
+            double windAngle = 0.9 + 0.6 * Math.sin(seconds / 97.0);
+            double windSpeed = (0.8 + 0.5 * Math.sin(seconds / 31.0) + 0.3 * Math.sin(seconds / 7.7)) * (1 + 1.6 * thunder);
+            wx = Math.cos(windAngle) * windSpeed;
+            wz = Math.sin(windAngle) * windSpeed;
+        }
+        double dt = seconds - driftSeconds;
+        if (dt > 0 && dt < 1) {
+            driftX = floorMod(driftX + wx * dt, DRIFT_WRAP);
+            driftZ = floorMod(driftZ + wz * dt, DRIFT_WRAP);
+        }
+        driftSeconds = seconds;
         float pixel = 2.0F / (RenderSystem.getProjectionMatrix().m11() * Math.max(1, mc.getWindow().getHeight()));
         Trucks trucks = trucks(level, cam, pt);
 
         drops.bind();
         // near: small and dense, the drops right around the camera; far: large and sparse
-        layer(sh, cam, 12, 12, 12, density * 0.2F, 0.55F, seconds, windAngle, windSpeed, pixel, trucks);
-        layer(sh, cam, 56, 36, 56, density, 0.45F, seconds, windAngle, windSpeed, pixel, trucks);
+        layer(sh, cam, 12, 12, 12, density * 0.2F, 0.55F, seconds, wx, wz, pixel, trucks);
+        layer(sh, cam, 56, 36, 56, density, 0.45F, seconds, wx, wz, pixel, trucks);
         VertexBuffer.unbind();
 
         RenderSystem.depthMask(true);
@@ -218,14 +241,15 @@ public final class RainRenderer {
     }
 
     private static void layer(ShaderInstance sh, Vec3 cam, double bx, double by, double bz, float count, float alpha, double seconds,
-                              double windAngle, double windSpeed, float pixel, Trucks trucks) {
+                              double wx, double wz, float pixel, Trucks trucks) {
         sh.apply();
         Locations l = locations;
         if (l == null || l.program != sh.getId()) locations = l = new Locations(sh.getId());
         GL20.glUniform3f(l.box, (float) bx, (float) by, (float) bz);
         // the camera modulo the box, worked out in double (world coordinates are too big for the GPU's floats)
         GL20.glUniform3f(l.offset, (float) floorMod(cam.x, bx), (float) floorMod(cam.y, by), (float) floorMod(cam.z, bz));
-        GL20.glUniform3f(l.wind, (float) (Math.cos(windAngle) * windSpeed), 0, (float) (Math.sin(windAngle) * windSpeed));
+        GL20.glUniform3f(l.wind, (float) wx, 0, (float) wz);
+        GL20.glUniform3f(l.drift, (float) driftX, 0, (float) driftZ);
         GL20.glUniform1f(l.time, (float) seconds);
         GL20.glUniform1f(l.count, count);
         GL20.glUniform1f(l.alpha, alpha);
@@ -320,7 +344,7 @@ public final class RainRenderer {
 
     /** The drop program's own uniforms (beside the ones its JSON declares). */
     private static final class Locations {
-        final int program, box, offset, wind, time, count, alpha, pixel, exposure, camY, colWrap, truckCount, boxCount,
+        final int program, box, offset, wind, drift, time, count, alpha, pixel, exposure, camY, colWrap, truckCount, boxCount,
                 truckO, truckF, truckR, truckU, lo, hi, cut;
 
         Locations(int p) {
@@ -328,6 +352,7 @@ public final class RainRenderer {
             box = GL20.glGetUniformLocation(p, "RainBox");
             offset = GL20.glGetUniformLocation(p, "RainOffset");
             wind = GL20.glGetUniformLocation(p, "RainWind");
+            drift = GL20.glGetUniformLocation(p, "RainDrift");
             time = GL20.glGetUniformLocation(p, "RainTime");
             count = GL20.glGetUniformLocation(p, "RainCount");
             alpha = GL20.glGetUniformLocation(p, "RainAlpha");

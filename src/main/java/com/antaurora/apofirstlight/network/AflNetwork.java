@@ -125,6 +125,7 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.health.HealthPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.hearing.HearingPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.health.LightningPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.weather.WeatherPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
@@ -576,6 +577,11 @@ public final class AflNetwork {
 
     /** Lightning injury V1: the own states / a strike (health/LightningPackets), to the player. */
     public static void lightning(ServerPlayer player, Object packet) {
+        if (channel != null && player.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Regional weather V1: the server's weather (weather/WeatherPackets), to the player. */
+    public static void weather(ServerPlayer player, Object packet) {
         if (channel != null && player.connection != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 

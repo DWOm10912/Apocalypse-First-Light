@@ -485,7 +485,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         double[] air = com.antaurora.apofirstlight.temperature.PlayerTemperature.outdoorAndSheltered(server, at, getY());
         // the sun on the cab: its height on a clear sky, with the sky open above the roof
         double sun = server.dimensionType().hasSkyLight() && server.canSeeSky(at.above())
-                ? Math.max(0, Math.cos(server.getSunAngle(1))) * (1 - server.getRainLevel(1)) : 0;
+                ? Math.max(0, Math.cos(server.getSunAngle(1)))
+                * (1 - com.antaurora.apofirstlight.weather.AflWeather.cloud(server, roof.x, roof.z)) : 0;
         boolean shut = !doorOpen(false) && !doorOpen(true);
         Drivetrain d = drivetrain();
         boolean running = d != null && d.running, power = electricsOn();

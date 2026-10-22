@@ -547,6 +547,17 @@ tasks.register('guideSignRender', JavaExec) {
             + (project.findProperty('bones') ?: 'adv|4|R61|S|Redfield|1|0,0;dir|1|R80||Redfield/Pelican Point|ur|0,0;gore|8||||ur|0,0;ent||F65|N|Kessler|ul|0,0').toString().split(';').toList())
 }
 
+// Regional weather V1 offline look (docs/gameplay/regional_weather_v1_plan.md 10): -Pout= -Pseed= -Pfirst= -Pdays=
+tasks.register('weatherMap', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.weather.WeatherMapRender'
+    args([(project.findProperty('out') ?: 'design/world/weather_w1/days.png').toString(),
+          (project.findProperty('seed') ?: '-295378578869149513').toString(),
+          (project.findProperty('first') ?: '0').toString(),
+          (project.findProperty('days') ?: '3').toString()])
+}
+
 // C3.3b group 3 survey: interstate corners at cities and interstate joins (docs/worldgen/federal_systems_c3_3b.md); -ProadNetwork=<file;file>
 tasks.register('systemSurvey', JavaExec) {
     dependsOn tasks.named('testClasses')

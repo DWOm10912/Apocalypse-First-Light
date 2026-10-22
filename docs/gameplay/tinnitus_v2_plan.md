@@ -132,7 +132,8 @@
 **客户端**
 
 - `client/TinnitusClient`：收到档位后按档的 `interval` 随机安排下一次阵发，长度 `length`、音量 `volume`；档位升高时立刻响一次（刚登录收到的第一个状态不算升高）。每次随机左耳、右耳或两耳（相对位置 x = −1 / 1 / 0，无距离衰减）。两次同步之间本地按半衰期倒数，供徽章计时。登出清空。
-- 声音事件 `apocalypse_firstlight:tinnitus`：2 个变体 `sounds/hearing/tinnitus_1..2.ogg`（单声道；用户录了 4 段 Firefly，2026-10-21 实机后只留"起伏高音" = tinnitus_1 和"更高更细" = tinnitus_2，"稳定高音"和"偏低带沙"听着奇怪，不用（「不要再使用“偏低带沙”和“稳定高音”了」）；`tools/build-tinnitus-sounds-v2.cjs` 切段、淡入淡出、主体响度统一），字幕"耳鸣 / Ears ring"。震耳仍用 `explosion_tinnitus`，音量 0.25 + 0.55 × 强度，长 4 + 6 × 强度 秒。
+- 声音事件 `apocalypse_firstlight:tinnitus`：只用 `sounds/hearing/tinnitus_2.ogg`（"更高更细"，单声道）。用户录了 4 段 Firefly，2026-10-21 实机后留下"起伏高音" = tinnitus_1 和 tinnitus_2，"稳定高音"和"偏低带沙"听着奇怪不用（「不要再使用“偏低带沙”和“稳定高音”了」）；2026-10-22 用户又定「tinnitus_1不要再用了，只用2」，`sounds.json` 里去掉 tinnitus_1（ogg 文件还留在资源里，没有引用）。`tools/build-tinnitus-sounds-v2.cjs` 切段、淡入淡出、主体响度统一。字幕"耳鸣 / Ears ring"。震耳仍用 `explosion_tinnitus`，长 4 + 6 × 强度 秒。
+- 音量（2026-10-22 用户「耳鸣的声音太大了，压低一点」，都减半，约 −6 dB；用户 2026-10-22 实机 PASS）：阵发耳鸣 `volume` 每档 0.12 / 0.2 / 0.28（原 0.25 / 0.4 / 0.55）；震耳新加配置 `jolt_volume` [0.12, 0.4]，按强度插值（原写死 0.25 + 0.55 × 强度）。`explosion_tinnitus.ogg` 本身比 tinnitus_2 响约 6 dB（平均 −14.6 dB 对 −20.9 dB）。
 - 周围声音：`HearingProtectionAudio.listenerMultiplier()` 再乘 `TinnitusClient.hearingMultiplier()` = 档的 `hearing` × 震耳的下沉（降到 `jolt_hearing`，`jolt_recover` 秒内平滑回来）。耳鸣声和震耳声本身不受这个倍率影响，也不再被耳罩压低。只调音量，没有做低通"闷住"。
 - 状态徽章（`StatusBadgeHud`）：key `tinnitus`，BAD 色，新的 EAR 图标（侧面的耳朵加两道声波）；名字和效果"轻度耳鸣 / 偶尔耳鸣"、"耳鸣 / 耳鸣，周围声音变小"、"严重耳鸣 / 频繁耳鸣，周围声音明显变小"；外圈 = 耳鸣有多重：负荷从轻度下限（空）到 `max_load`（满），按对数，开枪会变满，之后随消退慢慢变短；旁边不显示时间（2026-10-21 用户：每开一枪倒计时都往上加；照 master 脱水徽章的改法，只留外圈）。说明 `hud.apocalypse_firstlight.status.tinnitus.detail`。
 
