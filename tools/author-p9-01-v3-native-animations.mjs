@@ -57,7 +57,8 @@ const AX = norm(sub(rotX([0, -1, 0], MAG_TILT, [0, 0, 0]), Z));   // magazine ax
 const MAG_BOTTOM = rotX([0, -0.99, 1.79], MAG_TILT, MP);           // baseplate centre
 const MAG_CLEAR = 4.9;                                             // axial travel that clears the magwell (magazine length + lips)
 const MAG_ENTRY = 4.2;                                             // new magazine lined up this far below its seat
-const SLIDE_LOCK = 1.88, SLIDE_SHOT = 1.7, SLIDE_TOP_REAR = [0, 6.0, 2.7];
+export const SLIDE_LOCK = 1.88, SLIDE_TOP_REAR = [0, 6.0, 2.7];
+const SLIDE_SHOT = 1.7;
 const FOLLOWER_LOADED = mul(AX, 0.45);                             // loaded magazine: follower pushed down (empty = rest at the lips)
 const K = ARM_HALF / (4 * 0.62 / 0.37 / 2);                        // P9 hand size relative to the Blackridge authoring hand
 const Q = 0.45 / 0.53;                                             // same on-screen travel as Blackridge (Display 0.45 vs 0.53)
@@ -254,7 +255,10 @@ function legs(list) {                          // list: [t0, t1, pose, go option
         return {pos, rot};
     };
 }
-const RELOAD_UP = {pos: [0.4, 3.4, 2.0], rot: [27, 40, -24]};     // up and rolled: the magwell faces the support hand
+// a slow look-over sway (the lower tiers' procedural reloads)
+const drift = (t, t0, t1, amp, per) => t <= t0 || t >= t1 ? Z
+    : mul(amp, Math.sin(2 * Math.PI * (t - t0) / per) * clamp01((t - t0) / 0.25) * clamp01((t1 - t) / 0.25));
+const RELOAD_UP ={pos: [0.4, 3.4, 2.0], rot: [27, 40, -24]};     // up and rolled: the magwell faces the support hand
 const RELOAD_MEET = {pos: [-0.3, 2.8, 2.3], rot: [23, 35, -30]};  // floated down-left toward the incoming magazine
 const RELOAD_HOLD = {pos: [0.1, 3.1, 2.1], rot: [26, 38, -25]};   // after the seat (empty: until the slide is let go)
 
@@ -337,6 +341,140 @@ clips.push(clip('reload_tactical_no_mag', +(1.7 - NO_MAG_CUT).toFixed(3), 'once'
 clips.push(clip('reload_empty_no_mag', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, true, false, true)));
 clips.push(clip('reload_tactical_no_mag_ads', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, false, true, true)));
 clips.push(clip('reload_empty_no_mag_ads', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, true, true, true)));
+
+// ---------- lower tiers (docs/dev/gun_proficiency_v1_plan.md 4, docs/dev/p9_reload_inspect_v1.md 5; 2026-10-18) ----------
+// Same motion language, slower and with the eyes on the gun (the camera bone pitches the view down onto it):
+//   experienced (Lv 4-6, x1.35): the gun comes down to the chest work space instead of up to the eye line, the magazine is
+//     guided in and pushed home, no pause; the empty reload racks the slide overhand with the support hand.
+//   novice (Lv 0-3, x1.8): the gun is held close, eyes down the whole time; the thumb hunts for the release, the magazine
+//     is lined up and pushed in slowly, then the gun is tipped for a second look; slow overhand rack. The fumble variant
+//     (server roll, gun proficiency plan 4): the magazine goes in crooked, catches on the magwell edge, comes back out, is
+//     straightened and goes in (+0.7 s). Never a dropped magazine or a failed reload.
+export const TIERS = {
+    experienced: {
+        work: {pos: [-1.3, 2.0, 3.6], rot: [20, 30, -34]}, meet: {pos: [-1.8, 1.6, 3.8], rot: [17, 26, -38]},
+        hold: {pos: [-1.4, 1.9, 3.6], rot: [20, 28, -32]}, rack: {pos: [-1.0, 2.0, 1.6], rot: [13, -2, 42]},
+        eyes: [-4.0, 0.8, 1.0], flick: 0.6, slap: 0.85, drift: 1.2,
+        tactical: {up: 0.38, release: 0.3, drop: 0.33, enter: 0.62, align: 0.92, seat: 1.2, back: 1.32, backEnd: 1.85, regrip: 1.62, end: 2.3},
+        empty: {up: 0.38, release: 0.3, drop: 0.32, enter: 0.66, align: 0.96, seat: 1.24, grab: 1.5, pull: 1.56, pulled: 1.68, let: 1.74,
+            back: 1.86, backEnd: 2.34, regrip: 2.14, end: 2.7},
+    },
+    novice: {
+        work: {pos: [-2.3, 2.3, 5.2], rot: [26, 22, -48]}, meet: {pos: [-2.7, 2.0, 5.4], rot: [24, 19, -52]},
+        hold: {pos: [-2.3, 2.2, 5.2], rot: [25, 21, -48]}, look: {pos: [-2.0, 2.6, 5.0], rot: [40, 12, -30]},
+        rack: {pos: [-1.3, 1.6, 2.2], rot: [14, -2, 44]},
+        eyes: [-7.0, 0.6, 1.2], flick: 0, slap: 0.65, drift: 1.6,
+        tactical: {up: 0.5, release: 0.62, drop: 0.68, enter: 1.05, align: 1.5, seat: 2.0, lookAt: 2.06, lookEnd: 2.36, back: 2.42, backEnd: 2.95,
+            regrip: 2.8, end: 3.1},
+        empty: {up: 0.5, release: 0.62, drop: 0.66, enter: 1.05, align: 1.5, seat: 2.0, lookAt: 2.06, lookEnd: 2.32, grab: 2.5, pull: 2.6,
+            pulled: 2.8, let: 2.9, back: 3.0, backEnd: 3.45, regrip: 3.3, end: 3.6},
+    },
+};
+export const FUMBLE = 0.7;   // the second try at the magwell
+/** A tier's beats (seconds); fumble: the first try (bump, out, again) and everything after it shifted by FUMBLE. */
+export function tierTiming(empty, tierName, fumble = false) {
+    const T = {...TIERS[tierName][empty ? 'empty' : 'tactical']};
+    if (fumble) {   // everything from the first try on shifts by the second one
+        T.bump = T.align + 0.22; T.out = T.bump + 0.2; T.again = T.out + 0.28;
+        for (const n of ['seat', 'lookAt', 'lookEnd', 'grab', 'pull', 'pulled', 'let', 'back', 'backEnd', 'regrip', 'end']) if (T[n] != null) T[n] = +(T[n] + FUMBLE).toFixed(3);
+    }
+    return T;
+}
+function reloadTier(empty, tierName, fumble = false) {
+    const tier = TIERS[tierName], T = tierTiming(empty, tierName, fumble);
+    const settle = T.backEnd;
+    const list = [[0.0, T.up, tier.work, {antic: 0.03, over: 0.04, per: 0.24, tau: 0.09}],
+        [T.up + 0.06, (fumble ? T.bump : T.seat) - 0.02, tier.meet, {}]];
+    if (fumble) list.push([T.out, T.again, tier.work, {}], [T.again + 0.04, T.seat - 0.02, tier.meet, {}]);
+    list.push([T.seat + 0.02, T.seat + 0.18, tier.hold, {}]);
+    if (T.lookAt != null) list.push([T.lookAt, T.lookAt + 0.16, tier.look, {antic: 0.02, over: 0.03}]);
+    if (empty) list.push([T.lookEnd != null ? T.lookEnd + 0.02 : T.seat + 0.06, T.grab, tier.rack, {antic: 0.02, over: 0.03}]);
+    list.push([T.back, T.backEnd, IDLE, {antic: 0.03, over: 0.08, per: 0.26, tau: 0.1}]);
+    const path = legs(list);
+    const up = t => go(t, 0.0, T.up, {antic: 0, over: 0}) - go(t, T.back, T.backEnd, {antic: 0, over: 0});
+    // racking: the slide is turned toward the support hand, so the grip slip (it only shows the magwell) is taken back first
+    const racking = t => !empty ? 0 : clamp01(go(t, T.seat + 0.1, T.grab, {antic: 0, over: 0}));
+    const slide = t => !empty ? 0 : t < T.pull ? SLIDE_LOCK : t < T.let ? SLIDE_LOCK + 0.08 * clamp01(go(t, T.pull, T.pulled, {antic: 0, over: 0}))
+        : (SLIDE_LOCK + 0.08) * (1 - clamp01((t - T.let) / 0.028));
+    const hits = t => sum(
+        jolt(t, T.release, [-0.5, 0.15, 0.4]),
+        jolt(t, T.drop + 0.01, mul([-2.2, 0.4, 1.6], tier.flick), {rise: 0.03, per: 0.16, tau: 0.05}),
+        fumble ? jolt(t, T.bump, [-1.6, 0.8, -1.2], {rise: 0.02, per: 0.14, tau: 0.05}) : Z,          // crooked magazine stops on the edge
+        jolt(t, T.seat, mul([3.0, -0.6, 1.5], tier.slap), {rise: 0.02, per: 0.12, tau: 0.05}),
+        empty ? jolt(t, T.pulled, [-1.2, 0.6, 0.8], {rise: 0.03, per: 0.14, tau: 0.04}) : Z,
+        empty ? jolt(t, T.let, [2.4, 0.3, -1.4], {per: 0.1, tau: 0.04}) : Z,
+        jolt(t, settle, [0.7, 0, -0.3], {per: 0.22, tau: 0.09}));
+    // looking it over: slow, a bit wider than the practised drift; the novice also hunts for the release
+    const look = t => mul(sum(drift(t, 0.2, T.align, [1.0, -1.2, 1.6], 1.1), drift(t, T.seat + 0.1, T.back, [0.6, 0.8, -0.8], 0.6),
+        tierName === 'novice' ? drift(t, 0.3, T.release + 0.05, [0.8, 1.6, -1.0], 0.45) : Z), tier.drift);
+    const slip = t => SLIP * clamp01(up(t)) * (1 - racking(t));
+    const H = t => { const p = path(t), rot = sum(p.rot, look(t), hits(t));
+        return {rot, pos: sum(p.pos, mv(E(rot), mul(GRIP_SLIDE, slip(t))), mul([0, 0.1, -0.06], hits(t)[0]))}; };
+    // the old magazine falls free (tactical: shaken out, less so than the practised flick)
+    const g = 520, t0 = T.drop;
+    const axial = t => t < t0 ? 0 : 0.5 * g * (t - t0) ** 2;
+    const tClear = t0 + Math.sqrt(2 * MAG_CLEAR / g);
+    const inWell = t => magInGun(H(t), axial(t));
+    const vRel = mul(sub(inWell(tClear).pos, inWell(tClear - 0.004).pos), 1 / 0.004);
+    const oldMag = t => {
+        if (t <= tClear) return inWell(t);
+        const base = inWell(tClear), dt = t - tClear;
+        const pos = add(add(base.pos, mul(vRel, dt)), [0, -0.5 * g * dt * dt, 0]);
+        const R = mm(base.R, E([-160 * dt, 10 * dt, 70 * dt])); return {pos, rot: euler(R), R};
+    };
+    // the new magazine: up from lower left on an arc; fumble: in crooked, stuck on the edge, out, straightened, in
+    const CROOKED = [7, 0, 9], BUMP_DEPTH = 3.0, OUT_DEPTH = 4.7;
+    const newMag = t => {
+        if (t < T.align) {
+            const s = clamp01(go(t, T.enter - 0.06, T.align, {antic: 0, over: 0.03, per: 0.1, tau: 0.035})), g0 = magInGun(H(t), MAG_ENTRY, fumble ? CROOKED : Z);
+            const R = E(lerp(OFFSCREEN_MAG.rot, g0.rot, s));
+            return {pos: add(lerp(OFFSCREEN_MAG.pos, g0.pos, s), mul([-1.4, 0.9, 0.4], Math.sin(Math.PI * s))), rot: euler(R), R};
+        }
+        if (fumble && t < T.again) {
+            const d = t < T.bump ? MAG_ENTRY + (BUMP_DEPTH - MAG_ENTRY) * go(t, T.align + 0.02, T.bump, {antic: 0, over: 0, pre: 0.02})
+                : t < T.out ? BUMP_DEPTH + (OUT_DEPTH - BUMP_DEPTH) * go(t, T.bump + 0.06, T.out, {antic: 0, over: 0, pre: 0.02})
+                : OUT_DEPTH + (MAG_ENTRY - OUT_DEPTH) * go(t, T.out + 0.02, T.again, {antic: 0, over: 0.02, pre: 0.02});
+            const straight = t < T.out ? 0 : clamp01(go(t, T.out + 0.02, T.again, {antic: 0, over: 0}));
+            const wobble = t < T.out ? [0, 0, 0] : mul([2.5, 0, -3], Math.sin(2 * Math.PI * (t - T.out) / 0.22) * (1 - straight));
+            return magInGun(H(t), d, add(mul(CROOKED, 1 - straight), wobble));
+        }
+        return magInGun(H(t), Math.max(0, seatDepth(t, fumble ? T.again : T.align, T.seat)));
+    };
+    const onSlide = t => slideHand(H(t), SLIDE_TOP_REAR, slide(t));
+    const LH = t => {
+        if (t < T.enter - 0.08) return mixT(leftOnGun(H(t)), LOW_LEFT, go(t, 0.0, tierName === 'novice' ? 0.32 : 0.24, {antic: 0, over: 0}));
+        if (t < T.seat + 0.06) return mixT(LOW_LEFT, onMag(newMag(Math.min(t, T.seat)), slapGap(t, T.seat)),
+            clamp01(go(t, T.enter - 0.08, T.enter + 0.06, {antic: 0, over: 0})));
+        if (!empty) return mixT(onMag(newMag(T.seat)), leftOnGun(H(t)), go(t, T.seat + 0.06, T.regrip, {antic: 0.02, over: 0.04}));
+        if (t < T.grab) return mixT(onMag(newMag(T.seat)), onSlide(t), clamp01(go(t, T.seat + 0.06, T.grab, {antic: 0, over: 0})));
+        if (t < T.let + 0.04) return onSlide(t);
+        return mixT(onSlide(t), leftOnGun(H(t)), go(t, T.let + 0.04, T.regrip, {antic: 0.02, over: 0.04}));
+    };
+    const eyes = t => mul(tier.eyes, clamp01(go(t, 0.0, T.up, {antic: 0, over: 0})) - clamp01(go(t, T.back, T.backEnd, {antic: 0, over: 0})));
+    const camera = t => sum(eyes(t), mul(look(t), 0.3), mul(hits(t), 0.35), jolt(t, T.seat, mul([1.0, 0, 0.35], tier.slap)));
+    const tracks = {
+        handling: {position: t => H(t).pos, rotation: t => H(t).rot},
+        magazine: {scale: t => (t >= t0 && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
+        follower: {position: t => empty && t < t0 ? Z : FOLLOWER_LOADED},
+        empty_old_mag: {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
+        mag_out: {position: t => newMag(t).pos, rotation: t => newMag(t).rot},
+        reload_magazine: {scale: t => (t >= T.enter - 0.06 && t < T.seat) ? [1, 1, 1] : [0, 0, 0], step: true},
+        righthand: {position: t => sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rotation: () => RIGHT_REST.rot},
+        lefthand: lhTracks(LH),
+        camera: {rotation: camera},
+    };
+    if (empty) tracks.slide = {position: t => [0, 0, slide(t)]};
+    const sounds = [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out'],
+        [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'],
+        ...(empty ? [[T.pull - 0.01, 'slide_back'], [T.let - 0.005, 'slide_release']] : [])];
+    return {tracks, sounds, timing: T};
+}
+for (const tier of ['experienced', 'novice']) {
+    clips.push(clip(`reload_tactical_${tier}`, TIERS[tier].tactical.end, 'once', () => reloadTier(false, tier)));
+    clips.push(clip(`reload_empty_${tier}`, TIERS[tier].empty.end, 'once', () => reloadTier(true, tier)));
+}
+clips.push(clip('reload_tactical_novice_fumble', +(TIERS.novice.tactical.end + FUMBLE).toFixed(3), 'once', () => reloadTier(false, 'novice', true)));
+clips.push(clip('reload_empty_novice_fumble', +(TIERS.novice.empty.end + FUMBLE).toFixed(3), 'once', () => reloadTier(true, 'novice', true)));
 
 // Inspect (CS2-style, trained): one hand shows the left side and holds it with a slow look, the wrist rolls to show the
 // right side (ejection port; empty: the open chamber), then a magazine check: thumb release, the magazine drops into the

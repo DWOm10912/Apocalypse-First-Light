@@ -12,10 +12,11 @@ Per-level values, training and experience for strength and fitness are on [Survi
 
 ## Firearms
 
-Pistols, long guns and shotguns are trained separately: hits, kills and reloads give experience. At levels 0 / 4 / 7 the reload tier is novice, experienced and practised; only the practised tier can reload while aiming
+Pistols, long guns and shotguns are trained separately: hits, kills and reloads give experience. At levels 0 / 4 / 7 the reload tier is novice, experienced and practised; from level 5 you can reload while aiming
 
 - <StatusTag s="verified" d="2026-10-19" /> Per-level aiming sway and recoil recovery
-- <StatusTag s="test" /> The novice and experienced reload animations are still being built on a branch and are not in the main build
+- <StatusTag s="verified" d="2026-10-19" /> P9-01 novice and experienced reloads: experienced watches the gun and is slower than practised; novice looks down at it and is slower still, and at levels 0-3 sometimes gets the magazine in crooked and has to pull it out and try again (about 25% at level 0, down to 6% at level 3). The magazine is never dropped and the reload never fails. Other guns reload as practised for now
+- <StatusTag s="verified" d="2026-10-19" /> From level 5 you can reload while aiming (P9-01)
 
 <GunLevelTable />
 
