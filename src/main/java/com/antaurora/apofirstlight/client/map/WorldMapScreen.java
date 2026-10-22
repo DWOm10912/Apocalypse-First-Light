@@ -45,7 +45,8 @@ import java.util.Map;
  * plays that back. Drag to move, the wheel zooms about the cursor, the jump key (Space) goes back to the player, right
  * click or Esc folds it away. Top bar: the player's position, biome and town; the cursor shows the place under it (position and biome)
  * or, over a town, the town's card: its name as on the signs and, under it, its name in the game language when that is
- * different (user 2026-10-20). Names drawn on the map are the signs' English. Opens only with a map (MapKeys).
+ * different (user 2026-10-20). Names drawn on the map are the signs' English. A start map's pencil marks (StartMap: the
+ * traced way to Linden, the ring round it) are drawn over the print, under the names. Opens only with a map (MapKeys).
  */
 public final class WorldMapScreen extends Screen {
     static final String LANG = "gui.apocalypse_firstlight.map.";
@@ -158,6 +159,7 @@ public final class WorldMapScreen extends Screen {
         tiles.frame();
         MapProgram.Look look = new MapProgram.Look(x0, y0, x1, y1, radius, false, 0, 0, 0, 1, 1);
         MapDraw.tiles(g, tiles, cx, cz, mpg, width / 2F, height / 2F, 0, (float) Math.hypot(width, height) / 2 + 4, look);
+        pencil(g);
         labels(g);
         var player = minecraft.player;
         MapDraw.arrow(g, screenX(player.getX(partialTick)), screenY(player.getZ(partialTick)), minecraft.gameRenderer.getMainCamera().getYRot() + 180, 6);
@@ -257,6 +259,40 @@ public final class WorldMapScreen extends Screen {
         for (double z = Math.ceil(z0 / step) * step; z <= z1; z += step) {
             int sy = Math.round(screenY(z));
             g.fill(0, sy, width, sy + 1, colour);
+        }
+    }
+
+    /** Graphite: a soft pencil's dark grey, a little see-through so the print shows under it. */
+    static final int PENCIL = 0x3F3E43;
+    static final float PENCIL_ALPHA = 0.72F, PENCIL_PX = 2.4F;
+
+    /**
+     * The pencil marks: the traced way as drawn, the ring round a town by hand (a loop a little more than once round,
+     * its radius wandering a few percent and growing as it closes, so the ends overlap off each other), a steady width
+     * of PENCIL_PX real pixels.
+     */
+    private void pencil(GuiGraphics g) {
+        java.util.List<com.antaurora.apofirstlight.map.MapStore.Mark> marks = MapClient.marks();
+        if (marks.isEmpty()) return;
+        float w = (float) (PENCIL_PX / minecraft.getWindow().getGuiScale());
+        for (com.antaurora.apofirstlight.map.MapStore.Mark mk : marks) {
+            float[] q = mk.points();
+            float[] s;
+            if (mk.kind() == com.antaurora.apofirstlight.map.MapStore.Mark.LINE) {
+                s = new float[q.length & ~1];
+                for (int i = 0; i + 1 < q.length; i += 2) { s[i] = screenX(q[i]); s[i + 1] = screenY(q[i + 1]); }
+            } else if (mk.kind() == com.antaurora.apofirstlight.map.MapStore.Mark.LOOP && q.length >= 4) {
+                int n = 96;
+                double start = -2.2, sweep = 2 * Math.PI + 0.45;
+                s = new float[2 * (n + 1)];
+                for (int i = 0; i <= n; i++) {
+                    double t = (double) i / n, a = start + sweep * t;
+                    double k = 1 + 0.025 * Math.sin(3 * a + 1.3) + 0.012 * Math.sin(7 * a + 0.4) + 0.05 * t;
+                    s[2 * i] = screenX(q[0] + q[2] * k * Math.cos(a));
+                    s[2 * i + 1] = screenY(q[1] + q[3] * k * Math.sin(a));
+                }
+            } else continue;
+            MapDraw.stroke(g, s, w, PENCIL, PENCIL_ALPHA);
         }
     }
 

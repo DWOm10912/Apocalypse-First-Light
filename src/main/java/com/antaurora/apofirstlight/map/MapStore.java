@@ -26,10 +26,17 @@ import java.util.zip.GZIPOutputStream;
  * biome ids) in a folder of the world save, {@code data/afl_maps/map_<id>/}: {@code palette.txt} (one biome id a line) and
  * a file per 512 m region, {@code r.<rx>.<rz>.dat} (gzip: version, count, then per chunk its x and z in the region and
  * its 64 samples). Only changed regions are written. When each chunk was sampled is not kept: after a restart a chunk is
- * sampled again when the map comes by. Server thread only.
+ * sampled again when the map comes by. A map may carry pencil marks ({@code marks.dat}: version, count, then per mark its
+ * kind, point count and points; StartMap's traced way and circle). Server thread only.
  */
 public final class MapStore {
     static final int VERSION = 1, REGION = 32;
+
+    /** A pencil mark on the sheet: LINE {x0, z0, x1, z1, ...} or LOOP {cx, cz, rx, rz} (a hand-drawn ring), world metres. */
+    public record Mark(int kind, float[] points) {
+        public static final int LINE = 0, LOOP = 1;
+    }
+
     public final int id;
     private final Path dir;
     private final List<String> palette = new ArrayList<>();
@@ -37,7 +44,8 @@ public final class MapStore {
     private final Map<Long, int[]> chunks = new LinkedHashMap<>();
     private final Map<Long, Long> taken = new HashMap<>();
     private final Set<Long> dirtyRegions = new HashSet<>();
-    private boolean paletteDirty;
+    private boolean paletteDirty, marksDirty;
+    private List<Mark> marks = List.of();
 
     MapStore(int id, Path dir) {
         this.id = id;
@@ -66,6 +74,13 @@ public final class MapStore {
     /** When a chunk was last sampled this run (ms), or null. */
     public Long taken(long key) { return taken.get(key); }
 
+    public List<Mark> marks() { return marks; }
+
+    public void marks(List<Mark> m) {
+        marks = List.copyOf(m);
+        marksDirty = true;
+    }
+
     /** A new sample of a chunk; whether it differs from what was recorded. */
     public boolean put(int cx, int cz, int[] samples, long now) {
         long k = key(cx, cz);
@@ -84,6 +99,20 @@ public final class MapStore {
             for (String line : Files.readAllLines(pal, StandardCharsets.UTF_8))
                 if (!line.isBlank()) { paletteIndex.put(line.trim(), palette.size()); palette.add(line.trim()); }
         if (!Files.isDirectory(dir)) return;
+        Path mk = dir.resolve("marks.dat");
+        if (Files.exists(mk))
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(mk)))) {
+                if (in.readInt() == VERSION) {
+                    List<Mark> m = new ArrayList<>();
+                    for (int c = in.readInt(); c > 0; c--) {
+                        int kind = in.readUnsignedByte();
+                        float[] f = new float[in.readInt()];
+                        for (int i = 0; i < f.length; i++) f[i] = in.readFloat();
+                        m.add(new Mark(kind, f));
+                    }
+                    marks = List.copyOf(m);
+                }
+            }
         try (Stream<Path> files = Files.list(dir)) {
             for (Path f : (Iterable<Path>) files::iterator) {
                 String n = f.getFileName().toString();
@@ -107,8 +136,22 @@ public final class MapStore {
 
     /** Writes the palette and the changed regions (each to a temporary file, then moved over the old one). */
     void save() throws IOException {
-        if (!paletteDirty && dirtyRegions.isEmpty()) return;
+        if (!paletteDirty && !marksDirty && dirtyRegions.isEmpty()) return;
         Files.createDirectories(dir);
+        if (marksDirty) {
+            write(dir.resolve("marks.dat"), raw -> {
+                DataOutputStream out = new DataOutputStream(raw);
+                out.writeInt(VERSION);
+                out.writeInt(marks.size());
+                for (Mark m : marks) {
+                    out.writeByte(m.kind());
+                    out.writeInt(m.points().length);
+                    for (float f : m.points()) out.writeFloat(f);
+                }
+                out.flush();
+            }, false);
+            marksDirty = false;
+        }
         if (paletteDirty) {
             write(dir.resolve("palette.txt"), out -> out.write(String.join("\n", palette).getBytes(StandardCharsets.UTF_8)), false);
             paletteDirty = false;

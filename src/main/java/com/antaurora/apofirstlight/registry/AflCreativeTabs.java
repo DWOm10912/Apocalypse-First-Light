@@ -267,6 +267,7 @@ public final class AflCreativeTabs {
             AflItems.GEIGER_COUNTER,
             AflItems.FLIP_LIGHTER,
             AflItems.MAP,
+            AflItems.PRAIRIE_ROAD_MAP,
             AflItems.COMPASS,
             AflItems.FIELD_CHEST_RIG,
             AflItems.CANVAS_BACKPACK,

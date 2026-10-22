@@ -37,8 +37,9 @@ import java.util.stream.Stream;
  * carried (item tag {@value #TAG}); its record is a MapStore in the world save. For each player carrying a map (the first
  * found: inventory, then the grids) the chunks within {@link #RADIUS} are sampled into that map, again after
  * {@link #RESAMPLE_MS}, and the player's client gets the map's record (all of it when the player starts carrying it,
- * nearest first, then each changed chunk); every other player carrying the same map gets the changes too. Records are
- * written with the world's saves and dropped from memory when no one carries them.
+ * nearest first, then each changed chunk, and its pencil marks); every other player carrying the same map gets the
+ * changes too. A start map's record is filled from the plan at once (StartMap, {@link #fill}). Records are written with
+ * the world's saves and dropped from memory when no one carries them.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class MapServer {
@@ -159,6 +160,7 @@ public final class MapServer {
                     List<Long> keys = new ArrayList<>(s.chunks().keySet());
                     keys.sort(Comparator.comparingDouble(k -> sq((int) (k >> 32) * 16 + 8 - px) + sq((int) (long) k * 16 + 8 - pz)));
                     view.queue.addAll(keys);
+                    if (!s.marks().isEmpty()) AflNetwork.mapToPlayer(player, new MapPackets.Marks(id, s.marks()));
                 }
             }
         }
@@ -193,6 +195,34 @@ public final class MapServer {
                     if (store.put(cx, cz, s, now))
                         for (View v : VIEWS.values()) if (v.map == store.id) v.queue.add(k);
                 }
+    }
+
+    /**
+     * A start map's record from the plan (StartMap#make, on the server thread): the chunks' samples (biomes as MapStyle
+     * indices, turned into the map's palette) and its marks; whoever carries it gets them. A chunk sampled here counts as
+     * just sampled, so the real ground replaces it a little later round the player.
+     */
+    static void fill(MinecraftServer server, int id, Map<Long, int[]> ground, List<MapStore.Mark> marks) {
+        MapStore store = store(server, id);
+        long now = System.currentTimeMillis();
+        List<Long> changed = new ArrayList<>();
+        for (Map.Entry<Long, int[]> e : ground.entrySet()) {
+            long k = e.getKey();
+            if (store.chunk(k) != null) continue;
+            int[] s = e.getValue().clone();
+            for (int i = 0; i < s.length; i++) {
+                String b = MapStyle.registryId(MapGround.biome(s[i]));
+                s[i] = MapGround.pack(MapGround.y(s[i]), b == null ? -1 : store.biome(b), MapGround.water(s[i]));
+            }
+            if (store.put((int) (k >> 32), (int) k, s, now)) changed.add(k);
+        }
+        store.marks(marks);
+        for (Map.Entry<UUID, View> e : VIEWS.entrySet()) {
+            if (e.getValue().map != id) continue;
+            e.getValue().queue.addAll(changed);
+            ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+            if (p != null) AflNetwork.mapToPlayer(p, new MapPackets.Marks(id, store.marks()));
+        }
     }
 
     private static void sync(ServerPlayer player, View view, MapStore store) {

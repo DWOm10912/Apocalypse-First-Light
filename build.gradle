@@ -605,6 +605,14 @@ tasks.register('countyCheck', JavaExec) {
     if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
 }
 
+tasks.register('startMapCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.StartMapCheck'
+    maxHeapSize = '6g'
+    if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
+}
+
 // The wiki's HUD status icons (wiki/public/img/status/*.png), drawn offline with the HUD's own code
 tasks.register('wikiStatusIcons', JavaExec) {
     dependsOn tasks.named('testClasses')
