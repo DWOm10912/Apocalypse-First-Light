@@ -1,0 +1,37 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/town/shingle_charcoal"
+  },
+  "item": [
+    [
+      "roof/shingle_charcoal_lower",
+      0
+    ],
+    [
+      "roof/shingle_charcoal_eave_lower",
+      0
+    ],
+    [
+      "roof/shingle_charcoal_rake_neg_lower",
+      0
+    ],
+    [
+      "roof/shingle_charcoal_rake_pos_lower",
+      0
+    ],
+    [
+      "roof/shingle_charcoal_eave_corner_neg_lower",
+      0
+    ],
+    [
+      "roof/shingle_charcoal_eave_corner_pos_lower",
+      0
+    ],
+    [
+      "roof/under_lower",
+      0
+    ]
+  ]
+}

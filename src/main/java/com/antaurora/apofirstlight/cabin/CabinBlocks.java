@@ -82,10 +82,10 @@ public final class CabinBlocks {
 
     private CabinBlocks() {}
 
-    static ResourceLocation id(String path) { return new ResourceLocation(ApocalypseFirstLight.MOD_ID, path); }
+    public static ResourceLocation id(String path) { return new ResourceLocation(ApocalypseFirstLight.MOD_ID, path); }
 
     /** Quarter turns clockwise from north (the pieces are drawn facing north). */
-    static int turn(Direction d) { return (d.get2DDataValue() + 2) & 3; }
+    public static int turn(Direction d) { return (d.get2DDataValue() + 2) & 3; }
 
     private static BlockBehaviour.Properties wood(MapColor color, float strength) {
         return BlockBehaviour.Properties.of().mapColor(color).instrument(NoteBlockInstrument.BASS).strength(strength, 3.0F).sound(SoundType.WOOD).ignitedByLava();
@@ -183,19 +183,20 @@ public final class CabinBlocks {
         WoodFurnitureV2.register(event);
     }
 
-    /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */
-    public static void tabs(BuildCreativeModeTabContentsEvent event, ItemStack after) {
+    /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack); the last stack. */
+    public static ItemStack tabs(BuildCreativeModeTabContentsEvent event, ItemStack after) {
         for (Item item : ITEMS) {
             ItemStack stack = new ItemStack(item);
             event.getEntries().putAfter(after, stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             after = stack;
         }
+        return after;
     }
 
     // ------------------------------------------------------------------------------------------------ shapes
 
     /** Boxes (pixels) drawn for the north side, turned r quarters clockwise seen from above: (x, z) -> (16 - z, x). */
-    static VoxelShape turned(int r, double[]... boxes) {
+    public static VoxelShape turned(int r, double[]... boxes) {
         VoxelShape out = Shapes.empty();
         for (double[] b : boxes) {
             double x0 = b[0], z0 = b[2], x1 = b[3], z1 = b[5];
@@ -209,7 +210,7 @@ public final class CabinBlocks {
     }
 
     /** The boxes mirrored across x 8 (a left-hinged door's panel from the right-hinged one). */
-    static double[][] mirroredX(double[][] boxes) {
+    public static double[][] mirroredX(double[][] boxes) {
         double[][] out = new double[boxes.length][];
         for (int i = 0; i < boxes.length; i++) {
             double[] b = boxes[i];
@@ -392,7 +393,7 @@ public final class CabinBlocks {
      * a window or a door's upper half, and the boards' battens on the sides the wall has them), a stove pipe below (a boot
      * round it). The header beam under the eave is the state's {@code beam} (set by the builder).
      */
-    public static final class Roof extends Block implements CabinPieces {
+    public static class Roof extends Block implements CabinPieces {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final EnumProperty<RoofShape> SHAPE = EnumProperty.create("shape", RoofShape.class);
         public static final BooleanProperty BEAM = BooleanProperty.create("beam");
@@ -426,7 +427,7 @@ public final class CabinBlocks {
 
         final String material;
 
-        Roof(String material, Properties p) {
+        protected Roof(String material, Properties p) {
             super(p);
             this.material = material;
             registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(SHAPE, RoofShape.LOWER).setValue(BEAM, false));
@@ -453,12 +454,14 @@ public final class CabinBlocks {
             boolean pipe = below.getBlock() instanceof StovePipe && s.getValue(SHAPE) != RoofShape.RIDGE;
             int sh = s.getValue(SHAPE).ordinal(), r = turn(s.getValue(FACING)), key = (sh * 4 + r) * 4 + (fill ? 1 : 0) + (pipe ? 2 : 0);
             VoxelShape v = SLABS[key];
-            if (v == null) {
-                v = turned(r, (fill ? CabinShapeData.ROOF_FILL : CabinShapeData.ROOF)[sh]);
-                if (pipe) v = Shapes.or(v, turned(0, CabinShapeData.PIPE)).optimize();
-                SLABS[key] = v;
-            }
+            if (v == null) SLABS[key] = v = slabShape(s.getValue(SHAPE), r, fill, pipe);
             return v;
+        }
+
+        /** The bare slab of a shape turned r quarters, or filled down to the cell's bottom (Town House A's shingle roofs, 2026-10-21). */
+        public static VoxelShape slabShape(RoofShape shape, int r, boolean fill, boolean pipe) {
+            VoxelShape v = turned(r, (fill ? CabinShapeData.ROOF_FILL : CabinShapeData.ROOF)[shape.ordinal()]);
+            return pipe ? Shapes.or(v, turned(0, CabinShapeData.PIPE)).optimize() : v;
         }
 
         @Override

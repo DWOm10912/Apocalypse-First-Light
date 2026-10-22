@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "apocalypse_firstlight:block/town/linoleum",
+    "side": "apocalypse_firstlight:block/wood/red_oak_planks",
+    "bottom": "apocalypse_firstlight:block/wood/red_oak_planks"
+  }
+}

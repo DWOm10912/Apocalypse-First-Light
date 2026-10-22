@@ -1,0 +1,56 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/town/plaster",
+    "p": "apocalypse_firstlight:block/town/plaster",
+    "s": "apocalypse_firstlight:block/town/trim_white"
+  },
+  "elements": [
+    {
+      "from": [
+        5.6,
+        0,
+        0
+      ],
+      "to": [
+        6,
+        1.4,
+        5.6
+      ],
+      "faces": {
+        "west": {
+          "texture": "#s"
+        },
+        "up": {
+          "texture": "#s"
+        },
+        "north": {
+          "texture": "#s"
+        }
+      }
+    },
+    {
+      "from": [
+        10,
+        0,
+        0
+      ],
+      "to": [
+        10.4,
+        1.4,
+        5.6
+      ],
+      "faces": {
+        "east": {
+          "texture": "#s"
+        },
+        "up": {
+          "texture": "#s"
+        },
+        "north": {
+          "texture": "#s"
+        }
+      }
+    }
+  ]
+}

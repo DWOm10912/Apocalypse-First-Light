@@ -1,0 +1,258 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/town/limestone",
+    "l": "apocalypse_firstlight:block/town/limestone",
+    "t": "apocalypse_firstlight:block/town/terracotta",
+    "f": "apocalypse_firstlight:block/town/flue_top"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        -1
+      ],
+      "to": [
+        16,
+        2,
+        17
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "south": {
+          "uv": [
+            0,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "west": {
+          "uv": [
+            0,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l",
+          "cullface": "west"
+        },
+        "east": {
+          "uv": [
+            0,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        -1,
+        0,
+        -1
+      ],
+      "to": [
+        0,
+        2,
+        17
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            14,
+            1,
+            16
+          ],
+          "texture": "#l"
+        },
+        "south": {
+          "uv": [
+            15,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "west": {
+          "uv": [
+            0,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1,
+            16
+          ],
+          "texture": "#l"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            16
+          ],
+          "texture": "#l"
+        }
+      }
+    },
+    {
+      "from": [
+        16,
+        0,
+        -1
+      ],
+      "to": [
+        17,
+        2,
+        17
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            14,
+            1,
+            16
+          ],
+          "texture": "#l"
+        },
+        "south": {
+          "uv": [
+            15,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "west": {
+          "uv": [
+            0,
+            14,
+            16,
+            16
+          ],
+          "texture": "#l"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            1,
+            16
+          ],
+          "texture": "#l"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            16
+          ],
+          "texture": "#l"
+        }
+      }
+    },
+    {
+      "from": [
+        4.5,
+        2,
+        4.5
+      ],
+      "to": [
+        11.5,
+        5,
+        11.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "east": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "south": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "west": {
+          "uv": [
+            4.5,
+            11,
+            11.5,
+            14
+          ],
+          "texture": "#t"
+        },
+        "up": {
+          "uv": [
+            4.5,
+            4.5,
+            11.5,
+            11.5
+          ],
+          "texture": "#f"
+        }
+      }
+    }
+  ]
+}

@@ -2,6 +2,9 @@
   "replace": false,
   "values": [
     "apocalypse_firstlight:white_oak_cabin_door",
-    "apocalypse_firstlight:white_oak_board_door"
+    "apocalypse_firstlight:white_oak_board_door",
+    "apocalypse_firstlight:house_front_door",
+    "apocalypse_firstlight:house_back_door",
+    "apocalypse_firstlight:interior_panel_door"
   ]
 }

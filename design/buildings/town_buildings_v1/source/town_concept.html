@@ -1,0 +1,484 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Town Buildings Concept</title><style>html,body{margin:0;background:#222;overflow:hidden}canvas{display:block}</style></head><body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// AFL town buildings concept scene, round 1 (design source, not a game asset; docs/worldgen/town_buildings_concept_v1.md).
+// Metres = blocks. X along the street (left to right seen from the street), Z from the street into the lot, Y up.
+// A building's front wall is at z = 0, the street side is -z. One view per page load: ?view=<name>&w=1600&h=1000;
+// render with headless Chrome --screenshot (see the doc). Low-poly concept look, canvas textures, no game assets.
+const Q = new URLSearchParams(location.search), VIEW = Q.get('view') || 'houses_compare';
+const W = +(Q.get('w') || 1600), H = +(Q.get('h') || 1000);
+const r = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+r.setSize(W, H); r.setPixelRatio(1); r.outputEncoding = THREE.sRGBEncoding;
+r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(r.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xb7c7d2);
+scene.fog = new THREE.Fog(0xb7c7d2, 140, 320);
+scene.add(new THREE.HemisphereLight(0xe4ecf2, 0x6a6650, 0.62));
+const sun = new THREE.DirectionalLight(0xfff0dc, 1.25); sun.position.set(-40, 60, -55); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -70, right: 70, top: 70, bottom: -70, near: 1, far: 220});
+sun.shadow.bias = -0.0003; scene.add(sun); scene.add(sun.target);
+
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function rgb(hex, k) { const c = new THREE.Color(hex); const f = k >= 0 ? v => v + (1 - v) * k : v => v * (1 + k); return 'rgb(' + [c.r, c.g, c.b].map(v => Math.round(clamp(f(v), 0, 1) * 255)).join(',') + ')'; }
+
+// ---------------------------------------------------------------- textures: one tile = 1 m
+const TEX = {};
+function canvasTex(key, w, h, draw) {
+  if (TEX[key]) return TEX[key];
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.encoding = THREE.sRGBEncoding;
+  return TEX[key] = t;
+}
+function grain(g, w, h, a) { const im = g.getImageData(0, 0, w, h); for (let i = 0; i < w * h; i++) { const n = (rnd() - 0.5) * a; im.data[i * 4] += n; im.data[i * 4 + 1] += n; im.data[i * 4 + 2] += n; } g.putImageData(im, 0, 0); }
+// lap siding: 0.125 m exposure, a shadow line under each board's butt
+const siding = col => canvasTex('sid' + col, 256, 256, (g, w, h) => {
+  const n = 8, bh = h / n;
+  for (let k = 0; k < n; k++) { const y0 = k * bh, gr = g.createLinearGradient(0, y0, 0, y0 + bh);
+    gr.addColorStop(0, rgb(col, 0.06)); gr.addColorStop(0.85, rgb(col, -0.04)); gr.addColorStop(0.9, rgb(col, -0.32)); gr.addColorStop(1, rgb(col, -0.2));
+    g.fillStyle = gr; g.fillRect(0, y0, w, bh); }
+  grain(g, w, h, 6);
+});
+// brick, running bond, 8 courses x 4.5 bricks per metre (modular 203 x 67 mm with joints)
+const brick = (col, mortar, key) => canvasTex('br' + key, 512, 512, (g, w, h) => {
+  g.fillStyle = mortar; g.fillRect(0, 0, w, h);
+  const rows = 15, bw = w / 4.5, rh = h / rows;
+  for (let rI = 0; rI < rows; rI++) for (let c = -1; c < 6; c++) {
+    const x = c * bw + (rI % 2 ? bw / 2 : 0), k = (rnd() - 0.5) * 0.22;
+    g.fillStyle = rgb(col, k); g.fillRect(x + 3, rI * rh + 3, bw - 6, rh - 6);
+  }
+  grain(g, w, h, 14);
+});
+// asphalt 3-tab shingles: 0.14 m courses, 0.33 m tabs
+const shingle = col => canvasTex('sh' + col, 256, 256, (g, w, h) => {
+  const rows = 7, rh = h / rows, tw = w / 3;
+  for (let rI = 0; rI < rows; rI++) for (let c = -1; c < 4; c++) {
+    const x = c * tw + (rI % 2 ? tw / 2 : 0); g.fillStyle = rgb(col, (rnd() - 0.5) * 0.18); g.fillRect(x, rI * rh, tw, rh);
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(x, rI * rh + rh - 3, tw, 3); g.fillRect(x, rI * rh, 2, rh);
+  }
+  grain(g, w, h, 18);
+});
+const flat = (col, a) => canvasTex('fl' + col + a, 64, 64, (g, w, h) => { g.fillStyle = col; g.fillRect(0, 0, w, h); grain(g, w, h, a || 8); });
+const concrete = (col, joint) => canvasTex('cc' + col + joint, 256, 256, (g, w, h) => {
+  g.fillStyle = col; g.fillRect(0, 0, w, h); grain(g, w, h, 16);
+  if (joint) { g.fillStyle = 'rgba(40,40,40,0.35)'; g.fillRect(0, 0, w, 2); g.fillRect(0, 0, 2, h); }
+});
+const asphaltT = canvasTex('asph', 256, 256, (g, w, h) => { g.fillStyle = '#3b3d3f'; g.fillRect(0, 0, w, h); grain(g, w, h, 26); });
+const grassT = canvasTex('grass', 256, 256, (g, w, h) => { g.fillStyle = '#56703a'; g.fillRect(0, 0, w, h); grain(g, w, h, 30);
+  for (let i = 0; i < 600; i++) { g.fillStyle = 'rgba(' + (60 + rnd() * 50) + ',' + (90 + rnd() * 50) + ',40,0.5)'; g.fillRect(rnd() * w, rnd() * h, 2, 4); } });
+const gravelT = canvasTex('grav', 256, 256, (g, w, h) => { g.fillStyle = '#8b8478'; g.fillRect(0, 0, w, h); grain(g, w, h, 60); });
+
+const MAT = {};
+function M(key, map, opt) {
+  if (MAT[key]) return MAT[key];
+  return MAT[key] = new THREE.MeshStandardMaterial(Object.assign({map, roughness: 0.9, metalness: 0}, opt || {}));
+}
+const C = (hex, opt) => M('c' + hex + JSON.stringify(opt || {}), null, Object.assign({color: hex}, opt || {}));
+const GLASS = () => C(0x2b3a44, {roughness: 0.12, metalness: 0.55, envMapIntensity: 1});
+const SHOPGLASS = () => C(0x24343d, {roughness: 0.08, metalness: 0.65});
+
+// ---------------------------------------------------------------- geometry helpers
+function boxGeo(sx, sy, sz) {
+  const g = new THREE.BoxGeometry(sx, sy, sz), uv = g.attributes.uv;
+  const dims = [[sz, sy], [sz, sy], [sx, sz], [sx, sz], [sx, sy], [sx, sy]];
+  for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * dims[f][0], uv.getY(i) * dims[f][1]); }
+  return g;
+}
+function B(g, x0, y0, z0, x1, y1, z1, m) {
+  const me = new THREE.Mesh(boxGeo(Math.abs(x1 - x0), Math.abs(y1 - y0), Math.abs(z1 - z0)), m);
+  me.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); me.castShadow = me.receiveShadow = true; g.add(me); return me;
+}
+// a gable roof in local (a, b): a along the ridge, b across it; built with the ridge on x, then turned for axis 'z'
+function gable(g, o) {
+  const grp = new THREE.Group(); g.add(grp);
+  let a0, a1, b0, b1;
+  if (o.axis === 'x') { a0 = o.x0; a1 = o.x1; b0 = o.z0; b1 = o.z1; }
+  else { a0 = o.z0; a1 = o.z1; b0 = -o.x1; b1 = -o.x0; grp.rotation.y = -Math.PI / 2; }
+  const p = o.pitch, run = (b1 - b0) / 2, bc = (b0 + b1) / 2, ridge = o.eave + run * p, oh = o.oh, th = o.th || 0.16;
+  const ang = Math.atan(p), L = (run + oh) / Math.cos(ang), len = a1 - a0 + (o.rakeA0 ?? o.rake) + (o.rakeA1 ?? o.rake);
+  const ac = (a0 - (o.rakeA0 ?? o.rake) + a1 + (o.rakeA1 ?? o.rake)) / 2;
+  for (const s of [-1, 1]) {
+    const me = new THREE.Mesh(boxGeo(len, th, L), o.mat);
+    const mb = bc + s * (run + oh) / 2 * -1 * -1, my = ridge - (run + oh) * p / 2;   // slope centre
+    me.position.set(ac, my + th / 2 / Math.cos(ang), s < 0 ? bc - (run + oh) / 2 : bc + (run + oh) / 2);
+    me.rotation.x = s < 0 ? -ang : ang; me.castShadow = me.receiveShadow = true; grp.add(me);
+    // fascia board along the eave
+    const fz = s < 0 ? b0 - oh : b1 + oh, fy = o.eave - oh * p;
+    const f = new THREE.Mesh(boxGeo(len, 0.2, 0.05), o.trim); f.position.set(ac, fy - 0.02, fz); f.castShadow = true; grp.add(f);
+  }
+  // rake boards and the ridge cap
+  const cap = new THREE.Mesh(boxGeo(len, 0.08, 0.3), o.mat); cap.position.set(ac, ridge + th + 0.02, bc); grp.add(cap);
+  // gable infill triangles at both ends (unless an end is buried in another roof)
+  const sh = new THREE.Shape(); sh.moveTo(b0, o.eave); sh.lineTo(b1, o.eave); sh.lineTo(bc, ridge); sh.lineTo(b0, o.eave);
+  const d = o.wallTh || 0.3;
+  for (const end of o.ends || ['a0', 'a1']) {
+    const geo = new THREE.ExtrudeGeometry(sh, {depth: d, bevelEnabled: false});
+    const me = new THREE.Mesh(geo, o.gableMat); me.castShadow = me.receiveShadow = true;
+    me.rotation.y = -Math.PI / 2; me.position.x = end === 'a0' ? a0 + d : a1; grp.add(me);
+    // rake trim
+    for (const s of [-1, 1]) {
+      const rl = (run + oh) / Math.cos(ang) + 0.05, rk = new THREE.Mesh(boxGeo(0.05, 0.2, rl), o.trim);
+      rk.position.set(end === 'a0' ? a0 - (o.rakeA0 ?? o.rake) : a1 + (o.rakeA1 ?? o.rake), ridge - (run + oh) * p / 2 + 0.02, s < 0 ? bc - (run + oh) / 2 : bc + (run + oh) / 2);
+      rk.rotation.x = s < 0 ? -ang : ang; grp.add(rk);
+    }
+  }
+  return {ridge};
+}
+// wall-mounted parts are built facing -z in a local frame (x along the wall, outward = -z) and turned onto a face
+const FACE = {N: 0, S: Math.PI, E: -Math.PI / 2, W: Math.PI / 2};
+function onFace(g, face, x, y, z) { const grp = new THREE.Group(); grp.rotation.y = FACE[face]; grp.position.set(x, y, z); g.add(grp); return grp; }
+// double-hung window w x h, lites 'a/b' per sash (columns x rows), centre at local x = 0, sill at y = 0
+function win(g, face, x, y, z, w, h, o) {
+  o = o || {}; const q = onFace(g, face, x, y, z), tr = o.trim || C(0xf2efe6), fr = 0.09;
+  B(q, -w / 2, 0, -0.06, w / 2, h, 0.02, GLASS());
+  B(q, -w / 2 - fr, -0.04, -0.07, -w / 2, h + fr, 0.02, tr); B(q, w / 2, -0.04, -0.07, w / 2 + fr, h + fr, 0.02, tr);
+  B(q, -w / 2 - fr, h, -0.07, w / 2 + fr, h + fr, 0.02, tr);
+  B(q, -w / 2 - fr - 0.04, -0.07, -0.13, w / 2 + fr + 0.04, 0, 0.02, o.sill || tr);
+  if (!o.fixed) B(q, -w / 2, h / 2 - 0.03, -0.075, w / 2, h / 2 + 0.03, -0.02, tr);
+  const cols = o.cols || 1, rows = o.rows || 1, sashH = o.fixed ? h : h / 2;
+  for (let s = 0; s < (o.fixed ? 1 : 2); s++) for (let c = 1; c < cols; c++) B(q, -w / 2 + w * c / cols - 0.015, s * sashH, -0.07, -w / 2 + w * c / cols + 0.015, (s + 1) * sashH, -0.03, tr);
+  for (let s = 0; s < (o.fixed ? 1 : 2); s++) for (let rr = 1; rr < rows; rr++) B(q, -w / 2, s * sashH + sashH * rr / rows - 0.015, -0.07, w / 2, s * sashH + sashH * rr / rows + 0.015, -0.03, tr);
+  if (o.shutters) for (const sx of [-1, 1]) B(q, sx * (w / 2 + fr + 0.04), 0, -0.06, sx * (w / 2 + fr + 0.04 + w * 0.48), h, -0.01, o.shutters);
+  if (o.lintel) B(q, -w / 2 - fr - 0.1, h + fr, -0.06, w / 2 + fr + 0.1, h + fr + 0.22, 0.02, o.lintel);
+  return q;
+}
+function door(g, face, x, y, z, w, h, col, o) {
+  o = o || {}; const q = onFace(g, face, x, y, z), tr = o.trim || C(0xf2efe6);
+  B(q, -w / 2, 0, -0.04, w / 2, h, 0.02, C(col));
+  if (o.lite) B(q, -w / 2 + 0.15, h * 0.62, -0.05, w / 2 - 0.15, h - 0.15, -0.03, GLASS());
+  for (const s of [-1, 1]) B(q, s * w / 2 - 0.05 + s * 0.05, 0, -0.07, s * w / 2 + 0.05 + s * 0.05, h + 0.1, 0.02, tr);
+  B(q, -w / 2 - 0.1, h, -0.07, w / 2 + 0.1, h + 0.12, 0.02, tr);
+  return q;
+}
+function tree(g, x, z, s, col) {
+  const t = new THREE.Group(); g.add(t); t.position.set(x, 0, z);
+  B(t, -0.18 * s, 0, -0.18 * s, 0.18 * s, 3.2 * s, 0.18 * s, C(0x5a4636));
+  const leaf = C(col || 0x3c5626, {roughness: 1});
+  for (let i = 0; i < 6; i++) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry((1.3 + rnd() * 0.8) * s, 1), leaf);
+    m.position.set((rnd() - 0.5) * 2.4 * s, (3.6 + rnd() * 2.2) * s, (rnd() - 0.5) * 2.4 * s); m.castShadow = true; t.add(m);
+  }
+}
+function shrub(g, x, z, s) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55 * s, 1), C(0x3f5a2c, {roughness: 1})); m.scale.y = 0.7; m.position.set(x, 0.32 * s, z); m.castShadow = true; g.add(m); }
+
+// ---------------------------------------------------------------- ground and streets
+function ground(g, x0, x1, z0, z1) { const m = new THREE.Mesh(boxGeo(x1 - x0, 0.1, z1 - z0), M('grass', grassT)); m.position.set((x0 + x1) / 2, -0.05, (z0 + z1) / 2); m.receiveShadow = true; g.add(m); }
+// residential street: lots start at z = -7.5 (front setback), sidewalk, parkway, curb, 9 m street
+function resStreet(g, x0, x1) {
+  ground(g, x0, x1, -11, 110); ground(g, x0, x1, -80, -20.2);   // lawns, then the far side
+  B(g, x0, 0, -9.3, x1, 0.04, -7.8, M('walk', concrete('#a9a69c', 1)));
+  B(g, x0, -0.15, -20.2, x1, 0.0, -11, M('asph', asphaltT));
+  B(g, x0, 0, -11.15, x1, 0.15, -11, C(0xa6a39a));
+}
+function mainStreet(g, x0, x1) {
+  ground(g, x0, x1, 0, 110); ground(g, x0, x1, -80, -20);
+  B(g, x0, 0, -4, x1, 0.15, 0, M('walk2', concrete('#aaa79e', 1)));
+  B(g, x0, -0.05, -20, x1, 0.0, -4, M('asph', asphaltT));
+  for (let x = Math.ceil(x0 / 6) * 6; x < x1; x += 6) B(g, x, 0.0, -6.6, x + 0.12, 0.01, -4, C(0xe8e6de));   // parking stalls
+  B(g, x0, 0.0, -12.1, x1, 0.01, -11.95, C(0xd8b440));
+  B(g, x0, 0, 22, x1, 0.04, 34, M('gravel', gravelT));   // the back lot / alley
+}
+function streetLamp(g, x, z) {
+  B(g, x - 0.08, 0.15, z - 0.08, x + 0.08, 5.2, z + 0.08, C(0x2d3134, {metalness: 0.5, roughness: 0.5}));
+  B(g, x - 0.06, 5.0, z - 0.06, x + 0.06, 5.1, z + 1.2, C(0x2d3134));
+  B(g, x - 0.22, 4.86, z + 0.9, x + 0.22, 5.04, z + 1.5, C(0xdedbd0, {emissive: 0x332f22}));
+}
+function driveway(g, x0, x1, z1) { B(g, x0, 0, -11, x1, 0.05, z1, M('drive', concrete('#b2aea4', 1))); }
+
+// ---------------------------------------------------------------- house A: minimal traditional (1935-1950)
+// main block 13 x 10 side-gabled at 1:2 (6:12, the cabin roof pitch), front-gable bay 5 x 2 on the left,
+// door in the corner beside the bay, exterior brick chimney on the left gable, small concrete stoop.
+const PAL = {
+  A: [{sid: '#e9e5da', sh: '#4a4b4c', door: 0x7a2f2a, tr: 0xf4f1e8}, {sid: '#c9d3c0', sh: '#4f4a43', door: 0x2f4a3a, tr: 0xf2efe6},
+      {sid: '#e6dcbc', sh: '#3d4648', door: 0x2c3f57, tr: 0xf4f1e8}, {sid: '#c2cdd6', sh: '#50463d', door: 0x6b2c2c, tr: 0xf4f1e8},
+      {sid: '#d8cfc2', sh: '#3f3f3f', door: 0x3c3a36, tr: 0xf4f1e8}],
+};
+const FL = 0.5;   // floor top above the yard (the lot pad: 0.0-1.0 m, docs/worldgen/town_buildings_v1.md 2)
+function houseA(g, ox, o) {
+  o = o || {}; const p = o.pal || PAL.A[0], h = new THREE.Group(); g.add(h); h.position.x = ox;
+  if (o.mirror) { h.scale.x = -1; h.position.x = ox + 13; }
+  const sid = M('sid' + p.sid, siding(p.sid)), tr = C(p.tr), found = M('found', concrete('#9d9a92'));
+  const eave = FL + 3.0;
+  B(h, 0, 0, 0, 13, FL, 10, found); B(h, 0, -2, -2, 5, FL, 0, found);
+  B(h, 0, FL, 0, 13, eave, 10, sid); B(h, 0, FL, -2, 5, eave, 0, sid);
+  // corner boards
+  for (const [x, z] of [[0, -2], [5, -2], [13, 0], [0, 10], [13, 10]]) B(h, x - 0.06, FL, z - 0.06, x + 0.06, eave, z + 0.06, tr);
+  const shm = M('sh' + p.sh, shingle(p.sh));
+  gable(h, {axis: 'x', x0: 0, x1: 13, z0: 0, z1: 10, eave, pitch: 0.5, oh: 0.35, rake: 0.2, mat: shm, trim: tr, gableMat: sid});
+  gable(h, {axis: 'z', x0: 0, x1: 5, z0: -2, z1: 2.4, eave, pitch: 0.5, oh: 0.35, rake: 0.25, rakeA1: 0, mat: shm, trim: tr, gableMat: sid, ends: ['a0']});
+  // bay: picture window (fixed centre, narrow sashes), gable louvre
+  const yS = FL + 0.75;
+  win(h, 'N', 2.5, yS, -2, 1.8, 1.45, {fixed: true, trim: tr}); win(h, 'N', 1.05, yS, -2, 0.55, 1.45, {trim: tr}); win(h, 'N', 3.95, yS, -2, 0.55, 1.45, {trim: tr});
+  B(h, 2.2, eave + 0.45, -2.06, 2.8, eave + 0.95, -2.0, C(0xd9d5ca));
+  // entry: door at x 5.6, stoop, iron rail
+  door(h, 'N', 6.0, FL, 0, 0.92, 2.05, p.door, {lite: true, trim: tr});
+  B(h, 5.1, 0, -1.5, 7.2, FL, 0, found); B(h, 5.1, 0, -1.85, 7.2, FL / 2, -1.5, found);
+  B(h, 7.15, FL, -1.5, 7.2, FL + 0.9, -0.05, C(0x1d1f20)); B(h, 7.1, FL + 0.86, -1.5, 7.2, FL + 0.92, -0.05, C(0x1d1f20));
+  B(h, 5.4, eave - 0.05, -1.1, 7.0, eave + 0.05, 0, tr);   // small flat hood over the door
+  // front: two bedroom windows, side and rear windows
+  win(h, 'N', 8.6, yS, 0, 0.9, 1.45, {cols: 2, rows: 1, trim: tr}); win(h, 'N', 11.2, yS, 0, 0.9, 1.45, {cols: 2, rows: 1, trim: tr});
+  win(h, 'E', 13, yS, 2.5, 0.9, 1.45, {cols: 2, trim: tr}); win(h, 'E', 13, yS + 0.55, 6.8, 0.6, 0.8, {trim: tr}); win(h, 'E', 13, yS, 8.6, 0.9, 1.45, {cols: 2, trim: tr});
+  win(h, 'W', 0, yS, 1.3, 0.6, 1.1, {trim: tr}); win(h, 'W', 0, yS, 5.0, 0.6, 1.1, {trim: tr}); win(h, 'W', 0, yS, 8.2, 0.9, 1.45, {cols: 2, trim: tr});
+  win(h, 'S', 4.0, yS + 0.3, 10, 1.2, 1.1, {cols: 2, trim: tr}); win(h, 'S', 7.5, yS, 10, 0.9, 1.45, {cols: 2, trim: tr});
+  door(h, 'S', 2.0, FL, 10, 0.86, 2.05, 0xe8e4da, {lite: true, trim: tr});
+  B(h, 1.2, 0, 10, 2.9, FL, 11.1, found);
+  // chimney on the left gable, behind the living room
+  const br = M('brA', brick('#9a4a36', '#b9ada0', 'A'));
+  B(h, -0.75, 0, 2.6, 0, eave - 0.6, 4.2, br); B(h, -0.6, eave - 0.6, 2.85, 0.1, eave + 3.3, 3.95, br);
+  B(h, -0.7, eave + 3.3, 2.75, 0.2, eave + 3.42, 4.05, C(0x8f8a80));
+  // gutters and downspouts
+  for (const z of [-0.37, 10.37]) B(h, -0.2, eave - 0.25, z - 0.06, 13.2, eave - 0.12, z + 0.06, C(0xe6e3da));
+  B(h, 12.95, 0.1, -0.42, 13.05, eave - 0.2, -0.32, C(0xe6e3da));
+  if (o.yard !== false) { shrub(h, 1.0, -2.6, 1); shrub(h, 3.8, -2.6, 0.9); shrub(h, 9.0, -0.6, 1); shrub(h, 11.6, -0.6, 1.1); }
+  // front walk to the sidewalk
+  B(h, 5.6, 0, -7.6, 6.8, 0.04, -1.85, M('walk', concrete('#a9a69c', 1)));
+  return h;
+}
+
+// ---------------------------------------------------------------- house B: Cape Cod (1.5 storeys, 1:1 roof, two dormers)
+function houseB(g, ox, o) {
+  o = o || {}; const h = new THREE.Group(); g.add(h); h.position.x = ox;
+  const sidc = '#eeebe2', sid = M('sid' + sidc, siding(sidc)), tr = C(0xf6f4ee), found = M('found', concrete('#9d9a92'));
+  const eave = FL + 3.0, shm = M('sh#55524c', shingle('#55524c')), shut = C(0x2f3d33);
+  B(h, 0, 0, 0, 11, FL, 9, found); B(h, 0, FL, 0, 11, eave, 9, sid);
+  for (const [x, z] of [[0, 0], [11, 0], [0, 9], [11, 9]]) B(h, x - 0.06, FL, z - 0.06, x + 0.06, eave, z + 0.06, tr);
+  gable(h, {axis: 'x', x0: 0, x1: 11, z0: 0, z1: 9, eave, pitch: 1.0, oh: 0.2, rake: 0.12, mat: shm, trim: tr, gableMat: sid});
+  const yS = FL + 0.75;
+  for (const x of [1.8, 3.6, 7.4, 9.2]) win(h, 'N', x, yS, 0, 0.85, 1.45, {cols: 3, rows: 2, trim: tr, shutters: shut});
+  door(h, 'N', 5.5, FL, 0, 0.92, 2.1, 0x2f3d33, {trim: tr});
+  B(h, 4.6, 0, -1.2, 6.4, FL, 0, found);
+  B(h, 4.8, eave - 0.6, -0.9, 6.2, eave - 0.45, 0, tr);   // pediment hood
+  for (const x of [4.85, 6.15]) B(h, x - 0.06, FL, -0.85, x + 0.06, eave - 0.6, -0.75, tr);
+  // two gabled dormers on the front slope
+  for (const xc of [2.7, 8.3]) {
+    const dz0 = 1.2, dz1 = 3.6, dy = eave + dz0 * 1.0 - 0.2;
+    B(h, xc - 0.85, dy, dz0, xc + 0.85, dy + 1.5, dz1, sid);
+    gable(h, {axis: 'z', x0: xc - 0.85, x1: xc + 0.85, z0: dz0, z1: dz1, eave: dy + 1.5, pitch: 1.0, oh: 0.12, rake: 0.1, rakeA1: 0, mat: shm, trim: tr, gableMat: sid, ends: ['a0']});
+    win(h, 'N', xc, dy + 0.25, dz0, 0.75, 1.1, {cols: 3, rows: 2, trim: tr});
+  }
+  // gable-end windows on the upper floor and the chimney on the right end
+  win(h, 'W', 0, eave + 0.4, 4.5, 0.75, 1.1, {cols: 3, rows: 2, trim: tr}); win(h, 'E', 11, eave + 0.4, 3.2, 0.75, 1.1, {cols: 3, rows: 2, trim: tr});
+  win(h, 'E', 11, yS, 2.2, 0.85, 1.45, {cols: 3, rows: 2, trim: tr}); win(h, 'E', 11, yS, 6.8, 0.85, 1.45, {cols: 3, rows: 2, trim: tr});
+  win(h, 'W', 0, yS, 2.2, 0.85, 1.45, {cols: 3, rows: 2, trim: tr}); win(h, 'W', 0, yS, 6.8, 0.85, 1.45, {cols: 3, rows: 2, trim: tr});
+  win(h, 'S', 8.5, yS + 0.3, 9, 1.2, 1.1, {cols: 3, rows: 2, trim: tr}); door(h, 'S', 3.0, FL, 9, 0.86, 2.05, 0xe8e4da, {lite: true, trim: tr});
+  const br = M('brA', brick('#9a4a36', '#b9ada0', 'A'));
+  B(h, 8.6, eave + 3.2, 4.0, 9.6, eave + 5.6, 5.0, br); B(h, 8.5, eave + 5.6, 3.9, 9.7, eave + 5.72, 5.1, C(0x8f8a80));
+  shrub(h, 1.0, -0.7, 1); shrub(h, 10.0, -0.7, 1); shrub(h, 3.8, -0.7, 0.8); shrub(h, 7.2, -0.7, 0.8);
+  B(h, 5.0, 0, -7.6, 6.0, 0.04, -1.2, M('walk', concrete('#a9a69c', 1)));
+  return h;
+}
+
+// ---------------------------------------------------------------- house C: small ranch (1948-1960)
+// 11 x 9 at 1:3 (4:12) with wide eaves, attached carport 3 x 7 on the left, brick wainscot, picture window
+function houseC(g, ox, o) {
+  o = o || {}; const h = new THREE.Group(); g.add(h); h.position.x = ox;
+  const sidc = '#bfc9c4', sid = M('sid' + sidc, siding(sidc)), tr = C(0xf1efe8), found = M('found', concrete('#9d9a92'));
+  const br = M('brC', brick('#8c5a44', '#a99f94', 'C')), eave = FL + 2.8, shm = M('sh#5b5248', shingle('#5b5248'));
+  B(h, 3, 0, 0, 14, FL, 9, found); B(h, 3, FL, 0, 14, eave, 9, sid); B(h, 3, FL, -0.02, 14, FL + 0.9, 9.02, br);
+  B(h, 2.98, FL, -0.02, 3.0, FL + 0.9, 9.02, br); B(h, 14.0, FL, -0.02, 14.02, FL + 0.9, 9.02, br);
+  // one roof over the house and the carport
+  gable(h, {axis: 'x', x0: 0, x1: 14, z0: 0, z1: 9, eave, pitch: 1 / 3, oh: 0.7, rake: 0.5, mat: shm, trim: tr, gableMat: sid});
+  B(h, 0, 0, 0.6, 3, 0.06, 7.6, M('drive', concrete('#b2aea4', 1)));
+  for (const z of [0.3, 3.8, 7.3]) B(h, 0.15, 0, z - 0.08, 0.31, eave, z + 0.08, C(0x2c2e30, {metalness: 0.5}));
+  B(h, 0.0, eave - 0.3, 0, 3, eave, 9, C(0xd8d4c8));   // carport ceiling beam band
+  const yS = FL + 0.9;
+  win(h, 'N', 6.6, yS - 0.1, 0, 2.6, 1.4, {fixed: true, trim: tr}); win(h, 'N', 4.8, yS - 0.1, 0, 0.6, 1.4, {trim: tr}); win(h, 'N', 8.4, yS - 0.1, 0, 0.6, 1.4, {trim: tr});
+  win(h, 'N', 12.2, yS + 0.1, 0, 1.4, 1.0, {cols: 2, trim: tr});
+  door(h, 'N', 10.0, FL, 0, 0.92, 2.05, 0x6d5130, {trim: tr});
+  B(h, 9.3, 0, -1.3, 10.8, FL, 0, found);
+  win(h, 'E', 14, yS + 0.1, 2.5, 1.2, 1.0, {cols: 2, trim: tr}); win(h, 'E', 14, yS + 0.1, 7.0, 1.2, 1.0, {cols: 2, trim: tr});
+  win(h, 'S', 6.0, yS + 0.2, 9, 1.4, 1.0, {cols: 2, trim: tr}); win(h, 'S', 9.0, yS + 0.5, 9, 0.6, 0.6, {trim: tr}); win(h, 'S', 12.0, yS + 0.1, 9, 1.2, 1.0, {cols: 2, trim: tr});
+  door(h, 'W', 3, FL, 6.5, 0.86, 2.05, 0xe8e4da, {lite: true, trim: tr});
+  B(h, 8.2, eave + 0.6, 4.0, 9.2, eave + 2.4, 5.0, br);
+  shrub(h, 4.5, -0.8, 0.9); shrub(h, 13.2, -0.8, 1); shrub(h, 11.5, -0.8, 0.7);
+  B(h, 9.6, 0, -7.6, 10.5, 0.04, -1.3, M('walk', concrete('#a9a69c', 1)));
+  return h;
+}
+
+// ---------------------------------------------------------------- Main St two-part commercial blocks
+// ground storey 5 m (storefront), upper storey 4 m, parapet; lot widths 12 / 16 / 24 m, depth 22 m, party walls shared
+function signTex(key, text, bg, fg, font, w) {
+  return canvasTex('sg' + key, 1024, 128, (g, cw, ch) => {
+    g.fillStyle = bg; g.fillRect(0, 0, cw, ch); g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = font; const s = Math.min(1, (cw * 0.86) / g.measureText(text).width); g.save(); g.translate(cw / 2, ch / 2); g.scale(s * (w || 1), 1);
+    g.fillText(text, 0, 4); g.restore(); grain(g, cw, ch, 6);
+  });
+}
+function signBand(g, x0, x1, y0, y1, z, tex) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshStandardMaterial({map: tex, roughness: 0.6}));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, z); m.rotation.y = Math.PI; g.add(m);   // faces the street (-z)
+}
+function storefront(g, x0, x1, o) {
+  // a classic storefront: kickplate, display glass, recessed centre entry, transom band; o.side door for the upstairs
+  const fr = o.frame, w = x1 - x0, ent = o.entryW || 2.2, ec = o.entryAt ?? (x0 + x1) / 2, kp = o.kick || C(0x3a3430);
+  const dark = C(0x15181a);
+  const eL = ec - ent / 2, eR = ec + ent / 2;   // the entry opening: no kickplate, glass or mullions across it
+  for (const [a, b] of [[x0, eL], [eR, x1]]) { B(g, a, 0.15, -0.05, b, 0.6, 0.15, kp); B(g, a, 0.6, 0.05, b, 3.0, 0.12, SHOPGLASS()); }
+  // the dark shop interior behind the display glass (left and right of the recessed entry)
+  B(g, x0, 0.6, 0.2, ec - ent / 2, 3.85, 0.3, dark); B(g, ec + ent / 2, 0.6, 0.2, x1, 3.85, 0.3, dark);
+  for (let x = x0; x <= x1 + 0.01; x += w / Math.max(2, Math.round(w / 2.2))) if (x < eL - 0.1 || x > eR + 0.1) B(g, x - 0.05, 0.6, -0.06, x + 0.05, 3.0, 0.12, fr);
+  for (const sx of [eL, eR]) B(g, sx - 0.06, 0.15, -0.06, sx + 0.06, 3.0, 0.12, fr);
+  B(g, x0, 2.96, -0.08, x1, 3.12, 0.12, fr); for (const [a, b] of [[x0, eL], [eR, x1]]) B(g, a, 0.55, -0.08, b, 0.65, 0.12, fr);
+  B(g, x0, 3.12, 0.05, x1, 3.75, 0.12, o.transom || SHOPGLASS());
+  for (let x = x0; x <= x1 + 0.01; x += 0.6) B(g, x - 0.025, 3.12, -0.04, x + 0.025, 3.75, 0.12, fr);
+  B(g, x0, 3.75, -0.08, x1, 3.85, 0.12, fr);
+  // recessed entry 1.2 m deep
+  for (const sx of [ec - ent / 2, ec + ent / 2]) B(g, sx - 0.03, 0.15, 0.12, sx + 0.03, 3.0, 1.3, SHOPGLASS());
+  B(g, ec - ent / 2, 3.0, 0.12, ec + ent / 2, 3.05, 1.3, dark);
+  B(g, ec - 0.55, 0.15, 1.22, ec + 0.55, 2.4, 1.3, o.doorC || C(0x3c2a1e)); B(g, ec - 0.4, 1.0, 1.2, ec + 0.4, 2.25, 1.24, SHOPGLASS());
+  B(g, ec - ent / 2, 0.15, -0.1, ec + ent / 2, 0.17, 1.3, C(0x6c6a62));
+}
+function shopShell(g, x0, x1, o) {
+  const D = 22, y1 = 5.0, y2 = 9.0, par = o.parapet ?? 9.9, wall = o.wall;
+  B(g, x0, 3.85, 0, x1, par, D, wall); B(g, x0, 0.15, 1.3, x1, 3.85, D, wall);
+  B(g, x0, 0.15, 0, x0 + 0.2, 3.85, 1.3, wall); B(g, x1 - 0.2, 0.15, 0, x1, 3.85, 1.3, wall);
+  B(g, x0 + 0.3, par - 0.25, 0.3, x1 - 0.3, par - 0.2, D - 0.3, M('tpo', flat('#cfd2d0', 6)));   // roof seen over the parapet
+  return {y1, y2, par, D};
+}
+// shop A: 1910s red brick, corbelled cornice, stone sills and lintels, painted sign band, upstairs door at the side
+function shopA(g, x0, w, o) {
+  o = o || {}; const x1 = x0 + w, br = M('brS' + (o.brick || '#8e3f2e'), brick(o.brick || '#8e3f2e', '#b8ab9c', 'S' + (o.brick || ''))),
+    stone = C(0xc9bfa9), fr = C(o.frame || 0x23352c);
+  const s = shopShell(g, x0, x1, {wall: br});
+  B(g, x0, 0.15, -0.12, x0 + 0.5, 4.2, 0.02, br); B(g, x1 - 0.5, 0.15, -0.12, x1, 4.2, 0.02, br);    // brick piers
+  const sd = o.sideDoor !== false;   // the upstairs apartment's street door
+  storefront(g, x0 + 0.5 + (sd ? 1.3 : 0), x1 - 0.5, {frame: fr, transom: C(0x3e5348, {roughness: 0.25, metalness: 0.4})});
+  if (sd) { B(g, x0 + 0.5, 0.15, -0.02, x0 + 1.8, 3.85, 0.1, br); door(g, 'N', x0 + 1.15, 0.15, 0, 0.95, 2.4, 0x3c2a1e, {lite: true, trim: fr}); }
+  B(g, x0, 3.85, -0.14, x1, 4.75, 0.05, M('sgA' + o.name, null, {}));
+  signBand(g, x0 + 0.6, x1 - 0.6, 3.92, 4.68, -0.15, signTex('A' + o.name, o.name, o.signBg || '#1f3a2d', o.signFg || '#e8d9a8', 'bold 84px Georgia, serif'));
+  B(g, x0, 4.75, -0.2, x1, 4.9, 0.05, stone);
+  // upper floor: tall 1-over-1 windows with stone sills and lintels
+  const n = Math.max(2, Math.round(w / 3.0)), step = w / n;
+  for (let i = 0; i < n; i++) win(g, 'N', x0 + step * (i + 0.5), 5.85, 0, 1.0, 2.0, {trim: C(0xe9e4d6), sill: stone, lintel: stone});
+  // corbelled cornice + coping, datestone
+  for (let k = 0; k < 3; k++) B(g, x0, 8.55 + k * 0.12, -0.08 - k * 0.07, x1, 8.67 + k * 0.12, 0.02, br);
+  for (let x = x0 + 0.3; x < x1 - 0.2; x += 0.5) B(g, x, 8.2, -0.1, x + 0.22, 8.55, 0.02, br);
+  B(g, x0 - 0.02, s.par - 0.12, -0.12, x1 + 0.02, s.par, 0.3, stone);
+  if (o.date) { B(g, (x0 + x1) / 2 - 0.6, 9.05, -0.1, (x0 + x1) / 2 + 0.6, 9.65, 0.02, stone);
+    signBand(g, (x0 + x1) / 2 - 0.5, (x0 + x1) / 2 + 0.5, 9.1, 9.6, -0.11, signTex('d' + o.date, o.date, '#c9bfa9', '#6d6352', 'bold 96px Georgia, serif', 1.6)); }
+  rearA(g, x0, x1, br, stone);
+}
+// shop B: the same 1910s upper floor, the storefront remodelled about 1955 (aluminium, enamel panel band, metal canopy)
+function shopB(g, x0, w, o) {
+  o = o || {}; const x1 = x0 + w, br = M('brS#7f4a3a', brick('#7f4a3a', '#b0a597', 'SB')), stone = C(0xc9bfa9), al = C(0xb9bec0, {metalness: 0.7, roughness: 0.35});
+  const s = shopShell(g, x0, x1, {wall: br});
+  B(g, x0, 0.15, -0.14, x1, 0.6, 0.05, C(0x27292b));
+  storefront(g, x0 + 0.2, x1 - 0.2, {frame: al, kick: C(0x27292b), transom: C(0x9a3b2e), entryW: 2.6, doorC: al});
+  B(g, x0, 3.75, -0.16, x1, 4.85, 0.05, C(0x9a3b2e));
+  signBand(g, x0 + 0.6, x1 - 0.6, 3.85, 4.75, -0.17, signTex('B' + o.name, o.name, '#9a3b2e', '#f4efe2', 'bold 88px Arial, Helvetica, sans-serif'));
+  B(g, x0, 3.55, -1.6, x1, 3.7, 0.0, al);   // the metal canopy (an AFL metal_eyebrow_canopy reading)
+  for (let x = x0 + 1; x < x1; x += 3) B(g, x - 0.02, 3.7, -1.5, x + 0.02, 4.9, -1.46, al);
+  const n = Math.max(2, Math.round(w / 3.0)), step = w / n;
+  for (let i = 0; i < n; i++) {
+    const q = win(g, 'N', x0 + step * (i + 0.5), 5.85, 0, 1.0, 2.0, {trim: C(0xe9e4d6), sill: stone, lintel: stone});
+    if (o.boarded && i === n - 1) B(q, -0.5, 0, -0.08, 0.5, 2.0, -0.05, C(0x8a7b62));
+  }
+  B(g, x0, 8.75, -0.12, x1, 9.05, 0.02, C(0x6b6a66, {metalness: 0.4}));   // pressed-metal cornice, painted
+  for (let x = x0 + 0.5; x < x1; x += 1.4) B(g, x, 8.35, -0.2, x + 0.18, 8.75, 0.02, C(0x6b6a66, {metalness: 0.4}));
+  B(g, x0 - 0.02, s.par - 0.12, -0.12, x1 + 0.02, s.par, 0.3, stone);
+  rearA(g, x0, x1, br, stone);
+}
+// shop C: 1960s two-part: warm-grey face brick, aluminium ribbon windows upstairs, flat aluminium coping, flat canopy
+function shopC(g, x0, w, o) {
+  o = o || {}; const x1 = x0 + w, br = M('brWG', brick('#a39b8c', '#c4bdb1', 'WG')), al = C(0xbcc1c3, {metalness: 0.7, roughness: 0.3}), dk = C(0x2d3134, {metalness: 0.5, roughness: 0.4});
+  const s = shopShell(g, x0, x1, {wall: br, parapet: 9.5});
+  B(g, x0, 0.15, -0.1, x1, 0.6, 0.05, M('gfb', concrete('#8d8a83')));
+  storefront(g, x0 + 0.3, x1 - 0.3, {frame: dk, kick: M('gfb', concrete('#8d8a83')), transom: dk, entryW: 2.4, entryAt: x0 + 0.3 + 1.6, doorC: dk});
+  B(g, x0, 3.85, -0.12, x1, 4.8, 0.05, C(0x2d3134));
+  signBand(g, x0 + 2.0, x1 - 2.0, 3.98, 4.68, -0.13, signTex('C' + o.name, o.name, '#2d3134', '#e9e7e0', '600 80px Arial, Helvetica, sans-serif'));
+  B(g, x0, 3.6, -1.4, x1, 3.75, 0.0, dk);
+  B(g, x0 + 0.6, 5.7, -0.04, x1 - 0.6, 7.7, 0.08, GLASS());
+  for (let x = x0 + 0.6; x <= x1 - 0.59; x += (w - 1.2) / Math.round((w - 1.2) / 1.5)) B(g, x - 0.04, 5.7, -0.07, x + 0.04, 7.7, 0.08, al);
+  B(g, x0 + 0.55, 5.62, -0.1, x1 - 0.55, 5.72, 0.08, al); B(g, x0 + 0.55, 7.68, -0.1, x1 - 0.55, 7.78, 0.08, al);
+  B(g, x0 - 0.02, s.par - 0.18, -0.1, x1 + 0.02, s.par, 0.25, al);
+  rearA(g, x0, x1, br, al);
+}
+// the back: steel back door to the stockroom, small high windows, the upstairs' wooden back stair and landing
+function rearA(g, x0, x1, br, stone) {
+  const D = 22; const w = x1 - x0;
+  door(g, 'S', x1 - 1.6, 0.15, D, 1.0, 2.2, 0x55595c, {trim: C(0x55595c)});
+  for (let x = x0 + 2; x < x1 - 3; x += 2.6) win(g, 'S', x, 2.2, D, 0.9, 0.8, {fixed: true, trim: C(0x55595c)});
+  const nr = Math.max(2, Math.round(w / 3.5));
+  for (let i = 0; i < nr; i++) { const x = x0 + (i + 0.5) * w / nr; if (x > x0 + 3.2) win(g, 'S', x, 5.85, D, 0.9, 1.6, {trim: C(0xe9e4d6), sill: stone}); }
+  const wd = C(0x8a7458);
+  // landing at the upper floor (y 5) and a straight stair down to the back lot
+  B(g, x0 + 0.6, 4.9, D, x0 + 2.6, 5.05, D + 1.6, wd);
+  for (const [x, z] of [[x0 + 0.65, D + 1.5], [x0 + 2.55, D + 1.5]]) B(g, x - 0.05, 0, z - 0.05, x + 0.05, 5.0, z + 0.05, wd);
+  for (let k = 0; k < 14; k++) B(g, x0 + 2.6 + k * 0.28, 4.9 - (k + 1) * 0.35, D + 0.4, x0 + 2.88 + k * 0.28, 4.98 - (k + 1) * 0.35, D + 1.4, wd);
+  for (const z of [D + 0.37, D + 1.43]) { beam(g, [x0 + 2.6, 4.95, z], [x0 + 2.6 + 14 * 0.28, 0, z], 0.06, 0.28, wd);   // stringers
+    beam(g, [x0 + 2.6, 5.95, z], [x0 + 2.6 + 14 * 0.28, 1.0, z], 0.05, 0.06, wd); }                                    // handrails
+  B(g, x0 + 0.6, 5.85, D + 1.55, x0 + 2.6, 5.95, D + 1.62, wd); B(g, x0 + 0.55, 5.05, D, x0 + 0.65, 5.95, D + 1.6, wd);
+  B(g, x0 + 0.55, 5.85, D, x0 + 0.65, 5.95, D + 1.6, wd);
+  for (let x = x0 + 0.7; x < x0 + 2.6; x += 0.12) B(g, x, 5.05, D + 1.56, x + 0.04, 5.85, D + 1.6, wd);
+  door(g, 'S', x0 + 1.6, 5.05, D, 0.9, 2.1, 0x6f5a40, {lite: true});
+}
+function neighbour(g, x0, w, h) { B(g, x0, 0.15, 0, x0 + w, h, 22, M('nb', brick('#8f877c', '#a9a297', 'NB'))); B(g, x0, h - 0.15, -0.08, x0 + w, h, 0.1, C(0x9b968c)); }   // other buildings, toned down
+
+// a square timber from point a to point b (thickness t across, h tall)
+function beam(g, a, b, t, h, mat) {
+  const A = new THREE.Vector3(...a), Bv = new THREE.Vector3(...b), len = A.distanceTo(Bv);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(len, h, t), mat); m.position.copy(A).add(Bv).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), Bv.clone().sub(A).normalize()); m.castShadow = m.receiveShadow = true; g.add(m);
+}
+// ---------------------------------------------------------------- a parked car silhouette (scale only)
+function car(g, x, z, col) {
+  const c = new THREE.Group(); c.position.set(x, 0, z); g.add(c);
+  B(c, -2.4, 0.35, -0.9, 2.4, 1.0, 0.9, C(col, {metalness: 0.4, roughness: 0.4}));
+  B(c, -1.2, 1.0, -0.82, 1.0, 1.55, 0.82, C(col, {metalness: 0.4, roughness: 0.4})); B(c, -1.15, 1.02, -0.84, 0.95, 1.5, 0.84, GLASS());
+  for (const [a, b] of [[-1.5, -0.9], [1.5, -0.9], [-1.5, 0.9], [1.5, 0.9]]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.25, 16), C(0x1b1b1b)); wh.rotation.x = Math.PI / 2; wh.position.set(a, 0.36, b); c.add(wh); }
+}
+
+// ---------------------------------------------------------------- views
+const world = new THREE.Group(); scene.add(world);
+let cam = new THREE.PerspectiveCamera(32, W / H, 0.5, 600);
+function look(px, py, pz, tx, ty, tz, fov) { cam.fov = fov || 32; cam.position.set(px, py, pz); cam.lookAt(tx, ty, tz); cam.updateProjectionMatrix(); sun.target.position.set(tx, 0, tz); }
+function ortho(cx, cy, halfW) { const hh = halfW * H / W; cam = new THREE.OrthographicCamera(-halfW, halfW, hh, -hh, 0.1, 400); cam.position.set(cx, cy, -80); cam.lookAt(cx, cy, 0); scene.fog = null; }
+// lots are 24 m wide; a house sits 7.5 m back, so its front (bay) is at z = 0 and the lot line at z = -7.5
+const V = {
+  houses_compare() { resStreet(world, -30, 80); houseA(world, 0); driveway(world, 14.5, 17.5, 9); houseB(world, 26.5); driveway(world, 39.5, 42.5, 8);
+    houseC(world, 48); tree(world, -8, 14, 1.1); tree(world, 21, 16, 1.0); tree(world, 46, 15, 1.2); tree(world, 66, 12, 1.0);
+    look(31, 5.0, -66, 31, 4.0, 8, 19); },
+  hA_front() { resStreet(world, -30, 50); houseA(world, 0); driveway(world, 14.5, 17.5, 9); tree(world, -7, 14, 1.1); tree(world, 21, 15, 1.0);
+    car(world, 16, 3, 0x6e2a26); look(-9, 5.0, -20, 6.0, 2.6, 2, 38); },
+  hA_rear() { resStreet(world, -30, 50); houseA(world, 0); driveway(world, 14.5, 17.5, 9); tree(world, -7, 13, 1.1); tree(world, 24, 18, 1.0);
+    look(23, 7, 27, 6.0, 2.4, 4, 38); },
+  hB_front() { resStreet(world, -30, 50); houseB(world, 0); driveway(world, 13, 16, 8); tree(world, -6, 12, 1.1); tree(world, 20, 14, 1.0);
+    look(-8, 5.0, -19, 5.5, 3.4, 2, 38); },
+  hC_front() { resStreet(world, -30, 50); houseC(world, 0); tree(world, -6, 12, 1.1); tree(world, 21, 13, 1.0); car(world, 1.5, 4, 0x3f5b6b);
+    look(-8, 5.0, -19, 7.5, 2.4, 2, 38); },
+  street_A() { resStreet(world, -40, 130); const P = PAL.A;
+    [[0, 0, 0], [24, 1, 1], [48, 2, 0], [72, 3, 1], [96, 4, 0]].forEach(([x, k, m], i) => { houseA(world, x, {pal: P[k], mirror: !!m}); driveway(world, m ? x - 3.5 : x + 14.5, m ? x - 0.5 : x + 17.5, 9); tree(world, x + 20, 15 + (i % 2) * 3, 1.0 + (i % 3) * 0.1); });
+    for (let x = -30; x < 130; x += 12) tree(world, x, -10.2, 0.75, 0x56733a); car(world, 40, -13, 0x2e4a5c);
+    look(-22, 9, -36, 48, 2.5, 4, 34); },
+  shops_compare() { mainStreet(world, -30, 70); neighbour(world, -12, 12, 6.5); shopA(world, 0, 12, {name: 'BREWER DRUG CO.', date: '1912'});
+    shopB(world, 12, 12, {name: 'LINDEN CAFE'}); shopC(world, 24, 16, {name: 'HOLLIS APPLIANCE'}); neighbour(world, 40, 12, 5);
+    for (const x of [-4, 14, 32]) streetLamp(world, x, -3.6); car(world, 9, -5.4, 0x6e2a26); car(world, 33, -5.4, 0x2e4a5c);
+    look(14, 5.5, -62, 14, 4.8, 6, 19); },
+  sA_front() { mainStreet(world, -30, 50); neighbour(world, -12, 12, 6.5); shopA(world, 0, 12, {name: 'BREWER DRUG CO.', date: '1912'}); neighbour(world, 12, 16, 9.0);
+    streetLamp(world, 10, -3.6); look(-9, 3.0, -15, 6.5, 5.2, 4, 42); },
+  sB_front() { mainStreet(world, -30, 50); neighbour(world, -12, 12, 9.5); shopB(world, 0, 12, {name: 'LINDEN CAFE', boarded: true}); neighbour(world, 12, 16, 7);
+    streetLamp(world, 10, -3.6); car(world, 4, -5.4, 0x3f5b6b); look(16, 3.0, -15, 5.5, 5.0, 4, 42); },
+  sC_front() { mainStreet(world, -30, 50); neighbour(world, -12, 12, 9.5); shopC(world, 0, 16, {name: 'HOLLIS APPLIANCE'}); neighbour(world, 16, 12, 6);
+    streetLamp(world, 14, -3.6); look(-8, 3.0, -16, 8, 5.0, 4, 42); },
+  sA_rear() { mainStreet(world, -30, 50); neighbour(world, -12, 12, 6.5); shopA(world, 0, 12, {name: 'BREWER DRUG CO.', date: '1912'}); neighbour(world, 12, 16, 9.0);
+    car(world, 8, 28, 0x56605a); look(-10, 6, 40, 5, 4.5, 20, 40); },
+  main_street() { mainStreet(world, -30, 130);
+    const row = [[0, 12, 'A', 'BREWER DRUG CO.', {date: '1912'}], [12, 16, 'B', 'WARD HARDWARE', {}], [28, 12, 'A', 'LINDEN CAFE', {brick: '#7a4632', signBg: '#2b2b2b'}],
+      [40, 24, 'A', 'FIRST STATE BANK', {date: '1908', brick: '#94583f', sideDoor: false, signBg: '#3a2f22'}], [64, 12, 'B', 'BARBER', {boarded: true}], [76, 16, 'C', 'HOLLIS APPLIANCE', {}], [92, 12, 'A', 'VARIETY', {brick: '#86402f', date: '1915'}]];
+    for (const [x, w, k, n, o] of row) ({A: shopA, B: shopB, C: shopC})[k](world, x, w, Object.assign({name: n}, o));
+    for (let x = 4; x < 104; x += 16) streetLamp(world, x, -3.6);
+    car(world, 18, -5.4, 0x6e2a26); car(world, 54, -5.4, 0x2e4a5c); car(world, 84, -5.4, 0xc9c2a8);
+    const opp = new THREE.Group(); opp.rotation.y = Math.PI; opp.position.set(104, 0, -24); world.add(opp);   // the other side of Main St
+    B(world, -30, 0, -24, 130, 0.15, -20, M('walk2', concrete('#aaa79e', 1)));
+    for (const [x, w, k, n, o] of [[0, 16, 'C', 'COUNTY CO-OP', {}], [16, 12, 'A', 'POST OFFICE', {date: '1910', signBg: '#26313b'}], [28, 12, 'B', 'DINER', {}],
+      [40, 16, 'A', 'ODD FELLOWS', {brick: '#7d3a2c', date: '1904', signBg: '#3a2f22'}], [56, 12, 'B', 'SHOES', {boarded: true}], [68, 12, 'A', 'DRY GOODS', {brick: '#94583f'}], [80, 24, 'C', 'GAMBLE STORE', {}]])
+      ({A: shopA, B: shopB, C: shopC})[k](opp, x, w, Object.assign({name: n}, o));
+    car(world, 70, -18.6, 0x56605a);
+    look(-16, 7.5, -12, 50, 4.6, -10, 46); },
+  el_hA() { resStreet(world, -30, 50); houseA(world, 0, {yard: false}); ortho(6.5, 3.9, 12.5); },
+  el_sA() { mainStreet(world, -30, 50); shopA(world, 0, 12, {name: 'BREWER DRUG CO.', date: '1912'}); ortho(6, 4.9, 15.7); },
+};
+(V[VIEW] || V.houses_compare)();
+r.render(scene, cam);
+document.title = 'done';
+</script></body></html>

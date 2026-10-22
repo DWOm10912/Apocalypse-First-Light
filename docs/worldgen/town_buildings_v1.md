@@ -71,7 +71,8 @@
   - y：从地板往上（−1 是地板方块，−2 是基础）。
   - 生成器按"正面朝北"画，方块状态也按朝北写；画布负责转到实际朝向，方块状态跟着 `rotate`。
 - `BuildingKits`：每个种类一个生成器。
-- `WhiteBoxKit`：现在所有种类都用它，是占位，不是设计。
+- `SmallHouseKit`（2026-10-21，用户 2026-10-21 实机 PASS（town_buildings#7#5））：`house_small` 的 kit，按地块种子一半盖住宅 A（`MinimalTraditionalKit`，最简传统式小屋），一半盖住宅 B（`CapeCodKit`，科德角式小屋），只有 12 格宽的地块总是 A；做法见 [方块清单 8.0–8.2 节](town_buildings_blocks_v1.md)。地块比 12 格窄或比 17 格浅时退回白模。`house_small` 的深度 2026-10-21 从 16 格改成 17 格、前退线从 7.5 m 改成 6.5 m，房子位置不变，前面多出门廊台阶的地方。
+- `WhiteBoxKit`：其余种类都还用它，是占位，不是设计。
   - 墙一格厚，每层 4 格高（`STOREY`）；
   - 平屋顶 `roof_tpo`；
   - 地板 `sealed_concrete_floor`，下面一格 `reinforced_concrete` 基础；
@@ -98,7 +99,7 @@
 
 ## 5. 世界锁
 
-新的按世界开关 `town_buildings`，版本 `town_buildings#<TownBuildings.VERSION>#<BuildingKits.VERSION>`，现在是 `town_buildings#6#1`（`#3`：加油站 A1，第 8 节；`#4`：A1 的沿街草带和抬升，8.1 节；`#5`：草带上的东西脚下填实，8.2 节；`#6`：贴着路缘的东西不抬，8.2 节），HARD（[版本锁](worldgen_version_lock_v1.md)；`#2` = 2026-10-20 加了标志性建筑的种类）。
+新的按世界开关 `town_buildings`，版本 `town_buildings#<TownBuildings.VERSION>#<BuildingKits.VERSION>`，现在是 `town_buildings#7#5`（放置版本 `#3`：加油站 A1，第 8 节；`#4`：A1 的沿街草带和抬升，8.1 节；`#5`：草带上的东西脚下填实，8.2 节；`#6`：贴着路缘的东西不抬，8.2 节；`#7`：`house_small` 深 17 格、前退线 6.5 m，2026-10-21。kit 版本 `#2`：住宅 A 替换 `house_small` 的白模；`#3`：门廊改用混凝土门廊台阶；`#4`：住宅 A、B 混排，都是 2026-10-21），HARD（[版本锁](worldgen_version_lock_v1.md)；`#2` = 2026-10-20 加了标志性建筑的种类）。
 - 只有加了这个开关以后新建的联邦世界才有房子；
 - 旧世界的新区块不会冒出半栋房子。
 - 放置规则或任何一个生成器改了，就升对应的版本。
@@ -129,7 +130,7 @@
 
 （第 8 节以前写的，加油站 A1 不算在"真正的房子"里：它是现成的模板。）
 
-- 真正的房子：第一批是小住宅和 Main St 两段式商业楼，先出概念图给用户选。
+- 真正的房子：第一批是小住宅和 Main St 两段式商业楼。概念图 2026-10-21 出了，用户当天选了住宅 A（最简传统式）、商业楼 A 为主 B 混排 C 少量（`town_buildings_concept_v1.md`）；方块清单 `town_buildings_blocks_v1.md`（36 个新 ID，分三批），一个都没做，游戏里还是白模。
 - 标志性建筑：Linden 预留了一栋（`linden_landmark`，Main St 上、广场旁边的一整个街区），现在是 40 × 30 m 的白模；是什么建筑、剧情是什么还没定。其他城镇还没有。
 - 地块里的车道（车道口只到人行道）、院子、围栏、树。
 - 门牌号、信箱。

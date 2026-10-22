@@ -107,7 +107,8 @@ public final class WoodBlocks {
             event.getEntries().putAfter(after, stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             after = stack;
         }
-        CabinBlocks.tabs(event, after);   // Cabin Exterior V1 (docs/models/cabin_exterior_v1.md): after the wood blocks
+        after = CabinBlocks.tabs(event, after);   // Cabin Exterior V1 (docs/models/cabin_exterior_v1.md): after the wood blocks
+        com.antaurora.apofirstlight.townhouse.TownHouseBlocks.tabs(event, after);   // Town House A V1: after the cabin blocks
     }
 
     static boolean ready() { return TIMBER[0] != null; }
