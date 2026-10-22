@@ -266,6 +266,8 @@ public final class AflCreativeTabs {
             AflItems.ROUND_POINT_SHOVEL,
             AflItems.PICK_MATTOCK,
             AflItems.FIELD_STONE,
+            AflItems.PEBBLE,
+            AflItems.FLINT,
             AflItems.SIMPLE_HEARING_PROTECTION,
             AflItems.GEIGER_COUNTER,
             AflItems.FLIP_LIGHTER,

@@ -79,6 +79,12 @@ public final class AflItems {
     // a material only (no recipe before the recipe rework), creative tab too
     public static final RegistryObject<Item> FIELD_STONE = ITEMS.register("field_stone",
             () -> new Item(new Item.Properties().stacksTo(8)));
+    // Rock R1b (docs/gameplay/rock_r1_stones_boulders_design.md 2.1, 2.4, 11.3): a pebble and a flint, picked from loose
+    // stones; materials only (no recipe before the recipe rework), creative tab too
+    public static final RegistryObject<Item> PEBBLE = ITEMS.register("pebble",
+            () -> new Item(new Item.Properties().stacksTo(32)));
+    public static final RegistryObject<Item> FLINT = ITEMS.register("flint",
+            () -> new Item(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",

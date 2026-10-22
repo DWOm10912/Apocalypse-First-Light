@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.boulder.BoulderBlocks;
 import com.antaurora.apofirstlight.boulder.BoulderData;
 import com.antaurora.apofirstlight.boulder.BoulderIndex;
 import com.antaurora.apofirstlight.boulder.BoulderWorld;
+import com.antaurora.apofirstlight.boulder.LooseStones;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -28,14 +30,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * {@code /afl dev rock}: Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 11.2), boulders before worldgen places
- * them (C, design 7). Development runs only, op level 2, a player, the overworld (the boulder index's).
+ * {@code /afl dev rock}: Rock R1a / R1b (docs/gameplay/rock_r1_stones_boulders_design.md 6, 11.2, 11.3), boulders and
+ * loose stones before worldgen places them (C, design 7). Development runs only, op level 2, a player, the overworld (the
+ * boulder index's).
  * <pre>
  *   boulder &lt;form&gt; [turn]   a whole boulder of that form (12 ids) on the ground under the crosshair (within 16 blocks):
  *                            its origin cell the one the aimed point lies in, its ground that cell's floor; turn 0..3
  *                            quarter turns (default: the way you face)
  *   info                     every rock filling the aimed cell: form, node, stage, volume, strikes taken of its strikes,
  *                            what its last strike does, turn, root
+ *   scatter &lt;radius&gt; [field|river] [flint]
+ *                            loose stones on the ground around you (radius 1..32 blocks): field on open ground, river on
+ *                            the bed of water too (waterlogged); flint the share of patches with a flint, 0..1 (default
+ *                            1/8, design 2.4's limestone country)
  * </pre>
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight")
@@ -52,6 +59,12 @@ public final class RockCommands {
                 .executes(x -> boulder(x, -1))
                 .then(Commands.argument("turn", IntegerArgumentType.integer(0, 3)).executes(x -> boulder(x, IntegerArgumentType.getInteger(x, "turn"))))));
         c.then(Commands.literal("info").executes(RockCommands::info));
+        c.then(Commands.literal("scatter").then(Commands.argument("radius", IntegerArgumentType.integer(1, 32))
+                .executes(x -> scatter(x, LooseStones.Kind.FIELD, 1 / 8F))
+                .then(Commands.literal("field").executes(x -> scatter(x, LooseStones.Kind.FIELD, 1 / 8F))
+                        .then(Commands.argument("flint", FloatArgumentType.floatArg(0, 1)).executes(x -> scatter(x, LooseStones.Kind.FIELD, FloatArgumentType.getFloat(x, "flint")))))
+                .then(Commands.literal("river").executes(x -> scatter(x, LooseStones.Kind.RIVER, 1 / 8F))
+                        .then(Commands.argument("flint", FloatArgumentType.floatArg(0, 1)).executes(x -> scatter(x, LooseStones.Kind.RIVER, FloatArgumentType.getFloat(x, "flint")))))));
         event.getDispatcher().register(Commands.literal("afl").then(Commands.literal("dev").then(c)));
     }
 
@@ -84,6 +97,16 @@ public final class RockCommands {
         x.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
                 "Boulder %s (%d piece%s) at %d %d %d, turn %d", id, pieces, pieces == 1 ? "" : "s", origin.getX(), origin.getY(), origin.getZ(), t)), true);
         return pieces;
+    }
+
+    private static int scatter(CommandContext<CommandSourceStack> x, LooseStones.Kind kind, float flint) {
+        if (!(x.getSource().getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return 0;
+        if (!LooseStones.ready()) { x.getSource().sendFailure(Component.literal("Loose stones are not registered")); return 0; }
+        int radius = IntegerArgumentType.getInteger(x, "radius");
+        int n = LooseStones.scatter(level, player.blockPosition(), radius, kind, flint);
+        x.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
+                "%d patch%s of %s stones within %d blocks, flint %.2f", n, n == 1 ? "" : "es", kind.getSerializedName(), radius, flint)), true);
+        return n;
     }
 
     private static int info(CommandContext<CommandSourceStack> x) {

@@ -277,9 +277,13 @@ public final class Earthwork {
         return true;
     }
 
-    /** Air, a plant or snow: nothing a column's ground must keep (Rock R1a's boulder cells go only into such cells). */
+    /**
+     * Air, a plant, snow or loose stones: nothing a column's ground must keep (Rock R1a's boulder cells go only into such
+     * cells; #settle drops the stones as items first).
+     */
     public static boolean open(BlockState s) {
-        return s.isAir() || s.getBlock() instanceof BushBlock || s.getBlock() instanceof SnowLayerBlock;
+        return s.isAir() || s.getBlock() instanceof BushBlock || s.getBlock() instanceof SnowLayerBlock
+                || com.antaurora.apofirstlight.boulder.LooseStones.is(s);
     }
 
     /** EDITED, FREE (can be edited: docs/worldgen/earthwork_a1.md 2.1) or FIXED. */
@@ -533,7 +537,8 @@ public final class Earthwork {
     /**
      * The blocks of edited column (x, z), from its hard floor to top0 + 2, made to follow its skin; a new block is its loose
      * earth's material (the one at its middle vertex), else its first top's bare ground. A cell of a buried rock (Rock R1a)
-     * the skin bares becomes a rock cell (BoulderBlocks), not air.
+     * the skin bares becomes a rock cell (BoulderBlocks), not air. Loose stones (Rock R1b) in the column drop as their items
+     * first: the shovel moved the ground they lay on.
      */
     private static void settle(ServerLevel level, int x, int z) {
         int[] h = new int[SIDE * SIDE];
@@ -545,6 +550,8 @@ public final class Earthwork {
         var p = new BlockPos.MutableBlockPos();
         converting = true;
         try {
+            for (int y = bottom; y <= t + RAISE; y++)
+                if (com.antaurora.apofirstlight.boulder.LooseStones.is(level.getBlockState(p.set(x, y, z)))) level.destroyBlock(p, true);
             for (int y = t + RAISE - 1; y >= bottom; y--) {   // top down: nothing is left hanging
                 BlockState s = level.getBlockState(p.set(x, y, z));
                 if (kind(lo, hi, y) == AIR && soil(s.getBlock()))

@@ -1,8 +1,8 @@
 # 挖土和凿石
 
-- <StatusTag s="test" /> <StatusTag s="creative" /> 本页的工具都只在创造模式物品栏里，还在测试分支上
+- <StatusTag s="test" /> <StatusTag s="creative" /> 本页的工具和石头都只在创造模式物品栏里，还在测试分支上。散石现在只能用开发命令放，世界生成里还没有
 
-地面可以用铲子一铲一铲地挖开、填平。地表散落着半埋在土里的花岗岩巨石，铲子挖不动，要用鹤嘴锄凿开
+地面可以用铲子一铲一铲地挖开、填平。地表散落着半埋在土里的花岗岩巨石，铲子挖不动，要用鹤嘴锄凿开。地上还有随手能捡的石子和石块
 
 ## 工具
 
@@ -31,13 +31,31 @@
 - 只能凿离脚不远的地方：从眼睛算起 <V j="BoulderStrike.REACH" u="格" /> 以内
 - 每凿中一下扣 <V d="stamina/stamina_v1#costs.pick_strike" /> 耐力。耐力用光时凿不动
 - 声音很响，附近的感染体能听到
-- 大巨石凿够次数后先**裂开**成几块，每块再凿，凿够次数后**碎掉**，掉下<ItemIcon id="field_stone" />石块
+- 大巨石凿够次数后先**裂开**成几块，每块再凿，凿够次数后**碎掉**，掉下<ItemIcon id="field_stone" />石块，有时还有几颗<ItemIcon id="pebble" />石子
 - 一整块巨石从开始到全部凿碎，最多凿 50 下
 - 巨石凿掉以后留下一个坑，坑边的土会塌下来
 
-## 石块
+## 地上的散石
 
-<ItemIcon id="field_stone" />石块是凿碎巨石掉下来的花岗岩，<V d="item_mass/core_v1#items.apocalypse_firstlight:field_stone.unit_mass_kg" u="kg" /> 一块，最多叠 8 块。现在还没有用途
+野外的地上零星散着几颗石头：几颗石子，有时有一块石块。河床和河岸上的是河卵石，被水磨得更圆、更扁、更光滑
 
-- <StatusTag s="planned" /> 地上能捡的散石和石子
+- 对着散石按一下使用键捡一个：先捡石块，再捡燧石，最后一颗颗捡石子
+- 不需要工具，空手就能捡。捡到的石头算进负重
+- 拿着圆头铲时，使用键是挖。挖到散石所在的地方，石头会掉出来
+
+## 石块、石子和燧石
+
+| 物品 | 从哪来 | 重量 | 最多叠 |
+|---|---|---|---|
+| <ItemIcon id="field_stone" /> 石块 | 散石，凿碎的巨石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:field_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="pebble" /> 石子 | 散石，凿碎的巨石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:pebble.unit_mass_kg" u="kg" /> | 32 |
+| <ItemIcon id="flint" /> 燧石 | 散石里偶尔有 | <V d="item_mass/core_v1#items.apocalypse_firstlight:flint.unit_mass_kg" u="kg" /> | 16 |
+
+燧石很少见，多在石灰岩地区和河里的砾石中。它颜色深、有蜡一样的光泽，和旁边灰白的花岗岩不一样。山里出来的燧石外面裹着一层白色的皮，河里冲下来的皮已经磨掉了
+
+河卵石捡到手里就是普通的石子和石块，和田野里捡的叠在一起
+
+这三样现在都还没有用途
+
+- <StatusTag s="planned" /> 世界生成里的散石：森林、田野、河床
 - <StatusTag s="planned" /> 用鹤嘴锄开采天然石头

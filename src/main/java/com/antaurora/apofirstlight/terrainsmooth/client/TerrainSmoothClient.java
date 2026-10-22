@@ -249,6 +249,17 @@ public final class TerrainSmoothClient {
         return mask | (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 4;
     }
 
+    /**
+     * Rock R1b loose stones (boulder/LooseStonesModel, render threads): the drawn top of their support block above its floor
+     * as SmoothRules#corners, the road's graded turf's corners, or null where the top is the flat block top.
+     */
+    public static float[] groundCorners(BlockAndTintGetter region, BlockPos support) {
+        BlockState ground = region.getBlockState(support);
+        if (ground.getBlock() instanceof GradedTurfBlock) return GradedTurfBlock.corners(ground);
+        long g = supportGeometry(region, support);
+        return g < 0 ? null : SmoothRules.corners(g);
+    }
+
     /** Geometry of a plant's or a snow layer's support block (render threads), -1 = none or flat; does not touch the AO hand-over. */
     static long supportGeometry(BlockAndTintGetter region, BlockPos support) {
         RegionCells c = REGION.get();

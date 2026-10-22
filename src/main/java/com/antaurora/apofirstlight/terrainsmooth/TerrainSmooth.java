@@ -153,9 +153,10 @@ public final class TerrainSmooth {
         // a bridge's invisible collision (road_structure, under the client's mesh) covers the ground like a plant: the ground
         // under it is its column's surface and smooths with its neighbours, so where a skewed wall leaves part of a cell
         // uncovered that ground meets the ground in front without a block step (docs/worldgen/federal_highways_c3.md 10.11)
-        // a boulder's cells (Rock R1a) too: the rock sits in the ground, which keeps smoothing under and around it
+        // a boulder's cells (Rock R1a) too: the rock sits in the ground, which keeps smoothing under and around it; and loose
+        // stones (R1b), which lie on it as a plant stands
         if (b instanceof BushBlock || b instanceof SnowLayerBlock || b instanceof RoadStructureBlock
-                || com.antaurora.apofirstlight.boulder.BoulderBlocks.isBoulder(s)) return COVER;
+                || com.antaurora.apofirstlight.boulder.BoulderBlocks.isBoulder(s) || com.antaurora.apofirstlight.boulder.LooseStones.is(s)) return COVER;
         if (ground(b)) return NATURAL;
         if (s.is(BlockTags.LEAVES)) return LEAF;
         if (s.is(BlockTags.LOGS) || b instanceof VineBlock || b instanceof HugeMushroomBlock || b == Blocks.COCOA || b == Blocks.BEE_NEST) return TREE;

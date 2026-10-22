@@ -127,8 +127,10 @@ public final class BoulderWorld {
         // the stones fall out of the face that was struck, a little towards the striker
         Vec3 out = toward.subtract(at).multiply(1, 0, 1);
         Vec3 drop = at.add(out.lengthSqr() > 1e-6 ? out.normalize().scale(0.3) : Vec3.ZERO).add(0, 0.1, 0);
-        for (int i = 0; i < stones; i++) {
-            ItemEntity e = new ItemEntity(level, drop.x, drop.y, drop.z, new ItemStack(AflItems.FIELD_STONE.get()));
+        int pebbles = level.random.nextInt(4);   // and 0-3 pebbles (design 3.4, Rock R1b)
+        for (int i = 0; i < stones + (pebbles > 0 ? 1 : 0); i++) {
+            ItemEntity e = new ItemEntity(level, drop.x, drop.y, drop.z,
+                    i < stones ? new ItemStack(AflItems.FIELD_STONE.get()) : new ItemStack(AflItems.PEBBLE.get(), pebbles));
             e.setDeltaMovement((level.random.nextDouble() - 0.5) * 0.15, 0.15, (level.random.nextDouble() - 0.5) * 0.15);
             e.setDefaultPickUpDelay();
             level.addFreshEntity(e);

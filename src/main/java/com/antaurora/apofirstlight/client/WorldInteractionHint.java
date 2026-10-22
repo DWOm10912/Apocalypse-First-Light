@@ -75,6 +75,7 @@ public final class WorldInteractionHint {
         else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
+            if(target==null) target=looseStones(mc,hit);
             if(target==null) target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=freezerLid(mc,hit);
@@ -596,6 +597,12 @@ public final class WorldInteractionHint {
     }
 
     /** Emergency Radio V1: the slide switch (on / off), the crank (its end), as EmergencyRadio.Radio#use. */
+    /** Rock R1b loose stones (boulder/LooseStones): any hand picks one up, but a shovel that can dig there digs (ShovelClient). */
+    private static Target looseStones(Minecraft mc,BlockHitResult hit) {
+        if(!com.antaurora.apofirstlight.boulder.LooseStones.is(mc.level.getBlockState(hit.getBlockPos()))||ShovelClient.hint(mc)!=null) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.loose_stones.pick"),null);
+    }
+
     private static Target emergencyRadio(Minecraft mc,BlockHitResult hit) {
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio)) return null;

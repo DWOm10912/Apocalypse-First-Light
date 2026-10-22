@@ -64,6 +64,9 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.PICK_MATTOCK.get(), "pick_mattock", "pick_mattock_mesh", 0.0442);
             // Field stone (Rock R1a, tools/boulders/build-field-stone.mjs, 2026-10-21): the boulders' granite; 0.5 - height / 32
             bind(AflItems.FIELD_STONE.get(), "field_stone", "field_stone_mesh", 0.443338);
+            // Pebble and flint (Rock R1b, the same generator, 2026-10-21): 0.5 - height / 32
+            bind(AflItems.PEBBLE.get(), "pebble", "pebble_mesh", 0.481284);
+            bind(AflItems.FLINT.get(), "flint", "flint_mesh", 0.485968);
             // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
             bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
             bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);

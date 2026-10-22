@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/pebble"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/pebble"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          -0.0818,
+          0.4835,
+          1.3765
+        ],
+        "scale": [
+          2.4,
+          2.4,
+          2.4
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          40,
+          6
+        ],
+        "translation": [
+          1.046,
+          0.1807,
+          2.4095
+        ],
+        "scale": [
+          2,
+          2,
+          2
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          5.248,
+          5.248,
+          5.248
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          9.185,
+          9.185,
+          9.185
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/pebble"
+      }
+    }
+  }
+}

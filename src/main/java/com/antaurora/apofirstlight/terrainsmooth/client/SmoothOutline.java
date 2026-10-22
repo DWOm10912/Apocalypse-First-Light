@@ -35,13 +35,14 @@ public final class SmoothOutline {
 
     /**
      * Terrain Smooth's ground, overworld base stone (stone, granite, deepslate...), ores (vanilla's and AFL's), and the
-     * road's graded turf and pavement, and the boulders (Rock R1a).
+     * road's graded turf and pavement, the boulders (Rock R1a) and loose stones (R1b).
      */
     static boolean ground(BlockState s) {
         Block b = s.getBlock();
         if (TerrainSmooth.ground(b) || s.is(BlockTags.BASE_STONE_OVERWORLD) || s.is(Tags.Blocks.ORES)) return true;
         if (b == AflBlocks.GRADED_TURF.get() || b == AflBlocks.ROAD_SURFACE.get()) return true;
         if (com.antaurora.apofirstlight.boulder.BoulderBlocks.isBoulder(s)) return true;      // Rock R1a: boulders are ground
+        if (com.antaurora.apofirstlight.boulder.LooseStones.is(s)) return true;               // Rock R1b: and the stones lying on it
         var id = ForgeRegistries.BLOCKS.getKey(b);
         return id != null && id.getNamespace().equals(ApocalypseFirstLight.MOD_ID) && id.getPath().endsWith("_ore");
     }

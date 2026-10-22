@@ -207,6 +207,19 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - **图标**：两件都从自己的模型渲染。
 - **检查**：两个脚本 `--check` 通过；`compileJava` 通过；用户 2026-10-21 实机 PASS（随 R1a）。
 
+## 2026-10-21 新增：石子 `pebble`、燧石 `flint`（Rock R1b，土方分支）
+
+玩法见 [Rock R1 设计稿](../gameplay/rock_r1_stones_boulders_design.md) 2.1、2.4 和 11.3 节。
+
+- **生成**：`tools/boulders/build-field-stone.mjs` 改成一次做三件（石块、石子、燧石），石块的输出没变。
+  - 石子和燧石用散石生成器 `tools/boulders/build-loose-stones.mjs` 里同名石头的参数，网格更细一级。
+  - 石子：田野石子第 1 种，约 5.7 × 3.7 × 5.3 cm，320 个三角面，`verticalOffset` 0.481284；
+  - 燧石：敲开一面的结核，约 5.2 × 2.8 × 5.0 cm，592 个三角面，`verticalOffset` 0.485968。
+- **贴图**：同石块的盒投影。贴图集第 4 块原来空着，现在放断面：燧石的断面用 `flint` 贴图，其余用 `flint_cortex`（白垩皮）；石子全是 `granite`。
+- **手持**：同石块的做法，攥在拳头里。第三人称比例 2.4，石子压进拳头 0.3 px、燧石 0.4 px；第一人称比例 2.0，下沿落在扳手的握点上。比真实尺寸放大一点，小石头才能从手指间露出来。
+- **图标**：从模型渲染，64 px。
+- **检查**：`--check` 通过，`compileJava` 通过；用户 2026-10-22 实机 PASS（随 R1b）。
+
 ## 2026-10-20 新增：翻盖打火机 `flip_lighter`
 
 玩法、动作、镜头见 [翻盖打火机 V1](../gameplay/flip_lighter_v1.md)。这里只记生成和渲染。
