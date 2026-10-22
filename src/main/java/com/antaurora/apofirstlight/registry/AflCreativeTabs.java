@@ -250,7 +250,8 @@ public final class AflCreativeTabs {
             AflItems.HEAVY_SUPPRESSOR_01,
             AflItems.P9_01_MAGAZINE,
             AflItems.P9_01_EXTENDED_MAGAZINE,
-            AflItems.BR51_EXTENDED_MAGAZINE_35,
+            AflItems.BR51_01_MAGAZINE,
+            AflItems.BR51_01_EXTENDED_MAGAZINE,
             AflItems.BR51_DRUM_MAGAZINE_50);
 
     // In the firearms order: 9mm (P9), .50 AE (Blackridge), 7.62 (BR51, C.A.T.), 12.7x55 (HR55), 12 gauge (Silverwood).

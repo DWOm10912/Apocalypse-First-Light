@@ -39,7 +39,8 @@ import java.util.Map;
  * the count with an amber bar under it (the action clip the client plays, reload_*, against the gun's reload ticks).</li>
  * <li>a gun that loads from magazine items (weapon/NativeMagazines, the P9-01): the fitted magazine's rounds, a small
  * "+1" after them for the chambered round, and as the reserve the rounds in the spare magazines in the rig and the
- * pockets (CS2 style, user 2026-10-19); the reload prompt while a fuller one is there.</li>
+ * pockets (CS2 style, user 2026-10-19); empty, the reload key's prompt for what it would do (hold: swap, tap: put one
+ * in or take it out).</li>
  * </ul>
  * A view of vanilla-synced stack and inventory data; no ammo cache or client writes.
  */
@@ -68,13 +69,16 @@ public final class NativeGunHud {
         ItemStack stack = mc.player.getMainHandItem();
         String reserve = reserve(stack);
         var definition = ((NativeGunItem) stack.getItem()).definition();
-        // the empty gun's prompt: "Reload", or for a magazine-item gun with no fuller spare "Remove magazine" (the same key);
-        // a fuller one only in the backpack: "Magazine in backpack", without the key (the key does not reach it)
+        // the empty gun's prompt; a magazine-item gun (user 2026-10-22): "Hold to swap magazine" with a loaded spare in the
+        // rig or the pockets, "Insert magazine" with none fitted, else "Remove magazine" (the key tapped); a loaded one only in
+        // the backpack: "Magazine in backpack", without the key (the key does not reach it)
         String prompt;
-        if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition))
-            prompt = com.antaurora.apofirstlight.weapon.NativeMagazines.canReload(mc.player, stack, definition) ? "reload"
-                    : com.antaurora.apofirstlight.weapon.NativeMagazines.inBackpack(mc.player, stack, definition) ? NO_KEY_PROMPT
-                    : com.antaurora.apofirstlight.weapon.NativeMagazines.ejectable(mc.player, stack, definition) ? "unload_magazine" : null;
+        if (com.antaurora.apofirstlight.weapon.NativeMagazines.system(definition)) {
+            boolean fitted = com.antaurora.apofirstlight.weapon.NativeMagazines.ejectable(stack, definition);
+            prompt = com.antaurora.apofirstlight.weapon.NativeMagazines.canReload(mc.player, definition) ? fitted ? "swap_magazine" : "insert_magazine"
+                    : com.antaurora.apofirstlight.weapon.NativeMagazines.inBackpack(mc.player, definition) ? NO_KEY_PROMPT
+                    : fitted ? "unload_magazine" : null;
+        }
         else prompt = "0".equals(reserve) ? null : "reload";
         render(graphics, width, height, NativeGunHudConfigManager.get(), stack, reserve, prompt, reloadProgress(mc, stack, partialTick));
     };
@@ -116,7 +120,9 @@ public final class NativeGunHud {
         }
         // the empty reload's clip, or one of its variants (_ads, the skill tiers' _1.._4)
         boolean empty = clip.startsWith(gun.reloadClip(stack, true));
-        int ticks = Math.max(1, gun.reloadTicks(stack, empty));
+        // a no-magazine reload: its own length (the magazine fitted halfway would read as the full reload)
+        int ticks = Math.max(1, clip.contains(NativeGunItem.NO_MAG) ? gun.reloadTicks(empty) - gun.noMagReloadCut(empty)
+                : gun.reloadTicks(stack, empty));
         return Math.max(0, Math.min(1, (now - reloadStart + partialTick) / ticks));
     }
 

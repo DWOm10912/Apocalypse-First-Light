@@ -47,6 +47,29 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     }
     @Override public String fireClip(boolean last) { return "shoot"; }
     @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
+    // no magazine in the gun (user 2026-10-21, "没有弹匣，结果播放了取弹匣的动画"): the reload that goes straight for the
+    // new magazine, where the gun has the clip. It is its reload with the old magazine's part cut from the front, so the
+    // length and the magazine-in tick move by the same cut (docs/native_guns/magazine_system_v1.md 3).
+    private String noMagReload(ItemStack stack, boolean empty) {
+        if (stack == null || !NativeMagazines.system(definition()) || !NativeMagazines.fitted(stack, definition()).isEmpty()) return null;
+        String clip = reloadClip(empty) + NO_MAG;
+        return supportsClip(clip) ? clip : null;
+    }
+    @Override public int noMagReloadCut(boolean empty) {
+        String full = reloadClip(empty);
+        return supportsClip(full + NO_MAG) ? NativeGunAnimations.ticks(profile.id(), full) - NativeGunAnimations.ticks(profile.id(), full + NO_MAG) : 0;
+    }
+    @Override public String reloadClip(ItemStack stack, boolean empty) {
+        String noMag = noMagReload(stack, empty);
+        return noMag != null ? noMag : NativeGunItem.super.reloadClip(stack, empty);
+    }
+    @Override public int reloadTicks(ItemStack stack, boolean empty) {
+        return noMagReload(stack, empty) != null ? reloadTicks(empty) - noMagReloadCut(empty) : NativeGunItem.super.reloadTicks(stack, empty);
+    }
+    @Override public int magInTick(ItemStack stack, boolean empty) {
+        return noMagReload(stack, empty) != null ? NativeGunItem.super.magInTick(stack, empty) - noMagReloadCut(empty)
+                : NativeGunItem.super.magInTick(stack, empty);
+    }
     @Override public boolean supportsClip(String clip) {
         return profile.clips().contains(clip) && NativeGunAnimations.hasClip(profile.id(), clip);
     }

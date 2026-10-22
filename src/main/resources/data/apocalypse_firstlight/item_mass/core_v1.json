@@ -95,7 +95,11 @@
       "unit_mass_kg": 0.12,
       "estimated": true
     },
-    "apocalypse_firstlight:br51_extended_magazine_35": {
+    "apocalypse_firstlight:br51_01_magazine": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:br51_01_extended_magazine": {
       "unit_mass_kg": 0.3,
       "estimated": true
     },

@@ -1,0 +1,123 @@
+{
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/br51_01_v3_native"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        20,
+        135,
+        0
+      ],
+      "translation": [
+        -1.36941,
+        -0.46837,
+        1.28683
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        2,
+        -1.54931
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -1.93664,
+        0,
+        0
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0.96832,
+        0,
+        -1.67718
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -0.96832,
+        0,
+        -1.67718
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        -1.93664
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        -1.93664
+      ]
+    }
+  }
+}

@@ -41,7 +41,7 @@ public final class Br51MagazineProbe {
                     for(int x=-2;x<=3;x++)for(int z=-2;z<=2;z++)l.setBlock(ROOT.offset(x,-1,z),net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(),3);
                     for(var part:StaticWorkstationBlock.Part.values())l.setBlock(StaticWorkstationBlock.partPosition(ROOT,Direction.NORTH,part),AflBlocks.GUN_MAINTENANCE_BENCH.get().stateFor(Direction.NORTH,part),3);
                     p.teleportTo(l,21,120,-1,java.util.Set.of(),0,10);p.getInventory().clearContent();
-                    p.getInventory().setItem(4,new ItemStack(AflItems.BR51_01.get()));p.getInventory().setItem(23,new ItemStack(AflItems.RIFLE_SUPPRESSOR_01.get()));p.getInventory().setItem(24,new ItemStack(AflItems.RIFLE_RED_DOT_01.get()));p.getInventory().setItem(25,new ItemStack(AflItems.BR51_EXTENDED_MAGAZINE_35.get()));
+                    p.getInventory().setItem(4,new ItemStack(AflItems.BR51_01.get()));p.getInventory().setItem(23,new ItemStack(AflItems.RIFLE_SUPPRESSOR_01.get()));p.getInventory().setItem(24,new ItemStack(AflItems.RIFLE_RED_DOT_01.get()));p.getInventory().setItem(25,new ItemStack(AflItems.BR51_01_EXTENDED_MAGAZINE.get()));
                     var pos=ROOT;l.getBlockState(pos).use(l,p,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(pos),Direction.NORTH,pos,false));
                 });
                 case 1 -> slot(4);
@@ -54,18 +54,18 @@ public final class Br51MagazineProbe {
                 case 8 -> {var gun=screen().getMenu().synchronizedBench().getItem(0);check(NativeAttachments.activeSight(gun).is(AflItems.RIFLE_RED_DOT_01.get())&&sounds==2,"dual install and two sounds");shot("before_mag");hotspot(NativeAttachment.Slot.MAGAZINE);}
                 case 9 -> {shot("context");button(NativeAttachment.Slot.MAGAZINE);}
                 case 10 -> {shot("candidate");slot(0);}
-                case 11 -> {var gun=screen().getMenu().synchronizedBench().getItem(0);check(NativeGunAmmo.capacity(gun,((NativeGunItem)gun.getItem()).definition())==35&&sounds==3,"three installs");shot("bench");slot(4);}
+                case 11 -> {var gun=screen().getMenu().synchronizedBench().getItem(0);check(NativeGunAmmo.capacity(gun,((NativeGunItem)gun.getItem()).definition())==31&&sounds==3,"three installs");shot("bench");slot(4);}
                 case 12 -> {mc().player.closeContainer();mc().player.getInventory().selected=4;mc().options.setCameraType(CameraType.FIRST_PERSON);mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());p.teleportTo(p.serverLevel(),21,120,-1,java.util.Set.of(),180,0);NativeGunAmmo.set(p.getMainHandItem(),((NativeGunItem)p.getMainHandItem().getItem()).definition(),27);p.inventoryMenu.broadcastChanges();});}
                 case 13 -> {shot("fp");mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);}
                 case 14 -> {shot("tp");mc().options.setCameraType(CameraType.FIRST_PERSON);}
                 case 15 -> com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,4);
-                case 16 -> {var g=mc().player.getMainHandItem();check(NativeGunAmmo.read(g,((NativeGunItem)g.getItem()).definition())==35,"tactical fills 35");}
+                case 16 -> {var g=mc().player.getMainHandItem();check(NativeGunAmmo.read(g,((NativeGunItem)g.getItem()).definition())==31,"tactical fills 31");}
                 case 17 -> mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());NativeGunAmmo.set(p.getMainHandItem(),((NativeGunItem)p.getMainHandItem().getItem()).definition(),0);p.inventoryMenu.broadcastChanges();});
                 case 18 -> com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,4);
-                case 19 -> {var g=mc().player.getMainHandItem();check(NativeGunAmmo.read(g,((NativeGunItem)g.getItem()).definition())==35,"empty fills 35");}
-                case 20 -> mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());p.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);p.getInventory().setItem(9,new ItemStack(AflItems.BR51_EXTENDED_MAGAZINE_35.get()));p.inventoryMenu.broadcastChanges();});
+                case 19 -> {var g=mc().player.getMainHandItem();check(NativeGunAmmo.read(g,((NativeGunItem)g.getItem()).definition())==31,"empty fills 31");}
+                case 20 -> mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());p.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);p.getInventory().setItem(9,new ItemStack(AflItems.BR51_01_EXTENDED_MAGAZINE.get()));p.inventoryMenu.broadcastChanges();});
                 case 21 -> mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));
-                case 22 -> {shot("inventory");finish("PASS real three-slot installs, delay guard, sounds, tactical/empty capacity 35; screenshots require review");}
+                case 22 -> {shot("inventory");finish("PASS real three-slot installs, delay guard, sounds, tactical/empty capacity 31; screenshots require review");}
             }
         }catch(Exception ex){finish("FAIL step="+step+" "+ex);}
     }

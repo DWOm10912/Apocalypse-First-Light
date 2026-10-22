@@ -17,12 +17,13 @@
 | 12.7×55mm 重型消音器 | `heavy_suppressor_01` | `MUZZLE` | HR55（`heavy_brake_qd`，额定 12.7×55mm） | 游戏噪声半径 ×0.05（数据层）；消音声与出口视觉切换；反向套管式，套住制退器并向后包住枪管 | 已接入（2026-09-29，Pure Mesh + PBR V1，待实机验收） / [重型消音器 V1](heavy_suppressor_01_pure_mesh_v1.md) |
 | P9-01 28发扩容弹匣 | `p9_01_extended_magazine` | `MAGAZINE` | P9-01 | 弹匣容量覆盖为 28 发；Pure Mesh 加长钢匣 + 握把延长套 + 加厚底板 | 已接入（V2，待实机验收） / [扩容弹匣 V2](../p9_01_extended_magazine_v1.md) |
 
-| BR51-01 50发弹鼓 | `br51_drum_magazine_50` | `MAGAZINE` | BR51-01 | 20→50；方形双鼓；空仓换弹改用专用拼接动画 `reload_empty_drum`（3.2 s），战术换弹复用原动画；维护台平放自动抬高避免穿垫 | 已接入（2026-09-28，待实机验收） / [弹鼓 V1](br51_drum_magazine_50_v1.md) |
-| BR51-01 35发扩容弹匣 | `br51_extended_magazine_35` | `MAGAZINE` | BR51-01 | 20→35；替换枪内、换弹新匣和空仓旧匣三处弹匣；溢出安全返还；底板两侧黄褐识别条 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V2（待实机验收） / [35R V2](br51_extended_magazine_35_v2.md)、[35R V1](br51_extended_magazine_35_v1.md) |
+| BR51-01 20发弹匣 | `br51_01_magazine` | `MAGAZINE`（标准弹匣） | BR51-01 | 钢制直弹匣，弹匣系统，子弹存在弹匣里 | 已接入（2026-10-21，编译通过，没进游戏） / [BR-51 V3](../br51_01_v3_game_model_v1.md) |
+| BR51-01 30发扩容弹匣 | `br51_01_extended_magazine` | `MAGAZINE` | BR51-01 | 弧形，替换枪内、换弹新匣和空仓旧匣三处弹匣；取代旧的 35 发 `br51_extended_magazine_35`（旧存档自动换） | 已接入（2026-10-21，没进游戏） / [BR-51 V3](../br51_01_v3_game_model_v1.md) |
+| BR51-01 50发弹鼓 | `br51_drum_magazine_50` | `MAGAZINE` | BR51-01 | 2026-10-21 重做网格；和弹匣用同一套换弹动画，专用的 `reload_empty_drum` 已删 | 已接入（2026-10-21，没进游戏） / [BR-51 V3](../br51_01_v3_game_model_v1.md)；旧版 [弹鼓 V1](br51_drum_magazine_50_v1.md) 已过时 |
 
 物品栏图标：所有配件统一朝向与大小（2026-09-28，`NativeAttachmentGuiFit`，最长边占格 85%），见 [枪械物品栏展示 · 配件物品栏图标](../native_gun_inventory_presentation_v1.md)。
 
-兼容范围不按配件名称自动推断：当前手枪消音器和手枪红点不能装 BR51，步枪消音器和步枪红点不能装 P9；7.62×51mm 步枪消音器和 12.7×55mm 重型消音器按口径与接口严格区分，不能互换；BR51 接受专属 `br51_extended_magazine_35`。未来步枪可通过自己的兼容声明、挂载点与 ADS 数据复用步枪配件。当前扩容弹匣另有 `NativeMagazineItem.accepts` 的逐附件枪型限制，不能仅改 JSON 就宣称支持其他枪。
+兼容范围不按配件名称自动推断：当前手枪消音器和手枪红点不能装 BR51，步枪消音器和步枪红点不能装 P9；7.62×51mm 步枪消音器和 12.7×55mm 重型消音器按口径与接口严格区分，不能互换；BR51 接受自己的 20 发、30 发弹匣和 50 发弹鼓（2026-10-21 起，旧的 35 发已删）。未来步枪可通过自己的兼容声明、挂载点与 ADS 数据复用步枪配件。当前扩容弹匣另有 `NativeMagazineItem.accepts` 的逐附件枪型限制，不能仅改 JSON 就宣称支持其他枪。
 
 ## 当前属性明细
 

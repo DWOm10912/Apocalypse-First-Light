@@ -1,0 +1,42 @@
+{
+  "about": "A loose 7.62x51 mm round in the fingers while a BR-51 magazine is loaded (gun/br51_01_mag_load): the round item as client/AflStaticMeshItemClient draws it (upright, base at y 0.396628, centred on x / z), at the BR-51 magazine prop's scale so it matches the magazine. Points: base, mid, tip, and pinch (1.7 px behind the base along the round, 1.5 px off it on +z, as the 9x19 mm round's). Symmetry x. Written by tools/build-br51-01-mag-load.mjs.",
+  "items": [
+    "762x51mm_round"
+  ],
+  "scale": 0.38375,
+  "symmetry": "x",
+  "bounds": [
+    [
+      0.4825,
+      0.3966,
+      0.4825
+    ],
+    [
+      0.5175,
+      0.6033,
+      0.5175
+    ]
+  ],
+  "points": {
+    "base": [
+      0.5,
+      0.3966,
+      0.5
+    ],
+    "mid": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "tip": [
+      0.5,
+      0.6033,
+      0.5
+    ],
+    "pinch": [
+      0.5,
+      0.1198,
+      0.7443
+    ]
+  }
+}

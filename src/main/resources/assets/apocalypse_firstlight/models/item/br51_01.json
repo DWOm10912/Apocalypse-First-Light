@@ -5,7 +5,7 @@
     "particle": "apocalypse_firstlight:item/br51_01_inventory"
   },
   "base": {
-    "parent": "apocalypse_firstlight:item/br51_01_in_hand"
+    "parent": "apocalypse_firstlight:item/br51_01_v3_native_in_hand"
   },
   "perspectives": {
     "gui": {

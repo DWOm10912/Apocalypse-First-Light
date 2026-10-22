@@ -1361,6 +1361,7 @@ C 已经计划的"每条路做一遍车轮接地回归"（C3 状态）就用这�
 ### 8.18.2 收起驾驶按键提示
 
 - 新键 `key.apocalypse_firstlight.driving_hints`，默认 **Caps Lock**，只在驾驶座上生效：按一下右上角的提示面板淡出，再按淡入。
+  - 2026-10-22 起手里拿着枪（不在载具上）时也生效，收起 / 显示的是枪的按键提示，和开车共用同一个设置（[弹匣系统](../native_guns/magazine_system_v1.md) 第 5 节，`weapon/client/NativeGunKeyHints`）。键的生效范围是 `VehicleDriving.HINTS_CONTEXT`（开车或拿着枪），按键设置里的名字改成「显示 / 隐藏按键提示」（Key hints: hide / show）。用户 2026-10-22 实机 PASS。
 - 选择存进客户端配置（`apocalypse_firstlight-client.toml` 的 `vehicle_hud.key_hints`），下次上车还是一样。
 - 面板显示时最后一行是"Caps Lock 收起提示"，新玩家能看到这个键。
 - Caps Lock 同时会切换系统的大写锁定，之后在聊天框打字可能是大写；可以在按键设置里改键。

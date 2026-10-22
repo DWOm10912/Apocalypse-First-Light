@@ -39,8 +39,11 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
                 ?new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","textures/item/"+m.textureAsset()+".png")
                 :resource(item,"textures/item/",".png");
         // Pure Mesh accessories: an AFL Hybrid Mesh sidecar for this geo takes precedence; Cube geos keep the Gecko path.
+        // From the GPU cache where it can (client/MeshItemCache: the BR-51 drum cost about 60 FPS on the CPU path).
         if(VextrisMeshes.byGeometry(geometry)!=null){
-            GeckoMeshRenderer.render(geometry,texture,pose,buffers,light,overlay);return;
+            if(!com.antaurora.apofirstlight.client.MeshItemCache.draw(geometry,texture,pose,buffers,light,overlay))
+                GeckoMeshRenderer.render(geometry,texture,pose,buffers,light,overlay);
+            return;
         }
         var type=RenderType.entityCutoutNoCull(texture);
         for(var bone:model.topLevelBones())draw(bone,pose,buffers,type,light,overlay);

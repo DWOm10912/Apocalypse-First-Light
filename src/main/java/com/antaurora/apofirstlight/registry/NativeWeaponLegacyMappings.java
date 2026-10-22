@@ -17,6 +17,8 @@ public final class NativeWeaponLegacyMappings {
                 case "service_pistol" -> mapping.remap(AflItems.P9_01.get());
                 case "m14" -> mapping.remap(AflItems.BR51_01.get());
                 case "9mm_round" -> mapping.remap(AflItems.ROUND_9MM.get());
+                // BR-51 V3 (docs/native_guns/br51_01_v3_game_model_v1.md): the 35-round box became the 30-round curved one
+                case "br51_extended_magazine_35" -> mapping.remap(AflItems.BR51_01_EXTENDED_MAGAZINE.get());
             }
         }
         for (var mapping : event.getMappings(ForgeRegistries.Keys.SOUND_EVENTS, ApocalypseFirstLight.MOD_ID)) {
@@ -26,6 +28,8 @@ public final class NativeWeaponLegacyMappings {
             if (!next.equals(old)) {
                 var target = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(ApocalypseFirstLight.MOD_ID, next));
                 if (target != null) mapping.remap(target);
+            } else if (old.startsWith("br51_01_reload_") || old.startsWith("br51_01_inspect_slide_")) {
+                mapping.ignore();   // the old BR-51 rig's per-step takes, retired with V3 (no one-to-one replacement)
             }
         }
     }

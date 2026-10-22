@@ -1,0 +1,26 @@
+{
+  "format_version": 1,
+  "about": "BR-51 idle, the low ready (gun/<id>_idle, a stance loop under SkeletonGunStance#hold; docs/dev/p9_stance_loops_v1.md 4.7): the butt in the shoulder pocket as when shouldered (GunStance.Kind.RIFLE pocket), the rifle turned about the butt 30 degrees muzzle down, the bore straight ahead along the look (the chest is bladed 30 degrees right of it). Keyed in the chest frame: it turns and bends with the chest, not with the look. Third person and the own body looking down (client/FirstPersonBody#gunOnBody): the own first person otherwise shows the gun through its old view model. A shot, aiming, a reload or an inspect raise it to the shoulder (no hip_fire). Weight (1 - raise)(1 - sprint). The key is computed offline from the shouldered rifle (butt pivot, pitch -30, yaw 30 in the chest view frame), not keyed in the plugin; the right pole is the rifle's, the left hand goes under the handguard (GunStance.Support).",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 40,
+  "first_person": "view_model",
+  "blend": {"in": 0, "out": 0},
+  "loop": "time",
+  "length": 4,
+  "prop": {
+    "id": "br51_01",
+    "keys": [
+      {"at": 0, "frame": "chest", "point": "grip_r", "pos": [1.7, 5.15, -7.64], "rot": [-146.31, 25.659, 163.898], "blend": 0}
+    ]
+  },
+  "hands": {
+    "right": [
+      {"at": 0, "target": "prop:grip_r", "blend": 0, "roll": 0, "pole": [-0.35, 1, 0.45]}
+    ],
+    "left": [
+      {"at": 0, "target": "prop:grip_l", "blend": 0, "roll": 0, "pole": [1, 0.5, 0]}
+    ]
+  },
+  "events": []
+}

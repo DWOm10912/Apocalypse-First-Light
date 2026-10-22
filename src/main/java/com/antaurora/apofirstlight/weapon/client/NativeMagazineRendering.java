@@ -67,27 +67,29 @@ public final class NativeMagazineRendering {
     }
 
     /**
-     * The P9-01 magazines' top round (geo p9_01_v3_native magazine_round_anchor), from the magazine's pivot: px, and its
-     * tilt about x (deg, as GeckoLib turns the geo's 22).
+     * A loaded standalone magazine shows its top rounds where the gun's magazine shows them: the gun's
+     * magazine_round_visual.item_rounds (P9-01 one, BR-51 two of the double stack), as many as the magazine holds.
      */
-    private static final float ROUND_Y = 3.39381F - 3.5992F, ROUND_Z = 1.85725F - 1.647F, ROUND_TILT = -22F;
-
-    /** A loaded standalone magazine shows its top round where the gun's magazine shows it. */
     private static void topRound(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
-        if(!(stack.getItem() instanceof NativeMagazineItem m)||NativeMagazines.rounds(stack)<=0)return;
-        var gun=m.roundGun();
+        if(!(stack.getItem() instanceof NativeMagazineItem m))return;
+        int rounds=NativeMagazines.rounds(stack);
+        var gun=rounds<=0?null:m.roundGun();
         var visual=gun==null?null:gun.magazineRoundVisual();
         if(visual==null)return;
-        pose.pushPose();
-        pose.translate(0,ROUND_Y/16F,ROUND_Z/16F);
-        pose.mulPose(Axis.XP.rotationDegrees(ROUND_TILT));
         float[] offset=visual.localOffset(),rotation=visual.localRotation();
-        pose.translate(offset[0]/16F,offset[1]/16F,offset[2]/16F);
-        if(rotation[0]!=0)pose.mulPose(Axis.XP.rotationDegrees(rotation[0]));
-        if(rotation[1]!=0)pose.mulPose(Axis.YP.rotationDegrees(rotation[1]));
-        if(rotation[2]!=0)pose.mulPose(Axis.ZP.rotationDegrees(rotation[2]));
-        com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer.render(visual.geometry(),visual.texture(),pose,buffers,light,overlay);
-        pose.popPose();
+        for(int i=0;i<visual.itemRounds().size()&&i<rounds;i++){
+            float[] round=visual.itemRounds().get(i);
+            pose.pushPose();
+            pose.translate(round[0]/16F,round[1]/16F,round[2]/16F);
+            if(round[3]!=0)pose.mulPose(Axis.XP.rotationDegrees(round[3]));
+            pose.translate(offset[0]/16F,offset[1]/16F,offset[2]/16F);
+            if(rotation[0]!=0)pose.mulPose(Axis.XP.rotationDegrees(rotation[0]));
+            if(rotation[1]!=0)pose.mulPose(Axis.YP.rotationDegrees(rotation[1]));
+            if(rotation[2]!=0)pose.mulPose(Axis.ZP.rotationDegrees(rotation[2]));
+            if(!com.antaurora.apofirstlight.client.MeshItemCache.draw(visual.geometry(),visual.texture(),pose,buffers,light,overlay))
+                com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer.render(visual.geometry(),visual.texture(),pose,buffers,light,overlay);
+            pose.popPose();
+        }
     }
 
     public static final class ItemRenderer extends BlockEntityWithoutLevelRenderer {

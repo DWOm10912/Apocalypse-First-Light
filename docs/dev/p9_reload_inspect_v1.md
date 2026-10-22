@@ -105,6 +105,15 @@
 - 认得这两个名字的地方：`AflItems`（P9 的片段列表）、`NativeCameraBoneConsumer`（镜头骨骼）；`NativeGunAds`、`NativeGunInspect`、`NativeGunActions#isInspect` 改成按 `inspect` 前缀认（`SkeletonGunStance` 本来就是）。
 - 离线：重新生成后，原有 14 段第一人称片段和 6 个第三人称动作与改之前逐字一致，只多了这两段。编译通过，用户 2026-10-21 实机 PASS（"上面的内容PASS"）。
 
+### 2.10 没装弹匣时的换弹 `reload_*_no_mag`（2026-10-21）
+
+- 用户 2026-10-21（BR-51 上发现，P9 同样）："现在把弹匣卸下之后再装，可能有概率会卡出来空气的换弹"→"好像是没有弹匣，结果播放了取弹匣的动画，没有音效"。取下弹匣以后按换弹，枪里没有弹匣，原换弹前面那段按卡笋、拔旧弹匣还在空比划（两声早就去掉了，所以没声音）。
+- 选片段：`ConfiguredNativeGunItem#reloadClip(ItemStack, boolean)`，弹匣系统的枪、枪里没有弹匣、有这个片段时放 `<原换弹>_no_mag`；熟练度 2 档起照旧接 `_ads`。
+- 生成：`tools/author-p9-01-v3-native-animations.mjs` 的 `reload(empty, ads, noMag)`，`NO_MAG_CUT` 0.1 s。除按卡笋（release）和弹匣落下（drop）以外，所有节拍提前 0.1 s。去掉那两下抖动。弹匣骨骼从 0 到插到底一直缩成 0，`empty_old_mag` 隐藏，按卡笋、弹匣出两声不要。新增 `reload_tactical_no_mag`（1.6 s）、`reload_empty_no_mag`（1.9 s）和两个 `_ads` 版；原有 16 段逐字节不变。
+- 服务器的时长和弹匣插入 tick 都减去两个片段长度之差（2 tick）：插入在第 16 tick（原 18）。见 [magazine_system_v1.md](../native_guns/magazine_system_v1.md) 第 3 节。
+- 第三人称没有专门的动作：`SkeletonGunStance` 找不到 `gun/p9_01_reload_*_no_mag` 时，用原换弹的动作，起点往前错开同样的 0.1 s，手和第一人称的节拍对得上。
+- 编译通过，没进游戏看过。
+
 ### 2.6 第一人称的限制（旧视图模型，方块手臂）
 
 - 两只手是没有手腕的方块（[gun_handling_reference_v1.md](gun_handling_reference_v1.md)、`NativePlayerArmRenderer`），所以：

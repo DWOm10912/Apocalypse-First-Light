@@ -4,9 +4,9 @@
     {
       "description": {
         "identifier": "geometry.br51_drum_magazine_50",
-        "texture_width": 512,
-        "texture_height": 512,
-        "visible_bounds_width": 3,
+        "texture_width": 2048,
+        "texture_height": 2048,
+        "visible_bounds_width": 2,
         "visible_bounds_height": 2,
         "visible_bounds_offset": [
           0,
@@ -16,7 +16,7 @@
       },
       "bones": [
         {
-          "name": "br51_drum_magazine_50_root",
+          "name": "magazine_root",
           "pivot": [
             0,
             0,

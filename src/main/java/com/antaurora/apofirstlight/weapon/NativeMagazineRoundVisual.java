@@ -10,14 +10,19 @@ import java.util.List;
  * Optional asset contract shared by the main and auxiliary magazine top-round visuals.
  * Every anchor field is a bone name or an ordered list of bone names: entry i is the (i + 1)-th round from the top
  * (a double-stack magazine shows its top two rounds), drawn when that many rounds are present.
+ * <p>
+ * {@code item_rounds} (optional): the same top rounds on a standalone magazine item (NativeMagazineRendering), from the
+ * magazine's pivot: {@code [x, y, z, tilt]} each, px and degrees about x as the pose turns them (the anchor bone's
+ * Blockbench rotation), entry i drawn when more than i rounds are in it; then local_offset / local_rotation as at a bone.
  */
 public record NativeMagazineRoundVisual(List<String> anchors, ResourceLocation geometry, ResourceLocation texture,
                                         List<String> loadedAuxiliaryAnchors, List<String> oldMagazineAnchors,
-                                        float[] localOffset, float[] localRotation) {
+                                        float[] localOffset, float[] localRotation, List<float[]> itemRounds) {
     public NativeMagazineRoundVisual {
         anchors = List.copyOf(anchors);
         loadedAuxiliaryAnchors = List.copyOf(loadedAuxiliaryAnchors);
         oldMagazineAnchors = List.copyOf(oldMagazineAnchors);
+        itemRounds = List.copyOf(itemRounds);
         if (anchors.isEmpty()) throw new IllegalArgumentException("presentation.magazine_round_visual.anchor: required");
         var seen = new HashSet<String>();
         for (var list : List.of(anchors, loadedAuxiliaryAnchors, oldMagazineAnchors))
@@ -29,6 +34,11 @@ public record NativeMagazineRoundVisual(List<String> anchors, ResourceLocation g
             throw new IllegalArgumentException("presentation.magazine_round_visual: geometry and texture are required");
         validateVector(localOffset, "local_offset");
         validateVector(localRotation, "local_rotation");
+        for (float[] round : itemRounds) {
+            if (round == null || round.length != 4) throw new IllegalArgumentException("presentation.magazine_round_visual.item_rounds: expected [x, y, z, tilt]");
+            for (float value : round)
+                if (!Float.isFinite(value)) throw new IllegalArgumentException("presentation.magazine_round_visual.item_rounds: must be finite");
+        }
     }
 
     /** Position of this bone among the main magazine's round anchors (0 = top round), or -1. */
@@ -46,7 +56,27 @@ public record NativeMagazineRoundVisual(List<String> anchors, ResourceLocation g
         return new NativeMagazineRoundVisual(anchors(visual, "anchor", true),
                 resource(visual, "geometry"), resource(visual, "texture"),
                 anchors(visual, "loaded_auxiliary_anchor", false), anchors(visual, "old_magazine_anchor", false),
-                vector(visual, "local_offset"), vector(visual, "local_rotation"));
+                vector(visual, "local_offset"), vector(visual, "local_rotation"), itemRounds(visual));
+    }
+
+    private static List<float[]> itemRounds(JsonObject object) {
+        if (!object.has("item_rounds")) return List.of();
+        if (!object.get("item_rounds").isJsonArray())
+            throw new IllegalArgumentException("presentation.magazine_round_visual.item_rounds: expected an array");
+        var out = new java.util.ArrayList<float[]>();
+        for (var entry : object.getAsJsonArray("item_rounds")) {
+            if (!entry.isJsonArray() || entry.getAsJsonArray().size() != 4)
+                throw new IllegalArgumentException("presentation.magazine_round_visual.item_rounds: expected [x, y, z, tilt]");
+            float[] round = new float[4];
+            for (int i = 0; i < 4; i++) {
+                var value = entry.getAsJsonArray().get(i);
+                if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber())
+                    throw new IllegalArgumentException("presentation.magazine_round_visual.item_rounds: expected numbers");
+                round[i] = value.getAsFloat();
+            }
+            out.add(round);
+        }
+        return out;
     }
 
     /** A bone name, or an array of bone names ordered from the top round down. */

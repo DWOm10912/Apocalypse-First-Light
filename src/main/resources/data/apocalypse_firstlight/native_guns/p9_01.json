@@ -80,7 +80,8 @@
       "geometry": "apocalypse_firstlight:geo/9x19mm_round.geo.json",
       "texture": "apocalypse_firstlight:textures/item/9x19mm_ammo_v1.png",
       "local_offset": [0, -0.000036, 0.789958],
-      "local_rotation": [-90, 0, 0]
+      "local_rotation": [-90, 0, 0],
+      "item_rounds": [[0, -0.20539, 0.21025, -22]]
     }
   },
   "recoil": {

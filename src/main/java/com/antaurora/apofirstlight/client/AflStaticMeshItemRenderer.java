@@ -75,7 +75,7 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
             if (mesh.hasTranslucent() && !opaqueOnly.test(stack)) {
                 com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer.render(
                         geometry, texture, pose, buffers, light, overlay);
-            } else {
+            } else if (stack.hasFoil() || !MeshItemCache.draw(mesh, geo, texture, pose, buffers, light, overlay)) {
                 for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
             }
         } finally {
@@ -98,6 +98,7 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
             GeckoMeshRenderer.render(geometry, texture, pose, buffers, light, overlay);
             return;
         }
+        if (MeshItemCache.draw(mesh, geo, texture, pose, buffers, light, overlay)) return;
         VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(texture));
         for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
     }

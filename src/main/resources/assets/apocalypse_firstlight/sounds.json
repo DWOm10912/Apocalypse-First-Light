@@ -139,94 +139,50 @@
       }
     ]
   },
-  "br51_01_inspect_slide_back": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/inspect_slide_back", "stream": false}]
-  },
-  "br51_01_inspect_slide_release": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/inspect_slide_release", "stream": false}]
-  },
   "br51_01_suppressed": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.suppressed",
     "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/suppressed", "stream": false}]
   },
   "br51_01_fire": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/fire",
-        "stream": false
-      }
-    ]
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.fire",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/fire", "stream": false}]
   },
-  "br51_01_reload_empty_1": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_empty_1",
-        "stream": false
-      }
-    ]
-  },
-  "br51_01_reload_empty_2": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_empty_2",
-        "stream": false
-      }
-    ]
-  },
-  "br51_01_reload_empty_3": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_empty_3",
-        "stream": false
-      }
-    ]
-  },
-  "br51_01_reload_empty_4": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_empty_4",
-        "stream": false
-      }
-    ]
-  },
-  "br51_01_reload_tactical_1": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_tactical_1",
-        "stream": false
-      }
-    ]
-  },
-  "br51_01_reload_tactical_2": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_tactical_2",
-        "stream": false
-      }
-    ]
-  },
-  "br51_01_reload_tactical_3": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/reload_tactical_3",
-        "stream": false
-      }
-    ]
+  "br51_01_fire_near": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.fire",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/fire_near", "stream": false}]
   },
   "br51_01_draw": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/draw",
-        "stream": false
-      }
-    ]
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/draw", "stream": false}]
   },
   "br51_01_put_away": {
-    "sounds": [
-      {
-        "name": "apocalypse_firstlight:weapons/br51_01/put_away",
-        "stream": false
-      }
-    ]
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/put_away", "stream": false}]
+  },
+  "br51_01_magazine_release": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/magazine_release", "stream": false}]
+  },
+  "br51_01_magazine_out": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.magazine_out",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/magazine_out", "stream": false}]
+  },
+  "br51_01_magazine_in": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.magazine_in",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/magazine_in", "stream": false}]
+  },
+  "br51_01_charging_back": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.charging",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/charging_back", "stream": false}]
+  },
+  "br51_01_charging_release": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.charging",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/charging_release", "stream": false}]
+  },
+  "br51_01_mag_load": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.mag_load",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_1", "pitch": 0.9, "attenuation_distance": 8}, {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_2", "pitch": 0.9, "attenuation_distance": 8}, {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_3", "pitch": 0.9, "attenuation_distance": 8}]
+  },
+  "br51_01_mag_load_last": {
+    "subtitle": "subtitles.apocalypse_firstlight.br51_01.mag_load",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_last", "pitch": 0.9, "attenuation_distance": 8}]
   },
   "hr55_fire": {
     "subtitle": "subtitles.apocalypse_firstlight.hr55.fire",

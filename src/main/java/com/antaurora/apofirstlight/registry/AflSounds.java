@@ -246,10 +246,11 @@ public final class AflSounds {
     private AflSounds() {
     }
 
+    /** BR-51 V3 (M14 mechanism, tools/build-br51-01-sounds.mjs): the clips' cues (animations/br51_01_v3_native) and the
+     *  magazine press (NativeMagazineLoading: br51_01_mag_load / _last, the P9's takes pitched down in sounds.json). */
     public static final java.util.List<RegistryObject<SoundEvent>> BR51_01 = java.util.stream.Stream.of(
-            "fire", "reload_empty_1", "reload_empty_2", "reload_empty_3", "reload_empty_4",
-            "reload_tactical_1", "reload_tactical_2", "reload_tactical_3", "draw", "put_away",
-            "inspect_slide_back", "inspect_slide_release")
+            "fire", "draw", "put_away", "magazine_release", "magazine_out", "magazine_in", "charging_back", "charging_release",
+            "mag_load", "mag_load_last")
             .map(action -> SOUND_EVENTS.register("br51_01_" + action, () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "br51_01_" + action))))
             .toList();

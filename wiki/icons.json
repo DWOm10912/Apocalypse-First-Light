@@ -111,5 +111,32 @@
       -159.464
     ],
     "hide": "^(barrel.*|frame.*|part_magrel_.*|part_slidestop|part_takedown_.*|part_trigger|trigger|slide.*|righthand|lefthand|mag_out|empty_old_mag|.*_reference.*)$"
+  },
+  "br51_01_magazine": {
+    "bbmodel": "src/main/blockbench/br51_01_v3_native.bbmodel",
+    "rot": [
+      170.257,
+      40.967,
+      -159.464
+    ],
+    "hide": "^(gun_body|rear_sight|trigger|safety|mag_latch|selector|bolt_lock|oprod|bolt|righthand|lefthand|mag_out|reload_magazine|empty_old_mag|.*_reference.*)$"
+  },
+  "br51_01_extended_magazine": {
+    "bbmodel": "src/main/blockbench/br51_01_v3_mags.bbmodel",
+    "rot": [
+      170.257,
+      40.967,
+      -159.464
+    ],
+    "hide": "^mag50.*$"
+  },
+  "br51_drum_magazine_50": {
+    "bbmodel": "src/main/blockbench/br51_01_v3_mags.bbmodel",
+    "rot": [
+      170.257,
+      40.967,
+      -159.464
+    ],
+    "hide": "^mag30.*$"
   }
 }

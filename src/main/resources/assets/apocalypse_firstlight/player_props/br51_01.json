@@ -1,0 +1,24 @@
+{
+  "about": "The br51_01 as a player action's prop (docs/dev/p9_draw_holster_actions_v1.md 2.1-2.3), written by ./gradlew gunPropExport (src/test/.../skeleton/GunPropExport): its bare GeckoLib frame (blocks), its size on the body (GunStance), the hand anchors at static_idle 0 s (each hand's drop lower) with the kind's grips, the thigh holster at rest. Do not edit.",
+  "items": ["br51_01"],
+  "gun": "br51_01",
+  "scale": 0.38375,
+  "bounds": [[-0.063704, 0.20023, -1.75], [0.093926, 0.828602, 1.671832]],
+  "points": {
+    "grip_r": [-0.008127, 0.436875, 0.482499],
+    "grip_l": [-0.021874, 0.474652, -0.437498],
+    "muzzle": [0.0, 0.714844, -1.75]
+  },
+  "grips": {
+    "grip_r": {
+      "pos": [-0.008127, 0.436875, 0.482499],
+      "quat": [0.045906, -0.880543, 0.46361, 0.087191],
+      "grip": [-20.0, -40.0, -40.0]
+    },
+    "grip_l": {
+      "pos": [-0.021874, 0.474652, -0.437498],
+      "quat": [-0.404459, -0.265388, -0.258518, 0.836153],
+      "grip": [0.0, 0.0, 0.0]
+    }
+  }
+}

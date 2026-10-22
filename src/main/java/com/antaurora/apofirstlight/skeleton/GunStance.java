@@ -36,7 +36,7 @@ public final class GunStance {
          * of the centre, the support hand under the handguard as far forward as the arm reaches
          * (docs/dev/gun_handling_reference_v1.md 4.5).
          */
-        RIFLE(45F, new Vector3f(0.06F, -0.10F, 0.02F), new Vector3f(1.5F, 0F, -3F), new Vector3f(), 3F,
+        RIFLE(30F, new Vector3f(0.06F, -0.10F, 0.02F), new Vector3f(1.5F, 0F, -3F), new Vector3f(), 3F,
                 new Vector3f(0.08F, -0.02F, -0.26F), -35F, 25F, 0F,
                 new Grip(-20, -40, -40), Grip.NONE, new Vector3f(-0.35F, 1F, 0.45F), new Vector3f(0.15F, 1F, 0.25F),
                 null, 0F, new Vector3f(-1.5F, 1.5F, -2.2F)),
@@ -166,7 +166,7 @@ public final class GunStance {
      * hands {@link #P9_HAND_DROP} / {@link #P9_SUPPORT_DROP} lower than its anchors.
      */
     private static final Map<String, Carried> CARRIED = Map.of(
-            "br51_01", new Carried(Kind.RIFLE, 0.307F, "br51_01", 1.25F, new Vector3f(0F, 8F, 26.8F),
+            "br51_01", new Carried(Kind.RIFLE, 0.307F, "br51_01_v3_native", 1.25F, new Vector3f(0F, 7F, 26.7F),
                     new Support(new Vector3f(-0.2F, 8.6F, SUPPORT_Z), SUPPORT_DOWN, SUPPORT_OUT, SUPPORT_ROLL, SUPPORT_POLE), 0F, 0F),
             "p9_01", new Carried(Kind.PISTOL, 0.261F, "p9_01_v3_native", 0.49467F / 0.261F, null, null, GunStance.P9_HAND_DROP,
                     GunStance.P9_SUPPORT_DROP));

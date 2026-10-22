@@ -5,6 +5,8 @@ import com.antaurora.apofirstlight.cabin.CabinMeshModel;
 import com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity;
 import com.antaurora.apofirstlight.client.blockmesh.AflStaticMeshModel;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.client.MeshRendering;
 import com.antaurora.vextris.client.VextrisMeshes;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -395,8 +397,10 @@ public final class WoodGunRackChunking {
         if (!m.find()) return RENDERER;
         ResourceLocation texture = ResourceLocation.tryParse(m.group(1));
         // only the memoized entity types of exactly this texture: an opaque or cutout look the chunk's cutout layer keeps
+        // and Vextris' TRIANGLES twin of the cutout one, where a shader pack draws the smooth parts (MeshRendering#smoothTopology)
         if (texture == null || (type != RenderType.entityCutoutNoCull(texture) && type != RenderType.entityCutout(texture)
-                && type != RenderType.entitySolid(texture))) {
+                && type != RenderType.entitySolid(texture)
+                && type != MeshRendering.cutoutType(texture, MeshRenderer.Topology.TRIANGLES))) {
             return new Kind(false, false, null, false);
         }
         if (texture.equals(TextureAtlas.LOCATION_BLOCKS)) return new Kind(true, true, null, true);
@@ -413,12 +417,18 @@ public final class WoodGunRackChunking {
     private static void split(RenderType type, Stream s, List<int[]> quads, List<TextureAtlasSprite> sprites, List<Leftover> kept,
                               boolean cell) {
         Kind kind = kind(type);
-        if (type.mode() != VertexFormat.Mode.QUADS) {
-            // triangles (or lines) never go to the chunk: kept whole, in their own primitive size
+        boolean triangles = type.mode() == VertexFormat.Mode.TRIANGLES && kind.chunk();
+        if (type.mode() != VertexFormat.Mode.QUADS && !triangles) {
+            // lines (or triangles of a type the chunk does not keep) never go to the chunk: kept whole, in their primitive size
             Leftover whole = whole(type, s, kind.shadow());
             if (whole != null) kept.add(whole);
             return;
         }
+        // Vextris' smooth parts with a shader pack (user 2026-10-21: the BR-51's 30-round and drum magazines, 4390 and 6941
+        // triangles, stayed out of the chunk on the ground and cost the frame rate): each triangle a quad with its last
+        // corner twice, the chunk's quads; the pack's per-face normals there flatten their shading as it does every quad
+        if (triangles) s = s.asQuads();
+        int keep = triangles ? 3 : 4;
         var leftV = new ArrayList<float[]>();
         var leftC = new ArrayList<int[]>();
         var leftL = new ArrayList<int[]>();
@@ -426,9 +436,9 @@ public final class WoodGunRackChunking {
         for (int q = 0; q + 4 <= s.count; q += 4) {
             boolean chunk = kind.chunk() && fits(s, q, kind, cell);
             if (!chunk) {
-                leftV.add(java.util.Arrays.copyOfRange(s.v, q * 8, q * 8 + 32));
-                leftC.add(java.util.Arrays.copyOfRange(s.color, q, q + 4));
-                leftL.add(java.util.Arrays.copyOfRange(s.light, q, q + 4));
+                leftV.add(java.util.Arrays.copyOfRange(s.v, q * 8, q * 8 + keep * 8));
+                leftC.add(java.util.Arrays.copyOfRange(s.color, q, q + keep));
+                leftL.add(java.util.Arrays.copyOfRange(s.light, q, q + keep));
                 continue;
             }
             TextureAtlasSprite sprite = kind.sprite();
@@ -446,12 +456,12 @@ public final class WoodGunRackChunking {
         }
         if (leftV.isEmpty()) return;
         int n = leftV.size();
-        float[] v = new float[n * 32];
-        int[] c = new int[n * 4], l = new int[n * 4];
+        float[] v = new float[n * keep * 8];
+        int[] c = new int[n * keep], l = new int[n * keep];
         for (int i = 0; i < n; i++) {
-            System.arraycopy(leftV.get(i), 0, v, i * 32, 32);
-            System.arraycopy(leftC.get(i), 0, c, i * 4, 4);
-            System.arraycopy(leftL.get(i), 0, l, i * 4, 4);
+            System.arraycopy(leftV.get(i), 0, v, i * keep * 8, keep * 8);
+            System.arraycopy(leftC.get(i), 0, c, i * keep, keep);
+            System.arraycopy(leftL.get(i), 0, l, i * keep, keep);
         }
         kept.add(new Leftover(type, kind.shadow(), v, c, l));
     }
@@ -558,6 +568,29 @@ public final class WoodGunRackChunking {
         private int defaultArgb;
 
         Stream(Recorder owner) { this.owner = owner; }
+
+        /** This TRIANGLES stream as quads: each triangle's corners, then its last corner again. */
+        Stream asQuads() {
+            Stream q = new Stream(owner);
+            int n = count / 3;
+            q.v = new float[n * 32];
+            q.color = new int[n * 4];
+            q.light = new int[n * 4];
+            q.closed = new boolean[n * 4];
+            q.sprite = new TextureAtlasSprite[n * 4];
+            for (int t = 0; t < n; t++) {
+                for (int i = 0; i < 4; i++) {
+                    int src = t * 3 + Math.min(i, 2), dst = t * 4 + i;
+                    System.arraycopy(v, src * 8, q.v, dst * 8, 8);
+                    q.color[dst] = color[src];
+                    q.light[dst] = light[src];
+                    q.closed[dst] = closed[src];
+                    q.sprite[dst] = sprite[src];
+                }
+            }
+            q.count = n * 4;
+            return q;
+        }
 
         @Override
         public VertexConsumer vertex(double x, double y, double z) {

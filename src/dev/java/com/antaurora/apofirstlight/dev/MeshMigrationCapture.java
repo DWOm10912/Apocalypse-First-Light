@@ -90,7 +90,7 @@ public final class MeshMigrationCapture {
         gun("hr55", AflItems.HR55, null, null, "reload_empty");
         gun("silverwood12", AflItems.SILVERWOOD_12, null, null, "reload_empty");
         gun("blackridge50", AflItems.BLACKRIDGE_50, null, null, "reload_empty");
-        gun("br51_reddot_drum", AflItems.BR51_01, AflItems.RIFLE_RED_DOT_01, AflItems.BR51_DRUM_MAGAZINE_50, "reload_empty_drum");
+        gun("br51_reddot_drum", AflItems.BR51_01, AflItems.RIFLE_RED_DOT_01, AflItems.BR51_DRUM_MAGAZINE_50, "reload_empty");
         gun("p9_reddot", AflItems.P9_01, AflItems.PISTOL_RED_DOT, null, "reload_empty");
         gun("hr55_reddot", AflItems.HR55, AflItems.RIFLE_RED_DOT_01, null, "reload_empty");
         client(0, mc -> {

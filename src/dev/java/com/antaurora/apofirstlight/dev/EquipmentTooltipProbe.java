@@ -26,8 +26,8 @@ public final class EquipmentTooltipProbe {
     }
     private static void fixture(boolean extended){
         items=new ItemStack[]{new ItemStack(AflItems.P9_01.get()),new ItemStack(AflItems.BR51_01.get()),new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()),new ItemStack(AflItems.RIFLE_SUPPRESSOR_01.get()),
-                new ItemStack(AflItems.P9_01_EXTENDED_MAGAZINE.get()),new ItemStack(AflItems.BR51_EXTENDED_MAGAZINE_35.get()),new ItemStack(AflItems.PISTOL_RED_DOT.get()),new ItemStack(AflItems.RIFLE_RED_DOT_01.get())};
-        if(extended){attach(items[0],NativeAttachment.Slot.MAGAZINE,AflItems.P9_01_EXTENDED_MAGAZINE.get());attach(items[1],NativeAttachment.Slot.MAGAZINE,AflItems.BR51_EXTENDED_MAGAZINE_35.get());
+                new ItemStack(AflItems.P9_01_EXTENDED_MAGAZINE.get()),new ItemStack(AflItems.BR51_01_EXTENDED_MAGAZINE.get()),new ItemStack(AflItems.PISTOL_RED_DOT.get()),new ItemStack(AflItems.RIFLE_RED_DOT_01.get())};
+        if(extended){attach(items[0],NativeAttachment.Slot.MAGAZINE,AflItems.P9_01_EXTENDED_MAGAZINE.get());attach(items[1],NativeAttachment.Slot.MAGAZINE,AflItems.BR51_01_EXTENDED_MAGAZINE.get());
             attach(items[0],NativeAttachment.Slot.MUZZLE,AflItems.PISTOL_SUPPRESSOR_01.get());attach(items[1],NativeAttachment.Slot.MUZZLE,AflItems.RIFLE_SUPPRESSOR_01.get());}
     }
     private static void validate(boolean extended){

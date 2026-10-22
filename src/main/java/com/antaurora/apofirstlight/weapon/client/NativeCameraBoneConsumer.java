@@ -43,7 +43,7 @@ public final class NativeCameraBoneConsumer {
     public static boolean supportedAction(String name) {
         return name != null && switch (name) {
             case "inspect", "inspect_empty", "inspect_no_mag", "inspect_empty_no_mag", "reload_tactical", "reload_empty", "draw", "first_draw", "put_away", "unload", "unload_empty" -> true;
-            // Magazine-specific reload variants (attachment reload_overrides, e.g. reload_empty_drum).
+            // Magazine-specific reload variants (attachment reload_overrides, when an attachment names one).
             default -> name.startsWith("reload_"); // Excludes shoot and both static baselines.
         };
     }

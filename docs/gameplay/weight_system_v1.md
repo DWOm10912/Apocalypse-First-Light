@@ -168,7 +168,7 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 |---|---:|
 | pistol_red_dot / rifle_red_dot_01 | 0.100 / 0.250 |
 | p9_01_magazine（标准 17 发，2026-10-19） / p9_01_extended_magazine | 0.080 / 0.120 |
-| br51_extended_magazine_35 / br51_drum_magazine_50 | 0.300 / 0.800 |
+| br51_01_magazine / br51_01_extended_magazine / br51_drum_magazine_50 | 0.200 / 0.300 / 0.800（2026-10-21 BR-51 V3：35 发扩容弹匣换成 30 发弧形弹匣，估计值） |
 | pistol_suppressor_01 / rifle_suppressor_01 / heavy_suppressor_01 | 0.250 / 0.450 / 0.700 |
 
 21 种新材料：steel_billet 1；lead_brick 0.75（第一版 2，2026-10-03 改）；tungsten_filament 0.05；silver_scrap、cemented_carbide_blank、steel_scrap 各 0.25；plastic_scrap、plastic_pellets 各 0.1；bauxite、alumina、galena、sphalerite、cassiterite、pentlandite、electrolytic_nickel、wolframite、tungsten_oxide、tungsten_powder、spodumene_concentrate、lithium_carbonate、tungsten_carbide_powder 各 0.5。
@@ -490,7 +490,7 @@ coverage 每页20个AFL物品，报告来源：
 6. Native Gun：`/give @s apocalypse_firstlight:br51_01`，`/aflweight held` 应receiver3200、magazine200、loaded_ammo480、total3880g（无其它配件）。P9默认满17发应884g；Blackridge默认满7发应2045g。已有NBT的空枪不得重新视为满弹。
 7. 射击：Survival BR51每成功射击一次，枪内弹量与质量应分别−1 / −24g；不要把掉落弹壳特效加回玩家。Creative仍按真实gun ammo字段计量，不出现Integer.MAX_VALUE质量。
 8. 换弹：`/give @s apocalypse_firstlight:762x51mm_round 64`。Survival换弹begin不提前改变质量，magIn真实transfer后枪增加量等于备用弹减少量，总重保持（无丢物/换配置）。Creative补弹可增加枪内真值质量，但没有虚构无限备用弹重量。
-9. 匣/配件：给 br51_extended_magazine_35、br51_drum_magazine_50、rifle_red_dot_01、rifle_suppressor_01，用既有维护台/野外交互安装/拆除。无其它附件的20/35/50满弹枪应3880/4340/5200g；红点+250g，消音器+450g。magazine项仅一次；拆除回隐式默认匣的总量边界按上文，不误判为严格守恒。不要用动画中的辅助弹匣计量。
+9. 匣/配件（2026-10-21 前的旧验收项，BR-51 V3 起弹匣按弹匣系统计重，35 发弹匣已换成 30 发 `br51_01_extended_magazine`）：给 br51_extended_magazine_35、br51_drum_magazine_50、rifle_red_dot_01、rifle_suppressor_01，用既有维护台/野外交互安装/拆除。无其它附件的20/35/50满弹枪应3880/4340/5200g；红点+250g，消音器+450g。magazine项仅一次；拆除回隐式默认匣的总量边界按上文，不误判为严格守恒。不要用动画中的辅助弹匣计量。
 10. 模式：Creative → Survival的penaltiesEnabled下一tick变true，重量仍覆盖overflow；Spectator/Creative为false，这时没有任何移动惩罚。
 11. 生命周期：分别用 keepInventory true/false测试死亡重生，比较实际保留/掉落物；跨维度、退出重进、重新开世界后重新推导，不出现旧缓存质量。测试联网本人同步不泄漏给其它玩家。
 12. Reload：测试datapack覆盖同路径core_v1.json，将apple改0.3kg后`/reload`，revision增加且每个apple变300g。再从覆盖文件删除apple条目，若无其它匹配规则则250g，不保留旧300g。另测试相同最高priority的冲突tag，应警告并fallback；负数/小于克精度/溢出/非法policy文件应整份拒绝，而不是客户端崩溃。

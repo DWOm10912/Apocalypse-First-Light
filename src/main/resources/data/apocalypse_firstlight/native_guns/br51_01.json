@@ -18,9 +18,10 @@
   },
   "magazine_capacity": 20,
   "magazine_slot": {
-    "hotspot_anchor": "mag_standard",
-    "hotspot_y": -4,
-    "accepts": ["apocalypse_firstlight:br51_extended_magazine_35", "apocalypse_firstlight:br51_drum_magazine_50"]
+    "hotspot_anchor": "magazine",
+    "hotspot_offset": [0, -3.12, 1.94],
+    "standard": "apocalypse_firstlight:br51_01_magazine",
+    "accepts": ["apocalypse_firstlight:br51_01_magazine", "apocalypse_firstlight:br51_01_extended_magazine", "apocalypse_firstlight:br51_drum_magazine_50"]
   },
   "fire": {
     "modes": ["semi", "auto"],
@@ -67,8 +68,8 @@
     "profile": "battle_rifle"
   },
   "reload": {
-    "tactical_seconds": 2.6,
-    "empty_seconds": 2.85
+    "tactical_seconds": 2.4,
+    "empty_seconds": 2.9
   },
   "noise": {
     "radius": 112,
@@ -78,9 +79,9 @@
     "time_seconds": 0.2,
     "fov_multiplier": 0.89,
     "profile": {
-      "anchor": "octagon9/rear-aperture-axis",
-      "aim": [0, 13.6875, 15.46875],
-      "eye_relief": 0.16,
+      "anchor": "rear_sight",
+      "aim": [0, 12.748, 9.31],
+      "eye_relief": 0.36,
       "hip_translation": [3.8, -7.2, -11.5],
       "hip_rotation": [0, 4, 0],
       "scale": 0.45,
@@ -90,13 +91,17 @@
     }
   },
   "presentation": {
-    "hud": {"width": 60, "height": 12}, "mag_in_tick": 52, "trail": "subtle_rifle",
+    "hud": {"width": 59, "height": 11},
+    "mag_in_tick": 34,
+    "empty_mag_in_tick": 34,
+    "trail": "subtle_rifle",
     "magazine_round_visual": {
-      "anchor": ["7", "3"],
-      "loaded_auxiliary_anchor": ["reload_bullet_7", "reload_bullet_3"],
+      "anchor": ["magazine_round_1", "magazine_round_2"],
+      "loaded_auxiliary_anchor": ["mag_out_round_1", "mag_out_round_2"],
+      "old_magazine_anchor": ["empty_old_mag_round_1", "empty_old_mag_round_2"],
       "geometry": "apocalypse_firstlight:geo/762x51mm_round.geo.json",
       "texture": "apocalypse_firstlight:textures/item/762x51mm_ammo_v1.png",
-      "local_offset": [0, -1.96832, 0]
+      "item_rounds": [[-0.2233, 0.019, 3.674, -90], [0.2233, -0.272, 3.674, -90]]
     }
   },
   "recoil": {

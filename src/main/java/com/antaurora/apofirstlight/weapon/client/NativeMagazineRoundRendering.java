@@ -71,8 +71,8 @@ final class NativeMagazineRoundRendering {
         if (rotation[0] != 0) local.mulPose(Axis.XP.rotationDegrees(rotation[0]));
         if (rotation[1] != 0) local.mulPose(Axis.YP.rotationDegrees(rotation[1]));
         if (rotation[2] != 0) local.mulPose(Axis.ZP.rotationDegrees(rotation[2]));
-        GeckoMeshRenderer.render(visual.geometry(), visual.texture(),
-                local, buffers, light, overlay);
+        if (!com.antaurora.apofirstlight.client.MeshItemCache.draw(visual.geometry(), visual.texture(), local, buffers, light, overlay))
+            GeckoMeshRenderer.render(visual.geometry(), visual.texture(), local, buffers, light, overlay);
     }
 
     private NativeMagazineRoundRendering() {}

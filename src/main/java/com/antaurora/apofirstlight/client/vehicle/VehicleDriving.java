@@ -88,7 +88,15 @@ public final class VehicleDriving {
      */
     public static final KeyMapping CLIMATE = new KeyMapping("key.apocalypse_firstlight.climate", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V, CATEGORY);
     /** The key hints at the top right on / off (user 2026-10-18: Caps Lock, to film without them; remembered in the client config). */
-    public static final KeyMapping HINTS = new KeyMapping("key.apocalypse_firstlight.driving_hints", DRIVING, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_CAPS_LOCK, CATEGORY);
+    /** The hints key works while driving and with a gun in the hand on foot (its key hints, weapon/client/NativeGunKeyHints). */
+    private static final IKeyConflictContext HINTS_CONTEXT = new IKeyConflictContext() {
+        @Override
+        public boolean isActive() { return DRIVING.isActive() || com.antaurora.apofirstlight.weapon.client.NativeGunKeyHints.active(); }
+
+        @Override
+        public boolean conflicts(IKeyConflictContext other) { return other == this || other == DRIVING || other == net.minecraftforge.client.settings.KeyConflictContext.IN_GAME; }
+    };
+    public static final KeyMapping HINTS = new KeyMapping("key.apocalypse_firstlight.driving_hints", HINTS_CONTEXT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_CAPS_LOCK, CATEGORY);
     private static final KeyMapping[] KEYS = {SHIFT_UP, SHIFT_DOWN, TRANSFER, IGNITION, LIGHTS, HORN, SIGNAL_LEFT, SIGNAL_RIGHT, HAZARD, WIPERS, CLIMATE, HINTS};
     /** Below this speed (m/s) a truck whose driver has let go of the wheel keeps the handbrake on. */
     private static final float FREE_HANDS_HANDBRAKE = 1.0F;
@@ -410,7 +418,8 @@ public final class VehicleDriving {
             if (pressed(HAZARD) && driving) lampSwitch(PickupTruckEntity.SWITCH_HAZARD);
             if (pressed(WIPERS) && driving) lampSwitch(PickupTruckEntity.SWITCH_WIPER);
             if (pressed(CLIMATE) && driving) lampSwitch(PickupTruckEntity.SWITCH_CLIMATE);
-            if (pressed(HINTS) && driving) com.antaurora.apofirstlight.client.FirstPersonBodyConfig.toggleKeyHints();
+            if (pressed(HINTS) && (driving || com.antaurora.apofirstlight.weapon.client.NativeGunKeyHints.active()))
+                com.antaurora.apofirstlight.client.FirstPersonBodyConfig.toggleKeyHints();
             while (HORN.consumeClick()) {
             }
             boolean horn = driving && HORN.isDown();

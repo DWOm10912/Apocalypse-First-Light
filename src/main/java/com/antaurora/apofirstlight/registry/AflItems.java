@@ -30,16 +30,19 @@ public final class AflItems {
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "p9_01"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("p9_01_v3_native", "static_idle",
                             java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty",
-                                    "reload_tactical_ads", "reload_empty_ads", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty",
+                                    "reload_tactical_ads", "reload_empty_ads", "reload_tactical_no_mag", "reload_empty_no_mag",
+                                    "reload_tactical_no_mag_ads", "reload_empty_no_mag_ads", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty",
                                     "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty"),
                             java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","br51_01"),
-                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("br51_01", "static_idle",
-                            java.util.List.of("static_idle", "reload_empty", "reload_tactical", "static_bolt_caught",
-                                    "inspect", "shoot", "put_away", "draw", "reload_empty_drum"),
-                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "ejection_anchor", 4.8125F)));
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("br51_01_v3_native", "static_idle",
+                            java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty", "reload_tactical_no_mag",
+                                    "reload_empty_no_mag", "shoot", "draw", "first_draw",
+                                    "put_away", "inspect", "inspect_empty", "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty"),
+                            java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
+                            "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> HR55 = ITEMS.register("hr55", () ->
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "hr55"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("hr55", "static_idle",
@@ -80,13 +83,18 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("p9_01",17,java.util.Set.of(),false,2.16f,22f,"p9_01_v3_native"));
     public static final RegistryObject<Item> P9_01_EXTENDED_MAGAZINE = ITEMS.register("p9_01_extended_magazine",
             com.antaurora.apofirstlight.weapon.NativeMagazineItem::new);
-    public static final RegistryObject<Item> BR51_EXTENDED_MAGAZINE_35 = ITEMS.register("br51_extended_magazine_35",
-            () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",35,
-                    java.util.Set.of("mag_standard","reload_mag_standard","empty_old_mag_standard"),true,3.8f));
-    // 50-round drum: same replaced bones; its empty reload is reload_empty_drum (native_attachments/br51_drum_magazine_50.json).
+    // BR-51 V3 magazines (tools/build-br51-01-magazines.mjs, docs/native_guns/br51_01_v3_game_model_v1.md): all three stand
+    // where the 20-round one does, feed lips at the same place, so the gun's own top rounds show on any of them. The 20-round
+    // one is the gun's own magazine bone (the gun's texture, replaces nothing); the 30-round curved and the 50-round drum
+    // replace the loaded, reload (mag_out) and dropped magazine bones, drawn with the mags texture.
+    public static final RegistryObject<Item> BR51_01_MAGAZINE = ITEMS.register("br51_01_magazine",
+            () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",20,java.util.Set.of(),false,3.11883f,0f,"br51_01_v3_native"));
+    public static final RegistryObject<Item> BR51_01_EXTENDED_MAGAZINE = ITEMS.register("br51_01_extended_magazine",
+            () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",30,
+                    java.util.Set.of("magazine","reload_magazine","empty_old_mag"),false,4.82568f,0f,"br51_01_v3_mags"));
     public static final RegistryObject<Item> BR51_DRUM_MAGAZINE_50 = ITEMS.register("br51_drum_magazine_50",
             () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",50,
-                    java.util.Set.of("mag_standard","reload_mag_standard","empty_old_mag_standard"),true,3.4f));
+                    java.util.Set.of("magazine","reload_magazine","empty_old_mag"),false,4.14022f,0f,"br51_01_v3_mags"));
     public static final RegistryObject<Item> PISTOL_SUPPRESSOR_01 = ITEMS.register("pistol_suppressor_01",
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> RIFLE_SUPPRESSOR_01 = ITEMS.register("rifle_suppressor_01",

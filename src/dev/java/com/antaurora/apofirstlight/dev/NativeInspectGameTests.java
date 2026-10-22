@@ -36,6 +36,14 @@ public final class NativeInspectGameTests {
         GeoItem.getOrAssignId(p.getMainHandItem(), h.getLevel());
         NativeGunAmmo.set(p.getMainHandItem(), NativeGunDefinition.BR51_01, 10);
         p.getInventory().setItem(1, new ItemStack(AflItems.ROUND_762MM.get(), 32));
+        // the BR-51 V3 reloads from magazine items in the pockets (docs/native_guns/magazine_system_v1.md)
+        var pockets = com.antaurora.apofirstlight.inventory.grid.Pockets.of(p);
+        if (pockets != null) pockets.set(new net.minecraft.nbt.ListTag());
+        var mag = new ItemStack(AflItems.BR51_01_MAGAZINE.get());
+        com.antaurora.apofirstlight.weapon.NativeMagazines.setRounds(mag, 20);
+        var view = com.antaurora.apofirstlight.inventory.grid.PlayerGrids.view(p);
+        view.get(com.antaurora.apofirstlight.inventory.grid.PlayerGrids.Target.POCKETS).insert(mag);
+        view.commit();
         return p;
     }
     private static void tick(ServerPlayer p) { NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, p)); }
@@ -44,7 +52,7 @@ public final class NativeInspectGameTests {
         var p = player(h); var before = p.getMainHandItem().copy();
         h.assertTrue(NativeGunActions.operation(p, "inspect"), "starts existing inspect");
         h.assertTrue(!NativeGunActions.operation(p, "inspect"), "repeat does not restart");
-        int duration = NativeGunAnimations.ticks("br51_01", "inspect");
+        int duration = NativeGunAnimations.ticks("br51_01_v3_native", "inspect");
         h.runAfterDelay(duration, () -> {
             tick(p);
             h.assertTrue(!NativeGunActions.busy(p), "formal animation duration clears lock");
@@ -67,7 +75,7 @@ public final class NativeInspectGameTests {
         });
         h.runAfterDelay(58, () -> {
             tick(p);
-            h.assertTrue(NativeGunAmmo.read(p.getMainHandItem(), NativeGunDefinition.BR51_01) == 20, "normal reload after interrupt");
+            h.assertTrue(com.antaurora.apofirstlight.weapon.NativeMagazines.magazineRounds(p.getMainHandItem(), NativeGunDefinition.BR51_01) == 20, "normal reload after interrupt");
             h.assertTrue(!NativeGunActions.busy(p), "reload lock clears");h.succeed();
         });
     }
@@ -91,7 +99,7 @@ public final class NativeInspectGameTests {
         h.assertTrue("inspect_empty".equals(pistol.inspectClip(p.getMainHandItem())), "empty P9 inspect");
         h.assertTrue(NativeGunActions.operation(p, "inspect"), "empty P9 inspect starts");
         NativeGunActions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
-        h.assertTrue(!NativeGunAnimations.hasClip("br51_01", "missing_probe"), "missing clip safe");
+        h.assertTrue(!NativeGunAnimations.hasClip("br51_01_v3_native", "missing_probe"), "missing clip safe");
         h.succeed();
     }
 }

@@ -25,8 +25,10 @@ public final class NativeGunInput {
             KeyConflictContext.GUI, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
     public static boolean firing(){return triggerSent||attackHeld;}
-    /** The reload key, for the gun HUD's empty-magazine prompt. */
+    /** The reload key, for the gun HUD's empty-magazine prompt and the key hints (NativeGunKeyHints). */
     public static KeyMapping reloadKey(){return RELOAD;}
+    public static KeyMapping inspectKey(){return INSPECT;}
+    public static KeyMapping fireModeKey(){return FIRE_MODE;}
     private static final KeyMapping RELOAD = new KeyMapping("key.apocalypse_firstlight.reload",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
@@ -42,6 +44,13 @@ public final class NativeGunInput {
             "key.categories.apocalypse_firstlight");
     private static boolean inspectHeld;
     private static boolean reloadHeld;
+    /**
+     * Ticks the reload key has been down since its press on a gun, -1 when there is none to answer (user 2026-10-22,
+     * docs/native_guns/magazine_system_v1.md 3): let go before {@link #RELOAD_HOLD_TICKS} it is a tap (the magazine out,
+     * or one in when none is fitted), held that long the reload proper (another magazine in).
+     */
+    private static int reloadTicks = -1;
+    private static final int RELOAD_HOLD_TICKS = 6;
 
     private NativeGunInput() {}
 
@@ -101,14 +110,14 @@ public final class NativeGunInput {
             inspectHeld = INSPECT.isDown();
             attackHeld = mc.options.keyAttack.isDown();
             reloadHeld = RELOAD.isDown();
+            reloadTicks = -1;
             return;
         }
         if (!mc.options.keyAttack.isDown()) attackHeld = false;
-        if (reloadClick && !reloadHeld) {
-            stopTrigger();
-            NativeGunInspect.cancel();
-            NativeGunAds.reloadRequested();
-            AflNetwork.requestNativeGun(true, mc.player.getInventory().selected);
+        if (reloadClick && !reloadHeld) reloadTicks = 0;
+        if (reloadTicks >= 0) {
+            if (!RELOAD.isDown()) reload(mc, com.antaurora.apofirstlight.weapon.NativeGunActions.RELOAD_TAP);
+            else if (++reloadTicks >= RELOAD_HOLD_TICKS) reload(mc, 0);
         }
         reloadHeld = RELOAD.isDown();
         if(modeClick&&!attackHeld&&!reloadClick
@@ -118,6 +127,14 @@ public final class NativeGunInput {
         if (inspectClick && !inspectHeld && !reloadClick && !mc.options.keyAttack.isDown()) NativeGunInspect.pressed();
         inspectHeld = INSPECT.isDown();
         NativeGunInspect.tick(true);
+    }
+    /** The reload key's request, tapped or held (NativeGunActions#RELOAD_TAP, carried as the request's shot id). */
+    private static void reload(Minecraft mc, long mode) {
+        reloadTicks = -1;
+        stopTrigger();
+        NativeGunInspect.cancel();
+        NativeGunAds.reloadRequested();
+        AflNetwork.requestNativeGun(true, mc.player.getInventory().selected, mode);
     }
     private static void stopTrigger(){
         if(triggerSent){AflNetwork.nativeTrigger(0,triggerSlot,0,triggerGun);triggerSent=false;}

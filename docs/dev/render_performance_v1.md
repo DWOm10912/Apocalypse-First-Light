@@ -309,7 +309,37 @@
 
 已知问题（同一次排查发现，没改）：
 
-- 只按代码推断，没测，和上面的测量对不上，要先查清：开光影时（`MeshRendering.smoothTopology()` = TRIANGLES）带平滑部件的网格（P9 V3 从 10-17 起 `crease_angle` 35，两种弹匣也是）的平滑部分画进 TRIANGLES 类型。`classify` 只把原版的 entity cutout / solid 类型放进区块，按代码这一部分躺在地上、挂在枪架上时都不进区块，每帧由渲染器重放；它的 `shadow` 是 false，地上的物品在阴影 pass 里整件跳过，所以也不会有影子。可是 10-19 在 Aureveil 下测的就是 P9 V3，进区块后渲染器每帧只要约 0.02 ms，说明那时候它没走三角形，或者是别的原因，现在不知道。下次测帧时用 `GroundItemChunking.status()` 的四边形数和 `GroundItemRenderer.status()` 的耗时对一下。
+- （2026-10-21 已改，见下一节）只按代码推断，没测，和上面的测量对不上，要先查清：开光影时（`MeshRendering.smoothTopology()` = TRIANGLES）带平滑部件的网格（P9 V3 从 10-17 起 `crease_angle` 35，两种弹匣也是）的平滑部分画进 TRIANGLES 类型。`classify` 只把原版的 entity cutout / solid 类型放进区块，按代码这一部分躺在地上、挂在枪架上时都不进区块，每帧由渲染器重放；它的 `shadow` 是 false，地上的物品在阴影 pass 里整件跳过，所以也不会有影子。可是 10-19 在 Aureveil 下测的就是 P9 V3，进区块后渲染器每帧只要约 0.02 ms，说明那时候它没走三角形，或者是别的原因，现在不知道。下次测帧时用 `GroundItemChunking.status()` 的四边形数和 `GroundItemRenderer.status()` 的耗时对一下。
+
+## 2026-10-21：开光影时平滑部件的三角形也进区块
+
+用户 2026-10-21（截图：地上一只 BR-51 弹鼓、一只 30 发弹匣，28 FPS）：「你是不是又没做P9之前同款的掉落物优化」。
+
+- 地上物品进区块这套（上面 2026-10-19 一节）对所有网格物品都生效，BR-51 的弹匣也会走。但上面「已知问题」里说的那一点是真的：开光影时 Vextris 把平滑部件（`crease_angle`）画进它自己的 TRIANGLES 类型（`MeshRendering.cutoutType(texture, Topology.TRIANGLES)`），`classify` 不认这个类型，于是这部分不进区块，每帧由渲染器重放，阴影 pass 里也不画。
+- BR-51 的 30 发弹匣 4390 个三角形，弹鼓 6941 个，大部分是平滑部件，所以这两件几乎整件每帧重画；P9 弹匣约 600 个，所以以前看不出来。
+- 修改（`client/WoodGunRackChunking`）：
+  - `classify` 把同一张贴图的 Vextris TRIANGLES 类型也当成可进区块的 cutout；
+  - `split` 把每个三角形补成一个四边形（第三个角重复一次，`Stream#asQuads`），走原来四边形进区块的路径；
+  - 不进区块的那部分仍按三角形（每个 3 个顶点）留给渲染器。
+- 枪架、地上的物品（枪和弹匣都算）、车斗里的货物用的是同一个录制器，都跟着改了。
+- 代价：区块里的光影按每个面算法线（区块里所有四边形都一样），所以这些平滑部件躺在地上、挂在枪架上时，光影下会显出棱面；拿在手里不受影响。进了区块以后它们在阴影 pass 里也画，所以开始有影子。
+- 编译通过，没进游戏看过，没测帧。
+
+## 2026-10-21：手里的弹匣、子弹和网格物品走显存缓存
+
+用户 2026-10-21（截图：手持 BR-51 弹鼓 52 FPS，拿枪 112 FPS）：「手持BR51弹鼓会降低60多帧」「好像BR51的所有弹匣拿出来都会卡，原装的也是」。
+
+- 原因：枪本身从 Vextris 显存缓存画（`MaintenanceGunRendering#drawCached`），但单独的弹匣（`NativeMuzzleRendering.drawItem`）、弹匣顶上的子弹（`NativeMagazineRendering.topRound`、枪里的 `NativeMagazineRoundRendering`）和静态网格物品（`AflStaticMeshItemRenderer`）还在 CPU 上每帧逐顶点提交。开光影时约 145 ns/顶点（[vextris_gpu_cache_request.md](vextris_gpu_cache_request.md)）。拿在手里的东西每帧要画好几次：第一人称手里、阴影 pass、物品栏。
+  - 弹鼓 6941 个三角形，开光影时一次约 2.1 万个顶点。
+  - 20 发弹匣本身只有 934 个三角形，但顶上两发 7.62 子弹每发 1160 个，比弹匣还多，所以原装弹匣也卡。
+  - 装在枪上的 30 发和弹鼓替换枪的弹匣骨骼，也是走 `drawItem`，所以拿着装弹鼓的枪也一样。
+- 修改：新类 `client/MeshItemCache`，按 GeckoLib 骨骼逐个调 `MeshGpuCache.drawBone`（同 `GeckoMeshRenderer` 的遍历：`neverRender` 跳过，隐藏骨骼不画自己的部件，`hidingChildren` 不画子骨骼）。上面四处先走它，走不了才回 CPU：
+  - 带半透明层的网格（缓存不存半透明，玻璃要和别的半透明一起排序）；
+  - 录几何的缓冲（检视的 `MaintenanceGunRendering.Capture`，枪架、地上物品、车斗的区块录制 `ClosedFaces`），它们要的是顶点；
+  - `-Dvextris.gpuCache=false`；
+  - 带附魔光效的静态物品（光效要单独的 foil 缓冲）。
+- 静态网格物品原来全部按 QUADS 提交，开光影时平滑部件是棱面；走缓存以后平滑部件按 TRIANGLES 存，在手里会变得和枪一样平滑。
+- 用户 2026-10-21 实机：「卡顿的问题没了」。没测具体帧数。
 
 ## 还没做的
 

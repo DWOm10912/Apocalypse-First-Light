@@ -16,6 +16,10 @@ public interface NativeGunItem extends software.bernie.geckolib.animatable.GeoIt
     default int reloadTicks(boolean empty) {
         return empty ? definition().emptyReloadTicks() : definition().reloadDurationTicks();
     }
+    /** A reload clip's variant for a gun with no magazine fitted (reload_tactical_no_mag, reload_empty_no_mag). */
+    String NO_MAG = "_no_mag";
+    /** Ticks the no-magazine reload of this kind is shorter than the reload (0: the gun has none). */
+    default int noMagReloadCut(boolean empty) { return 0; }
     /** Whether this gun's animation asset can play the named clip (magazine reload overrides need it). */
     default boolean supportsClip(String clip) { return false; }
     /** The fitted magazine's reload override for this reload kind, if the gun can play its clip (else the gun's own reload). */

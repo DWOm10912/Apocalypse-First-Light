@@ -87,7 +87,7 @@ public final class MagazineSystemGameTests {
         h.assertTrue(NativeGunAmmo.read(old, d) == 17 && NativeMagazines.magazineRounds(old, d) == 17, "its rounds are kept, in the magazine");
         var gun = p9(18, true);
         h.assertTrue(NativeMagazines.magazineRounds(gun, d) == 17 && NativeMagazines.chamber(gun, d) == 1, "17 in the magazine + 1");
-        h.assertTrue(BR51Probe.notMagazineItems(), "the BR-51 keeps loose-round reloads");
+        h.assertTrue(BR51Probe.magazineItems(), "the BR-51 V3 loads from magazine items too (20 + 1)");
         h.succeed();
     }
 
@@ -100,10 +100,10 @@ public final class MagazineSystemGameTests {
         wear(player, AflEquipmentSlots.BACK, new ItemStack(AflItems.CANVAS_BACKPACK.get()));
         put(player, PlayerGrids.Target.BACKPACK, magazine(standard, 17));
         var gun = p9(4, true);   // 3 + 1
-        h.assertTrue(!NativeMagazines.canReload(player, gun, d), "the backpack is never searched");
+        h.assertTrue(!NativeMagazines.canReload(player, d) && NativeMagazines.inBackpack(player, d), "the backpack is never searched");
         put(player, PlayerGrids.Target.RIG, magazine(standard, 12));
         put(player, PlayerGrids.Target.POCKETS, magazine(standard, 15));
-        h.assertTrue(NativeMagazines.canReload(player, gun, d), "a fuller magazine in the rig or the pockets");
+        h.assertTrue(NativeMagazines.canReload(player, d), "a loaded magazine in the rig or the pockets");
         h.assertTrue(NativeMagazines.spares(player, d)[0] == 2 && NativeMagazines.spares(player, d)[1] == 27, "spares: rig and pockets only");
         h.assertTrue(NativeMagazines.swap(player, gun, d), "swap");
         h.assertTrue(NativeMagazines.magazineRounds(gun, d) == 15 && NativeGunAmmo.read(gun, d) == 16, "the fullest went in, the chamber kept: 15 + 1");
@@ -111,8 +111,9 @@ public final class MagazineSystemGameTests {
         var pockets = PlayerGrids.view(player).get(PlayerGrids.Target.POCKETS);
         h.assertTrue(pockets.entries().stream().anyMatch(e -> e.stack().is(standard) && NativeMagazines.rounds(e.stack()) == 3),
                 "it took the new one's place in the pockets");
-        h.assertTrue(!NativeMagazines.swap(player, gun, d) || NativeMagazines.magazineRounds(gun, d) > 15,
-                "no swap for a magazine with fewer rounds than the fitted one");
+        // held on purpose (user 2026-10-22): the next swap takes the fullest other loaded one, fewer rounds or not
+        h.assertTrue(NativeMagazines.swap(player, gun, d) && NativeMagazines.magazineRounds(gun, d) == 12,
+                "the 12-round one goes in for the 15: " + NativeMagazines.magazineRounds(gun, d));
         h.succeed();
     }
 
@@ -177,20 +178,20 @@ public final class MagazineSystemGameTests {
         inventory.items.set(com.antaurora.apofirstlight.inventory.HotbarRoles.PISTOL_SLOT, gun);
         inventory.selected = com.antaurora.apofirstlight.inventory.HotbarRoles.PISTOL_SLOT;
         put(player, PlayerGrids.Target.RIG, magazine(standard, 0));
-        h.assertTrue(!NativeMagazines.canReload(player, gun, d) && NativeMagazines.ejectable(player, gun, d),
-                "an empty spare is no reload: the key takes the magazine out");
+        h.assertTrue(!NativeMagazines.canReload(player, d) && NativeMagazines.ejectable(gun, d),
+                "an empty spare is no reload; a tap takes the magazine out");
         h.assertTrue(NativeMagazines.eject(player, gun, d), "eject");
         int hand = com.antaurora.apofirstlight.inventory.HotbarRoles.HAND_SLOT;
         h.assertTrue(inventory.selected == hand && inventory.getItem(hand).is(standard) && NativeMagazines.rounds(inventory.getItem(hand)) == 0,
                 "the magazine is held, in the hand");
         h.assertTrue(inventory.getItem(com.antaurora.apofirstlight.inventory.HotbarRoles.PISTOL_SLOT) == gun
                 && NativeMagazines.fitted(gun, d).isEmpty() && NativeGunAmmo.read(gun, d) == 1, "the gun stays holstered, the chambered round in it");
-        h.assertTrue(!NativeMagazines.ejectable(player, gun, d), "nothing left to take out");
-        // a fuller spare: the key reloads instead; a full fitted magazine stays in
+        h.assertTrue(!NativeMagazines.ejectable(gun, d), "nothing left to take out");
+        // a loaded spare: a tap with none fitted puts it in; a tap takes even a full fitted magazine out (user 2026-10-22)
         put(player, PlayerGrids.Target.RIG, magazine(standard, 9));
-        h.assertTrue(NativeMagazines.canReload(player, gun, d) && !NativeMagazines.ejectable(player, gun, d), "a fuller spare reloads");
+        h.assertTrue(NativeMagazines.canReload(player, d) && !NativeMagazines.ejectable(gun, d), "a loaded spare goes in");
         var full = p9(18, true);
-        h.assertTrue(!NativeMagazines.ejectable(player, full, d), "a full magazine stays in");
+        h.assertTrue(NativeMagazines.ejectable(full, d), "a full magazine comes out too");
         // creative swaps real magazines too, from the rig and pockets only
         player.setGameMode(GameType.CREATIVE);
         h.assertTrue(NativeMagazines.swap(player, gun, d) && NativeMagazines.magazineRounds(gun, d) == 9, "creative swaps the 9-round spare in");
@@ -198,8 +199,13 @@ public final class MagazineSystemGameTests {
         h.succeed();
     }
 
-    /** The BR-51 has no standard magazine: its reloads stay loose rounds. */
+    /** The BR-51 V3 (docs/native_guns/br51_01_v3_game_model_v1.md): its standard 20-round magazine, as the P9's. */
     private static final class BR51Probe {
-        static boolean notMagazineItems() { return !NativeMagazines.system(NativeGunDefinition.BR51_01); }
+        static boolean magazineItems() {
+            var d = NativeGunDefinition.BR51_01;
+            var fresh = new ItemStack(AflItems.BR51_01.get());
+            return NativeMagazines.system(d) && NativeMagazines.fitted(fresh, d).is(AflItems.BR51_01_MAGAZINE.get())
+                    && NativeGunAmmo.capacity(fresh, d) == 21;
+        }
     }
 }

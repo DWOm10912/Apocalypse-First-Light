@@ -35,10 +35,13 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | Key | Action |
 |---|---|
 | Left / right click | Fire / aim |
-| R | Reload |
+| R | Reload. Guns with magazines: tap to remove the magazine, hold to swap magazines |
 | B | Switch fire mode |
 | V | Inspect |
 | Z | Change attachments in the field |
+| Caps Lock | Hide / show the gun key hints at the top right (the same setting as the driving hints) |
+
+<StatusTag s="verified" d="2026-10-22" /> For the reload tap / hold and the gun key hints, see [Arms](../arms/)
 
 ## Map
 
@@ -66,6 +69,6 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | ↓ | Hazards |
 | C | Wipers: off / intermittent / low / high |
 | V | Climate: off / heat / A/C |
-| Caps Lock | Hide / show the key hints at the top right (remembered) |
+| Caps Lock | Hide / show the key hints at the top right (remembered; the same key works with a gun in hand) |
 
 In the driver's seat these keys lend out their usual actions; R, F and X only while you hold the wheel

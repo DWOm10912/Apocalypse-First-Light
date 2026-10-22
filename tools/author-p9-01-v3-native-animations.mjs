@@ -267,11 +267,16 @@ const RELOAD_ADS_MEET = {pos: add(RELOAD_ADS_DIP.pos, [-0.15, -0.2, 0]), rot: ad
 // Tactical: thumb release, the old magazine drops; fresh one from lower left on an arc, the gun meets it, palm slap,
 // home. Empty: same, the old magazine falls free, then the right thumb drops the slide off the slide stop (trained tier:
 // no overhand rack).
-function reload(empty, ads = false) {
+// No magazine in the gun (reload_*_no_mag[_ads]; ConfiguredNativeGunItem#reloadClip): no thumb on the release, nothing
+// shaken out; the support hand goes straight down for the new magazine, every beat NO_MAG_CUT s earlier (whole ticks:
+// the game takes the cut from the two clip lengths, length and magazine-in tick alike).
+export const NO_MAG_CUT = 0.1;
+function reload(empty, ads = false, noMag = false) {
     const T = empty
         ? {release: 0.22, drop: 0.24, enter: 0.46, align: 0.66, seat: 0.9, stop: 1.0, back: 1.06, backEnd: 1.5, regrip: 1.34, end: 2.0}
         : {release: 0.22, drop: 0.24, enter: 0.42, align: 0.62, seat: 0.86, back: 0.93, backEnd: 1.34, regrip: 1.18, end: 1.7};
     if (ads) Object.assign(T, empty ? {back: 1.04, backEnd: 1.3} : {back: 0.9, backEnd: 1.16});   // back on the sights sooner
+    if (noMag) for (const k of Object.keys(T)) if (k !== 'release' && k !== 'drop') T[k] = +(T[k] - NO_MAG_CUT).toFixed(3);
     const settle = T.backEnd;
     const path = ads ? legs([
         [0.0, 0.2, RELOAD_ADS_DIP, {antic: 0.02, over: 0.04, per: 0.2, tau: 0.08}],
@@ -283,8 +288,8 @@ function reload(empty, ads = false) {
         [T.back, T.backEnd, IDLE, {antic: 0.03, over: 0.09, per: 0.24, tau: 0.09}]]);
     const up = t => go(t, 0.0, 0.28, {antic: 0, over: 0}) - go(t, T.back, T.backEnd, {antic: 0, over: 0});
     const hits = t => mul(sum(
-        jolt(t, T.release, [-0.7, 0.2, 0.5]),                                            // thumb on the release
-        empty ? Z : jolt(t, T.drop + 0.01, [-2.2, 0.4, 1.6], {rise: 0.03, per: 0.16, tau: 0.05}),   // wrist flick shakes it free
+        noMag ? Z : jolt(t, T.release, [-0.7, 0.2, 0.5]),                                // thumb on the release
+        empty || noMag ? Z : jolt(t, T.drop + 0.01, [-2.2, 0.4, 1.6], {rise: 0.03, per: 0.16, tau: 0.05}),   // wrist flick shakes it free
         jolt(t, T.seat, [3.0, -0.6, 1.5], {rise: 0.017, per: 0.11, tau: 0.05}),          // palm slap
         empty ? jolt(t, T.stop + 0.02, [-1.8, 0.3, 0.8], {rise: 0.015, per: 0.1, tau: 0.04}) : Z,   // slide slams home
         jolt(t, settle, [0.7, 0, -0.3], {per: 0.2, tau: 0.08}),
@@ -326,9 +331,10 @@ function reload(empty, ads = false) {
         empty ? jolt(t, T.stop + 0.02, [-0.5, 0, 0.2]) : Z);
     const tracks = {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
-        magazine: {scale: t => (t >= t0 && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
+        magazine: {scale: t => (t >= (noMag ? 0 : t0) && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
         follower: {position: t => empty && t < t0 ? Z : FOLLOWER_LOADED},   // empty magazine until the swap
-        empty_old_mag: {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
+        empty_old_mag: noMag ? {scale: () => [0, 0, 0], step: true}
+            : {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
         mag_out: {position: t => newMag(t).pos, rotation: t => newMag(t).rot},
         reload_magazine: {scale: t => (t >= T.enter - 0.06 && t < T.seat) ? [1, 1, 1] : [0, 0, 0], step: true},
         righthand: {position: t => sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rotation: () => RIGHT_REST.rot},
@@ -336,7 +342,7 @@ function reload(empty, ads = false) {
         camera: {rotation: camera},
     };
     if (empty) tracks.slide = {position: t => [0, 0, slidePos(t)]};
-    const sounds = [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out'],
+    const sounds = [...(noMag ? [] : [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out']]),
         [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'], ...(empty ? [[T.stop + 0.015, 'slide_release']] : [])];
     return {tracks, sounds, timing: T};
 }
@@ -344,6 +350,10 @@ clips.push(clip('reload_tactical', 1.7, 'once', () => reload(false)));
 clips.push(clip('reload_empty', 2.0, 'once', () => reload(true)));
 clips.push(clip('reload_tactical_ads', 1.7, 'once', () => reload(false, true)));
 clips.push(clip('reload_empty_ads', 2.0, 'once', () => reload(true, true)));
+clips.push(clip('reload_tactical_no_mag', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', () => reload(false, false, true)));
+clips.push(clip('reload_empty_no_mag', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', () => reload(true, false, true)));
+clips.push(clip('reload_tactical_no_mag_ads', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', () => reload(false, true, true)));
+clips.push(clip('reload_empty_no_mag_ads', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', () => reload(true, true, true)));
 
 // Inspect (CS2-style, trained): one hand shows the left side and holds it with a slow look, the wrist rolls to show the
 // right side (ejection port; empty: the open chamber), then a magazine check: thumb release, the magazine drops into the

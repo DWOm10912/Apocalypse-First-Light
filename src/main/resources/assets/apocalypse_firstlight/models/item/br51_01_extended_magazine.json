@@ -1,0 +1,123 @@
+{
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/br51_01_v3_mags"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        20,
+        135,
+        0
+      ],
+      "translation": [
+        -0.81459,
+        -0.27861,
+        0.76546
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        2,
+        -0.9216
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -1.152,
+        0,
+        0
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0.576,
+        0,
+        -0.99766
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -0.576,
+        0,
+        -0.99766
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        -1.152
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        -1.152
+      ]
+    }
+  }
+}

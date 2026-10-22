@@ -175,10 +175,13 @@ public final class NativeMagazines {
 
     private static final PlayerGrids.Target[] SEARCHED = {PlayerGrids.Target.RIG, PlayerGrids.Target.POCKETS};
 
-    /** The fullest compatible magazine with more rounds than {@code than}, rig first on a tie; null when there is none. */
-    private static GridStorage.Entry best(PlayerGrids.View view, NativeGunDefinition definition, int than) {
+    /**
+     * The fullest compatible magazine with rounds in it, rig first on a tie; null when there is none. Since 2026-10-22 (user)
+     * the reload is held on purpose and takes it even when it holds fewer than the fitted one.
+     */
+    private static GridStorage.Entry best(PlayerGrids.View view, NativeGunDefinition definition) {
         GridStorage.Entry best = null;
-        int most = than;
+        int most = 0;
         for (PlayerGrids.Target target : SEARCHED) {
             GridStorage storage = view.get(target);
             if (storage == null) continue;
@@ -210,31 +213,25 @@ public final class NativeMagazines {
     }
 
     /**
-     * A fuller compatible magazine than the fitted one is in the backpack (client: its synced copy; the HUD): the reload key
-     * never reaches it, the player moves it to the rig or the pockets in the inventory screen.
+     * A compatible magazine with rounds in it is in the backpack (client: its synced copy; the HUD): the reload key never
+     * reaches it, the player moves it to the rig or the pockets in the inventory screen.
      */
-    public static boolean inBackpack(Player player, ItemStack gun, NativeGunDefinition definition) {
+    public static boolean inBackpack(Player player, NativeGunDefinition definition) {
         GridStorage storage = PlayerGrids.view(player).get(PlayerGrids.Target.BACKPACK);
         if (storage == null) return false;
-        int than = fitted(gun, definition).isEmpty() ? 0 : magazineRounds(gun, definition);
         for (GridStorage.Entry entry : storage.entries())
-            if (fits(entry.stack(), definition) && rounds(entry.stack()) > than) return true;
+            if (fits(entry.stack(), definition) && rounds(entry.stack()) > 0) return true;
         return false;
     }
 
-    /** A reload would change something: a fuller spare than the fitted magazine in the rig or the pockets (creative too). */
-    public static boolean canReload(Player player, ItemStack gun, NativeGunDefinition definition) {
-        return best(PlayerGrids.view(player), definition, fitted(gun, definition).isEmpty() ? 0 : magazineRounds(gun, definition)) != null;
+    /** A reload has a magazine to put in: a compatible one with rounds in the rig or the pockets (creative too). */
+    public static boolean canReload(Player player, NativeGunDefinition definition) {
+        return best(PlayerGrids.view(player), definition) != null;
     }
 
-    /**
-     * The reload key would take the fitted magazine out into the hand instead (user 2026-10-20): no fuller spare to swap
-     * in, none in the backpack either ({@link #inBackpack}), and the fitted one is not full (a full one stays in: nothing to load).
-     */
-    public static boolean ejectable(Player player, ItemStack gun, NativeGunDefinition definition) {
-        ItemStack fitted = fitted(gun, definition);
-        return !fitted.isEmpty() && fitted.getItem() instanceof NativeMagazineItem m && magazineRounds(gun, definition) < m.capacity()
-                && !canReload(player, gun, definition) && !inBackpack(player, gun, definition);
+    /** A tap of the reload key takes the fitted magazine out into the hand (user 2026-10-22): one is fitted, full or not. */
+    public static boolean ejectable(ItemStack gun, NativeGunDefinition definition) {
+        return !fitted(gun, definition).isEmpty();
     }
 
     /**
@@ -262,7 +259,7 @@ public final class NativeMagazines {
     /** Server, at the reload's start: the magazines its bones show going out and coming in. */
     static void beginSwap(ServerPlayer player, ItemStack gun, NativeGunDefinition definition) {
         ItemStack out = fitted(gun, definition);
-        var entry = best(PlayerGrids.view(player), definition, out.isEmpty() ? 0 : magazineRounds(gun, definition));
+        var entry = best(PlayerGrids.view(player), definition);
         ItemStack in = entry == null ? ItemStack.EMPTY : entry.stack();
         int inRounds = entry == null ? 0 : rounds(entry.stack());
         CompoundTag swap = new CompoundTag();
@@ -294,7 +291,7 @@ public final class NativeMagazines {
     public static boolean swap(ServerPlayer player, ItemStack gun, NativeGunDefinition definition) {
         ItemStack out = takenOut(gun, definition);
         var view = PlayerGrids.view(player);
-        var entry = best(view, definition, out.isEmpty() ? 0 : rounds(out));
+        var entry = best(view, definition);
         if (entry == null) return false;
         ItemStack in = entry.stack().copyWithCount(1);
         int inRounds = rounds(in);

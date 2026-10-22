@@ -1,0 +1,44 @@
+{
+  "about": "The BR-51 magazine in the hand while it is loaded (gun/br51_01_mag_load; docs/native_guns/magazine_system_v1.md 4, docs/native_guns/br51_01_v3_game_model_v1.md): the held magazine item as NativeMagazineRendering draws it (item block units: the magazine pivot, the front lug, at (0.5, 0.5 + lift / 16, 0.5), the lips up, the front at -z). Scale as the BR-51 on the body (GunStance.Carried 0.307 x 1.25), so it is the gun's own magazine size. Points from tools/build-br51-01-magazines.mjs (the 20-round one): top (the feed lips), grip (the middle of the body), base (the floorplate), hold_l (the left palm on the magazine's left side, low, as the P9-01's). The 30-round and the drum are held at the same points. Symmetry x. Written by tools/build-br51-01-mag-load.mjs.",
+  "items": [
+    "br51_01_magazine",
+    "br51_01_extended_magazine",
+    "br51_drum_magazine_50"
+  ],
+  "scale": 0.38375,
+  "symmetry": "x",
+  "bounds": [
+    [
+      0.45814,
+      0.27931,
+      0.49394
+    ],
+    [
+      0.54186,
+      0.72069,
+      0.74815
+    ]
+  ],
+  "points": {
+    "top": [
+      0.5,
+      0.72069,
+      0.62104
+    ],
+    "grip": [
+      0.5,
+      0.5,
+      0.62104
+    ],
+    "base": [
+      0.5,
+      0.27931,
+      0.62104
+    ],
+    "hold_l": [
+      0.1581,
+      0.4042,
+      0.6868
+    ]
+  }
+}

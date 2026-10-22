@@ -1,9 +1,9 @@
-# 弹匣系统 V1（P9-01）
+# 弹匣系统 V1（P9-01、BR-51）
 
 ## 1. 状态（2026-10-19）
 
 - **用户 2026-10-20 实机 PASS**（第四轮之后："PASS"），提交到 master。编译通过，GameTest 里弹匣相关的测试通过（第 9 节）。下面各轮里写的"没进游戏看过"指当时的状态。
-- 只有 P9-01 用这套规则。BR-51、HR-55 仍然直接从身上的散装子弹装填。Silverwood 12 这类不用弹匣的枪，以后也照旧一发一发塞。
+- P9-01 用这套规则；2026-10-21 起 BR-51（V3，M14 机构）也用，见第 10 节，编译通过，没进游戏看过。HR-55 仍然直接从身上的散装子弹装填。Silverwood 12 这类不用弹匣的枪，以后也照旧一发一发塞。
 - 压弹动作 `gun/p9_01_mag_load` 用 AFL Rig 插件在 Blockbench 里做好并导出。插件和游戏的 Java 代码对拍一致，但没在游戏里看过。
 - 压弹声（2026-10-20，用户的 Firefly 录音）已接入，没在游戏里听过；取弹声用户决定先不做（第 4.1 节）。
 - 胸挂上画出携带的弹匣：**没做**，计划中（第 8 节）。
@@ -14,6 +14,7 @@
   - 压弹动作以前**从来没播过**（第一、第三人称都没有）：骨骼按动作 id 判断是不是持枪动作，`gun/` 开头的只在拿着枪时播放，`gun/p9_01_mag_load` 手上没枪就被丢掉了，右手只是原版姿势拿着弹匣。改成按来源判断（`SkeletonActions#gunAction`：只有 `SkeletonGunStance#action` 给的才算枪自己的动作）；
   - 拿着弹匣（和其他普通物品）低头时，第一人称手里的模型 25°–45° 滑出画面，45° 起身体的手拿着它，抬回 42° 以上再还给第一人称（`FirstPersonBody#itemHandOver`，`docs/rendering/first_person_body_v1.md` 3.5.3）。
   - 编译通过，没进游戏看过。
+- 2026-10-22（用户："当背包里面有多个有弹药的弹匣的时候，按换弹会卸下当前弹匣，然后强制拿着弹匣，这可能会有点烦"，选了"按R卸下弹匣，长按R更换另一个弹匣（如果有的话）"）：换弹键分成点按和长按（第 3.0 节）；换弹不再要求新弹匣比枪里的更满；枪的按键提示面板（第 5 节）。用户 2026-10-22 实机 PASS。
 - 2026-10-20 第四轮（用户截图："取下来的弹匣明明是在右手，压弹的时候直接瞬移到左手了"，"其他的没问题"）：压弹动作是按左手拿弹匣做的，取下的弹匣在主手（右手）。现在右手持枪的玩家镜像播放压弹动作：右手拿弹匣，左手从左腰前取弹压进去，弹匣一直在取下它的那只手里（第 4 节）。编译通过，没进游戏看过。
 
 来源（用户 2026-10-19）：
@@ -44,9 +45,19 @@
 
 ## 3. 换弹
 
+### 3.0 点按和长按（2026-10-22）
+
+- **点按换弹键**（默认 R，按下到松开不到 0.3 s）：枪里装着弹匣时取下弹匣（第 3.1 节），满的也取。枪里没装弹匣时，有能用的弹匣就装上（和长按一样）。
+- **长按换弹键**（按住 0.3 s，`NativeGunInput#RELOAD_HOLD_TICKS` = 6 tick，到时就开始，不等松开）：换上另一只弹匣（下面的规则）。没有能换的弹匣时什么都不做，动作栏提示「没有备用弹匣」（`hud.apocalypse_firstlight.gun.no_spare_magazine`，No spare magazine）；只有背包里有时提示「弹匣在背包里」。
+- 以前按一下 R：有更满的弹匣就换，没有就取下。身上有几只装着子弹的弹匣、但都不比枪里的满时，按 R 会把枪里的弹匣取下塞到手上。
+- 不用弹匣的枪（HR-55、Silverwood 12 等）不分点按长按：按下 0.3 s 内松开或按满 0.3 s 都是换弹。点按要等松开才发出去，所以这些枪的换弹最多晚 0.3 s 开始。
+- 协议没改：还是同一个换弹包（`NativeGunC2SPacket`，`reload`），点按时 `shotId` 填 `NativeGunActions.RELOAD_TAP`（1），长按填 0。旧客户端发的都是 0，按长按处理。
+
+### 3.0.1 找哪只弹匣
+
 - **只找胸挂和口袋**（`PlayerGrids` 的 RIG、POCKETS）。背包、快捷栏、主物品栏里的弹匣都不算。这是所有快速动作的通用规则（[物品栏网格](../ui/afl_inventory_grid_v0_plan.md) 3.1 两层规则，用户 2026-10-20 确认）：背包里的东西只能打开物品栏去拿。
-- 找的是同一把枪能用的弹匣里子弹最多的那个，而且要比枪里这个多（同样多时先用胸挂里的）。有几只弹匣时不看格子的先后，总是挑最满的；空弹匣不会被换上。找不到就不能换弹，换弹键改为取下弹匣（第 3.1 节）。
-- **背包里有更满的弹匣、身上没有时**（2026-10-20，`NativeMagazines#inBackpack`；用户截图：背包里一只满的扩容弹匣和一只空的 17 发，按 R 换不上）：按换弹键不换弹、也不取下弹匣，动作栏提示「弹匣在背包里」（`hud.apocalypse_firstlight.gun.magazine_in_backpack`，Magazine in backpack）；枪打空时 HUD 也显示这一句，不带按键图标（按键没用）。用户最早的说法就是"背包里面没有任何弹匣的时候"才取下弹匣。
+- 找的是同一把枪能用的弹匣里子弹最多的那个（同样多时先用胸挂里的，`NativeMagazines#best`）。有几只弹匣时不看格子的先后，总是挑最满的；空弹匣不会被换上。2026-10-22 起**不再要求比枪里这个多**：长按就是玩家要换，哪怕换上的子弹更少（比如 15 发的枪换上 12 发的那只）。
+- **背包里有装着子弹的弹匣、身上没有时**（2026-10-20，`NativeMagazines#inBackpack`；用户截图：背包里一只满的扩容弹匣和一只空的 17 发，按 R 换不上）：长按不换弹，动作栏提示「弹匣在背包里」（`hud.apocalypse_firstlight.gun.magazine_in_backpack`，Magazine in backpack）；枪打空时 HUD 也显示这一句，不带按键图标（按键没用）。点按照样能取下弹匣（2026-10-22 起；以前背包里有弹匣时连取下也不行）。
 - 换弹动作照旧（战术换弹 / 空仓换弹，熟练度三档）。弹匣在动作的「弹匣插入」那一刻（`presentation.mag_in_tick`，P9 是 18 tick）才交换，这时重新找一次，开始换弹时不预留。
 - 换下来的弹匣**保留它剩下的子弹**：
   - 和换上去的是同一种弹匣时，放回新弹匣原来的格子；
@@ -56,14 +67,26 @@
 - 换弹时，枪的骨骼显示的是真实的弹匣：
   - 开始换弹时，枪上记下出去和进来的弹匣及各自弹数（`AflGunAmmo.swap`）；
   - 结束或中断时清掉。
-- 枪里没装弹匣时换弹（取下弹匣以后再插回去）：换弹动作里旧弹匣的 `<枪>_magazine_release`、`<枪>_magazine_out` 两声不放，画面上出去的弹匣本来就不画（第 5 节）；检视时没装弹匣，四个弹匣声都不放（`NativeGunActions#magazineCues`，用户 2026-10-20："把弹匣重新插入枪械，会额外播放弹匣弹出的声音，这是不可接受的"）。
+- 枪里没装弹匣时换弹（取下弹匣以后再插回去）：
+  - **专用的无弹匣换弹**（2026-10-21，用户："没有弹匣，结果播放了取弹匣的动画，没有音效"）：有这两个剪辑的枪播 `reload_tactical_no_mag` / `reload_empty_no_mag`（`ConfiguredNativeGunItem#reloadClip(ItemStack, boolean)`，服务器按枪里有没有弹匣选，客户端照服务器的剪辑播）。剪辑就是原换弹去掉前面"按卡笋、拔旧弹匣"的那一段：左手从枪上直接去拿新弹匣，之后的每一帧和原换弹一样，只是整体提前。
+  - 时长和「弹匣插入」tick 减去同一个差值，差值从两个剪辑的长度算（`NativeGunItem#noMagReloadCut` = 原剪辑 tick − 无弹匣剪辑 tick），枪数据 JSON 不变：
+
+    | 枪 | 去掉 | 战术 / 空仓时长 | 弹匣插入 |
+    |---|---|---|---|
+    | P9-01 | 0.10 s（2 tick） | 1.6 s / 1.9 s | 第 16 tick（原 18） |
+    | BR-51 | 0.65 s（13 tick） | 1.75 s / 2.25 s | 第 21 tick（原 34） |
+
+  - P9 还有 ADS 版（`reload_*_no_mag_ads`，熟练度 2 档起，和原来的 `_ads` 规则一样）。HUD 换弹进度条按无弹匣剪辑的长度走（`NativeGunHud#reloadProgress`）。
+  - 剪辑里本来就没有旧弹匣那两声；`magazineCues` 对没有这两个剪辑的枪照旧去掉 `<枪>_magazine_release`、`<枪>_magazine_out`。检视时没装弹匣，四个弹匣声都不放（`NativeGunActions#magazineCues`，用户 2026-10-20："把弹匣重新插入枪械，会额外播放弹匣弹出的声音，这是不可接受的"）。
+  - 编译通过，没进游戏看过。
 - 创造模式（2026-10-20 起）：和生存一样，只换胸挂和口袋里更满的真实弹匣，换下来的弹匣照样回到身上。以前创造模式直接把枪里的弹匣装满，所以从来没有弹匣出来。压弹在创造模式下仍然不消耗子弹（第 4 节）。
 
-代码：`NativeMagazines#canReload / beginSwap / swap / endSwap`、`NativeGunActions#load`。
+代码：`NativeMagazines#best / canReload / inBackpack / beginSwap / swap / endSwap`、`NativeGunActions#request`（换弹分支，`RELOAD_TAP`）/ `#load`、`weapon/client/NativeGunInput`（点按 / 长按，`reloadTicks`）。
 
 ### 3.1 取下弹匣（2026-10-20）
 
-- 条件：胸挂和口袋里没有比枪里更满的弹匣（`canReload` 为假），背包里也没有（`inBackpack` 为假，2026-10-20 起），枪里装着弹匣，而且这个弹匣没装满（`NativeMagazines#ejectable`）。这时按换弹键（默认 R）不换弹，而是把弹匣取下来。
+- 条件（2026-10-22 起）：点按换弹键（第 3.0 节），枪里装着弹匣（`NativeMagazines#ejectable(gun, definition)`）。身上、背包里有没有别的弹匣都不管，满的弹匣也取下。
+- 2026-10-20 到 2026-10-21 的旧条件：按换弹键时，胸挂和口袋里没有比枪里更满的弹匣，背包里也没有，而且枪里的弹匣没装满。
 - 取下的弹匣带着它剩下的子弹，**拿在手上**（`Loadout#toHand`）：
   - 放进「手」这一格（快捷栏第 4 格，`HotbarRoles.HAND_SLOT`），并选中它；
   - 枪留在原来的枪位（手枪在枪套位）。枪原本在「手」这一格时，先按原来的规则把枪放回去；
@@ -78,7 +101,7 @@
   - 弹匣交到手上引起的换手不再触发枪的 `put_away`（剪辑里已经收过枪）；第三人称照常播放回枪套动作。
 - 声音：剪辑自己的 `p9_01_magazine_release`（0.35 s）、`p9_01_magazine_out`（0.39 s）、`p9_01_put_away`（0.62 s），由服务器按剪辑时间放。`NativeMagazines#eject` 自己不再出声。没有这个剪辑的枪：立即交到手上，放 `<枪>_magazine_out`。
 - 拿到手上以后右键就能压弹（第 4 节）。切到别的格子时，弹匣按「手」的规则放回网格；也可以在物品栏页面里自己放。
-- 装满的弹匣不取下：没什么可压的。
+- 装满的弹匣以前不取下（没什么可压的）；2026-10-22 起点按也取下，玩家可能只是想把它拿出来。
 
 代码：`NativeMagazines#ejectable / eject`、`inventory/grid/Loadout#toHand`、`NativeGunActions#request`（换弹分支）/ `#unload`；剪辑名还要在 `NativeCameraBoneConsumer`（镜头骨骼）、`NativeGunAds`（取下时放下瞄准）、`NativeMagazineRoundRendering`（拔出的弹匣按真实弹数画最上面一发）、`SkeletonGunStance`（第三人称动作）、`AflItems`（P9 的剪辑列表）里认得 `unload`。
 
@@ -144,18 +167,25 @@
   - 换弹时进来、出去的弹匣按各自的弹数显示；
   - 检视时拔出来的弹匣按装着的弹匣显示。
 - **手里的弹匣物品**：用枪的贴图（`textureAsset p9_01_v3_native`）。有子弹时画最上面那一发。
+- **手里弹匣最上面的子弹放在哪**（2026-10-21 起读数据）：枪定义 `magazine_round_visual.item_rounds`，每发一行 `[x, y, z, 绕 x 倾角]`（物品坐标里的弹底位置，px；倾角让弹头朝前），弹匣里有几发就画前几行。P9 一行 `[0, -0.20539, 0.21025, -22]`（以前写死在 `NativeMagazineRendering` 里的数），BR-51 两行（双排，第 10 节）。代码 `NativeMagazineRoundVisual#itemRounds`。
 - **HUD（CS2 式）**（`weapon/client/NativeGunHud`）：
   - 大数字是弹匣里的子弹；膛里有一发时，后面跟一个小的「+1」；
   - 备弹是胸挂和口袋里能用的弹匣的子弹总数；
   - 低弹量的门槛按弹匣容量算；
   - 备弹在创造模式下也显示真实数字（以前是 ∞）；
-  - 枪里打空时（含膛内）：有能换的弹匣提示「换弹」，只有背包里有时提示「弹匣在背包里」（不带按键），没有但能取下弹匣时提示「取下弹匣」（`hud.apocalypse_firstlight.gun.unload_magazine`，Remove magazine），按键都是换弹键。
+  - 枪里打空时（含膛内），2026-10-22 起：有能换的弹匣时，装着弹匣提示「长按换弹匣」（`gun.swap_magazine`，Hold to swap magazine），没装弹匣提示「装上弹匣」（`gun.insert_magazine`，Insert magazine）；只有背包里有时提示「弹匣在背包里」（不带按键）；都没有但装着弹匣时提示「取下弹匣」（`gun.unload_magazine`，Remove magazine）。按键都是换弹键。
+- **按键提示面板**（2026-10-22，用户："需要给枪械也加上汽车的那种按键提示"，`weapon/client/NativeGunKeyHints`）：和开车时右上角的按键提示同一个面板（`client/ui/AflKeyHintPanel`，缩放 0.62）。手里拿着枪、不在载具上、没开界面、不在野外改装视角时显示，每个按键一行，按键名取当前绑定：
+  - 用弹匣的枪：装着弹匣时一行「换弹键 取下弹匣」；有能换的弹匣时一行「换弹键 长按换弹匣」（没装弹匣时是「装上弹匣」）；身上没有、背包里有时一行不带按键的「弹匣在背包里」；
+  - 不用弹匣的枪：「换弹键 换弹」；
+  - 「B 开火模式」（只在有不止一种开火模式的枪上）、「V 检视」、「Z 配件」、「Caps Lock 隐藏按键提示」。开火、瞄准是鼠标键，不列（开车时也不列走路的键）。
+  - 隐藏 / 显示用开车时那个键（`VehicleDriving.HINTS`，默认 Caps Lock，按键名改为「显示 / 隐藏按键提示」），和开车共用一个设置（`FirstPersonBodyConfig#keyHints`）。这个键的生效范围改成开车或手里拿着枪（`VehicleDriving.HINTS_CONTEXT`）。
+  - 语言键：`hud.apocalypse_firstlight.gun_keys.fire_mode / inspect / attachments`，其他沿用 `gun.*` 和 `drive.hide_hints`。
 - **胸挂上画弹匣**：没做（第 8 节）。
 
 ## 6. 资源
 
 - 物品 `p9_01_magazine`：`NativeMagazineItem("p9_01", 17, …, textureAsset "p9_01_v3_native")`，创造模式物品栏里在扩容弹匣前面。
-- 创造模式物品栏（配件页）里，能装弹的弹匣各有两个：空的和装满的（`NativeMagazines.full`，同一个物品，带 `AflMagazine.rounds`）。P9 标准弹匣 0 / 17 发，扩容弹匣 0 / 28 发。BR-51 的弹匣不装弹，只有一个。中文名「P9-01 17 发弹匣」。默认 1×1 格，能放进口袋。质量 0.08 kg（`item_mass/core_v1.json`，估计值），子弹的质量另算（`weight/AflCarriedContents`）。
+- 创造模式物品栏（配件页）里，能装弹的弹匣各有两个：空的和装满的（`NativeMagazines.full`，同一个物品，带 `AflMagazine.rounds`）。P9 标准弹匣 0 / 17 发，扩容弹匣 0 / 28 发；BR-51 的 20 发、30 发、50 发弹鼓也各有空、满两个（2026-10-21）。中文名「P9-01 17 发弹匣」。默认 1×1 格，能放进口袋。质量 0.08 kg（`item_mass/core_v1.json`，估计值），子弹的质量另算（`weight/AflCarriedContents`）。
 - 模型：
   - `geo/p9_01_magazine.geo.json` 和 `meshes/p9_01_magazine.aflmesh.json` 由 `tools/build-p9-01-magazine.mjs` 生成。它从枪的 v3 游戏网格里切出弹匣三个部件（`part_mag_base`、`part_mag_body`、`part_mag_follower`），所以手里的、枪里的、换弹时的弹匣是同一个形状；
   - `--check` 只核对；
@@ -172,7 +202,7 @@
   - 代码 `AttachmentInteractionCore`。
 - **重量**：没装弹匣的 P9 不再加默认弹匣的质量。弹匣物品按自身质量加子弹质量算。
 - **旧存档**：P9 第一次 tick 时装上标准弹匣，原来的子弹留在里面（第 2 节）。
-- **其他枪**：BR-51、HR-55、Silverwood 12 规则不变。
+- **其他枪**：HR-55、Silverwood 12 规则不变。BR-51 从 V3 起同样用弹匣（第 10 节）。
 
 ## 8. 已知问题和没做的
 
@@ -180,12 +210,13 @@
   - 胸挂网格上定弹匣袋的位置；
   - 让客户端知道其他玩家胸挂里装了什么（现在只同步自己的格子）。
 - ~~扩容弹匣还是旧的 V2 式网格~~：2026-10-20 已按 V3 原装弹匣重做（[扩容弹匣 V3](p9_01_extended_magazine_v1.md)），没进游戏看过。扩容弹匣手里的道具点还是 17 发弹匣的。
-- 三个弹匣骨骼名（`magazine`、`reload_magazine`、`empty_old_mag`）按 P9 的骨骼写死。以后别的枪用这套规则时要改成读数据。
+- 三个弹匣骨骼名（`magazine`、`reload_magazine`、`empty_old_mag`）按 P9 的骨骼写死。BR-51 V3 的骨骼按同样的名字搭，所以能直接用；以后别的枪用这套规则时要改成读数据。
 - 手持弹匣的「压弹」提示在方块界面上也可能显示。
 - 丢在地上、放进箱子的弹匣如果带着压弹标记，要等下一次物品 tick 才清掉。
 - 取弹声（右手从口袋摸出一发）：用户决定先不做。
 - 压弹声没在游戏里听过：响度、和动作里拇指压下的时刻是否对得上。
-- 取下弹匣只在枪里完全打空时才有 HUD 提示（0+1 时按 R 也能取下，只是不提示）。
+- 取下弹匣的 HUD 提示只在枪里完全打空时出现；2026-10-22 起按键提示面板一直显示「取下弹匣」这一行。
+- 点按 / 长按（2026-10-22）没进游戏看过：0.3 s 的长按门槛合不合手；不用弹匣的枪换弹最多晚 0.3 s 开始。
 - 取下弹匣的第三人称动作只有 1.05 s，之后接回枪套动作；弹匣换到右手（主手）显示，左手里的那个不再画。之后压弹也在右手（第四轮镜像）。
 - 开始压弹时，弹匣道具直接放到动作里的位置，手在 0.25 s 淡入里跟过去；第三人称能看到弹匣从原版持物位置挪到胸前右侧这一下（不换手）。
 - 压弹的低头只转镜头，玩家本身的朝向不变：准星和交互还在原来看的方向（压弹时不需要交互）。
@@ -212,3 +243,24 @@
   - `successfulshotnoisematrix`：第 2 tick 第一次拿起枪时，先开了一段抽枪动作，同一 tick 的开枪被挡掉。这段逻辑本轮没动，是读代码判断的，没有在旧版本上重跑对比。
 
 压弹动作的对拍：`./gradlew aflRigParity --offline` 加 `node tools/blockbench/afl_rig_check.mjs`，`gun/p9_01_mag_load` 130 个场景，骨头、道具都差 0.00001 px。同一次运行里，`machine/generator_pull`、`tool/crowbar_smash`、`gun/p9_01_draw / holster / sprint` 不一致。这几个的代码和文件这一轮都没改，是已提交代码里原有的问题，没查。
+
+## 10. BR-51 V3（2026-10-21）
+
+BR-51 改成 M14 式机构的同时接入这套弹匣规则（[BR-51 V3 游戏模型](br51_01_v3_game_model_v1.md)）。编译通过，离线核对过，**没进游戏看过**。
+
+- **弹匣物品**（`tools/build-br51-01-magazines.mjs` 生成网格）：
+  - `br51_01_magazine`：20 发钢制直弹匣，枪自己的 `magazine` 骨骼，用枪的贴图 `br51_01_v3_native`，不替换骨骼。标准弹匣。
+  - `br51_01_extended_magazine`：30 发弧形弹匣，替换 `magazine`、`reload_magazine`、`empty_old_mag` 三个骨骼，贴图 `br51_01_v3_mags`。
+  - `br51_drum_magazine_50`：50 发弹鼓，同样替换三个骨骼，同一张贴图。以前的空仓换弹专用动作 `reload_empty_drum`（`native_attachments/br51_drum_magazine_50.json`）删掉了，弹鼓和弹匣用同一套换弹动作。
+  - 三个都按枪里的位置建模，以弹匣前钩（`MP`）为原点，供弹口在同一处，所以枪里最上面两发（`magazine_round_1/2`）在三种弹匣上都对得上。
+  - 物品抬高：20 发 3.11883 px、30 发 4.82568 px、弹鼓 4.14022 px（各自中段落在格子中间）。弹匣的前后中心离格子中心 1.94 / 1.15 / 1.27 px，手持、地上、展示框、物品栏的 `display` 平移把这段补回来，让弹匣中段落在 P9 弹匣中段的位置（`models/item/br51_*.json`）。
+  - 质量 0.2 / 0.3 / 0.8 kg（估计）；30 发 1×2 格，弹鼓 2×2 格，20 发默认 1×1。
+- **旧存档**：以前的 35 发扩容弹匣 `br51_extended_magazine_35` 换成 30 发弧形弹匣（`NativeWeaponLegacyMappings`）。BR-51 第一次 tick 时装上标准弹匣，原来的子弹留在里面（第 2 节，和 P9 一样）。
+- **最上面的子弹**：枪里双排两发，`magazine_round_visual` 的锚点 `magazine_round_1/2`（换弹进来的 `mag_out_round_1/2`，出去的 `empty_old_mag_round_1/2`）；手里的弹匣 `item_rounds` 两行 `[-0.2233, 0.019, 3.674, -90]`、`[0.2233, -0.272, 3.674, -90]`。
+- **换弹**：普通换弹 2.4 s、空仓换弹 2.9 s，弹匣在 1.70 s（34 tick）卡到位时换（`presentation.mag_in_tick` / `empty_mag_in_tick` 34）。M14 的换法：先把前钩挂进去，再往后一扳卡住；取下时按住弹匣后面的卡榫往前一推、前端一翻出来。
+- **取下弹匣**：`unload` / `unload_empty`（1.3 s，弹匣在 0.38 s 出来，1.05 s 交到手上）。
+- **压弹（第三人称）**：`gun/br51_01_mag_load` 由 `tools/build-br51-01-mag-load.mjs` 从 P9 的 `gun/p9_01_mag_load` 换算：时间、手、胸前的位置照搬，弹匣道具换成 `player_props/br51_01_magazine.json`（缩放 0.38375 = 枪在身上的大小 0.307 × 1.25，三种弹匣共用），子弹换成 `player_props/762x51mm_round.json`，子弹在弹匣上的关键帧平移到 BR-51 的供弹口（模型里差 [-0.887, 0.686, 0.413] px）。压弹声 `br51_01_mag_load` / `_last` 是 P9 的录音降调（`sounds.json`）。
+- **已知问题**：
+  - 30 发和弹鼓的物品抬高跟 20 发不同，压弹时用的是 20 发的道具点，它们的供弹口离子弹差 0.65 / 0.40 px（模型）。
+  - 压弹动作没有自己的 AFL Rig 源文件，是从 P9 的换算出来的；要单独调时在插件里另做一份。
+

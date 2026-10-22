@@ -116,6 +116,12 @@ public final class NativeGunActions {
         return true;
     }
 
+    /**
+     * A reload request's {@code shotId} (unused by a reload otherwise): the reload key tapped (take the magazine out, or put
+     * one in when none is fitted); 0, the default, is the reload proper (the key held: swap in another magazine).
+     */
+    public static final long RELOAD_TAP = 1;
+
     public static void request(ServerPlayer player, boolean reload, int slot) {
         request(player,reload,slot,0);
     }
@@ -151,13 +157,18 @@ public final class NativeGunActions {
         // Shot cadence follows the stack's current fire mode (fire.mode_overrides.<mode>.interval_ticks).
         int interval = definition.fireIntervalTicks();
         if (reload) {
-            // a gun that loads from magazine items: a fuller magazine in the rig or the pockets (NativeMagazines),
-            // else the fitted one out into the hand, to be loaded there
+            // a gun that loads from magazine items (user 2026-10-22, docs/native_guns/magazine_system_v1.md 3): a tap takes
+            // the fitted magazine out into the hand, to be loaded there; held, or a tap with none fitted, puts in the
+            // fullest loaded one from the rig or the pockets (NativeMagazines)
             if (NativeMagazines.system(definition)) {
-                if (!NativeMagazines.canReload(player, held, definition)) {
-                    if (NativeMagazines.ejectable(player, held, definition)) unload(player, held, item, slot);
-                    else if (NativeMagazines.inBackpack(player, held, definition))
-                        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("hud.apocalypse_firstlight.gun.magazine_in_backpack"), true);
+                boolean tap = shotId == RELOAD_TAP;
+                if (tap && NativeMagazines.ejectable(held, definition)) {
+                    unload(player, held, item, slot);
+                    return;
+                }
+                if (!NativeMagazines.canReload(player, definition)) {
+                    String why = NativeMagazines.inBackpack(player, definition) ? "magazine_in_backpack" : tap ? null : "no_spare_magazine";
+                    if (why != null) player.displayClientMessage(net.minecraft.network.chat.Component.translatable("hud.apocalypse_firstlight.gun." + why), true);
                     return;
                 }
             } else if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)

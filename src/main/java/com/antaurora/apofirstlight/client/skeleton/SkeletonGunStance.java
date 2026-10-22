@@ -44,8 +44,8 @@ import java.util.Map;
 
 /**
  * Player skeleton V1 (docs/dev/player_skeleton_v1_design.md 4, 12, 13): the guns the skeleton carries (skeleton/GunStance:
- * the BR51 as a rifle at 1.25 x real size, the P9 as a pistol at real size), placed on the shoulder (rifle), against the
- * eye (raised pistol, first-person aiming) or the chest (lowered).
+ * the BR51 as a rifle at 1.25 x real size, the P9 as a pistol at real size), placed on the shoulder (raised rifle), against
+ * the eye (raised pistol, first-person aiming) or before the chest (at the ready: the stance idle loops; lowered).
  * <ul>
  * <li>Every clip of the gun plays on the skeleton, in first and third person and for the other players (the server's
  * clip triggers reach everyone tracking the player): each frame the gun's bones are evaluated before it is drawn
@@ -151,8 +151,8 @@ public final class SkeletonGunStance {
      * (client/FirstPersonBody#gunOnBody): a gun with a stance idle loop (the P9: its chest ready,
      * docs/dev/p9_stance_loops_v1.md), on the feet, at that ready or lowered for a sprint, and nothing else going on: not
      * aimed, not raised (a shot's {@link #RAISED_AFTER_SHOT}, a reload, an inspect), no clip of its own playing (draw,
-     * first draw, shot, reload, inspect), not being drawn or put away. Other guns (the BR51: its stance follows the view)
-     * keep their view model.
+     * first draw, shot, reload, inspect), not being drawn or put away. The BR51 has one too since 2026-10-22 (its low ready,
+     * docs/dev/p9_stance_loops_v1.md 4.7); a gun without one keeps its view model.
      */
     public static boolean atReady(Player p, float partial) {
         if (!PlayerSkeleton.supportedPose(p) || !holds(p) || loops(p.getMainHandItem()).idle() == null) return false;
@@ -188,11 +188,20 @@ public final class SkeletonGunStance {
         return (c.kind().chestTwist * up + idleTwist * (1F - up)) * (1F - lower);
     }
 
-    /** The gun is up (the chest follows the view's pitch more, HumanoidPoser#chestPitch's rifle share). */
+    /**
+     * The gun is up (the chest follows the view's pitch more, HumanoidPoser#chestPitch's rifle share): raised, or a rifle
+     * without a ready of its own (always shouldered).
+     */
     static boolean gunUp(Player p, float partial) {
-        GunStance.Carried c = carried(drawn(p));
+        ItemStack stack = drawn(p);
+        GunStance.Carried c = carried(stack);
         if (c == null) return false;
-        return c.kind() == GunStance.Kind.RIFLE || raise(TRACKS.get(p.getId()), partial) > 0.5F;
+        return !hasReady(c.kind(), loops(stack)) || raise(TRACKS.get(p.getId()), partial) > 0.5F;
+    }
+
+    /** The gun has a ready to come down to (a pistol's two-handed ready, or a stance idle loop), else it is always raised. */
+    private static boolean hasReady(GunStance.Kind kind, Loops loops) {
+        return kind.readyHand != null || loops.idle() != null;
     }
 
     private static float raise(Track t, float partial) {
@@ -295,12 +304,21 @@ public final class SkeletonGunStance {
         // speed (the action is as long as the clip), while the clip runs
         if (holds(p) && (t.clip.startsWith("reload") || t.clip.startsWith("inspect") || t.clip.startsWith("unload"))) {
             String id = actionId(p.getMainHandItem(), "_" + t.clip);
+            float cut = 0F;
+            if (id == null && t.clip.startsWith("reload") && t.clip.contains(NativeGunItem.NO_MAG)
+                    && p.getMainHandItem().getItem() instanceof NativeGunItem gun) {
+                // a no-magazine reload without its own action (magazine_system_v1.md 3): the reload's, from where the clip
+                // cut the old magazine's part off, so the hands keep to the clip
+                String full = t.clip.replace(NativeGunItem.NO_MAG, "");
+                id = actionId(p.getMainHandItem(), "_" + full);
+                cut = gun.noMagReloadCut(full.startsWith("reload_empty")) / 20F;
+            }
             if (id == null) return null;
             // an action may end before its clip (an ADS reload is back on the sights early, 2.7): it then eases out into the aim
-            float length = PlayerActions.get(id).length;
+            float length = PlayerActions.get(id).length - cut;
             float window = clipSeconds(p.getMainHandItem(), t.clip, 0F);
             if (length > 0) window = Math.min(window, length);
-            return now < t.clipStart + window ? new GunAction(id, t.clipStart, 1F) : null;
+            return now < t.clipStart + window ? new GunAction(id, t.clipStart - cut, 1F) : null;
         }
         return null;
     }
@@ -360,13 +378,13 @@ public final class SkeletonGunStance {
     }
 
     /**
-     * This frame's aim progress, how far the drawn gun is raised from its ready (a rifle: always up) and how far it is
-     * lowered for a sprint: {aim, raise, lower}.
+     * This frame's aim progress, how far the drawn gun is raised from its ready (without one, {@link #hasReady}: always up)
+     * and how far it is lowered for a sprint: {aim, raise, lower}.
      */
-    private static float[] state(Player p, Track t, GunStance.Kind kind, boolean ghost, float partial) {
+    private static float[] state(Player p, Track t, GunStance.Kind kind, Loops loops, boolean ghost, float partial) {
         float aim = ghost ? 0F : aim(p, partial);
         float lower = t == null ? 0F : t.lowerO + (t.lower - t.lowerO) * partial;
-        float raise = kind.readyHand != null ? Math.max(raise(t, partial), aim) : 1F;
+        float raise = hasReady(kind, loops) ? Math.max(raise(t, partial), aim) : 1F;
         return new float[]{aim, raise, lower};
     }
 
@@ -381,7 +399,7 @@ public final class SkeletonGunStance {
         Loops loops = loops(stack);
         if (loops.idle() == null && loops.sprint() == null) return;
         Track t = TRACKS.get(p.getId());
-        float[] s = state(p, t, c.kind(), t != null && !t.ghost.isEmpty(), partial);
+        float[] s = state(p, t, c.kind(), loops, t != null && !t.ghost.isEmpty(), partial);
         double now = now(partial);
         stanceClip(in, rig, loops.idle(), (1F - s[1]) * (1F - s[2]), now);
         stanceClip(in, rig, loops.sprint(), s[2], now);
@@ -519,9 +537,10 @@ public final class SkeletonGunStance {
         if (leftRest == null) leftRest = new Matrix4f();
         leftAnchor = carried.leftHand(leftAnchor == null ? leftRest : leftAnchor, leftRest);
 
-        // where it is held: a rifle on the shoulder (to the eye aiming in first person); a pistol raised against the eye or
-        // at its two-handed ready before the chest (or its idle loop); lowered (sprinting; or its sprint loop)
-        float[] state = state(p, t, kind, ghost, partial);
+        // where it is held raised: a rifle on the shoulder (to the eye aiming in first person), a pistol against the eye; at
+        // its ready (a pistol's two-handed one before the chest, or the gun's idle loop: the BR51's low ready); lowered
+        // (sprinting; or its sprint loop)
+        float[] state = state(p, t, kind, loops, ghost, partial);
         float aim = state[0], raise = state[1], lower = state[2];
         float up = raise * (1F - lower);
         Looped idle = loops.idle() == null ? null

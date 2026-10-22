@@ -2,7 +2,7 @@
   "parent": "builtin/entity",
   "gui_light": "side",
   "textures": {
-    "particle": "apocalypse_firstlight:item/br51_drum_magazine_50"
+    "particle": "apocalypse_firstlight:item/br51_01_v3_mags"
   },
   "display": {
     "gui": {
@@ -12,9 +12,9 @@
         0
       ],
       "translation": [
-        0,
-        0,
-        0
+        -0.89842,
+        -0.30728,
+        0.84424
       ],
       "scale": [
         1,
@@ -26,57 +26,97 @@
       "translation": [
         0,
         2,
-        0
+        -1.01645
       ],
       "scale": [
-        0.65,
-        0.65,
-        0.65
+        0.8,
+        0.8,
+        0.8
       ]
     },
     "fixed": {
+      "rotation": [
+        0,
+        90,
+        0
+      ],
       "scale": [
-        1.2,
-        1.2,
-        1.2
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -1.27056,
+        0,
+        0
       ]
     },
     "firstperson_righthand": {
       "rotation": [
         0,
-        90,
-        -15
+        -30,
+        0
       ],
       "scale": [
-        0.8,
-        0.8,
-        0.8
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0.63528,
+        0,
+        -1.10034
       ]
     },
     "firstperson_lefthand": {
       "rotation": [
         0,
-        -90,
-        15
+        30,
+        0
       ],
       "scale": [
-        0.8,
-        0.8,
-        0.8
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -0.63528,
+        0,
+        -1.10034
       ]
     },
     "thirdperson_righthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "scale": [
-        0.75,
-        0.75,
-        0.75
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        -1.27056
       ]
     },
     "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "scale": [
-        0.75,
-        0.75,
-        0.75
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        -1.27056
       ]
     }
   }
