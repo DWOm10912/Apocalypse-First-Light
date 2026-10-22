@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.vehicle.physics;
 
+import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import com.antaurora.apofirstlight.vehicle.VehicleColliders;
@@ -25,6 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 2026-10-16): the road design's continuous height and normal for lanes, shoulders, decks and tunnel bores, graded turf
  * as drawn; grip by surface (asphalt 1.0, concrete 0.95, turf 0.70). A blocking answer (parapet, barrier, walkway) is
  * no ground: the layers below answer, so its blocks stop the wheel and the body as any wall does;</li>
+ * <li>edited earth (Earthwork A3, docs/gameplay/sandbox_v1_design.md 3.8): a column dug or filled answers with its
+ * skin's triangle, height and normal, not the 1/8 column boxes; grip the loose earth's (earthwork bulk material) or,
+ * on natural ground, the block's;</li>
  * <li>smoothed terrain: a natural surface top (TerrainSmooth) answers with its drawn surface, two triangles per block,
  * not the 1/16 stepped collision boxes, so the tyres roll on the slope;</li>
  * <li>blocks: the top of the collision shape in that column.</li></ol>
@@ -47,6 +51,8 @@ public final class LevelVehicleWorld implements VehicleWorld {
     private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
     /** The road layer's answer (one per vehicle: asked on the thread that owns the level only). */
     private final RoadSurfaceQuery.Out road = new RoadSurfaceQuery.Out();
+    /** Earthwork#vehicleGround's answer: height, normal, grip */
+    private final double[] earth = new double[6];
 
     public LevelVehicleWorld(Level level, VehicleColliders.Collider self) {
         this.level = level;
@@ -69,6 +75,11 @@ public final class LevelVehicleWorld implements VehicleWorld {
             BlockState state = chunk.getBlockState(pos.set(bx, y, bz));
             if (state.isAir()) continue;
             Block block = state.getBlock();
+            if (smooth && Earthwork.soil(block) && Earthwork.vehicleGround(level, x, z, earth)) {
+                if (earth[0] < yBottom) break;
+                out.set(earth[0], earth[1], earth[2], earth[3], earth[4] >= 0 ? earth[4] : grip(block), Source.EARTH);
+                return true;
+            }
             if (smooth && TerrainSmooth.ground(block)) {
                 long g = TerrainSmooth.geometry(level, chunk, bx, y, bz);
                 if (g >= 0) {
@@ -106,6 +117,11 @@ public final class LevelVehicleWorld implements VehicleWorld {
             if (yy < level.getMinBuildHeight()) break;
             BlockState state = chunk.getBlockState(pos.set(bx, yy, bz));
             if (state.isAir()) continue;
+            if (smooth && Earthwork.soil(state.getBlock()) && Earthwork.vehicleGround(level, x, z, earth)) {
+                if (y >= earth[0]) continue;   // above the skin (a lower cell of the column gives the same skin)
+                out.set(earth[1], earth[2], earth[3], (earth[0] - y) * earth[2]);
+                return true;
+            }
             if (smooth && TerrainSmooth.ground(state.getBlock())) {
                 long g = TerrainSmooth.geometry(level, chunk, bx, yy, bz);
                 if (g >= 0) {

@@ -65,10 +65,10 @@ V1 不改 B 方案的几何算法和外观，只做三件事：
 
 | 类 | 作用 |
 |---|---|
-| `TerrainSmoothClient` | 收到状态后整体重建网格；方块变化后局部重建；本地玩家抬升；区块构建线程用的取数 `renderGeometry` |
+| `TerrainSmoothClient` | 收到状态后整体重建网格；方块变化后局部重建；本地玩家抬升；区块构建线程用的取数 `renderGeometry`；第一人称"头在方块里"的黑屏，平滑坡面和挖过的地表只在眼睛真的进了土里才出（`blockScreen`，土方 A2 2026-10-21） |
 | `SmoothModels` | 每次模型烘焙（含 F3+T）包装平滑方块（2026-10-14 起 18 种）、小植物和雪层（`SnowSkinModel`，U 节）的模型 |
 | `SmoothSurfaceModel` / `SinkPlantModel` | 斜面模型 / 植物下沉 |
-| `SmoothOutline` | 斜面选中轮廓 |
+| `SmoothOutline` | 天然地面、岩石、矿石，以及道路的坡面草皮和路面不画选中框（2026-10-21 起；以前画斜面轮廓） |
 
 Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配置的公共段：
 
@@ -114,6 +114,7 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
 - **离线数字和 P1 相同**：8 × 8 盒子 p95 0.063、最大下陷 0.094、最大浮空 0.125；盒子间台阶 1/8；直坡最大台阶 1/16。
 - **2 格及以上高差**：保持硬边。树干、水边、建筑和道路边界照旧钉住。
 - **防窒息**：只对“本身就是平滑坡面”的块生效；普通地下整块仍按原版窒息。
+- **第一人称黑屏**：同样的格子不再整格挡视线，按真正的形状判断眼睛是不是在土里（`TerrainSmoothClient.blockScreen`，2026-10-21）。
 - **抬升**：只针对本地玩家，只在脚陷进平滑坡面的碰撞盒时触发，最多抬 1 格，抬起后会撞东西就不动。没有改 `stepHeight`。
 
 ## F. 挖掘、放置和局部刷新

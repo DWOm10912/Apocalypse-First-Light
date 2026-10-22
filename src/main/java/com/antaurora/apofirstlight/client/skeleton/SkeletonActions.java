@@ -90,6 +90,24 @@ public final class SkeletonActions {
     }
 
     private static final String CROWBAR = "tool/crowbar_smash", CROWBAR_HOLD = "item/crowbar", JERRY_CAN = "item/jerry_can";
+    /** The round point shovel (Earthwork A2, tools/author-shovel-actions-a2.cjs): its hold, its strokes by ShovelAction mode. */
+    private static final String SHOVEL_HOLD = "item/round_point_shovel";
+    private static final String[] SHOVEL = {"tool/shovel_dig", "tool/shovel_pour", "tool/shovel_scrape"};
+    /**
+     * Where a stroke's poses put the blade (the "dig" anchor), as tools/author-shovel-actions-a2.cjs checked them: ahead of
+     * the feet along the body (blocks, the ground point's distance clamped to this), this far to the working hand's side,
+     * and the ground point's height over the feet clamped to this.
+     */
+    private static final double SHOVEL_NEAR = 0.55, SHOVEL_FAR = 0.8, SHOVEL_SIDE = 0.15, SHOVEL_LOW = -0.2, SHOVEL_HIGH = 0.25;
+    /**
+     * The pick mattock (Rock R1a, tools/author-pick-actions-r1a.cjs): its hold, and its strikes by the rock point's height
+     * over the feet (low, middle, high), each with the reach its poses were checked for: ahead of the feet along the body
+     * (near .. far, blocks) and over the feet (low .. high), this far to the working hand's side.
+     */
+    private static final String PICK_HOLD = "item/pick_mattock";
+    private static final String[] PICK = {"tool/pick_strike_low", "tool/pick_strike", "tool/pick_strike_high"};
+    private static final double[][] PICK_REACH = {{0.85, 1.0, 0.2, 0.45}, {0.9, 1.05, 0.45, 0.7}, {0.95, 1.05, 0.7, 1.0}};
+    private static final double PICK_SIDE = 0.1;
     private static final String LIGHTER = "item/flip_lighter";
     /** The crowbar hold's swing (s of its time): the melee attack swing's progress (0..1) times this. */
     private static final double CROWBAR_SWING = 0.3;
@@ -347,6 +365,19 @@ public final class SkeletonActions {
             return new Live("item/nozzle_fill", Double.NaN, (float) Mth.clamp((0.9 - h) / 0.6, 0, 1),
                     Map.of("nozzle_grip", nozzle[0], "opening", nozzle[1]), false);
         }
+        double stroke = com.antaurora.apofirstlight.client.ShovelClient.elapsed(p, partial);
+        if (stroke >= 0) {
+            Vec3 ground = com.antaurora.apofirstlight.client.ShovelClient.target(p);
+            return new Live(SHOVEL[com.antaurora.apofirstlight.client.ShovelClient.mode(p)], now - stroke / 20.0, 0F,
+                    ground == null ? Map.of() : Map.of("dig", shovelAnchor(p, partial, ground)), p.getMainArm() == HumanoidArm.LEFT);
+        }
+        double strike = com.antaurora.apofirstlight.client.PickClient.elapsed(p, partial);
+        if (strike >= 0) {
+            Vec3 rock = com.antaurora.apofirstlight.client.PickClient.target(p);
+            int swing = rock == null ? 1 : pickSet(p, partial, rock);
+            return new Live(PICK[swing], now - strike / 20.0, 0F, rock == null ? Map.of() : Map.of("strike", pickAnchor(p, partial, rock, swing)),
+                    p.getMainArm() == HumanoidArm.LEFT);
+        }
         double smash = CrowbarSmashClient.elapsed(p, partial);
         if (smash >= 0) {
             PlayerAction a = PlayerActions.get(CROWBAR);
@@ -354,6 +385,8 @@ public final class SkeletonActions {
         }
         ItemStack main = p.getMainHandItem();
         if (main.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return lighter(p, main, now);
+        if (main.is(AflItems.ROUND_POINT_SHOVEL.get())) return new Live(SHOVEL_HOLD, now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
+        if (main.is(AflItems.PICK_MATTOCK.get())) return new Live(PICK_HOLD, now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         if (main.is(AflItems.CROWBAR.get()))   // held; the melee swing's progress runs the hold's swing
             return new Live(CROWBAR_HOLD, now - p.getAttackAnim(partial) * CROWBAR_SWING, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         if (main.is(AflItems.JERRY_CAN.get())) {
@@ -443,6 +476,40 @@ public final class SkeletonActions {
     /** The own first-person camera on the stepped body this frame (world), or null when the action does not step it. */
     public static Vec3 cameraEye() {
         return stepping && eye != null && frame - eyeFrame <= 2 ? eye : null;
+    }
+
+    /**
+     * The shovel stroke's blade point (world): straight ahead of the body at the ground point's distance and height,
+     * clamped to what the poses reach (SHOVEL_NEAR .. SHOVEL_FAR ahead, SHOVEL_LOW .. SHOVEL_HIGH over the feet), a little
+     * to the working hand's side. The ground changes where the server's stroke works it (at most ShovelAction.FLAT away).
+     */
+    private static Vec3 shovelAnchor(AbstractClientPlayer p, float partial, Vec3 ground) {
+        float yaw = Mth.rotLerp(partial, p.yBodyRotO, p.yBodyRot) * Mth.DEG_TO_RAD;
+        Vec3 feet = p.getPosition(partial), ahead = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)), left = new Vec3(Mth.cos(yaw), 0, Mth.sin(yaw));
+        Vec3 d = ground.subtract(feet);
+        double along = Mth.clamp(d.x * ahead.x + d.z * ahead.z, SHOVEL_NEAR, SHOVEL_FAR), up = Mth.clamp(d.y, SHOVEL_LOW, SHOVEL_HIGH);
+        double side = p.getMainArm() == HumanoidArm.LEFT ? SHOVEL_SIDE : -SHOVEL_SIDE;
+        return feet.add(ahead.scale(along)).add(left.scale(side)).add(0, up, 0);
+    }
+
+    /** The pick strike for a rock point: by its height over the feet, the low strike under 0.45, the high one from 0.7. */
+    private static int pickSet(AbstractClientPlayer p, float partial, Vec3 rock) {
+        double up = rock.y - p.getPosition(partial).y;
+        return up < PICK_REACH[1][2] ? 0 : up < PICK_REACH[2][2] ? 1 : 2;
+    }
+
+    /**
+     * The pick strike's point (world, the "strike" anchor) as the shovel's blade point (#shovelAnchor): straight ahead of the
+     * body at the rock point's distance and height, clamped to the strike set's reach, a little to the working hand's side.
+     */
+    private static Vec3 pickAnchor(AbstractClientPlayer p, float partial, Vec3 rock, int set) {
+        float yaw = Mth.rotLerp(partial, p.yBodyRotO, p.yBodyRot) * Mth.DEG_TO_RAD;
+        Vec3 feet = p.getPosition(partial), ahead = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)), left = new Vec3(Mth.cos(yaw), 0, Mth.sin(yaw));
+        Vec3 d = rock.subtract(feet);
+        double[] r = PICK_REACH[set];
+        double along = Mth.clamp(d.x * ahead.x + d.z * ahead.z, r[0], r[1]), up = Mth.clamp(d.y, r[2], r[3]);
+        double side = p.getMainArm() == HumanoidArm.LEFT ? PICK_SIDE : -PICK_SIDE;
+        return feet.add(ahead.scale(along)).add(left.scale(side)).add(0, up, 0);
     }
 
     /** The action's view anchors for a player this frame (world): the own first-person view's where an anchor has one. */

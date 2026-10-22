@@ -41,7 +41,8 @@ function sidebar(loc: 'zh' | 'en') {
         { text: t('幸存者与特质', 'Survivor & Traits'), link: `${p}/guide/survivor` },
         { text: t('成长', 'Growth'), link: `${p}/guide/growth` },
         { text: t('背包与负重', 'Inventory & Weight'), link: `${p}/guide/inventory` },
-        { text: t('辐射', 'Radiation'), link: `${p}/guide/radiation` }
+        { text: t('辐射', 'Radiation'), link: `${p}/guide/radiation` },
+        { text: t('挖土和凿石', 'Digging and Rock'), link: `${p}/guide/earth-and-rock` }
       ] }
     ],
     [`${p}/arms/`]: [

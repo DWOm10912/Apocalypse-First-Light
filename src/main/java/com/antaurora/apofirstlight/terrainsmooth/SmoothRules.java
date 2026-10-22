@@ -187,6 +187,37 @@ public final class SmoothRules {
         return g;
     }
 
+    /**
+     * Earthwork (docs/worldgen/earthwork_a1.md 2.1): block (x, y, z) is its column's natural surface top, open above, all
+     * 3 x 3 columns around it are natural at this level and none of its four corners is pinned. Then its top is continuous
+     * with every neighbour's (they share the corner heights) and has no side band, so a height field can take it over
+     * exactly, and its neighbours, reading it as it was, never part from it.
+     */
+    public static boolean freeCorners(Cells c, int mode, int x, int y, int z) {
+        return notFree(c, mode, x, y, z) == null;
+    }
+
+    private static final String[] KIND_NAMES = {"natural", "not natural ground or not open above (built, a path, a plant block...)",
+            "water", "two or more lower", "two or more higher (a wall)", "not loaded"};
+    private static final String[] CORNER_NAMES = {"north-west", "north-east", "south-west", "south-east"};
+
+    /** Why #freeCorners fails (development output, English), or null when the corners are free. */
+    public static String notFree(Cells c, int mode, int x, int y, int z) {
+        if (c.surface(x, z) != y || c.cell(x, y, z) != NATURAL) return "its top is not Terrain Smooth's natural surface";
+        if (!open(c.cell(x, y + 1, z))) return "the block above is not open";
+        long[] col = new long[9];
+        for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) {
+            col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, x + i - 1, y, z + j - 1);
+            int k = kind(col[j * 3 + i]);
+            if (k != K_NAT) return "neighbour " + (x + i - 1) + " " + (z + j - 1) + " is " + KIND_NAMES[k];
+        }
+        float[][] turf = new float[9][];
+        for (int k = 0; k < 4; k++)
+            if (Float.isNaN(corner(col, turf, CORNER[k][0], CORNER[k][1], mode)))
+                return "its " + CORNER_NAMES[k] + " corner is pinned (the four columns there differ by two or more)";
+        return null;
+    }
+
     /** Bottom of B's side band at a corner, in quarters above B's floor: the neighbour column's surface there. */
     private static int lower(long n, long[] col, float[][] turf, int index, int cornerIndex, int mode, int y) {
         int oi = CORNER[cornerIndex][0], oj = CORNER[cornerIndex][1];

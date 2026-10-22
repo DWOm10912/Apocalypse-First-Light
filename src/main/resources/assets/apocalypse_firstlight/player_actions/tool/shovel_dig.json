@@ -1,0 +1,87 @@
+{
+  "format_version": 1,
+  "about": "Round point shovel, Dig (interaction/ShovelAction DIG: 22 ticks, the ground and the blade change at 16 = 0.8 s): from the hold the blade comes up over the ground point (0.3 s), goes in with the hips down and the knees bent (0.55 s), the handle is levered back as the legs straighten (0.8 s, the scoop), the loaded blade comes up (0.95 s) and back into the hold. First and third person alike; the own first person sits on the posed eye (it goes down with the hips) and looks down to 45 deg at least. Written by tools/author-shovel-actions-a2.cjs. docs/worldgen/earthwork_a2.md 6",
+  "clip": "tool.shovel_dig",
+  "layer": "action",
+  "mask": "full",
+  "priority": 60,
+  "first_person": "body",
+  "first_person_pitch": 45,
+  "first_person_eye": true,
+  "blend": {
+    "in": 0,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "round_point_shovel",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [2, 6, -7],
+        "rot": [-20, 0, 45],
+        "blend": 0
+      },
+      {
+        "at": 0.001,
+        "frame": "anchor:dig",
+        "point": "blade",
+        "pos": [0, -3, 0],
+        "rot": [-30, -5, 0],
+        "blend": 0.299
+      },
+      {
+        "at": 0.3,
+        "frame": "anchor:dig",
+        "point": "blade",
+        "pos": [0, 1.5, 0],
+        "rot": [-20, -5, 0],
+        "blend": 0.25
+      },
+      {
+        "at": 0.55,
+        "frame": "anchor:dig",
+        "point": "blade",
+        "pos": [0, -0.5, 2],
+        "rot": [-20, -15, 0],
+        "blend": 0.25
+      },
+      {
+        "at": 0.8,
+        "frame": "anchor:dig",
+        "point": "blade",
+        "pos": [0, -6, 5],
+        "rot": [-30, -5, 10],
+        "blend": 0.15
+      },
+      {
+        "at": 0.95,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [2, 6, -7],
+        "rot": [-20, 0, 45],
+        "blend": 0.15
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_end",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

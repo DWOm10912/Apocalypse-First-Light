@@ -286,8 +286,9 @@ VehicleGround.sample(level, x, z, yHint, radius) → {height, normal, surface, s
 数据从哪里来（按优先级）：
 
 1. **道路**（C）：路面底座的连续路面——C 负责（[Main ↔ C3 契约](../worldgen/main_c3_interface_contract_v1.md)：Mesh 路面底座给载具的路面高度、法线、接地查询；[Highway V2.0 契约](../worldgen/highway_v2_0_design_contract.md) 的 `RoadSurfaceQuery`）。桥面、伸缩缝、涵洞顶上都走这里。
-2. **平滑地形**（[地表平滑](../worldgen/terrain_smooth_v1.md)）：自然地面的连续高度和法线，按 `SmoothRules` 的规则算，和玩家看到、踩到的坡面一致。
-3. **方块**（兜底）：方块碰撞形状的顶面；车轮在台阶边上按轮胎半径抹圆（一个 0.37 m 半径的轮子能爬上大约 0.15 m 的台阶，一整格 1 m 的台阶爬不上去，这和真车一样）。
+2. **土方**（土方 A3，分支 `feature/earthwork-a`，2026-10-21，没合并、没进游戏）：玩家挖过、填过的列，用画出来的表皮三角形的高度和法线；松土的抓地力按材料，原状土按方块。来源 `Source.EARTH`。见 [`earthwork_a3.md`](../worldgen/earthwork_a3.md)。
+3. **平滑地形**（[地表平滑](../worldgen/terrain_smooth_v1.md)）：自然地面的连续高度和法线，按 `SmoothRules` 的规则算，和玩家看到、踩到的坡面一致。
+4. **方块**（兜底）：方块碰撞形状的顶面；车轮在台阶边上按轮胎半径抹圆（一个 0.37 m 半径的轮子能爬上大约 0.15 m 的台阶，一整格 1 m 的台阶爬不上去，这和真车一样）。
 
 Main 写接口、第 2、3 种来源和车辆这一侧；C 提供第 1 种来源，插在最前面。**接口的字段和"多层怎么选"要和 C 先对好**，C 现在在做 C3.3a 的 B–E 组（草皮、填方、涵洞、桥），不打断它：先把这一节作为草案发给 C，等 C 方便时回复。
 

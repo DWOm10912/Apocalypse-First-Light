@@ -118,6 +118,10 @@ public final class WorldInteractionHint {
             target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
         // a magazine in the hand (weapon/NativeMagazineLoading): a click starts loading it from the loose rounds carried, or stops
         if(target==null&&!mc.player.isSpectator()) target=heldMagazine(mc);
+        // the round point shovel at loose ground in its reach (Earthwork A2, client/ShovelClient): dig, pour, or scrape (sneak)
+        if(target==null) {var shovel=ShovelClient.hint(mc);if(shovel!=null) target=new Target(shovel,null);}
+        // the pick mattock at a boulder in its reach (Rock R1a, client/PickClient): strike; any other hand on a boulder: it needs a pick
+        if(target==null) {var pick=PickClient.hint(mc);if(pick!=null) target=new Target(pick,null);}
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;
@@ -184,8 +188,9 @@ public final class WorldInteractionHint {
         if(key.endsWith(".pickup_t15.in_gear")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(com.antaurora.apofirstlight.client.vehicle.VehicleDriving.SHIFT_UP));
         if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
-        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
+        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")||key.endsWith(".pick.needed")) return java.util.List.of();
         if(key.endsWith(".tunnel_fixture.dismantle")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyAttack));
+        if(key.endsWith(".shovel.scrape")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }

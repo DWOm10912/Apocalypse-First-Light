@@ -1,0 +1,10 @@
+{
+  "density_kg_m3": 1700,
+  "repose_deg": 38,
+  "excavation_deg": 45,
+  "block": "minecraft:gravel",
+  "grip": 0.6,
+  "sources": [
+    "minecraft:gravel"
+  ]
+}

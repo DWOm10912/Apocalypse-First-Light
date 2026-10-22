@@ -58,6 +58,12 @@ public final class AflStaticMeshItemClient {
             // Crowbar mesh (2026-10-14, equipment meshes): authored in the V1 cuboid model's frame, whose origin the bake moves
             // up 5.0271 px; (-0.8 - 5.0271) / 16 keeps the bar where the V1 model held it (its display transforms are kept)
             bind(AflItems.CROWBAR.get(), "crowbar", "crowbar_mesh", -0.36419375);
+            // Round point shovel (Earthwork A2, tools/build-round-point-shovel-v1.mjs, 2026-10-21): the mesh and the heap its load needs
+            bind(AflItems.ROUND_POINT_SHOVEL.get(), ShovelItemRenderer::new, "round_point_shovel");
+            // Pick mattock (Rock R1a, tools/build-pick-mattock-v1.mjs, 2026-10-21): the handle's foot 0.0442 above the item's floor
+            bind(AflItems.PICK_MATTOCK.get(), "pick_mattock", "pick_mattock_mesh", 0.0442);
+            // Field stone (Rock R1a, tools/boulders/build-field-stone.mjs, 2026-10-21): the boulders' granite; 0.5 - height / 32
+            bind(AflItems.FIELD_STONE.get(), "field_stone", "field_stone_mesh", 0.443338);
             // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
             bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
             bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);

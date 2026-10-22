@@ -69,6 +69,16 @@ public final class AflItems {
                             "muzzle_anchor", "ejection_disabled")));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
+    // Earthwork A2 (docs/worldgen/earthwork_a2.md 4): the round point shovel, creative only
+    public static final RegistryObject<Item> ROUND_POINT_SHOVEL = ITEMS.register("round_point_shovel",
+            com.antaurora.apofirstlight.item.ShovelItem::new);
+    // Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 4): the pick mattock, creative only
+    public static final RegistryObject<Item> PICK_MATTOCK = ITEMS.register("pick_mattock",
+            com.antaurora.apofirstlight.item.PickMattockItem::new);
+    // Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 2.1, 11.2): a field stone, what a broken boulder piece drops;
+    // a material only (no recipe before the recipe rework), creative tab too
+    public static final RegistryObject<Item> FIELD_STONE = ITEMS.register("field_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",

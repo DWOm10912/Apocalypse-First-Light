@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "about": "Round point shovel in the main hand, first and third person alike (Earthwork A2). Held two-handed across the body as a shovel is carried to the work: the left hand at the top of the handle at the left of the belly, the right down the handle at the right, the blade low ahead and out to the right. A stroke (dig, pour, scrape: tool/shovel_*) starts and ends in this hold. Written by tools/author-shovel-actions-a2.cjs. docs/worldgen/earthwork_a2.md 6",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "round_point_shovel",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [2, 6, -7],
+        "rot": [-20, 0, 45],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_end",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

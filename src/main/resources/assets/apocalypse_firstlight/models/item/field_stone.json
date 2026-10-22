@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/field_stone"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/field_stone"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          0.2487,
+          1.554,
+          1.4878
+        ],
+        "scale": [
+          2.2,
+          2.2,
+          2.2
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          40,
+          6
+        ],
+        "translation": [
+          1.2162,
+          1.1372,
+          2.4592
+        ],
+        "scale": [
+          1.7,
+          1.7,
+          1.7
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          1.779,
+          1.779,
+          1.779
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          3.113,
+          3.113,
+          3.113
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/field_stone"
+      }
+    }
+  }
+}

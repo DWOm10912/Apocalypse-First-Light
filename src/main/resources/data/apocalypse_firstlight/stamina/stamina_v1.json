@@ -36,6 +36,10 @@
     "recoil_pull": 6,
     "chop": 4,
     "crank": 0.4,
+    "shovel_dig": 5,
+    "shovel_pour": 2,
+    "shovel_scrape": 4,
+    "pick_strike": 6,
     "reloads_by_gun": {
       "apocalypse_firstlight:hr55": 2
     }

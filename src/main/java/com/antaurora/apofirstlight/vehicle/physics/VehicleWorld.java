@@ -14,7 +14,7 @@ public interface VehicleWorld {
         public double grip = 1;
         /** Something was found between the top and the bottom of the search. */
         public boolean found;
-        /** What answered: road, smoothed terrain, block (for the debug report). */
+        /** What answered: road, edited earth, smoothed terrain, block (for the debug report). */
         public Source source = Source.NONE;
 
         public void set(double height, double nx, double ny, double nz, double grip, Source source) {
@@ -33,7 +33,7 @@ public interface VehicleWorld {
         }
     }
 
-    enum Source { NONE, ROAD, SMOOTH, BLOCK }
+    enum Source { NONE, ROAD, EARTH, SMOOTH, BLOCK }
 
     /** How to get a hull point out of something solid: a unit direction and the depth. */
     final class Push {

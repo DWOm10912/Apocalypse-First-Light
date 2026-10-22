@@ -263,6 +263,9 @@ public final class AflCreativeTabs {
 
     public static final RegistryObject<CreativeModeTab> MELEE_AND_EQUIPMENT = tab("melee_and_equipment", AMMUNITION, AflItems.CROWBAR,
             AflItems.CROWBAR,
+            AflItems.ROUND_POINT_SHOVEL,
+            AflItems.PICK_MATTOCK,
+            AflItems.FIELD_STONE,
             AflItems.SIMPLE_HEARING_PROTECTION,
             AflItems.GEIGER_COUNTER,
             AflItems.FLIP_LIGHTER,
