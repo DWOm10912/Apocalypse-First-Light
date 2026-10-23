@@ -118,8 +118,10 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 | 野战胸挂 `field_chest_rig` | 胸前一块面板（x ±4.1，y -9.4..-4.0），3 个弹匣包 + 1 个杂物包，都有盖和扣舌；H 形背带（肩带过肩、沿后背下到腰带）；一圈腰带 | 游骑兵绿尼龙 `[76,82,62]`，包盖深一档，黑色塑料扣舌 | 2796 / 512 | 0.157344 | 躯干，`[0, 10.175, -0.73]` |
 | 帆布背包 `canvas_backpack` | 背上一个 5.8 × 7.3 × 2.65 像素的圆角包，顶盖翻过顶面盖住正面上部，正面一个口袋，两条皮扣带和钢扣，皮肩带下到胸前 | 卡其帆布 `[122,112,84]`，油皮 `[98,66,44]`，发黑钢扣 | 1852 / 512 | 0.18375 | 躯干，`[0, 9.3, 1.58]` |
 | 登山背包 `hiking_backpack` | 内架登山包，主体 6.8 × 9.4 × 4 像素，顶到肩膀高（再高会顶到头），顶包、正面弹力网兜、两侧各两条压缩带，加宽肩带、胸带、加厚腰带 | 石板蓝尼龙 `[60,70,82]`，黑色尼龙配件，网兜更暗更哑 | 2300 / 512 | 0.111875 | 躯干，`[0, 11.6, 1.855]` |
-| 枪背带 `gun_sling` | 物品是卷起来的两点式背带：4 圈橄榄色织带（宽 0.65 像素，展开约 1.3 m），自由端带一个钢钩垂出来 | 橄榄织带 `[84,88,66]`，钢钩 | 920 / 256 | 0.385235 | 物品本身不戴；身上画的是 `gun_sling_worn` |
+| 枪背带 `gun_sling` | 物品是卷起来的两点式背带：4 圈橄榄色织带（宽 0.65 像素，展开约 1.3 m），自由端带一个钢钩垂出来 | 橄榄织带 `[84,88,66]`，钢钩 | 920 / 256 | 0.385235 | 物品本身不戴；装在枪上后是物理带子（`gun_sling_hook` + `gun_sling_strap`，[枪背带物理 R1](../native_guns/attachments/sling_physics_v1.md)），2026-10-22 起不再画 `gun_sling_worn` |
 | 枪背带（身上）`gun_sling_worn` | 没有物品，`meshOnly`：一条闭合的带子，从左肩斜过胸前到右胯，绕到背后 | 同枪背带 | 480 / 256 | — | 躯干，`[0.5926, 12.2307, 0]` |
+| 背带快挂钩 `gun_sling_hook` | 没有物品，`meshOnly`（2026-10-22，背带物理 R1）：钢丝弯成的快挂钩，下面是织带穿过的方眼，上面的 J 钩扣在背带环底杆上，带弹簧舌；织带在方眼上折回一截。1 像素 = 1 cm（真实尺寸，挂在哪把枪上都一样），销子在出带口上方 8.17 cm | 钢、橄榄织带 | 772 个三角形 / 每像素 24 texel | — | 由 `client/sling/SlingStrapRenderer` 画在背带两头 |
+| 背带织带 `gun_sling_strap` | 没有物品，`meshOnly`：6 cm 一段 32 × 2.5 mm 的织带，只用来给代码画的带子提供贴图 UV（沿带子每 6 cm 镜像重复） | 橄榄织带 | 12 个三角形 | — | 同上 |
 | 手枪枪套 `pistol_holster` | 右大腿外侧的腿挂枪套：黑色模压壳（按第三人称手上大小的手枪做：前沿到 y -2.4，后壁 z 1.0、顶到 -2.85，套筒露出后面约五分之一，握把从后面露出，扳机护圈在壳里，宽 1.3 px；2026-10-15 改，原来壳口在 -3.45，把手枪整把盖住），后面一块尼龙衬板，两条绕腿的腿带，一条上挂带 | 黑色 Kydex `[42,44,46]`（半光，F0 22），黑尼龙 | 892 / 256 | 0.26875 | 右腿，`[-0.605, 7.6, 0]`；口袋位置 `HOLSTER = {mid 3.25, bottom -7.4, front -1.05}` |
 
 ### 隔音耳罩 `simple_hearing_protection`（替换 V1 方块模型）
@@ -133,7 +135,7 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 
 - `AflStaticMeshItemRenderer.drawMesh`：在当前姿态直接画烘焙好的网格，不加物品的偏移。穿戴装备和第一人称部件都用它。
 - `ClientEquipmentSlots.WornMeshRenderer`（Curios 渲染器）：按部件进对应坐标（`apply`），平移 `-origin`，画网格。胸挂、两个背包在躯干，枪套在右腿，耳罩在头上；替换了原来耳罩用的 HeadItemRenderer（照搬原版头部物品层的那个）。跟着部件动：蹲下、走路、转头。所在部件被模型设为不可见时不画（2026-10-15，第一人称身体藏头时耳罩跟着藏，见 `docs/rendering/first_person_body_v1.md`）。
-- 枪背带（身上）和枪套里的手枪由 `CarriedWeaponsLayer` 画，见 [网格背包 V0 计划](../ui/afl_inventory_grid_v0_plan.md) 第 11 节；别的玩家身上的枪由服务器同步，见第 14 节。
+- 枪背带（身上，2026-10-22 起是绕身体的物理带子，`client/sling/SlingStraps`）和枪套里的手枪由 `CarriedWeaponsLayer` 画，见 [网格背包 V0 计划](../ui/afl_inventory_grid_v0_plan.md) 第 11 节；别的玩家身上的枪由服务器同步，见第 14 节。
 - 撬棍第一人称：`CrowbarFirstPerson` 把 `crowbar_model` 骨骼的 V1 方块藏起来，在这个骨骼上画网格（缩放 0.65，平移 `-(origin + [0, 3.8, 0])`）。
 - 穿原版胸甲时，盔甲层比身体大 1 像素：胸挂和背带的带子会被盖住，包和口袋露在外面。没有处理。
 
@@ -408,3 +410,16 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 - **源图**：`design/items/field_survival_guide_v1/fsg_game_assets.py` + `fsg_game_assets.cjs` 生成 `src/main/blockbench/textures/field_survival_guide_cover_src.png`（1180 × 900）和 `field_survival_guide_edges_src.png`（512 × 128）。
 - **输出**：`src/main/blockbench/field_survival_guide.bbmodel` 和 `textures/field_survival_guide_mesh{,_n,_s}.png`；`geo/field_survival_guide.geo.json`、`meshes/field_survival_guide.aflmesh.json`、`models/item/field_survival_guide.json`、`textures/item/field_survival_guide.png`（图标）、`textures/item/field_survival_guide_mesh{,_n,_s}.png`。渲染：`AflStaticMeshItemClient.bind(FIELD_SURVIVAL_GUIDE, "field_survival_guide", "field_survival_guide_mesh", 0.322835)`。
 - **检查**：握点数值离线核对过；手锯、建筑锤、羊角锤的 `--check` 仍为 CHECK OK；`compileJava --offline` 通过；书的第一轮用户 2026-10-22 实机 PASS。
+
+## 2026-10-22 新增：9 V 电池 `battery_9v_alkaline` / `battery_9v_nimh`，盖革计数器电池仓
+
+玩法见 [物品检视 V1 + 9 V 电池](../gameplay/item_inspect_v1_design.md) 第 5、6 节。
+
+- **电池**（`battery9vPart`，导出常量 `BATTERY_9V`）：IEC 6LR61 尺寸 48.5 × 26.5 × 17.5 mm，1 px = 10 mm，平躺，接线柱朝 −Z；圆形正极和六角负极相距 12.7 mm。膜包外壳卷边压在镍板上，靠底端一圈色带：碱性深灰配琥珀色带，镍氢绿色配浅灰色带；不印字。
+  - 各 508 个三角面，尺寸 2.65 × 1.75 × 5.15 px，`verticalOffset` 0.445313。
+  - 手持：捏住底端，第三人称落在指南针南边沿的握点上，缩放 0.55；第一人称缩放 0.72；地上平放 0.5；展示框正面朝外、接线柱朝上，1.2。
+  - 输出 `src/main/blockbench/battery_9v_{alkaline,nimh}.bbmodel`、`geo/`、`meshes/`、`models/item/`、`textures/item/battery_9v_*{,_mesh,_mesh_n,_mesh_s}.png`。
+- **计数器电池仓**（导出常量 `GEIGER_POWER`）：背面下半截重建外壳、开电池仓 `bay`（仓底两条筋），去掉下面那颗螺钉；滑盖 `cover`（比开口大一圈，底端五条防滑筋，顶端卡舌）；扣子 `snap`（黑色 PVC、红黑两根线）做两份：`snap_on` 扣在电池上，`snap_off` 歪在空仓底，共用 UV（`copyOf`）；侧面推钮 `power_switch`；液晶读数右边的电量图标 `bat_frame`、`bat_bar_0..2`（和段码同材质、同高度）。
+  - 3942 个三角面（原来 2262），`points.battery` = (−0.025, 1.1, 2.4)：装着的电池用电池物品自己的网格画在这里。
+- **渲染**：`client/GeigerCounterItemRenderer` 按 NBT 显示盖子、电池、两份扣子和电量格；检视界面里记下部件位置给交互点用。
+- **检查**：`node tools/build-equipment-meshes-v1.mjs --check` CHECK OK；`compileJava --offline` 通过；**没进游戏看过**手持、展示框和图标。

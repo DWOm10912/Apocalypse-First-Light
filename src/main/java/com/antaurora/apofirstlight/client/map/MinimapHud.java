@@ -51,7 +51,7 @@ public final class MinimapHud {
         AflKeyHintPanel.topInset = 0;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.options.hideGui || mc.options.renderDebug
-                || !FirstPersonBodyConfig.minimap() || mc.level.dimension() != Level.OVERWORLD) return;
+                || !FirstPersonBodyConfig.minimap() || mc.level.dimension() != Level.OVERWORLD || inspecting()) return;
         draw(g, mc, width, height, partialTick);
     };
 
@@ -122,7 +122,17 @@ public final class MinimapHud {
             String name = com.antaurora.apofirstlight.worldgen.network.road.RoadNames.town(town.id());
             if (name != null) text(g, font, Component.literal(name), x + 4, ty, AflUiStyle.TEXT_DIM);
         }
-        AflKeyHintPanel.topInset = top + ph + 2 - MARGIN;
+        AflKeyHintPanel.topInset = top + ph + 4;
+    }
+
+    /**
+     * A view that looks at a thing up close owns the screen (user 2026-10-22): the field attachment view, from the moment
+     * it starts to open until it has closed, and the item inspect screen (item inspect V1). Minimap, position box and
+     * compass bar stay away meanwhile (the Geiger HUD too).
+     */
+    public static boolean inspecting() {
+        return com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState.isActive()
+                || com.antaurora.apofirstlight.client.inspect.ItemInspectScreen.open();
     }
 
     static void text(GuiGraphics g, Font font, Component c, float x, float y, int rgb) {

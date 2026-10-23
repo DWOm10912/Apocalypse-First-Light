@@ -37,7 +37,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | Left / right click | Fire / aim |
 | R | Reload. Guns with magazines: tap to remove the magazine, hold to swap magazines |
 | B | Switch fire mode |
-| V | Inspect |
+| V | Inspect the gun; with anything else in hand, open the [inspect screen](./inventory#inspecting-items) |
 | Z | Change attachments in the field |
 | Caps Lock | Hide / show the gun key hints at the top right (the same setting as the driving hints) |
 

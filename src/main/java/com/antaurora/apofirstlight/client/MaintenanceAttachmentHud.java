@@ -53,7 +53,7 @@ public final class MaintenanceAttachmentHud {
     private Minecraft mc(){return Minecraft.getInstance();}
     private ItemStack gun(){return host.gun();}
     private Component text(String key){return Component.translatable("gui.apocalypse_firstlight.gun_maintenance."+key);}
-    private Component title(NativeAttachment.Slot slot){return text(switch(slot){case SIGHT->"sight";case MUZZLE->"muzzle";case MAGAZINE->"magazine";});}
+    private Component title(NativeAttachment.Slot slot){return text(switch(slot){case SIGHT->"sight";case MUZZLE->"muzzle";case MAGAZINE->"magazine";case SLING->"sling";});}
     private Component installed(NativeAttachment.Slot slot){var item=NativeAttachments.stored(gun(),slot);return item.isEmpty()?text("none"):item.getHoverName();}
     public boolean selecting(){return selection;}
     /** The attachment slot hotspot under the mouse, or null (key hints). */
@@ -162,11 +162,12 @@ public final class MaintenanceAttachmentHud {
     }
     private void submit(int source,ItemStack stack){
         if(pending||locked==null)return;pending=true;
-        host.action(locked==NativeAttachment.Slot.MAGAZINE
-                ?(source<0?MaintenanceActionState.REMOVING_MAGAZINE:MaintenanceActionState.INSTALLING_MAGAZINE)
-                :locked==NativeAttachment.Slot.SIGHT
-                ?(source<0?MaintenanceActionState.REMOVING_SIGHT:MaintenanceActionState.INSTALLING_SIGHT)
-                :(source<0?MaintenanceActionState.REMOVING_MUZZLE:MaintenanceActionState.INSTALLING_MUZZLE));
+        host.action(switch(locked){
+            case MAGAZINE->source<0?MaintenanceActionState.REMOVING_MAGAZINE:MaintenanceActionState.INSTALLING_MAGAZINE;
+            case SIGHT->source<0?MaintenanceActionState.REMOVING_SIGHT:MaintenanceActionState.INSTALLING_SIGHT;
+            case MUZZLE->source<0?MaintenanceActionState.REMOVING_MUZZLE:MaintenanceActionState.INSTALLING_MUZZLE;
+            case SLING->source<0?MaintenanceActionState.REMOVING_SLING:MaintenanceActionState.INSTALLING_SLING;
+        });
         host.submit(expected.copy(),revision,locked,source,stack.copy());
     }
     public void result(int phase){

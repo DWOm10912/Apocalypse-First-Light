@@ -12,7 +12,7 @@ You have five equipment slots: back, rig, wrist, ears and holster
 | <ItemIcon id="canvas_backpack" /> Canvas Backpack | Back | 5×6 cells |
 | <ItemIcon id="hiking_backpack" /> Hiking Backpack | Back | 6×10 cells |
 | <ItemIcon id="pistol_holster" /> Pistol Holster | Holster | Lets a pistol use slot 2 |
-| <ItemIcon id="gun_sling" /> Gun Sling | Fitted to a long gun | Lets the long gun use slot 1 |
+| <ItemIcon id="gun_sling" /> Gun Sling | A long gun's rear swivel (fitted with Z or at the bench, see [attachments](./attachments#gun-sling)) | Lets the long gun use slot 1 |
 
 See [Inventory and Weight](../guide/inventory)
 

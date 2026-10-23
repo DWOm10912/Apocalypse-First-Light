@@ -31,7 +31,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     private static void refreshMeshBounds() {
         long generation = VextrisMeshes.generation();
         if (meshGeneration != generation) {
-            BOUNDS.clear(); LONGITUDINAL_CENTERS.clear(); REST_LIFTS.clear();
+            BOUNDS.clear(); LONGITUDINAL_CENTERS.clear(); REST_LIFTS.clear(); BIND_FRAMES.clear();
             meshGeneration = generation;
         }
     }
@@ -161,7 +161,9 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         GeckoMeshRenderer.collectBounds(mesh,bone,pose,result);
         for(var b:bone.getChildBones())collect(b,pose,result,mesh);pose.popPose();
     }
-    public static void render(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {
+    public static void render(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {render(stack,pose,buffers,light,null);}
+    /** As {@link #render(ItemStack,PoseStack,MultiBufferSource,int)}; with a strap key (the bench) a fitted sling hangs from the gun, live (client/sling/SlingStraps). */
+    public static void render(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light,Object strapKey) {
         if(!(stack.getItem() instanceof NativeGunItem gun))return;
         var model=GeckoLibCache.getBakedModels().get(asset(stack,"geo/",".geo.json"));
         if(model==null)return;
@@ -170,16 +172,42 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         var type=renderType(stack);
         var mesh=mesh(stack);
         for(var bone:bones)draw(bone,stack,pose,buffers,type,light,mesh);
+        if(strapKey!=null)com.antaurora.apofirstlight.client.sling.SlingStraps.bench(strapKey,stack,pose.last(),buffers,light);
         pose.popPose();
     }
-    /** The same bind-pose gun in its own model space, without the bench transform: for displays that place it themselves (Wood Furniture V1 gun rack). */
-    public static void renderBindPose(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {
+    /**
+     * The same bind-pose gun in its own model space, without the bench transform: for displays that place it themselves
+     * (Wood Furniture V1 gun rack, the ground guns). A fitted sling lies on it at rest (SlingStraps#still).
+     */
+    public static void renderBindPose(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {renderBindPose(stack,pose,buffers,light,true);}
+    /** As above; strap false leaves the sling to the caller (the gun carried on the back: its strap goes round the body). */
+    public static void renderBindPose(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light,boolean strap) {renderBindPose(stack,pose,buffers,light,strap,true);}
+    /** As above; lying false lets the strap hang free below the gun (the gun rack's wall brackets) instead of lying beside it. */
+    public static void renderBindPose(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light,boolean strap,boolean lying) {
         if(!(stack.getItem() instanceof NativeGunItem))return;
         var model=model(stack);
         if(model==null)return;
         var type=renderType(stack);
         var mesh=mesh(stack);
         for(var bone:bones(stack,model))draw(bone,stack,pose,buffers,type,light,mesh);
+        if(strap&&!(buffers instanceof Capture))com.antaurora.apofirstlight.client.sling.SlingStraps.still(stack,pose.last(),buffers,light,buffers instanceof ClosedFaces,lying);
+    }
+    /** The gun's Vextris mesh (geo/<gun>.geo.json), or null. */
+    public static MeshModel meshOf(ItemStack stack){return mesh(stack);}
+    private static final Map<BakedGeoModel,Map<String,org.joml.Matrix4f>> BIND_FRAMES=new WeakHashMap<>();
+    /**
+     * Every bone's mesh frame in the bind pose (prepMatrixForBone, then translateToPivotPoint: where its mesh vertices,
+     * pivot-local blocks, are drawn), relative to the model root; empty when the model is not loaded. Read only.
+     */
+    public static Map<String,org.joml.Matrix4f> bindFrames(ItemStack stack){
+        var m=model(stack);if(m==null)return Map.of();
+        return BIND_FRAMES.computeIfAbsent(m,key->{var out=new HashMap<String,org.joml.Matrix4f>();var pose=new PoseStack();for(var b:bones(stack,key))frames(b,pose,out);return Map.copyOf(out);});
+    }
+    private static void frames(GeoBone bone,PoseStack pose,Map<String,org.joml.Matrix4f> out){
+        pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
+        pose.pushPose();RenderUtils.translateToPivotPoint(pose,bone);out.put(bone.getName(),new org.joml.Matrix4f(pose.last().pose()));pose.popPose();
+        for(var child:bone.getChildBones())frames(child,pose,out);
+        pose.popPose();
     }
     static RenderType renderType(ItemStack stack) {
         return RenderType.entityCutoutNoCull(asset(stack,"textures/item/",".png"));

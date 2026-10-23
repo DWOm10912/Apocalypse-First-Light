@@ -276,6 +276,8 @@ public final class AflCreativeTabs {
             AflItems.FIELD_SURVIVAL_GUIDE,
             AflItems.SIMPLE_HEARING_PROTECTION,
             AflItems.GEIGER_COUNTER,
+            AflItems.BATTERY_9V_ALKALINE,
+            AflItems.BATTERY_9V_NIMH,
             AflItems.FLIP_LIGHTER,
             AflItems.MAP,
             AflItems.PRAIRIE_ROAD_MAP,

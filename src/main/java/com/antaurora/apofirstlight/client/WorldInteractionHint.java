@@ -475,10 +475,19 @@ public final class WorldInteractionHint {
         return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.dumpster."+prompt.key()),prompt.anchor());
     }
 
+    /** Item inspect V1: a 9 V alkaline battery (loose or in a Geiger counter) and a counter without one say why. */
+    private static String whyNotCharge(net.minecraft.world.item.ItemStack stack) {
+        var kind=stack.getItem() instanceof com.antaurora.apofirstlight.item.GeigerCounterItem
+                ?com.antaurora.apofirstlight.item.GeigerCounterItem.batteryKind(stack):com.antaurora.apofirstlight.item.Battery9vItem.kind(stack);
+        if(kind==com.antaurora.apofirstlight.item.Battery9vItem.Kind.ALKALINE) return "alkaline";
+        if(kind==null&&stack.getItem() instanceof com.antaurora.apofirstlight.item.GeigerCounterItem) return "no_battery";
+        return "cannot_charge";
+    }
+
     /**
      * Charging station tray, resolved like ChargingStationBlock#use (main hand first, then the off hand): place a chargeable
-     * item, "cannot charge" for anything else, or take the item back (either hand empty) with its synced FE; drawn above
-     * the tray.
+     * item, "cannot charge" for anything else (alkaline / no battery say why), or take the item back (either hand empty)
+     * with its synced FE; drawn above the tray.
      */
     private static Target chargingStation(Minecraft mc,BlockHitResult hit) {
         var s=mc.level.getBlockState(hit.getBlockPos());
@@ -491,7 +500,7 @@ public final class WorldInteractionHint {
         if(station.item().isEmpty()) {
             if(main.isEmpty()&&off.isEmpty()) return null;
             boolean chargeable=ChargingStationBlockEntity.canCharge(main)||ChargingStationBlockEntity.canCharge(off);
-            return new Target(Component.translatable("hint.apocalypse_firstlight.charging_station."+(chargeable?"place":"cannot_charge")),anchor);
+            return new Target(Component.translatable("hint.apocalypse_firstlight.charging_station."+(chargeable?"place":whyNotCharge(main.isEmpty()?off:main))),anchor);
         }
         if(!main.isEmpty()&&!off.isEmpty()) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.charging_station.take",

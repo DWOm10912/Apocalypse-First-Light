@@ -31,9 +31,6 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class NativeGunKeyHints {
     private static final AflKeyHintPanel PANEL = new AflKeyHintPanel();
-    /** As VehicleKeyHints#SCALE. */
-    private static final float SCALE = 0.62F;
-
     private NativeGunKeyHints() {
     }
 
@@ -55,7 +52,7 @@ public final class NativeGunKeyHints {
         List<AflKeyHintPanel.Row> rows = new ArrayList<>();
         boolean shown = !mc.options.hideGui && active() && com.antaurora.apofirstlight.client.FirstPersonBodyConfig.keyHints();
         if (shown) rows(mc, mc.player.getMainHandItem(), rows);
-        PANEL.render(graphics, width, rows, shown, SCALE);
+        PANEL.render(graphics, width, rows, shown);
     };
 
     private static void rows(Minecraft mc, ItemStack stack, List<AflKeyHintPanel.Row> rows) {

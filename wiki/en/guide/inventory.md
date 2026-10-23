@@ -14,7 +14,7 @@ AFL replaces the vanilla inventory with a grid: every item takes up a block of c
 
 | Slot | Holds | Needs |
 |---|---|---|
-| 1 | Long gun | A gun sling fitted to the gun |
+| 1 | Long gun | A gun sling fitted to the gun ([how](../arms/attachments#gun-sling)) |
 | 2 | Pistol | A pistol holster |
 | 3 | Melee weapon | — |
 | 4–9 | Quick binds for items in pockets or the rig | — |
@@ -57,6 +57,22 @@ Comfortable load is <V d="item_mass/core_v1#policy.comfort_capacity_kg" u="kg" /
 | <V d="stamina/stamina_v1#weight.4.load_ratio" x="30" digits="0" u="kg" /> | ×<V d="stamina/stamina_v1#weight.4.move" /> | ×<V d="stamina/stamina_v1#weight.4.action" /> | ×<V d="stamina/stamina_v1#weight.4.regen" /> |
 
 Kilograms in these tables assume the default 30 kg comfortable load
+
+## Inspecting items
+
+<StatusTag s="integrated" />
+
+- Point at an item in the inventory and press **V**, or press **V** holding anything that is not a gun, to open the inspect screen. The item flies out of its cell to the middle of the screen; the game keeps running. In first person it is lit by the light around you, like the gun on the field attachment screen, and the background is not dimmed
+- Left-drag to turn it, middle-drag to pan, scroll to zoom, **R** to square it up again; **V**, **Esc** or **E** closes it
+- Top right are the key hints, with the item's name and a one-line description under them (the same line its hover tooltip shows under the name). The minimap, coordinates, compass and Geiger counter window are hidden meanwhile
+- Some items have hotspots: turn the item so the part faces you, point at it to see it outlined in amber, and click. Each action finishes before the next click. For now only the Geiger counter has them:
+  - the power slider on the side: switch on / off
+  - the battery cover on the back: open the cover; once open, right-click the bay to close it
+  - a fitted battery: remove it
+  - the empty bay: fit a battery, picked from a row of the 9 V batteries you carry (pockets, chest rig, backpack, hotbar)
+- A battery you take out goes back into your inventory, or drops at your feet if there is no room. Closing the screen with the cover off puts it back on first
+- Being hurt, or the item leaving the cell it was in, closes the screen
+- **V** with a gun in hand still plays the inspect animation; a gun in the inventory can only be turned and looked at
 
 ## Searching containers
 

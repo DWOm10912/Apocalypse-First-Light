@@ -22,6 +22,10 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
         var id=net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(item.getItem());
         return new ResourceLocation(id.getNamespace(),prefix+id.getPath()+suffix);
     }
+    /** An accessory item's geometry (geo/<item>.geo.json): the model drawItem draws, and its Mesh sidecar's key. */
+    public static ResourceLocation geometry(ItemStack item){
+        return resource(item,"geo/",".geo.json");
+    }
     private static BakedGeoModel model(ItemStack item){
         return item.isEmpty()?null:GeckoLibCache.getBakedModels().get(resource(item,"geo/",".geo.json"));
     }

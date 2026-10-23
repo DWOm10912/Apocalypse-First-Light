@@ -20,6 +20,11 @@ public final class AflCreativeTabExtras {
             // a fully charged Energy Battery right after the empty one, for testing before the charging station exists
             event.getEntries().putAfter(new ItemStack(AflItems.ENERGY_BATTERY.get()),
                     EnergyBatteryItem.charged(AflItems.ENERGY_BATTERY.get()), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+            // a Geiger counter with a fresh alkaline battery fitted, after the empty one (item inspect V1)
+            var fitted = new ItemStack(AflItems.GEIGER_COUNTER.get());
+            com.antaurora.apofirstlight.item.GeigerCounterItem.fit(fitted, new ItemStack(AflItems.BATTERY_9V_ALKALINE.get()), 0);
+            fitted.getTag().remove(com.antaurora.apofirstlight.item.GeigerCounterItem.SINCE);
+            event.getEntries().putAfter(new ItemStack(AflItems.GEIGER_COUNTER.get()), fitted, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
     }
 }

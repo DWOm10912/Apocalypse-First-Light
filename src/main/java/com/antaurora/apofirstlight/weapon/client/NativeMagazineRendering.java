@@ -30,37 +30,45 @@ public final class NativeMagazineRendering {
     }
 
     /** The magazine a bone of a magazine-item gun shows, or null when the gun is not one or the bone is no magazine bone. */
-    private static NativeMagazines.Shown shown(ItemStack gun, GeoBone bone) {
+    private static NativeMagazines.Shown shown(ItemStack gun, String bone) {
         if (gun == null || !(gun.getItem() instanceof NativeGunItem g) || !NativeMagazines.system(g.definition())) return null;
-        var role = role(bone.getName());
+        var role = role(bone);
         return role == null ? null : NativeMagazines.shown(gun, g.definition(), role);
     }
 
     public static boolean replaces(ItemStack gun,GeoBone bone){
+        return replaces(gun,bone.getName());
+    }
+    /** The same by bone name (the sling's colliders: client/sling/SlingStraps). */
+    public static boolean replaces(ItemStack gun,String bone){
         if (gun != null && NativeMagazines.system(gun)) {
             var shown = shown(gun, bone);
             return shown != null && (shown.magazine().isEmpty()
-                    || shown.magazine().getItem() instanceof NativeMagazineItem m && m.replacesBone(bone.getName()));
+                    || shown.magazine().getItem() instanceof NativeMagazineItem m && m.replacesBone(bone));
         }
         return gun!=null&&NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE).getItem() instanceof NativeMagazineItem m
-                &&m.replacesBone(bone.getName());
+                &&m.replacesBone(bone);
+    }
+    /** The magazine drawn in place of a gun bone that {@link #replaces} (empty when it shows none). */
+    public static ItemStack drawn(ItemStack gun,String bone){
+        if(!replaces(gun,bone))return ItemStack.EMPTY;
+        if (NativeMagazines.system(gun)) {
+            var shown = shown(gun, bone);
+            return shown == null ? ItemStack.EMPTY : shown.magazine();
+        }
+        return NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE);
     }
     public static boolean replacesSubtree(ItemStack gun,GeoBone bone){
         if (gun != null && NativeMagazines.system(gun)) {
-            var shown = shown(gun, bone);
+            var shown = shown(gun, bone.getName());
             return shown != null && (shown.magazine().isEmpty()
                     || shown.magazine().getItem() instanceof NativeMagazineItem m && m.replacesSubtree());
         }
         return NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE).getItem() instanceof NativeMagazineItem m&&m.replacesSubtree();
     }
     public static void render(ItemStack gun,GeoBone bone,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
-        if(!replaces(gun,bone))return;
-        ItemStack magazine;
-        if (NativeMagazines.system(gun)) {
-            var shown = shown(gun, bone);
-            if (shown == null || shown.magazine().isEmpty()) return;
-            magazine = shown.magazine();
-        } else magazine = NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE);
+        ItemStack magazine=drawn(gun,bone.getName());
+        if(magazine.isEmpty())return;
         pose.pushPose();RenderUtils.translateToPivotPoint(pose,bone);
         NativeMuzzleRendering.drawItem(magazine,pose,buffers,light,overlay);
         pose.popPose();

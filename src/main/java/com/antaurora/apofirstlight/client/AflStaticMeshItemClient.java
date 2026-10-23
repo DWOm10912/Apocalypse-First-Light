@@ -86,6 +86,13 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.SIMPLE_HEARING_PROTECTION.get(), "simple_hearing_protection", "simple_hearing_protection_mesh", 0.280324);
             // Geiger counter V2 (equipment meshes, 2026-10-15): the mesh with a live LCD and count LED (0.5 - 3.12 / 32)
             bind(AflItems.GEIGER_COUNTER.get(), GeigerCounterItemRenderer::new, "geiger_counter");
+            com.antaurora.apofirstlight.item.GeigerCounterItem.clientClock = () -> {
+                var level = net.minecraft.client.Minecraft.getInstance().level;
+                return level == null ? 0L : level.getGameTime();
+            };
+            // 9 V batteries (item inspect V1, equipment meshes): 0.5 - 1.75 / 32
+            bind(AflItems.BATTERY_9V_ALKALINE.get(), "battery_9v_alkaline", "battery_9v_alkaline_mesh", 0.445313);
+            bind(AflItems.BATTERY_9V_NIMH.get(), "battery_9v_nimh", "battery_9v_nimh_mesh", 0.445313);
             // Flip lighter V1 (equipment meshes, 2026-10-20): the lid, wheel and flame from the stack's tag (0.5 - 11.4 / 32)
             bind(AflItems.FLIP_LIGHTER.get(), FlipLighterRenderer::new, "flip_lighter");
             // Health V1a medical items (equipment meshes, 2026-10-19): 0.5 - height / 32 (4.149 / 9.25 px); in use, the player skeleton

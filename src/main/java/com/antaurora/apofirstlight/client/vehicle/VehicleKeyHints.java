@@ -31,8 +31,6 @@ import java.util.List;
 public final class VehicleKeyHints {
     private static final String LANG = "hud.apocalypse_firstlight.drive.";
     private static final AflKeyHintPanel PANEL = new AflKeyHintPanel();
-    /** The panel's size (user 2026-10-17: at full size ten rows filled the top right while driving). */
-    private static final float SCALE = 0.62F;
 
     private VehicleKeyHints() {
     }
@@ -49,7 +47,7 @@ public final class VehicleKeyHints {
                 && mc.player.getVehicle() instanceof PickupTruckEntity truck && truck.getControllingPassenger() == mc.player;
         boolean shown = driving && com.antaurora.apofirstlight.client.FirstPersonBodyConfig.keyHints();
         if (shown) rows((PickupTruckEntity) mc.player.getVehicle(), mc, rows);
-        PANEL.render(graphics, width, rows, shown, SCALE);
+        PANEL.render(graphics, width, rows, shown);
     };
 
     private static void rows(PickupTruckEntity truck, Minecraft mc, List<AflKeyHintPanel.Row> rows) {

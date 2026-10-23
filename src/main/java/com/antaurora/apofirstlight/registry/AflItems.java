@@ -575,8 +575,14 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PLASTIC_PELLETS = ITEMS.register("plastic_pellets",
             () -> new Item(new Item.Properties()));
+    // Item inspect V1 (docs/gameplay/item_inspect_v1_design.md 5): a 9 V battery in its bay, switched on with a right click
     public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
-            () -> new Item(new Item.Properties().stacksTo(1)));
+            () -> new com.antaurora.apofirstlight.item.GeigerCounterItem(new Item.Properties().stacksTo(1)));
+    // 9 V batteries (design doc 6): alkaline (full ones stack to 4) and NiMH rechargeable
+    public static final RegistryObject<Item> BATTERY_9V_ALKALINE = ITEMS.register("battery_9v_alkaline",
+            () -> new com.antaurora.apofirstlight.item.Battery9vItem(com.antaurora.apofirstlight.item.Battery9vItem.Kind.ALKALINE, new Item.Properties().stacksTo(4)));
+    public static final RegistryObject<Item> BATTERY_9V_NIMH = ITEMS.register("battery_9v_nimh",
+            () -> new com.antaurora.apofirstlight.item.Battery9vItem(com.antaurora.apofirstlight.item.Battery9vItem.Kind.NIMH, new Item.Properties().stacksTo(1)));
     // Flip lighter V1 (docs/gameplay/flip_lighter_v1.md, 2026-10-20): flick open, strike, light; the fuel rides in its tag
     public static final RegistryObject<Item> FLIP_LIGHTER = ITEMS.register("flip_lighter",
             () -> new com.antaurora.apofirstlight.item.FlipLighterItem(new Item.Properties()));

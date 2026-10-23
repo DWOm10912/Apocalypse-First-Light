@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.config.GeigerHudConfig;
 import com.antaurora.apofirstlight.client.config.GeigerHudConfigManager;
+import com.antaurora.apofirstlight.client.map.MinimapHud;
+import com.antaurora.apofirstlight.item.GeigerCounterItem;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -19,20 +21,25 @@ import net.minecraftforge.client.gui.overlay.IGuiOverlay;
  * decimal point (GeigerReadout: the same smoothed value and auto range as the counter's own LCD); the unit, the count
  * LED and the alarm bell sit in their own column right of the window. Drawn at screen resolution into one dynamic
  * texture (distance-field shapes, anti-aliased); redrawn only when the digits, LED, alarm, GUI scale or size change.
+ * <p>Item inspect V1 (docs/gameplay/item_inspect_v1_design.md 5.3, user 2026-10-22): the window is 4 GUI px wider for
+ * the battery icon right of the digits (the reading and the charge); shown only while the counter is on with charge,
+ * every segment and the whole icon lit for its 1 s self-test.
  */
 public final class GeigerHudOverlay {
     /** Panel size (GUI px at hudScale 1), the margin to the screen corner. */
-    public static final int WIDTH = 62, HEIGHT = 24, MARGIN = 8;
+    public static final int WIDTH = 66, HEIGHT = 24, MARGIN = 8;
     private static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/geiger_hud");
     private static final double RADIUS = 3.0, BEZEL = 1.3;
     /** LCD window and the digit grid (panel GUI px). */
-    private static final double LCD_X0 = 3.6, LCD_Y0 = 3.6, LCD_X1 = 44.6, LCD_Y1 = 20.4, LCD_R = 1.4;
+    private static final double LCD_X0 = 3.6, LCD_Y0 = 3.6, LCD_X1 = 48.6, LCD_Y1 = 20.4, LCD_R = 1.4;
     private static final double DIGIT_X0 = 7.0, DIGIT_TOP = 6.3, DIGIT_H = 11.4, DIGIT_W = 6.8, PITCH = 9.2, BAR = 1.7, GAP = 0.25;
     /** Right column: its centre line, the unit's top, the LED and the bell centres. */
-    private static final double COLUMN_X = 52.6, UNIT_TOP = 4.4, LED_Y = 13.0, LED_R = 1.35, BELL_Y = 18.0;
+    private static final double COLUMN_X = 56.6, UNIT_TOP = 4.4, LED_Y = 13.0, LED_R = 1.35, BELL_Y = 18.0;
     private static final int BEZEL_TOP = 0x5A5E64, BEZEL_BOTTOM = 0x2A2C2F, BEZEL_RIM = 0x1A1B1D, OUTLINE = SurvivalHudLayout.OUTLINE,
             FACE = 0x141517, LCD = 0x9FA892, LCD_SHADE = 0x8A937E, INK = 0x1D2219, LED_ON = 0xE5483A, LED_OFF = 0x3A2220,
             AMBER = 0xE2A24A, TEXT = 0xF0ECE4;
+    /** The battery icon: frame (left, top, width, height, line), the bars' gap. */
+    private static final double ICON_X = 44.4, ICON_Y = 6.0, ICON_W = 2.6, ICON_H = 11.8, ICON_T = 0.45, ICON_GAP = 0.5;
     /** Unlit segments show faintly, as on a real LCD. */
     private static final double GHOST = 0.03;
 
@@ -49,11 +56,14 @@ public final class GeigerHudOverlay {
 
     private static void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui
-                || !com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(minecraft.player, AflItems.GEIGER_COUNTER.get())) return;
+        if (minecraft.player == null || minecraft.options.hideGui || MinimapHud.inspecting()) return;
+        var stack = GeigerCounterItem.inUse(minecraft.player, AflItems.GEIGER_COUNTER.get());
+        long now = GeigerCounterItem.now();
+        if (stack.isEmpty() || !GeigerCounterItem.powered(stack, now)) return;
         GeigerHudConfig config = GeigerHudConfigManager.get();
         if (!config.enabled()) return;
-        preview(graphics, screenWidth, screenHeight, config);
+        boolean test = GeigerCounterItem.selfTest(stack, now);
+        preview(graphics, screenWidth, screenHeight, config, test ? 3 : GeigerCounterItemRenderer.batteryBars(stack, now), test);
     }
 
     /** Top-left corner of the panel (GUI px). */
@@ -62,15 +72,20 @@ public final class GeigerHudOverlay {
                 Math.round(screenHeight - HEIGHT * config.hudScale() - MARGIN - config.offsetY())};
     }
 
-    /** The HUD as it is drawn, independent of held-item visibility (also the layout editor's preview). */
+    /** The layout editor's preview: a full battery, a reading. */
     public static void preview(GuiGraphics graphics, int screenWidth, int screenHeight, GeigerHudConfig config) {
+        preview(graphics, screenWidth, screenHeight, config, 3, false);
+    }
+
+    /** The HUD as it is drawn: battery bars (0: the frame alone, blinking), whether it is in the switch-on self-test. */
+    public static void preview(GuiGraphics graphics, int screenWidth, int screenHeight, GeigerHudConfig config, int bars, boolean selfTest) {
         Minecraft minecraft = Minecraft.getInstance();
         float[] o = origin(screenWidth, screenHeight, config);
         double gui = minecraft.getWindow().getGuiScale(), k = config.hudScale(), s = gui * k;   // screen px per panel px
         GeigerReadout.Display shown = GeigerReadout.display();
         boolean led = GeigerReadout.ledLit(), alarm = GeigerReadout.alarm() && (System.nanoTime() / 500_000_000L) % 2 == 0;
         int x0 = (int)Math.round(o[0] * gui), y0 = (int)Math.round(o[1] * gui);
-        draw(s, shown, led, alarm);
+        draw(s, shown, led && !selfTest, alarm && !selfTest, bars > 0 ? bars : GeigerCounterItemRenderer.lowBlink() ? 4 : 5, selfTest);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         graphics.pose().pushPose();
@@ -83,7 +98,8 @@ public final class GeigerHudOverlay {
     }
 
     // ---- raster ----
-    private static void draw(double s, GeigerReadout.Display shown, boolean led, boolean alarm) {
+    /** icon: 1..3 bars, 4 the frame alone, 5 nothing (the low-battery blink's dark half). */
+    private static void draw(double s, GeigerReadout.Display shown, boolean led, boolean alarm, int icon, boolean selfTest) {
         int w = (int)Math.ceil(WIDTH * s) + 2, h = (int)Math.ceil(HEIGHT * s) + 2;
         if (texture == null || imgW != w || imgH != h) {
             image = new NativeImage(NativeImage.Format.RGBA, w, h, true);
@@ -92,7 +108,7 @@ public final class GeigerHudOverlay {
             imgW = w; imgH = h; baseScale = -1; drawnKey = Long.MIN_VALUE;
         }
         if (baseScale != s) { base = background(s, w, h); baseScale = s; drawnKey = Long.MIN_VALUE; }
-        long key = shown.key() * 4 + (led ? 2 : 0) + (alarm ? 1 : 0);
+        long key = ((shown.key() * 4 + (led ? 2 : 0) + (alarm ? 1 : 0)) * 8 + icon) * 2 + (selfTest ? 1 : 0);
         if (key == drawnKey) return;
         float[] px = new float[w * h * 4];
         for (int i = 0; i < w * h; i++) {
@@ -103,9 +119,10 @@ public final class GeigerHudOverlay {
         for (int cell = 0; cell < 4; cell++) {
             double cx0 = DIGIT_X0 + cell * PITCH;
             double[][][] segs = segments(cx0);
-            for (int bit = 0; bit < 7; bit++) shape(px, w, h, s, segs[bit], INK, shown.segment(cell, bit) ? 1 : GHOST);
-            if (cell < 3) shape(px, w, h, s, point(cx0), INK, shown.dp() == cell ? 1 : GHOST);
+            for (int bit = 0; bit < 7; bit++) shape(px, w, h, s, segs[bit], INK, selfTest || shown.segment(cell, bit) ? 1 : GHOST);
+            if (cell < 3) shape(px, w, h, s, point(cx0), INK, selfTest || shown.dp() == cell ? 1 : GHOST);
         }
+        batteryIcon(px, w, h, s, icon);
         disc(px, w, h, s, COLUMN_X, LED_Y, LED_R, led ? LED_ON : LED_OFF, 1);
         if (led) disc(px, w, h, s, COLUMN_X, LED_Y, LED_R + 1.2, LED_ON, 0.18);
         if (alarm) bell(px, w, h, s);
@@ -171,6 +188,22 @@ public final class GeigerHudOverlay {
     private static double[][] point(double x0) {
         double cx = x0 + (DIGIT_W + PITCH) / 2, y1 = DIGIT_TOP + DIGIT_H, d = BAR;
         return new double[][]{{cx - d / 2, y1 - d}, {cx + d / 2, y1 - d}, {cx + d / 2, y1}, {cx - d / 2, y1}};
+    }
+
+    /** The LCD's battery icon right of the digits: a frame with its + nub on top, three bars filling from the bottom. */
+    private static void batteryIcon(float[] px, int w, int h, double s, int icon) {
+        double x0 = ICON_X, y0 = ICON_Y, x1 = x0 + ICON_W, y1 = y0 + ICON_H, t = ICON_T, frame = icon <= 4 ? 1 : GHOST;
+        for (double[][] r : new double[][][]{rect(x0, y0, x1, y0 + t), rect(x0, y1 - t, x1, y1), rect(x0, y0 + t, x0 + t, y1 - t),
+                rect(x1 - t, y0 + t, x1, y1 - t), rect(x0 + 0.7, y0 - 0.9, x1 - 0.7, y0)}) shape(px, w, h, s, r, INK, frame);
+        double ih = (ICON_H - 2 * t - 0.6 - 2 * ICON_GAP) / 3, bx0 = x0 + t + 0.35, bx1 = x1 - t - 0.35;
+        for (int i = 0; i < 3; i++) {
+            double top = y1 - t - 0.3 - (i + 1) * ih - i * ICON_GAP;
+            shape(px, w, h, s, rect(bx0, top, bx1, top + ih), INK, icon <= 3 && i < icon ? 1 : GHOST);
+        }
+    }
+
+    private static double[][] rect(double x0, double y0, double x1, double y1) {
+        return new double[][]{{x0, y0}, {x1, y0}, {x1, y1}, {x0, y1}};
     }
 
     /** Alarm bell in the right column: a dome on a rim with the clapper under it. */

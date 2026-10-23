@@ -150,7 +150,7 @@ public final class NativeGunData {
                     (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
                     NativeMuzzleMount.parse(o,validate),sound(o,"fire_sound",validate),sound(o,"dry_fire_sound",validate),
                     suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),fire,presentation.hitEffect(),
-                    actionType,pellets,adsSpread,headshot,presentation.magazineRoundVisual());
+                    actionType,pellets,adsSpread,headshot,presentation.magazineRoundVisual(),NativeSlingMount.parse(o,validate));
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {

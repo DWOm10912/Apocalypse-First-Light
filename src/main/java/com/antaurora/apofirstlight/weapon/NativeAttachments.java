@@ -10,8 +10,11 @@ import static com.antaurora.apofirstlight.weapon.NativeAttachment.Slot;
 /** Stack-local slots; live player mutations go through server-authoritative maintenance operations. */
 public final class NativeAttachments {
     private static final String ROOT="AflAttachments";
+    /** Before the sling became an attachment (2026-10-22) a fitted sling was this flag; it still reads as one. */
+    private static final String LEGACY_SLING="AflSling";
     /** Serialization primitive; callers must provide server authority and compatibility validation. */
     static void writeStored(ItemStack gun,Slot slot,ItemStack attachment){
+        if(slot==Slot.SLING)gun.getOrCreateTag().remove(LEGACY_SLING);
         var root=gun.getOrCreateTag().getCompound(ROOT);
         if(attachment.isEmpty())root.remove(slot.name());
         else root.put(slot.name(),attachment.save(new net.minecraft.nbt.CompoundTag()));
@@ -19,9 +22,14 @@ public final class NativeAttachments {
     }
     public static ItemStack stored(ItemStack gun,Slot slot){
         var tag=gun.getTag();
-        return tag==null||!tag.contains(ROOT,Tag.TAG_COMPOUND)?ItemStack.EMPTY:
+        if(tag==null)return ItemStack.EMPTY;
+        if(slot==Slot.SLING&&tag.getBoolean(LEGACY_SLING)&&!tag.getCompound(ROOT).contains(slot.name()))
+            return new ItemStack(com.antaurora.apofirstlight.registry.AflItems.GUN_SLING.get());
+        return !tag.contains(ROOT,Tag.TAG_COMPOUND)?ItemStack.EMPTY:
                 ItemStack.of(tag.getCompound(ROOT).getCompound(slot.name()));
     }
+    /** Setup only (GameTests, dev): a sling at the swivel without the bench transaction. */
+    public static void fitSling(ItemStack gun){writeStored(gun,Slot.SLING,new ItemStack(com.antaurora.apofirstlight.registry.AflItems.GUN_SLING.get()));}
     public static ItemStack storedSight(ItemStack gun){return stored(gun,Slot.SIGHT);}
     public static boolean supportsSlot(ItemStack gun,Slot slot){
         if(!(gun.getItem() instanceof NativeGunItem g))return false;
@@ -30,6 +38,7 @@ public final class NativeAttachments {
             case SIGHT -> d.sightMount()!=null&&!d.sightMount().accepts().isEmpty();
             case MUZZLE -> d.muzzleMount()!=null&&!d.muzzleMount().accepts().isEmpty();
             case MAGAZINE -> d.magazineMount()!=null&&!d.magazineMount().accepts().isEmpty();
+            case SLING -> d.slingMount()!=null&&!d.slingMount().accepts().isEmpty();
         };
     }
     public static boolean compatible(ItemStack gun,ItemStack attachment){
@@ -39,6 +48,7 @@ public final class NativeAttachments {
             case SIGHT -> d.sightMount()!=null&&d.sightMount().accepts().contains(id);
             case MUZZLE -> d.muzzleMount()!=null&&d.muzzleMount().accepts().contains(id);
             case MAGAZINE -> a instanceof NativeMagazineItem m&&m.accepts(d)&&d.magazineMount()!=null&&d.magazineMount().accepts().contains(id);
+            case SLING -> d.slingMount()!=null&&d.slingMount().accepts().contains(id);
         };
     }
     public static ItemStack active(ItemStack gun,Slot slot){

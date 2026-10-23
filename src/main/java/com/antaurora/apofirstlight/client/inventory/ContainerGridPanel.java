@@ -8,7 +8,6 @@ import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.inventory.grid.GridActions;
 import com.antaurora.apofirstlight.inventory.grid.GridPackets;
 import com.antaurora.apofirstlight.inventory.grid.GridStorage;
-import com.antaurora.apofirstlight.inventory.grid.GunSling;
 import com.antaurora.apofirstlight.inventory.grid.ItemSizes;
 import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -253,13 +252,6 @@ public final class ContainerGridPanel {
                     CELL, CELL, 1.5F, AflUiStyle.BACK_HOVER, 0.6F, AflUiStyle.LINE, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
             return;
         }
-        if (GunSling.isSling(carried)) {
-            if (entry == null) return;
-            int colour = GunSling.canFit(entry.stack()) ? GridDrawing.FREE : GridDrawing.BLOCKED;
-            var size = cell.storage().footprint(entry);
-            AflUiShapes.box(g, cell.x() + entry.x() * CELL, cell.y() + entry.y() * CELL, size.w() * CELL, size.h() * CELL, 2, colour, 0.28F, colour, 0.7F, 0, 0);
-            return;
-        }
         var plan = GridDrawing.plan(cell.storage(), cell.section(), cell.x(), cell.y(), carried, rotated, mx, my);
         int colour = plan.kind() == GridActions.Kind.MERGE || plan.free() ? GridDrawing.FREE : plan.swap() ? GridDrawing.SWAP : GridDrawing.BLOCKED;
         var size = ItemSizes.of(carried, true).turned(rotated);
@@ -320,10 +312,6 @@ public final class ContainerGridPanel {
         if (cell == null) return;
         var entry = GridDrawing.entryAt(cell.storage(), cell.section(), cell.x(), cell.y(), mx, my);
         int target = cell.target().ordinal();
-        if (GunSling.isSling(carried) && entry != null && GunSling.canFit(entry.stack())) {
-            send(GridActions.Kind.SLING, target, cell.section(), entry.x(), entry.y(), false, 0);
-            return;
-        }
         if (carried.isEmpty()) {
             if (entry == null) return;
             if (Screen.hasShiftDown()) {

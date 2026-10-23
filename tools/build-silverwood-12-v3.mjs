@@ -23,6 +23,7 @@ import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {Part, extrude, add, sub, mul, dot, cross, norm, newell, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
 import {hash, mix, sm} from './lathe-mesh-lib.mjs';
+import {dRing, sweepRing, lathe as latheAxis} from './sling-swivel-lib.mjs';
 import {silverwoodClips, bake, bakeHand, FPS} from './silverwood-12-v3-animations.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -355,6 +356,19 @@ export const MATS = {   // Base Color (sRGB) or function, bevel highlight, smoot
   wood:     {c: walnut, hl: 0, sm: 120, se: 120, f0: 10},
   rubber:   {c: [22, 22, 23], hl: 0, sm: 38, se: 38, f0: 10},
 };
+// ---------------- sling swivels (docs/native_guns/attachments/sling_physics_v1.md 3) ----------------
+// D-rings across the gun (bars along x, 32 mm strap: 1.45 inside), bottom bar = sling_slot.strap anchor
+// (native_guns/silverwood_12.json). Front: a lug brazed under the bottom rib 6.5 units (14 cm) behind the muzzle, reaching
+// below the barrels' undersides so the ring's top bar clears them; it opens with the barrels. Rear: a wood-screw stud in
+// the stock's toe line 2.9 units (6.4 cm) ahead of the butt pad.
+export const SWIVEL_FRONT = {top: 8.12, bottom: 7.30, z: -15.0, width: 1.62, corner: 0.25};
+export const SWIVEL_REAR = {top: 2.02, bottom: 1.20, z: 21.3, width: 1.62, corner: 0.25};
+{
+  ext(P('sling_lug', 'barrels', 'blued'), 'x', [[-15.3, 8.80], [-15.15, 7.98], [-14.85, 7.98], [-14.7, 8.80]], [], -0.12, 0.12, 0.03);
+  sweepRing(P('sling_swivel_front', 'barrels', 'blued'), dRing(SWIVEL_FRONT), 0.085);
+  latheAxis(P('sling_stud', 'stock', 'blued'), 'y', [0, 2.45, SWIVEL_REAR.z], [[0, 0.17], [-0.45, 0.17], [-0.53, 0.11], [-0.56, 0]], 12);
+  sweepRing(P('sling_swivel_rear', 'stock', 'blued'), dRing(SWIVEL_REAR), 0.085);
+}
 const ATLAS = 1024, PAD = 1;
 // planar islands of the extruded parts (shared unwrap; the monoblock chamber walls are buried in the barrel tubes) + the
 // developed lathe / loft charts, packed together at the largest uniform density (long side horizontal)

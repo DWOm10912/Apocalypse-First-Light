@@ -26,6 +26,8 @@
     "apocalypse_firstlight:pistol_holster": "1x2",
     "apocalypse_firstlight:jerry_can": "3x3",
     "apocalypse_firstlight:geiger_counter": "1x2",
+    "apocalypse_firstlight:battery_9v_alkaline": "1x1",
+    "apocalypse_firstlight:battery_9v_nimh": "1x1",
     "apocalypse_firstlight:flip_lighter": "1x1",
     "apocalypse_firstlight:map": "1x2",
     "apocalypse_firstlight:prairie_road_map": "1x2",

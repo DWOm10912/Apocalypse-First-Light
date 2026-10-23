@@ -33,6 +33,7 @@ Top right of the screen. It turns with your view, forward is up and the N on the
 - <V j="MinimapHud.SPAN" u="m" /> across on foot; the faster you drive the further it zooms out, up to <V j="MinimapHud.SPAN_MAX" u="m" />
 - Below it: your position, the biome and, in a town, the town's name
 - Show or Hide Minimap is in the key settings, unbound by default
+- <StatusTag s="integrated" /> While the field attachment view (Z) is open, the minimap, position and compass bar step aside; they come back once it closes
 
 ## Compass
 

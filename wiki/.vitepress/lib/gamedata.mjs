@@ -143,7 +143,7 @@ function attachmentData(id) {
 
 function attachmentsOf(raw, java) {
   const out = []
-  for (const [slot, key] of [['sight', 'sight_slot'], ['muzzle', 'muzzle_slot'], ['magazine', 'magazine_slot']]) {
+  for (const [slot, key] of [['sight', 'sight_slot'], ['muzzle', 'muzzle_slot'], ['magazine', 'magazine_slot'], ['sling', 'sling_slot']]) {
     for (const full of raw[key]?.accepts ?? []) {
       const id = short(full)
       const data = attachmentData(id)

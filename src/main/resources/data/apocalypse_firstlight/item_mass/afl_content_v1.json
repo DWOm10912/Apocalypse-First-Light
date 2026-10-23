@@ -285,6 +285,14 @@
       "unit_mass_kg": 0.33,
       "estimated": true
     },
+    "apocalypse_firstlight:battery_9v_alkaline": {
+      "unit_mass_kg": 0.045,
+      "estimated": true
+    },
+    "apocalypse_firstlight:battery_9v_nimh": {
+      "unit_mass_kg": 0.04,
+      "estimated": true
+    },
     "apocalypse_firstlight:flip_lighter": {
       "unit_mass_kg": 0.06,
       "estimated": true

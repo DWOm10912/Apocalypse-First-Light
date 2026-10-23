@@ -1,0 +1,315 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Item Inspect V1</title>
+<style>
+@font-face { font-family: 'AFL Sans'; src: url('/assets/font/afl_sans_sc.ttf'); }
+body { margin: 0; background: #222; color: #ddd; font-family: 'AFL Sans', sans-serif; } canvas { max-width: 100%; display: block; }
+</style></head><body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Item inspect V1 + 9 V battery concept sheets (design use only; docs/gameplay/item_inspect_v1_design.md 12).
+// The Geiger counter is the game's own Pure Mesh and atlas (tools/build-equipment-meshes-v1.mjs geiger_counter); the
+// battery cover, the bay, the snap connector, the 9 V batteries and the LCD battery segments are concept shapes added
+// here in generator pixels (1 px = 10 mm; face up +Y, top end toward -Z), not game assets.
+const PI = Math.PI;
+const r = new THREE.WebGLRenderer({antialias: true, alpha: true, preserveDrawingBuffer: true, stencil: true});
+r.setPixelRatio(1); r.outputEncoding = THREE.sRGBEncoding; r.setClearColor(0x000000, 0);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xdfe6ee, 0x3a3630, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 0.75); key.position.set(0.4, -0.3, 0.9); scene.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-0.6, 0.8, -0.3); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.3); rim.position.set(-0.2, -1, -0.8); scene.add(rim);
+const cam = new THREE.PerspectiveCamera(30, 1, 0.005, 20);
+const load = u => new Promise(res => new THREE.TextureLoader().load(u, t => { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.flipY = false; t.encoding = THREE.sRGBEncoding; res(t); }, undefined, () => res(null)));
+const json = u => fetch(u).then(x => x.ok ? x.json() : null).catch(() => null);
+const DIGIT = [0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F], DASH = 0x40;
+function format(v) {
+  if (v === null) return {cells: [0, 0, 0, 0], dp: []};
+  if (v === 'test') return {cells: [0x7F, 0x7F, 0x7F, 0x7F], dp: [0, 1, 2]};
+  const [scale, dp] = v < 10 ? [1000, 0] : v < 100 ? [100, 1] : [10, 2];
+  const n = Math.min(9999, Math.floor(v * scale + 1e-9)), s = String(n).padStart(4, '0');
+  return {cells: [...s].map(c => DIGIT[+c]), dp: [dp]};
+}
+// generator pixels -> the mesh's block space (the shell's export offset, read from geiger_counter.aflmesh.json)
+const OFF = [-0.025, 0, -0.35];
+let GEIGER = null, EXTRA = null, BAY = null; const PARTS = [], ICON = {}; const LOOSE = {};
+const std = (c, rough = 0.7, metal = 0) => new THREE.MeshStandardMaterial({color: c, roughness: rough, metalness: metal});
+function box(w, h, d, mat, x, y, z) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); return m; }
+function rrShape(w, h, rad) {
+  const s = new THREE.Shape(), x0 = -w / 2, y0 = -h / 2;
+  s.moveTo(x0 + rad, y0); s.lineTo(x0 + w - rad, y0); s.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + rad); s.lineTo(x0 + w, y0 + h - rad);
+  s.quadraticCurveTo(x0 + w, y0 + h, x0 + w - rad, y0 + h); s.lineTo(x0 + rad, y0 + h); s.quadraticCurveTo(x0, y0 + h, x0, y0 + h - rad);
+  s.lineTo(x0, y0 + rad); s.quadraticCurveTo(x0, y0, x0 + rad, y0); return s;
+}
+// a slab along z: rounded (w x h) section from z0 to z1
+function slab(w, h, rad, z0, z1, mat) {
+  const g = new THREE.ExtrudeGeometry(rrShape(w, h, rad), {depth: z1 - z0, bevelEnabled: false, curveSegments: 4});
+  g.translate(0, 0, z0); return new THREE.Mesh(g, mat);
+}
+/** A 9 V battery (6LR61 size, 26.5 x 17.5 x 48.5 mm), centred, snap terminals toward -Z. */
+function battery(kind) {
+  const grp = new THREE.Group(), W = 2.65, H = 1.75, L = 4.85, nickel = std(0xa6a8ab, 0.38, 0.25);
+  const wrap = kind === 'nimh' ? std(0x2f4a3c, 0.5) : std(0x1e2023, 0.45), band = kind === 'nimh' ? std(0xb9bcb8, 0.5) : std(0xc08a2e, 0.48);
+  grp.add(slab(W, H, 0.22, -L / 2 + 0.1, L / 2 - 0.1, wrap));
+  grp.add(slab(W - 0.12, H - 0.12, 0.18, -L / 2, -L / 2 + 0.1, nickel));
+  grp.add(slab(W - 0.12, H - 0.12, 0.18, L / 2 - 0.1, L / 2, nickel));
+  grp.add(slab(W + 0.02, H + 0.02, 0.23, L / 2 - 1.05, L / 2 - 0.55, band));
+  const pos = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.3, 16), nickel); pos.rotation.x = PI / 2; pos.position.set(-0.635, 0, -L / 2 - 0.15); grp.add(pos);
+  const neg = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.3, 6), nickel); neg.rotation.x = PI / 2; neg.position.set(0.635, 0, -L / 2 - 0.15); grp.add(neg);
+  const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.31, 12), std(0x2a2b2d, 0.6)); hole.rotation.x = PI / 2; hole.position.copy(neg.position); grp.add(hole);
+  return grp;
+}
+async function build() {
+  GEIGER = new THREE.Group(); scene.add(GEIGER);
+  const [mesh, tex] = await Promise.all([json('/assets/meshes/geiger_counter.aflmesh.json'), load('/assets/textures/item/geiger_counter_mesh.png')]);
+  const cut = new THREE.MeshStandardMaterial({map: tex, side: THREE.DoubleSide, alphaTest: 0.1, roughness: 0.62});
+  const glass = new THREE.MeshStandardMaterial({map: tex, side: THREE.DoubleSide, transparent: true, depthWrite: false, roughness: 0.1});
+  const bright = new THREE.MeshBasicMaterial({map: tex, side: THREE.DoubleSide});
+  for (const p of mesh.parts) {
+    if (p.name === 'screw_bottom') continue;   // moved off: it sat where the battery cover goes
+    const pos = [], uv = [];
+    for (const f of p.faces) { const tri = f.length === 4 ? [[0, 1, 2], [0, 2, 3]] : [[0, 1, 2]];
+      for (const t of tri) for (const k of t) { const v = p.vertices[f[k]]; pos.push(v[0], v[1], v[2]); uv.push(v[3], v[4]); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, p.render_layer === 'translucent' ? glass : p.name === 'led_on' ? bright : cut); m.name = p.name; GEIGER.add(m); PARTS.push(m);
+  }
+  // concept extras, in generator pixels
+  EXTRA = new THREE.Group(); EXTRA.scale.setScalar(1 / 16); EXTRA.position.set(OFF[0] / 16, OFF[1] / 16, OFF[2] / 16); GEIGER.add(EXTRA);
+  // LCD battery icon: frame, + nub, three bars, in the blank right of the digits
+  // drawn after the LCD glass (transparent list, late order) so the glass does not wash the segments out
+  const segMat = new THREE.MeshBasicMaterial({color: new THREE.Color(0x2a2f28).convertSRGBToLinear(), transparent: true, opacity: 1, depthWrite: false}), ySeg = 2.921;
+  const flat = (name, x0, x1, z0, z1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), segMat); m.rotation.x = -PI / 2; m.position.set((x0 + x1) / 2, ySeg, (z0 + z1) / 2); m.name = name; m.renderOrder = 10; EXTRA.add(m); return m; };
+  const fx0 = 2.42, fx1 = 2.88, fz0 = -3.6, fz1 = -1.45, t = 0.11;
+  ICON.frame = [flat('f0', fx0, fx1, fz0, fz0 + t), flat('f1', fx0, fx1, fz1 - t, fz1), flat('f2', fx0, fx0 + t, fz0, fz1), flat('f3', fx1 - t, fx1, fz0, fz1), flat('nub', 2.57, 2.73, fz0 - 0.14, fz0)];
+  const iz0 = fz0 + t + 0.08, iz1 = fz1 - t - 0.08, gap = 0.08, bh = (iz1 - iz0 - 2 * gap) / 3;
+  ICON.bars = [0, 1, 2].map(i => flat('bar' + i, fx0 + t + 0.07, fx1 - t - 0.07, iz1 - (i + 1) * bh - i * gap, iz1 - i * bh - i * gap));
+  // the bay: the opening on the back marks the stencil, the inside drawn only there
+  BAY = new THREE.Group(); EXTRA.add(BAY);
+  const bx = 3.2, bz0 = -0.35, bz1 = 5.35, depth = 2.45;
+  const open = new THREE.Mesh(new THREE.PlaneGeometry(bx, bz1 - bz0), new THREE.MeshBasicMaterial({colorWrite: false, depthWrite: false,
+    stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp, side: THREE.DoubleSide}));
+  open.rotation.x = PI / 2; open.position.set(0, 0.115, (bz0 + bz1) / 2); open.renderOrder = 1; BAY.add(open);
+  const inside = new THREE.Mesh(new THREE.BoxGeometry(bx, depth - 0.12, bz1 - bz0), new THREE.MeshStandardMaterial({color: 0x2c2e31, roughness: 0.85, side: THREE.BackSide,
+    stencilWrite: true, stencilRef: 1, stencilFunc: THREE.EqualStencilFunc, depthFunc: THREE.AlwaysDepth}));
+  inside.position.set(0, (0.12 + depth) / 2, (bz0 + bz1) / 2); inside.renderOrder = 2; BAY.add(inside);
+  // moulded ribs on the bay floor and the pull ribbon
+  for (const x of [-1.1, 1.1]) { const rb = box(0.18, 0.12, 4.6, std(0x26282b, 0.85), x, depth - 0.06, 2.6); rb.renderOrder = 3; BAY.add(rb); }
+  // snap connector with its two leads into the case wall
+  const snap = new THREE.Group(); snap.name = 'snap';
+  snap.add(box(2.3, 1.05, 0.5, std(0x18191b, 0.55), 0, 0, 0));
+  for (const [x, c] of [[-0.635, 0x18191b], [0.635, 0x18191b]]) { const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.12, 12), std(0x9a9ca0, 0.35, 1)); cup.rotation.x = PI / 2; cup.position.set(x, 0, 0.27); snap.add(cup); }
+  for (const [x, c] of [[-0.45, 0xb0302a], [0.45, 0x1b1c1e]]) {
+    const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(x, 0.15, -0.25), new THREE.Vector3(x * 1.4, 0.55, -0.45), new THREE.Vector3(x * 2.4, 0.9, -0.35)]);
+    snap.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.11, 6), std(c, 0.5)));
+  }
+  snap.position.set(0, 1.25, 0.15); snap.traverse(o => o.renderOrder = 3); BAY.add(snap);
+  // battery (inside: centre z 2.75; terminals toward -Z)
+  for (const k of ['alk', 'nimh']) { const b = battery(k); b.name = 'bat_' + k; b.traverse(o => o.renderOrder = 3); b.visible = false; EXTRA.add(b); LOOSE[k] = b; }
+  // battery cover: a ribbed slide plate
+  const cover = new THREE.Group(); cover.name = 'cover';
+  cover.add(slab(3.5, 0.12, 0.05, -0.45, 5.45, std(0x36383b, 0.6)));
+  cover.children[0].rotation.set(0, 0, 0);
+  for (let i = 0; i < 5; i++) cover.add(box(2.4, 0.06, 0.1, std(0x303235, 0.6), 0, -0.09, 4.6 - i * 0.28));
+  // a lip under the plate's top end that hooks into the case
+  cover.add(box(3.0, 0.2, 0.3, std(0x303235, 0.6), 0, 0.12, -0.25));
+  cover.traverse(o => o.renderOrder = 3); EXTRA.add(cover);
+}
+const part = n => EXTRA.getObjectByName(n);
+/** The device's state: reading (number, 'test' or null = blank), battery icon ('3' '2' '1' 'low' 'off' 'test'), cover, battery. */
+function state({v = 0.42, led = false, icon = '3', cover = 'shut', bat = null, batPose = 'in', snapOn = true} = {}) {
+  const f = format(v);
+  for (const m of PARTS) {
+    const s = /^seg_(\d)_([a-g])$/.exec(m.name), d = /^dp_(\d)$/.exec(m.name);
+    if (s) m.visible = !!(f.cells[+s[1]] & (1 << (s[2].charCodeAt(0) - 97)));
+    else if (d) m.visible = f.dp.includes(+d[1]);
+    else if (m.name === 'led_on') m.visible = led; else if (m.name === 'led') m.visible = !led;
+  }
+  const frame = icon !== 'off', bars = {test: 3, 3: 3, 2: 2, 1: 1, low: 0, off: 0}[icon];
+  ICON.frame.forEach(m => m.visible = frame); ICON.bars.forEach((m, i) => m.visible = i < bars);
+  const c = part('cover'); c.visible = cover !== 'gone';
+  if (cover === 'shut') { c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); BAY.visible = false; }
+  else { c.position.set(-6.6, 0.9, 1.4); c.rotation.set(0.1, 0.22, 0.12); BAY.visible = true; }
+  for (const k of ['alk', 'nimh']) {
+    const b = LOOSE[k]; b.visible = cover !== 'shut' && bat === k;
+    if (batPose === 'in') { b.position.set(0, 1.0, 2.75); b.rotation.set(0, 0, 0); }
+    else { b.position.set(0.15, -0.55, 3.25); b.rotation.set(-0.5, 0.05, 0.03); }
+  }
+  const sn = part('snap'); sn.position.set(0, snapOn && bat && batPose === 'in' ? 1.0 : 1.4, snapOn && bat && batPose === 'in' ? 0.0 : 0.35);
+  sn.rotation.set(snapOn && bat && batPose === 'in' ? 0 : -0.5, 0, 0);
+}
+/** Renders the scene at w x h from p looking at t; returns a canvas copy. */
+function render(w, h, p, t, fov = 30, up = [0, 1, 0]) {
+  r.setSize(w, h); cam.aspect = w / h; cam.fov = fov; cam.up.set(...up); cam.position.set(...p); cam.lookAt(...t); cam.updateProjectionMatrix();
+  r.render(scene, cam);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(r.domElement, 0, 0); return c;
+}
+/** Screen position (in a w x h render) of a generator-pixel point under the last camera. */
+function project([x, y, z], w, h) {
+  const v = new THREE.Vector3((x + OFF[0]) / 16, (y + OFF[1]) / 16, (z + OFF[2]) / 16);
+  GEIGER.updateMatrixWorld(); v.applyMatrix4(GEIGER.matrixWorld).project(cam); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * h];
+}
+/** One loose battery, alone, three-quarter view. */
+function looseBattery(kind, w, h, p = [0.16, 0.2, 0.26]) {
+  const vis = GEIGER.visible; GEIGER.visible = true;
+  const saved = PARTS.map(m => m.visible), bay = BAY.visible, cover = part('cover').visible, snap = part('snap').visible;
+  PARTS.forEach(m => m.visible = false); ICON.frame.concat(ICON.bars).forEach(m => m.visible = false); BAY.visible = false; part('cover').visible = false;
+  for (const k of ['alk', 'nimh']) { LOOSE[k].visible = k === kind; LOOSE[k].position.set(0, 1.5, 0); LOOSE[k].rotation.set(0, 0, 0); }
+  const centre = [(0 + OFF[0]) / 16, (1.5 + OFF[1]) / 16, (0 + OFF[2]) / 16];
+  const c = render(w, h, [centre[0] + p[0], centre[1] + p[1], centre[2] + p[2]], centre, 28);
+  PARTS.forEach((m, i) => m.visible = saved[i]); BAY.visible = bay; part('cover').visible = cover; GEIGER.visible = vis;
+  return c;
+}
+
+// ---- 2D composition (the game's overlay style: docs/ui/afl_overlay_ui_style_v1.md) ----
+const UI = {back: 'rgba(16,16,16,0.62)', line: 'rgba(232,228,220,0.28)', text: '#E8E4DC', dim: '#A8A49C', acc: '#E0A84A'};
+const G = 3;   // GUI scale 3 at 1920 x 1080
+function rr(g, x, y, w, h, rad) { g.beginPath(); g.moveTo(x + rad, y); g.arcTo(x + w, y, x + w, y + h, rad); g.arcTo(x + w, y + h, x, y + h, rad); g.arcTo(x, y + h, x, y, rad); g.arcTo(x, y, x + w, y, rad); g.closePath(); }
+function panel(g, x, y, w, h, rad = 4 * G) { g.save(); g.shadowColor = 'rgba(0,0,0,0.22)'; g.shadowBlur = 12; g.shadowOffsetY = 3; rr(g, x, y, w, h, rad); g.fillStyle = UI.back; g.fill(); g.restore(); rr(g, x + 0.75, y + 0.75, w - 1.5, h - 1.5, rad); g.strokeStyle = UI.line; g.lineWidth = 1.5; g.stroke(); }
+function text(g, s, x, y, px, col = UI.text, align = 'left') { g.font = `${px}px 'AFL Sans'`; g.fillStyle = col; g.textAlign = align; g.textBaseline = 'top'; g.fillText(s, x, y); return g.measureText(s).width; }
+/** The key hint panel at 0.62 (AflKeyHintPanel.SCALE), top right, rows [cap, label]. */
+function keyHints(g, W, rows, top = 8 * 0.62 * G) {
+  const k = 0.62 * G, rowH = 14 * k, padY = 4 * k, padR = 6 * k, gap = 5 * k, fade = 26 * k, fs = 9 * k;
+  g.font = `${fs}px 'AFL Sans'`;
+  const capW = s => Math.max(11 * k, g.measureText(s).width + 6 * k);
+  const content = Math.max(...rows.map(([c, l]) => capW(c) + gap + g.measureText(l).width));
+  const right = W - 8 * k, w = content + fade + padR, h = rows.length * rowH + 2 * padY, x = right - w;
+  const grad = g.createLinearGradient(x, 0, x + fade, 0); grad.addColorStop(0, 'rgba(16,16,16,0)'); grad.addColorStop(1, UI.back);
+  rr(g, x, top, w, h, 3 * k); g.fillStyle = grad; g.fill();
+  rows.forEach(([cap, label, hot], i) => {
+    const y = top + padY + i * rowH; g.font = `${fs}px 'AFL Sans'`;
+    const lw = g.measureText(label).width, lx = right - padR - lw; text(g, label, lx, y + 3.2 * k, fs, hot ? UI.acc : UI.text);
+    const cw = capW(cap), cx = lx - gap - cw; rr(g, cx, y + 1.5 * k, cw, 11 * k, 2 * k); g.fillStyle = hot ? UI.acc : 'rgba(232,228,220,0.92)'; g.fill();
+    text(g, cap, cx + cw / 2, y + 2.9 * k, fs * 0.92, '#16181A', 'center');
+  });
+}
+async function background(W, H) {
+  const img = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = '/design/ui/new_world_v1/source/bg_forest.png'; });
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  g.filter = 'blur(10px) brightness(0.38) saturate(0.8)'; g.drawImage(img, -40, -40, W + 80, H + 80); g.filter = 'none';
+  return c;
+}
+function caption(g, y, W, title, lines) {
+  g.fillStyle = '#18191a'; g.fillRect(0, y, W, 9999);
+  text(g, title, 40, y + 26, 34); lines.forEach((l, i) => text(g, l, 40, y + 80 + i * 34, 21, '#CFCBC3'));
+}
+async function save(c, name) { const blob = await new Promise(res => c.toBlob(res, 'image/png')); await fetch('/save?name=' + name, {method: 'POST', body: blob}); }
+
+// ---- sheet 1: the inspect screen ----
+async function sheetInspect() {
+  const W = 1920, H = 1080, CAP = 300, c = document.createElement('canvas'); c.width = W; c.height = H + CAP; const g = c.getContext('2d');
+  g.drawImage(await background(W, H), 0, 0);
+  // the counter, turned to its back: cover slid off, the NiMH battery pulled half out
+  state({v: null, icon: 'off', cover: 'open', bat: null});
+  const RW = 1300, RH = 960, cp = [0.5, -1.35, 0.45], ct = [-0.02, 0.0, 0.02];
+  const dev = render(RW, RH, cp, ct, 40, [0, 0, -1]), ox = (W - RW) / 2, oy = 10;
+  g.drawImage(dev, ox, oy);
+  // hotspot on the battery: an accent ring and a dot
+  // the empty bay's hotspot (ringed: the candidates below are for it), the other hotspots as dim dots
+  const [hx, hy] = project([0, 0.1, 2.6], RW, RH);
+  g.strokeStyle = UI.acc; g.lineWidth = 3; g.beginPath(); g.arc(ox + hx, oy + hy, 20, 0, 2 * PI); g.stroke();
+  g.fillStyle = UI.acc; g.beginPath(); g.arc(ox + hx, oy + hy, 5, 0, 2 * PI); g.fill();
+  for (const pt of [[-6.6, 0.75, 3.9], [3.95, 1.5, -2.5]]) { const [px, py] = project(pt, RW, RH); g.fillStyle = 'rgba(232,228,220,0.55)'; g.beginPath(); g.arc(ox + px, oy + py, 5, 0, 2 * PI); g.fill(); }
+  // bottom left: name, one line, status
+  const ix = 8 * G, iw = 150 * G, ih = 50 * G, iy = H - 8 * G - ih;
+  panel(g, ix, iy, iw, ih);
+  text(g, '盖革计数器', ix + 6 * G, iy + 5 * G, 11 * G);
+  text(g, '测量所在位置的剂量率', ix + 6 * G, iy + 19 * G, 7.5 * G, UI.dim);
+  text(g, '电池：没装', ix + 6 * G, iy + 30 * G, 7.5 * G);
+  text(g, '开机（没电）    0.33 kg', ix + 6 * G, iy + 39.5 * G, 7.5 * G, UI.dim);
+  // bottom centre: the battery candidates (once the bay is empty), the maintenance strip's cells
+  const cell = 26 * G, cg = 3 * G, n = 3, sx = (W - (n * cell + (n - 1) * cg)) / 2, sy = H - 8 * G - cell - 12 * G;
+  text(g, '装电池', W / 2, sy - 10 * G, 7.5 * G, UI.dim, 'center');
+  const cands = [['alk', '100%', 'x2'], ['nimh', '64%', ''], ['alk', '7%', '']];
+  for (let i = 0; i < n; i++) {
+    const x = sx + i * (cell + cg); panel(g, x, sy, cell, cell, 3 * G);
+    if (i === 1) { rr(g, x + 1.5, sy + 1.5, cell - 3, cell - 3, 3 * G); g.strokeStyle = UI.acc; g.lineWidth = 3; g.stroke(); }
+    const [k, pct, cnt] = cands[i]; g.drawImage(looseBattery(k, cell - 4, cell - 9 * G, [0.3, 0.38, 0.5]), x + 2, sy + 2);
+    text(g, pct, x + cell / 2, sy + cell - 8.5 * G, 6.5 * G, pct === '7%' ? '#D0705E' : UI.text, 'center');
+    if (cnt) text(g, cnt, x + 2 * G, sy + 2 * G, 6.5 * G, UI.dim);
+  }
+  // top right: the key hints follow what the mouse is on
+  keyHints(g, W, [['左键', '装上', true], ['右键', '返回'], ['中键', '拖动平移'], ['滚轮', '缩放'], ['R', '重置视角'], ['V', '退出']]);
+  caption(g, H, W, '检视界面（任何物品；这张是盖革计数器装电池）', [
+    '背包里鼠标指着物品按 V，或手里拿着不是枪的物品按 V。游戏不暂停，背景压暗模糊；小地图、坐标、罗盘隐藏',
+    '左键拖动旋转、中键平移、滚轮缩放、R 重置。交互点（琥珀色圈）只在朝向镜头的一面能点；右上角提示跟着鼠标指着的东西变',
+    '左下：名字、一句说明、状态。底部：点空电池仓弹出身上的 9 V 电池（电量低的标红），和即时改装选配件同一种画法；这张是取出电池后、指着镍氢那格',
+    '计数器是游戏里现在的模型；电池盖、电池仓、扣子、9 V 电池是概念图里临时加的形状，批准后在生成器里正式做']);
+  await save(c, 'inspect_screen.png'); return c;
+}
+
+// ---- sheet 2: the LCD battery icon ----
+function hudPanel(g, ox, oy, s, v, icon, led) {
+  // client/GeigerHudOverlay's panel, the LCD 4 px wider for the battery icon (unit, LED, bell column moved right by 4)
+  const W = 66, H = 24, R = 3, BEZ = 1.3, LCD = [3.6, 3.6, 48.6, 20.4], X0 = 7.0, TOP = 6.3, DH = 11.4, DW = 6.8, PITCH = 9.2, BAR = 1.7, GAP = 0.25, COL = 56.6;
+  g.save(); g.translate(ox, oy); g.scale(s, s);
+  const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, '#5A5E64'); grad.addColorStop(1, '#2A2C2F');
+  rr(g, 0.3, 0.3, W - 0.6, H - 0.6, R); g.fillStyle = grad; g.fill(); g.strokeStyle = 'rgba(26,27,29,0.9)'; g.lineWidth = 0.45; g.stroke();
+  rr(g, BEZ, BEZ, W - 2 * BEZ, H - 2 * BEZ, R - 0.8); g.fillStyle = '#141517'; g.fill();
+  const lg = g.createLinearGradient(0, LCD[1], 0, LCD[1] + 1.6); lg.addColorStop(0, '#8A937E'); lg.addColorStop(1, '#9FA892');
+  rr(g, LCD[0], LCD[1], LCD[2] - LCD[0], LCD[3] - LCD[1], 1.4); g.fillStyle = lg; g.fill();
+  const f = format(v), hb = BAR / 2, G_ = GAP, ink = '#1D2219';
+  const poly = pts => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
+  const hBar = (x0, x1, y) => [[x0 + G_, y], [x0 + hb + G_, y - hb], [x1 - hb - G_, y - hb], [x1 - G_, y], [x1 - hb - G_, y + hb], [x0 + hb + G_, y + hb]];
+  const vBar = (x, y0, y1) => [[x, y0 + G_], [x + hb, y0 + hb + G_], [x + hb, y1 - hb - G_], [x, y1 - G_], [x - hb, y1 - hb - G_], [x - hb, y0 + hb + G_]];
+  g.fillStyle = ink;
+  for (let c = 0; c < 4; c++) {
+    const x0 = X0 + c * PITCH, l = x0 + hb, r_ = x0 + DW - hb, t = TOP + hb, b = TOP + DH - hb, m = (t + b) / 2;
+    [hBar(l, r_, t), vBar(r_, t, m), vBar(r_, m, b), hBar(l, r_, b), vBar(l, m, b), vBar(l, t, m), hBar(l, r_, m)].forEach((sg, bit) => { if (f.cells[c] & (1 << bit)) poly(sg); });
+    if (c < 3 && f.dp.includes(c)) { const cx = x0 + (DW + PITCH) / 2, y1 = TOP + DH; g.fillRect(cx - BAR / 2, y1 - BAR, BAR, BAR); }
+  }
+  // battery icon: frame 2.6 x 12, nub, three bars
+  if (icon !== 'off') {
+    const bx = 44.4, by = 6.0, bw = 2.6, bh = 11.8, t = 0.45; g.fillRect(bx + 0.7, by - 0.9, bw - 1.4, 0.9);
+    g.fillRect(bx, by, bw, t); g.fillRect(bx, by + bh - t, bw, t); g.fillRect(bx, by, t, bh); g.fillRect(bx + bw - t, by, t, bh);
+    const n = {test: 3, 3: 3, 2: 2, 1: 1, low: 0}[icon], ih = (bh - 2 * t - 0.6 - 2 * 0.5) / 3;
+    for (let i = 0; i < n; i++) g.fillRect(bx + t + 0.35, by + bh - t - 0.3 - (i + 1) * ih - i * 0.5, bw - 2 * t - 0.7, ih);
+  }
+  g.fillStyle = '#F0ECE4'; g.font = 'bold 3.6px Segoe UI, Arial'; g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText('RU/h', COL, 4.4);
+  g.fillStyle = led ? '#E5483A' : '#3A2220'; g.beginPath(); g.arc(COL, 13, 1.35, 0, 2 * PI); g.fill();
+  g.restore();
+}
+async function sheetLcd() {
+  const W = 1920, cols = 3, CW = 600, CH = 400, top = 30, c = document.createElement('canvas'); c.width = W; c.height = top + 2 * (CH + 70) + 330 + 300;
+  const g = c.getContext('2d'); g.fillStyle = '#5f7a52'; g.fillRect(0, 0, W, c.height);
+  const views = [
+    [{v: 'test', icon: 'test'}, '开机自检：全段亮 1 秒'], [{v: 0.42, icon: '3'}, '电量 > 66%：3 格'], [{v: 3.586, icon: '2', led: true}, '33–66%：2 格'],
+    [{v: 0.118, icon: '1'}, '15–33%：1 格'], [{v: 0.118, icon: 'low'}, '≤ 15%：只剩外框，1 Hz 闪'], [{v: null, icon: 'off'}, '关机或没电：全灭']];
+  views.forEach(([s, label], i) => {
+    state({...s, cover: 'shut'});
+    const x = 30 + (i % cols) * (CW + 30), y = top + Math.floor(i / cols) * (CH + 70);
+    g.drawImage(render(CW, CH, [0.05, 0.88, -0.03], [0.0, 0.182, -0.178], 22, [0, 0, -1]), x, y);
+    text(g, label, x, y + CH + 12, 22, '#F0ECE4');
+  });
+  // HUD windows with the icon, scale 5 and actual size at GUI scale 3
+  const hy = top + 2 * (CH + 70) + 10;
+  [[0.42, '3', false, '3 格'], [3.586, '2', true, '2 格，计数'], [0.118, 'low', false, '低电量（闪）']].forEach(([v, icon, led, label], i) => {
+    const x = 30 + i * 440; hudPanel(g, x, hy, 5.6, v, icon, led); text(g, 'HUD：' + label, x, hy + 24 * 5.6 + 14, 20, '#F0ECE4');
+  });
+  hudPanel(g, 1380, hy + 40, 3, 0.42, '3', true); text(g, 'GUI 缩放 3 实际大小', 1380, hy + 40 + 72 + 14, 20, '#F0ECE4');
+  caption(g, c.height - 300, W, '液晶电量图标（用户 2026-10-22：液晶上显示电量）', [
+    '电池图标放在液晶右边、数字旁的空白里：外框、顶上的正极头和 3 格都是单独的液晶段，和数字段一样点亮',
+    '> 66% 3 格，33–66% 2 格，15–33% 1 格，≤ 15% 外框 1 Hz 闪，没电整块灭；开机时全段亮 1 秒自检',
+    'HUD 窗口跟着画同一个图标：窗口里的液晶加宽 4 GUI 像素，单位和计数灯一起右移 4',
+    '液晶上的图标是概念图临时加的形状；正式做时和数字段一起进生成器']);
+  await save(c, 'lcd_battery.png'); return c;
+}
+
+// ---- sheet 3: the batteries and the bay ----
+async function sheetBatteries() {
+  const W = 1920, c = document.createElement('canvas'); c.width = W; c.height = 1500; const g = c.getContext('2d');
+  g.fillStyle = '#8a9aa6'; g.fillRect(0, 0, W, c.height);
+  g.drawImage(looseBattery('alk', 600, 440, [0.3, 0.38, 0.5]), 20, 20); text(g, '9 V 碱性电池（一次性，4,500 FE，3 个游戏日）', 40, 470, 22, '#16181A');
+  g.drawImage(looseBattery('nimh', 600, 440, [0.3, 0.38, 0.5]), 660, 20); text(g, '9 V 镍氢充电电池（3,000 FE，2 个游戏日）', 680, 470, 22, '#16181A');
+  g.drawImage(looseBattery('nimh', 600, 440, [-0.16, 0.42, -0.5]), 1300, 20); text(g, '端子一头：圆的正极、六角的负极（扣式）', 1320, 470, 22, '#16181A');
+  const bays = [[{bat: 'alk', batPose: 'in'}, '盖子推开：碱性电池扣在扣子上'], [{bat: 'nimh', batPose: 'out'}, '取出电池：拔下扣子，从底端翻出来'], [{bat: null}, '电池取出：空仓、扣子和两根线']];
+  bays.forEach(([s, label], i) => { state({v: 0.42, icon: '3', cover: 'open', ...s});
+    g.drawImage(render(620, 640, [0.42, -1.5, 0.35], [-0.03, 0.0, 0.04], 34, [0, 0, -1]), 10 + i * 635, 520); text(g, label, 30 + i * 635, 1170, 22, '#16181A'); });
+  caption(g, 1220, W, '9 V 电池和电池仓（背面下半截）', [
+    '真实 9 V 方形电池 48.5 × 26.5 × 17.5 mm；不印字，只靠收缩膜颜色和色环分：碱性深灰 + 琥珀环，镍氢墨绿 + 浅灰环',
+    '电池仓：背面下半截一块带防滑凸棱的滑盖，往底端推开；里面深灰内腔、黑色扣座、一红一黑两根线；底端那颗壳螺钉挪走',
+    '没盖盖子、没装电池的样子在手里、挂点、地上都看得出来；镍氢电池在充电站上每 tick 充 1 FE，单独放上去或装在计数器里都能充']);
+  await save(c, 'batteries_9v.png'); return c;
+}
+async function sheets() {
+  await document.fonts.load("20px 'AFL Sans'"); if (!GEIGER) await build();
+  await sheetInspect(); await sheetLcd(); await sheetBatteries(); return 'done';
+}
+</script></body></html>

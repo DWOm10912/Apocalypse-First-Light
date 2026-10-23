@@ -94,6 +94,8 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
     private void renderReplacedMagazine(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,
             boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
         pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
+        // the magazine drawn here collides with the sling like the gun's own bones
+        if(!bone.isHidden())strapBone(pose,bone);
         if(!bone.isHidden())NativeMagazineRendering.render(currentItemStack,bone,pose,buffers,light,overlay);
         if(!NativeMagazineRendering.replacesSubtree(currentItemStack,bone)&&!bone.isHidingChildren())
             for(var child:bone.getChildBones())renderRecursively(pose,item,child,type,buffers,buffers.getBuffer(type),reRender,partial,light,overlay,red,green,blue,alpha);

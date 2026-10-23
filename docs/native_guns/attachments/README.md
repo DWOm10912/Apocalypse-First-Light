@@ -20,6 +20,7 @@
 | BR51-01 20发弹匣 | `br51_01_magazine` | `MAGAZINE`（标准弹匣） | BR51-01 | 钢制直弹匣，弹匣系统，子弹存在弹匣里 | 已接入（2026-10-21，编译通过，没进游戏） / [BR-51 V3](../br51_01_v3_game_model_v1.md) |
 | BR51-01 30发扩容弹匣 | `br51_01_extended_magazine` | `MAGAZINE` | BR51-01 | 弧形，替换枪内、换弹新匣和空仓旧匣三处弹匣；取代旧的 35 发 `br51_extended_magazine_35`（旧存档自动换） | 已接入（2026-10-21，没进游戏） / [BR-51 V3](../br51_01_v3_game_model_v1.md) |
 | BR51-01 50发弹鼓 | `br51_drum_magazine_50` | `MAGAZINE` | BR51-01 | 2026-10-21 重做网格；和弹匣用同一套换弹动画，专用的 `reload_empty_drum` 已删 | 已接入（2026-10-21，没进游戏） / [BR-51 V3](../br51_01_v3_game_model_v1.md)；旧版 [弹鼓 V1](br51_drum_magazine_50_v1.md) 已过时 |
+| 枪背带 | `gun_sling` | `SLING` | BR51-01、HR55、Silverwood 12（后背带环 `sling_slot`） | 两点式背带，挂在前后背带环上实时模拟（Z 页面、手持时自由下垂、背着绕身体、维护台），能进主武器位 | 已接入（2026-10-22，编译通过，没进游戏） / [背带物理 R1](sling_physics_v1.md)、[挂点安装](../../ui/afl_inventory_grid_v0_plan.md) 第 19 节 |
 
 物品栏图标：所有配件统一朝向与大小（2026-09-28，`NativeAttachmentGuiFit`，最长边占格 85%），见 [枪械物品栏展示 · 配件物品栏图标](../native_gun_inventory_presentation_v1.md)。
 

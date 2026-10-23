@@ -12,7 +12,7 @@
 | <ItemIcon id="canvas_backpack" /> 帆布背包 | 背包 | 5×6 格 |
 | <ItemIcon id="hiking_backpack" /> 登山背包 | 背包 | 6×10 格 |
 | <ItemIcon id="pistol_holster" /> 手枪枪套 | 枪套 | 手枪可放入 2 号栏 |
-| <ItemIcon id="gun_sling" /> 枪背带 | 装在长枪上 | 长枪可放入 1 号栏 |
+| <ItemIcon id="gun_sling" /> 枪背带 | 长枪的后背带环（按 Z 或在维护台装，见 [配件](./attachments#枪背带)） | 长枪可放入 1 号栏 |
 
 见 [背包与负重](../guide/inventory)
 

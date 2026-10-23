@@ -23,7 +23,8 @@ public final class RadiationSyncEvents {
                 RadiationManager.PlayerRadiation playerRadiation = RadiationManager.getPlayerRadiation(player);
                 RadiationSample worldSample = playerRadiation.worldSample();
                 AflNetwork.sendRadiation(player, worldSample.finalRadiation());
-                if (com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(player, AflItems.GEIGER_COUNTER.get())) {
+                // only a counter at work that is switched on with charge reads (item inspect V1)
+                if (com.antaurora.apofirstlight.item.GeigerCounterItem.working(player, AflItems.GEIGER_COUNTER.get())) {
                     player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
                         double measuredRate = worldSample.zone() == RadiationZone.SAFE
                                 ? exposure.getResidualRadiationRate() + playerRadiation.carriedItemRadiation()

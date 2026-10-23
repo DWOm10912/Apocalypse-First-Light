@@ -127,7 +127,8 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
         pose.mulPose(Axis.YP.rotationDegrees(-90));
         pose.scale((float) scale, (float) scale, (float) scale);
         pose.translate(-cx, -(yMuzzle + yStock) / 2, -cz);
-        MaintenanceGunRendering.renderBindPose(s, pose, buffers, light);
+        // on the wall brackets the sling hangs free below the gun
+        MaintenanceGunRendering.renderBindPose(s, pose, buffers, light, true, false);
     }
 
     private static void shelf(ItemStack s, double x, PoseStack pose, MultiBufferSource buffers, int light, int seed) {

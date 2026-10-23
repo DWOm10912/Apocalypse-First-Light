@@ -22,6 +22,7 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {M4, add, mul, Part, inRegion, collectGroups, createBuilder, unwrap, paint, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {dRing, sweepRing, box, lathe} from './sling-swivel-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const REF = 'e184568';   // HR55 Native Rig V2 (Phase 1) commit
@@ -101,6 +102,28 @@ export const zFight = {passes: zHistory, maxLevel: Math.max(0, ...zf.levels.valu
   const o = PARTS.find(q => q.name === 'mag_standard'), c = new Part('reload_mag_standard', 'reload_mag_standard', o.mat);
   c.v = o.v.map(q => q.slice()); c.f = o.f.map(f => ({...f, ids: f.ids.slice()})); c.copyOf = o; PARTS.push(c);
 }
+// ---------------- sling swivels (docs/native_guns/attachments/sling_physics_v1.md 3) ----------------
+// D-rings across the gun (bars along x, 32 mm strap: 1.45 inside at ~22 mm / unit), bottom bar = sling_slot.strap anchor
+// (native_guns/hr55.json). Front: a rail-mount swivel on the lower handguard's Picatinny rail (group2_rail, bottom y 5.0)
+// near its front, a clamp with jaws round the rail's sides, a cross bolt, and a lug under it for the ring's top bar. Rear:
+// a stud screwed into the butt's bottom 2.1 units (46 mm) ahead of its end.
+export const SWIVEL_FRONT = {top: 4.48, bottom: 3.70, z: -12.05, width: 1.62, corner: 0.25};
+export const SWIVEL_REAR = {top: 2.38, bottom: 1.60, z: 16.6, width: 1.62, corner: 0.25};
+{
+  const clamp = new Part('sling_clamp', 'group2', 'swivel');
+  box(clamp, [-0.48, 4.62, -12.5], [0.48, 5.05, -11.6], 0.05);
+  for (const s of [-1, 1]) box(clamp, [s > 0 ? 0.31 : -0.48, 4.9, -12.5], [s > 0 ? 0.48 : -0.31, 5.22, -11.6], 0.03);
+  box(clamp, [-0.13, 4.36, -12.3], [0.13, 4.64, -11.8], 0.04);
+  lathe(clamp, 'x', [0.48, 4.83, -12.05], [[-0.02, 0.15], [0.10, 0.15], [0.13, 0.11], [0.13, 0]], 12);   // bolt head (right)
+  lathe(clamp, 'x', [-0.48, 4.83, -12.05], [[0.02, 0.16], [-0.11, 0.16], [-0.13, 0.12], [-0.13, 0]], 6);  // nut (left)
+  const front = new Part('sling_swivel_front', 'group2', 'swivel');
+  sweepRing(front, dRing(SWIVEL_FRONT), 0.085);
+  const stud = new Part('sling_stud', 'group3', 'swivel');
+  lathe(stud, 'y', [0, 2.85, SWIVEL_REAR.z], [[0, 0.17], [-0.45, 0.17], [-0.53, 0.11], [-0.56, 0]], 12);
+  const rear = new Part('sling_swivel_rear', 'group3', 'swivel');
+  sweepRing(rear, dRing(SWIVEL_REAR), 0.085);
+  PARTS.push(clamp, front, stud, rear);
+}
 for (const p of PARTS) assert(groupInfo.has(p.bone), 'bone ' + p.bone);
 
 // ---------------- UV: planar islands (normal flood fill), shelf packing into 1024 ----------------
@@ -125,6 +148,7 @@ export const MATS = {
   lower:     {c: [31, 32, 34], hl: 7, sm: 58, se: 70, f0: 10},
   stock:     {c: [30, 31, 33], hl: 7, sm: 56, se: 68, f0: 10},
   grip:      {c: [28, 29, 30], hl: 6, sm: 48, se: 60, f0: 10},
+  swivel:    {c: [36, 38, 40], hl: 18, sm: 96, se: 140, f0: 24, edgeF0: 255},   // phosphated steel sling swivels and clamp
 };
 const ZONED = new Set(['receiver', 'handguard', 'rail', 'sight', 'barrel', 'muzzle', 'handle', 'magazine']);   // polymer: one tone
 const SOURCE_OF = {group_rail: 'group', group_handguard: 'group', group_grip: 'group', group_lower: 'group', group2_rail: 'group2', sight_rail: 'sight'};

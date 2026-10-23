@@ -142,6 +142,7 @@ const samples = computed(() => {
           <span class="eff">
             <template v-if="a.slot === 'muzzle'">{{ t(`枪声 ${g.noise.radius} → ${Math.max(1, Math.round(g.noise.radius * a.noiseMultiplier))} 格`, `Noise ${g.noise.radius} → ${Math.max(1, Math.round(g.noise.radius * a.noiseMultiplier))} blocks`) }}</template>
             <template v-else-if="a.slot === 'magazine'">{{ t(`${g.capacity} → ${a.rounds} 发`, `${g.capacity} → ${a.rounds} rounds`) }}<template v-if="a.emptyReload">{{ t(`，空仓换弹 ${fmt(a.emptyReload)} 秒`, `, empty reload ${fmt(a.emptyReload)} s`) }}</template></template>
+            <template v-else-if="a.slot === 'sling'">{{ t('能背在背上，放进 1 号栏', 'Carried on the back, in slot 1') }}</template>
             <template v-else>{{ t('瞄准点移到红点上', 'Aims through the dot') }}</template>
           </span>
           <code>{{ a.id }}</code>

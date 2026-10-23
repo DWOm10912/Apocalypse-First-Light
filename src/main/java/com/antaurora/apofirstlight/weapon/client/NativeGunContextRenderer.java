@@ -25,6 +25,8 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
     private final String idle;
     private MeshModel mesh;
     private boolean skipMeshShadow;
+    /** A fitted sling's strap (client/sling/SlingStraps): each drawn bone's mesh frame this traversal, null without one. */
+    private java.util.Map<String, Matrix4f> strapBones;
     /**
      * Player skeleton (docs/dev/player_skeleton_v1_design.md 13): the gun it draws in third person plays its clips (it
      * is placed against the eye as in first person, so the clips fit; the hands follow its anchors), and one bone may be
@@ -72,36 +74,57 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
             int light, int overlay, float red, float green, float blue, float alpha) {
         var previousMesh = mesh;
         boolean previousSkip = skipMeshShadow;
+        var previousStrap = strapBones;
         mesh = VextrisMeshes.byGeometry(getGeoModel().getModelResource(item));
         skipMeshShadow = mesh != null && NativeGunShadowSkip.shouldSkip(currentItemStack, renderPerspective, item);
         // first person: the eye sits at the pose origin, so the closed parts' back faces (and those of the rounds and
         // attachments drawn in this traversal) can be skipped on the CPU (docs/native_guns/hybrid_mesh_runtime_v1.md)
         boolean firstPerson = renderPerspective == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || renderPerspective == ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+        boolean third = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
+                || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+        boolean strap = !reRender && mesh != null && (third || firstPerson && !"HAND_TRANSLUCENT".equals(AflShaderCompat.handPhase()))
+                && currentItemStack != null && !com.antaurora.apofirstlight.weapon.NativeAttachments.active(currentItemStack,
+                com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SLING).isEmpty();
+        strapBones = strap ? new java.util.HashMap<>() : null;
+        Matrix4f root = new Matrix4f(pose.last().pose());
         boolean previousCull = com.antaurora.vextris.client.MeshRenderer.cullBackFaces(firstPerson && !AflShaderCompat.activeShadowPass());
         try {
-            boolean third = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
-                    || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
             if (!(item instanceof NativeGunItem) || !third || skeletonAnimated) {
                 super.actuallyRender(pose,item,baked,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
-                return;
+            } else {
+                var frozen = thirdPerson.resolve(baked, getGeoModel().getAnimation(item, idle));
+                // Equivalent geometry traversal without GeoItemRenderer's handleAnimations call.
+                // Preserve the real reRender flag: forcing it true would also suppress sight/muzzle/FX layers.
+                modelRenderTranslations = new Matrix4f(pose.last().pose());
+                updateAnimatedTextureFrame(item);
+                for (var bone : frozen.topLevelBones())
+                    renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
             }
-            var frozen = thirdPerson.resolve(baked, getGeoModel().getAnimation(item, idle));
-            // Equivalent geometry traversal without GeoItemRenderer's handleAnimations call.
-            // Preserve the real reRender flag: forcing it true would also suppress sight/muzzle/FX layers.
-            modelRenderTranslations = new Matrix4f(pose.last().pose());
-            updateAnimatedTextureFrame(item);
-            for (var bone : frozen.topLevelBones())
-                renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
+            if (strap && firstPerson)
+                com.antaurora.apofirstlight.client.sling.SlingStraps.firstPerson(currentItemStack, mesh, root, strapBones, buffers, light);
+            else if (strap)
+                com.antaurora.apofirstlight.client.sling.SlingStraps.thirdPerson(currentItemStack, mesh, root, strapBones);
         } finally {
             mesh = previousMesh;
             skipMeshShadow = previousSkip;
+            strapBones = previousStrap;
             com.antaurora.vextris.client.MeshRenderer.cullBackFaces(previousCull);
         }
+    }
+
+    /** A drawn bone's mesh frame for the sling's colliders (pose: the bone's matrix, before its pivot). */
+    protected void strapBone(PoseStack pose, GeoBone bone) {
+        if (strapBones == null) return;
+        pose.pushPose();
+        RenderUtils.translateToPivotPoint(pose, bone);
+        strapBones.put(bone.getName(), new Matrix4f(pose.last().pose()));
+        pose.popPose();
     }
 
     @Override public void renderCubesOfBone(PoseStack pose, GeoBone bone, VertexConsumer buffer,
             int light, int overlay, float red, float green, float blue, float alpha) {
         super.renderCubesOfBone(pose, bone, buffer, light, overlay, red, green, blue, alpha);
+        strapBone(pose, bone);
         // This per-bone geometry hook also runs on reRender. GeoRenderLayers do not.
         // Parent hiding and NativeAnimatedWeaponRenderer's replacement/early-return policy
         // already control entry here. The backend checks the bone's own hidden flag.

@@ -12,7 +12,7 @@ const rows = computed(() => {
       m.get(a.id).guns.push(g)
     }
   }
-  const order = ['sight', 'muzzle', 'magazine']
+  const order = ['sight', 'muzzle', 'magazine', 'sling']
   return [...m.values()].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot))
 })
 function effect(a: any) {
@@ -21,6 +21,7 @@ function effect(a: any) {
   if (a.rounds != null) out.push(t(`${a.rounds} 发`, `${a.rounds} rounds`))
   if (a.emptyReload != null) out.push(t(`空仓换弹 ${fmt(a.emptyReload)} 秒`, `Empty reload ${fmt(a.emptyReload)} s`))
   if (a.slot === 'sight') out.push(t('红点瞄准', 'Red dot sight'))
+  if (a.slot === 'sling') out.push(t('长枪能背在背上，放进 1 号栏', 'The long gun can be carried on the back, in slot 1'))
   return out.join(' · ')
 }
 </script>

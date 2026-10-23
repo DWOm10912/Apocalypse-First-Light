@@ -42,4 +42,24 @@ Dirty water carries the radiation of where you filled it, and boiling doesn't re
 
 <ItemIcon id="geiger_counter" />Held in hand it shows the current dose rate on a digital display and clicks. It measures the rate only, not how much dose you have built up
 
+<StatusTag s="integrated" /> Battery and switch:
+
+- It runs on one 9 V battery. Right-click with it in hand to switch it on or off; switching on lights the whole display for <V j="GeigerCounterItem.SELF_TEST_TICKS" x="0.05" u="s" /> as a self-test, then the reading appears
+- It draws power whenever it is on, in your hand, on a clip, in a backpack, in a chest or on the ground: 1 FE every <V j="GeigerCounterItem.TICKS_PER_FE" x="0.05" u="s" />. A fresh alkaline battery lasts about 3 game days, a NiMH rechargeable about 2. Switch it off when you are done
+- The battery icon on the right of the display: 3 bars above 66%, 2 above 33%, 1 above 15%; below that only the outline is left, blinking, and a flat battery blanks the whole display
+- Off or flat it stays silent, and the counter window on the HUD is not shown
+- Batteries are changed on the [inspect screen](./inventory#inspecting-items): turn it over, open the battery cover, take the old battery out and fit a new one
+- With a NiMH battery fitted the whole counter can go on a charging station tray; an alkaline battery cannot be charged, only replaced. The crosshair hint at the tray says why
+
+### 9 V batteries
+
+| | <ItemIcon id="battery_9v_alkaline" />Alkaline | <ItemIcon id="battery_9v_nimh" />NiMH rechargeable |
+|---|---|---|
+| Capacity | <V j="Battery9vItem.ALKALINE_CAPACITY" u="FE" /> | <V j="Battery9vItem.NIMH_CAPACITY" u="FE" /> |
+| Runs the counter for | about 3 game days | about 2 game days |
+| Charging | no | on a charging station tray, at most <V j="Battery9vItem.NIMH_MAX_RECEIVE" x="20" u="FE" /> a second; flat to full in about 2.5 minutes |
+| Stacking | fresh full batteries stack up to 4 | does not stack |
+
+The tooltip shows the charge left as a percentage
+
 <StatusTag s="creative" />

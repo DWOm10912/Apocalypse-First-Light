@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client.inventory;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.MaintenanceGunRendering;
+import com.antaurora.apofirstlight.client.sling.SlingStraps;
 import com.antaurora.apofirstlight.client.ClientEquipmentSlots;
 import com.antaurora.apofirstlight.client.WoodGunRackRenderer;
 import com.antaurora.apofirstlight.client.skeleton.SkeletonGunStance;
@@ -60,8 +61,6 @@ public final class CarriedWeaponsLayer extends RenderLayer<AbstractClientPlayer,
     private static final float BACK_TILT = 38, BACK_Y = -6.5F, BACK_SURFACE = 3.05F;
     /** The holster's pocket in the leg frame (tools/build-equipment-meshes-v1.mjs HOLSTER): centre x, floor + 0.25, front wall. */
     private static final float HOLSTER_X = 3.25F, HOLSTER_MUZZLE_Y = -7.15F, HOLSTER_FRONT_Z = -0.98F;
-    private static final ClientEquipmentSlots.WornMeshRenderer SLING =
-            new ClientEquipmentSlots.WornMeshRenderer(ClientEquipmentSlots.WornMeshRenderer.Part.BODY, "gun_sling_worn", 0.5926F, 12.2307F, 0F);
 
     public CarriedWeaponsLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
@@ -74,24 +73,21 @@ public final class CarriedWeaponsLayer extends RenderLayer<AbstractClientPlayer,
         // the own player from its inventory; the others as the server sent them (their inventories are not synced)
         var shown = player == Minecraft.getInstance().player ? CarriedWeaponsSync.of(player) : CarriedWeaponsSync.received(player.getId());
         if (shown == null) return;
-        if (shown.sling()) {
-            pose.pushPose();
-            ClientEquipmentSlots.WornMeshRenderer.apply(getParentModel(), ClientEquipmentSlots.WornMeshRenderer.Part.BODY, pose);
-            SLING.draw(pose, buffers, light);
-            pose.popPose();
-        }
-        if (shown.back().getItem() instanceof NativeGunItem && !SkeletonGunStance.hidesCarried(player, shown.back()))
-            draw(pose, buffers, light, shown.back(), backFrame(getParentModel(), shown.back()));
+        Matrix4f back = shown.back().getItem() instanceof NativeGunItem && !SkeletonGunStance.hidesCarried(player, shown.back())
+                ? backFrame(getParentModel(), shown.back()) : null;
+        draw(pose, buffers, light, shown.back(), back);
+        // the sling's strap, from the gun's swivels round the body: the gun in the hand or on the back (client/sling)
+        SlingStraps.carried(player, getParentModel(), pose, buffers, light, shown.back(), back);
         if (shown.thigh().getItem() instanceof NativeGunItem && !SkeletonGunStance.hidesCarried(player, shown.thigh()))
             draw(pose, buffers, light, shown.thigh(), thighFrame(getParentModel(), shown.thigh()));
     }
 
-    /** A carried gun in its bind pose at a model-space frame (blocks). */
+    /** A carried gun in its bind pose at a model-space frame (blocks); its strap is drawn round the body (SlingStraps#carried). */
     public static void draw(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun, Matrix4f frame) {
         if (frame == null) return;
         pose.pushPose();
         pose.mulPoseMatrix(frame);
-        MaintenanceGunRendering.renderBindPose(gun, pose, buffers, light);
+        MaintenanceGunRendering.renderBindPose(gun, pose, buffers, light, false);
         pose.popPose();
     }
 

@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.inventory;
 
+import com.antaurora.apofirstlight.client.inspect.ItemInspectScreen;
 import com.antaurora.apofirstlight.client.survivor.AflCharacterScreen;
 import com.antaurora.apofirstlight.client.ui.AflKeyHint;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
@@ -17,8 +18,10 @@ import com.antaurora.apofirstlight.inventory.grid.GunSling;
 import com.antaurora.apofirstlight.inventory.grid.Loadout;
 import com.antaurora.apofirstlight.inventory.grid.ItemSizes;
 import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
+import com.antaurora.apofirstlight.inventory.grid.GridSource;
 import com.antaurora.apofirstlight.temperature.ClientTemperature;
 import com.antaurora.apofirstlight.weight.ClientWeightState;
+import com.antaurora.apofirstlight.weapon.client.NativeGunInput;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -78,8 +81,6 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     private record OverflowHit(PlayerGrids.Target target, int index, ItemStack stack, float x, float y, float w, float h) implements Hit {}
     /** A quick binding cell (keys 4-9): shows what the key takes; right-click unbinds. */
     private record BindHit(int index, float x, float y, float w, float h) implements Hit {}
-    /** The "sling" tag on a gun in a weapon box: click to take the sling off. */
-    private record SlingHit(int hotbarIndex, float x, float y, float w, float h) implements Hit {}
     /** One item lying nearby (its entity id): click takes it onto the cursor, shift-click straight in. */
     private record GroundHit(int entityId, ItemStack stack, float x, float y, float w, float h) implements Hit {}
     /** A part of the body map (BodySilhouette): hover shows its injuries and what helps; a click does nothing. */
@@ -109,6 +110,8 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     /** Opened from a workbench (WorkbenchClient): the "背包 / 制作" tabs in the title row; set when leaving for 制作. */
     private float craftTabX, craftTabW;
     private boolean toCrafting;
+    /** Set when leaving for the item inspect screen (ItemInspectScreen): it brings this page back on closing. */
+    private boolean toInspect;
 
     public AflInventoryScreen(Player player) {
         super(player.inventoryMenu, player.getInventory(), Component.translatable("container.crafting"));
@@ -118,6 +121,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     @Override
     protected void init() {
         super.init();
+        toInspect = false;
         var window = minecraft.getWindow();
         int whole = Math.max(1, (int) Math.min(window.getWidth() / W, window.getHeight() / H));
         scale = (float) (whole / window.getGuiScale());
@@ -179,7 +183,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
 
     @Override
     public void removed() {
-        if (!toCharacter && !toCrafting) super.removed();
+        if (!toCharacter && !toCrafting && !toInspect) super.removed();
     }
 
     @Override
@@ -340,7 +344,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         hits.add(new SlotHit(menu.getSlot(HAND_MENU), x, y, w, h));
     }
 
-    /** The "sling" tag in the bottom-left corner of a box whose gun has one; clicking it takes the sling off. */
+    /** The "sling" tag in the bottom-left corner of a box whose gun has one (fitted on the Z page or the gun bench). */
     private void slingTag(GuiGraphics g, int hotbarIndex, float x, float y, float h) {
         if (!GunSling.has(player.getInventory().getItem(hotbarIndex))) return;
         var tag = Component.translatable("screen.apocalypse_firstlight.inventory.sling");
@@ -351,7 +355,6 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         AflUiShapes.fill(g, tx, ty, w, 5.6F, 2, AflUiStyle.LINE, 0.14F);
         text(g, tag, tx + 1.5F, ty + 0.7F, 4.2F, 0xC9C4BA, 1);
         pose.popPose();
-        hits.add(new SlingHit(hotbarIndex, tx, ty, w, 5.6F));
     }
 
     private void gridColumn(GuiGraphics g, PlayerGrids.View view, float mx, float my) {
@@ -585,14 +588,6 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
                         cell.storage().footprint(entry), entry.rotated(), true);
                 else AflUiShapes.box(g, cell.x() + col(cell, mx) * CELL, cell.y() + row(cell, my) * CELL, CELL, CELL, 1.5F,
                         AflUiStyle.BACK_HOVER, 0.6F, AflUiStyle.LINE, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
-            } else if (GunSling.isSling(carried)) {
-                var entry = entryAt(cell, mx, my);
-                if (entry != null) {
-                    int colour = GunSling.canFit(entry.stack()) ? FREE : BLOCKED;
-                    var size = cell.storage().footprint(entry);
-                    AflUiShapes.box(g, cell.x() + entry.x() * CELL, cell.y() + entry.y() * CELL, size.w() * CELL, size.h() * CELL,
-                            2, colour, 0.28F, colour, 0.7F, 0, 0);
-                }
             } else {
                 var plan = plan(cell, carried, mx, my);
                 int colour = plan.kind() == GridActions.Kind.MERGE || plan.free() ? FREE : plan.swap() ? SWAP : BLOCKED;
@@ -607,7 +602,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
                 AflUiShapes.box(g, x, y, size.w() * CELL, size.h() * CELL, 2, colour, 0.28F, colour, 0.7F, 0, 0);
             }
             g.disableScissor();
-        } else if (hover instanceof BindHit || hover instanceof SlingHit) {
+        } else if (hover instanceof BindHit) {
             AflUiShapes.box(g, hover.x(), hover.y(), hover.w(), hover.h(), AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.25F,
                     AflUiStyle.LINE, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
         } else if (hover instanceof SlotHit || hover instanceof OverflowHit) {
@@ -615,7 +610,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
             if (scrolled) scissorGrid(g);
             int colour = AflUiStyle.LINE;
             if (hover instanceof SlotHit s && !carried.isEmpty())
-                colour = GunSling.isSling(carried) && slingTarget(s.slot()) >= 0 || s.slot().mayPlace(carried) ? FREE : BLOCKED;
+                colour = s.slot().mayPlace(carried) ? FREE : BLOCKED;
             AflUiShapes.box(g, hover.x(), hover.y(), hover.w(), hover.h(), AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.25F,
                     colour, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
             if (scrolled) g.disableScissor();
@@ -650,8 +645,6 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
             if (kind == null) hint(g, List.of(Component.translatable("screen.apocalypse_firstlight.inventory.bind_empty")), mouseX, mouseY);
             else hint(g, List.of(new ItemStack(kind).getHoverName(),
                     Component.translatable("screen.apocalypse_firstlight.inventory.bind_unbind")), mouseX, mouseY);
-        } else if (hover instanceof SlingHit) {
-            hint(g, List.of(Component.translatable("screen.apocalypse_firstlight.inventory.sling_off")), mouseX, mouseY);
         } else if (hover instanceof BodyHit b) {
             BodySilhouette.tooltip(g, font, player, b.part(), mouseX, mouseY, width, height);
         } else if (hover instanceof PlaceholderHit p) {
@@ -812,23 +805,8 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
             else send(GridActions.Kind.GROUND_PICK, 0, 0, button, 0, false, ground.entityId());
             return true;
         }
-        if (hit instanceof SlingHit sling) {
-            if (carried.isEmpty()) send(GridActions.Kind.SLING, GridActions.SLOT_TARGET, 0, 0, 0, false, sling.hotbarIndex());
-            return true;
-        }
         if (hit instanceof BindHit bind) {
             if (button == 1) send(GridActions.Kind.UNBIND, 0, 0, 0, 0, false, bind.index());
-            return true;
-        }
-        if (hit instanceof CellHit cell && GunSling.isSling(carried)) {
-            var entry = entryAt(cell, mx, my);
-            if (entry != null && GunSling.canFit(entry.stack())) {
-                send(GridActions.Kind.SLING, cell.target().ordinal(), cell.section(), entry.x(), entry.y(), false, 0);
-                return true;
-            }
-        }
-        if (hit instanceof SlotHit s && GunSling.isSling(carried) && slingTarget(s.slot()) >= 0) {
-            send(GridActions.Kind.SLING, GridActions.SLOT_TARGET, 0, 0, 0, false, slingTarget(s.slot()));
             return true;
         }
         if (hit instanceof CellHit cell) {
@@ -869,12 +847,6 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         if (hit instanceof CellHit cell) return entryAt(cell, mx, my) != null;
         if (hit instanceof SlotHit s) return s.slot().hasItem();
         return hit instanceof OverflowHit || hit instanceof GroundHit;
-    }
-
-    /** The hotbar index of a weapon box / hands box holding a long gun a sling fits, or -1. */
-    private int slingTarget(Slot slot) {
-        if (!(slot.container instanceof Inventory) || slot.getContainerSlot() >= HotbarRoles.USED) return -1;
-        return GunSling.canFit(slot.getItem()) ? slot.getContainerSlot() : -1;
     }
 
     private boolean insidePanels(float mx, float my) {
@@ -925,6 +897,29 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         return false;
     }
 
+    /** The inspect key over an item: the inspect screen, flying out of its cell (docs/gameplay/item_inspect_v1_design.md 2). */
+    private boolean inspect(@Nullable Hit hover, float mx, float my) {
+        int source;
+        float x, y, w, h;
+        if (hover instanceof CellHit cell) {
+            var entry = entryAt(cell, mx, my);
+            if (entry == null) return false;
+            var size = cell.storage().footprint(entry);
+            source = GridSource.encode(cell.target(), cell.section(), entry.x(), entry.y());
+            x = cell.x() + entry.x() * CELL;
+            y = cell.y() + entry.y() * CELL;
+            w = size.w() * CELL;
+            h = size.h() * CELL;
+        } else if (hover instanceof SlotHit s && s.slot().hasItem() && s.slot().index > 0) {
+            source = s.slot().index;
+            x = s.x(); y = s.y(); w = s.w(); h = s.h();
+        } else return false;
+        toInspect = true;
+        ItemInspectScreen.openFrom(this, source, originX + (x + w / 2) * scale, originY + (y + h / 2) * scale, h * scale);
+        if (minecraft.screen == this) toInspect = false;
+        return true;
+    }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         var key = InputConstants.getKey(keyCode, scanCode);
@@ -938,6 +933,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         double mouseY = mouse.ypos() * height / minecraft.getWindow().getScreenHeight();
         float mx = vx(mouseX), my = vy(mouseY);
         var hover = hitAt(mx, my);
+        if (NativeGunInput.inspectKey().matches(keyCode, scanCode) && menu.getCarried().isEmpty() && inspect(hover, mx, my)) return true;
         int number = -1;
         for (int i = 0; i < Inventory.getSelectionSize(); i++)
             if (minecraft.options.keyHotbarSlots[i].isActiveAndMatches(key)) number = i;

@@ -92,6 +92,14 @@ public final class AflEquipmentSlots {
     public static boolean inUse(LivingEntity entity, Item item) {
         return entity != null && (entity.getMainHandItem().is(item) || entity.getOffhandItem().is(item) || clipped(entity, item));
     }
+    /** The stack of a gadget at work ({@link #inUse}): the main hand, the off hand, then the clips; empty if none. */
+    public static ItemStack inUseStack(LivingEntity entity, Item item) {
+        if (entity == null) return ItemStack.EMPTY;
+        if (entity.getMainHandItem().is(item)) return entity.getMainHandItem();
+        if (entity.getOffhandItem().is(item)) return entity.getOffhandItem();
+        for (int i = 0; i < CLIPS; i++) { var stack = clip(entity, i); if (stack.is(item)) return stack; }
+        return ItemStack.EMPTY;
+    }
     static SlotContext context(LivingEntity entity, String id) { return new SlotContext(id, entity, 0, false, true); }
 
     /** Curios' own rules: the slot's validators (the item tag curios:<id>) and the item's canEquip. */

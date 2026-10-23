@@ -9,10 +9,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/** The gun sling (GunSling): fitted on the inventory page by clicking a long gun with it. */
-public final class GunSlingItem extends Item {
+/** The gun sling (GunSling): fitted at a long gun's rear swivel on the Z page or the gun maintenance bench. */
+public final class GunSlingItem extends Item implements com.antaurora.apofirstlight.weapon.NativeAttachment {
     public GunSlingItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public Slot slot() {
+        return Slot.SLING;
     }
 
     @Override

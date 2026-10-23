@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {dRing, remapRing} from './sling-swivel-lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const lowPolyPath = path.join(root, 'design/items/br51_m14/source/br51_01_v3_game_lowpoly_gun.json');
@@ -107,8 +108,17 @@ export function lowParts(file = lowPolyPath) {
     low.slivers += p.faces.length - faces.length;
     return {...p, name: n > 1 ? `${p.name}_${n}` : p.name, faces};
   });
+  // sling swivels (docs/native_guns/attachments/sling_physics_v1.md 3): the Blender loops lay in the y-z plane, across the
+  // strap's way; bent onto D-rings across the gun (bars along x, 35 mm inside for the 32 mm strap), top bar through the
+  // front band's / butt plate's lug, bottom bar = sling_slot.strap anchor (native_guns/br51_01.json)
+  low.parts = low.parts.map(p => SWIVELS[p.name] ? remapRing(p, dRing(SWIVELS[p.name]), SWIVEL_WIRE) : p);
   return low;
 }
+export const SWIVEL_WIRE = 0.09;
+export const SWIVELS = {
+  nose_swivel_loop: {top: 9.42, bottom: 8.60, z: -14.97, width: 1.88, corner: 0.28},
+  stock_swivel_loop: {top: 4.18, bottom: 3.35, z: 21.795, width: 1.88, corner: 0.28},
+};
 
 export function build() {
   const low = lowParts();

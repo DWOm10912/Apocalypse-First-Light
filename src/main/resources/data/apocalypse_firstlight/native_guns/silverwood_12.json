@@ -5,6 +5,13 @@
   "casing": "apocalypse_firstlight:12_gauge_casing",
   "fire_sound": "apocalypse_firstlight:silverwood_12_fire",
   "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
+  "sling_slot": {
+    "anchor": "stock",
+    "hotspot_offset": [0, -6.09, 9.9],
+    "strap": {"front": {"bone": "barrels", "point": [0, -0.22, -16.2]}, "rear": {"bone": "stock", "point": [0, -6.5, 9.9]}},
+    "accepts": ["apocalypse_firstlight:gun_sling"]
+  },
+
   "magazine_capacity": 2,
   "fire": {
     "mode": "semi",

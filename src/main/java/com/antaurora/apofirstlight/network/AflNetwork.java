@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "68";
+    private static final String PROTOCOL = "71";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -170,6 +170,18 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.building.BuildingPackets.register(channel, nextId);
         // Field Survival Guide: the book files, "read this section", the recipe it taught (the same merge)
         nextId = com.antaurora.apofirstlight.book.GuideBookPackets.register(channel, nextId);
+        // Item inspect V1: a hotspot click and its answer (new packets: Main bumps the protocol at the merge)
+        nextId = com.antaurora.apofirstlight.inspect.InspectPackets.register(channel, nextId);
+    }
+
+    /** Item inspect V1: a hotspot click's answer, to its player. */
+    public static void inspect(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Item inspect V1 (client): a hotspot click. */
+    public static void inspectToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** AFL Map V1: a map's record, to the player carrying it. */

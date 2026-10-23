@@ -23,6 +23,13 @@
   "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
   "suppressed_fire_sound": "apocalypse_firstlight:hr55_fire_suppressed",
 
+  "sling_slot": {
+    "anchor": "group3",
+    "hotspot_offset": [0, -2.838, 3.6],
+    "strap": {"front": {"bone": "group2", "point": [0, 3.7, -12.05]}, "rear": {"bone": "group3", "point": [0, -3.228, 3.6]}},
+    "accepts": ["apocalypse_firstlight:gun_sling"]
+  },
+
   "magazine_capacity": 20,
 
   "fire": {

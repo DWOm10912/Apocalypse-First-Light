@@ -51,7 +51,8 @@ public final class CompassHud {
         bossBottom = 0;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.options.hideGui || mc.options.renderDebug || !FirstPersonBodyConfig.compass()
-                || !com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(mc.player, com.antaurora.apofirstlight.registry.AflItems.COMPASS.get())) return;
+                || !com.antaurora.apofirstlight.equipment.AflEquipmentSlots.inUse(mc.player, com.antaurora.apofirstlight.registry.AflItems.COMPASS.get())
+                || MinimapHud.inspecting()) return;
         draw(g, mc, width, Math.max(TOP, boss + 2));
     };
 

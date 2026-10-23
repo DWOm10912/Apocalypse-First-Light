@@ -14,6 +14,6 @@ public final class GunMaintenanceBenchRenderer implements BlockEntityRenderer<Gu
         pose.pushPose();
         var facing=bench.getBlockState().getValue(StaticWorkstationBlock.FACING);
         MaintenanceCameraController.benchTransform(pose,facing);
-        MaintenanceGunRendering.render(bench.getItem(0),pose,buffers,light);pose.popPose();
+        MaintenanceGunRendering.render(bench.getItem(0),pose,buffers,light,bench.getBlockPos().immutable());pose.popPose();
     }
 }

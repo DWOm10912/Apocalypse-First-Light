@@ -106,6 +106,10 @@ public final class NativeGunInput {
         boolean inspectClick = false;
         while (INSPECT.consumeClick()) inspectClick = true;
         if (!ready(mc)) {
+            // a non-gun in hand: the item inspect screen (docs/gameplay/item_inspect_v1_design.md 2); not while riding (V is the cab climate)
+            if (inspectClick && !inspectHeld && mc.player != null && mc.level != null && mc.screen == null && mc.player.isAlive()
+                    && !mc.player.isSpectator() && !mc.player.isPassenger() && !mc.player.getMainHandItem().isEmpty())
+                com.antaurora.apofirstlight.client.inspect.ItemInspectScreen.openHand();
             NativeGunInspect.tick(false);
             inspectHeld = INSPECT.isDown();
             attackHeld = mc.options.keyAttack.isDown();

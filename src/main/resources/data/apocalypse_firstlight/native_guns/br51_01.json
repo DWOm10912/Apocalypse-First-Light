@@ -16,6 +16,13 @@
     "mount_interface": "rifle_fh_qd",
     "accepts": ["apocalypse_firstlight:rifle_suppressor_01"]
   },
+  "sling_slot": {
+    "anchor": "gun_body",
+    "hotspot_offset": [0, 3.765, 21.795],
+    "strap": {"front": {"bone": "gun_body", "point": [0, 8.6, -14.97]}, "rear": {"bone": "gun_body", "point": [0, 3.35, 21.795]}},
+    "accepts": ["apocalypse_firstlight:gun_sling"]
+  },
+
   "magazine_capacity": 20,
   "magazine_slot": {
     "hotspot_anchor": "magazine",

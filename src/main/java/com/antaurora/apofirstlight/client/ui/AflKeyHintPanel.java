@@ -28,28 +28,43 @@ public final class AflKeyHintPanel {
     private final AflUiTween shown = new AflUiTween(0), height = new AflUiTween(0), width = new AflUiTween(0);
     private List<Row> rows = List.of(), previous = List.of();
     private long changed;
+    /** The panel's bottom as last drawn, in GUI pixels from the screen's top (its top margin when nothing is shown). */
+    private float bottom;
 
-    /** Draws the panel for this frame's rows; visible = false fades it out. */
+    /** Where the panel ended last frame: what sits under it (the item inspect view's name and description) goes there. */
+    public float bottom() { return bottom; }
+
+    /**
+     * The panel's size everywhere (user 2026-10-17: at full size ten rows filled the top right while driving; user
+     * 2026-10-22: the field attachment view's keys at full size were far too big), so every owner draws it the same.
+     */
+    public static final float SCALE = 0.62F;
+
+    /** Draws the panel for this frame's rows at SCALE; visible = false fades it out. */
     public void render(GuiGraphics g, int screenWidth, List<Row> next, boolean visible) {
-        render(g, screenWidth, next, visible, 1);
+        render(g, screenWidth, next, visible, SCALE);
     }
 
     /**
-     * GUI pixels the panel moves down from the top right: the minimap's height when it is shown there (AFL Map V1,
-     * docs/ui/afl_map_v1_plan.md 6; set by MinimapHud every frame).
+     * Where the panel's top goes, in GUI pixels from the screen's top, when something is shown above it in the top right:
+     * the bottom of the minimap and its position / biome box plus a gap (AFL Map V1, docs/ui/afl_map_v1_plan.md 6; set by
+     * MinimapHud every frame, 0 when no minimap).
      */
     public static float topInset;
 
     /** As above, the whole panel (margins too) scaled by k about the screen's top right corner. */
     public void render(GuiGraphics g, int screenWidth, List<Row> next, boolean visible, float k) {
         g.pose().pushPose();
-        g.pose().translate(k == 1 ? 0 : screenWidth, AflUiTween.snap(topInset), 0);
+        // the panel's own top margin scales with it: under the minimap the top lands on topInset itself
+        g.pose().translate(k == 1 ? 0 : screenWidth, topInset > 0 ? AflUiTween.snap(topInset - MARGIN * k) : 0, 0);
         if (k != 1) g.pose().scale(k, k, 1);
-        draw(g, k == 1 ? screenWidth : 0, next, visible);
+        float drawn = draw(g, k == 1 ? screenWidth : 0, next, visible);
         g.pose().popPose();
+        bottom = (topInset > 0 ? AflUiTween.snap(topInset - MARGIN * k) : 0) + (MARGIN + drawn) * k;
     }
 
-    private void draw(GuiGraphics g, int screenWidth, List<Row> next, boolean visible) {
+    /** Returns the panel's drawn height (0 when hidden). */
+    private float draw(GuiGraphics g, int screenWidth, List<Row> next, boolean visible) {
         long now = System.nanoTime();
         Font font = Minecraft.getInstance().font;
         if (!same(next, rows)) {
@@ -68,7 +83,7 @@ public final class AflKeyHintPanel {
         float alpha = shown.value(now);
         if (alpha <= 0.01F) {
             previous = List.of();
-            return;
+            return 0;
         }
         float slide = AflUiTween.snap((1 - alpha) * 8);
         float w = width.value(now) + FADE_ZONE + PAD_RIGHT, h = height.value(now) + 2 * PAD_Y;
@@ -79,6 +94,7 @@ public final class AflKeyHintPanel {
         if (cross < 1) drawRows(g, font, previous, right, top, alpha * (1 - cross), now);
         else previous = List.of();
         drawRows(g, font, rows, right, top, alpha * cross, now);
+        return h;
     }
 
     private static void drawRows(GuiGraphics g, Font font, List<Row> rows, float right, float top, float alpha, long now) {

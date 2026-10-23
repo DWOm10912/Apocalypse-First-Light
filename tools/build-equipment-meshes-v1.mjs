@@ -406,6 +406,80 @@ function gunSling() {
 }
 
 /**
+ * Round wire swept along points (ring of `sides` corners, frames carried along the path so it never twists); closed
+ * joins the last point back to the first.
+ */
+function sweptWire(part, pts, r, {sides = 8, closed = false} = {}) {
+  const n = pts.length, tan = i => unit(sub3(pts[closed ? (i + 1) % n : Math.min(i + 1, n - 1)], pts[closed ? (i - 1 + n) % n : Math.max(i - 1, 0)]));
+  let t = tan(0), a = Math.abs(t[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0], u = unit(cross3(t, a));
+  const ring = Array.from({length: sides}, (_, k) => [r * Math.cos(2 * Math.PI * k / sides), r * Math.sin(2 * Math.PI * k / sides)]), rings = [];
+  for (let i = 0; i < n; i++) {
+    const ti = tan(i);
+    u = unit(sub3(u, mul3(ti, dot3(u, ti))));
+    rings.push(ringAt(part, pts[i], u, cross3(ti, u), ring));
+    t = ti;
+  }
+  loft(part, rings, pts, {closed});
+}
+/** Points of an arc in the y-z plane at x = 0: centre (y, z), radius, from angle a0 to a1 (degrees, 0 = +z, 90 = +y). */
+const arcYZ = (cy, cz, r, a0, a1, step = 15) => {
+  const n = Math.max(1, Math.round(Math.abs(a1 - a0) / step));
+  return Array.from({length: n + 1}, (_, i) => { const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [0, cy + r * Math.sin(a), cz + r * Math.cos(a)]; });
+};
+
+// Sling strap physics (docs/native_guns/attachments/sling_physics_v1.md 5): the strap is drawn by code as a ribbon along
+// the simulated chain, the hooks as this mesh at each end. Both in centimetres (1 px = 1 cm): real webbing and hardware
+// sizes, whatever gun they hang on. The hook's printed points (pin 8.17 cm above the exit at the origin) are
+// client/sling/SlingStrapRenderer HOOK_PIN and SlingStraps HOOK: change them together.
+const SLING_WEB = {w: 3.2, t: 0.25}, SLING_WIRE = 0.2, SLING_HOOK_Y = 4.0, SLING_HOOK_R = 0.55, SLING_FOLD = 4.0;
+const SLING_SWIVEL_WIRE = 0.18;   // the swivel bar the hook rests on (BR-51 / HR-55 / Silverwood swivels, 0.085-0.09 px at about 21 mm/px)
+
+/**
+ * Sling snap hook (no item, drawn by the strap renderer at both ends of a sling): a bent steel wire hook in the x-y-z
+ * frame of its strap: x across the strap (the swivel bar's direction), y up towards the swivel. A rectangular eye the
+ * webbing loops through (bottom bar at y 0), the stem rising behind it to a J that curls over the swivel bar (the bar
+ * rests at the top inside of the J, the pin) and a sprung gate wire closing the J; the webbing end folded round the eye's
+ * bottom bar, two layers sewn flat down to the strap's exit (y -4 cm, where the ribbon starts).
+ */
+function gunSlingHook() {
+  const B = 'gun_sling_hook', steel = new Part('hook', B, 'steel'), gate = new Part('gate', B, 'steel'), web = new Part('fold', B, 'web');
+  const R = 0.3, W = 1.9, H = 1.0, eye = [];
+  for (const [cx, cy, a0] of [[W - R, R, -90], [W - R, H - R, 0], [-W + R, H - R, 90], [-W + R, R, 180]])
+    for (let i = 0; i <= 3; i++) { const a = (a0 + 30 * i) * Math.PI / 180; eye.push([cx + R * Math.cos(a), cy + R * Math.sin(a), 0]); }
+  sweptWire(steel, eye, SLING_WIRE, {closed: true});
+  const zs = -SLING_HOOK_R, stem = [[0, H - 0.05, 0], [0, H + 0.3, zs * 0.55], [0, H + 0.75, zs], [0, 2.6, zs], [0, SLING_HOOK_Y, zs]];
+  const j = arcYZ(SLING_HOOK_Y, 0, SLING_HOOK_R, 180, 0).slice(1), tip = [0, SLING_HOOK_Y - 0.7, SLING_HOOK_R];
+  sweptWire(steel, [...stem, ...j, [0, SLING_HOOK_Y - 0.35, SLING_HOOK_R], tip], SLING_WIRE);
+  // the gate: a thinner sprung wire from the stem up to the inside of the tip
+  sweptWire(gate, [[0, 2.3, zs + 0.12], [0, 2.9, -0.1], [0, SLING_HOOK_Y - 0.62, SLING_HOOK_R - 0.16]], 0.09, {sides: 6});
+  // the folded webbing round the eye's bottom bar: up the front, over the bar, down the back, both layers sewn flat below
+  const g = SLING_WIRE + SLING_WEB.t / 2 + 0.01, flat = SLING_WEB.t / 2 + 0.005, path = [];
+  path.push([0, -SLING_FOLD, flat], [0, -1.4, flat], [0, -0.6, g * 0.85]);
+  path.push(...arcYZ(0, 0, g, -20, 200).slice(0));
+  path.push([0, -0.6, -g * 0.85], [0, -1.4, -flat], [0, -SLING_FOLD + 0.35, -flat]);
+  const rings = path.map((q, i) => {
+    const t = unit(sub3(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)])), nrm = unit(cross3(t, [1, 0, 0]));
+    return ringAt(web, q, nrm, [1, 0, 0], [[SLING_WEB.t / 2, SLING_WEB.w / 2], [SLING_WEB.t / 2, -SLING_WEB.w / 2], [-SLING_WEB.t / 2, -SLING_WEB.w / 2], [-SLING_WEB.t / 2, SLING_WEB.w / 2]]);
+  });
+  loft(web, rings, path);
+  const pin = [0, SLING_HOOK_Y + SLING_HOOK_R - SLING_WIRE - SLING_SWIVEL_WIRE, 0];
+  return {PARTS: [steel, gate, web], MATS: {
+    web: {c: [84, 88, 66], ...NYLON},
+    steel: {c: [62, 64, 66], hl: 14, sm: 120, se: 140, f0: 230},   // phosphated spring steel
+  }, meshOnly: true, texelsPerPx: 24, points: {pin, exit: [0, -SLING_FOLD, 0]}};
+}
+
+/**
+ * Sling strap texture (no item): a straight 6 cm piece of the webbing, 32 mm x 2.5 mm. The strap renderer reads the UV
+ * rectangles of its two faces (+z / -z) and two edges (+x / -x) and tiles them, mirrored, along the simulated ribbon.
+ */
+function gunSlingStrap() {
+  const B = 'gun_sling_strap', web = new Part('web', B, 'web'), w = SLING_WEB.w / 2, t = SLING_WEB.t / 2;
+  extrude(web, 'y', {outer: orient([[-t, -w], [t, -w], [t, w], [-t, w]], true), holes: []}, 0, 6, 0);
+  return {PARTS: [web], MATS: {web: {c: [84, 88, 66], ...NYLON}}, meshOnly: true, texelsPerPx: 24};
+}
+
+/**
  * Gun sling worn (no item, drawn with a slung primary on the back): the strap across the body, over the left shoulder
  * (where the muzzle rides) and down across the chest to the right hip, round the back. One closed band in the plane
  * through the torso that holds that diagonal.
@@ -495,8 +569,100 @@ function roundRectCorners(u0, v0, u1, v1, radii, seg = 3) {
   return orient(out, true);
 }
 
+/** Copy src's vertices (through T, a translation or a proper rotation: windings stay right) and faces into dst. */
+function mergePart(dst, src, T = p => p) {
+  const o = dst.v.length;
+  for (const p of src.v) dst.v.push(T(p));
+  for (const f of src.f) dst.f.push({...f, ids: f.ids.map(i => i + o)});
+}
+/**
+ * A prism along Z through rings of the same vertex count: rings[k] = [z, loop in (x, y)], segMats[k] the material between
+ * ring k and k + 1 (two rings at one z make a flat step), the end caps capMats[0] / [1]. Faces point away from the origin,
+ * so the solid is authored round its own centre (convex enough: every face sees out from there).
+ */
+function prismZ(part, rings, segMats, capMats) {
+  const ids = rings.map(([z, L]) => L.map(([x, y]) => part.vtx([x, y, z])));
+  for (let k = 0; k + 1 < rings.length; k++) for (let i = 0; i < ids[k].length; i++) {
+    const j = (i + 1) % ids[k].length, q = [ids[k][i], ids[k][j], ids[k + 1][j], ids[k + 1][i]];
+    const mid = mul3(q.reduce((s, id) => add3(s, part.v[id]), [0, 0, 0]), 0.25);
+    part.face(q, mid, 'side', segMats[k]);
+  }
+  for (const [k, sgn, mat] of [[0, -1, capMats[0]], [rings.length - 1, 1, capMats[1]]]) {
+    const {pts, tris} = triangulate(rings[k][1], []), cap = pts.map(([x, y]) => part.vtx([x, y, rings[k][0]]));
+    for (const t of tris) part.face(t.map(i => cap[i]), [0, 0, sgn], 'cap', mat);
+  }
+}
+/** Catmull-Rom points through ctrl (3D), n steps per span. */
+function catmull(ctrl, n) {
+  const P = [ctrl[0], ...ctrl, ctrl[ctrl.length - 1]], out = [ctrl[0]];
+  for (let s = 1; s + 2 < P.length; s++) for (let k = 1; k <= n; k++) {
+    const t = k / n, [p0, p1, p2, p3] = [P[s - 1], P[s], P[s + 1], P[s + 2]];
+    out.push(p1.map((_, i) => 0.5 * (2 * p1[i] + (-p0[i] + p2[i]) * t + (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * t * t + (-p0[i] + 3 * p1[i] - 3 * p2[i] + p3[i]) * t * t * t)));
+  }
+  return out;
+}
+/** A round wire (6 sides, radius r) along pts, both ends capped. */
+function wire(part, pts, r, mat) {
+  const rings = pts.map((p, i) => {
+    const T = unit(sub3(pts[Math.min(i + 1, pts.length - 1)], pts[Math.max(i - 1, 0)]));
+    const n = unit(cross3(T, Math.abs(T[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])), b = cross3(T, n);
+    return ringAt(part, p, n, b, Array.from({length: 6}, (_, k) => [r * Math.cos(k * Math.PI / 3), r * Math.sin(k * Math.PI / 3)]));
+  });
+  loft(part, rings, pts, {mat: () => mat});
+}
+
+/**
+ * 9 V battery (item inspect V1, 2026-10-22, docs/gameplay/item_inspect_v1_design.md section 4): IEC 6LR61 / 6LF22 size,
+ * 48.5 x 26.5 x 17.5 mm at 1 px = 10 mm. Lies flat round its centre, the broad faces up / down (Y), the snap terminals
+ * toward -Z: the round positive stud at x -0.635, the hex negative socket at x +0.635 (12.7 mm apart, as the standard).
+ * A printed film wrap rolled over nickel end plates, a coloured band near the bottom end: alkaline dark grey with an amber
+ * band, NiMH green with a light grey band. No printed text.
+ */
+export const BATTERY_9V = {W: 2.65, H: 1.75, L: 4.85, pitch: 0.635};
+function battery9vPart(part, kind) {
+  const {W, H, L, pitch} = BATTERY_9V, wrap = 'wrap_' + kind, band = 'band_' + kind, z = L / 2;
+  const loop = d => rr(-W / 2 + d, -H / 2 + d, W / 2 - d, H / 2 - d, 0.22 - d);
+  // the nickel top plate (terminals), the wrap's rolled edges, the band at the bottom end, the nickel bottom plate
+  prismZ(part, [[-z, loop(0.06)], [-z + 0.095, loop(0.06)], [-z + 0.095, loop(0.01)], [-z + 0.145, loop(0)], [z - 1.05, loop(0)], [z - 0.55, loop(0)],
+    [z - 0.145, loop(0)], [z - 0.095, loop(0.01)], [z - 0.095, loop(0.06)], [z, loop(0.06)]],
+    ['nickel', wrap, wrap, wrap, band, wrap, wrap, wrap, 'nickel'], ['nickel', 'nickel']);
+  const t = -z - 0.3, pos = new Part('pos', part.bone, 'nickel'), neg = new Part('neg', part.bone, 'nickel');
+  // positive: a round stud with a waist; negative: a hex with a round socket (dark inside)
+  revolve(pos, -pitch, 0, [[-z + 0.02, 0], [-z + 0.02, 0.25], [t + 0.22, 0.25], [t + 0.16, 0.22], [t + 0.1, 0.26], [t + 0.035, 0.24], [t, 0.17], [t, 0]], 12);
+  revolve(neg, pitch, 0, [[-z + 0.02, 0], [-z + 0.02, 0.34], [t, 0.34], [t, 0.16], [t + 0.125, 0.16], [t + 0.125, 0]], 6);
+  for (const f of neg.f) if (f.ids.every(i => Math.hypot(neg.v[i][0] - pitch, neg.v[i][1]) < 0.161)) f.mat = 'socket';
+  mergePart(part, pos); mergePart(part, neg);
+  return part;
+}
+const BATTERY_MATS = {
+  wrap_alk: {c: [30, 32, 35], hl: 6, sm: 128, se: 138, f0: 20},     // printed film wrap, satin
+  band_alk: {c: [192, 138, 46], hl: 6, sm: 128, se: 138, f0: 20},   // amber band
+  wrap_nimh: {c: [47, 74, 60], hl: 6, sm: 128, se: 138, f0: 20},    // green wrap
+  band_nimh: {c: [185, 188, 184], hl: 6, sm: 128, se: 138, f0: 20}, // light grey band
+  nickel: {c: [166, 168, 171], hl: 10, sm: 160, se: 170, f0: 230},  // nickel-plated steel ends and terminals
+  socket: {c: [42, 43, 45], hl: 2, sm: 80, se: 90, f0: 20},         // inside the negative socket
+};
+const battery9v = kind => () => ({PARTS: [battery9vPart(new Part('battery', 'battery_9v_' + (kind === 'alk' ? 'alkaline' : 'nimh'), 'wrap_' + kind), kind)],
+  MATS: BATTERY_MATS,
+  // pinched at the bottom end (baked (0, 0, 1.9)), landing where the compass's south rim lands (the wiring wrench's grip
+  // points): translation = landing - scale * R * grip; ground flat; item frame broad face out, terminals up
+  display: {
+    thirdperson_righthand: {rotation: [90, 0, 0], translation: [0, -0.9 + 0.55 * 1.9, 1.37], scale: [0.55, 0.55, 0.55]},
+    firstperson_righthand: {rotation: [40, -13, 12], translation: sub3(add3([1.616, 0.893, 0.848], mul3(rotXYZ([40, -13, 12], [0, 0, 3.0]), 0.72)), mul3(rotXYZ([40, -13, 12], [0, 0, 1.9]), 0.72)).map(v => +v.toFixed(3)), scale: [0.72, 0.72, 0.72]},
+    ground: {rotation: [0, 0, 0], translation: [0, 2, 0], scale: [0.5, 0.5, 0.5]},
+    fixed: {rotation: [-90, 180, 0], translation: [0, 0, 0], scale: [1.2, 1.2, 1.2]},
+  },
+  icon: {view: [35, 30, 0], coverage: 0.3, mat: kind === 'alk' ? {wrap_alk: [52, 55, 60], band_alk: [222, 160, 54], nickel: [196, 198, 202]} : {wrap_nimh: [62, 100, 80], band_nimh: [214, 217, 212], nickel: [196, 198, 202]}}});
+
 /** Seven-segment layout of one LCD digit (a..g) and its decimal point, shared with the HUD (client/GeigerReadout). */
 export const GEIGER_LCD = {cells: 4, x0: -2.62, pitch: 1.31, glyph: 0.98, zTop: -3.82, zBottom: -1.38, bar: 0.24, gap: 0.035, dp: 0.24};
+/**
+ * The counter's 9 V supply (item inspect V1, 2026-10-22): the bay opening in the back (x, z) and its floor height, the fitted
+ * battery's centre, the LCD battery icon's frame (x, z on the LCD) and line width. The inspect screen's hotspots and the
+ * cover's aside pose are worked out from these (client/inspect/InspectProfile).
+ */
+export const GEIGER_POWER = {BAY: {x0: -1.6, x1: 1.6, z0: -0.35, z1: 5.35, floor: 2.1}, bat: [0, 1.1, 2.75],
+  ICON: {x0: 2.42, x1: 2.88, z0: -3.6, z1: -1.45, t: 0.11}};
 /**
  * Geiger counter V2 (direction B, 2026-10-15; docs/models/geiger_counter_v2_design.md): a digital pocket monitor after the
  * Inspector class of thin-window counters, 150 x 80 x 30 mm at 1 px = 10 mm. A charcoal ABS shell between two yellow
@@ -509,7 +675,22 @@ export const GEIGER_LCD = {cells: 4, x0: -2.62, pitch: 1.31, glyph: 0.98, zTop: 
 function geigerCounter() {
   const B = 'geiger_counter', parts = [], add = p => { parts.push(p); return p; };
   const plan = (u0, v0, u1, v1, r) => rr(u0, v0, u1, v1, r);   // axis y: (u, v) = (z, x)
-  extrude(add(new Part('shell', B, 'shell')), 'y', {outer: plan(-6.4, -3.85, 6.4, 3.85, 0.9), holes: []}, 0.12, 2.88, 0.35);
+  const shellPlan = plan(-6.4, -3.85, 6.4, 3.85, 0.9), shell = add(new Part('shell', B, 'shell'));
+  extrude(shell, 'y', {outer: shellPlan, holes: []}, 0.12, 2.88, 0.35);
+  // the battery bay in the back (item inspect V1): the back cap rebuilt round the opening (the chamfered outline is the
+  // extrusion's first ring), the bay a pocket BAY.floor deep with two moulded ribs on its floor
+  const {BAY} = GEIGER_POWER, bayLoop = plan(BAY.z0, BAY.x0, BAY.z1, BAY.x1, 0.2), backY = 0.12;
+  shell.f = shell.f.filter(f => !(f.tag === 'cap' && f.ids.every(i => Math.abs(shell.v[i][1] - backY) < 1e-9)));
+  const backOuter = shell.v.slice(0, shellPlan.length).map(([x, , z]) => [z, x]);
+  { const {pts, tris} = triangulate(backOuter, [orient(bayLoop, false)]), ids = pts.map(([u, v]) => shell.vtx([v, backY, u]));
+    for (const t of tris) shell.face(t.map(i => ids[i]), [0, -1, 0], 'cap'); }
+  const bay = add(new Part('bay', B, 'shell')), lip = bayLoop.map(([u, v]) => bay.vtx([v, backY, u])), deep = bayLoop.map(([u, v]) => bay.vtx([v, BAY.floor, u]));
+  const bayMid = [0, 1, (BAY.z0 + BAY.z1) / 2];
+  for (let i = 0; i < bayLoop.length; i++) { const j = (i + 1) % bayLoop.length, q = [lip[i], lip[j], deep[j], deep[i]];
+    bay.face(q, sub3(bayMid, mul3(q.reduce((s, id) => add3(s, bay.v[id]), [0, 0, 0]), 0.25)), 'wall'); }
+  { const {pts, tris} = triangulate(bayLoop, []), ids = pts.map(([u, v]) => bay.vtx([v, BAY.floor, u]));
+    for (const t of tris) bay.face(t.map(i => ids[i]), [0, -1, 0], 'wall'); }
+  for (const x of [-1.1, 1.1]) extrude(bay, 'z', {outer: rr(x - 0.09, BAY.floor - 0.12, x + 0.09, BAY.floor + 0.005, 0.03), holes: []}, 0.3, 4.9, 0, 'wall');
   // end boots: rounded outer corners, square where they meet the shell
   extrude(add(new Part('boot_top', B, 'rubber')), 'y', {outer: roundRectCorners(-7.5, -4.0, -5.6, 4.0, [0.12, 0.12, 1.4, 1.4], 4), holes: []}, 0, 3.0, 0.4);
   extrude(add(new Part('boot_bottom', B, 'rubber')), 'y', {outer: roundRectCorners(5.6, -4.0, 7.5, 4.0, [1.4, 1.4, 0.12, 0.12], 4), holes: []}, 0, 3.0, 0.4);
@@ -552,8 +733,46 @@ function geigerCounter() {
   }
   extrude(add(new Part('grille', B, 'grille')), 'y', {outer: orient(circle(-2.6, 0, 2.05, 24), true), holes}, 0.03, 0.14, 0);
   extrude(add(new Part('mica', B, 'mica')), 'y', {outer: orient(circle(-2.6, 0, 1.9, 24), true), holes: []}, 0.07, 0.11, 0);
-  for (const z of [-4.9, 4.9]) extrude(add(new Part('screw_' + (z < 0 ? 'top' : 'bottom'), B, 'steel')), 'y', {outer: orient(circle(z, 0, 0.2, 8), true), holes: []}, 0.06, 0.13, 0);
+  // one case screw at the top end (the bottom one gave way to the battery bay)
+  extrude(add(new Part('screw_top', B, 'steel')), 'y', {outer: orient(circle(-4.9, 0, 0.2, 8), true), holes: []}, 0.06, 0.13, 0);
+  // the slide cover over the bay: a plate a little larger than the opening, five thumb ribs at its bottom end, a lip at
+  // its top end hooking under the case (drawn only while shut; the inspect screen lays it aside when open)
+  const cover = add(new Part('cover', B, 'cover'));
+  extrude(cover, 'y', {outer: plan(BAY.z0 - 0.1, BAY.x0 - 0.15, BAY.z1 + 0.1, BAY.x1 + 0.15, 0.3), holes: []}, 0.03, 0.115, 0);
+  for (let i = 0; i < 5; i++) extrude(cover, 'y', {outer: plan(4.55 - i * 0.28, -1.2, 4.65 - i * 0.28, 1.2, 0.04), holes: []}, 0, 0.035, 0);
+  extrude(cover, 'y', {outer: plan(-0.3, -1.5, -0.05, 1.5, 0.06), holes: []}, 0.11, 0.3, 0);
+  // the battery snap and its two leads into the case wall, on the battery (snap_on) and loose in the empty bay (snap_off)
+  const snap = new Part('snap', B, 'snap');
+  extrude(snap, 'z', {outer: rr(-1.15, -0.525, 1.15, 0.525, 0.25), holes: []}, -0.25, 0.25, 0.06);
+  // contacts on its face: the hex clip that takes the battery's round positive, the round stud into its hex negative
+  const clip = new Part('clip', B, 'nickel'), stud = new Part('stud', B, 'nickel'), {pitch} = BATTERY_9V;
+  revolve(clip, -pitch, 0, [[0.3, 0], [0.3, 0.2], [0.36, 0.2], [0.36, 0.3], [0.2, 0.3], [0.2, 0]], 6);
+  revolve(stud, pitch, 0, [[0.38, 0], [0.38, 0.12], [0.34, 0.15], [0.2, 0.15], [0.2, 0]], 10);
+  mergePart(snap, clip); mergePart(snap, stud);
+  for (const [x, mat] of [[-0.45, 'lead_red'], [0.45, 'lead_black']]) {
+    const s = Math.sign(x);
+    wire(snap, catmull([[x, 0.15, -0.15], [x * 1.4, 0.55, -0.45], [s * 1.08, 0.9, -0.35], [s * 1.2, 0.95, -0.55]], 4), 0.11, mat);
+  }
+  const {bat} = GEIGER_POWER, snapOn = add(new Part('snap_on', B, 'snap')), snapOff = add(new Part('snap_off', B, 'snap'));
+  mergePart(snapOn, snap, ([x, y, z]) => [x, y + bat[1], z]);
+  { const c = Math.cos(-0.5), s = Math.sin(-0.5);   // tipped back against the bay floor
+    mergePart(snapOff, snap, ([x, y, z]) => [x, y * c - z * s + bat[1] + 0.28, y * s + z * c + 0.35]); }
+  snapOff.copyOf = snapOn;   // the same snap: one set of UVs
+  // the fitted battery is the battery item's own mesh, drawn by the renderer at points.battery (its centre)
+  // the LCD's battery icon in the blank right of the digits: frame with its + nub, three bars (lit like the segments)
+  const {ICON} = GEIGER_POWER, t = ICON.t, frame = add(new Part('bat_frame', B, 'segment'));
+  const flat = (p, x0, x1, z0, z1) => p.face([[x0, z0], [x1, z0], [x1, z1], [x0, z1]].map(([x, z]) => p.vtx([x, ySeg, z])), [0, 1, 0], 'cap');
+  flat(frame, ICON.x0, ICON.x1, ICON.z0, ICON.z0 + t); flat(frame, ICON.x0, ICON.x1, ICON.z1 - t, ICON.z1);
+  flat(frame, ICON.x0, ICON.x0 + t, ICON.z0 + t, ICON.z1 - t); flat(frame, ICON.x1 - t, ICON.x1, ICON.z0 + t, ICON.z1 - t);
+  flat(frame, (ICON.x0 + ICON.x1) / 2 - 0.08, (ICON.x0 + ICON.x1) / 2 + 0.08, ICON.z0 - 0.14, ICON.z0);
+  { const iz0 = ICON.z0 + t + 0.08, iz1 = ICON.z1 - t - 0.08, gap = 0.08, bh = (iz1 - iz0 - 2 * gap) / 3;
+    for (let i = 0; i < 3; i++) flat(add(new Part('bat_bar_' + i, B, 'segment')), ICON.x0 + t + 0.07, ICON.x1 - t - 0.07, iz1 - (i + 1) * bh - i * gap, iz1 - i * bh - i * gap); }
   return {PARTS: parts, MATS: {
+    nickel: BATTERY_MATS.nickel,
+    cover: {c: [44, 46, 49], hl: 6, sm: 96, se: 110, f0: 22},        // the bay cover: the shell's ABS a shade darker, matte (reads as its own part)
+    snap: {c: [24, 25, 27], hl: 6, sm: 110, se: 120, f0: 20},        // black PVC snap
+    lead_red: {c: [176, 48, 42], hl: 4, sm: 120, se: 130, f0: 20},   // red lead
+    lead_black: {c: [27, 28, 30], hl: 4, sm: 120, se: 130, f0: 20},  // black lead
     shell: {c: [54, 56, 59], hl: 8, sm: 112, se: 132, f0: 22},       // charcoal ABS, satin
     rubber: {c: [198, 152, 42], hl: 6, sm: 70, se: 82, f0: 20},      // yellow rubber boots
     bezel: {c: [24, 25, 27], hl: 6, sm: 176, se: 186, f0: 22},       // gloss black bezel
@@ -574,7 +793,9 @@ function geigerCounter() {
     firstperson_righthand: {rotation: [55, -13, 21], translation: [-1, 3, 0.5], scale: [0.45, 0.45, 0.45]},
     fixed: {rotation: [-90, 180, 0], translation: [0, 0, 0], scale: [0.56, 0.56, 0.56]},
   },
-  atlas: 512, icon: {view: [60, 0, 0], coverage: 0.4, xray: ['lcd_glass'], hide: parts.filter(p => /^(seg_|dp_|led_on)/.test(p.name)).map(p => p.name),
+  // the bay's inside and the snap are seen only with the cover open, close up in the inspect screen: half density
+  islandScale: p => p.name === 'bay' || p.name.startsWith('snap_') ? 0.5 : 1, points: {battery: GEIGER_POWER.bat},
+  atlas: 512, icon: {view: [60, 0, 0], coverage: 0.4, xray: ['lcd_glass'], hide: parts.filter(p => /^(seg_|dp_|led_on|bat_|snap_)/.test(p.name)).map(p => p.name),
     mat: {rubber: [226, 176, 52], shell: [70, 72, 76], lcd: [168, 178, 156]}}};
 }
 
@@ -1447,9 +1668,13 @@ export const ITEMS = {
   hiking_backpack: hikingBackpack,
   gun_sling: gunSling,
   gun_sling_worn: gunSlingWorn,
+  gun_sling_hook: gunSlingHook,
+  gun_sling_strap: gunSlingStrap,
   pistol_holster: pistolHolster,
   simple_hearing_protection: simpleHearingProtection,
   geiger_counter: geigerCounter,
+  battery_9v_alkaline: battery9v('alk'),
+  battery_9v_nimh: battery9v('nimh'),
   flip_lighter: flipLighter,
   bandage,
   medical_alcohol: medicalAlcohol,

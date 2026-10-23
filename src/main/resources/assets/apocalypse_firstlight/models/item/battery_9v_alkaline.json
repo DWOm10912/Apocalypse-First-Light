@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/battery_9v_alkaline"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/battery_9v_alkaline"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0.1449999999999999,
+          1.37
+        ],
+        "scale": [
+          0.55,
+          0.55,
+          0.55
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          40,
+          -13,
+          12
+        ],
+        "translation": [
+          1.438,
+          0.397,
+          1.439
+        ],
+        "scale": [
+          0.72,
+          0.72,
+          0.72
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          2,
+          0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          -90,
+          180,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1.2,
+          1.2,
+          1.2
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/battery_9v_alkaline"
+      }
+    }
+  }
+}

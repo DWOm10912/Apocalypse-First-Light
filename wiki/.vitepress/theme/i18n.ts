@@ -30,7 +30,8 @@ export const MODE_NAMES: Record<string, { zh: string; en: string }> = {
 export const SLOT_NAMES: Record<string, { zh: string; en: string }> = {
   sight: { zh: '瞄具', en: 'Sight' },
   muzzle: { zh: '枪口', en: 'Muzzle' },
-  magazine: { zh: '弹匣', en: 'Magazine' }
+  magazine: { zh: '弹匣', en: 'Magazine' },
+  sling: { zh: '背带', en: 'Sling' }
 }
 
 // Images from images.json (scripts/images.mjs). Public images are served from R2 at the URL in images.lock.json;

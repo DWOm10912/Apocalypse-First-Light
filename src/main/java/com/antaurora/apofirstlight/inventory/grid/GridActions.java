@@ -38,11 +38,6 @@ public final class GridActions {
         BIND,
         /** Right-click on a binding ({@code extra}: 0..5): unbind it. */
         UNBIND,
-        /**
-         * Fit the sling on the cursor to the long gun at a cell, or take the gun's sling off onto an empty cursor; target
-         * {@link #SLOT_TARGET}: the gun in hotbar index {@code extra} instead.
-         */
-        SLING,
         /** Ground items (GroundItems): the item entity {@code extra} onto the empty cursor, {@code x} 0 all, 1 half. */
         GROUND_PICK,
         /** The item entity {@code extra} straight in: {@code x} GroundItems.AUTO (normal pickup order) or STOW (grids only). */
@@ -58,8 +53,6 @@ public final class GridActions {
         }
     }
 
-    /** Action target meaning "a hotbar index" ({@code extra}) rather than a grid storage. */
-    public static final int SLOT_TARGET = 15;
     /** Action target meaning "the open {@link ExternalGridMenu}'s grid" (docs/ui/afl_inventory_grid_v0_plan.md 15). */
     public static final int EXTERNAL_TARGET = 14;
 
@@ -129,9 +122,6 @@ public final class GridActions {
             changed = toContainer(player, menu, action);
         } else if (kind == Kind.QUICK_FROM_SLOT) {
             changed = quickFromSlot(player, action.extra());
-        } else if (kind == Kind.SLING && action.target() == SLOT_TARGET) {
-            int index = action.extra();
-            changed = index >= 0 && index < HotbarRoles.USED && sling(player, player.getInventory().items.get(index));
         } else {
             var target = PlayerGrids.Target.of(action.target());
             var storage = target == null ? null : view.get(target);
@@ -148,10 +138,6 @@ public final class GridActions {
                     var entry = storage.at(action.section(), action.x(), action.y());
                     if (entry != null && target != PlayerGrids.Target.BACKPACK) Loadout.bind(player, action.extra(), entry.stack());
                     yield false;
-                }
-                case SLING -> {
-                    var entry = storage.at(action.section(), action.x(), action.y());
-                    yield entry != null && sling(player, entry.stack());
                 }
                 default -> false;
             };
@@ -178,10 +164,6 @@ public final class GridActions {
             case DROP -> drop(player, storage, action);
             case HOTBAR_KEY -> hotbarKey(player, storage, action);
             case OVERFLOW_TAKE -> overflowTake(player, storage, action);
-            case SLING -> {
-                var entry = storage.at(action.section(), action.x(), action.y());
-                yield entry != null && sling(player, entry.stack());
-            }
             default -> false;
         };
     }
@@ -429,23 +411,6 @@ public final class GridActions {
         }
         inventory.items.set(index, moving);
         return true;
-    }
-
-    /** Sling on the cursor onto a long gun without one, or the gun's sling onto an empty cursor. */
-    private static boolean sling(ServerPlayer player, ItemStack gun) {
-        var menu = player.containerMenu;
-        var carried = menu.getCarried();
-        if (GunSling.isSling(carried) && GunSling.canFit(gun)) {
-            GunSling.fit(gun);
-            carried.shrink(1);
-            menu.setCarried(carried.isEmpty() ? ItemStack.EMPTY : carried);
-            return true;
-        }
-        if (carried.isEmpty() && GunSling.has(gun)) {
-            menu.setCarried(GunSling.remove(gun));
-            return true;
-        }
-        return false;
     }
 
     private static boolean overflowTake(ServerPlayer player, GridStorage storage, GridPackets.Action a) {

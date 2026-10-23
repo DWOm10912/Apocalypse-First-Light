@@ -102,6 +102,8 @@ public final class NativePlayerArmRenderer {
         if (pose == null) return;
         pose.scale(x,y,z);
         NativeHandBinding.apply(pose, right, player.getModelName().equals("slim"));
+        // the gun's sling strap collides with the arm as drawn (client/sling/SlingStraps)
+        com.antaurora.apofirstlight.client.sling.SlingStraps.arm(pose.last().pose(), right, player.getModelName().equals("slim"));
         var model = renderer.getModel();
         var skin = player.getSkinTextureLocation();
         renderPart(right ? model.rightArm : model.leftArm, pose,

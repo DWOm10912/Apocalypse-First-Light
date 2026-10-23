@@ -14,6 +14,8 @@ public record AttachmentHotspotDefinition(NativeAttachment.Slot slot,String pref
             case MUZZLE -> new AttachmentHotspotDefinition(slot,"maintenance_muzzle_anchor",d.muzzleMount().anchor(),0,0,0);
             case MAGAZINE -> new AttachmentHotspotDefinition(slot,null,d.magazineMount().hotspotAnchor(),
                     d.magazineMount().hotspotX()/16f,d.magazineMount().hotspotY()/16f,d.magazineMount().hotspotZ()/16f);
+            case SLING -> new AttachmentHotspotDefinition(slot,null,d.slingMount().anchor(),
+                    d.slingMount().x()/16f,d.slingMount().y()/16f,d.slingMount().z()/16f);
         };
     }
 }

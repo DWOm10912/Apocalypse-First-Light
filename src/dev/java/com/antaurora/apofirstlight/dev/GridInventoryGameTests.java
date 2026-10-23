@@ -15,6 +15,9 @@ import com.antaurora.apofirstlight.inventory.grid.Loadout;
 import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
 import com.antaurora.apofirstlight.inventory.grid.Pockets;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.weapon.AttachmentInteractionCore;
+import com.antaurora.apofirstlight.weapon.NativeAttachment;
+import com.antaurora.apofirstlight.weapon.NativeAttachments;
 import com.antaurora.apofirstlight.weapon.NativeGunAmmo;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.mojang.authlib.GameProfile;
@@ -181,6 +184,29 @@ public final class GridInventoryGameTests {
         return false;
     }
 
+    /** How many of an item the player carries: vanilla slots and grids. */
+    private static int count(ServerPlayer player, Item item) {
+        int n = 0;
+        for (var s : player.getInventory().items) if (s.is(item)) n += s.getCount();
+        var view = PlayerGrids.view(player);
+        for (var target : PlayerGrids.Target.values()) {
+            var storage = view.get(target);
+            if (storage != null) for (var e : storage.entries()) if (e.stack().is(item)) n += e.stack().getCount();
+        }
+        return n;
+    }
+
+    private static void discard(ServerPlayer player, Item item) {
+        var items = player.getInventory().items;
+        for (int i = 0; i < items.size(); i++) if (items.get(i).is(item)) items.set(i, ItemStack.EMPTY);
+        var view = PlayerGrids.view(player);
+        for (var target : PlayerGrids.Target.values()) {
+            var storage = view.get(target);
+            if (storage != null) for (var e : java.util.List.copyOf(storage.entries())) if (e.stack().is(item)) storage.remove(e);
+        }
+        view.commit();
+    }
+
     @GameTest(template = "network_empty")
     public static void bindingsAndHand(GameTestHelper h) {
         var player = survivor(h, "grid_binds");
@@ -292,17 +318,26 @@ public final class GridInventoryGameTests {
         var inventory = player.getInventory();
         var menu = player.inventoryMenu;
         var rifle = new ItemStack(AflItems.BR51_01.get());
-        h.assertTrue(GunSling.canFit(rifle) && !GunSling.canFit(new ItemStack(AflItems.P9_01.get())), "only long guns take a sling");
+        var sling = NativeAttachment.Slot.SLING;
+        h.assertTrue(NativeAttachments.supportsSlot(rifle, sling) && !NativeAttachments.supportsSlot(new ItemStack(AflItems.P9_01.get()), sling),
+                "only long guns have a sling swivel");
         h.assertTrue(!HotbarRoles.accepts(player, HotbarRoles.PRIMARY_SLOT, rifle), "no sling: no primary position");
-        inventory.items.set(HotbarRoles.PRIMARY_SLOT, rifle);
-        menu.setCarried(new ItemStack(AflItems.GUN_SLING.get(), 2));
-        act(player, GridActions.Kind.SLING, GridActions.SLOT_TARGET, 0, 0, 0, false, HotbarRoles.PRIMARY_SLOT);
-        h.assertTrue(GunSling.has(rifle) && menu.getCarried().getCount() == 1, "the sling on the cursor is fitted to the rifle");
+        // fitted and taken off at the swivel (Z page / gun bench transaction), never by a click in the inventory
+        inventory.items.set(HotbarRoles.HAND_SLOT, new ItemStack(AflItems.GUN_SLING.get()));
+        var fitted = new ItemStack[1];
+        h.assertTrue(AttachmentInteractionCore.commit(player, rifle, sling, HotbarRoles.HAND_SLOT, inventory.getItem(HotbarRoles.HAND_SLOT).copy(),
+                s -> fitted[0] = s) && GunSling.has(fitted[0]) && inventory.getItem(HotbarRoles.HAND_SLOT).isEmpty(), "the sling is fitted at the swivel");
+        rifle = fitted[0];
         h.assertTrue(HotbarRoles.accepts(player, HotbarRoles.PRIMARY_SLOT, rifle), "slung: the primary position takes it");
-        menu.setCarried(ItemStack.EMPTY);
-        act(player, GridActions.Kind.SLING, GridActions.SLOT_TARGET, 0, 0, 0, false, HotbarRoles.PRIMARY_SLOT);
-        h.assertTrue(!GunSling.has(rifle) && menu.getCarried().is(AflItems.GUN_SLING.get()), "an empty cursor takes the sling off");
-        menu.setCarried(ItemStack.EMPTY);
+        var removed = new ItemStack[1];
+        h.assertTrue(AttachmentInteractionCore.commit(player, rifle, sling, -1, ItemStack.EMPTY, s -> removed[0] = s) && !GunSling.has(removed[0])
+                && count(player, AflItems.GUN_SLING.get()) == 1, "taking it off returns the sling");
+        rifle = removed[0];
+        discard(player, AflItems.GUN_SLING.get());
+        var old = new ItemStack(AflItems.BR51_01.get());
+        old.getOrCreateTag().putBoolean("AflSling", true);
+        h.assertTrue(GunSling.has(old) && NativeAttachments.stored(old, sling).is(AflItems.GUN_SLING.get()), "the old sling flag reads as a fitted sling");
+        inventory.items.set(HotbarRoles.PRIMARY_SLOT, rifle);
 
         wear(player, AflEquipmentSlots.BACK, new ItemStack(AflItems.CANVAS_BACKPACK.get()));
         inventory.selected = 2;
