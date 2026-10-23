@@ -327,6 +327,48 @@ function woodenKnob() {
   return {PARTS, bg: 'plate', MATS: {plate: {c: [196, 156, 108], hl: 4, sm: 56, se: 62, f0: 20}, wood: {c: wood, hl: 4, sm: 56, se: 62, f0: 20}}, display, icon: {view: [20, 35, 0], coverage: 0.35}, check: box};
 }
 
+/**
+ * The wooden knob at the bench (docs/gameplay/furniture_recipes_v1.md 4.1, tools/author-wooden-knob-actions.mjs): a mesh
+ * drawn by code only, no item. The strip on the bench hook (`stick`, lying along +X) with its end that is sawn off
+ * (`blank_end`, x 2.8..7 cm), and the blank in the hand at each stage of the whittling, standing along +Y from the tenon's
+ * end: `blank` (sawn square 3.2 cm), `octagon` (the corners off), `rough` (rounded, no neck), `necked` (the head and the
+ * neck cut, the foot still thick), `finished` (the knob itself: woodenKnob's profile and carver's hand). The parts share
+ * one frame: the stick is symmetric about x = 0 and every part's foot is at y = -1.5 cm, so the bake's shift is
+ * (0, 1.5 cm, ~0).
+ */
+export const KNOB_WORK = {half: 1.6, foot: -1.5, top: 2.7, stick: 7, cut: 2.8};
+function woodenKnobWork() {
+  const B = 'wooden_knob_work', {half: H, foot: F, top: T, stick: S, cut: C} = KNOB_WORK;
+  const carver = (part, amount) => { part.v = part.v.map(([x, y, z]) => { const r = Math.hypot(x, y); if (r < 1e-6) return [x, y, z];
+    const k = 1 + amount * (vn3(x * 3.1 + 1.7, y * 3.1 + 4.2, z * 0.7 + 2.9) - 0.5); return [x * k, y * k, z]; }); };
+  const stage = (name, profile, seg, amount) => {
+    const p = new Part(name, B, 'wood');
+    revolve(p, 0, 0, profile, seg, Math.PI / seg);
+    if (amount) carver(p, amount);
+    zToY(p);
+    return p;
+  };
+  const sq = H * Math.SQRT2, oct = H / Math.cos(Math.PI / 8);
+  const blank = stage('blank', [[T, 0], [T, sq], [F, sq], [F, 0]], 4, 0);
+  const octagon = stage('octagon', [[T, 0], [T, oct * 0.9], [T - 0.1, oct], [F, oct], [F, 0]], 8, 0.03);
+  const rough = stage('rough', [[T - 0.05, 0], [T - 0.1, 0.8], [2.4, 1.35], [2.0, 1.6], [0.6, 1.62], [F, 1.62], [F, 0]], 8, 0.06);
+  const necked = stage('necked', [[2.6, 0], [2.55, 0.7], [2.35, 1.25], [2.0, 1.5], [1.6, 1.4], [1.2, 0.9], [0.8, 0.75], [0.4, 0.9], [0.15, 1.3],
+    [F, 1.3], [F, 0]], 8, 0.06);
+  const finished = stage('finished', [[2.6, 0], [2.55, 0.7], [2.35, 1.25], [2.0, 1.5], [1.6, 1.4], [1.2, 0.9], [0.8, 0.75], [0.4, 0.9], [0, 0.95],
+    [0, 0.5], [F, 0.5], [F, 0]], 8, 0.06);
+  // the strip: a square bar along +X (built along +Z, then turned), its foot on y = F like the stages
+  const bar = (name, z0, z1) => {
+    const p = new Part(name, B, 'wood');
+    revolve(p, 0, 0, [[z1, 0], [z1, sq], [z0, sq], [z0, 0]], 4, Math.PI / 4);
+    p.v = p.v.map(([x, y, z]) => [z, y + H + F, -x]);
+    return p;
+  };
+  const PARTS = [blank, octagon, rough, necked, finished, bar('stick', -S, C), bar('blank_end', C, S)];
+  for (const q of PARTS) scaleCm(q);
+  const wood = pos => tone3([196, 156, 108], 1 + 0.16 * (fbm3(pos[0] * 0.6 + 2.1, pos[1] * 5.5, pos[2] * 5.5) - 0.5) + 0.05 * (vn3(pos[0] * 2 + 5.3, pos[1] * 14, pos[2] * 14) - 0.5));
+  return {PARTS, bg: 'plate', MATS: {plate: {c: [196, 156, 108], hl: 4, sm: 56, se: 62, f0: 20}, wood: {c: wood, hl: 4, sm: 56, se: 62, f0: 20}}, meshOnly: true};
+}
+
 /** Keyhole escutcheon: an oval iron plate 2.8 x 4.5 cm, 1.5 mm thick, the keyhole (a round head and a tapered slot) through it, a nail hole above and below. */
 function keyholeEscutcheon() {
   const B = 'keyhole_escutcheon', rk = 0.42, cy = 0.5, w0 = 0.16, w1 = 0.2, yb = -0.9;
@@ -351,6 +393,7 @@ export const ITEMS = {
   cabinet_hinge: cabinetHinge,
   iron_knob: ironKnob,
   wooden_knob: woodenKnob,
+  wooden_knob_work: woodenKnobWork,
   keyhole_escutcheon: keyholeEscutcheon,
 };
 

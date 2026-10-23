@@ -63,6 +63,9 @@ public final class AflWorkbenchScreen extends Screen {
     private static final long STATUS_NANOS = 3_000_000_000L;
     /** Key cap scales: the header's (beside 6-7 high text) and the key bar's (beside 5.4). */
     private static final float HEADER_CAP = 0.62F, BAR_CAP = 0.56F;
+    /** What is short under the materials: its size and at most this many lines, wrapped to the panel. */
+    private static final float MISSING_SIZE = 5;
+    private static final int MISSING_LINES = 3;
 
     private enum Kind { TAB_INVENTORY, CLOSE, SEARCH, CATEGORY, RECIPE, MINUS, PLUS, CRAFT, MATERIAL, TOOL, PREVIEW, LIST }
     private record Hit(Kind kind, float x, float y, float w, float h, int index, @Nullable Object data) {}
@@ -186,7 +189,7 @@ public final class AflWorkbenchScreen extends Screen {
         Hit hover = hitAt(mx, my);
         if (hover != null && recipe != null && optionsOf < 0) {
             if (hover.kind == Kind.MATERIAL) g.renderTooltip(font, recipe.materials().get(hover.index).shown(net.minecraft.Util.getMillis()), mouseX, mouseY);
-            else if (hover.kind == Kind.TOOL && recipe.tool() != null) g.renderTooltip(font, recipe.tool(), mouseX, mouseY);
+            else if (hover.kind == Kind.TOOL && hover.index < recipe.tools().size()) g.renderTooltip(font, recipe.tools().get(hover.index), mouseX, mouseY);
         }
     }
 
@@ -389,54 +392,65 @@ public final class AflWorkbenchScreen extends Screen {
         float x = R_X + 6, right = R_X + R_W - 6;
         int lines = r.materials().size();
         float matsH = Math.max(1, lines) * 19;
-        boolean anyShort = false;
-        for (var m : r.materials()) if (WorkbenchRecipes.carried(player, m) < m.count()) anyShort = true;
-        float h = 16 + matsH + (anyShort ? 10 : 2) + 4 + 26 + 4 + 18 + 20 + 4;
-        panel(g, R_X, R_Y, R_W, h);
-        text(g, Component.translatable("screen.apocalypse_firstlight.workbench.materials"), x, R_Y + 6, 7, AflUiStyle.TEXT, 1);
-        Component haveNeed = Component.translatable("screen.apocalypse_firstlight.workbench.have_need");
-        text(g, haveNeed, right - width(haveNeed, 4.8F), R_Y + 7.5F, 4.8F, AflUiStyle.TEXT_DIM, 1);
-        float y = R_Y + 18;
+        // the panel as tall as what it holds: the materials, what is short (wrapped), a row per tool, the quantity, the button
         List<Component> missing = new ArrayList<>();
-        for (int i = 0; i < lines; i++) {
-            var m = r.materials().get(i);
+        for (var m : r.materials()) {
             int have = WorkbenchRecipes.carried(player, m);
-            boolean ok = have >= m.count();
-            if (!ok) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench.missing_item", m.name(), m.count() - have));
-            boolean hover = in(mx, my, x - 2, y - 1, R_W - 8, 18);
-            if (hover) AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 18, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.5F);
-            slot(g, x, y, 16);
-            icon(g, m.shown(net.minecraft.Util.getMillis()), x + 2, y + 2, 12);
-            text(g, m.name(), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
-            if (m.options().size() > 1)
-                text(g, Component.translatable("screen.apocalypse_firstlight.workbench.options_count", m.options().size()), x + 21, y + 10.5F, 4.2F, AflUiStyle.TEXT_DISABLED, 1);
-            Component count = Component.literal(have + " / " + m.count());
-            text(g, count, right - width(count, 6.4F), y + 4.5F, 6.4F, ok ? AflUiStyle.TEXT : AflUiStyle.WARN, 1);
-            hits.add(new Hit(Kind.MATERIAL, x - 2, y - 1, R_W - 8, 18, i, null));
-            y += 19;
+            if (have < m.count()) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench.missing_item", m.name(), m.count() - have));
         }
-        if (anyShort) {
+        Component short_ = null;
+        int shortLines = 0;
+        if (!missing.isEmpty()) {
             Component joined = Component.empty();
             for (int i = 0; i < missing.size(); i++) {
                 if (i > 0) joined = joined.copy().append(Component.translatable("screen.apocalypse_firstlight.workbench.list_sep"));
                 joined = joined.copy().append(missing.get(i));
             }
-            text(g, Component.translatable("screen.apocalypse_firstlight.workbench.missing", joined), x, y + 1, 5, AflUiStyle.WARN, 1);
-            y += 10;
-        } else y += 2;
+            short_ = Component.translatable("screen.apocalypse_firstlight.workbench.missing", joined);
+            shortLines = Math.min(MISSING_LINES, font.split(short_, (int) ((R_W - 12) / (MISSING_SIZE / font.lineHeight))).size());
+        }
+        float shortH = short_ == null ? 2 : 3 + shortLines * MISSING_SIZE * 1.45F;
+        float toolsH = 13 + 13 * Math.max(1, r.tools().size());
+        float h = 18 + matsH + shortH + 5 + toolsH + 4 + 18 + 15 + 6;
+        panel(g, R_X, R_Y, R_W, h);
+        text(g, Component.translatable("screen.apocalypse_firstlight.workbench.materials"), x, R_Y + 6, 7, AflUiStyle.TEXT, 1);
+        Component haveNeed = Component.translatable("screen.apocalypse_firstlight.workbench.have_need");
+        text(g, haveNeed, right - width(haveNeed, 4.8F), R_Y + 7.5F, 4.8F, AflUiStyle.TEXT_DIM, 1);
+        float y = R_Y + 18;
+        for (int i = 0; i < lines; i++) {
+            var m = r.materials().get(i);
+            int have = WorkbenchRecipes.carried(player, m);
+            boolean ok = have >= m.count();
+            boolean hover = in(mx, my, x - 2, y - 1, R_W - 8, 18);
+            if (hover) AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 18, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.5F);
+            slot(g, x, y, 16);
+            icon(g, m.shown(net.minecraft.Util.getMillis()), x + 2, y + 2, 12);
+            Component count = Component.literal(have + " / " + m.count());
+            float countW = width(count, 6.4F);
+            text(g, fit(m.name(), 5.6F, right - countW - 3 - (x + 21)), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
+            if (m.options().size() > 1)
+                text(g, Component.translatable("screen.apocalypse_firstlight.workbench.options_count", m.options().size()), x + 21, y + 10.5F, 4.2F, AflUiStyle.TEXT_DISABLED, 1);
+            text(g, count, right - countW, y + 4.5F, 6.4F, ok ? AflUiStyle.TEXT : AflUiStyle.WARN, 1);
+            hits.add(new Hit(Kind.MATERIAL, x - 2, y - 1, R_W - 8, 18, i, null));
+            y += 19;
+        }
+        if (short_ != null) wrap(g, short_, x, y + 1, R_W - 12, MISSING_SIZE, AflUiStyle.WARN, MISSING_LINES);
+        y += shortH;
         AflUiShapes.fill(g, x - 2, y + 1, R_W - 8, 0.4F, 0, AflUiStyle.LINE, 0.2F);
         y += 5;
         // tool
         text(g, Component.translatable("screen.apocalypse_firstlight.workbench.tool"), x, y, 6.4F, AflUiStyle.TEXT, 1);
-        if (r.tool() == null) {
+        if (r.tools().isEmpty())
             text(g, Component.translatable("screen.apocalypse_firstlight.workbench.tool.none"), x, y + 10, 5.2F, AflUiStyle.TEXT_DIM, 1);
-        } else {
-            boolean have = WorkbenchRecipes.toolPresent(player, r);
-            icon(g, r.tool(), x, y + 8.5F, 10);
-            text(g, r.tool().getHoverName(), x + 13, y + 11, 5.2F, have ? AflUiStyle.TEXT_DIM : AflUiStyle.WARN, 1);
-            hits.add(new Hit(Kind.TOOL, x - 2, y + 7, R_W - 8, 13, 0, null));
+        for (int i = 0; i < r.tools().size(); i++) {   // a row each, every one needed
+            ItemStack tool = r.tools().get(i);
+            boolean have = WorkbenchRecipes.carried(player, tool.getItem()) > 0;
+            float ty = y + 13 * i;
+            icon(g, tool, x, ty + 8.5F, 10);
+            text(g, fit(tool.getHoverName(), 5.2F, right - (x + 13)), x + 13, ty + 11, 5.2F, have ? AflUiStyle.TEXT_DIM : AflUiStyle.WARN, 1);
+            hits.add(new Hit(Kind.TOOL, x - 2, ty + 7, R_W - 8, 13, i, null));
         }
-        y += 26;
+        y += toolsH;
         AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 0.4F, 0, AflUiStyle.LINE, 0.2F);
         y += 4;
         // quantity
@@ -804,6 +818,13 @@ public final class AflWorkbenchScreen extends Screen {
             g.drawString(font, lines.get(i), 0, 0, AflUiStyle.argb(rgb, 1), false);
             pose.popPose();
         }
+    }
+
+    /** The text, cut to {@code w} wide with an ellipsis when it is wider (a long name beside a count). */
+    private Component fit(Component text, float size, float w) {
+        if (width(text, size) <= w) return text;
+        int px = (int) (w / (size / font.lineHeight)) - font.width("…");
+        return Component.literal(font.plainSubstrByWidth(text.getString(), Math.max(0, px)) + "…").withStyle(text.getStyle());
     }
 
     private float width(Component text, float size) {

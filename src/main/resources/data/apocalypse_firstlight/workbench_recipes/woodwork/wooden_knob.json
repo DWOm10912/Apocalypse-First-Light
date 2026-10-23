@@ -10,8 +10,12 @@
       "count": 1
     }
   ],
-  "tool": "apocalypse_firstlight:hand_saw",
+  "tools": [
+    "apocalypse_firstlight:hand_saw",
+    "apocalypse_firstlight:folding_knife"
+  ],
   "seconds": 10,
+  "work": "tool/wooden_knob_carve",
   "unlock": [
     {
       "type": "background",

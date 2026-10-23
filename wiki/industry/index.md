@@ -28,6 +28,8 @@ AFL 的电能以 FE（Forge Energy）计量。发电机把柴油、煤或岩浆�
 - <StatusTag s="test" /> 现在只有一条测试配方：白栎原木 × 1 加身上的 <ItemIcon id="hand_saw" /> 手锯，做成 <ItemIcon id="white_oak_beam" /> 白栎横梁 × 1，在"建造"分类里。为了测试书，现在要先读 <ItemIcon id="field_survival_guide" /> [野外求生指南](../arms/equipment#野外求生指南)的弓钻那一节才会（生存模式）
 - <StatusTag s="test" /> 横梁在桌面上做：站在工作台正面点一下"制作"，界面关掉，人走到桌前，用手锯把桌面上的原木顺着纹理锯开，锯缝一点点往里走，锯末往下掉。快捷栏上方显示正在做的物品、第几件和进度。做好的直接放进身上；数量调多了会一件接一件锯完。走动、跳、左键或打开任何界面就停下。站得太远或在工作台后面时，会提示站到工作台前面
 - <StatusTag s="test" /> 锯木头的声音一推一拉，跟着手上的动作走，<V j="WorkbenchCrafting.SAW_RADIUS" /> 格外就听不见了。这个范围内的感染者也听得到
+- <StatusTag s="test" /> 锯下来的木屑是一粒粒小木块：木粉从锯口往下飘，木片和刨花划着弧线飞出去，落到台面或地上躺平，过一会儿消失。颜色取这个树种木头里面的颜色
+- <StatusTag s="test" /> <ItemIcon id="wooden_knob" /> 木拉手要身上同时带着手锯和 <ItemIcon id="folding_knife" /> 折刀。工作台右端放上台钩和一根料：先锯下一截料头，再用折刀削角、削圆、削出颈和榫头，最后拿到眼前看一圈，吹掉木屑放到台面上，一轮 10 秒出 6 个。削木头的声音在 <V j="WorkbenchCrafting.WHITTLE_RADIUS" /> 格内能被感染者听到
 - 材料现在只从身上扣，抽屉里的不算；离工作台太远、没带工具、材料不够时做不了，屏幕下方会写原因
 - 做好的横梁用 [建筑锤](../arms/equipment#建筑锤) 装到房子上
 - 其他分类还是灰的；未学会的配方不会显示
@@ -44,7 +46,7 @@ AFL 的电能以 FE（Forge Energy）计量。发电机把柴油、煤或岩浆�
 | <ItemIcon id="nail_box" /> 圆钉 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="cabinet_hinge" /> 合页 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="iron_knob" /> 铁拉手 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
-| <ItemIcon id="wooden_knob" /> 木拉手 | 工作台上用板材做 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wooden_knob" /> 木拉手 | 工作台上用板材做，要带手锯和折刀 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="keyhole_escutcheon" /> 锁眼盖 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:keyhole_escutcheon.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="furniture_hardware_box" /> 家具配件盒 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:furniture_hardware_box.unit_mass_kg" u="kg" /> |
 

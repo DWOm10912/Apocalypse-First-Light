@@ -72,9 +72,14 @@ public final class WorkbenchRecipes {
             } catch (IllegalArgumentException ex) {
                 continue;
             }
-            Item tool = r.tool() == null ? null : WorkbenchCrafting.item(r.tool());
+            List<ItemStack> tools = new ArrayList<>();
+            for (var id : r.tools()) {
+                Item tool = WorkbenchCrafting.item(id);
+                if (tool != null) tools.add(new ItemStack(tool));
+            }
+            if (tools.size() != r.tools().size()) continue;
             list.add(new WorkbenchRecipeView(r.id(), category, new ItemStack(result, r.count()), List.copyOf(mats),
-                    tool == null ? null : new ItemStack(tool), r.ticks(), source(e.how()), false, r.work()));
+                    List.copyOf(tools), r.ticks(), source(e.how()), false, r.work()));
             if (!first && !before.contains(r.id())) fresh.add(r.id());
         }
         real = List.copyOf(list);
@@ -147,7 +152,14 @@ public final class WorkbenchRecipes {
     }
 
     public static boolean toolPresent(Player player, WorkbenchRecipeView recipe) {
-        return recipe.tool() == null || carried(player, recipe.tool().getItem()) > 0;
+        return missingTool(player, recipe) == null;
+    }
+
+    /** The first of the recipe's tools the player does not carry, or null: all there. */
+    @Nullable
+    public static ItemStack missingTool(Player player, WorkbenchRecipeView recipe) {
+        for (ItemStack tool : recipe.tools()) if (carried(player, tool.getItem()) == 0) return tool;
+        return null;
     }
 
     // ------------------------------------------------------------------------------------------- dev preview
@@ -187,7 +199,7 @@ public final class WorkbenchRecipes {
         for (Material m : materials) if (m != null) mats.add(m);
         Item toolItem = tool == null ? null : item(tool);
         list.add(new WorkbenchRecipeView(id("sample/" + result), category, new ItemStack(item, count), List.copyOf(mats),
-                toolItem == null ? null : new ItemStack(toolItem), ticks, source, true, null));
+                toolItem == null ? List.of() : List.of(new ItemStack(toolItem)), ticks, source, true, null));
     }
 
     @Nullable

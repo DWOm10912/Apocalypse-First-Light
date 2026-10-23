@@ -141,7 +141,8 @@ public final class PlayerAction {
      * JSON {@code first_person_view} [[s, pitch], ...] (deg, + = down; times rising), or null: while the action shows, the
      * own view (and so the head, as the others see it) follows this pitch, smooth-stepped between the keys, and keeps its
      * yaw: an action that throws the whole body about (falling over on a landing, docs/gameplay/fall_landing_v1_plan.md).
-     * See {@link #viewAt}.
+     * With an {@link #approach} it takes the place of the approach's pitch (ActionPose#pitch: the look follows the work, the
+     * wooden knob at the workbench). See {@link #viewAt}.
      */
     public final float[][] firstPersonView;
     /** JSON {@code loop} ({@code "time"}, {@code "stride"}) and the loop's {@code length} (s; NaN: the clip's). */

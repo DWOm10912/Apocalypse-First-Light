@@ -10,12 +10,12 @@ import java.util.List;
 
 /**
  * One learned workbench recipe as the crafting page shows it (docs/gameplay/afl_workbench_v1_design.md 16): what it makes,
- * its category, the materials (each with the items that count for it), the tool, the time and where the survivor learned
+ * its category, the materials (each with the items that count for it), the tools (all needed), the time and where the survivor learned
  * it. The page only reads these; the recipe data and its server side come with the recipe rework. {@code work}: the
  * player action of a recipe made at the bench (WorkbenchWork), or null: made on the page.
  */
 public record WorkbenchRecipeView(ResourceLocation id, Category category, ItemStack result, List<Material> materials,
-                                  @Nullable ItemStack tool, int ticks, Component source, boolean sample, @Nullable String work) {
+                                  List<ItemStack> tools, int ticks, Component source, boolean sample, @Nullable String work) {
 
     /** The page's fixed categories, in list order; a category with nothing learned still shows, greyed. */
     public enum Category {

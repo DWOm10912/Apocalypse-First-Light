@@ -31,7 +31,7 @@
 
 两版都能锁住刀身，所以都可以当近战武器。刀面都不刻品牌。
 
-## 3. 做成物品时要做的事（选版之后；已按第 5 节做完，木拉手一条除外）
+## 3. 做成物品时要做的事（选版之后；已按第 5 节做完，木拉手见 `furniture_recipes_v1.md` 2.1.1）
 
 - Mesh 物品：完整模型、PBR、第一 / 第三人称手持从握点适配、3D 渲染图标；打开和收起两种状态（收起时进普通物品格，不能攻击）。
 - 近战：加 `weapons/melee` 标签；近战栏剪影 `textures/gui/melee/<id>_hud.png`（侧视，刀头朝左）；第一人称攻击动作参考 `CrowbarFirstPerson`，按「沉稳」规则做开刀、攻击、收刀，切换时走 CameraDirector 淡入淡出。
@@ -144,8 +144,8 @@
 | `folding_knife_stab` | `stab_flesh_1..4` | 刺中生物（`hurtEnemy`），在目标身上 | 6 格 |
 | `folding_knife_hit_metal` / `_stone` / `_wood` | `hit_metal_1`、`hit_stone_1..4`、`hit_wood_1..4` | 打开时左键点方块的第一下（服务端 `LeftClickBlock` START），按方块破坏声的名字分金属、木头、石头；泥土、沙子、羊毛等软方块不出声 | 4 格 |
 | `folding_knife_swing` | `swing_1..3` | 打开时左键挥空，只在自己客户端播（挥空服务端收不到，也不产生噪声） | 本地 |
-| `folding_knife_whittle` | `whittle_1..6` | 已登记，木拉手的台前削木动作做好后用 | — |
-| `workbench_tool_down` | `workbench/tool_down_1` | 已登记，台前换工具时用 | — |
+| `folding_knife_whittle` | `whittle_1..6` | 木拉手台前每一刀的开头（`WorkbenchWork.knob`，2026-10-22） | 4 格（削的那段每秒一次感染者噪声） |
+| `workbench_tool_down` | `workbench/tool_down_1` | 木拉手：料头掉到台面、拉手放下（小音量、高音调） | 4 格 |
 
 字幕：折刀：打开落锁 / 折刀：合上 / 折刀：挥空 / 折刀：刺入 / 刀尖：戳到硬物 / 削木头 / 工具：放到台面。
 
@@ -153,4 +153,4 @@
 
 - 第一轮实机（用户 2026-10-22）：图标、开合、声音 PASS；近战栏剪影太大、预备姿势和刺击已按上面改，等第二轮实机。
 - 别的玩家听不到挥空声（挥空不发包）。
-- 木拉手改成手锯 + 折刀、台前削木（第 3 节最后一条）还没做，归家具配方那一轮。
+- 木拉手改成手锯 + 折刀、台前削木：2026-10-22 已做，用户实机 PASS，见 `furniture_recipes_v1.md` 2.1.1。

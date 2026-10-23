@@ -58,6 +58,7 @@ See [Inventory and Weight](../guide/inventory)
 - Open, the knife is held low before the chest, the elbow tucked in at the side and the tip forward and a little up; a left click drops it to the hip, then drives it forward and up from below
 - Closed, it hits like a bare fist; you cannot attack while opening or folding it
 - It goes in the melee slot (key 3), open or closed; switching to another slot or dropping it folds it
+- The workbench's wooden knob needs it on you with the hand saw: it whittles the sawn-off end into a knob (see [Workbench](../industry/#workbench))
 - Infected within <V j="FoldingKnifeItem.SOUND_RADIUS" /> blocks can hear it open, fold, and its tip striking metal, stone or wood; a stab into flesh carries <V j="FoldingKnifeItem.STAB_RADIUS" /> blocks
 - For now it comes only from the creative inventory
 
@@ -74,6 +75,7 @@ See [Inventory and Weight](../guide/inventory)
 <StatusTag s="test" /> A 26 inch rip saw: a straight-backed blade, a closed apple-wood handle and three brass saw nuts, made at its real size
 
 - The workbench needs it for the white oak beam: with the saw on you, click Craft on the crafting screen and you step up to the bench and rip the log on its top along the grain (see [Workbench](../industry/#workbench))
+- The wooden knob needs it too, with the folding knife: first it crosscuts an end off the strip on the bench hook
 - It hangs on the workbench's pegs (both pegs through the hand hole) and on a wooden tool rack (from one peg)
 - It is not a melee weapon and cannot fell trees
 - For now it comes only from the creative inventory

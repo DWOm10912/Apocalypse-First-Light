@@ -1,0 +1,24 @@
+{
+  "about": "The wooden knob's blank at the workbench, stage finished (docs/gameplay/furniture_recipes_v1.md 4.1; written by tools/author-wooden-knob-actions.mjs): the part finished of the wooden_knob_work mesh (code only, no item). Points, bounds: item block units of the mesh as drawn (meshes/wooden_knob_work.aflmesh.json + (0.5, 0.458661, 0.5)); y along the blank from the tenon's end (foot) to the head. Scale 1.35: as the knife (0.42 px per cm), the 4 px fist a hand. center; foot, head (the ends); hold_foot, hold_head: the left palm on an end (2 px past it); pinch: the right palm on the +z face.",
+  "items": [],
+  "scale": 1.35,
+  "bounds": [
+    [0.4685, 0.4587, 0.4685],
+    [0.5315, 0.5413, 0.5315]
+  ],
+  "symmetry": "x",
+  "mesh": {
+    "model": "wooden_knob_work",
+    "atlas": "wooden_knob_work_mesh",
+    "offset": 0.458661,
+    "parts": ["finished"]
+  },
+  "points": {
+    "center": [0.5, 0.5, 0.5],
+    "foot": [0.5, 0.4587, 0.5],
+    "head": [0.5, 0.5413, 0.5],
+    "hold_foot": [0.5, 0.3661, 0.5],
+    "hold_head": [0.5, 0.6339, 0.5],
+    "pinch": [0.5, 0.5, 0.6241]
+  }
+}

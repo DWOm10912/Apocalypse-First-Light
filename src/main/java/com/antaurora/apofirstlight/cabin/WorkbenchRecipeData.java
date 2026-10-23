@@ -46,7 +46,7 @@ public final class WorkbenchRecipeData {
     private record Line(List<ResourceLocation> items, List<ResourceLocation> tags, int count) {}
 
     private record Raw(ResourceLocation id, String category, ResourceLocation result, int count, List<Line> materials,
-                       @Nullable ResourceLocation tool, int ticks, @Nullable String work, List<Unlock> unlock) {}
+                       List<ResourceLocation> tools, int ticks, @Nullable String work, List<Unlock> unlock) {}
 
     private static volatile List<Raw> pending = List.of();
     private static volatile List<Recipe> server = List.of();
@@ -115,7 +115,9 @@ public final class WorkbenchRecipeData {
             lines.add(new Line(List.copyOf(items), List.copyOf(tags), n));
         }
         if (lines.isEmpty()) throw new IllegalArgumentException("no materials");
-        ResourceLocation tool = root.has("tool") ? known(root.get("tool").getAsString()) : null;
+        List<ResourceLocation> tools = new ArrayList<>();   // "tool": one, "tools": several, all carried
+        if (root.has("tool")) tools.add(known(root.get("tool").getAsString()));
+        if (root.has("tools")) for (JsonElement t : root.getAsJsonArray("tools")) tools.add(known(t.getAsString()));
         double seconds = root.get("seconds").getAsDouble();
         if (!(seconds > 0) || seconds > 3600) throw new IllegalArgumentException("seconds must be over 0 and at most 3600");
         String work = root.has("work") ? root.get("work").getAsString() : null;
@@ -133,7 +135,7 @@ public final class WorkbenchRecipeData {
             unlock.add(new Unlock(type, value));
         }
         if (unlock.isEmpty()) throw new IllegalArgumentException("no unlock: nobody could ever make it");
-        return new Raw(id, category.toUpperCase(Locale.ROOT), item, count, List.copyOf(lines), tool, (int) Math.round(seconds * 20), work, List.copyOf(unlock));
+        return new Raw(id, category.toUpperCase(Locale.ROOT), item, count, List.copyOf(lines), List.copyOf(tools), (int) Math.round(seconds * 20), work, List.copyOf(unlock));
     }
 
     /** A survivor background id as the survivor records keep it ("afl:forest_resident"); a bare name gets "afl:". */
@@ -173,7 +175,7 @@ public final class WorkbenchRecipeData {
             for (Unlock u : raw.unlock())
                 if (u.type().equals("after") && !ids.contains(new ResourceLocation(u.value())))
                     ApocalypseFirstLight.LOGGER.warn("[AFL WORKBENCH] Recipe {}: unlock after {}, which is not a recipe", raw.id(), u.value());
-            out.add(new Recipe(raw.id(), raw.category(), raw.result(), raw.count(), List.copyOf(materials), raw.tool(), raw.ticks(),
+            out.add(new Recipe(raw.id(), raw.category(), raw.result(), raw.count(), List.copyOf(materials), raw.tools(), raw.ticks(),
                     raw.work(), raw.unlock()));
         }
         server = List.copyOf(out);

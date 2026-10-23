@@ -57,11 +57,11 @@ public final class WorkbenchCrafting {
 
     /**
      * One recipe (WorkbenchRecipeData). {@code category} is the page's category name (WorkbenchRecipeView.Category);
-     * {@code work}: the player action played at the bench while it is made (player_actions/<work>.json), or null:
+     * {@code tools}: every one must be carried (none: made by hand); {@code work}: the player action played at the bench while it is made (player_actions/<work>.json), or null:
      * made on the page; {@code unlock}: any one of them teaches it.
      */
     public record Recipe(ResourceLocation id, String category, ResourceLocation result, int count, List<Material> materials,
-                         @Nullable ResourceLocation tool, int ticks, @Nullable String work, List<Unlock> unlock) {}
+                         List<ResourceLocation> tools, int ticks, @Nullable String work, List<Unlock> unlock) {}
 
     /**
      * A player working at a bench: the bench's master cell, the recipe, and for the players watching (who may not know the
@@ -72,8 +72,9 @@ public final class WorkbenchCrafting {
     private static final double REACH_SQ = 5.5 * 5.5;
     /** The last finished item per player (game time): a client may not finish faster than 3/4 of the recipe's time. */
     private static final Map<UUID, Long> LAST = new HashMap<>();
-    /** Who works at a bench now (#work). */
+    /** Who works at a bench now (#work), and since when (game time). */
     private static final Map<UUID, Working> WORKING = new HashMap<>();
+    private static final Map<UUID, Long> SINCE = new HashMap<>();
     /**
      * Sawing at the bench is heard this far (blocks), by players (client/workbench/WorkbenchWork plays each push and pull
      * in step with the action, fading out here) and by the infected (#workNoise, once a stroke): a hand saw is quieter than
@@ -82,6 +83,14 @@ public final class WorkbenchCrafting {
     public static final double SAW_RADIUS = 8;
     /** One saw stroke, push and pull (ticks): tools/author-hand-saw-actions.mjs, tool/hand_saw_rip's length. */
     private static final int STROKE_TICKS = 16;
+    /**
+     * The wooden knob's work (tools/author-wooden-knob-actions.mjs, one 10 s loop): the saw's three pushes (ticks into the
+     * loop), heard as far as the rip; the knife's cuts (a second apart while it whittles) only close by.
+     */
+    public static final String KNOB_WORK = "tool/wooden_knob_carve";
+    private static final int KNOB_LOOP = 200, KNOB_WHITTLE_FROM = 98, KNOB_WHITTLE_TO = 179;
+    private static final int[] KNOB_PUSHES = {14, 30, 46};
+    public static final double WHITTLE_RADIUS = 4;
 
     private WorkbenchCrafting() {}
 
@@ -117,9 +126,10 @@ public final class WorkbenchCrafting {
         if (r.work() != null && (at == null || !at.bench().equals(bench) || !at.recipe().equals(r.id()))) return;   // not at work
         Long last = LAST.get(player.getUUID());
         if (last != null && now >= last && now - last < r.ticks() * 3L / 4) return;   // faster than the page can hold
-        Item tool = item(r.tool());
-        if (r.tool() != null && (tool == null || CarriedItems.count(player, tool) == 0)) {
-            refuse(player, "no_tool", tool == null ? Component.literal(r.tool().toString()) : new ItemStack(tool).getHoverName());
+        ResourceLocation missing = missingTool(player, r);
+        if (missing != null) {
+            Item tool = item(missing);
+            refuse(player, "no_tool", tool == null ? Component.literal(missing.toString()) : new ItemStack(tool).getHoverName());
             return;
         }
         // check every line first, then take: nothing is taken when anything is short
@@ -164,14 +174,26 @@ public final class WorkbenchCrafting {
             refuse(player, "too_far");
             return;
         }
-        Item tool = item(r.tool());
-        if (r.tool() != null && (tool == null || CarriedItems.count(player, tool) == 0)) {
-            refuse(player, "no_tool", tool == null ? Component.literal(r.tool().toString()) : new ItemStack(tool).getHoverName());
+        ResourceLocation missing = missingTool(player, r);
+        if (missing != null) {
+            Item tool = item(missing);
+            refuse(player, "no_tool", tool == null ? Component.literal(missing.toString()) : new ItemStack(tool).getHoverName());
             return;
         }
         Working w = new Working(bench.immutable(), r.id(), r.work(), r.ticks());
         WORKING.put(player.getUUID(), w);
+        SINCE.put(player.getUUID(), level.getGameTime());
         AflNetwork.skeletonToTracking(player, new BuildingPackets.WorkOf(player.getId(), w));
+    }
+
+    /** The first of the recipe's tools the player does not carry, or null: all there. */
+    @Nullable
+    private static ResourceLocation missingTool(ServerPlayer player, Recipe r) {
+        for (ResourceLocation id : r.tools()) {
+            Item tool = item(id);
+            if (tool == null || CarriedItems.count(player, tool) == 0) return id;
+        }
+        return null;
     }
 
     /** What the player works at now, or null. */
@@ -181,19 +203,36 @@ public final class WorkbenchCrafting {
     }
 
     private static void stopWork(ServerPlayer player) {
+        SINCE.remove(player.getUUID());
         if (WORKING.remove(player.getUUID()) != null) AflNetwork.skeletonToTracking(player, new BuildingPackets.WorkOf(player.getId(), null));
     }
 
-    /** The infected hear the saw: a noise from each working player's bench once a stroke. */
+    /**
+     * The infected hear the work: a noise from each working player's bench once a saw stroke; at the wooden knob only on
+     * the saw's pushes, and the knife's cuts close by (WHITTLE_RADIUS).
+     */
     @SubscribeEvent
     public static void workNoise(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || WORKING.isEmpty() || event.getServer().getTickCount() % STROKE_TICKS != 0) return;
+        if (event.phase != TickEvent.Phase.END || WORKING.isEmpty()) return;
+        boolean stroke = event.getServer().getTickCount() % STROKE_TICKS == 0;
         for (var e : WORKING.entrySet()) {
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(e.getKey());
             if (player == null) continue;
+            long now = player.serverLevel().getGameTime();
+            double radius = stroke ? SAW_RADIUS : 0;
+            String sound = "hand_saw";
+            if (KNOB_WORK.equals(e.getValue().action())) {
+                int t = (int) Math.floorMod(now - SINCE.getOrDefault(e.getKey(), now), (long) KNOB_LOOP);
+                radius = 0;
+                for (int push : KNOB_PUSHES) if (t == push) radius = SAW_RADIUS;
+                if (t >= KNOB_WHITTLE_FROM && t <= KNOB_WHITTLE_TO && (t - KNOB_WHITTLE_FROM) % 20 == 0) {
+                    radius = WHITTLE_RADIUS;
+                    sound = "folding_knife";
+                }
+            }
+            if (radius <= 0) continue;
             Vec3 at = Vec3.atCenterOf(e.getValue().bench()).add(0, 0.5, 0);
-            NoiseSystem.emit(new NoiseEvent(player, at, NoiseType.INTERACTION, player.serverLevel().getGameTime(), id("hand_saw"), SAW_RADIUS),
-                    player.serverLevel());
+            NoiseSystem.emit(new NoiseEvent(player, at, NoiseType.INTERACTION, now, id(sound), radius), player.serverLevel());
         }
     }
 

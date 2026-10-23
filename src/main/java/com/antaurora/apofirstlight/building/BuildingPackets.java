@@ -109,7 +109,8 @@ public final class BuildingPackets {
                 for (var item : m.items()) b.writeResourceLocation(item);
                 b.writeVarInt(m.count());
             }
-            b.writeNullable(r.tool(), FriendlyByteBuf::writeResourceLocation);
+            b.writeVarInt(r.tools().size());
+            for (var tool : r.tools()) b.writeResourceLocation(tool);
             b.writeVarInt(r.ticks());
             b.writeNullable(r.work(), FriendlyByteBuf::writeUtf);
             b.writeVarInt(r.unlock().size());
@@ -138,13 +139,15 @@ public final class BuildingPackets {
                 for (int l = 0; l < k; l++) items.add(b.readResourceLocation());
                 materials.add(new WorkbenchCrafting.Material(List.copyOf(items), b.readVarInt()));
             }
-            ResourceLocation tool = b.readNullable(FriendlyByteBuf::readResourceLocation);
+            int t = b.readVarInt();
+            List<ResourceLocation> tools = new ArrayList<>(t);
+            for (int j = 0; j < t; j++) tools.add(b.readResourceLocation());
             int ticks = b.readVarInt();
             String work = b.readNullable(FriendlyByteBuf::readUtf);
             int u = b.readVarInt();
             List<WorkbenchCrafting.Unlock> unlock = new ArrayList<>(u);
             for (int j = 0; j < u; j++) unlock.add(new WorkbenchCrafting.Unlock(b.readUtf(), b.readNullable(FriendlyByteBuf::readUtf)));
-            var recipe = new WorkbenchCrafting.Recipe(id, category, result, count, List.copyOf(materials), tool, ticks, work, List.copyOf(unlock));
+            var recipe = new WorkbenchCrafting.Recipe(id, category, result, count, List.copyOf(materials), List.copyOf(tools), ticks, work, List.copyOf(unlock));
             recipes.add(new WorkbenchKnowledge.Entry(recipe, new WorkbenchKnowledge.How(b.readUtf(), b.readNullable(FriendlyByteBuf::readResourceLocation))));
         }
         return new Known(List.copyOf(recipes));

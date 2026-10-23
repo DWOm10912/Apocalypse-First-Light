@@ -400,7 +400,7 @@ public final class PlayerSkeleton {
         if (d.solved.hold != null && !AflShaderCompat.activeShadowPass() && (!ownView || FirstPersonBody.armsShown()))
             SkeletonGunStance.render(d.solved.hold, pose, d.buffers, light);
         for (Solved.Extra e : d.solved.extras) {
-            ItemStack stack = extraStack(e.prop());
+            ItemStack stack = e.open() ? openStack(e.prop()) : extraStack(e.prop());
             if (!stack.isEmpty() || e.prop().mesh() != null) drawPlaced(d, e.prop(), e.pose(), e.open(), stack, pose, d.buffers, light);
         }
         return true;
@@ -415,6 +415,22 @@ public final class PlayerSkeleton {
             net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(
                     new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, prop.items().get(0)));
             return item == null || item == net.minecraft.world.item.Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
+        });
+    }
+
+    private static final Map<String, ItemStack> OPEN_STACKS = new java.util.HashMap<>();
+
+    /**
+     * An opened extra prop (PlayerAction open_from) that is an item: its stack with the tag Open (the folding knife's blade
+     * out, FoldingKnifeItem#OPEN; items that ignore the tag look the same).
+     */
+    private static ItemStack openStack(PlayerProps.Prop prop) {
+        return OPEN_STACKS.computeIfAbsent(prop.id(), k -> {
+            ItemStack stack = extraStack(prop);
+            if (stack.isEmpty()) return stack;
+            stack = stack.copy();
+            stack.getOrCreateTag().putBoolean(com.antaurora.apofirstlight.item.FoldingKnifeItem.OPEN, true);
+            return stack;
         });
     }
 
