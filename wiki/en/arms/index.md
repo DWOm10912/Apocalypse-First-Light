@@ -45,6 +45,7 @@ Every AFL gun is modelled from scratch and driven by data files. The table below
 - The magazine that comes out keeps its rounds and goes where the new one was. If it does not fit there, it goes by the pickup order, and if there is still no room it drops
 - The chambered round stays in the gun: 3+1 swapped for a 15-round magazine gives 15+1
 - Inspecting a gun with no magazine in it shows the gun and the empty magwell, without taking a magazine out and putting it back
+- <StatusTag s="verified" d="2026-10-22" /> The P9-01 inspect is slower now, about 11 s: the gun turns slowly through both sides, then the magazine comes out and is raised to the left of the screen and turned to show both sides and the top, with the top round in view when it has rounds, before it goes back in and is slapped home. About 7 s with no magazine in the gun
 - <StatusTag s="verified" d="2026-10-22" /> Reloading a gun with no magazine in it goes straight for the new magazine without first miming the old one coming out, so it is quicker than the usual reload: 0.1 s for the P9-01, 0.65 s for the BR-51
 - The HUD's big number is the rounds in the magazine, with a small "+1" when a round is chambered. Reserve is the total in usable magazines in your rig and pockets
 - Changing magazines at the maintenance bench keeps each magazine's rounds

@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "P9 inspect with no magazine in the gun (gun/p9_01_inspect_no_mag; docs/dev/p9_reload_inspect_v1.md 2.4-2.5, 3): the support hand lets go, the gun shows its left side, turns to show its right side, then tips up to show the empty magwell; back to the chest ready, the support hand regrips on the way. Same beats and length as the first-person clip. Written by tools/author-p9-01-reload-actions.mjs.",
+  "about": "P9 inspect with no magazine in the gun (gun/p9_01_inspect_no_mag; docs/dev/p9_reload_inspect_v1.md 2.4-2.5, 3): unhurried; the support hand lets go, the gun shows its left side, turns slowly to show its right side, then tips up to show the empty magwell; back to the chest ready, the support hand regrips on the way. Same beats and length as the first-person clip (INSPECT_NO_MAG_T). Written by tools/author-p9-01-reload-actions.mjs.",
   "layer": "action",
   "mask": "upper",
   "priority": 60,
@@ -9,7 +9,7 @@
     "in": 0.12,
     "out": 0.2
   },
-  "length": 4.6,
+  "length": 6.75,
   "props": [
     {
       "id": "p9_01",
@@ -44,10 +44,10 @@
             48.974,
             171.692
           ],
-          "blend": 0.58
+          "blend": 1.03
         },
         {
-          "at": 1.7,
+          "at": 2,
           "frame": "chest",
           "point": "grip_r",
           "pos": [
@@ -60,10 +60,10 @@
             -19.921,
             150.183
           ],
-          "blend": 0.7
+          "blend": 1.05
         },
         {
-          "at": 3,
+          "at": 3.8,
           "frame": "chest",
           "point": "grip_r",
           "pos": [
@@ -76,10 +76,10 @@
             8.649,
             -152.962
           ],
-          "blend": 0.3
+          "blend": 0.9
         },
         {
-          "at": 3.75,
+          "at": 5.55,
           "frame": "chest",
           "point": "grip_r",
           "pos": [
@@ -92,7 +92,7 @@
             5.521,
             177.648
           ],
-          "blend": 0.48
+          "blend": 0.65
         }
       ]
     }
@@ -126,13 +126,13 @@
       {
         "at": 0.02,
         "target": "pose",
-        "blend": 0.3,
+        "blend": 0.4,
         "roll": 0
       },
       {
-        "at": 3.85,
+        "at": 5.55,
         "target": "prop:p9_01:grip_l",
-        "blend": 0.3,
+        "blend": 0.5,
         "roll": 0,
         "pole": [
           0.26,

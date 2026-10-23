@@ -57,7 +57,8 @@ const AX = norm(sub(rotX([0, -1, 0], MAG_TILT, [0, 0, 0]), Z));   // magazine ax
 const MAG_BOTTOM = rotX([0, -0.99, 1.79], MAG_TILT, MP);           // baseplate centre
 const MAG_CLEAR = 4.9;                                             // axial travel that clears the magwell (magazine length + lips)
 const MAG_ENTRY = 4.2;                                             // new magazine lined up this far below its seat
-const SLIDE_LOCK = 1.88, SLIDE_SHOT = 1.7, SLIDE_TOP_REAR = [0, 6.0, 2.7];
+export const SLIDE_LOCK = 1.88, SLIDE_TOP_REAR = [0, 6.0, 2.7];
+const SLIDE_SHOT = 1.7;
 const FOLLOWER_LOADED = mul(AX, 0.45);                             // loaded magazine: follower pushed down (empty = rest at the lips)
 const K = ARM_HALF / (4 * 0.62 / 0.37 / 2);                        // P9 hand size relative to the Blackridge authoring hand
 const Q = 0.45 / 0.53;                                             // same on-screen travel as Blackridge (Display 0.45 vs 0.53)
@@ -238,9 +239,9 @@ clips.push(clip('first_draw', 1.2, 'once', () => {
 
 // ---------- trained-tier reloads and inspects (docs/dev/p9_reload_inspect_v1.md, 2026-10-17) ----------
 // References: the user's CS2 FN57 and COD P890 recordings (2026-10-16). What the V2 clips lacked: the gun stood still
-// while the support hand worked and the end was dead time. Here a move is a chain of legs, each easing from the previous
-// pose with `go` (anticipation, overshoot); legs overlap and a slow drift runs under the holds, so the gun never stops:
-// it comes up, floats toward the incoming magazine, is knocked up by the seat, swings home and settles.
+// while the support hand worked and the end was dead time. The reloads and inspects are hand keyed in Blockbench now
+// (bezier keys, 2026-10-22); the gun never stops: it comes up, floats toward the incoming magazine, is knocked up by the
+// seat, swings home and settles. The unload is still a chain of legs, each easing from the previous pose with `go`.
 // The firing arm is a rigid box without a wrist: the gun turns with the whole forearm, and the support arm only ever
 // comes in from below / lower left so its box does not cover the gun (V2's inspect and empty rack did).
 const SLIP = +(process.env.P9_SLIP ?? 1);      // grip slip out of the fist while the magwell faces the support hand
@@ -254,10 +255,10 @@ function legs(list) {                          // list: [t0, t1, pose, go option
         return {pos, rot};
     };
 }
-// slow look-around under a hold: amp (degrees) along a sine of `per` seconds, faded in and out over 0.25 s
+// a slow look-over sway (the lower tiers' procedural reloads)
 const drift = (t, t0, t1, amp, per) => t <= t0 || t >= t1 ? Z
     : mul(amp, Math.sin(2 * Math.PI * (t - t0) / per) * clamp01((t - t0) / 0.25) * clamp01((t1 - t) / 0.25));
-const RELOAD_UP = {pos: [0.4, 3.4, 2.0], rot: [27, 40, -24]};     // up and rolled: the magwell faces the support hand
+const RELOAD_UP ={pos: [0.4, 3.4, 2.0], rot: [27, 40, -24]};     // up and rolled: the magwell faces the support hand
 const RELOAD_MEET = {pos: [-0.3, 2.8, 2.3], rot: [23, 35, -30]};  // floated down-left toward the incoming magazine
 const RELOAD_HOLD = {pos: [0.1, 3.1, 2.1], rot: [26, 38, -25]};   // after the seat (empty: until the slide is let go)
 
@@ -285,13 +286,17 @@ const magOnHand = lh => {                      // inverse of onMag(m, 0): the ma
     return {pos: sub(sub(sub(point, mv(R, mul(AX, 0.12))), MP), mv(R, sub(MAG_BOTTOM, MP))), rot: euler(R), R};
 };
 // Empty: the slide stays locked back until the right thumb drops it at `stop`; the left hand regrips after that.
-function reloadKeyed(hand, empty = false) {
+// ADS (2.7) and no magazine (2.10) are keyed the same way (user 2026-10-22): ADS keys the small dip and cant under the
+// sights with the hands working below them; no magazine has no release and nothing to drop, every beat NO_MAG_CUT earlier.
+function reloadKeyed(hand, empty = false, ads = false, noMag = false) {
     const T = empty ? {release: 0.22, drop: 0.24, enter: 0.46, align: 0.66, seat: 0.9, stop: 1.0, regrip: 1.34, end: 2.0}
         : {release: 0.22, drop: 0.24, enter: 0.42, align: 0.62, seat: 0.86, regrip: 1.18, end: 1.7};
+    if (ads || noMag) T.regrip += 0.1;   // the palm turns back onto the grip over more time (2026-10-22); the passed hip clips keep theirs
+    if (noMag) for (const k of Object.keys(T)) if (k !== 'release' && k !== 'drop') T[k] = +(T[k] - NO_MAG_CUT).toFixed(3);
     const hr = hand.ch('handling', 'rotation'), hp = hand.ch('handling', 'position'), cam = hand.ch('camera', 'rotation');
     const lr = hand.ch('lefthand', 'rotation'), lp = hand.ch('lefthand', 'position'), pre = E(hand.pre);
     const H = t => ({rot: hr(t), pos: hp(t)});
-    const slip = t => SLIP * clamp01(H(t).rot[1] / RELOAD_UP.rot[1]);   // the gun slips out of the fist as it turns up
+    const slip = t => ads ? 0 : SLIP * clamp01(H(t).rot[1] / RELOAD_UP.rot[1]);   // the gun slips out of the fist as it turns up
     const keyedLH = t => ({pos: lp(t), rot: euler(mm(E(lr(t)), pre))});
     const LH = t => {
         const k = keyedLH(t);
@@ -313,9 +318,10 @@ function reloadKeyed(hand, empty = false) {
     };
     const tracks = {
         handling: {position: hp, rotation: hr},
-        magazine: {scale: t => (t >= t0 && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
+        magazine: {scale: t => (t >= (noMag ? 0 : t0) && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
         follower: {position: t => empty && t < t0 ? Z : FOLLOWER_LOADED},   // empty magazine until the swap
-        empty_old_mag: {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
+        empty_old_mag: noMag ? {scale: () => [0, 0, 0], step: true}
+            : {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
         mag_out: {position: t => newMag(t).pos, rotation: t => newMag(t).rot},
         reload_magazine: {scale: t => (t >= T.enter - 0.06 && t < T.seat) ? [1, 1, 1] : [0, 0, 0], step: true},
         righthand: {position: t => sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rotation: () => RIGHT_REST.rot},
@@ -323,38 +329,106 @@ function reloadKeyed(hand, empty = false) {
         camera: {rotation: cam},
     };
     if (empty) tracks.slide = {position: t => [0, 0, t < T.stop ? SLIDE_LOCK : SLIDE_LOCK * (1 - clamp01((t - T.stop) / 0.025))]};
-    const sounds = [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out'], [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'],
-        ...(empty ? [[T.stop + 0.015, 'slide_release']] : [])];
+    const sounds = [...(noMag ? [] : [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out']]),
+        [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'], ...(empty ? [[T.stop + 0.015, 'slide_release']] : [])];
     return {tracks, sounds, timing: T};
 }
-function reload(empty, ads = false, noMag = false) {
-    const T = empty
-        ? {release: 0.22, drop: 0.24, enter: 0.46, align: 0.66, seat: 0.9, stop: 1.0, back: 1.06, backEnd: 1.5, regrip: 1.34, end: 2.0}
-        : {release: 0.22, drop: 0.24, enter: 0.42, align: 0.62, seat: 0.86, back: 0.93, backEnd: 1.34, regrip: 1.18, end: 1.7};
-    if (ads) Object.assign(T, empty ? {back: 1.04, backEnd: 1.3} : {back: 0.9, backEnd: 1.16});   // back on the sights sooner
-    if (noMag) for (const k of Object.keys(T)) if (k !== 'release' && k !== 'drop') T[k] = +(T[k] - NO_MAG_CUT).toFixed(3);
-    const settle = T.backEnd;
-    const path = ads ? legs([
-        [0.0, 0.2, RELOAD_ADS_DIP, {antic: 0.02, over: 0.04, per: 0.2, tau: 0.08}],
-        [0.3, T.seat - 0.02, RELOAD_ADS_MEET, {}],
-        [T.back, T.backEnd, IDLE, {antic: 0.02, over: 0.06, per: 0.22, tau: 0.08}]]) : legs([
-        [0.0, 0.28, RELOAD_UP, {antic: 0.04, over: 0.05, per: 0.2, tau: 0.08}],
-        [0.34, T.seat - 0.02, RELOAD_MEET, {}],
-        [T.seat + 0.02, T.seat + 0.16, RELOAD_HOLD, {}],
-        [T.back, T.backEnd, IDLE, {antic: 0.03, over: 0.09, per: 0.24, tau: 0.09}]]);
-    const up = t => go(t, 0.0, 0.28, {antic: 0, over: 0}) - go(t, T.back, T.backEnd, {antic: 0, over: 0});
-    const hits = t => mul(sum(
-        noMag ? Z : jolt(t, T.release, [-0.7, 0.2, 0.5]),                                // thumb on the release
-        empty || noMag ? Z : jolt(t, T.drop + 0.01, [-2.2, 0.4, 1.6], {rise: 0.03, per: 0.16, tau: 0.05}),   // wrist flick shakes it free
-        jolt(t, T.seat, [3.0, -0.6, 1.5], {rise: 0.017, per: 0.11, tau: 0.05}),          // palm slap
-        empty ? jolt(t, T.stop + 0.02, [-1.8, 0.3, 0.8], {rise: 0.015, per: 0.1, tau: 0.04}) : Z,   // slide slams home
-        jolt(t, settle, [0.7, 0, -0.3], {per: 0.2, tau: 0.08}),
-        ads ? jolt(t, T.align + 0.03, [1.4, -0.3, 0.6], {rise: 0.03, per: 0.14, tau: 0.05}) : Z), ads ? 0.45 : 1);   // ADS: the magazine meets the well, felt not seen; at the eye a degree reads big
-    const look = t => mul(sum(drift(t, 0.3, T.seat - 0.05, [1.0, -1.2, 1.6], 0.9), drift(t, T.seat + 0.1, T.back + 0.05, [0.6, 0.8, -0.8], 0.5)), ads ? 0.35 : 1);
-    const slip = t => ads ? 0 : SLIP * clamp01(up(t));   // the slip only shows the magwell; under ADS it stays below the frame
-    const H = t => { const p = path(t), rot = sum(p.rot, look(t), hits(t));
-        return {rot, pos: sum(p.pos, mv(E(rot), mul(GRIP_SLIDE, slip(t))), mul([0, 0.1, -0.06], hits(t)[0]))}; };
-    // the old magazine leaves along the magwell, then keeps its true world velocity (gun motion included) under gravity
+clips.push(clip('reload_tactical', 1.7, 'once', hand => reloadKeyed(hand)));
+clips.push(clip('reload_empty', 2.0, 'once', hand => reloadKeyed(hand, true)));
+clips.push(clip('reload_tactical_ads', 1.7, 'once', hand => reloadKeyed(hand, false, true)));
+clips.push(clip('reload_empty_ads', 2.0, 'once', hand => reloadKeyed(hand, true, true)));
+clips.push(clip('reload_tactical_no_mag', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, false, false, true)));
+clips.push(clip('reload_empty_no_mag', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, true, false, true)));
+clips.push(clip('reload_tactical_no_mag_ads', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, false, true, true)));
+clips.push(clip('reload_empty_no_mag_ads', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', hand => reloadKeyed(hand, true, true, true)));
+
+// ---------- lower tiers (docs/dev/gun_proficiency_v1_plan.md 4, docs/dev/p9_reload_inspect_v1.md 5.1) ----------
+// Hand keyed since 2026-10-22 (same standard as the practised clips, 2.11 / 2.12): handling, lefthand and camera are bezier
+// keys in the .bbmodel; reloadTierKeyed solves the magazines, the magwell contact, the fumble, the overhand rack and the slip.
+//   experienced (Lv 4-6, x1.35): the gun comes down to the chest work space instead of up to the eye line, the head dips
+//     onto it, the magazine is guided in and pushed home without a stop; the empty reload racks the slide overhand.
+//     From Lv 5 a reload started while aiming plays the experienced ADS clip (<clip>_experienced_ads): the practised ADS
+//     keys on the experienced beats, the slide still dropped with the thumb (eyes stay on the target).
+//   novice (Lv 0-3, x1.8): the gun is held close, the head well down the whole time; the thumb hunts for the release, the
+//     magazine is lined up and pushed in slowly, then the gun is tipped for a second look; slow overhand rack. The fumble
+//     variant (server roll, gun proficiency plan 4): the magazine goes in crooked, stops on the magwell edge, one more push
+//     does not help, it comes back out, is straightened and goes in (+FUMBLE s). Never a dropped magazine or a failed reload.
+// No magazine in the gun (<clip>_no_mag_<tier>): no release, nothing dropped, every beat from the pouch on NO_MAG_CUT
+// earlier (the third-person action is the full one started that much in, SkeletonGunStance).
+export const TIERS = {
+    experienced: {
+        work: {pos: [-1.3, 2.0, 3.6], rot: [20, 30, -34]}, meet: {pos: [-1.8, 1.6, 3.8], rot: [17, 26, -38]},
+        hold: {pos: [-1.4, 1.9, 3.6], rot: [20, 28, -32]}, rack: {pos: [-1.0, 2.0, 1.6], rot: [13, -2, 42]},
+        tactical: {up: 0.38, release: 0.3, drop: 0.33, enter: 0.62, align: 0.92, seat: 1.2, back: 1.32, backEnd: 1.85, regrip: 1.62, end: 2.3},
+        empty: {up: 0.38, release: 0.3, drop: 0.32, enter: 0.66, align: 0.96, seat: 1.24, grab: 1.7, pull: 1.76, pulled: 1.88, let: 1.94,
+            back: 2.06, backEnd: 2.52, regrip: 2.4, end: 2.8},
+    },
+    novice: {
+        work: {pos: [-2.3, 2.3, 5.2], rot: [26, 22, -48]}, meet: {pos: [-2.7, 2.0, 5.4], rot: [24, 19, -52]},
+        hold: {pos: [-2.3, 2.2, 5.2], rot: [25, 21, -48]}, look: {pos: [-2.0, 2.6, 5.0], rot: [40, 12, -30]},
+        rack: {pos: [-1.3, 1.6, 2.2], rot: [14, -2, 44]},
+        tactical: {up: 0.5, release: 0.62, drop: 0.68, enter: 1.05, align: 1.5, seat: 2.0, lookAt: 2.06, lookEnd: 2.36, back: 2.42, backEnd: 2.95,
+            regrip: 2.8, end: 3.1},
+        empty: {up: 0.5, release: 0.62, drop: 0.66, enter: 1.05, align: 1.5, seat: 2.0, lookAt: 2.06, lookEnd: 2.32, grab: 2.74, pull: 2.84,
+            pulled: 3.04, let: 3.14, back: 3.24, backEnd: 3.64, regrip: 3.58, end: 3.8},
+    },
+};
+// experienced ADS reload: the practised ADS keys warped onto these beats (stop: the thumb drops the slide)
+export const TIER_ADS = {
+    tactical: {release: 0.3, drop: 0.33, enter: 0.62, align: 0.92, seat: 1.2, regrip: 1.66, end: 2.3},
+    empty: {release: 0.3, drop: 0.32, enter: 0.66, align: 0.96, seat: 1.24, stop: 1.36, regrip: 1.84, end: 2.7},
+};
+export const FUMBLE = 0.9;   // the first try: in crooked to the edge (0.26 s), one more push and out (0.3 s), straightened (0.34 s)
+const NO_MAG_SHIFT = ['enter', 'align', 'bump', 'out', 'again', 'seat', 'stop', 'grab', 'pull', 'pulled', 'let', 'lookAt', 'lookEnd',
+    'back', 'backEnd', 'regrip', 'end'];
+/** A tier's beats (seconds); fumble: the first try (bump, out, again) and everything after it shifted by FUMBLE. */
+export function tierTiming(empty, tierName, fumble = false, {ads = false, noMag = false} = {}) {
+    const T = ads ? {...TIER_ADS[empty ? 'empty' : 'tactical']} : {...TIERS[tierName][empty ? 'empty' : 'tactical']};
+    if (fumble) {   // everything from the first try on shifts by the second one
+        T.bump = +(T.align + 0.26).toFixed(3); T.out = +(T.bump + 0.3).toFixed(3); T.again = +(T.align + FUMBLE).toFixed(3);
+        for (const n of ['seat', 'lookAt', 'lookEnd', 'grab', 'pull', 'pulled', 'let', 'back', 'backEnd', 'regrip', 'end']) if (T[n] != null) T[n] = +(T[n] + FUMBLE).toFixed(3);
+    }
+    if (noMag) for (const n of NO_MAG_SHIFT) if (T[n] != null) T[n] = +(T[n] - NO_MAG_CUT).toFixed(3);
+    return T;
+}
+/** Clip name of a tier reload: the no-magazine part before the tier, the ADS suffix last (NativeGunActions). */
+export const tierClip = (empty, tierName, {fumble = false, ads = false, noMag = false} = {}) =>
+    `reload_${empty ? 'empty' : 'tactical'}${noMag ? '_no_mag' : ''}_${tierName}${fumble ? '_fumble' : ''}${ads ? '_ads' : ''}`;
+// the fumbled magazine: tilted on the magwell lips, how far it gets before the edge stops it, how far it is pulled back out
+export const CROOKED = [7, 0, 9], BUMP_DEPTH = 3.0, OUT_DEPTH = 4.9;
+const easeInTo = (t, a, b) => { const u = clamp01((t - a) / (b - a)); return u * u * (2 - u); };   // still moving at b: it hits something
+function reloadTierKeyed(hand, empty, tierName, {fumble = false, ads = false, noMag = false} = {}) {
+    const T = tierTiming(empty, tierName, fumble, {ads, noMag}), rack = empty && !ads;
+    const hr = hand.ch('handling', 'rotation'), hp = hand.ch('handling', 'position'), cam = hand.ch('camera', 'rotation');
+    const lr = hand.ch('lefthand', 'rotation'), lp = hand.ch('lefthand', 'position'), pre = E(hand.pre);
+    const H = t => ({rot: hr(t), pos: hp(t)});
+    // the grip slips out of the fist as the magwell turns to the support hand (none under the sights, none once the slide
+    // is turned up for the rack: the yaw is back near zero there)
+    const slip = t => ads ? 0 : SLIP * clamp01(H(t).rot[1] / TIERS[tierName].work.rot[1]);
+    const keyedLH = t => ({pos: lp(t), rot: euler(mm(E(lr(t)), pre))});
+    const slide = t => rack ? (t < T.pull ? SLIDE_LOCK : t < T.let ? SLIDE_LOCK + 0.08 * W(t, T.pull, T.pulled)
+        : (SLIDE_LOCK + 0.08) * (1 - clamp01((t - T.let) / 0.028)))
+        : t < T.stop ? SLIDE_LOCK : SLIDE_LOCK * (1 - clamp01((t - T.stop) / 0.025));
+    const onSlide = t => slideHand(H(t), SLIDE_TOP_REAR, slide(t));
+    const entryAt = t => magInGun(H(t), MAG_ENTRY, fumble ? CROOKED : Z);
+    const fumblePath = t => {
+        const d = t < T.bump ? MAG_ENTRY + (BUMP_DEPTH - MAG_ENTRY) * easeInTo(t, T.align + 0.02, T.bump)
+            : t < T.out ? BUMP_DEPTH - 0.14 * Math.sin(Math.PI * clamp01((t - T.bump - 0.1) / 0.14))   // one more push: it will not go
+            : t < T.out + 0.16 ? BUMP_DEPTH + (OUT_DEPTH - BUMP_DEPTH) * W(t, T.out, T.out + 0.16)
+            : OUT_DEPTH + (MAG_ENTRY - OUT_DEPTH) * W(t, T.out + 0.16, T.again);
+        return magInGun(H(t), d, mul(CROOKED, 1 - W(t, T.out + 0.08, T.again - 0.04)));
+    };
+    const LH = t => {
+        const k = keyedLH(t);
+        if (t < T.align) return mixT(mixT(leftOnGun(H(t)), k, W(t, 0, 0.1)), onMag(entryAt(t)), W(t, T.align - 0.06, T.align));
+        if (t < T.seat + 0.06) return onMag(newMag(t), slapGap(t, T.seat));
+        const off = mixT(onMag(newMag(t)), k, W(t, T.seat + 0.06, T.seat + 0.12));
+        if (!rack) return mixT(off, leftOnGun(H(t)), W(t, T.regrip - 0.1, T.regrip));
+        if (t < T.let + 0.04) return mixT(off, onSlide(t), W(t, T.grab - 0.1, T.grab));
+        return mixT(mixT(onSlide(t), k, W(t, T.let + 0.04, T.let + 0.1)), leftOnGun(H(t)), W(t, T.regrip - 0.1, T.regrip));
+    };
+    const newMag = t => t < T.align ? magOnHand(LH(t)) : fumble && t < T.again ? fumblePath(t)
+        : magInGun(H(t), Math.max(0, seatDepth(t, fumble ? T.again : T.align, T.seat)));
     const g = 520, t0 = T.drop;
     const axial = t => t < t0 ? 0 : 0.5 * g * (t - t0) ** 2;
     const tClear = t0 + Math.sqrt(2 * MAG_CLEAR / g);
@@ -364,52 +438,35 @@ function reload(empty, ads = false, noMag = false) {
         if (t <= tClear) return inWell(t);
         const base = inWell(tClear), dt = t - tClear;
         const pos = add(add(base.pos, mul(vRel, dt)), [0, -0.5 * g * dt * dt, 0]);
-        const R = mm(base.R, E([-160 * dt, 10 * dt, 70 * dt])); return {pos, rot: euler(R), R};
+        return {pos, rot: euler(mm(base.R, E([-160 * dt, 10 * dt, 70 * dt])))};
     };
-    // the new magazine rises from lower left on an arc (bulging left and up), tilting into line with the magwell
-    const newMag = t => {
-        if (t < T.align) {
-            const s = clamp01(go(t, T.enter - 0.06, T.align, {antic: 0, over: 0.03, per: 0.1, tau: 0.035})), g0 = magInGun(H(t), MAG_ENTRY);
-            const R = E(lerp(OFFSCREEN_MAG.rot, g0.rot, s));
-            return {pos: add(lerp(OFFSCREEN_MAG.pos, g0.pos, s), mul([-1.4, 0.9, 0.4], Math.sin(Math.PI * s))), rot: euler(R), R};
-        }
-        return magInGun(H(t), Math.max(0, seatDepth(t, T.align, T.seat)));
-    };
-    const slidePos = t => !empty ? 0 : t < T.stop ? SLIDE_LOCK : SLIDE_LOCK * (1 - clamp01((t - T.stop) / 0.025));
-    const LH = t => {
-        if (t < T.enter - 0.08) return mixT(leftOnGun(H(t)), LOW_LEFT, go(t, 0.0, 0.2, {antic: 0, over: 0}));
-        if (t < T.seat + 0.06) return mixT(LOW_LEFT, onMag(newMag(Math.min(t, T.seat)), slapGap(t, T.seat)),
-            clamp01(go(t, T.enter - 0.08, T.enter + 0.04, {antic: 0, over: 0})));
-        return mixT(onMag(newMag(T.seat)), leftOnGun(H(t)), go(t, T.seat + 0.06, T.regrip, {antic: 0.02, over: 0.04}));
-    };
-    const camera = t => ads ? sum(mul(hits(t), 0.3), jolt(t, T.seat, [0.4, 0, 0.15]), empty ? jolt(t, T.stop + 0.02, [-0.25, 0, 0.1]) : Z)
-        : sum(mul([-1.0, 1.2, 1.5], up(t)), mul(look(t), 0.3), mul(hits(t), 0.4), jolt(t, T.seat, [1.0, 0, 0.35]),
-        empty ? jolt(t, T.stop + 0.02, [-0.5, 0, 0.2]) : Z);
     const tracks = {
-        handling: {position: t => H(t).pos, rotation: t => H(t).rot},
+        handling: {position: hp, rotation: hr},
         magazine: {scale: t => (t >= (noMag ? 0 : t0) && t < T.seat) ? [0, 0, 0] : [1, 1, 1], step: true},
-        follower: {position: t => empty && t < t0 ? Z : FOLLOWER_LOADED},   // empty magazine until the swap
+        follower: {position: t => empty && t < t0 ? Z : FOLLOWER_LOADED},
         empty_old_mag: noMag ? {scale: () => [0, 0, 0], step: true}
             : {position: t => oldMag(t).pos, rotation: t => oldMag(t).rot, scale: t => (t >= t0 && t < t0 + 0.5) ? [1, 1, 1] : [0, 0, 0], step: true},
         mag_out: {position: t => newMag(t).pos, rotation: t => newMag(t).rot},
         reload_magazine: {scale: t => (t >= T.enter - 0.06 && t < T.seat) ? [1, 1, 1] : [0, 0, 0], step: true},
         righthand: {position: t => sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rotation: () => RIGHT_REST.rot},
         lefthand: lhTracks(LH),
-        camera: {rotation: camera},
+        camera: {rotation: cam},
     };
-    if (empty) tracks.slide = {position: t => [0, 0, slidePos(t)]};
+    if (empty) tracks.slide = {position: t => [0, 0, slide(t)]};
     const sounds = [...(noMag ? [] : [[T.release - 0.01, 'magazine_release'], [T.drop + 0.02, 'magazine_out']]),
-        [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'], ...(empty ? [[T.stop + 0.015, 'slide_release']] : [])];
+        [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat'],
+        ...(rack ? [[T.pull - 0.01, 'slide_back'], [T.let - 0.005, 'slide_release']] : empty ? [[T.stop + 0.015, 'slide_release']] : [])];
     return {tracks, sounds, timing: T};
 }
-clips.push(clip('reload_tactical', 1.7, 'once', hand => reloadKeyed(hand)));
-clips.push(clip('reload_empty', 2.0, 'once', hand => reloadKeyed(hand, true)));
-clips.push(clip('reload_tactical_ads', 1.7, 'once', () => reload(false, true)));
-clips.push(clip('reload_empty_ads', 2.0, 'once', () => reload(true, true)));
-clips.push(clip('reload_tactical_no_mag', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', () => reload(false, false, true)));
-clips.push(clip('reload_empty_no_mag', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', () => reload(true, false, true)));
-clips.push(clip('reload_tactical_no_mag_ads', +(1.7 - NO_MAG_CUT).toFixed(3), 'once', () => reload(false, true, true)));
-clips.push(clip('reload_empty_no_mag_ads', +(2.0 - NO_MAG_CUT).toFixed(3), 'once', () => reload(true, true, true)));
+export const TIER_CLIPS = [];
+for (const noMag of [false, true]) for (const empty of [false, true]) {
+    const variants = [['experienced', {}], ['experienced', {ads: true}], ['novice', {}], ['novice', {fumble: true}]];
+    for (const [tierName, o] of variants) {
+        const opts = {...o, noMag}, name = tierClip(empty, tierName, opts);
+        TIER_CLIPS.push({name, empty, tierName, ...opts});
+        clips.push(clip(name, tierTiming(empty, tierName, !!o.fumble, opts).end, 'once', hand => reloadTierKeyed(hand, empty, tierName, opts)));
+    }
+}
 
 // Inspect (CS2-style, trained): one hand shows the left side and holds it with a slow look, the wrist rolls to show the
 // right side (ejection port; empty: the open chamber), then a magazine check: thumb release, the magazine drops into the
@@ -426,62 +483,53 @@ const SHOW_R_EMPTY = {pos: [0.4, 3.0, 2.2], rot: rolled(SHOW_R_RPY[0], SHOW_R_RP
 const FOREARM_VIEW = (process.env.P9_FOREARM || '0.35,-0.6,1').split(',').map(Number);   // forearm way in view space
 const bentRight = rot => solve(RP, HP)(RH_POINT, E(levelArm(mv(T3(E(rot)), norm(FOREARM_VIEW)))));
 const MAG_CHECK = {pos: [0.3, 3.2, 2.0], rot: [24, 36, -22]};
-const MAG_SHOW = {pos: [-5.5, 0.5, 6.5], rot: [60, -20, 12]};
-// noMag (user 2026-10-20: an inspect without a magazine still pulled and seated one): the same left and right side, then
-// the gun tips up to look into the empty magwell, the support hand stays down (no release, no seat, no magazine sounds)
-// and comes back to the grip on the way home; shorter by the magazine work (NO_MAG_LENGTH).
-export const NO_MAG_LENGTH = 4.6;
-function inspect(empty, noMag = false) {
-    const k = noMag ? (empty ? 4.5 : NO_MAG_LENGTH) / NO_MAG_LENGTH : empty ? 5.3 / 5.4 : 1;
-    const T = Object.fromEntries(Object.entries(noMag ? {up: 0.6, turn: 1.7, turned: 2.4, check: 3.0, checked: 3.3, back: 3.75, backEnd: 4.23, regrip: 4.05}
-        : {up: 0.6, turn: 1.7, turned: 2.4, check: 3.0, checked: 3.3, release: 3.3, drop: 3.32, out: 3.5, show: 3.75, showEnd: 4.0, align: 4.12,
-            seat: 4.45, back: 4.52, backEnd: 5.0, regrip: 4.82}).map(([n, v]) => [n, v * k]));
-    const path = legs([
-        [0.02, T.up, SHOW_L, {antic: 0.04, over: 0.05, per: 0.24, tau: 0.09}],
-        [T.turn, T.turned, empty ? SHOW_R_EMPTY : SHOW_R, {antic: 0.03, over: 0.05, per: 0.22, tau: 0.08}],
-        [T.check, T.checked, MAG_CHECK, {antic: 0.02, over: 0.03}],
-        [T.back, T.backEnd, IDLE, {antic: 0.03, over: 0.08, per: 0.24, tau: 0.09}]]);
-    const check = t => go(t, T.check, T.checked, {antic: 0, over: 0}) - go(t, T.back, T.backEnd, {antic: 0, over: 0});
-    const look = t => sum(drift(t, T.up - 0.1, T.turn + 0.05, [2.4, 4.2, -2.0], 1.5), drift(t, T.turned - 0.1, T.check + 0.05, [2.0, -2.6, 3.2], 1.2),
-        drift(t, T.checked, noMag ? T.back : T.seat, [0.8, -0.8, 1.0], 0.9));
-    const hits = t => noMag ? jolt(t, T.backEnd, [0.6, 0, -0.25], {per: 0.2, tau: 0.08})
-        : sum(jolt(t, T.release, [-0.6, 0, 0.4]), jolt(t, T.out, [0.5, 0, -0.25]), jolt(t, T.seat, [2.6, -0.5, 1.2]),
-            jolt(t, T.backEnd, [0.6, 0, -0.25], {per: 0.2, tau: 0.08}));
-    const slip = t => SLIP * clamp01(check(t));
-    const H = t => { const p = path(t), rot = sum(p.rot, look(t), hits(t));
-        return {rot, pos: sum(p.pos, mv(E(rot), mul(GRIP_SLIDE, slip(t))), mul([0, 0.1, 0], hits(t)[0]))}; };
-    const wrist = t => clamp01(go(t, T.turn, T.turned, {antic: 0, over: 0}) - go(t, T.check, T.checked, {antic: 0, over: 0}));
-    const bent = bentRight((empty ? SHOW_R_EMPTY : SHOW_R).rot);
-    const RH = t => mixT({pos: sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rot: RIGHT_REST.rot}, bent, wrist(t));
-    // the magazine slides down into the cupped support hand, is tipped toward the eye, then slapped home
-    const axial = t => MAG_CLEAR * clamp01(go(t, T.drop, T.out, {antic: 0, over: 0}));
+// Hand-keyed inspect (user 2026-10-22: unhurried, every move eased and cushioned; the magazine is brought out to the left of
+// the screen and turned so its sides, its top and the round in it can be seen; docs/dev/p9_reload_inspect_v1.md 2.4).
+// Keyed: handling, lefthand, camera and (with a magazine) mag_out. Solved from them: the grip slip and the bent right
+// wrist from the beats; the thumb release and the pull out of the magwell; while the magazine is out the support hand
+// holds it by the base plate: its turn is keyed, its position follows the magazine's base; the insert and the slap.
+// noMag (user 2026-10-20: no magazine, no magazine check): the same sides, then the gun tips up to look into the empty
+// magwell; the support hand stays down and comes back to the grip on the way home.
+export const INSPECT_T = {up: 1.05, turn: 2.0, turned: 3.05, check: 3.8, checked: 4.7, release: 4.8, drop: 4.82, out: 5.17,
+    look: 5.95, lookEnd: 8.5, align: 9.1, seat: 9.45, back: 9.56, backEnd: 10.4, regrip: 10.2, end: 11.1};
+export const INSPECT_NO_MAG_T = {up: 1.05, turn: 2.0, turned: 3.05, check: 3.8, checked: 4.7, back: 5.55, backEnd: 6.2, regrip: 6.05, end: 6.75};
+const DROP_GAP = 0.4;                          // the support hand waits this far under the base plate; the magazine drops onto it
+const inspectSlip = T => t => SLIP * (W(t, T.check, T.checked) - W(t, T.back, T.backEnd));
+const inspectWrist = T => t => W(t, T.turn, T.turned) - W(t, T.check, T.checked);
+const MAG_HOLD = add(MAG_BOTTOM, mul(AX, 0.12));   // where the support hand holds a magazine (onMag's anchor point)
+function inspectKeyed(hand, empty, noMag = false) {
+    const T = noMag ? INSPECT_NO_MAG_T : INSPECT_T;
+    const hr = hand.ch('handling', 'rotation'), hp = hand.ch('handling', 'position'), cam = hand.ch('camera', 'rotation');
+    const lr = hand.ch('lefthand', 'rotation'), lp = hand.ch('lefthand', 'position'), pre = E(hand.pre);
+    const H = t => ({rot: hr(t), pos: hp(t)});
+    const slip = inspectSlip(T), wrist = inspectWrist(T);
+    const RH = t => mixT({pos: sub(RIGHT_REST.pos, mul(GRIP_SLIDE, slip(t))), rot: RIGHT_REST.rot}, bentRight(H(t).rot), wrist(t));
+    const keyedLH = t => ({pos: lp(t), rot: euler(mm(E(lr(t)), pre))});
+    const grip = t => mixT(leftOnGun(H(t)), keyedLH(t), W(t, 0, 0.2));
+    // the thumb drops the magazine onto the waiting palm, then the hand draws it out of the magwell
+    const axial = t => DROP_GAP * W(t, T.drop, T.drop + 0.05) + (MAG_CLEAR - DROP_GAP) * W(t, T.drop + 0.08, T.out);
+    const mk = noMag ? null : {r: hand.ch('mag_out', 'rotation'), p: hand.ch('mag_out', 'position')};
+    const withR = m => ({...m, R: E(m.rot)});
     const held = t => {
         if (noMag) return magInGun(H(t), 0);   // nothing drawn there: no magazine in the gun hides its bones
         if (t < T.out) return magInGun(H(t), axial(t));
-        if (t < T.showEnd) {
-            const a = magInGun(H(T.out), MAG_CLEAR), s = go(t, T.out + 0.03, T.show, {antic: 0, over: 0.05});
-            const wig = mul([5, -7, 3], Math.sin(2 * Math.PI * clamp01((t - T.show) / (T.showEnd - T.show))) * clamp01((t - T.show) / 0.08));
-            const R = E(add(lerp(a.rot, MAG_SHOW.rot, s), wig)); return {pos: lerp(a.pos, MAG_SHOW.pos, s), rot: euler(R), R};
-        }
-        if (t < T.align) {
-            const g = magInGun(H(t), MAG_ENTRY), s = go(t, T.showEnd, T.align, {antic: 0, over: 0.04, per: 0.1, tau: 0.035});
-            const R = E(lerp(MAG_SHOW.rot, g.rot, s)); return {pos: lerp(MAG_SHOW.pos, g.pos, s), rot: euler(R), R};
-        }
+        if (t < T.align) return withR(mixT(mixT(magInGun(H(t), MAG_CLEAR), {pos: mk.p(t), rot: mk.r(t)}, W(t, T.out, T.out + 0.12)),
+            magInGun(H(t), MAG_ENTRY), W(t, T.align - 0.08, T.align)));
         return magInGun(H(t), Math.max(0, seatDepth(t, T.align, T.seat)));
     };
     const LH = t => {
-        if (noMag) return t < T.back ? mixT(leftOnGun(H(t)), LOW_LEFT, go(t, 0.0, 0.32, {antic: 0, over: 0}))
-            : mixT(LOW_LEFT, leftOnGun(H(t)), go(t, T.back, T.regrip, {antic: 0.02, over: 0.04}));
-        if (t < T.check - 0.2) return mixT(leftOnGun(H(t)), LOW_LEFT, go(t, 0.0, 0.32, {antic: 0, over: 0}));
-        if (t < T.drop) return mixT(LOW_LEFT, onMag(held(t), 0.5), clamp01(go(t, T.check - 0.2, T.release - 0.02, {antic: 0, over: 0})));
-        if (t < T.seat + 0.06) return onMag(held(Math.min(t, T.seat)), t < T.out ? 0.5 * (1 - clamp01((t - T.drop) / (T.out - T.drop))) : slapGap(t, T.seat));
-        return mixT(onMag(held(T.seat)), leftOnGun(H(t)), go(t, T.seat + 0.06, T.regrip, {antic: 0.02, over: 0.04}));
+        if (noMag) return mixT(grip(t), leftOnGun(H(t)), W(t, T.regrip - 0.2, T.regrip));
+        if (t < T.release - 0.03) return mixT(grip(t), onMag(magInGun(H(t), 0), DROP_GAP), W(t, T.release - 0.25, T.release - 0.03));
+        if (t < T.out) return onMag(held(t), Math.max(0, DROP_GAP - axial(t)));
+        if (t < T.align) {   // holding the magazine out: the hand's turn is keyed, its anchor on the base plate
+            const m = held(t), R = E(slerpRot(slerpRot(onMag(m).rot, keyedLH(t).rot, W(t, T.out, T.out + 0.12)), onMag(m).rot, W(t, T.align - 0.1, T.align)));
+            return handAt(magPointWorld(m, MAG_HOLD), R);
+        }
+        if (t < T.seat + 0.06) return onMag(held(t), slapGap(t, T.seat));
+        return mixT(mixT(onMag(held(t)), keyedLH(t), W(t, T.seat + 0.06, T.seat + 0.16)), leftOnGun(H(t)), W(t, T.regrip - 0.2, T.regrip));
     };
-    const camera = t => sum(mul([-1.0, 1.6, 1.2], go(t, 0.02, T.up, {antic: 0, over: 0}) - go(t, T.turn, T.turned, {antic: 0, over: 0})),
-        mul([-1.0, -1.2, -1.4], go(t, T.turn, T.turned, {antic: 0, over: 0}) - go(t, T.check, T.checked, {antic: 0, over: 0})),
-        mul([-1.0, 1.2, 1.5], check(t)), mul(look(t), 0.25), mul(hits(t), 0.35), noMag ? Z : jolt(t, T.seat, [1.0, 0, 0.35]));
     const tracks = {
-        handling: {position: t => H(t).pos, rotation: t => H(t).rot},
+        handling: {position: hp, rotation: hr},
         magazine: {scale: t => !noMag && t >= T.drop && t < T.seat ? [0, 0, 0] : [1, 1, 1], step: true},
         follower: {position: () => empty ? Z : FOLLOWER_LOADED},
         mag_out: {position: t => held(t).pos, rotation: t => held(t).rot},
@@ -490,15 +538,15 @@ function inspect(empty, noMag = false) {
         righthand: {position: t => RH(t).pos, rotation: t => RH(t).rot},
         lefthand: lhTracks(LH),
         slide: {position: () => [0, 0, empty ? SLIDE_LOCK : 0]},
-        camera: {rotation: camera},
+        camera: {rotation: cam},
     };
-    const sounds = noMag ? [] : [[T.release - 0.01, 'magazine_release'], [T.release + 0.03, 'magazine_out'], [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat']];
+    const sounds = noMag ? [] : [[T.release - 0.01, 'magazine_release'], [T.drop + 0.03, 'magazine_out'], [T.seat - 0.275, 'magazine_in'], [T.seat - 0.005, 'magazine_seat']];
     return {tracks, sounds, timing: T};
 }
-clips.push(clip('inspect', 5.4, 'once', () => inspect(false)));
-clips.push(clip('inspect_empty', 5.3, 'once', () => inspect(true)));
-clips.push(clip('inspect_no_mag', NO_MAG_LENGTH, 'once', () => inspect(false, true)));
-clips.push(clip('inspect_empty_no_mag', 4.5, 'once', () => inspect(true, true)));
+clips.push(clip('inspect', INSPECT_T.end, 'once', hand => inspectKeyed(hand, false)));
+clips.push(clip('inspect_empty', INSPECT_T.end, 'once', hand => inspectKeyed(hand, true)));
+clips.push(clip('inspect_no_mag', INSPECT_NO_MAG_T.end, 'once', hand => inspectKeyed(hand, false, true)));
+clips.push(clip('inspect_empty_no_mag', INSPECT_NO_MAG_T.end, 'once', hand => inspectKeyed(hand, true, true)));
 
 // Unload (docs/native_guns/magazine_system_v1.md 3.1, user 2026-10-20): the reload key with no fuller magazine on the rig
 // or in the pockets takes the magazine out to be loaded by hand. The inspect's magazine check up to the catch: the gun comes
@@ -551,7 +599,12 @@ clips.push(clip('unload_empty', UNLOAD.end, 'once', () => unload(true)));
 // ---------- hand-keyed channels ----------
 // Keyed by hand in Blockbench (bezier), read back from the source; lefthand keys are local to the clip's lefthand_pos.
 const RELOAD_HAND = {handling: ['rotation', 'position'], lefthand: ['rotation', 'position'], camera: ['rotation']};
-export const HAND_KEYED = {reload_tactical: RELOAD_HAND, reload_empty: RELOAD_HAND};
+const INSPECT_HAND = {...RELOAD_HAND, mag_out: ['rotation', 'position']};
+export const HAND_KEYED = {reload_tactical: RELOAD_HAND, reload_empty: RELOAD_HAND, reload_tactical_ads: RELOAD_HAND, reload_empty_ads: RELOAD_HAND,
+    reload_tactical_no_mag: RELOAD_HAND, reload_empty_no_mag: RELOAD_HAND, reload_tactical_no_mag_ads: RELOAD_HAND, reload_empty_no_mag_ads: RELOAD_HAND,
+    inspect: INSPECT_HAND, inspect_empty: INSPECT_HAND,
+    inspect_no_mag: RELOAD_HAND, inspect_empty_no_mag: RELOAD_HAND,
+    ...Object.fromEntries(TIER_CLIPS.map(c => [c.name, RELOAD_HAND]))};
 function handKeys(source, name) {
     const spec = HAND_KEYED[name]; if (!spec) return null;
     const anim = source.animations?.find(a => a.name === name);
@@ -666,7 +719,8 @@ export function build() {
 
 // rig and solvers, for seeding / checking hand keys from other scripts
 export const RIG = {E, euler, mm, mv, T3, unwrap, slerpRot, levelArm, handAt, leftOnGun, onMag, magInGun, magOnHand, handleWorld,
-    GRIP_SLIDE, RELOAD_UP, RELOAD_MEET, RELOAD_HOLD, OFFSCREEN_MAG, LOW_LEFT, MAG_ENTRY, PART, SLAP_GAP, AX, LP, LA, HP, MP, RP, RIGHT_REST};
+    GRIP_SLIDE, RELOAD_UP, RELOAD_MEET, RELOAD_HOLD, RELOAD_ADS_DIP, RELOAD_ADS_MEET, OFFSCREEN_MAG, LOW_LEFT, MAG_ENTRY, PART, SLAP_GAP, AX, LP, LA, HP, MP, RP, RIGHT_REST,
+    magPointWorld, slideHand, SLIDE_TOP_REAR, SLIDE_LOCK, HAND_RACK, seatDepth, MAG_HOLD, MAG_CLEAR, HAND_ON_MAG, SHOW_L, SHOW_R, SHOW_R_EMPTY, MAG_CHECK, DROP_GAP, inspectSlip, inspectWrist, bentRight, W, LOW};
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const args = process.argv.slice(2), {bb, runtime, stats, lhChoice} = build();

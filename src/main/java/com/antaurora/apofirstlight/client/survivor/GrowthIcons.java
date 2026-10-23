@@ -17,7 +17,8 @@ import java.util.Map;
  * The growth page's icons (docs/gameplay/survivor_background_skills_v1_plan.md 9, P3): strength (a dumbbell) and fitness
  * (lungs) as HUD-style glyphs (AflRingIcon distance fields), the gun classes as the guns' own HUD silhouettes (P9,
  * BR51, Silverwood 12), cold / heat tolerance as a snowflake and a sun, and the node marks inside the level pills (each
- * perk its own glyph: a magazine for the novice reload, one and two chevrons for the experienced and practised reloads; a
+ * perk its own glyph: a magazine for the novice reload, one and two chevrons for the experienced and practised reloads, a sight for the ADS
+ * reload; a
  * lock on levels this survivor cannot reach). Glyphs are baked once into small white textures and tinted when drawn, so the
  * page draws quads instead of filling pixels each frame. Positions and sizes in the caller's (canvas) units.
  */
@@ -42,6 +43,14 @@ final class GrowthIcons {
     };
     static final AflRingIcon.Glyph CHEVRON = (x, y) -> chevron(x, y, 0.5);
     static final AflRingIcon.Glyph CHEVRON_2 = (x, y) -> Math.min(chevron(x, y, 0.36), chevron(x, y, 0.64));
+    /** A sight reticle (reloading while aiming): a ring and four ticks pointing in. */
+    static final AflRingIcon.Glyph SIGHT = (x, y) -> {
+        double d = Math.abs(Math.hypot(x - 0.5, y - 0.5) - 0.3) - 0.045;
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.5, 0.08, 0.5, 0.32) - 0.04);
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.5, 0.68, 0.5, 0.92) - 0.04);
+        d = Math.min(d, AflRingIcon.segment(x, y, 0.08, 0.5, 0.32, 0.5) - 0.04);
+        return Math.min(d, AflRingIcon.segment(x, y, 0.68, 0.5, 0.92, 0.5) - 0.04);
+    };
     static final AflRingIcon.Glyph SNOWFLAKE = (x, y) -> {
         double d = 1;
         for (int i = 0; i < 3; i++) {
@@ -119,6 +128,7 @@ final class GrowthIcons {
         return switch (perk) {
             case "reload_novice" -> MAGAZINE;
             case "reload_trained" -> CHEVRON;
+            case "reload_ads" -> SIGHT;
             case "reload_practised" -> CHEVRON_2;
             default -> DIAMOND;
         };

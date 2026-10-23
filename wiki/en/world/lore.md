@@ -26,18 +26,19 @@ When creating a world you pick a start scene: creek valley farmhouse (default, u
 
 ## The six states
 
-The Federal Six States are an island of about 20×16 km. State lines follow survey lines and one river. They only decide names, signs and building style, never terrain or biomes
+The Federal Six States are an island of about 20×16 km. State lines follow survey lines and one river. They only decide names, signs and building style, never terrain or biomes; the terrain column is roughly what each state looks like, and its name follows from it
 
-| State | Style | Street names |
-|---|---|---|
-| S1 | Old English-style state | High St, Church St, Mill St |
-| S2 | Midwest | Courthouse Square, Depot St, Prairie Ave |
-| S3 | Mountain mining towns | Silver St, Ore Ave, Mine Rd |
-| S4 | Great Lakes industry | Foundry St, Dock St, Lake Shore Dr |
-| S5 | French bayou coast | Royal St, Toulouse St, Levee Rd |
-| S6 | Spanish Southwest | Camino Real, Calle del Sol, Arroyo Rd |
+| State | Name | Abbr. | Terrain | Style | Street names |
+|---|---|---|---|---|---|
+| S1 | New Kent | NK | Forested hills | Old English-style state | High St, Church St, Mill St |
+| S2 | Arvonia | AV | Farm plains | Midwest | Courthouse Square, Depot St, Prairie Ave |
+| S3 | Serrana | SR | Cold mountains | Mountain mining towns | Silver St, Ore Ave, Mine Rd |
+| S4 | Laurentia | LT | Lake country | Great Lakes industry | Foundry St, Dock St, Lake Shore Dr |
+| S5 | Marais | MR | Wetland coast | French bayou coast | Royal St, Toulouse St, Levee Rd |
+| S6 | Altamesa | AT | Dry plateau | Spanish Southwest | Camino Real, Calle del Sol, Arroyo Rd |
 
-The states have no names yet, only S1–S6
+- <StatusTag s="planned" /> The state names were set on 2026-10-22; nothing in the game shows them yet. Licence plates, road signs, maps and state line signs will carry the English names, plates with the full name across the top, maps, addresses and road signs with the two-letter abbreviation
+- Port Marais is in Marais, written in full as Port Marais, Marais; Marais Cola takes the same name. Mesa Roja is in Altamesa
 
 ## Towns
 

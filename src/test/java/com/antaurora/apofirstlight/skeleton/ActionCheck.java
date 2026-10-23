@@ -180,6 +180,23 @@ final class ActionCheck {
         list.add(new Scene("gun/p9_01_reload_tactical_ads", "p9_reload_tac_ads_62_down", 0.62F, 0, Map.of(), new Vector3f(), false, false));
         for (float t : new float[]{0.9F, 1.1F})
             list.add(new Scene("gun/p9_01_reload_empty_ads", "p9_reload_empty_ads_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        // lower-tier reloads (docs/dev/gun_proficiency_v1_plan.md 4): the gun worked lower and closer, the fumble's second try,
+        // the novice's second look, the overhand rack (the support hand on the helper prop riding the slide)
+        for (float t : new float[]{0.4F, 0.9F, 1.3F})
+            list.add(new Scene("gun/p9_01_reload_tactical_experienced", "p9_reload_tac_exp_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        for (float t : new float[]{1.76F, 1.88F})
+            list.add(new Scene("gun/p9_01_reload_empty_experienced", "p9_reload_empty_exp_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        for (float t : new float[]{1.2F, 2.2F})
+            list.add(new Scene("gun/p9_01_reload_tactical_novice", "p9_reload_tac_nov_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_reload_tactical_novice", "p9_reload_tac_nov_120_crouch", 1.2F, 0, Map.of(), null, false, true));
+        for (float t : new float[]{1.76F, 2.1F})
+            list.add(new Scene("gun/p9_01_reload_tactical_novice_fumble", "p9_reload_tac_fum_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        for (float t : new float[]{2.84F, 3.04F})
+            list.add(new Scene("gun/p9_01_reload_empty_novice", "p9_reload_empty_nov_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        // the experienced reload while aiming (docs/dev/p9_reload_inspect_v1.md 5.1): the trained ADS action on slower beats
+        for (float t : new float[]{0.4F, 0.9F, 1.2F})
+            list.add(new Scene("gun/p9_01_reload_tactical_experienced_ads", "p9_reload_tac_exp_ads_" + Math.round(t * 100), t, 0, Map.of(), null, false, false));
+        list.add(new Scene("gun/p9_01_reload_empty_experienced_ads", "p9_reload_empty_exp_ads_130", 1.3F, 0, Map.of(), null, false, false));
         return list.toArray(Scene[]::new);
     }
 
