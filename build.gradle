@@ -456,6 +456,13 @@ tasks.register('treeStripCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.tree.TreeStripCheck'
 }
 
+// Lightning V2 (docs/gameplay/lightning_v2_plan.md 6): the rolling sphere on a made-up scene (a person, a tree, a barn with a rod).
+tasks.register('lightningStrikeCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.world.LightningStrikeCheck'
+}
+
 // T15 headlamp beams (docs/vehicles/first_pickup_v0_design.md 8.10): light along and across, reach, walls, layers.
 tasks.register('headlightCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

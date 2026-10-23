@@ -1,0 +1,4 @@
+# AFL Lightning V2 copper air terminal
+newmtl terminal
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/copper_air_terminal

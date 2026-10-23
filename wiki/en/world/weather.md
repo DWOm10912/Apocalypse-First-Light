@@ -18,9 +18,18 @@
 - Thunderstorm lightning is drawn by AFL: one main channel with branches, and each flash strikes 2–5 times, the later strokes lighting only the main channel
 - The ground around the strike lights up (without a shader pack) and the sky flashes
 - Thunder is delayed by distance at <V j="AflLightning.SOUND_SPEED" u="m/s" />: count the seconds after the flash to tell how far away it struck
-- A direct hit kills
+- Being struck does not always kill, see [Lightning injuries](../guide/survival#lightning-injuries)
 
-<StatusTag s="planned" /> High places and metal drawing strikes, lightning splitting trees, sheltering from lightning in a car
+### Where it strikes and lightning rods
+
+- <StatusTag s="test" /> Lightning V2: on a branch only, checked in game 2026-10-22
+
+- Where lightning lands follows the rolling sphere: each strike's striking distance is <V d="lightning/lightning_injury_v1#strike.distance.0" />–<V d="lightning/lightning_injury_v1#strike.distance.2" u="m" /> (most often <V d="lightning/lightning_injury_v1#strike.distance.1" u="m" />). The leader comes down from the cloud, and the first thing within that distance of it is struck. The taller and more alone something stands, the likelier it is struck; metal itself does not draw lightning
+- A person alone on open ground is struck by leaders coming down within about 12.6 m of them at a striking distance of 45 m; a lone 20 m tree within about 37 m. Under a lone tree, the current comes down its trunk after the strike, and people beneath it are hurt by side flash or ground current
+- There is no warning before a strike
+- **Lightning rods**: two kinds, the copper air terminal (modern roofs: a solid copper rod about 1 m tall, braced by a tripod halfway up, its conductor laid along the roof) and the barn lightning rod (the twisted copper rod on a cast-iron tripod with a blue glass ball and an arrow vane, found on old barns and farmhouse ridges, 1.8 m and two blocks tall). The tip counts <V d="lightning/lightning_injury_v1#strike.rod_reach" u="m" /> higher than it is, so it draws the strikes that would have landed on the roof or on people near it. A strike on a rod lights no fire and goes to earth down its conductor, hurting nobody through the ground. For now they are in the Creative inventory only
+- **Trees**: a struck tree always throws out splinters and its trunk cracks; with a chance of <V d="lightning/lightning_injury_v1#strike.fell" pct="true" /> the trunk bursts and the whole tree falls. Otherwise its crown may catch fire (<V d="lightning/lightning_injury_v1#strike.fire_wet" pct="true" /> in the rain, <V d="lightning/lightning_injury_v1#strike.fire_dry" pct="true" /> in a dry storm). The fire burns <V d="lightning/lightning_injury_v1#strike.fire_seconds.0" />–<V d="lightning/lightning_injury_v1#strike.fire_seconds.1" u="秒" ue="s" /> at most and the rain puts it out; it does not burn the crown away or spread through the crowns to other trees
+- **T15**: the truck can be struck too (on its roof). It is not damaged and does not catch fire. With both doors shut, the people inside are unhurt; people outside it can still be hurt by side flash or ground current
 
 ### Thunder
 

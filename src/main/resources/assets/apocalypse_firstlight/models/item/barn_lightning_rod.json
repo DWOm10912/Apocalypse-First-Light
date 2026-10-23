@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/barn_lightning_rod"
+  },
+  "base": {
+    "parent": "apocalypse_firstlight:block/barn_lightning_rod/item",
+    "textures": {
+      "particle": "apocalypse_firstlight:block/barn_lightning_rod"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          10
+        ],
+        "translation": [
+          0,
+          -0.1122,
+          1.2311
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          -20
+        ],
+        "translation": [
+          1.13,
+          0.179,
+          2.6926
+        ],
+        "scale": [
+          0.85,
+          0.85,
+          0.85
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          -0.023,
+          2.379,
+          -0.091
+        ],
+        "scale": [
+          0.097,
+          0.097,
+          0.097
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          180,
+          0
+        ],
+        "translation": [
+          0.047,
+          -1.242,
+          0.182
+        ],
+        "scale": [
+          0.194,
+          0.194,
+          0.194
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/barn_lightning_rod"
+      }
+    }
+  }
+}

@@ -265,6 +265,8 @@
   "block.apocalypse_firstlight.emergency_light": "Emergency Light",
   "block.apocalypse_firstlight.porcelain_lampholder": "Porcelain Pull-Chain Lampholder",
   "block.apocalypse_firstlight.keyless_lampholder": "Keyless Porcelain Lampholder",
+  "block.apocalypse_firstlight.copper_air_terminal": "Copper Air Terminal",
+  "block.apocalypse_firstlight.barn_lightning_rod": "Barn Lightning Rod",
   "block.apocalypse_firstlight.light_pole_base": "Light Pole Base",
   "block.apocalypse_firstlight.light_pole": "Light Pole",
   "block.apocalypse_firstlight.area_light": "LED Area Light",

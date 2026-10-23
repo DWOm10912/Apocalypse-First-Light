@@ -265,7 +265,7 @@ public final class FellingServer {
     }
 
     /** Chip particles: the vanilla stripped log nearest the species' fresh wood. */
-    static BlockState chips(Species s) {
+    public static BlockState chips(Species s) {
         return switch (s) {
             case WHITE_PINE, SHAGBARK_HICKORY, RED_MAPLE -> Blocks.STRIPPED_BIRCH_LOG.defaultBlockState();
             case EASTERN_HEMLOCK -> Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState();
@@ -306,11 +306,34 @@ public final class FellingServer {
 
     /** The last chop: direction, rest angle, the falling tree, then the tree's cells and the stump. */
     static void fell(ServerLevel level, ServerPlayer player, BlockPos root, BlockState rootState, TreeForms.Form form, float cut) {
+        var look = player.getLookAngle();
+        double toward = Math.atan2(player.getZ() - (root.getZ() + 0.5), player.getX() - (root.getX() + 0.5));
+        fell(level, player, root, rootState, form, cut, Math.atan2(look.z, look.x), toward);
+    }
+
+    /**
+     * Lightning V2 (world/LightningTrees, docs/gameplay/lightning_v2_plan.md 5): a struck trunk shattered, the tree falling
+     * toward about this angle (radians, atan2(z, x)) as if felled from its other side; its stump keeps a full notch. False
+     * when it could not fall (its chunks not loaded, no room for the falling tree).
+     */
+    public static boolean fellStruck(ServerLevel level, BlockPos root, double angle) {
+        if (!TreeBlocks.ready() || !FellingRegistry.ready()) return false;
+        BlockState rootState = level.getBlockState(root);
+        if (rootState.getBlock() != TreeBlocks.root()) return false;
+        Species species = TreeBlocks.species(rootState);
+        var form = TreeForms.grow(species, rootState.getValue(TreeBlocks.VARIANT));
+        float cut = FellingRules.cutHeight(species, root.getX(), root.getY(), root.getZ());
+        return fell(level, null, root, rootState.setValue(TreeBlocks.CHOP, FellingRules.STAGES), form, cut, angle, angle + Math.PI);
+    }
+
+    /** preferred: the way it should fall (radians); toward: the side the feller stands (it falls at least 100° away). */
+    static boolean fell(ServerLevel level, @org.jetbrains.annotations.Nullable ServerPlayer player, BlockPos root, BlockState rootState, TreeForms.Form form, float cut,
+                        double preferred, double toward) {
         long t0 = System.nanoTime();
         int cx = root.getX() >> 4, cz = root.getZ() >> 4;
         // the tree reaches one chunk out, the crowns it shares cells with two
         for (int dz = -2; dz <= 2; dz++) for (int dx = -2; dx <= 2; dx++)
-            if (!level.hasChunk(cx + dx, cz + dz)) { refuse(player, "not_loaded"); return; }
+            if (!level.hasChunk(cx + dx, cz + dz)) { if (player != null) refuse(player, "not_loaded"); return false; }
         Species species = TreeBlocks.species(rootState);
         int variant = rootState.getValue(TreeBlocks.VARIANT), turns = TreeBlocks.turns(rootState);
         var layout = TreeShape.layout(species, variant, turns);
@@ -337,8 +360,6 @@ public final class FellingServer {
                 if (support(level, (int) Math.floor(px + ux * d), (int) Math.floor(pz + uz * d), yTop, cache)[1] == 0) cost += 0.5;
             return cost;
         };
-        var look = player.getLookAngle();
-        double preferred = Math.atan2(look.z, look.x), toward = Math.atan2(player.getZ() - pz, player.getX() - px);
         // the crown's lean (its centre off the trunk), turned with the layout like TreeShape.Quad#rotated
         double lx = form.crownCx - 0.5, lz = form.crownCz - 0.5;
         for (int k = 0; k < turns; k++) { double t = lx; lx = -lz; lz = t; }
@@ -349,7 +370,7 @@ public final class FellingServer {
         if (rest == null) { scorer.cost(dir); rest = restBy.get(dir); }
         // the falling tree first: if it cannot be added, nothing is removed
         var fall = FallingTree.create(level, root, species, variant, turns, (float) dir, rest, cut, level.getGameTime() + FellingRules.PAUSE_TICKS);
-        if (!level.addFreshEntity(fall)) { refuse(player, "no_fall"); return; }
+        if (!level.addFreshEntity(fall)) { if (player != null) refuse(player, "no_fall"); return false; }
         var journal = journal(level);
         journal.ledger.fell(root.asLong(), fall.getUUID());
         journal.setDirty();
@@ -358,6 +379,7 @@ public final class FellingServer {
         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, chips(species)), px, py, pz, 24, 0.3, 0.1, 0.3, 0.15);
         FELLS.increment();
         FELL_NANOS.add(System.nanoTime() - t0);
+        return true;
     }
 
     /** Removes a felled tree's cells (shared cells keep the others' best) and leaves the stump at the root. */

@@ -12,6 +12,7 @@ import com.antaurora.apofirstlight.mixin.LightningBoltAccessor;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
+import com.antaurora.apofirstlight.world.LightningAim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -63,12 +64,13 @@ import java.util.UUID;
  * Lightning injury V1 (docs/gameplay/lightning_injury_v1_plan.md, user 2026-10-21 "按推荐做"). Replaces Lightning V1's
  * 1000 damage. Each bolt (not a visual-only one), the tick after it joins the level, sorts every living thing near it:
  * <ul>
- * <li><b>direct</b>: the one the strike aimed at (mixin LightningTargetServerLevelMixin), or with no aim known the nearest
- * within direct_range across;</li>
- * <li><b>side flash</b>: within side_range across of the struck column, its top at most conductor_height above the feet and
- * at most side_height below them;</li>
+ * <li><b>direct</b>: the one the strike aimed at (world/LightningAim, the rolling sphere), or with no aim known (a command's
+ * bolt, a trident's) the nearest within direct_range across;</li>
+ * <li><b>side flash</b>: within side_range across of the struck column (a struck tree's trunk), its top at most
+ * conductor_height above the feet and at most side_height below them;</li>
  * <li><b>ground current</b>: out to ground_range across (water_range when the strike or the one hit is in water; animals
- * × animal_ground), on the ground or in water, the strike at most ground_height below the feet.</li>
+ * × animal_ground), on the ground or in water, the strike at most ground_height below the feet. A lightning rod's strike
+ * has none: its down conductor takes the current into the earth (Lightning V2).</li>
  * </ul>
  * Under a roof (no sky over the eyes), or in the T15's cab with both doors shut, nothing reaches them; in the cab with a
  * door open a direct strike counts as a side flash. Players roll death, health, fainting, paralysed legs, a burst eardrum
@@ -94,8 +96,6 @@ public final class LightningInjury {
     private static final UUID MOVE_ID = UUID.fromString("c4b1e7d2-6a35-4f0e-9b8d-2f71a5c3e904");
     /** The struck column reaches at most this far down to the feet of the one beside it (a tree's height). */
     private static final double CONDUCTOR_HEIGHT = 20;
-    /** An aim is forgotten after this many ticks (the bolt joins the level in the same tick). */
-    private static final int AIM_TICKS = 2;
     /** Hurt within this many ticks of the strike (its own burning) does not wake the fainted. */
     private static final int STRIKE_BURN_TICKS = 100;
     /**
@@ -126,14 +126,12 @@ public final class LightningInjury {
         }
     }
 
-    private record Aim(ResourceKey<Level> level, BlockPos pos, UUID target, long tick) {}
-
-    private record Strike(ResourceKey<Level> level, Vec3 at, @Nullable UUID target) {}
+    /** One bolt: where its current comes down (LightningAim.Aim#ground), the one aimed at; aimed: from LightningAim; conducted: a rod's. */
+    private record Strike(ResourceKey<Level> level, Vec3 at, @Nullable UUID target, boolean aimed, boolean conducted) {}
 
     private record ClearFire(ResourceKey<Level> level, UUID player, int until) {}
 
     private static final Map<UUID, State> STATES = new HashMap<>();
-    private static final List<Aim> AIMS = new ArrayList<>();
     private static final List<Strike> PENDING = new ArrayList<>();
     private static final List<ClearFire> CLEAR_FIRE = new ArrayList<>();
 
@@ -142,32 +140,23 @@ public final class LightningInjury {
 
     // ---- the strike ----
 
-    /** The mixin chose this living thing to strike at pos. */
-    public static void aimed(ServerLevel level, BlockPos pos, Entity target) {
-        AIMS.add(new Aim(level.dimension(), pos.immutable(), target.getUUID(), level.getGameTime()));
-    }
-
-    /** Living things are hurt here once per bolt (the strike's tick), never by vanilla's every-flash hit; the rest keep vanilla's. */
+    /**
+     * Living things are hurt here once per bolt (the strike's tick), never by vanilla's every-flash hit; a T15 takes none
+     * (Lightning V2: only a place for it to land, its electrics later); the rest keep vanilla's.
+     */
     @SubscribeEvent
     public static void struck(EntityStruckByLightningEvent event) {
-        if (event.getEntity() instanceof LivingEntity) event.setCanceled(true);
+        Entity e = event.getEntity();
+        if (e instanceof LivingEntity || e instanceof PickupTruckEntity || e instanceof PickupTruckEntity.Part) event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void joined(EntityJoinLevelEvent event) {
         if (event.loadedFromDisk() || !(event.getEntity() instanceof LightningBolt bolt) || !(event.getLevel() instanceof ServerLevel level)
                 || ((LightningBoltAccessor) bolt).afl$visualOnly()) return;
-        UUID target = null;
-        long now = level.getGameTime();
-        for (Iterator<Aim> it = AIMS.iterator(); it.hasNext(); ) {
-            Aim a = it.next();
-            if (now - a.tick > AIM_TICKS) it.remove();
-            else if (target == null && a.level == level.dimension() && a.pos.equals(bolt.blockPosition())) {
-                target = a.target;
-                it.remove();
-            }
-        }
-        PENDING.add(new Strike(level.dimension(), bolt.position(), target));
+        LightningAim.Aim a = LightningAim.of(bolt);   // its listener runs first (HIGHEST)
+        PENDING.add(a != null ? new Strike(level.dimension(), a.ground(), a.target(), true, a.kind() == LightningAim.Kind.ROD)
+                : new Strike(level.dimension(), bolt.position(), null, false, false));
     }
 
     @SubscribeEvent
@@ -178,7 +167,7 @@ public final class LightningInjury {
             PENDING.clear();
             for (Strike s : strikes) {
                 ServerLevel level = event.getServer().getLevel(s.level);
-                if (level != null) strike(level, s.at, s.target);
+                if (level != null) strike(level, s.at, s.target, s.aimed, s.conducted);
             }
         }
         if (!CLEAR_FIRE.isEmpty()) clearFire(event.getServer());
@@ -204,14 +193,17 @@ public final class LightningInjury {
         }
     }
 
-    /** One bolt at `at`: everyone near it, sorted and hurt. Also the dev command's way in (target: the one it strikes). */
-    static void strike(ServerLevel level, Vec3 at, @Nullable UUID target) {
+    /**
+     * One bolt at `at`: everyone near it, sorted and hurt (target: the one it strikes; aimed: no other is struck directly;
+     * conducted: no ground current).
+     */
+    static void strike(ServerLevel level, Vec3 at, @Nullable UUID target, boolean aimed, boolean conducted) {
         var c = LightningInjuryConfig.get();
         double reach = c.waterRange * c.animalGround + 2;
         List<LivingEntity> near = level.getEntitiesOfClass(LivingEntity.class, new AABB(at, at).inflate(reach, CONDUCTOR_HEIGHT + 2, reach), LivingEntity::isAlive);
         LivingEntity direct = null;
         if (target != null) for (LivingEntity e : near) if (e.getUUID().equals(target)) direct = e;
-        if (direct == null) {
+        if (direct == null && !aimed) {
             double best = c.directRange;
             for (LivingEntity e : near) {
                 double across = across(e, at), dy = e.getY() - at.y;
@@ -223,7 +215,7 @@ public final class LightningInjury {
         }
         for (LivingEntity e : near) {
             Way way = way(level, e, at, e == direct);
-            if (way == null) continue;
+            if (way == null || conducted && way == Way.GROUND) continue;
             if (e instanceof ServerPlayer player) hit(player, way, across(e, at), at, level.getFluidState(BlockPos.containing(at)).is(FluidTags.WATER), true);
             else hitMob(e, way, across(e, at));
         }

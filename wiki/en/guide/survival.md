@@ -172,7 +172,7 @@ The hearing load tops out at <V d="hearing/tinnitus_v2#max_load" />. Each time t
 
 - <StatusTag s="test" /> Lightning injuries V1: on a branch only, not yet checked in game
 
-Lightning goes for the tallest thing around: a person or creature is only picked when its head is at least as high as every block within <V d="lightning/lightning_injury_v1#target_radius" u="格" ue="blocks" />. Open ground and hilltops are the most dangerous; a taller tree or building nearby takes the strike first. Lightning rods come first
+Where lightning lands follows the rolling sphere (lightning V2, on a branch only, checked in game 2026-10-22): each strike's striking distance is <V d="lightning/lightning_injury_v1#strike.distance.0" />–<V d="lightning/lightning_injury_v1#strike.distance.2" u="m" />, most often <V d="lightning/lightning_injury_v1#strike.distance.1" u="m" />, and the first thing the leader comes within that distance of is struck. Height and standing alone decide it; metal does not draw lightning. Open ground, hilltops and the foot of a lone tree are the most dangerous; a taller tree, a house or a lightning rod nearby takes the strike first. There is no warning before a strike. See [Weather](../world/weather#where-it-strikes-and-lightning-rods)
 
 There are three ways to be struck:
 

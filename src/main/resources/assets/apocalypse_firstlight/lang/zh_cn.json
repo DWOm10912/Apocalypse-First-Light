@@ -265,6 +265,8 @@
   "block.apocalypse_firstlight.emergency_light": "应急灯",
   "block.apocalypse_firstlight.porcelain_lampholder": "拉线瓷灯座",
   "block.apocalypse_firstlight.keyless_lampholder": "无开关瓷灯座",
+  "block.apocalypse_firstlight.copper_air_terminal": "铜接闪杆",
+  "block.apocalypse_firstlight.barn_lightning_rod": "谷仓避雷针",
   "block.apocalypse_firstlight.light_pole_base": "灯杆底座",
   "block.apocalypse_firstlight.light_pole": "灯杆",
   "block.apocalypse_firstlight.area_light": "LED 区域灯",

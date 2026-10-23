@@ -18,9 +18,18 @@
 - 雷雨天的闪电由 AFL 自己渲染：一条主通道带分叉，每次闪电连续闪击 2–5 次，后几次只有主通道发亮
 - 闪电落地时会照亮周围地面（不开光影时），天空也随之闪亮
 - 雷声按距离延迟传来，声速 <V j="AflLightning.SOUND_SPEED" u="m/s" />：看到闪光后数几秒，就能估算闪电离你多远
-- 被闪电直接击中必定死亡
+- 被闪电击中不一定会死，见[雷击伤](../guide/survival#雷击伤)
 
-<StatusTag s="planned" /> 高处和金属更容易引雷、雷击树木、在车内避雷
+### 落点和避雷针
+
+- <StatusTag s="test" /> 闪电 V2：只在分支上，用户 2026-10-22 实机验证过
+
+- 落点按滚球法：每道雷的击距在 <V d="lightning/lightning_injury_v1#strike.distance.0" />–<V d="lightning/lightning_injury_v1#strike.distance.2" u="m" /> 之间（最常见 <V d="lightning/lightning_injury_v1#strike.distance.1" u="m" />），雷的先导从云里往下走，最先进入击距的东西被劈。越高、越孤立越容易被劈；金属本身不吸雷
+- 空地上的一个人，击距 45 m 时大约 12.6 m 内落下的雷会劈到他身上；一棵 20 m 高的孤树大约 37 m。站在孤树底下，雷劈中树以后电流顺着树干下来，树下的人会被侧闪或地电流伤到
+- 落雷前没有任何提示
+- **避雷针**：两种，铜接闪杆（现代建筑屋顶用，约 1 m 高的实心铜杆，半高处有三脚撑架，引下线贴着屋面走）和谷仓避雷针（老谷仓、农舍屋脊上的扭绞铜杆，铸铁三脚座，带蓝色玻璃球和风向箭头，高 1.8 m，占两格）。针尖按比实际高 <V d="lightning/lightning_injury_v1#strike.rod_reach" u="m" /> 算，会把附近本来落在屋顶、旁边的人身上的雷引过来；劈中避雷针不起火，电流顺着引下线入地，不会沿地面伤人。现在只能在创造模式物品栏里拿到
+- **树**：劈中的树每次都会喷出木屑、树干开裂；<V d="lightning/lightning_injury_v1#strike.fell" pct="true" /> 的概率树干炸裂、整棵树倒下；没倒的话树冠可能起火（下雨时 <V d="lightning/lightning_injury_v1#strike.fire_wet" pct="true" />，不下雨的干雷暴 <V d="lightning/lightning_injury_v1#strike.fire_dry" pct="true" />），火最多烧 <V d="lightning/lightning_injury_v1#strike.fire_seconds.0" />–<V d="lightning/lightning_injury_v1#strike.fire_seconds.1" u="秒" ue="s" />，雨会浇灭，不会烧掉树冠，也不会顺着树冠烧到别的树
+- **T15**：车也会被劈（落在车顶），车不会坏、不会着火。两扇车门都关着时车里的人不受伤；车外的人照常可能被侧闪、地电流伤到
 
 ### 雷声
 

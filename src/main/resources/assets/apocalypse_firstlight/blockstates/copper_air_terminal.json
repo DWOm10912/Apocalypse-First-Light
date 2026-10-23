@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/copper_air_terminal/terminal"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/copper_air_terminal/terminal",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/copper_air_terminal/terminal",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/copper_air_terminal/terminal",
+      "y": 270
+    }
+  }
+}

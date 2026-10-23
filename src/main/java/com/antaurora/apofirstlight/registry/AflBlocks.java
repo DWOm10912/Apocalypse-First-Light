@@ -201,6 +201,11 @@ public final class AflBlocks {
     public static final RegistryObject<Block> KEYLESS_LAMPHOLDER = BLOCKS.register("keyless_lampholder",
             () -> new com.antaurora.apofirstlight.block.KeylessLampholderBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.GLASS).noCollission().noOcclusion()
                     .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? com.antaurora.apofirstlight.block.PorcelainLampholderBlock.LIGHT_LEVEL : 0)));
+    /** Lightning V2 (2026-10-22, docs/gameplay/lightning_v2_plan.md 4): the two lightning rods; creative only, no recipe. */
+    public static final RegistryObject<Block> COPPER_AIR_TERMINAL = BLOCKS.register("copper_air_terminal",
+            () -> new com.antaurora.apofirstlight.block.CopperAirTerminalBlock(BlockBehaviour.Properties.of().strength(1.5F, 6.0F).sound(SoundType.COPPER).noCollission().noOcclusion()));
+    public static final RegistryObject<Block> BARN_LIGHTNING_ROD = BLOCKS.register("barn_lightning_rod",
+            () -> new com.antaurora.apofirstlight.block.BarnLightningRodBlock(BlockBehaviour.Properties.of().strength(1.5F, 6.0F).sound(SoundType.METAL).noCollission().noOcclusion()));
     /**
      * Site Lighting V1 (docs/models/site_lighting_v1.md): parking-lot poles (base, segments, head cell), the wall pack and the
      * canopy downlight are galvanized / die-cast steel and aluminium fixtures: pickaxe + diamond tier. The hidden light point

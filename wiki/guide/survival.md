@@ -172,7 +172,7 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 - <StatusTag s="test" /> 雷击伤 V1：只在分支上，还没进游戏验证
 
-落雷先打附近最高的东西：只有头顶不低于周围 <V d="lightning/lightning_injury_v1#target_radius" u="格" ue="blocks" /> 内所有方块时，人或生物才会被选中。站在开阔地、山顶最危险，身边有更高的树或建筑时雷会先打它们。有避雷针时避雷针优先
+落点按滚球法算（闪电 V2，只在分支上，用户 2026-10-22 实机验证过）：每道雷的击距在 <V d="lightning/lightning_injury_v1#strike.distance.0" />–<V d="lightning/lightning_injury_v1#strike.distance.2" u="m" /> 之间，最常见 <V d="lightning/lightning_injury_v1#strike.distance.1" u="m" />，先导下来时最先进入击距的东西被劈。高度和孤立决定落点，金属不吸雷。站在空地、山顶、孤树底下最危险；身边有更高的树、房子或避雷针时，雷会先打它们。落雷前没有任何预兆，详见[天气](../world/weather#落点和避雷针)
 
 被雷击分三种：
 

@@ -85,9 +85,28 @@ public final class LightningInjuryConfig {
         }
     }
 
-    /** Strikes aim at the tallest thing: a living thing is struck only with its head as high as every block within target_radius. */
-    public boolean tallestFirst = true;
-    public int targetRadius = 3;
+    /**
+     * Lightning V2 (docs/gameplay/lightning_v2_plan.md): where strikes land and what they do to trees. Rolling sphere
+     * (world/StrikePoint): distance [least, likeliest, most] m drawn per strike; a lightning rod's tip counts rod_reach m
+     * higher. A struck tree falls with fell, its crown catches fire with fire_wet where it rains, fire_dry in a dry storm,
+     * burning fire_seconds [least, most] at most (rain puts it out sooner). enabled false: vanilla's target.
+     */
+    public static final class Strike {
+        public boolean enabled = true;
+        public double[] distance = {20, 45, 80};
+        public double rodReach = 6;
+        public double fell = 0.15, fireWet = 0.05, fireDry = 0.3;
+        public double[] fireSeconds = {60, 150};
+
+        void validate() {
+            if (distance == null || distance.length != 3 || !(distance[0] >= 5) || !(distance[1] >= distance[0]) || !(distance[2] >= distance[1])
+                    || distance[2] > 200 || !(rodReach >= 0) || rodReach > 30 || !chance(fell) || !chance(fireWet) || !chance(fireDry)
+                    || !range(fireSeconds, 1))
+                throw new IllegalArgumentException("strike: distance [least <= likeliest <= most] 5..200, rod_reach 0..30, chances 0..1, fire_seconds [least, most] >= 1");
+        }
+    }
+
+    public Strike strike = new Strike();
 
     public Hit direct = new Hit(0.5, new double[]{40, 60}, 1, new double[]{20, 40}, 1, new double[]{120, 240}, 0.7, 0, true).real(0.35, 2, true);
     public Hit side = new Hit(0.05, new double[]{20, 35}, 0.5, new double[]{10, 25}, 0.6, new double[]{60, 120}, 0.3, 0, true).real(0.03, 1, true);
@@ -160,7 +179,9 @@ public final class LightningInjuryConfig {
         direct.validate("direct");
         side.validate("side");
         ground.validate("ground");
-        if (targetRadius < 0 || targetRadius > 8 || !(sideRange > 0) || !(sideHeight > 0) || !(groundRange >= sideRange) || !(waterRange >= groundRange)
+        if (strike == null) throw new IllegalArgumentException("strike");
+        strike.validate();
+        if (!(sideRange > 0) || !(sideHeight > 0) || !(groundRange >= sideRange) || !(waterRange >= groundRange)
                 || !(groundHeight > 0) || !(groundAftermath >= 0) || !(directRange > 0) || !(wakeDamage > 0) || !chance(crawl) || !range(weakLegs, 0)
                 || !chance(weakMove) || !(weakStamina >= 1) || !(eardrumDays > 0) || !chance(eardrumHearing) || !chance(eardrumHeal)
                 || !(aftermathDays > 0) || !chance(aftermathFade) || !(aftermathStaminaRegen >= 0) || !(aftermathHealthRegen >= 0)

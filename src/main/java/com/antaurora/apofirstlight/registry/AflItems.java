@@ -271,6 +271,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.PORCELAIN_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> KEYLESS_LAMPHOLDER = ITEMS.register("keyless_lampholder",
             () -> new BlockItem(AflBlocks.KEYLESS_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> COPPER_AIR_TERMINAL = ITEMS.register("copper_air_terminal",
+            () -> new BlockItem(AflBlocks.COPPER_AIR_TERMINAL.get(), new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> BARN_LIGHTNING_ROD = ITEMS.register("barn_lightning_rod",
+            () -> new net.minecraft.world.item.DoubleHighBlockItem(AflBlocks.BARN_LIGHTNING_ROD.get(), new Item.Properties().stacksTo(4)));
     /** Fuel Stop A1 details V1 (docs/models/fuel_stop_a1_details_v1.md): one channel-letter item, the letter in its BlockStateTag. */
     public static final RegistryObject<Item> CHANNEL_LETTER = ITEMS.register("channel_letter",
             () -> new com.antaurora.apofirstlight.item.ChannelLetterBlockItem(AflBlocks.CHANNEL_LETTER.get(), new Item.Properties().stacksTo(16)));

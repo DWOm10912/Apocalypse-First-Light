@@ -221,7 +221,7 @@ function steelScrap() {
 
 const DUMMY = 'data:image/png;base64,' + png(Buffer.from([0, 0, 0, 255]), 1, 1).toString('base64');
 const r12 = v => +v.toFixed(12) || 0, r3 = v => +v.toFixed(3) || 0, r6 = v => +v.toFixed(6) || 0;
-const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXYZ, applied to a vector as Rx * Ry * Rz
+export const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXYZ, applied to a vector as Rx * Ry * Rz
   const rx = rotX(ax), ry = rotY(ay), rz = deg => { const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return p => [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]]; };
   const z = rz(az); return p => rx(ry(z(p)));
 };
@@ -236,7 +236,7 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
  * The old pixel-art options (mat, coverage, xray, seamless, depthSeam) no longer change the picture.
  */
 const ICON_SIZE = 64, ICON_SS = 4, ICON_LIGHT = norm([-0.35, 0.85, 0.4]);
-function drawIcon(PARTS, UV, atlasPng, view, centreY) {
+export function drawIcon(PARTS, UV, atlasPng, view, centreY) {
   const N = ICON_SIZE * ICON_SS, k = N / 16, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation;
   const atlas = readPng(atlasPng);
   const opaque = [], glass = [];
