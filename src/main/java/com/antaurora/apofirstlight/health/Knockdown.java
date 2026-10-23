@@ -63,9 +63,9 @@ public final class Knockdown {
             AflNetwork.skeletonToTracking(player, packet);
         }
         // a vehicle's hit (vehicle/VehicleImpact) throws the living body as a ragdoll (plan 9), crawling or collapsed too;
-        // it gets up (or stays down collapsed) once it lies still
+        // it gets up (or stays down collapsed) once it lies still. A bump (below vehicle.knock_speed) only flinches
         Vec3 thrown = com.antaurora.apofirstlight.vehicle.VehicleImpact.thrown(player);
-        if (thrown != null && !player.isInWater() && !player.isPassenger() && !player.isSleeping() && !LightningInjury.down(player)
+        if (thrown != null && !com.antaurora.apofirstlight.vehicle.VehicleImpact.bump(player) && !player.isInWater() && !player.isPassenger() && !player.isSleeping() && !LightningInjury.down(player)
                 && !FallLanding.fallingOver(player) && LiveRagdolls.canStart(player)) {
             if (COLLAPSED.remove(player.getUUID()) != null) {
                 moveModifier(player, false);

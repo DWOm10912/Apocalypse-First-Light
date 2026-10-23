@@ -59,12 +59,13 @@
     "ignore": ["minecraft:starve", "apocalypse_firstlight:dehydration", "apocalypse_firstlight:hypothermia", "apocalypse_firstlight:heatstroke", "minecraft:lightning_bolt"]
   },
   "vehicle": {
-    "about": "Vehicle impact (plan 5, vehicle/VehicleImpact): closing speed (m/s) -> health lost of 100 (passed / 5, the vanilla scale; 20 km/h 15, 50 km/h 90). Thrown along the hit at throw_factor x closing x mass / (mass + its mass), up at lift x closing (at most lift_max m/s); its mass = box volume x density. A player's leg breaks with chance clamp((d - [0]) / [1], 0, [2]).",
-    "min_speed": 1.5,
+    "about": "Vehicle impact (plan 5, vehicle/VehicleImpact): closing speed (m/s) -> health lost of 100 (passed / 5, the vanilla scale; 20 km/h 15, 50 km/h 90). From min_speed (walking pace, a truck backing up slowly) a bump; a player is thrown down as a living ragdoll from knock_speed, below it only flinches and is shoved (2026-10-22). Thrown along the hit at throw_factor x closing x mass / (mass + its mass), up at lift x closing (at most lift_max m/s); its mass = box volume x density. A player's leg breaks with chance clamp((d - [0]) / [1], 0, [2]).",
+    "min_speed": 0.8,
+    "knock_speed": 1.5,
     "cooldown": 10,
     "inflate": 0.15,
     "inflate_per_speed": 0.03,
-    "damage": [[1.5, 0], [3, 4], [5.6, 15], [8.3, 36], [11.1, 62], [13.9, 90], [16.7, 120]],
+    "damage": [[0.8, 0.5], [1.5, 1], [3, 4], [5.6, 15], [8.3, 36], [11.1, 62], [13.9, 90], [16.7, 120]],
     "throw_factor": 1.2,
     "lift": 0.15,
     "lift_max": 3,

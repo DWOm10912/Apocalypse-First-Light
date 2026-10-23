@@ -135,12 +135,13 @@ public final class HealthConfig {
      * ticks) is hurt by damage [[closing m/s, health lost of 100], ...] (passed / 5: the vanilla scale), thrown along the hit
      * at throw × closing × mass / (mass + its mass) and up at lift × closing (at most lift_max m/s), its mass its box's
      * volume × density kg; a player breaks a leg with chance clamp((d - [0]) / [1], 0, [2]) of leg. The box reaches out
-     * inflate + inflate_per_speed × speed blocks.
+     * inflate + inflate_per_speed × speed blocks. A player is thrown down (a living ragdoll) from knock_speed; slower, the
+     * bump (a truck backing up at walking pace) only flinches and shoves it.
      */
     public static final class Vehicle {
-        public double minSpeed = 1.5, inflate = 0.15, inflatePerSpeed = 0.03;
+        public double minSpeed = 0.8, knockSpeed = 1.5, inflate = 0.15, inflatePerSpeed = 0.03;
         public int cooldown = 10;
-        public double[][] damage = {{1.5, 0}, {3, 4}, {5.6, 15}, {8.3, 36}, {11.1, 62}, {13.9, 90}, {16.7, 120}};
+        public double[][] damage = {{0.8, 0.5}, {1.5, 1}, {3, 4}, {5.6, 15}, {8.3, 36}, {11.1, 62}, {13.9, 90}, {16.7, 120}};
         public double throwFactor = 1.2, lift = 0.15, liftMax = 3, mass = 1450, density = 108;
         public double[] leg = {10, 50, 0.7};
 
@@ -251,7 +252,7 @@ public final class HealthConfig {
             throw new IllegalArgumentException("invalid collapse numbers");
         if (vehicle == null) vehicle = new Vehicle();
         var v = vehicle;
-        if (!(v.minSpeed > 0) || !(v.inflate >= 0) || !(v.inflatePerSpeed >= 0) || v.cooldown < 1 || v.damage == null || v.damage.length < 2
+        if (!(v.minSpeed > 0) || !(v.knockSpeed >= v.minSpeed) || !(v.inflate >= 0) || !(v.inflatePerSpeed >= 0) || v.cooldown < 1 || v.damage == null || v.damage.length < 2
                 || !(v.throwFactor >= 0) || !(v.lift >= 0) || !(v.liftMax >= 0) || !(v.mass > 0) || !(v.density > 0) || !pair(v.leg, 3) || !(v.leg[1] > 0))
             throw new IllegalArgumentException("invalid vehicle numbers");
         for (int i = 0; i < v.damage.length; i++)

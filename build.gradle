@@ -448,6 +448,14 @@ tasks.register('vehicleCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.vehicle.physics.VehiclePhysicsCheck'
 }
 
+// Mesh trees on a dedicated server (docs/rendering/mesh_trees_p4_formal.md Y): a layout with its quads dropped says which
+// cells carry leaves as one with them.
+tasks.register('treeStripCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.tree.TreeStripCheck'
+}
+
 // T15 headlamp beams (docs/vehicles/first_pickup_v0_design.md 8.10): light along and across, reach, walls, layers.
 tasks.register('headlightCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

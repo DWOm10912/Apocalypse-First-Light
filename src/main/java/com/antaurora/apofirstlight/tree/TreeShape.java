@@ -78,6 +78,11 @@ public final class TreeShape {
         public long[] solid;
         @SuppressWarnings("unchecked")
         public final List<Quad>[] quads = new List[LODS];
+        /**
+         * Set once the quads were dropped ({@link #strip}, a dedicated server): whether it carried any. Before (fixed
+         * 2026-10-22) a dedicated server read the emptied lists and placed every crown cell without leaves.
+         */
+        private boolean stripped, carried;
 
         Cell(int x, int y, int z, int kind) {
             this.x = x; this.y = y; this.z = z; this.kind = kind;
@@ -85,6 +90,7 @@ public final class TreeShape {
         }
 
         public boolean carries() {
+            if (stripped) return carried;
             for (var l : quads) if (!l.isEmpty()) return true;
             return false;
         }
@@ -168,7 +174,11 @@ public final class TreeShape {
 
     /** Drops a layout's quads when this side never draws (TreeShape#keepQuads). */
     private static Layout strip(Layout l) {
-        if (!keepQuads) for (var c : l.cells.values()) for (var q : c.quads) q.clear();
+        if (!keepQuads) for (var c : l.cells.values()) {
+            c.carried = c.carries();
+            c.stripped = true;
+            for (var q : c.quads) q.clear();
+        }
         return l;
     }
 
@@ -624,6 +634,9 @@ public final class TreeShape {
                 }
             }
             for (int l = 0; l < LODS; l++) for (var q : c.quads[l]) cell.quads[l].add(done.computeIfAbsent(q, k -> k.rotated(turns)));
+            // a stripped base (dedicated server) keeps only the record
+            cell.stripped = c.stripped;
+            cell.carried = c.carried;
             r.cells.put(key(x, c.y, z), cell);
         }
         r.lost = base.lost; r.moved = base.moved; r.height = base.height; r.crownRadius = base.crownRadius;

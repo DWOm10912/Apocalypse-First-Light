@@ -25,8 +25,10 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -38,7 +40,9 @@ import java.util.UUID;
  * (of 100; passed / 5, the vanilla scale, so armour counts and a 20 HP zombie dies at about 50 km/h), is thrown along the
  * hit (throw_factor × closing × M / (M + m), up lift × closing at most lift_max), thumps down, and a player rolls a leg
  * (vehicle.leg; PlayerHealth then knocks it down: Knockdown, the vehicle type always does). A death keeps the throw for
- * the ragdoll's push ({@link #thrown}). Not passengers, spectators or creative players. The truck itself is not slowed
+ * the ragdoll's push ({@link #thrown}). Below vehicle.knock_speed (a truck backing up at walking pace, user 2026-10-22
+ * 「倒车撞不到人」: it used to start at 1.5 m/s and slow reversing only pushed bodies aside) it is a bump: hurt a little,
+ * a flinch and the shove, never thrown down ({@link #bump}). Not passengers, spectators or creative players. The truck itself is not slowed
  * (its physics runs on the driver's client).
  */
 public final class VehicleImpact {
@@ -48,6 +52,8 @@ public final class VehicleImpact {
     private static final Map<UUID, Long> LAST = new HashMap<>();
     /** The throw of a hit being dealt (m/s, world), while it is (a death in it reads it: SurvivorRagdolls). */
     private static final Map<UUID, Vec3> THROWN = new HashMap<>();
+    /** The bodies whose hit being dealt is a bump (closing below vehicle.knock_speed). */
+    private static final Set<UUID> BUMPED = new HashSet<>();
 
     private VehicleImpact() {
     }
@@ -100,10 +106,12 @@ public final class VehicleImpact {
                 truck, driver != null ? driver : truck);
         boolean lying = body instanceof ServerPlayer p && LiveRagdolls.active(p);
         THROWN.put(body.getUUID(), thrown);
+        if (closing < c.knockSpeed) BUMPED.add(body.getUUID());
         try {
             if (health > 0) body.hurt(source, (float) (health / 5));
         } finally {
             THROWN.remove(body.getUUID());
+            BUMPED.remove(body.getUUID());
         }
         RangedSound.play(level, body.position(), AflSounds.BODY_FALL.get(), SoundSource.PLAYERS, MovementNoiseEvents.HEAVY_LANDING_RADIUS,
                 1.0F, 0.95F + body.getRandom().nextFloat() * 0.1F);
@@ -119,6 +127,11 @@ public final class VehicleImpact {
         }
         if (body instanceof ServerPlayer player)
             Fractures.roll(player, BodyPart.randomLeg(player.getRandom()), Fractures.chance(c.leg, health));
+    }
+
+    /** Whether the vehicle hit this body is taking now is a bump (below vehicle.knock_speed): no throwing down (Knockdown). */
+    public static boolean bump(Entity body) {
+        return BUMPED.contains(body.getUUID());
     }
 
     /** The throw (m/s, world) of the vehicle hit this body is taking now, or null (SurvivorRagdolls: a death's push). */
