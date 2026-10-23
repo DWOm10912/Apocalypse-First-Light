@@ -5,9 +5,12 @@ import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import com.antaurora.apofirstlight.worldgen.underground.GeologyModel.Column;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Anchor;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Background;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Bowl;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Box;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Capsule;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Cave;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Destination;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.DestinationKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.CaveKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.CaveLink;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.District;
@@ -24,6 +27,7 @@ import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Fixture;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Kit;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Mine;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Need;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Notch;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.OreBody;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.OreKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Pillar;
@@ -34,6 +38,7 @@ import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Platform
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Shape;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.StepKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Succession;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Talus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,6 +157,7 @@ public final class UndergroundPlanner {
         t = time("index_rig", t);
         documents();
         successions();
+        destinations();
         time("docs_succession", t);
         return plan;
     }
@@ -246,7 +252,7 @@ public final class UndergroundPlanner {
         if (l == null) return false;
         for (int i : l) {
             Shape o = plan.shapes.get(i);
-            if (o instanceof Pillar) continue;
+            if (o.solid()) continue;
             double[] b = o.bounds();
             if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) continue;
             if (o.inside(x, y, z)) return true;
@@ -1567,6 +1573,7 @@ public final class UndergroundPlanner {
             case SPRING_MOUTH -> 1.6 + 1.0 * h(salt);
             default -> 1.8 + 1.2 * h(salt);
         };
+        int places0 = plan.places.size(), pitches0 = plan.pitches.size();
         int rim = plan.addPlace(PlaceKind.SURFACE, x, y, z, owner, new Platform(x, y, z, 3, 3, 50));
         int st;
         Place t = plan.places.get(targetPlace);
@@ -1578,6 +1585,14 @@ public final class UndergroundPlanner {
             st = connect(mouth, 0.5, targetPlace, owner, 2, true, true, Set.of(owner), rh, salt + 1, naturalFixture(salt + 2));
             if (st >= 0) {
                 throat(m);
+                // the porch (22.3): the slope cut back to the mouth's floor; the rim goes out to where it meets the ground
+                Notch n = notch(owner, x, z, y - 1.5, rh + 0.5);
+                if (n != null) {
+                    throat(n);
+                    double ex = x + n.dx() * n.len(), ez = z + n.dz() * n.len(), ey = Math.min(s.heightAt(ex, ez), n.floorAt(ex, ez));
+                    plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, ex, ey, ez, owner, new Platform(ex, ey, ez, 3, 3, 50)));
+                    plan.note("porches " + kind.name().toLowerCase(java.util.Locale.ROOT));
+                }
                 plan.addStep(rim, mouth, StepKind.WALK, Need.NONE, Need.NONE, null, 0);
             }
         } else if (kind == EntranceKind.KARST_WINDOW) {
@@ -1585,28 +1600,92 @@ public final class UndergroundPlanner {
             Capsule pit = new Capsule(owner, x, y + 4, z, x, t.y() + rh, z, rh, rh);
             if (!clear(pit, owner, Set.of(owner)) || !p.allows(pit, 2) || cutsRig(pit)) { kill(rim); return -1; }
             throat(pit);
-            double tx = x + rh + 1.5, tz = z, ty = s.heightAt(tx, tz);
+            // the ground round it sagged before the roof fell (22.2): a collar bowl the window opens in
+            Bowl col = dryBowl(bowl(owner, x, z, 2 + 2 * h(salt + 11), rh + 2.5, rh + 6, 0.8, rh + 25, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner)));
+            if (col != null) { throat(col); plan.note("bowls karst_window"); }
+            double tx = x + rh + 1.5, tz = z, ty = ground(tx, tz, col);
             plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, tx, ty, tz, owner, new Platform(tx, ty, tz, 3, 3, 50)));
             st = pitch(rim, targetPlace, x, z, rh, owner, false, Fixture.NONE, salt + 9, -1);
         } else if (kind == EntranceKind.GREAT_SINKHOLE) {
             double depth = Math.min(150, Math.max(40, y - (t.y() + 10)));
+            // the collar (22.2), and on 60 % the collapse talus as a route from the far rim (22.4): the cone falls 0.7
+            // per m from the far wall and stops 8 m short of the floor place. Where it reaches the rim the sinkhole is
+            // only as deep as the cone and the talus is walked all the way; else it lies lower against the wall and the
+            // far rim has a shorter rope down onto it (the way into a tiankeng)
+            Bowl col = dryBowl(bowl(owner, x, z, Math.min(6, 2 + 0.05 * rh), rh + 3.5, rh + 12, 0.7, rh + 45, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner)));
+            double sx = x - (rh + 2), sz = z, side = ground(sx, sz, col), apexY = side - 0.4;
+            boolean talusRoute = h(salt + 5) < 0.6, walked = false;
+            if (talusRoute && y - (apexY - 0.7 * (1.3 * rh - 8.5)) >= 40) {
+                walked = true;
+                depth = Math.min(depth, y - (apexY - 0.7 * (1.3 * rh - 8.5)));
+            }
             double floor = y - depth;
+            if (talusRoute && !walked) apexY = Math.min(apexY, floor + 0.7 * (1.3 * rh - 8.5));
             Capsule pit = new Capsule(owner, x, y + 6, z, x, floor + 12, z, rh, 12);
             if (!clear(pit, owner, Set.of(owner)) || !p.allows(pit, 2) || cutsRig(pit)) { kill(rim); return -1; }
             double fx = x + rh * 0.3, fz = z;
             int fl = plan.addPlace(PlaceKind.CHAMBER, fx, floor, fz, owner, new Platform(fx, floor, fz, 6, 6, depth));
-            st = floor - t.y() > 1 ? connect(fl, rh, targetPlace, owner, 3, true, true, Set.of(owner), 2.5, salt + 3, naturalFixture(salt + 4)) : walk(fl, targetPlace, 3, 3, plan.caves.get(owner).waterY, true);
+            // the way on drops from beside the floor place, clear of where the talus comes down (22.4)
+            st = floor - t.y() > 1 ? connect(fl, talusRoute ? 5 : rh, targetPlace, owner, 3, true, true, Set.of(owner), 2.5, salt + 3, naturalFixture(salt + 4)) : walk(fl, targetPlace, 3, 3, plan.caves.get(owner).waterY, true);
             if (st < 0) { kill(rim); kill(fl); return -1; }
-            throat(pit);
-            // the rim: rope with rebelays down the wall, or (60 %) the collapse talus as a slope route
-            double tx = x + rh + 2, tz = z;
-            plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, tx, s.heightAt(tx, tz), tz, owner, new Platform(tx, s.heightAt(tx, tz), tz, 3, 3, 50)));
+            int pitShape = throat(pit);
+            if (col != null) { throat(col); plan.note("bowls great_sinkhole"); }
+            // the rim: rope with rebelays down the wall
+            double tx = x + rh + 2, tz = z, ty = ground(tx, tz, col);
+            plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, tx, ty, tz, owner, new Platform(tx, ty, tz, 3, 3, 50)));
             int slope = -1;
-            if (h(salt + 5) < 0.6) slope = plan.addStep(rim, fl, StepKind.SLOPE, Need.NONE, Need.NONE, null, 2);
+            Talus tal = talusRoute ? new Talus(owner, pitShape, x - (rh - 0.5), z, apexY, 0.7, floor - 1, (int) ((salt + 13) & 0x7fffffff)) : null;
+            if (tal != null && buries(tal, places0, pitches0)) tal = null;
+            if (tal != null && walked) {
+                add(tal);
+                int top2 = plan.addPlace(PlaceKind.SURFACE, sx, side, sz, owner, new Platform(sx, side, sz, 3, 3, 50));
+                slope = plan.addStep(top2, fl, StepKind.SLOPE, Need.NONE, Need.NONE, null, 2);
+                plan.note("talus slope routes");
+            } else if (tal != null) {
+                add(tal);
+                // the rope from the far rim to the head of the talus, 2 m out from the wall, then down the talus
+                double hx = x - (rh - 2.5), hy = tal.surfaceAt(hx, z);
+                int top2 = plan.addPlace(PlaceKind.SURFACE, sx, side, sz, owner, new Platform(sx, side, sz, 3, 3, 50));
+                int head = plan.addPlace(PlaceKind.LEDGE, hx, hy, z, owner, new Platform(hx, hy, z, 1.5, 1.5, 2.6));
+                pitch(top2, head, x, z, rh, owner, false, Fixture.NONE, salt + 17, -1);
+                plan.addStep(head, fl, StepKind.SLOPE, Need.NONE, Need.NONE, null, 2);
+                plan.note("talus rope-and-slope routes");
+            } else {
+                // no route: the rockfall heaped at the foot of the far wall, on the curve of the floor
+                double r0 = rh - 2, foot = floor + 12 - 12 * Math.sqrt(Math.max(0, 1 - r0 * r0 / (rh * rh)));
+                Talus heap = new Talus(owner, pitShape, x - r0, z, foot + Math.min(0.25 * rh, 12), 0.7, floor - 1, (int) ((salt + 14) & 0x7fffffff));
+                if (!buries(heap, places0, pitches0)) { add(heap); plan.note("talus heaps great_sinkhole"); }
+            }
             pitch(rim, fl, x, z, rh, owner, false, Fixture.NONE, salt + 6, slope);
             plan.caves.get(owner).places.add(fl);
         } else {
-            st = connect(rim, 0.5, targetPlace, owner, plan.caves.get(owner).layer, true, true, Set.of(owner), rh, salt + 7, naturalFixture(salt + 8));
+            // a pit's bowl (22.2): the throat drops from the middle of its floor, the rim on the floor's far side
+            Bowl b = pitBowl(kind, x, z, rh, owner, salt);
+            st = -1;
+            if (b != null) {
+                double hx = t.x() - x, hz = t.z() - z, hl = Math.hypot(hx, hz);
+                double dx = hl < 1e-6 ? 1 : hx / hl, dz = hl < 1e-6 ? 0 : hz / hl;
+                double rx = x - dx * (rh + 3), rz = z - dz * (rh + 3), ry = ground(rx, rz, b);
+                if (ry >= b.floorY() - 0.5) {
+                    plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, rx, ry, rz, owner, new Platform(rx, ry, rz, 3, 3, 50)));
+                    st = connect(rim, 0.5, targetPlace, owner, plan.caves.get(owner).layer, true, true, Set.of(owner), rh, salt + 7, naturalFixture(salt + 8));
+                }
+                if (st >= 0) {
+                    int bi = throat(b);
+                    plan.note("bowls " + kind.name().toLowerCase(java.util.Locale.ROOT));
+                    // rockfall from the wall beside the throat (22.4), clear of the throat and the rim
+                    double hgt = Math.min(0.35 * (y - b.floorY()), 0.7 * (b.rf() - rh - 1));
+                    if ((kind == EntranceKind.COLLAPSE_PIT || kind == EntranceKind.COVER_SINKHOLE) && hgt >= 0.8) {
+                        double sg = h(salt + 15) < 0.5 ? 1 : -1, ax = x - dz * sg * b.rf(), az = z + dx * sg * b.rf();
+                        Talus heap = new Talus(owner, bi, ax, az, b.floorY() + hgt, 0.7, b.floorY() - 0.5, (int) ((salt + 16) & 0x7fffffff));
+                        if (!buries(heap, places0, pitches0)) { add(heap); plan.note("talus heaps"); }
+                    }
+                } else {
+                    plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, x, y, z, owner, new Platform(x, y, z, 3, 3, 50)));
+                    plan.note("bowl dropped: no throat from it");
+                }
+            }
+            if (st < 0) st = connect(rim, 0.5, targetPlace, owner, plan.caves.get(owner).layer, true, true, Set.of(owner), rh, salt + 7, naturalFixture(salt + 8));
         }
         if (st < 0) { kill(rim); return -1; }
         Place tp = plan.places.get(targetPlace);
@@ -1618,6 +1697,123 @@ public final class UndergroundPlanner {
     void kill(int place) {
         Place q = plan.places.get(place);
         plan.places.set(place, new Place(place, PlaceKind.JUNCTION, q.x(), -1e6, q.z(), q.cave(), null));
+    }
+
+    // ------------------------------------------------------------------ entrance shapes (U4, design 22)
+
+    /** The ground after a cut over (x, z): the planned ground, or the cut's floor where it is lower (cut may be null). */
+    double ground(double x, double z, UndergroundPlan.Open cut) {
+        double gy = s.heightAt(x, z);
+        return cut == null ? gy : Math.min(gy, cut.floorAt(x, z));
+    }
+
+    /** The lowest and highest planned ground over a disc (rings every 2 m, 24 directions), and 1 when all of it is land. */
+    double[] groundRange(double x, double z, double r) {
+        double lo = s.heightAt(x, z), hi = lo;
+        boolean dry = land(x, z);
+        for (double rr = 2; rr < r + 2; rr += 2) {
+            double q = Math.min(rr, r);
+            for (int a = 0; a < 24; a++) {
+                double px = x + Math.cos(a * Math.PI / 12) * q, pz = z + Math.sin(a * Math.PI / 12) * q, gy = s.heightAt(px, pz);
+                lo = Math.min(lo, gy);
+                hi = Math.max(hi, gy);
+                if (a % 3 == 0 && !land(px, pz)) dry = false;
+            }
+        }
+        return new double[]{lo, hi, dry ? 1 : 0};
+    }
+
+    /**
+     * An entrance bowl (22.2) round (x, z): its flat floor `depth` under the planned ground there out to rf, the wall no
+     * steeper than maxSlope (the outline's wobble counted) up to over the highest ground of its footprint. pond: the
+     * level its water may stand at, kept 0.5 m under the lowest ground round it (-inf dry). Null when it would grow past
+     * maxR, leave the land or break a rule (protection as layer 2, another cave's rock gap, a rig); adds nothing.
+     */
+    Bowl bowl(int owner, double x, double z, double depth, double rf, double minR, double maxSlope, double maxR, double pond, long salt, Set<Integer> ok) {
+        // the wall's slope along the ray, its wobble counted; R: where it is over the highest ground round it
+        double wob = UndergroundPlan.BOWL_WOB, k = maxSlope * (1 - wob), floor = s.heightAt(x, z) - depth, R = Math.max(minR, rf + 1);
+        double[] gr;
+        for (int it = 0; ; it++) {
+            gr = groundRange(x, z, R * (1 + wob) + 1);
+            double need = rf + Bowl.TOE / 2 + (gr[1] + 0.5 - floor) / k;
+            if (need <= R + 1e-6) break;
+            if (it == 8 || need > maxR) { plan.note("bowl too wide"); return null; }
+            R = need;
+        }
+        if (gr[2] < 0.5) { plan.note("bowl off the land"); return null; }
+        double water = Math.min(pond, gr[0] - 0.5);
+        Bowl b = new Bowl(owner, x, z, floor, rf, R, gr[1] + 0.5, k, (int) (salt & 0x7fffffff), water > floor + 0.3 ? water : Double.NEGATIVE_INFINITY);
+        if (!p.allows(b, 2)) { plan.note("bowl breaks protection"); return null; }
+        if (!clear(b, owner, ok)) { plan.note("bowl too close to a cave"); return null; }
+        if (cutsRig(b)) return null;
+        return b;
+    }
+
+    /** A bowl that its cave's water stays under (the throat below it would otherwise stand open to it), or null. */
+    Bowl dryBowl(Bowl b) {
+        if (b == null || plan.caves.get(b.owner()).waterY < b.floorY() - 0.3) return b;
+        plan.note("bowl over high water");
+        return null;
+    }
+
+    /** The bowl round a pit's throat (22.2): a collapse pit's rock bowl, a cover sinkhole's soil funnel, a shaft's lip. */
+    Bowl pitBowl(EntranceKind kind, double x, double z, double rh, int owner, long salt) {
+        double rf = rh + 3.5, u = h(salt + 10);
+        return dryBowl(switch (kind) {
+            case COLLAPSE_PIT -> bowl(owner, x, z, 1.5 + 2.5 * u, rf, rf + 2, 1.0, rf + 20, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner));
+            case COVER_SINKHOLE -> bowl(owner, x, z, 2 + 4 * u, rf, rf + 3, 0.65, rf + 30, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner));
+            case SHAFT, FISSURE -> bowl(owner, x, z, 0.6 + 0.6 * u, rf, rf + 1.5, 0.65, rf + 12, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner));
+            default -> null;
+        });
+    }
+
+    /**
+     * A mouth's porch (22.3) out of the mouth at (x, z): downhill, as long as the floor (falling 0.1 per m from floorY)
+     * takes to come out on the ground, at most 16 m. Null on a slope too gentle for that, off the land, against a rule,
+     * where the cave's water would reach the porch, or where the ground over it rises past its cut.
+     */
+    Notch notch(int owner, double x, double z, double floorY, double w) {
+        double gx = s.heightAt(x + 4, z) - s.heightAt(x - 4, z), gz = s.heightAt(x, z + 4) - s.heightAt(x, z - 4), gl = Math.hypot(gx, gz);
+        if (gl / 8 < 0.13) { plan.note("porch: slope too gentle"); return null; }
+        double dx = -gx / gl, dz = -gz / gl, len = -1;
+        for (double a = 0.5; a <= 15; a += 0.5)
+            if (s.heightAt(x + dx * a, z + dz * a) <= floorY - 0.1 * a + 0.2) { len = a + 1; break; }
+        if (len < 0) { plan.note("porch: never meets the ground"); return null; }
+        if (plan.caves.get(owner).waterY >= floorY - 0.1 * len - 0.3 || !land(x + dx * len, z + dz * len)) return null;
+        double top = s.heightAt(x, z) + 1;
+        Notch n = null;
+        for (int it = 0; it < 4; it++) {
+            n = new Notch(owner, x, z, dx, dz, floorY, len, w, top);
+            double hi = Double.NEGATIVE_INFINITY;
+            double[] b = n.bounds();
+            for (double px = b[0]; px <= b[3] + 1e-6; px += 1.5) for (double pz = b[2]; pz <= b[5] + 1e-6; pz += 1.5)
+                if (n.floorAt(px, pz) < Double.POSITIVE_INFINITY || it == 0) hi = Math.max(hi, s.heightAt(px, pz));
+            if (hi + 0.5 <= top) break;
+            if (it == 3) { plan.note("porch: ground rises past it"); return null; }
+            top = hi + 0.5;
+        }
+        if (!p.allows(n, 2) || !clear(n, owner, Set.of(owner)) || cutsRig(n)) { plan.note("porch: against a rule"); return null; }
+        return n;
+    }
+
+    /** Whether a talus would bury a place laid since places0 (its platform's corners) or the head of a pitch laid since pitches0. */
+    boolean buries(Talus t, int places0, int pitches0) {
+        for (int i = places0; i < plan.places.size(); i++) {
+            Place q = plan.places.get(i);
+            if (q.y() < -1e5 || q.platform() == null) continue;
+            Platform pf = q.platform();
+            for (int sx = -1; sx <= 1; sx++) for (int sz = -1; sz <= 1; sz++)
+                if (t.inside(q.x() + sx * pf.hx(), q.y() + 0.3, q.z() + sz * pf.hz())) { plan.note("talus would bury a place"); return true; }
+        }
+        for (int i = pitches0; i < plan.pitches.size(); i++) {
+            Pitch pc = plan.pitches.get(i);
+            double ty = plan.places.get(pc.top()).y();
+            for (int a = 0; a <= 8; a++) {
+                double r = a == 0 ? 0 : pc.rh(), an = a * Math.PI / 4;
+                if (t.inside(pc.ax() + Math.cos(an) * r, ty + 0.3, pc.az() + Math.sin(an) * r)) { plan.note("talus would bury a shaft"); return true; }
+            }
+        }
+        return false;
     }
 
     /** Entrances into systems (7.4): 40 % of karst systems and 15 % of fracture systems, through the connector if any. */
@@ -1887,9 +2083,32 @@ public final class UndergroundPlanner {
                 }
             }
         }
-        // dead: a pit or a closed crack, no cave behind it (U4 carves the bowl)
+        // dead: a pit or a closed crack, no cave behind it
         double depth = kind == EntranceKind.COLLAPSE_PIT ? 1 + 5 * h(k(142, key)) : kind == EntranceKind.COVER_SINKHOLE ? 5 + 20 * h(k(142, key)) : 2 + 6 * h(k(142, key));
         double radius = kind == EntranceKind.COLLAPSE_PIT ? 1.5 + 6 * h(k(143, key)) : kind == EntranceKind.COVER_SINKHOLE ? 5 + 15 * h(k(143, key)) : 0.5 + 1.5 * h(k(143, key));
+        if (kind == EntranceKind.COLLAPSE_PIT || kind == EntranceKind.COVER_SINKHOLE) {
+            // U4 (22.2): its bowl, a cave of its own; a cover sinkhole's funnel holds a pond where the water table is
+            // high, a collapse pit drains into the rock and has the rockfall of its steeper wall at the foot of it
+            boolean cov = kind == EntranceKind.COVER_SINKHOLE;
+            double d = cov ? Math.min(8, depth) : depth;
+            int id = plan.caves.size();
+            Bowl bw = bowl(id, c.x, c.z, d, (cov ? 0.3 : 0.35) * radius, radius, cov ? 0.65 : 1.0, cov ? 45 : 30,
+                    cov ? g.waterTable(c) : Double.NEGATIVE_INFINITY, k(149, key), null);
+            if (bw != null) {
+                Cave cv = cave(CaveKind.SINKHOLE, 2, c.x, bw.floorY(), c.z, bw.water(), g.rockAt(c, bw.floorY() - 1));
+                cv.label = cov ? "cover sinkhole" : "collapse pit";
+                int bi = throat(bw);
+                plan.note("dead bowls " + (cov ? "cover_sinkhole" : "collapse_pit") + (bw.water() > Double.NEGATIVE_INFINITY ? " pond" : ""));
+                double gx = s.heightAt(c.x + 4, c.z) - s.heightAt(c.x - 4, c.z), gz = s.heightAt(c.x, c.z + 4) - s.heightAt(c.x, c.z - 4), gl = Math.hypot(gx, gz);
+                if (!cov && d >= 2.3 && gl > 1e-6) {
+                    double ax = c.x + gx / gl * bw.rf(), az = c.z + gz / gl * bw.rf();
+                    add(new Talus(id, bi, ax, az, bw.floorY() + 0.35 * d, 0.7, bw.floorY() - 0.5, (int) (k(150, key) & 0x7fffffff)));
+                    plan.note("talus heaps dead");
+                }
+                plan.entrances.add(new Entrance(plan.entrances.size(), kind, c.x, c.z, c.h, bw.R(), d, -1, -1));
+                return;
+            }
+        }
         plan.entrances.add(new Entrance(plan.entrances.size(), kind, c.x, c.z, c.h, radius, depth, -1, -1));
     }
 
@@ -2353,5 +2572,60 @@ public final class UndergroundPlanner {
             plan.successions.add(new Succession(plan.successions.size(), env, q.x(), q.y(), q.z(), c[0], cv == null ? "-" : cv.kind + " " + cv.id + " " + cv.label,
                     q.platform(), exits, kit, bg, hazard, first, succ, cps));
         }
+    }
+
+    // ------------------------------------------------------------------ destinations (U5 sample, design 24)
+
+    /**
+     * The start cave as the first destination: its room (the biggest dry chamber a light reaches, else the dry place
+     * deepest along the way in), the light's way in to it (the shortest exit walked backwards) and the entrance it
+     * starts at, and how one gets there from the home and the nearest road. Notes "start destination none" when the
+     * plan has no start cave or a light reaches no dry place of it.
+     */
+    void destinations() {
+        if (plan.startCave < 0) { plan.note("start destination none"); return; }
+        Cave cv = plan.caves.get(plan.startCave);
+        int kit = 1;
+        BitSet lit = UndergroundRoutes.reachIn(plan, UndergroundPlan.KITS.get(kit));
+        int room = -1;
+        Exit way = null;
+        double best = -1;
+        for (int pl : cv.places) {
+            Place q = plan.places.get(pl);
+            if (!lit.get(pl) || q.y() + 1 < cv.waterY || q.platform() == null) continue;
+            Exit e = UndergroundRoutes.exit(plan, pl, UndergroundPlan.KITS.get(kit));
+            if (e == null || !e.reliable()) continue;
+            // chambers by floor area first, then any dry place by how far in it lies
+            double score = q.kind() == PlaceKind.CHAMBER ? 1e6 + q.platform().area() : e.length();
+            if (score > best) { best = score; room = pl; way = e; }
+        }
+        if (way == null) { plan.note("start destination none"); return; }
+        // the exit runs room -> surface; the route is the walk in, rim first
+        List<double[]> route = new ArrayList<>();
+        int at = room;
+        List<double[]> back = new ArrayList<>();
+        for (int si : way.path()) {
+            Place a = plan.places.get(at);
+            back.add(new double[]{a.x(), a.y(), a.z()});
+            UndergroundPlan.Step st = plan.steps.get(si);
+            at = st.a() == at ? st.b() : st.a();
+        }
+        Place rim = plan.places.get(way.surface());
+        back.add(new double[]{rim.x(), rim.y(), rim.z()});
+        for (int i = back.size() - 1; i >= 0; i--) route.add(back.get(i));
+        int ent = -1;
+        for (Entrance e : plan.entrances) if (e.place() == way.surface()) { ent = e.id(); break; }
+        Place r = plan.places.get(room);
+        double hd = p.homeDistance(rim.x(), rim.z());
+        double bearing = p.home ? (Math.toDegrees(Math.atan2(rim.x() - p.homeX, -(rim.z() - p.homeZ))) + 360) % 360 : Double.NaN;
+        double rx = Double.NaN, rz = Double.NaN, rw = Double.MAX_VALUE;
+        for (double[] line : p.roadLines)
+            for (int i = 0; i + 2 < line.length; i += 3) {
+                double d = Math.hypot(line[i] - rim.x(), line[i + 1] - rim.z());
+                if (d < rw) { rw = d; rx = line[i]; rz = line[i + 1]; }
+            }
+        plan.destinations.add(new Destination(plan.destinations.size(), DestinationKind.START_CAVE, UndergroundPlan.START_CAVE_NAME,
+                cv.id, ent, room, kit, way.length(), rim.y() - r.y(), route, hd, bearing, rx, rz, rw));
+        plan.note("start destination");
     }
 }

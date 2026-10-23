@@ -12,6 +12,7 @@ import com.antaurora.apofirstlight.worldgen.underground.GeologyModel.Column;
 import com.antaurora.apofirstlight.worldgen.underground.RockType;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Anchor;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Bowl;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Capsule;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Cave;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.CaveKind;
@@ -22,8 +23,8 @@ import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Entrance
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Exit;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.FacilityPart;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Kit;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Notch;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.OreBody;
-import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Pillar;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Pitch;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Place;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Need;
@@ -32,6 +33,7 @@ import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.PlaceKin
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Platform;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Shape;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Succession;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Talus;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlanner;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundRoutes;
 
@@ -249,7 +251,7 @@ public final class UndergroundCheck {
             Shape sh = u.shapes.get(i);
             if (sh.bounds()[1] < -1e5) continue;
             Cave c = u.caves.get(sh.owner());
-            if (sh instanceof Pillar) continue;
+            if (sh.solid()) continue;
             String v = p0.violation(sh, c.layer);
             if (v == null && sh.owner() != facOwner && sh.owner() != facLink && p.facilityHit(sh)) v = "facility";
             if (v != null && c.kind == CaveKind.BUILT && c.label.startsWith("mine")) v = p0.violation(sh, 3);
@@ -434,6 +436,29 @@ public final class UndergroundCheck {
             }
             if (best > 3000) bad.add("no light-only dry cave within 3 km of the home");
         }
+        // the start cave as a destination (U5 sample, design 24): named, walked in with a light, every route point open
+        {
+            UndergroundPlan.Destination d = null;
+            for (UndergroundPlan.Destination q : u.destinations) if (q.kind() == UndergroundPlan.DestinationKind.START_CAVE) d = q;
+            if (d == null) {
+                out("  start destination: none");
+                if (u.startCave >= 0) bad.add("the start cave has no destination");
+            } else {
+                int shut = 0;
+                for (int i = 1; i < d.route().size(); i++) {
+                    double[] q = d.route().get(i);
+                    if (!u.airAt(q[0], q[1] + 1, q[2])) shut++;
+                }
+                UndergroundPlan.Entrance e = d.entrance() >= 0 ? u.entrances.get(d.entrance()) : null;
+                out("  start destination: %s, cave %d, entrance %s, %.0f m from the home (bearing %.0f), road %.0f m; way in kit %s, %.0f m, down %.0f m, %d places, %d not open",
+                        d.name(), d.cave(), e == null ? "none" : e.id() + " " + e.kind(), d.homeDistance(), d.homeBearing(), d.roadWalk(),
+                        UndergroundPlan.KITS.get(d.kit()).name(), d.length(), d.drop(), d.route().size(), shut);
+                if (d.cave() != u.startCave) bad.add("the start destination is not the start cave");
+                if (d.kit() > 1) bad.add("the start destination needs more than a light");
+                if (e == null) bad.add("the start destination has no entrance");
+                if (shut > 0) bad.add(shut + " start destination route points not open");
+            }
+        }
         int entUnreach = 0;
         for (Entrance e : u.entrances) if (e.connected() && e.place() >= 0 && UndergroundRoutes.leastKitIn(u, e.place(), in) < 0) entUnreach++;
         if (entUnreach > 0) bad.add(entUnreach + " connected entrances whose rim is not a surface place");
@@ -476,6 +501,8 @@ public final class UndergroundCheck {
                 pitchN, maxH, fx, u.anchors.size(), anchorBad, anchorWeak, noAnchor, platBad);
         if (platBad > pitchN / 50 + 2) bad.add(platBad + " rope platforms not standable");
         if (anchorBad > 0 || noAnchor > 0) bad.add((anchorBad + noAnchor) + " rope anchors missing or not in rock");
+
+        entranceShapes(u, s, bad);
 
         // ---- successions (19.7)
         int succ = 0, first = 0, noExit = 0;
@@ -606,7 +633,7 @@ public final class UndergroundCheck {
         for (int i = 0; i < u.shapes.size(); i++) {
             if (u.throats.get(i)) continue;
             Shape sh = u.shapes.get(i);
-            if (sh instanceof Pillar) continue;
+            if (sh.solid()) continue;
             double[] b = sh.bounds();
             if (b[1] < -1e5) continue;
             boolean br = false;
@@ -628,7 +655,7 @@ public final class UndergroundCheck {
         Platform pf = q.platform();
         if (pf == null) return "no platform";
         if (q.kind() == PlaceKind.SURFACE || Math.abs(q.y() - s.heightAt(q.x(), q.z())) < 1.5 && !u.openAt(q.x(), q.y() + 0.5, q.z())) {
-            double gy = s.heightAt(q.x(), q.z());
+            double gy = u.groundAt(q.x(), q.z(), s.heightAt(q.x(), q.z()));
             if (Math.abs(gy - q.y()) > 2) return String.format(Locale.ROOT, "%.1f m off the ground", q.y() - gy);
             if (u.openAt(q.x(), gy - 0.6, q.z()) && Math.hypot(q.x() - pc.ax(), q.z() - pc.az()) <= pc.rh() + 0.2) return "over the shaft";
             return null;
@@ -639,6 +666,115 @@ public final class UndergroundCheck {
             if (q.id() != pc.bottom() || u.caveAt(q.x(), q.y() - 3, q.z()) >= 0) return "open below";
         }
         return null;
+    }
+
+    /**
+     * U4 (design 22): the entrance bowls, porches and talus. Along 24 rays of every bowl the ground after the cut has no
+     * step over 1.2 m in 1 m and no slope steeper than its kind allows (+10 %); no water stands open to air beside or
+     * under it (a bowl's pond, or the cave's water in the throat under it); no talus buries a place; every surface place
+     * stands on the ground after the cut. Prints the counts by entrance kind and the sizes.
+     */
+    static void entranceShapes(UndergroundPlan u, TerrainPlanSurface s, List<String> bad) {
+        Map<String, EntranceKind> at = new HashMap<>();
+        for (Entrance e : u.entrances) at.put(Math.round(e.x()) + "," + Math.round(e.z()), e.kind());
+        Map<String, int[]> count = new TreeMap<>();
+        int bowls = 0, ponds = 0, steps = 0, steep = 0, hang = 0, notches = 0, taluses = 0, buried = 0, offGround = 0;
+        double sumR = 0, maxR = 0, sumD = 0, maxD = 0, worstStep = 0, worstSlope = 0, sumLen = 0;
+        String worstSlopeAt = "";
+        for (int i = 0; i < u.shapes.size(); i++) {
+            Shape sh = u.shapes.get(i);
+            if (sh instanceof Notch n) { notches++; sumLen += n.len(); continue; }
+            if (sh instanceof Talus t) {
+                taluses++;
+                Shape host = u.shapes.get(t.host());
+                for (Place q : u.places) {
+                    if (q.y() < -1e5 || q.platform() == null || Math.abs(q.x() - t.x()) > 80 || Math.abs(q.z() - t.z()) > 80) continue;
+                    if (t.inside(q.x(), q.y() + 0.3, q.z()) && host.inside(q.x(), q.y() + 0.3, q.z())) {
+                        buried++;
+                        if (buried <= 3) out("    talus %d buries place %d %s at (%.1f, %.1f, %.1f)", i, q.id(), q.kind(), q.x(), q.y(), q.z());
+                    }
+                }
+                continue;
+            }
+            if (!(sh instanceof Bowl b)) continue;
+            bowls++;
+            EntranceKind k = at.get(Math.round(b.x()) + "," + Math.round(b.z()));
+            String kn = (k == null ? "?" : k.name().toLowerCase(Locale.ROOT)) + (u.caves.get(b.owner()).kind == CaveKind.SINKHOLE ? " dead" : "");
+            count.computeIfAbsent(kn, q -> new int[1])[0]++;
+            if (b.water() > Double.NEGATIVE_INFINITY) ponds++;
+            double depth = s.heightAt(b.x(), b.z()) - b.floorY();
+            sumR += b.R();
+            maxR = Math.max(maxR, b.R());
+            sumD += depth;
+            maxD = Math.max(maxD, depth);
+            double limit = (k == EntranceKind.COLLAPSE_PIT ? 1.0 : k == EntranceKind.KARST_WINDOW ? 0.8 : k == EntranceKind.GREAT_SINKHOLE ? 0.7 : 0.65) * 1.1;
+            double reach = b.R() * (1 + UndergroundPlan.BOWL_WOB) + 3;
+            for (int a = 0; a < 24; a++) {
+                double cx = Math.cos(a * Math.PI / 12), cz = Math.sin(a * Math.PI / 12);
+                double pg = Double.NaN, pp = Double.NaN, ppg = Double.NaN, ppp = Double.NaN;
+                for (double r = 0; r <= reach; r += 0.5) {
+                    double x = b.x() + cx * r, z = b.z() + cz * r, plan = s.heightAt(x, z), gy = u.groundAt(x, z, plan);
+                    boolean cut = gy < plan - 0.1;
+                    if (!Double.isNaN(pg) && cut && pp - 0.1 > pg) {
+                        double sl = Math.abs(gy - pg) / 0.5;
+                        if (sl > worstSlope) { worstSlope = sl; worstSlopeAt = String.format(Locale.ROOT, "%s at (%.0f, %.0f)", kn, x, z); }
+                        if (sl > limit) steep++;
+                    }
+                    if (!Double.isNaN(ppg) && (cut || ppp - 0.1 > ppg)) {
+                        double st = Math.abs(gy - ppg) - Math.abs(plan - ppp);
+                        worstStep = Math.max(worstStep, st);
+                        if (st > 1.2) steps++;
+                    }
+                    ppg = pg;
+                    ppp = pp;
+                    pg = gy;
+                    pp = plan;
+                }
+            }
+            // water open to air: every wet point of the footprint against its four sides and the point under it
+            double top = Math.max(b.water(), b.floorY()) + 1;
+            for (double x = b.x() - reach; x <= b.x() + reach; x += 1) for (double z = b.z() - reach; z <= b.z() + reach; z += 1)
+                for (double y = Math.floor(b.floorY()) - 2.5; y <= top; y += 1) {
+                    if (!u.waterAt(x, y, z)) continue;
+                    double[][] nb = {{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1}, {0, -1, 0}};
+                    for (double[] o : nb) {
+                        double nx = x + o[0], ny = y + o[1], nz = z + o[2];
+                        boolean air = u.airAt(nx, ny, nz) || ny > s.heightAt(nx, nz) && !u.waterAt(nx, ny, nz);
+                        if (!air) continue;
+                        hang++;
+                        if (hang <= 3) out("    water open to air at (%.1f, %.1f, %.1f) by bowl %d %s", x, y, z, i, kn);
+                        break;
+                    }
+                }
+        }
+        for (Place q : u.places) {
+            if (q.kind() != PlaceKind.SURFACE || q.y() < -1e5 || u.caves.get(q.cave()).kind == CaveKind.BUILT) continue;   // built heads stand at their own level
+            double gy = u.groundAt(q.x(), q.z(), s.heightAt(q.x(), q.z()));
+            if (Math.abs(gy - q.y()) > 2) {
+                offGround++;
+                if (offGround <= 3) out("    surface place %d %.1f m off the ground after the cut", q.id(), q.y() - gy);
+            }
+        }
+        StringBuilder cs = new StringBuilder();
+        for (var e : count.entrySet()) cs.append(' ').append(e.getKey()).append(' ').append(e.getValue()[0]);
+        out("  U4 entrance shapes: bowls %d (%s ), %d with a pond; radius %.1f m mean / %.1f max, depth %.1f / %.1f; porches %d (%.1f m long); talus %d; notes %s",
+                bowls, cs, ponds, bowls == 0 ? 0 : sumR / bowls, maxR, bowls == 0 ? 0 : sumD / bowls, maxD, notches, notches == 0 ? 0 : sumLen / notches, taluses, u4Notes(u));
+        out("    steepest cut %.2f (%s), worst step over the ground's own %.2f m; %d steep samples, %d steps, %d wet points open to air, %d places buried, %d surface places off the ground",
+                worstSlope, worstSlopeAt, worstStep, steep, steps, hang, buried, offGround);
+        if (bowls == 0) bad.add("no entrance bowls");
+        if (steep > 0) bad.add(steep + " bowl wall samples steeper than allowed");
+        if (steps > 0) bad.add(steps + " steps over 1.2 m at bowl rims");
+        if (hang > 0) bad.add(hang + " wet points open to air at entrances");
+        if (buried > 0) bad.add(buried + " places buried by talus");
+        if (offGround > 0) bad.add(offGround + " surface places off the ground");
+    }
+
+    static String u4Notes(UndergroundPlan u) {
+        StringBuilder sb = new StringBuilder("{");
+        for (var e : u.notes.entrySet())
+            if (e.getKey().startsWith("bowl") || e.getKey().startsWith("dead bowls") || e.getKey().startsWith("porch") || e.getKey().startsWith("talus") || e.getKey().startsWith("sinkhole too"))
+                sb.append(sb.length() > 1 ? ", " : "").append(e.getKey()).append('=').append(e.getValue());
+        return sb.append('}').toString();
     }
 
     static int[] components(UndergroundPlan u) {
@@ -864,7 +1000,7 @@ public final class UndergroundCheck {
         for (int i = 0; i < u.shapes.size(); i++) {
             Shape sh = u.shapes.get(i);
             double[] b = sh.bounds();
-            if (b[1] < -1e5 || sh instanceof Pillar) continue;
+            if (b[1] < -1e5 || sh.solid()) continue;
             Cave c = u.caves.get(sh.owner());
             gr.setColor(rgb(CAVE_RGB.get(c.kind)));
             if (sh instanceof Capsule cp) {

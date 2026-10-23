@@ -22,7 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * U2 (docs/worldgen/underground_geology_caves_v0_design.md section 20): cuts the planned caves of a deep world into the
  * noise fill. Only solid rock is cut (the default block, null here): a cave block above its waterY becomes air, below it
- * water, and a stream trench is water whatever the level (section 21.2). Sea, rivers and open air are left as the density made them. The shape list is gathered once per chunk.
+ * water, and a stream trench is water whatever the level (section 21.2); an entrance bowl or porch (section 22) is plain
+ * air, or its pond. Sea, rivers and open air are left as the density made them. The shape list is gathered once per chunk.
  */
 @Mixin(NoiseChunk.class)
 public abstract class NoiseChunkUndergroundMixin {
@@ -56,7 +57,9 @@ public abstract class NoiseChunkUndergroundMixin {
         double px = x + 0.5, py = y + 0.5, pz = z + 0.5;
         int shape = apocalypse$cavePlan.shapeAmong(apocalypse$caveShapes, px, py, pz);
         if (shape < 0) return;
-        cir.setReturnValue(apocalypse$cavePlan.wetAt(shape, px, py, pz)
-                ? Blocks.WATER.defaultBlockState() : Blocks.CAVE_AIR.defaultBlockState());
+        // an entrance's bowl or porch is open to the sky: plain air there (design 22.2)
+        cir.setReturnValue(apocalypse$cavePlan.wetAt(shape, px, py, pz) ? Blocks.WATER.defaultBlockState()
+                : apocalypse$cavePlan.shapes.get(shape) instanceof UndergroundPlan.Open ? Blocks.AIR.defaultBlockState()
+                : Blocks.CAVE_AIR.defaultBlockState());
     }
 }

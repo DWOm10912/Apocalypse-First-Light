@@ -19,14 +19,108 @@ public final class UndergroundPlan {
 
     // ------------------------------------------------------------------ shapes
 
-    /** One hollow (or, for a pillar, solid) volume. owner = the cave object. */
-    public sealed interface Shape permits Ellipsoid, Capsule, Box, Pillar {
+    /** One hollow (or, for a pillar or a talus, solid) volume. owner = the cave object. */
+    public sealed interface Shape permits Ellipsoid, Capsule, Box, Pillar, Open, Talus {
         int owner();
 
         /** {minX, minY, minZ, maxX, maxY, maxZ}. */
         double[] bounds();
 
         boolean inside(double x, double y, double z);
+
+        /** Solid rock left in a hollow (a pillar, a talus), not a hollow itself. */
+        default boolean solid() { return false; }
+    }
+
+    /**
+     * U4 (22.2–22.3): a cut open to the sky, the ground taken down to floorAt inside its footprint. It cuts only what is
+     * solid, so above the planned ground it changes nothing and the ground after the cut is min(planned, floorAt).
+     */
+    public sealed interface Open extends Shape permits Bowl, Notch {
+        /** The cut's floor over (x, z), +inf outside the footprint. */
+        double floorAt(double x, double z);
+    }
+
+    /** Wobble of a bowl's outline (share of the radius, either way). */
+    public static final double BOWL_WOB = 0.08;
+
+    /**
+     * An entrance bowl (22.2): the flat floor floorY out to rf, then a wall rising `slope` per m (easing in over its
+     * first 2 m) until it meets the ground, so on a hillside the uphill wall runs further out than the downhill one; R
+     * is where it is over top, the highest ground round it. rf and R wobble with the angle by up to BOWL_WOB. water: its
+     * pond's level (-inf dry), whatever its cave's water level.
+     */
+    public record Bowl(int owner, double x, double z, double floorY, double rf, double R, double top, double slope, int salt, double water) implements Open {
+        /** The wall's foot, where it eases from the floor into its slope. */
+        public static final double TOE = 2;
+
+        public double[] bounds() {
+            double e = R * (1 + BOWL_WOB);
+            return new double[]{x - e, floorY, z - e, x + e, top, z + e};
+        }
+
+        public double floorAt(double px, double pz) {
+            double dx = px - x, dz = pz - z, r = Math.sqrt(dx * dx + dz * dz);
+            if (r >= R * (1 + BOWL_WOB)) return Double.POSITIVE_INFINITY;
+            double rho = r / scale(dx, dz, r);
+            if (rho <= rf) return floorY;
+            if (rho >= R) return Double.POSITIVE_INFINITY;
+            double u = rho - rf;
+            return floorY + slope * (u < TOE ? u * u / (2 * TOE) : u - TOE / 2);
+        }
+
+        /** The outline's stretch in the direction (dx, dz): smooth and periodic in the angle. */
+        double scale(double dx, double dz, double r) {
+            if (r < 1e-6) return 1;
+            return 1 + BOWL_WOB * (2 * valueNoise(50 + 1.6 * dx / r, 50 + 1.6 * dz / r, 0, salt) - 1);
+        }
+
+        public boolean inside(double px, double py, double pz) { return py < top && py > floorAt(px, pz); }
+    }
+
+    /**
+     * A mouth's porch (22.3), cut back into the slope from the mouth (x, z) downhill along the unit (dx, dz): the floor
+     * falls 0.1 per m from floorY, the back, the front past len and the sides (half width w at the floor) lean out as
+     * they rise, so the cut meets the ground without a step. Always dry.
+     */
+    public record Notch(int owner, double x, double z, double dx, double dz, double floorY, double len, double w, double top) implements Open {
+        public double[] bounds() {
+            double hgt = top - floorY + 0.1 * len, a0 = -0.8 * hgt, a1 = len + 0.8 * hgt, l = w + 0.6 * hgt;
+            double[] xs = {x + dx * a0 - dz * l, x + dx * a0 + dz * l, x + dx * a1 - dz * l, x + dx * a1 + dz * l};
+            double[] zs = {z + dz * a0 + dx * l, z + dz * a0 - dx * l, z + dz * a1 + dx * l, z + dz * a1 - dx * l};
+            return new double[]{Math.min(Math.min(xs[0], xs[1]), Math.min(xs[2], xs[3])), floorY - 0.1 * a1, Math.min(Math.min(zs[0], zs[1]), Math.min(zs[2], zs[3])),
+                    Math.max(Math.max(xs[0], xs[1]), Math.max(xs[2], xs[3])), top, Math.max(Math.max(zs[0], zs[1]), Math.max(zs[2], zs[3]))};
+        }
+
+        public double floorAt(double px, double pz) {
+            double qx = px - x, qz = pz - z, a = qx * dx + qz * dz, l = Math.abs(-qx * dz + qz * dx);
+            double f = floorY - 0.1 * Math.max(0, a);
+            double c = Math.max(f, Math.max(f + (l - w) / 0.6, Math.max(f - a / 0.8, f + (a - len) / 0.8)));
+            return c >= top ? Double.POSITIVE_INFINITY : c;
+        }
+
+        public boolean inside(double px, double py, double pz) { return py < top && py > floorAt(px, pz); }
+    }
+
+    /**
+     * Solid (22.4): a rubble cone on the floor of the hollow `host` (a shape index), apex (x, apexY, z), flanks rising
+     * `slope` per m, from y0 up, the surface roughened by up to 0.3 m away from the apex. It fills only its host.
+     */
+    public record Talus(int owner, int host, double x, double z, double apexY, double slope, double y0, int salt) implements Shape {
+        public double[] bounds() {
+            double l = (apexY + 0.3 - y0) / slope;
+            return new double[]{x - l, y0, z - l, x + l, apexY + 0.3, z + l};
+        }
+
+        /** The cone's surface over (px, pz). */
+        public double surfaceAt(double px, double pz) {
+            double r = Math.hypot(px - x, pz - z);
+            return apexY - slope * r + 0.3 * (2 * valueNoise(px / 2.5, 0, pz / 2.5, salt) - 1) * Math.min(1, r / 3);
+        }
+
+        public boolean inside(double px, double py, double pz) { return py >= y0 && py < surfaceAt(px, pz); }
+
+        @Override public boolean solid() { return true; }
     }
 
     /** Chamber kinds (21.3): a plain dome, or a breakdown room (flat bedding ceiling, rubble heaped along the walls). */
@@ -227,6 +321,8 @@ public final class UndergroundPlan {
         public boolean inside(double px, double py, double pz) {
             return py >= y0 && py <= y1 && (px - x) * (px - x) + (pz - z) * (pz - z) < r * r;
         }
+
+        @Override public boolean solid() { return true; }
     }
 
     // ------------------------------------------------------------------ objects
@@ -391,6 +487,22 @@ public final class UndergroundPlan {
                              List<Exit> exits, Kit kit, EnumSet<Background> backgrounds, int hazard, boolean firstStart,
                              boolean succession, List<double[]> checkpoints) {}
 
+    public enum DestinationKind { START_CAVE, GIANT_CAVE, CANYON }
+
+    /** The start cave's English name (U5 sample, design 24; the user's choice 2026-10-22). */
+    public static final String START_CAVE_NAME = "Bear Hollow Cave";
+
+    /**
+     * A cave as a destination (U5, design 8.4 and 24): its name, the entrance a kit walks in by and the room it leads
+     * to, data only (no story; the map, documents and the wiki read it). kit: the least that walks in (KITS index);
+     * length / drop: the route's walk and how far it goes down; route: {x, y, z} from the entrance rim to the room;
+     * from the home: straight-line distance and bearing (degrees, 0 north, clockwise); the nearest road point and the
+     * straight walk from it to the rim.
+     */
+    public record Destination(int id, DestinationKind kind, String name, int cave, int entrance, int room, int kit,
+                              double length, double drop, List<double[]> route, double homeDistance, double homeBearing,
+                              double roadX, double roadZ, double roadWalk) {}
+
     // ------------------------------------------------------------------ the plan
 
     public final long seed;
@@ -413,6 +525,7 @@ public final class UndergroundPlan {
     public final List<Pitch> pitches = new ArrayList<>();
     public final List<Anchor> anchors = new ArrayList<>();
     public final List<Succession> successions = new ArrayList<>();
+    public final List<Destination> destinations = new ArrayList<>();
     /** Planning times, ms, by stage (the check's report). */
     public final Map<String, Long> times = new java.util.LinkedHashMap<>();
 
@@ -484,13 +597,13 @@ public final class UndergroundPlan {
 
     /**
      * The hollow shape at a point among the ids (-1 = rock): the first that holds it, a stream trench only when no
-     * other shape opens the point; -1 when the owner's pillar stands there.
+     * other shape opens the point; -1 when the owner's pillar or the shape's own talus stands there.
      */
     public int shapeAmong(int[] ids, double x, double y, double z) {
         int found = -1, trench = -1;
         for (int i : ids) {
             Shape s = shapes.get(i);
-            if (s instanceof Pillar) continue;
+            if (s.solid()) continue;
             double[] b = s.bounds();
             if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) continue;
             if (!s.inside(x, y, z)) continue;
@@ -501,14 +614,30 @@ public final class UndergroundPlan {
         if (found < 0) found = trench;
         if (found < 0) return -1;
         int owner = shapes.get(found).owner();
-        for (int i : ids) if (shapes.get(i) instanceof Pillar p && p.owner() == owner && p.inside(x, y, z)) return -1;
+        for (int i : ids) {
+            Shape s = shapes.get(i);
+            if (s instanceof Pillar p && p.owner() == owner && p.inside(x, y, z)) return -1;
+            if (s instanceof Talus t && t.host() == found && t.inside(x, y, z)) return -1;
+        }
         return found;
     }
 
-    /** Whether a hollow point of the shape holds water: under its cave's water level, or in a stream trench (21.2). */
+    /**
+     * Whether a hollow point of the shape holds water: under its cave's water level, or in a stream trench (21.2); a
+     * bowl by its own pond level, a porch never (22.2).
+     */
     public boolean wetAt(int shape, double x, double y, double z) {
         Shape s = shapes.get(shape);
+        if (s instanceof Bowl b) return y < b.water();
+        if (s instanceof Notch) return false;
         return y < caves.get(s.owner()).waterY || s instanceof Capsule c && c.inTrench(x, y, z);
+    }
+
+    /** The ground after the cut over (x, z) (22.2): the planned ground, or an open cut's floor where that is lower. */
+    public double groundAt(double x, double z, double planned) {
+        double g = planned;
+        for (int i : shapesNear(x, z)) if (shapes.get(i) instanceof Open o) g = Math.min(g, o.floorAt(x, z));
+        return g;
     }
 
     public boolean airAt(double x, double y, double z) {

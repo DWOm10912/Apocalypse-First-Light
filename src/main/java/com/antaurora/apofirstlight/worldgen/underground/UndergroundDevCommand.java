@@ -40,7 +40,7 @@ import java.util.WeakHashMap;
  * Every place has a [go] that runs {@code /afl dev underground goto <x> <z>}, which sets the caller on the ground there.
  * In a deep world (U2 preset federal_deep_proto) the caves are cut into its chunks, and each cave also has an [in] that
  * runs {@code /afl dev underground cave <id>}: the caller is set inside it. In any other world the plan is read-only
- * (nothing is built). The plan is UndergroundRuntime's, made once per world (about 1–2 s on the server thread).
+ * (nothing is built). {@code /afl dev underground destinations} lists the plan's destinations (U5 sample, design 24). The plan is UndergroundRuntime's, made once per world (about 1–2 s on the server thread).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class UndergroundDevCommand {
@@ -56,6 +56,7 @@ public final class UndergroundDevCommand {
         event.getDispatcher().register(Commands.literal("afl").then(Commands.literal("dev").then(Commands.literal("underground")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("here").executes(c -> here(c.getSource())))
+                .then(Commands.literal("destinations").executes(c -> destinations(c.getSource())))
                 .then(Commands.literal("goto").then(Commands.argument("x", DoubleArgumentType.doubleArg())
                         .then(Commands.argument("z", DoubleArgumentType.doubleArg())
                                 .executes(c -> go(c.getSource(), DoubleArgumentType.getDouble(c, "x"), DoubleArgumentType.getDouble(c, "z"))))))
@@ -116,6 +117,8 @@ public final class UndergroundDevCommand {
                 f == null ? "none within 3 km" : String.format(Locale.ROOT, "%.0f m (throw %.0f m)", fd[0], f.throwM()),
                 cave < 0 ? "no" : "#" + cave + " " + u.caves.get(cave).kind)));
 
+        for (UndergroundPlan.Destination d : u.destinations) lines.add(destinationLine(u, d, x, z, built));
+
         // cave systems, giant caves and canyons
         lines.add(Component.literal("Nearest cave systems:").withStyle(ChatFormatting.YELLOW));
         for (Cave cv : nearest(u, x, z, 3, cv -> cv.system())) lines.add(caveLine(u, pd.reach(), cv, x, z, built));
@@ -161,6 +164,50 @@ public final class UndergroundDevCommand {
         }
         source.sendSuccess(() -> all, false);
         return 1;
+    }
+
+    /** The destinations of this world's plan (U5 sample, design 24): one line each, with [go] and [in] links. */
+    private static int destinations(CommandSourceStack source) {
+        ServerLevel level = source.getServer().overworld();
+        RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level);
+        if (n == null) {
+            source.sendFailure(Component.literal("AFL underground: not a federal world (no terrain plan, roads or towns)."));
+            return 0;
+        }
+        UndergroundPlan u = planned(n).q().plan;
+        Vec3 pos = source.getPosition();
+        boolean built = built(level);
+        MutableComponent all = Component.literal(u.destinations.isEmpty() ? "AFL underground: this plan has no destinations (no start cave near the home)."
+                : "AFL underground destinations (plan data; the way in is walked with the kit named):").withStyle(ChatFormatting.GRAY);
+        for (UndergroundPlan.Destination d : u.destinations) all.append("\n").append(destinationLine(u, d, pos.x, pos.z, built));
+        source.sendSuccess(() -> all, false);
+        return 1;
+    }
+
+    private static MutableComponent destinationLine(UndergroundPlan u, UndergroundPlan.Destination d, double x, double z, boolean built) {
+        Cave cv = u.caves.get(d.cave());
+        double[] rim = d.route().get(0), room = d.route().get(d.route().size() - 1);
+        Entrance e = d.entrance() >= 0 ? u.entrances.get(d.entrance()) : null;
+        MutableComponent l = Component.literal(String.format(Locale.ROOT, "  %s (%s, #%d %s): entrance %s at (%.0f, %.0f, %.0f) %.0f m away",
+                d.name(), d.kind().name().toLowerCase(Locale.ROOT), cv.id, caveName(cv), e == null ? "-" : "#" + e.id() + " " + e.kind().name().toLowerCase(Locale.ROOT),
+                rim[0], rim[1], rim[2], Math.hypot(rim[0] - x, rim[2] - z))).withStyle(ChatFormatting.GREEN);
+        l.append(" ").append(go(rim[0], rim[2]));
+        if (!Double.isNaN(d.homeBearing()))
+            l.append(Component.literal(String.format(Locale.ROOT, ", %.0f m %s of the home", d.homeDistance(), compass(d.homeBearing()))));
+        if (!Double.isNaN(d.roadX())) {
+            l.append(Component.literal(String.format(Locale.ROOT, "; nearest road %.0f m from it ", d.roadWalk())));
+            l.append(go(d.roadX(), d.roadZ()));
+        }
+        l.append(Component.literal(String.format(Locale.ROOT, "; way in with kit %s: %.0f m, down %.0f m, %d places, to the room at (%.0f, %.0f, %.0f)",
+                kitName(d.kit()), d.length(), d.drop(), d.route().size(), room[0], room[1], room[2])));
+        if (built) l.append(" ").append(link("[in]", "/afl dev underground cave " + cv.id));
+        return l;
+    }
+
+    /** A bearing (degrees, 0 north, clockwise) as one of the 8 compass points. */
+    private static String compass(double deg) {
+        String[] pts = {"north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"};
+        return pts[(int) Math.floor(((deg % 360) + 360 + 22.5) / 45) % 8];
     }
 
     private static MutableComponent caveLine(UndergroundPlan u, List<BitSet> reach, Cave cv, double x, double z, boolean built) {

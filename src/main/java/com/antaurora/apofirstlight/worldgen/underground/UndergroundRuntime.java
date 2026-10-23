@@ -25,8 +25,9 @@ public final class UndergroundRuntime {
      * Planned caves in chunks: the planner, the cut and the fluids (version lock system "underground"). Bump when chunks
      * change. 2: caves V2 round 1 (base-level water, shaped sections, wall relief, the start dry cave; design 21).
      * 3: round 2 (systems on the high ground, the states' plan forms and ways in; design 21.10).
+     * 4: U4 entrance shapes (bowls, porches, talus; design 22).
      */
-    public static final int RULES = 3;
+    public static final int RULES = 4;
 
     private static final Map<RoadNetworkRuntime.Network, GeologyQuery> CACHE = new WeakHashMap<>();
 
