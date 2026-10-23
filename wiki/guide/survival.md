@@ -122,6 +122,30 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 - <StatusTag s="verified" d="2026-10-20" /> 摔倒时手撑地那一下有身体着地的声音，附近 <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> 格内听得到
 - 换弹不会因为手臂骨折变慢（以后再做）
 
+## 受击和倒地
+
+- <StatusTag s="test" /> 受击和倒地 V1：只在分支上，还没进游戏验证
+
+**受击**：被打、被枪打中、被炸或被车撞时，身体会往远离来源的方向晃一下：正面中弹往后仰，背后中弹往前扑，侧面中弹往另一侧歪。伤得越重晃得越大，几下伤会叠在一起。镜头不动。摔落和雷击没有来源方向，不晃。
+
+**被打倒**：伤害不致死时可能被打倒。人往远离来源的方向倒下，躺一会儿再自己爬起来，这几秒里不能移动，也不能用东西。手里的东西有 <V d="health/health_v1#knockdown.drop" pct /> 的几率脱手飞出去。
+
+- 爆炸、倒下的树和车辆撞击：扣血至少 <V d="health/health_v1#knockdown.always_min" /> 就一定倒
+- 其他有来源的伤害：概率 =（扣掉的生命值 − <V d="health/health_v1#knockdown.chance.0" />）÷ <V d="health/health_v1#knockdown.chance.1" />，最高 <V d="health/health_v1#knockdown.chance.2" pct />。负重超过轻载 +<V d="health/health_v1#knockdown.load" pct />，腿骨折 ×<V d="health/health_v1#knockdown.broken_leg" />，疾跑中 +<V d="health/health_v1#knockdown.sprint" pct />，潜行 ×<V d="health/health_v1#knockdown.sneak" />。感染者一爪打不倒人，BR-51 一枪一定倒
+- 来源在正前方 <V d="health/health_v1#knockdown.front_cone" u="°" ue="°" /> 以内往后倒，在正后方往前扑，在两侧往另一侧倒
+- 倒地那一下有身体着地的声音，附近 <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> 格内听得到
+- 在水里、坐着或已经趴在地上时不会被打倒
+
+**被车撞飞**：<StatusTag s="test" /> 被车撞了没死时，人会像布娃娃一样被撞飞、落地、翻滚，停下来以后从躺着的姿势自己爬起来。第一人称镜头跟着头一起飞出去。飞着和爬起来时不能移动，也不能用东西。停下时生命值只剩 <V d="health/health_v1#collapse.at" /> 或更少就爬不起来，直接瘫倒（见下）。飞着时被撞死，尸体接着往前飞
+
+**重伤瘫倒**：一下受伤后生命值只剩 <V d="health/health_v1#collapse.at" /> 或更少（又没死）时，膝盖一软跪下，往前栽倒，只能趴着爬：
+
+- 爬得更慢（×<V d="health/health_v1#collapse.crawl" />），不能跳，不能疾跑
+- 可以用东西，比如给自己包扎
+- 至少趴 <V d="health/health_v1#collapse.min_seconds" u="秒" ue="s" />，之后生命值回到 <V d="health/health_v1#collapse.up_at" /> 就站起来；趴满 <V d="health/health_v1#collapse.max_seconds" u="秒" ue="s" /> 也会缓过来自己站起。头顶太低时接着爬，出来再站
+- 饥饿、口渴、冻伤、中暑和雷击这类伤害不会让人瘫倒
+- 下线再上线不会接着趴
+
 ## 耳鸣
 
 - <StatusTag s="test" /> 耳鸣 V2：负面状态。用户 2026-10-21 在分支上实机通过，等合并进主线

@@ -2,6 +2,8 @@
 
 **状态：已实现，用户 2026-10-20 实机 PASS（摔断两条腿后看状态面板，回复「PASS」；D 分支 `feature/survival-health-v1a`，2026-10-21 由 Main 合并进 master）。** 用户 2026-10-20 批准概念动画：「概念通过，第 3 节按推荐，去 Blockbench 正式做并接上落地判定」。两个动作由作者脚本按概念写出，在 Blockbench 里用 AFL Rig 插件导入核对过（长度、骨头、`first_person_view` 都在）；落地分档、摔倒判定、撑地手的手臂骨折和摔倒声都已接上（第 6 节）。同日按用户的问题（「恢复中不会受到骨折的影响吗」）把状态面板的骨折说明改成"摔倒时撑地的那只手臂也可能骨折；骨折期间生命值无法恢复到满"（`hud.apocalypse_firstlight.status.fracture.detail`，中英文）：骨折本来就压低自然恢复的上限（腿未固定 85、固定 95，`HealthCap`），到上限前"恢复中"照常显示，坐着算休息恢复更快。用户看过后回复「PASS」（2026-10-20）。
 
+2026-10-22 起 `FallLanding` 也放受击倒地（`knock_front / knock_back / knock_side`）和重伤瘫倒（`collapse`），种类 3–6，见 [injury_knockdown_v1_plan.md](injury_knockdown_v1_plan.md)（D 分支，未实机验证）。着地声抽成 `FallLanding.thump`，摔倒的行为不变。
+
 接在 [fracture_splint_v1_plan.md](fracture_splint_v1_plan.md) 后面：骨折现在只由摔落造成，一次摔落里腿和手臂各自独立掷骰子，会出现"脚着地，手却断了"。
 
 ## 1. 用户的要求（2026-10-20）

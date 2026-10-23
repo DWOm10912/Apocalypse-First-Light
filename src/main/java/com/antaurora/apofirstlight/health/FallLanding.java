@@ -40,12 +40,19 @@ import java.util.UUID;
  * Lightning injury V1 (health/LightningInjury) uses the same: a strike's ground current knocks a player down
  * ({@link #knockDown}: body/fall_over, no arm roll), and after lying paralysed it gets up ({@link #getUp}: body/prone_get_up,
  * 2.6 s from lying on the front to standing; tools/medical-actions-v1a/author_lightning_getup_v1.cjs).
+ * <p>
+ * Injury knockdown V1 (health/Knockdown, docs/gameplay/injury_knockdown_v1_plan.md) too: a heavy hit knocks the player
+ * down away from it and it gets up again ({@link #knock}: body/knock_front, knock_back, knock_side), and very low health
+ * collapses it onto the front (body/collapse), where it stays crawling (Knockdown).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class FallLanding {
-    public static final byte HARD = 0, FALL_OVER = 1, GET_UP = 2;
+    public static final byte HARD = 0, FALL_OVER = 1, GET_UP = 2, KNOCK_FRONT = 3, KNOCK_BACK = 4, KNOCK_SIDE = 5, COLLAPSE = 6;
     /** The actions' lengths and the hand meeting the ground (ticks; tools/medical-actions-v1a/author_fall_v1.cjs). */
     public static final int HARD_TICKS = 12, FALL_TICKS = 56, HAND_HITS = 9, GET_UP_TICKS = 52;
+    /** The knockdown actions' lengths and the body meeting the ground (ticks; tools/medical-actions-v1a/author_knockdown_v1.cjs). */
+    public static final int KNOCK_FRONT_TICKS = 90, KNOCK_BACK_TICKS = 76, KNOCK_SIDE_TICKS = 74, COLLAPSE_TICKS = 40;
+    private static final int KNOCK_FRONT_THUMP = 16, KNOCK_BACK_THUMP = 12, KNOCK_SIDE_THUMP = 11, COLLAPSE_THUMP = 27;
     /** How far the body's thump carries (blocks): a heavy landing's noise. */
     private static final double THUMP_RADIUS = MovementNoiseEvents.HEAVY_LANDING_RADIUS;
     /** How far in from the feet's corners the support is looked for, and how deep under them (blocks). */
@@ -57,14 +64,21 @@ public final class FallLanding {
         final double healthLost;
         /** The hand meeting the ground thumps and may break the arm (a fall, not a knock-down or getting up). */
         final boolean handHits;
+        /** A knockdown's body meeting the ground (ticks in; -1 none): the thump. */
+        final int thumpAt;
         boolean handDown;
 
         Falling(int start, int length, boolean mirror, double healthLost, boolean handHits) {
+            this(start, length, mirror, healthLost, handHits, -1);
+        }
+
+        Falling(int start, int length, boolean mirror, double healthLost, boolean handHits, int thumpAt) {
             this.start = start;
             this.length = length;
             this.mirror = mirror;
             this.healthLost = healthLost;
             this.handHits = handHits;
+            this.thumpAt = thumpAt;
         }
     }
 
@@ -78,6 +92,8 @@ public final class FallLanding {
     /** A fall took this much health (Fractures#onDamage, after scaling). */
     static void land(ServerPlayer player, double healthLost) {
         if (healthLost >= player.getHealth() || player.isPassenger() || player.isInWater()) return;
+        // a living ragdoll (survivor/LiveRagdolls) lands as the ragdoll: the damage, no landing of its own
+        if (com.antaurora.apofirstlight.survivor.LiveRagdolls.active(player)) return;
         var c = HealthConfig.get().fracture;
         var random = player.getRandom();
         boolean legBefore = false;
@@ -101,14 +117,51 @@ public final class FallLanding {
         if (!player.isAlive() || player.isPassenger()) return;
         boolean mirror = player.getRandom().nextBoolean();
         play(player, new Falling(player.server.getTickCount(), FALL_TICKS, mirror, 0, false), FALL_OVER);
-        RangedSound.play(player.serverLevel(), player.position(), AflSounds.BODY_FALL.get(), SoundSource.PLAYERS, THUMP_RADIUS,
-                1.0F, 0.95F + player.getRandom().nextFloat() * 0.1F);
+        thump(player);
     }
 
     /** Lightning injury: up from lying on the front (body/prone_get_up); no moving or using things meanwhile. */
     public static void getUp(ServerPlayer player) {
         if (!player.isAlive() || player.isPassenger()) return;
         play(player, new Falling(player.server.getTickCount(), GET_UP_TICKS, false, 0, false), GET_UP);
+    }
+
+    /**
+     * Injury knockdown: down away from the hit and up again (KNOCK_FRONT / KNOCK_BACK / KNOCK_SIDE, mirror = onto the
+     * right side), or the collapse onto the front (COLLAPSE); the body's thump when it meets the ground.
+     */
+    public static void knock(ServerPlayer player, byte kind, boolean mirror) {
+        if (!player.isAlive() || player.isPassenger()) return;
+        int length, thump;
+        switch (kind) {
+            case KNOCK_FRONT -> { length = KNOCK_FRONT_TICKS; thump = KNOCK_FRONT_THUMP; }
+            case KNOCK_BACK -> { length = KNOCK_BACK_TICKS; thump = KNOCK_BACK_THUMP; }
+            case KNOCK_SIDE -> { length = KNOCK_SIDE_TICKS; thump = KNOCK_SIDE_THUMP; }
+            case COLLAPSE -> { length = COLLAPSE_TICKS; thump = COLLAPSE_THUMP; }
+            default -> throw new IllegalArgumentException("not a knockdown: " + kind);
+        }
+        play(player, new Falling(player.server.getTickCount(), length, mirror, 0, false, thump), kind);
+    }
+
+    /**
+     * A living ragdoll (survivor/LiveRagdolls): the player counts as falling over (no using, hitting or sprinting) until
+     * {@link #ragdollGetUp} or {@link #ragdollEnd}. No packet: the ragdoll's own tell the clients.
+     */
+    public static void ragdoll(ServerPlayer player) {
+        FALLING.put(player.getUUID(), new Falling(player.server.getTickCount(), Integer.MAX_VALUE, false, 0, false));
+        player.stopUsingItem();
+        player.setSprinting(false);
+    }
+
+    /** The ragdoll came to rest: the knockdown {@code kind}'s get-up from {@code fromTick} ticks into it, no thump. */
+    public static void ragdollGetUp(ServerPlayer player, byte kind, int fromTick) {
+        int length = kind == KNOCK_BACK ? KNOCK_BACK_TICKS : KNOCK_FRONT_TICKS;
+        FALLING.put(player.getUUID(), new Falling(player.server.getTickCount() - fromTick, length, false, 0, false));
+    }
+
+    /** The ragdoll ended without a get-up (it stays down collapsed, or it was dropped). */
+    public static void ragdollEnd(ServerPlayer player) {
+        FALLING.remove(player.getUUID());
     }
 
     private static void play(ServerPlayer player, Falling f, byte kind) {
@@ -167,16 +220,22 @@ public final class FallLanding {
             f.handDown = true;
             handHits(player, f);
         }
+        if (t == f.thumpAt) thump(player);
         if (player.isUsingItem()) player.stopUsingItem();
         if (player.isSprinting()) player.setSprinting(false);
     }
 
     /** The hand meets the ground: the body's thump, and the arm under it may break (arm_fall). */
     private static void handHits(ServerPlayer player, Falling f) {
-        RangedSound.play(player.serverLevel(), player.position(), AflSounds.BODY_FALL.get(), SoundSource.PLAYERS, THUMP_RADIUS,
-                1.0F, 0.95F + player.getRandom().nextFloat() * 0.1F);
+        thump(player);
         Fractures.roll(player, f.mirror ? BodyPart.RIGHT_ARM : BodyPart.LEFT_ARM,
                 Fractures.chance(HealthConfig.get().fracture.armFall, f.healthLost));
+    }
+
+    /** The body's thump (a heavy landing's noise). */
+    static void thump(ServerPlayer player) {
+        RangedSound.play(player.serverLevel(), player.position(), AflSounds.BODY_FALL.get(), SoundSource.PLAYERS, THUMP_RADIUS,
+                1.0F, 0.95F + player.getRandom().nextFloat() * 0.1F);
     }
 
     @SubscribeEvent

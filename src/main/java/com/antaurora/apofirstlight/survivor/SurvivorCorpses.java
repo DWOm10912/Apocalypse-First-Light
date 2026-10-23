@@ -62,7 +62,9 @@ public final class SurvivorCorpses {
     static void create(ServerPlayer player, SurvivorRecord record, @Nullable net.minecraft.world.damagesource.DamageSource source) {
         ServerLevel level = player.serverLevel();
         SurvivorWorldData data = SurvivorWorldData.get(player.server);
-        boolean falls = SurvivorRagdolls.canFall(player);
+        // a thrown living body (LiveRagdolls) falls on as the corpse, with the death's push on top
+        com.antaurora.apofirstlight.skeleton.ragdoll.RagdollBody thrown = LiveRagdolls.take(player);
+        boolean falls = thrown != null || SurvivorRagdolls.canFall(player);
         Vec3 at = falls ? player.position() : restingPlace(level, player);
         SurvivorCorpseRecord corpse = new SurvivorCorpseRecord(UUID.randomUUID(), player.getUUID(), record.id,
                 record.fullName(), record.lifeIndex, level.dimension().location().toString(), at.x, at.y, at.z,
@@ -73,7 +75,11 @@ public final class SurvivorCorpses {
         record.corpseId = corpse.id;
         PENDING.put(player.getUUID(), corpse.id);
         SurvivorCorpse entity = spawn(level, corpse);
-        if (falls && entity != null) entity.fall(SurvivorRagdolls.start(player, source));
+        if (falls && entity != null) {
+            if (thrown != null && source != null)
+                SurvivorRagdolls.push(thrown, source, com.antaurora.apofirstlight.vehicle.VehicleImpact.thrown(player));
+            entity.fall(thrown != null ? thrown : SurvivorRagdolls.start(player, source));
+        }
     }
 
     /**

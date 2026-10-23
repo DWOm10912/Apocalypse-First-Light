@@ -104,6 +104,57 @@ public final class HealthConfig {
         public double brokenLeg = 1.5, load = 0.15, speedFrom = 0.25, speed = 0.15, edge = 0.15, sneak = 0.5;
     }
 
+    /**
+     * Injury knockdown V1 (docs/gameplay/injury_knockdown_v1_plan.md 3, health/Knockdown): a hit from somewhere that does
+     * not kill knocks the player down with chance clamp((d - [0]) / [1], 0, [2]) of the health lost d; + load above the
+     * light load, × broken_leg with a leg broken, + sprint while sprinting, × sneak while sneaking; capped at 1. The types in
+     * always knock down whenever d reaches always_min. The held item drops with drop. Within front_cone degrees of the facing
+     * the hit comes from the front (down on the back), within it of the back from behind (onto the front), else the side.
+     */
+    public static final class Knockdown {
+        public double[] chance = {25, 30, 1};
+        public double load = 0.15, brokenLeg = 1.5, sprint = 0.15, sneak = 0.5;
+        public List<String> always = List.of("minecraft:explosion", "minecraft:player_explosion", "apocalypse_firstlight:falling_tree",
+                "apocalypse_firstlight:vehicle");
+        public double alwaysMin = 8, drop = 0.3, frontCone = 50;
+    }
+
+    /**
+     * Collapse (plan 4): a hit that leaves at most at health (and does not kill, nor is one of ignore) drops the player onto
+     * the front, crawling × crawl, no jumping or sprinting; it gets up after min_seconds once health is back to up_at, or
+     * after max_seconds.
+     */
+    public static final class Collapse {
+        public double at = 15, upAt = 20, minSeconds = 12, maxSeconds = 45, crawl = 0.6;
+        public List<String> ignore = List.of("minecraft:starve", "apocalypse_firstlight:dehydration", "apocalypse_firstlight:hypothermia",
+                "apocalypse_firstlight:heatstroke", "minecraft:lightning_bolt");
+    }
+
+    /**
+     * Vehicle impact (plan 5, vehicle/VehicleImpact): a body the truck closes on at min_speed m/s or more (once a cooldown
+     * ticks) is hurt by damage [[closing m/s, health lost of 100], ...] (passed / 5: the vanilla scale), thrown along the hit
+     * at throw × closing × mass / (mass + its mass) and up at lift × closing (at most lift_max m/s), its mass its box's
+     * volume × density kg; a player breaks a leg with chance clamp((d - [0]) / [1], 0, [2]) of leg. The box reaches out
+     * inflate + inflate_per_speed × speed blocks.
+     */
+    public static final class Vehicle {
+        public double minSpeed = 1.5, inflate = 0.15, inflatePerSpeed = 0.03;
+        public int cooldown = 10;
+        public double[][] damage = {{1.5, 0}, {3, 4}, {5.6, 15}, {8.3, 36}, {11.1, 62}, {13.9, 90}, {16.7, 120}};
+        public double throwFactor = 1.2, lift = 0.15, liftMax = 3, mass = 1450, density = 108;
+        public double[] leg = {10, 50, 0.7};
+
+        /** The health lost (of 100) at this closing speed (m/s): the curve, its last slope past the end. */
+        public double damageAt(double speed) {
+            if (speed <= damage[0][0]) return damage[0][1];
+            for (int i = 1; i < damage.length; i++)
+                if (speed <= damage[i][0])
+                    return damage[i - 1][1] + (speed - damage[i - 1][0]) / (damage[i][0] - damage[i - 1][0]) * (damage[i][1] - damage[i - 1][1]);
+            int n = damage.length;
+            return damage[n - 1][1] + (speed - damage[n - 1][0]) * (damage[n - 1][1] - damage[n - 2][1]) / (damage[n - 1][0] - damage[n - 2][0]);
+        }
+    }
+
     public static final class Leg {
         public double[] move = {0.6, 0.8}, jump = {0.85, 0.9}, stamina = {1.3, 1.15}, cap = {85, 95};
         /** Jump height never below this × vanilla (1.25 blocks × 0.82: still up one block, never trapped in a pit). */
@@ -144,6 +195,9 @@ public final class HealthConfig {
     public Damage damage = new Damage();
     public Regen regen = new Regen();
     public Fracture fracture = new Fracture();
+    public Knockdown knockdown = new Knockdown();
+    public Collapse collapse = new Collapse();
+    public Vehicle vehicle = new Vehicle();
 
     private static final Gson GSON = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
     private static volatile HealthConfig current = new HealthConfig();
@@ -184,6 +238,25 @@ public final class HealthConfig {
         for (Arm a : new Arm[]{f.mainArm, f.supportArm})
             for (double[] p : new double[][]{a.sway, a.recoilRecovery, a.dig, a.melee, a.climb, a.cap})
                 if (!pair(p, 2)) throw new IllegalArgumentException("invalid fracture arm numbers");
+        if (knockdown == null) knockdown = new Knockdown();
+        var k = knockdown;
+        if (k.always == null) k.always = List.of();
+        if (!pair(k.chance, 3) || !(k.chance[1] > 0) || !(k.load >= 0) || !(k.brokenLeg >= 0) || !(k.sprint >= 0) || !(k.sneak >= 0)
+                || !(k.alwaysMin >= 0) || !(k.drop >= 0 && k.drop <= 1) || !(k.frontCone > 0 && k.frontCone < 90))
+            throw new IllegalArgumentException("invalid knockdown numbers");
+        if (collapse == null) collapse = new Collapse();
+        var c = collapse;
+        if (c.ignore == null) c.ignore = List.of();
+        if (!(c.at >= 0) || !(c.upAt >= c.at) || !(c.minSeconds >= 0) || !(c.maxSeconds >= c.minSeconds) || !(c.crawl > 0 && c.crawl <= 1))
+            throw new IllegalArgumentException("invalid collapse numbers");
+        if (vehicle == null) vehicle = new Vehicle();
+        var v = vehicle;
+        if (!(v.minSpeed > 0) || !(v.inflate >= 0) || !(v.inflatePerSpeed >= 0) || v.cooldown < 1 || v.damage == null || v.damage.length < 2
+                || !(v.throwFactor >= 0) || !(v.lift >= 0) || !(v.liftMax >= 0) || !(v.mass > 0) || !(v.density > 0) || !pair(v.leg, 3) || !(v.leg[1] > 0))
+            throw new IllegalArgumentException("invalid vehicle numbers");
+        for (int i = 0; i < v.damage.length; i++)
+            if (!pair(v.damage[i], 2) || (i > 0 && !(v.damage[i][0] > v.damage[i - 1][0])))
+                throw new IllegalArgumentException("vehicle damage points are ascending [speed, health]");
     }
 
     private static boolean pair(double[] values, int n) {

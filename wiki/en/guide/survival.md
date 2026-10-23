@@ -122,6 +122,30 @@ Fractures are judged by the health the fall actually took, so armour and landing
 - <StatusTag s="verified" d="2026-10-20" /> Falling over makes a thump as your hand hits the ground, heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
 - A broken arm does not slow reloading yet (later)
 
+## Hit and knocked down
+
+- <StatusTag s="test" /> Hits and knockdowns V1: only on a branch, not checked in game yet
+
+**Flinching**: when you are struck, shot, caught in a blast or hit by a vehicle, your body sways away from where it came from: hit from the front you rock back, from behind you lurch forward, from the side you lean the other way. The harder the hit, the bigger the sway, and hits add up. The camera does not move. Falls and lightning come from no direction and make no sway.
+
+**Knocked down**: a hit that does not kill can knock you down. You fall away from where it came from, lie there a moment and get back up on your own; for those seconds you cannot move or use anything. Whatever is in your hand flies out of it with a <V d="health/health_v1#knockdown.drop" pct /> chance.
+
+- Explosions, falling trees and vehicles: always, once they take at least <V d="health/health_v1#knockdown.always_min" /> health
+- Any other hit from somewhere: chance = (health lost − <V d="health/health_v1#knockdown.chance.0" />) ÷ <V d="health/health_v1#knockdown.chance.1" />, at most <V d="health/health_v1#knockdown.chance.2" pct />. More than a light load +<V d="health/health_v1#knockdown.load" pct />, a broken leg ×<V d="health/health_v1#knockdown.broken_leg" />, sprinting +<V d="health/health_v1#knockdown.sprint" pct />, sneaking ×<V d="health/health_v1#knockdown.sneak" />. An infected's swipe never knocks you down; a BR-51 round always does
+- From within <V d="health/health_v1#knockdown.front_cone" u="°" ue="°" /> of straight ahead you go down on your back, from behind onto your front, from either side onto the other side
+- Hitting the ground makes a thump heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
+- Not in water, sitting, or already lying on the ground
+
+**Thrown by a vehicle**: <StatusTag s="test" /> a vehicle hit that does not kill throws you like a ragdoll: you fly, land and tumble, and once still you get up from however you lie. In first person the view flies with your head. While thrown and getting up you cannot move or use anything. With <V d="health/health_v1#collapse.at" /> health or less when you stop, you do not get up but collapse (below). Killed mid-flight, the body flies on
+
+**Collapsing**: when one hit leaves you with <V d="health/health_v1#collapse.at" /> health or less (and you live), your knees give, you pitch forward and can only crawl:
+
+- Crawling is slower (×<V d="health/health_v1#collapse.crawl" />); no jumping or sprinting
+- You can still use things, for example to bandage yourself
+- After at least <V d="health/health_v1#collapse.min_seconds" u="秒" ue="s" /> you stand up once your health is back to <V d="health/health_v1#collapse.up_at" />; after <V d="health/health_v1#collapse.max_seconds" u="秒" ue="s" /> you come round and stand up anyway. Under a low ceiling you keep crawling and stand once you are out
+- Hunger, thirst, cold, heatstroke and lightning never make you collapse
+- Logging out and back in, you are on your feet again
+
 ## Tinnitus
 
 - <StatusTag s="test" /> Tinnitus V2: a negative state. Checked in game on its branch on 2026-10-21, waiting to be merged

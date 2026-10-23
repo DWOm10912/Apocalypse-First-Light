@@ -1299,6 +1299,8 @@
   "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s died of heatstroke whilst fighting %2$s",
   "death.attack.apocalypse_firstlight.falling_tree": "%1$s was crushed by a falling tree",
   "death.attack.apocalypse_firstlight.falling_tree.player": "%1$s was crushed by a falling tree whilst fighting %2$s",
+  "death.attack.apocalypse_firstlight.vehicle": "%1$s was hit by %2$s",
+  "death.attack.apocalypse_firstlight.vehicle.item": "%1$s was hit by %2$s",
 
   "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
   "biome.apocalypse_firstlight.temperate_grassland": "Temperate Grassland",
@@ -1624,6 +1626,8 @@
   "message.apocalypse_firstlight.lightning.legs_back": "Your legs are steady again",
   "message.apocalypse_firstlight.lightning.eardrum_healed": "You can hear clearly with that ear again",
   "message.apocalypse_firstlight.lightning.aftermath_gone": "The after-effects of the strike have faded",
+  "message.apocalypse_firstlight.knockdown.down": "You can't stay on your feet",
+  "message.apocalypse_firstlight.knockdown.up": "You've got your strength back and can stand",
   "message.apocalypse_firstlight.sit.cannot": "You can't sit here",
   "hint.apocalypse_firstlight.sit.stand": "%s to get up",
 

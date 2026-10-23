@@ -1,0 +1,81 @@
+{
+  "format_version": 1,
+  "about": "Injury knockdown V1 (docs/gameplay/injury_knockdown_v1_plan.md): hit from the front: the knees give, sat down hard onto both hands, onto the back at 0.62 s (the thump), a breath, sit up, feet in, a squat with the hands on the ground, up. 3.8 s (health/FallLanding). The whole body (mask full), held (hold_body: arms keyed by FK); the own first person draws the body, the camera on the posed eye, the view following first_person_view. No moving or using items meanwhile (client/skeleton/FallLandingClient). Written by tools/medical-actions-v1a/author_knockdown_v1.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "knock.back"
+  },
+  "clip": "knock.back",
+  "layer": "action",
+  "mask": "full",
+  "priority": 70,
+  "first_person": "body",
+  "blend": {
+    "in": 0.06,
+    "out": 0.3
+  },
+  "first_person_eye": true,
+  "hold_body": true,
+  "first_person_view": [
+    [
+      0,
+      0
+    ],
+    [
+      0.15,
+      -10
+    ],
+    [
+      0.27,
+      -15
+    ],
+    [
+      0.38,
+      -20
+    ],
+    [
+      0.62,
+      -60
+    ],
+    [
+      0.85,
+      -70
+    ],
+    [
+      1.8,
+      -70
+    ],
+    [
+      2.2,
+      -20
+    ],
+    [
+      2.55,
+      0
+    ],
+    [
+      2.95,
+      30
+    ],
+    [
+      3.4,
+      10
+    ],
+    [
+      3.8,
+      0
+    ]
+  ],
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": [
+    {
+      "at": 0.62,
+      "kind": "sound",
+      "id": "apocalypse_firstlight:body_fall",
+      "about": "played by the server (health/FallLanding)"
+    }
+  ]
+}

@@ -84,7 +84,7 @@ public final class LightningInjuryClient {
             if (fainted && player.isUsingItem()) player.stopUsingItem();
         } else if (posed) {
             posed = false;
-            if (player.getForcedPose() == Pose.SWIMMING) player.setForcedPose(null);
+            if (player.getForcedPose() == Pose.SWIMMING && !com.antaurora.apofirstlight.health.ClientKnockdown.collapsed()) player.setForcedPose(null);   // still collapsed (Knockdown): crawls on
         }
         if (ClientLightningInjury.sprintBlocked() && player.isSprinting() && !player.isPassenger()) player.setSprinting(false);
         headache();

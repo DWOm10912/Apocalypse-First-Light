@@ -399,8 +399,11 @@ public final class LightningInjury {
         return (at.x - player.getX()) * left.x + (at.z - player.getZ()) * left.z >= 0;
     }
 
-    /** Plan 10.3 D: the hand jerks open, the held item lands drop_range blocks away (where there is room, else at the feet). */
-    private static void throwHeld(ServerPlayer player, RandomSource r) {
+    /**
+     * Plan 10.3 D: the hand jerks open, the held item lands drop_range blocks away (where there is room, else at the feet).
+     * Also an injury knockdown's (Knockdown).
+     */
+    static void throwHeld(ServerPlayer player, RandomSource r) {
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty()) return;
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
@@ -566,9 +569,10 @@ public final class LightningInjury {
             if (s.faint > 0 && player.isUsingItem()) player.stopUsingItem();
         } else if (s.down) {
             s.down = false;
-            player.setForcedPose(null);
-            // up, unless a low ceiling keeps it crawling (it stands by itself once out from under it)
-            if (player.level().noCollision(player, player.getDimensions(Pose.STANDING).makeBoundingBox(player.position()).deflate(1.0E-7)))
+            // up, unless a low ceiling keeps it crawling (it stands by itself once out from under it), or it collapsed
+            // meanwhile (Knockdown gets that one up)
+            if (!Knockdown.collapsed(player)) player.setForcedPose(null);
+            if (!Knockdown.collapsed(player) && player.level().noCollision(player, player.getDimensions(Pose.STANDING).makeBoundingBox(player.position()).deflate(1.0E-7)))
                 FallLanding.getUp(player);
         }
         if ((down || s.weak > 0) && player.isSprinting() && !player.isPassenger()) player.setSprinting(false);

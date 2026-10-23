@@ -39,6 +39,12 @@ public final class HumanoidPoser {
         /** Degrees, vanilla body frame: view yaw (vanilla netHeadYaw) and pitch (down positive). */
         public float viewYaw, viewPitch;
         /**
+         * Degrees, the root's frame: a hit's flinch (client/skeleton/HitReactClient), + pitch leaning forward, + roll leaning
+         * to the left. The pelvis takes {@link #FLINCH_PELVIS} of it (the legs kept), the chest {@link #FLINCH_CHEST} in all,
+         * the head {@link #FLINCH_HEAD} on top of the view.
+         */
+        public float flinchPitch, flinchRoll;
+        /**
          * 0..1: how far the head goes back from the view to the clips' head (lying out cold: the face on the ground, not
          * where the view looks; client/skeleton/ProneClient).
          */
@@ -179,6 +185,13 @@ public final class HumanoidPoser {
         return rifle ? Math.max(-25F, Math.min(30F, viewPitch * 0.5F)) : Math.max(-15F, Math.min(20F, viewPitch * 0.3F));
     }
 
+    /** A hit's flinch shares (HitReactClient; docs/gameplay/injury_knockdown_v1_plan.md 2). */
+    static final float FLINCH_PELVIS = 0.25F, FLINCH_CHEST = 0.5F, FLINCH_HEAD = 0.5F;
+
+    private static Quaternionf flinch(Input in, float share) {
+        return new Quaternionf().rotationX(rad(in.flinchPitch * share)).rotateZ(rad(in.flinchRoll * share));
+    }
+
     public Report solve(Input in, SkeletonPose pose) {
         Report report = solveBody(in, pose);
         solveArms(in, pose, report);
@@ -210,10 +223,19 @@ public final class HumanoidPoser {
         pose.local[rig.thighR].premul(legBack);
         pose.local[rig.thighL].premul(legBack);
         pose.local[rig.chest].rotationY(rad(twist - hip)).rotateX(rad(bend)).mul(chestClip);
+        if (in.flinchPitch != 0F || in.flinchRoll != 0F) {
+            Quaternionf pelvis = flinch(in, FLINCH_PELVIS), chest = flinch(in, FLINCH_CHEST - FLINCH_PELVIS);
+            pose.local[rig.pelvis].premul(pelvis);
+            Quaternionf legsBack = new Quaternionf(pelvis).conjugate();
+            pose.local[rig.thighR].premul(legsBack);
+            pose.local[rig.thighL].premul(legsBack);
+            pose.local[rig.chest].premul(chest);
+        }
         pose.update();
         // head: the view in model space, relative to the chest as posed; headClip of the way back to the clips' head
         Quaternionf headClip = in.headClip > 0 ? new Quaternionf(pose.local[rig.head]) : null;
         Quaternionf view = new Quaternionf().rotationY(rad(in.viewYaw)).rotateX(rad(in.viewPitch));
+        if (in.flinchPitch != 0F || in.flinchRoll != 0F) view.premul(flinch(in, FLINCH_HEAD));
         Quaternionf chestWorld = pose.rotation(rig.chest, new Quaternionf());
         pose.local[rig.head].set(new Quaternionf(chestWorld).conjugate().mul(view));
         clampHead(pose.local[rig.head], rig.limits[rig.head]);

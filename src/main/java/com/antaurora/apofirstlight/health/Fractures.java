@@ -162,7 +162,7 @@ public final class Fractures {
         FallLanding.land(player, healthLost);
     }
 
-    static double chance(double[] curve, double d) {
+    public static double chance(double[] curve, double d) {
         return Mth.clamp((d - curve[0]) / curve[1], 0, curve[2]);
     }
 

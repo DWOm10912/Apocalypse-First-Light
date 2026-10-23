@@ -1299,6 +1299,8 @@
   "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s 在与 %2$s 战斗时死于热射病",
   "death.attack.apocalypse_firstlight.falling_tree": "%1$s 被倒下的树砸死了",
   "death.attack.apocalypse_firstlight.falling_tree.player": "%1$s 在与 %2$s 战斗时被倒下的树砸死了",
+  "death.attack.apocalypse_firstlight.vehicle": "%1$s 被 %2$s 撞死了",
+  "death.attack.apocalypse_firstlight.vehicle.item": "%1$s 被 %2$s 撞死了",
 
   "biome.apocalypse_firstlight.fallout_barrens": "沉降荒原",
   "biome.apocalypse_firstlight.temperate_grassland": "温带草地",
@@ -1624,6 +1626,8 @@
   "message.apocalypse_firstlight.lightning.legs_back": "双腿不再发软了",
   "message.apocalypse_firstlight.lightning.eardrum_healed": "那只耳朵又能听清了",
   "message.apocalypse_firstlight.lightning.aftermath_gone": "雷击后的不适消退了",
+  "message.apocalypse_firstlight.knockdown.down": "站不住了",
+  "message.apocalypse_firstlight.knockdown.up": "缓过来了，能站起来了",
   "message.apocalypse_firstlight.sit.cannot": "这里不能坐下",
   "hint.apocalypse_firstlight.sit.stand": "按 %s 站起",
 
