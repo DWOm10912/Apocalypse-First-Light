@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.world.biome.StartupSurfaceBiomeContext;
+import com.antaurora.apofirstlight.world.biome.SurfaceBiomeCache;
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.biome.Biome;
@@ -25,6 +26,7 @@ public abstract class SurfaceSystemStartupBiomeMixin {
                                                         WorldGenerationContext generationContext, ChunkAccess chunk,
                                                         NoiseChunk noiseChunk, SurfaceRules.RuleSource ruleSource,
                                                         CallbackInfo callbackInfo) {
+        SurfaceBiomeCache.begin();
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) randomState;
         if (access.apocalypse$hasMacroGeography()) StartupSurfaceBiomeContext.begin(access.apocalypse$getSeed(), registry,
                 randomState.router().initialDensityWithoutJaggedness(),
@@ -38,5 +40,6 @@ public abstract class SurfaceSystemStartupBiomeMixin {
                                                       NoiseChunk noiseChunk, SurfaceRules.RuleSource ruleSource,
                                                       CallbackInfo callbackInfo) {
         StartupSurfaceBiomeContext.end();
+        SurfaceBiomeCache.end();
     }
 }

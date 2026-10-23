@@ -9,6 +9,9 @@ allprojects {
             property 'afl.c2', (project.findProperty('c2') ?: '')
             // -ProadGpu=false: the road chunks submitted per vertex (RoadClient.GPU), for frame time comparisons
             if (project.findProperty('roadGpu')) property 'afl.roadGpu', project.findProperty('roadGpu')
+            // -Pc2jfr=NAME.jfr: a JFR CPU profile of the whole run in build/federal-c2-client (deep world generation, 2026-10-22)
+            if (project.findProperty('c2jfr'))
+                jvmArgs '-XX:+UnlockDiagnosticVMOptions', '-XX:+DebugNonSafepoints', '-XX:FlightRecorderOptions=stackdepth=256', '-XX:StartFlightRecording=filename=' + project.property('c2jfr') + ',settings=profile'
         }
     }
 }

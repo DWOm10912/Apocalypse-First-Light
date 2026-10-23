@@ -24,7 +24,7 @@
     "TerrainSmoothBlockStateMixin", "TerrainSmoothBlockCollisionsMixin", "TerrainSmoothLevelMixin", "TerrainSmoothServerLevelMixin", "TerrainSmoothLevelChunkMixin", "EarthworkLevelChunkMixin",
     "TerrainSmoothMoveControlMixin", "TerrainSmoothPathNavigationMixin",
     "WiringLevelChunkMixin", "WiringServerLevelMixin", "SurvivorRespawnGateMixin", "AflDifficultyLockMixin",
-    "ChunkGeneratorForestHomeMixin", "WorldGenRegionForestHomeGuardMixin",
+    "ChunkGeneratorForestHomeMixin", "WorldGenRegionForestHomeGuardMixin", "WorldGenRegionSurfaceBiomeCacheMixin",
     "ChunkGeneratorRoadWorksMixin", "WorldGenRegionRoadGuardMixin", "BushBlockGradedTurfMixin",
     "EntityVehicleCollisionMixin", "ServerGamePacketListenerVehicleMixin", "PlayerGunRightArmMixin", "LightningBoltLifeMixin", "LightningBoltAccessor", "LightningTargetServerLevelMixin", "ServerLevelLightningInvoker", "ServerLevelWeatherMixin", "LevelWeatherMixin", "FireBlockRainMixin",
     "RetiredGearEnchantmentMixin", "RetiredSwordMixin", "RetiredTurtleHelmetMixin", "RetiredFreezeImmunityMixin", "RetiredPowderSnowMixin", "RetiredSpawnGearMixin"],
