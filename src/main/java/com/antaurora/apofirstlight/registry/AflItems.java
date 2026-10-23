@@ -32,7 +32,14 @@ public final class AflItems {
                             java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty",
                                     "reload_tactical_ads", "reload_empty_ads", "reload_tactical_no_mag", "reload_empty_no_mag",
                                     "reload_tactical_no_mag_ads", "reload_empty_no_mag_ads", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty",
-                                    "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty"),
+                                    "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty",
+                                    // proficiency tiers (NativeReloadTiers)
+                                    "reload_tactical_experienced", "reload_empty_experienced", "reload_tactical_novice", "reload_empty_novice",
+                                    "reload_tactical_novice_fumble", "reload_empty_novice_fumble",
+                                    "reload_tactical_experienced_ads", "reload_empty_experienced_ads",
+                                    "reload_tactical_no_mag_experienced", "reload_empty_no_mag_experienced", "reload_tactical_no_mag_novice",
+                                    "reload_empty_no_mag_novice", "reload_tactical_no_mag_novice_fumble", "reload_empty_no_mag_novice_fumble",
+                                    "reload_tactical_no_mag_experienced_ads", "reload_empty_no_mag_experienced_ads"),
                             java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
@@ -288,6 +295,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.PORCELAIN_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> KEYLESS_LAMPHOLDER = ITEMS.register("keyless_lampholder",
             () -> new BlockItem(AflBlocks.KEYLESS_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> COPPER_AIR_TERMINAL = ITEMS.register("copper_air_terminal",
+            () -> new BlockItem(AflBlocks.COPPER_AIR_TERMINAL.get(), new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> BARN_LIGHTNING_ROD = ITEMS.register("barn_lightning_rod",
+            () -> new net.minecraft.world.item.DoubleHighBlockItem(AflBlocks.BARN_LIGHTNING_ROD.get(), new Item.Properties().stacksTo(4)));
     /** Fuel Stop A1 details V1 (docs/models/fuel_stop_a1_details_v1.md): one channel-letter item, the letter in its BlockStateTag. */
     public static final RegistryObject<Item> CHANNEL_LETTER = ITEMS.register("channel_letter",
             () -> new com.antaurora.apofirstlight.item.ChannelLetterBlockItem(AflBlocks.CHANNEL_LETTER.get(), new Item.Properties().stacksTo(16)));

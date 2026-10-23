@@ -54,6 +54,8 @@ public final class AflCreativeTabs {
             AflItems.EMERGENCY_LIGHT,
             AflItems.PORCELAIN_LAMPHOLDER,
             AflItems.KEYLESS_LAMPHOLDER,
+            AflItems.COPPER_AIR_TERMINAL,
+            AflItems.BARN_LIGHTNING_ROD,
             AflItems.LIGHT_POLE_BASE,
             AflItems.LIGHT_POLE,
             AflItems.AREA_LIGHT,

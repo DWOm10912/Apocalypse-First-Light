@@ -178,6 +178,7 @@ public final class PlayerHealth {
             Wounds.onDamage(player, source, (float) health);
             Fractures.onDamage(player, source, health);
             LightningInjury.onDamage(player, source, health);
+            Knockdown.onDamage(player, source, health);
         }
     }
 

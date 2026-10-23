@@ -40,6 +40,8 @@ public final class SurvivorRagdolls {
     private static final int MAX_SPAN = 12;
     /** Death pushes (kg m/s, a 75 kg body; section 5). */
     private static final double PUSH_HIT = 25, PUSH_SHOT = 20, PUSH_BLAST_NEAR = 140, PUSH_BLAST_FAR = 40, BLAST_RANGE = 8;
+    /** The body's mass for a vehicle's throw (kg). */
+    static final double BODY_MASS = 75;
 
     private static final Set<UUID> ACTIVE = new HashSet<>();
     private static HumanoidPoser poser;
@@ -58,6 +60,13 @@ public final class SurvivorRagdolls {
 
     /** The falling body of a death: the survivor's last stance at its feet, its motion, the death's push. */
     static RagdollBody start(ServerPlayer player, @Nullable DamageSource source) {
+        RagdollBody body = stance(player);
+        if (source != null) push(body, source, com.antaurora.apofirstlight.vehicle.VehicleImpact.thrown(player));
+        return body;
+    }
+
+    /** A body standing as the player stands now, at its feet, moving as it moved the last tick (no push). */
+    static RagdollBody stance(ServerPlayer player) {
         SkeletonPose pose = new SkeletonPose(SkeletonRig.get());
         HumanoidPoser.Input in = new HumanoidPoser.Input();
         in.crouch = player.isCrouching() ? 1F : 0F;
@@ -70,14 +79,22 @@ public final class SurvivorRagdolls {
         if (moved.length() > MAX_START_SPEED) moved = moved.normalize().scale(MAX_START_SPEED);
         RagdollBody body = new RagdollBody(RagdollDefinition.get());
         body.start(pose, vec(player.position()), player.yBodyRot, vec(moved));
-        if (source != null) push(body, source);
         return body;
     }
 
-    /** Section 5: explosions push the whole body away from the blast, shots the box they hit, blows the chest. */
-    private static void push(RagdollBody body, DamageSource source) {
+    /**
+     * Section 5: explosions push the whole body away from the blast, shots the box they hit, blows the chest; a vehicle
+     * (vehicle/VehicleImpact) throws it as it throws the living, a 75 kg body at the throw, the hips and the chest.
+     */
+    static void push(RagdollBody body, DamageSource source, @Nullable Vec3 thrown) {
         RagdollDefinition def = body.def;
         Vector3d chest = new Vector3d(body.position(def.chest));
+        if (thrown != null) {
+            Vector3d j = vec(thrown).mul(BODY_MASS * 0.5);
+            body.impulse(def.pelvis, body.position(def.pelvis), new Vector3d(j));
+            body.impulse(def.chest, chest, j);
+            return;
+        }
         Vec3 from = source.getSourcePosition();
         if (source.is(DamageTypeTags.IS_EXPLOSION) && from != null) {
             Vector3d dir = new Vector3d(chest).sub(from.x, from.y, from.z);
@@ -231,7 +248,7 @@ public final class SurvivorRagdolls {
             }
             case DROP, COLLAPSE -> null;
         };
-        if (source != null) push(body, source);
+        if (source != null) push(body, source, null);
         entity.fall(body);
         return entity;
     }

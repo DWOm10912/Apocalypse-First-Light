@@ -1,0 +1,73 @@
+{
+  "format_version": 1,
+  "about": "Injury knockdown V1 (docs/gameplay/injury_knockdown_v1_plan.md): collapsing at very low health: the knees give, kneeling, slumped back, toppled onto the front, the chest hits at 1.35 s (the thump), settled as prone.idle; every key moved forward by ProneClient's 7 px set-back over its 0.35 s ease (the server lays the player down at the start). 2 s (health/FallLanding). The whole body (mask full), held (hold_body: arms keyed by FK); the own first person draws the body, the camera on the posed eye, the view following first_person_view. No moving or using items meanwhile (client/skeleton/FallLandingClient). Written by tools/medical-actions-v1a/author_knockdown_v1.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "knock.collapse"
+  },
+  "clip": "knock.collapse",
+  "layer": "action",
+  "mask": "full",
+  "priority": 70,
+  "first_person": "body",
+  "blend": {
+    "in": 0.06,
+    "out": 0.3
+  },
+  "first_person_eye": true,
+  "hold_body": true,
+  "first_person_view": [
+    [
+      0,
+      0
+    ],
+    [
+      0.12,
+      15
+    ],
+    [
+      0.35,
+      25
+    ],
+    [
+      0.5,
+      35
+    ],
+    [
+      0.8,
+      40
+    ],
+    [
+      1.1,
+      55
+    ],
+    [
+      1.22,
+      45
+    ],
+    [
+      1.35,
+      30
+    ],
+    [
+      1.6,
+      15
+    ],
+    [
+      2,
+      10
+    ]
+  ],
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": [
+    {
+      "at": 1.35,
+      "kind": "sound",
+      "id": "apocalypse_firstlight:body_fall",
+      "about": "played by the server (health/FallLanding)"
+    }
+  ]
+}

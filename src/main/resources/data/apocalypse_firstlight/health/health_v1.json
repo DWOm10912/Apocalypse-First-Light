@@ -36,5 +36,41 @@
     "leg": {"move": [0.6, 0.8], "jump": [0.85, 0.9], "stamina": [1.3, 1.15], "cap": [85, 95], "jump_floor": 0.82, "landing_from": 2, "landing_extra": 1},
     "main_arm": {"sway": [1.5, 1.2], "recoil_recovery": [0.6, 0.8], "dig": [0.5, 0.8], "melee": [0.6, 0.85], "climb": [0.5, 0.8], "cap": [90, 95]},
     "support_arm": {"sway": [2.0, 1.4], "recoil_recovery": [0.8, 0.9], "dig": [0.8, 0.9], "melee": [0.85, 0.95], "climb": [0.5, 0.8], "cap": [90, 95]}
+  },
+  "knockdown": {
+    "about": "Injury knockdown V1 (docs/gameplay/injury_knockdown_v1_plan.md 3): a hit from somewhere that does not kill knocks the player down with chance clamp((health lost - [0]) / [1], 0, [2]); + load above the light load, x broken_leg with a leg broken, + sprint, x sneak; the types in always knock down from always_min health lost. P9 30 -> 17 %, BR-51 62 -> always. The held item drops with drop.",
+    "chance": [25, 30, 1],
+    "load": 0.15,
+    "broken_leg": 1.5,
+    "sprint": 0.15,
+    "sneak": 0.5,
+    "always": ["minecraft:explosion", "minecraft:player_explosion", "apocalypse_firstlight:falling_tree", "apocalypse_firstlight:vehicle"],
+    "always_min": 8,
+    "drop": 0.3,
+    "front_cone": 50
+  },
+  "collapse": {
+    "about": "Collapse (plan 4): a hit leaving at most 'at' health drops the player onto the front, crawling x crawl; up after min_seconds once health is back to up_at, or after max_seconds. Slow harm (ignore) does not.",
+    "at": 15,
+    "up_at": 20,
+    "min_seconds": 12,
+    "max_seconds": 45,
+    "crawl": 0.6,
+    "ignore": ["minecraft:starve", "apocalypse_firstlight:dehydration", "apocalypse_firstlight:hypothermia", "apocalypse_firstlight:heatstroke", "minecraft:lightning_bolt"]
+  },
+  "vehicle": {
+    "about": "Vehicle impact (plan 5, vehicle/VehicleImpact): closing speed (m/s) -> health lost of 100 (passed / 5, the vanilla scale; 20 km/h 15, 50 km/h 90). From min_speed (walking pace, a truck backing up slowly) a bump; a player is thrown down as a living ragdoll from knock_speed, below it only flinches and is shoved (2026-10-22). Thrown along the hit at throw_factor x closing x mass / (mass + its mass), up at lift x closing (at most lift_max m/s); its mass = box volume x density. A player's leg breaks with chance clamp((d - [0]) / [1], 0, [2]).",
+    "min_speed": 0.8,
+    "knock_speed": 1.5,
+    "cooldown": 10,
+    "inflate": 0.15,
+    "inflate_per_speed": 0.03,
+    "damage": [[0.8, 0.5], [1.5, 1], [3, 4], [5.6, 15], [8.3, 36], [11.1, 62], [13.9, 90], [16.7, 120]],
+    "throw_factor": 1.2,
+    "lift": 0.15,
+    "lift_max": 3,
+    "mass": 1450,
+    "density": 108,
+    "leg": [10, 50, 0.7]
   }
 }

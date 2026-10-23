@@ -1,0 +1,17 @@
+// Live ragdoll probe, dedicated server + client (dev only; src/dev/java/.../dev/LiveRagdollServerProbe.java, LiveRagdollProbe.java).
+// Server: gradlew runServer --offline -PaflWithoutShaders -I src/dev/live-ragdoll-probe-server.init.gradle
+// Client: gradlew runClient --offline -I src/dev/live-ragdoll-probe-server.init.gradle  (joins localhost:25566 in mp mode)
+// Both run in build/ directories of their own (the server on a copy of run-server/world), never run/ or run-server/.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.server {
+            workingDirectory project.file('build/live-ragdoll-server')
+            property 'afl.liveragdollserver', 'true'
+        }
+        minecraft.runs.client {
+            workingDirectory project.file('build/live-ragdoll-probe')
+            property 'afl.liveragdollprobe', 'mp'
+            args '--quickPlayMultiplayer', 'localhost:25566', '--width', '1280', '--height', '720'
+        }
+    }
+}

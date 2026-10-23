@@ -578,6 +578,8 @@ public final class PickupTruckEntity extends Entity implements VehicleColliders.
         }
         drive();
         placeParts();
+        // bodies it closes on fast are hit before they are pushed aside (docs/gameplay/injury_knockdown_v1_plan.md 5)
+        if (!level().isClientSide && physics != null) VehicleImpact.tick(this, physics);
         carry();
         if (level() instanceof net.minecraft.server.level.ServerLevel server) flattenPlants(server);
         if (!level().isClientSide) {

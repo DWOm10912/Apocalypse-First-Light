@@ -26,18 +26,19 @@ internal: true
 
 ## 六个州
 
-联邦六州是一座大约 20×16 km 的海岛，州界由测量线和一条河组成。州界只管名字、路牌和建筑风格，不决定地形和生物群系
+联邦六州是一座大约 20×16 km 的海岛，州界由测量线和一条河组成。州界只管名字、路牌和建筑风格，不决定地形和生物群系；表里的地形是各州大致的样子，州名按它起
 
-| 州 | 风格 | 街名举例 |
-|---|---|---|
-| S1 | 英式老州 | High St、Church St、Mill St |
-| S2 | 中西部 | Courthouse Square、Depot St、Prairie Ave |
-| S3 | 山区矿镇 | Silver St、Ore Ave、Mine Rd |
-| S4 | 五大湖工业 | Foundry St、Dock St、Lake Shore Dr |
-| S5 | 法语湾区 | Royal St、Toulouse St、Levee Rd |
-| S6 | 西南西班牙语 | Camino Real、Calle del Sol、Arroyo Rd |
+| 州 | 州名 | 缩写 | 地形 | 风格 | 街名举例 |
+|---|---|---|---|---|---|
+| S1 | New Kent（新肯特州） | NK | 森林丘陵 | 英式老州 | High St、Church St、Mill St |
+| S2 | Arvonia（阿沃尼亚州） | AV | 农业平原 | 中西部 | Courthouse Square、Depot St、Prairie Ave |
+| S3 | Serrana（塞拉纳州） | SR | 寒冷山地 | 山区矿镇 | Silver St、Ore Ave、Mine Rd |
+| S4 | Laurentia（劳伦西亚州） | LT | 湖区 | 五大湖工业 | Foundry St、Dock St、Lake Shore Dr |
+| S5 | Marais（马雷州） | MR | 湿地海岸 | 法语湾区 | Royal St、Toulouse St、Levee Rd |
+| S6 | Altamesa（阿尔塔梅萨州） | AT | 干旱高原 | 西南西班牙语 | Camino Real、Calle del Sol、Arroyo Rd |
 
-州名还没定，现在只有 S1–S6 的编号
+- <StatusTag s="planned" /> 州名 2026-10-22 定下，游戏里还没有显示州名的地方。以后车牌、路牌、地图和界牌上写英文州名，车牌上方印全称，地图、地址和路牌用两字母缩写；报纸、文件等中文文本里写「新肯特州」「马雷州」
+- 马雷港（Port Marais）在马雷州，全称写成 Port Marais, Marais；马雷可乐也取自同一个名字。梅萨罗哈（Mesa Roja）在阿尔塔梅萨州
 
 ## 城镇
 

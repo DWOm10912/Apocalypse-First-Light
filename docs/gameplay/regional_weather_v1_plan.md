@@ -159,7 +159,7 @@ W0（雷声）已经写好，见雷声方案。W1 的天气模型（第 10 节�
   - 原版的天气计时器停掉（mixin `ServerLevelWeatherMixin`，取消 `advanceWeatherCycle`，全局下雨、打雷一直是关的）。所以原版 `/weather` 不起作用，原版"雷暴时每个区块随机落雷"也没有了。
   - `Level#isRainingAt` 改问这一格的天气（mixin `LevelWeatherMixin`，两端都改）：露天、在最高的挡雨方块之上、这里雨量 ≥ 0.3 mm/h、生物群系下雨。淋湿、僵尸、T15 都走这个。
   - 灭火：原版先问"全世界下没下雨"，现在改成"有 AFL 天气就算"，再由 `isRainingAt` 判断火旁边下没下（mixin `FireBlockRainMixin`）。
-  - 落雷：每个雷暴每 tick 按"每分钟几次闪 / 1200"的概率落一次，落在雷暴当前半径 0.8 倍的圆里。落点那片区块在跑实体时放真闪电，落点由原版找目标的方法定（`ServerLevelLightningInvoker`，所以雷击伤的"先打最高的"也照常）；否则只给 15 km 内的玩家发远处闪电（`LightningPackets.FarStrike`），只看得到、听得到。
+  - 落雷：每个雷暴每 tick 按"每分钟几次闪 / 1200"的概率落一次，落在雷暴当前半径 0.8 倍的圆里。落点那片区块在跑实体时放真闪电，落点由原版找目标的方法定（`ServerLevelLightningInvoker`，所以闪电 V2 的滚球法落点也照常）；否则只给 15 km 内的玩家发远处闪电（`LightningPackets.FarStrike`），只看得到、听得到。
   - 按位置查天气：32 m 一格缓存，每 20 tick 重算。
 - **同步**（`weather/WeatherPackets.Sync`）：玩家登录时、每次 `/afl weather` 改动后，把天气种子、气候格子（每值一个字节）、强制的大势和手放的雨团发给玩家。客户端用同一个模型自己算。**新包，要 Main 给协议号**（分支上仍是 64）。
 - **客户端**（`client/weather/ClientWeather.java`）：每 tick 开头在镜头位置取天气，把原版的 `rainLevel` / `thunderLevel` 设成这里的值（每 tick 追 5 %，约 1 秒）。天空变暗、雨 V1、光影包的雨、T15 的玻璃水和车顶雨声都跟着走。风每 tick 追 2 %。

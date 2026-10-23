@@ -20,8 +20,8 @@ import net.minecraftforge.fml.common.Mod;
  * Lightning V1 (docs/rendering/lightning_v1.md) on the server. What a strike does to living things is lightning injury V1
  * (health/LightningInjury, docs/gameplay/lightning_injury_v1_plan.md): vanilla's strike (5 damage and fire, again every
  * tick the bolt flashes) is replaced for them by one sorting per bolt (direct, side flash, ground current); other entities
- * (items, vehicles) keep vanilla's. Where it strikes: mixin LightningTargetServerLevelMixin (the tallest thing, a lightning
- * rod first).
+ * (items) keep vanilla's, a T15 takes none. Where it strikes and what it does to a tree: lightning V2 (world/LightningAim,
+ * the rolling sphere; world/LightningTrees).
  * <p>
  * Thunder V1 (docs/audio/thunder_sounds_v1_plan.md 5): every player within FAR_RANGE hears and sees a strike, also far
  * beyond the entity's tracking range (LightningPackets.FarStrike, client/lightning/FarLightning); the infected hear only

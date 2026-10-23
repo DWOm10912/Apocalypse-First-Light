@@ -135,6 +135,13 @@ public final class PlayerSkeleton {
                 turnTicks = -1;
                 return;
             }
+            float thrown = com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.bodyYaw(p);
+            if (!Float.isNaN(thrown)) {
+                // a living ragdoll at rest (getting up): hips and chest the way it lies, no turn after
+                pelvis = chest = thrown;
+                turnTicks = -1;
+                return;
+            }
             boolean gun = SkeletonGunStance.busy(p);
             float target = head + SkeletonGunStance.chestTwist(p, 1F);
             float seat = GroundSitClient.seatYaw(p);
@@ -565,6 +572,8 @@ public final class PlayerSkeleton {
         in.crouch = crouch;
         in.time = (p.tickCount + partial) / 20F;
         in.turnStep = s != null && s.turnTicks >= 0 ? (s.turnTicks + partial) / 20F : -1F;
+        // a hit's flinch (injury knockdown V1): the body sways away from it
+        HitReactClient.apply(p, in, partial);
         // lying on the front (ProneClient): a held gun is an ordinary item there, put away while crawling
         boolean gun = SkeletonGunStance.busy(p) && !ProneClient.prone(p);
         float pelvis = s != null ? Mth.rotLerp(partial, s.pelvisO, s.pelvis) : body;
@@ -574,11 +583,26 @@ public final class PlayerSkeleton {
         in.viewYaw = Mth.wrapDegrees(head - body);
         in.viewPitch = pitch;
         in.chestPitch = HumanoidPoser.chestPitch(pitch, SkeletonGunStance.gunUp(p, partial));
+        // a living ragdoll's get-up: solved facing ahead, then put at the root and yaw it lies at (LiveRagdollClient#afterSolve)
+        float aligned = d.world ? com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.alignedYaw(p) : Float.NaN;
+        if (!Float.isNaN(aligned)) {
+            in.rootYaw = 0F;
+            in.chestYaw = 0F;
+            in.viewYaw = Mth.wrapDegrees(head - aligned);
+        }
         // the eye: the camera's own position for the own first-person body, the entity's eye height otherwise
         Vec3 eye;
         Vec3 offset = mc.getEntityRenderDispatcher().getRenderer(p).getRenderOffset(p, partial);
         Vec3 origin = new Vec3(Mth.lerp(partial, p.xOld, p.getX()), Mth.lerp(partial, p.yOld, p.getY()),
                 Mth.lerp(partial, p.zOld, p.getZ())).add(offset);
+        // a living ragdoll falling (client/survivor/LiveRagdollClient): its boxes are the body
+        if (d.world && com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.pose(p, partial, origin, toModel, out.pose)) {
+            out.hold = null;
+            out.prop = null;
+            out.heldHidden = false;
+            out.extras.clear();
+            return;
+        }
         if (firstPerson) {
             eye = camera.getPosition().subtract(origin);
         } else {
@@ -586,7 +610,7 @@ public final class PlayerSkeleton {
             eye = new Vec3(0, eyeHeight - offset.y, 0);
         }
         Vector3f eyeModel = toModel.transformPosition(new Vector3f((float) eye.x, (float) eye.y, (float) eye.z)).mul(16F);
-        in.eyeTarget = eyeModel;
+        in.eyeTarget = Float.isNaN(aligned) ? eyeModel : null;
         // arms
         in.vanillaRight.rotationZYX(model.rightArm.zRot, model.rightArm.yRot, model.rightArm.xRot);
         in.vanillaLeft.rotationZYX(model.leftArm.zRot, model.leftArm.yRot, model.leftArm.xRot);
@@ -695,6 +719,7 @@ public final class PlayerSkeleton {
             }
         }
         poser().solveArms(in, out.pose, report);
+        if (d.world) com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.afterSolve(p, partial, origin, toModel, out.pose);
         if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
         if (sit != null) GroundSitClient.solved(p, out.pose, origin, toModel);
         if (lie != null && d.world) ProneClient.solved(p, out.pose, origin, toModel);
@@ -788,6 +813,8 @@ public final class PlayerSkeleton {
      * out of view (client/FirstPersonBody#gunOnBody), so this stays false and the hand pass runs.
      */
     public static boolean firstPersonHands(Player p) {
+        // a living ragdoll (client/survivor/LiveRagdollClient): the body's arms, the item in its hand
+        if (enabled() && com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.active(p) && supportedPose(p)) return true;
         if (!enabled() || !supportedPose(p) || p.isScoping() || FieldAttachmentViewState.isActive()) return false;
         // crawling the hands are on the ground (the item put away); lying still the item's own view model, as standing
         if (ProneClient.prone(p) && ProneClient.stowed(p)) return true;

@@ -122,6 +122,30 @@ Fractures are judged by the health the fall actually took, so armour and landing
 - <StatusTag s="verified" d="2026-10-20" /> Falling over makes a thump as your hand hits the ground, heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
 - A broken arm does not slow reloading yet (later)
 
+## Hit and knocked down
+
+- <StatusTag s="test" /> Hits and knockdowns V1: only on a branch, not checked in game yet
+
+**Flinching**: when you are struck, shot, caught in a blast or hit by a vehicle, your body sways away from where it came from: hit from the front you rock back, from behind you lurch forward, from the side you lean the other way. The harder the hit, the bigger the sway, and hits add up. The camera does not move. Falls and lightning come from no direction and make no sway.
+
+**Knocked down**: a hit that does not kill can knock you down. You fall away from where it came from, lie there a moment and get back up on your own; for those seconds you cannot move or use anything. Whatever is in your hand flies out of it with a <V d="health/health_v1#knockdown.drop" pct /> chance.
+
+- Explosions, falling trees and vehicles: always, once they take at least <V d="health/health_v1#knockdown.always_min" /> health
+- Any other hit from somewhere: chance = (health lost − <V d="health/health_v1#knockdown.chance.0" />) ÷ <V d="health/health_v1#knockdown.chance.1" />, at most <V d="health/health_v1#knockdown.chance.2" pct />. More than a light load +<V d="health/health_v1#knockdown.load" pct />, a broken leg ×<V d="health/health_v1#knockdown.broken_leg" />, sprinting +<V d="health/health_v1#knockdown.sprint" pct />, sneaking ×<V d="health/health_v1#knockdown.sneak" />. An infected's swipe never knocks you down; a BR-51 round always does
+- From within <V d="health/health_v1#knockdown.front_cone" u="°" ue="°" /> of straight ahead you go down on your back, from behind onto your front, from either side onto the other side
+- Hitting the ground makes a thump heard within <V j="MovementNoiseEvents.HEAVY_LANDING_RADIUS" /> blocks
+- Not in water, sitting, or already lying on the ground
+
+**Thrown by a vehicle**: <StatusTag s="test" /> a vehicle hit that does not kill throws you like a ragdoll: you fly, land and tumble, and once still you get up from however you lie. In first person the view flies with your head. While thrown and getting up you cannot move or use anything. With <V d="health/health_v1#collapse.at" /> health or less when you stop, you do not get up but collapse (below). Killed mid-flight, the body flies on
+
+**Collapsing**: when one hit leaves you with <V d="health/health_v1#collapse.at" /> health or less (and you live), your knees give, you pitch forward and can only crawl:
+
+- Crawling is slower (×<V d="health/health_v1#collapse.crawl" />); no jumping or sprinting
+- You can still use things, for example to bandage yourself
+- After at least <V d="health/health_v1#collapse.min_seconds" u="秒" ue="s" /> you stand up once your health is back to <V d="health/health_v1#collapse.up_at" />; after <V d="health/health_v1#collapse.max_seconds" u="秒" ue="s" /> you come round and stand up anyway. Under a low ceiling you keep crawling and stand once you are out
+- Hunger, thirst, cold, heatstroke and lightning never make you collapse
+- Logging out and back in, you are on your feet again
+
 ## Tinnitus
 
 - <StatusTag s="test" /> Tinnitus V2: a negative state. Checked in game on its branch on 2026-10-21, waiting to be merged
@@ -148,7 +172,7 @@ The hearing load tops out at <V d="hearing/tinnitus_v2#max_load" />. Each time t
 
 - <StatusTag s="test" /> Lightning injuries V1: on a branch only, not yet checked in game
 
-Lightning goes for the tallest thing around: a person or creature is only picked when its head is at least as high as every block within <V d="lightning/lightning_injury_v1#target_radius" u="格" ue="blocks" />. Open ground and hilltops are the most dangerous; a taller tree or building nearby takes the strike first. Lightning rods come first
+Where lightning lands follows the rolling sphere (lightning V2, on a branch only, checked in game 2026-10-22): each strike's striking distance is <V d="lightning/lightning_injury_v1#strike.distance.0" />–<V d="lightning/lightning_injury_v1#strike.distance.2" u="m" />, most often <V d="lightning/lightning_injury_v1#strike.distance.1" u="m" />, and the first thing the leader comes within that distance of is struck. Height and standing alone decide it; metal does not draw lightning. Open ground, hilltops and the foot of a lone tree are the most dangerous; a taller tree, a house or a lightning rod nearby takes the strike first. There is no warning before a strike. See [Weather](../world/weather#where-it-strikes-and-lightning-rods)
 
 There are three ways to be struck:
 

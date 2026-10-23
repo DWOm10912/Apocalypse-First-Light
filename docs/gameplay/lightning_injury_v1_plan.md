@@ -40,7 +40,7 @@
 
 结果：雷雨天站在开阔地带最危险；躲在树下不会被直击，但会挨侧闪（现实里也是这样，树下躲雨是雷击伤的常见原因）；进屋、进车最安全。
 
-这一条改动了闪电 V1 已经 PASS 的落点（用户同意，第 6 节第 1 条）。`tallest_first: false` 可以退回原版落点。
+这一条改动了闪电 V1 已经 PASS 的落点（用户同意，第 6 节第 1 条）。**2026-10-22 起被闪电 V2 的滚球法取代**（[lightning_v2_plan.md](lightning_v2_plan.md) 第 2 节），`tallest_first`、`target_radius` 已删；`strike.enabled: false` 退回原版落点。
 
 ### 3.3 四种挨雷方式
 
