@@ -202,11 +202,12 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
 
     /**
      * Round point shovel on the rack (docs/worldgen/earthwork_a2.md 4.2, user 2026-10-22): hung by the middle of its D grip's
-     * crossbar from one peg, plumb, blade down with its load face to the room; 1.48 m, so the blade hangs 67 cm into the cell
-     * below. The inner peg of the pair: the D is 16.5 cm across, on an outer peg it would go through the end bracket, on
-     * the inner one it clears a neighbour axe's bit by 1.2 cm. The blade is 34 cm wide and neighbouring handles are 20 or
-     * 30 cm apart, so the middle shovel hangs 7.2 cm further out on its peg (the crossbar 2 mm inside the peg's end; the
-     * outer ones 1 cm off the board): measured on the mesh, 6.8 cm keeps two blades 20 cm apart from meeting. Drawn empty
+     * crossbar from one peg, plumb, blade down with its load face to the room; 1.6 m (the big shovel, 2026-10-22), so the
+     * blade hangs 80 cm into the cell below. The inner peg of the pair: the D is 16.5 cm across, on an outer peg it would go through the end bracket, on
+     * the inner one it clears a neighbour axe's bit by 1.2 cm. The blade is 38 cm wide (34 cm before 2026-10-22) and
+     * neighbouring handles are 20 or 30 cm apart, so the middle shovel hangs 7.2 cm further out on its peg (the crossbar
+     * 2 mm inside the peg's end; the outer ones 1 cm off the board): measured on the mesh, 6.8 cm kept two 34 cm blades
+     * 20 cm apart from meeting, and the 38 cm blade's dish needs 0.1 mm more than the 34 cm one's. Drawn empty
      * (a loaded shovel is not taken).
      */
     private static void shovel(double x, PoseStack pose, MultiBufferSource buffers, int light) {

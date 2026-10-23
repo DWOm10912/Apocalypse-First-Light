@@ -325,11 +325,16 @@ public final class TerrainSmooth {
 
     /** Why the corners are not free (SmoothRules#notFree, development output), null when they are. */
     public static String notFree(Level level, int x, int y, int z) {
+        return notFree(level, x, y, z, false);
+    }
+
+    /** The same, walls allowed (SmoothRules#notFree(Cells, int, int, int, int, boolean): the foot of a natural step). */
+    public static String notFree(Level level, int x, int y, int z, boolean walls) {
         LevelCells c = CELLS.get();
         c.level = level;
         c.owner = owner(level);
         try {
-            return SmoothRules.notFree(c, MODE, x, y, z);
+            return SmoothRules.notFree(c, MODE, x, y, z, walls);
         } finally {
             c.reset();
         }

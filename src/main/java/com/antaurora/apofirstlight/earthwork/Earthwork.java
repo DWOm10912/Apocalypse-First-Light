@@ -79,6 +79,11 @@ public final class Earthwork {
      * top0 + 2 (heights up to (top0 + 3) * Q); poured earth stays CLEARANCE quanta (0.05 m) below a block above it.
      */
     public static final int DEPTH = 3, RAISE = 3, CLEARANCE = 13;
+    /**
+     * Rock R2 (docs/gameplay/rock_r2_rock_face_mining_design.md 3.3): a pick cuts rock at most ROCK_DEPTH cells below a
+     * column's first top (a test value), keeping a lid of one cell over a cave.
+     */
+    public static final int ROCK_DEPTH = 6;
     /** development (A1): the earth each player carries, in quanta */
     public static final Map<UUID, Long> CARRIED = new HashMap<>();
 
@@ -125,10 +130,10 @@ public final class Earthwork {
      * around it with a shadow. Chunk-builder threads; cheap unless the column is edited.
      */
     public static boolean clientSkinCell(Block b, int x, int y, int z) {
-        return !CLIENT.isEmpty() && soil(b) && clientSkinCell(x, y, z);
+        return !CLIENT.isEmpty() && ground(b) && clientSkinCell(x, y, z);
     }
 
-    /** The same without the block in hand (a skin cell's block is soil by the block invariant): section occlusion (A3). */
+    /** The same without the block in hand (a skin cell's block is ground by the block invariant): section occlusion (A3). */
     public static boolean clientSkinCell(int x, int y, int z) {
         if (CLIENT.isEmpty() || editedTop(get(null, x >> 4, z >> 4), x, z) == Integer.MIN_VALUE) return false;
         int[] h = SKIN_HEIGHTS.get();
@@ -183,7 +188,8 @@ public final class Earthwork {
             int k = vertex(vx & 63, vz & 63), v = e.h(k);
             if (v == NONE) return false;
             h[at(i, j)] = v;
-            if (undisturbed != null) undisturbed[at(i, j)] = EarthGrid.undisturbed(v, e.base(k));
+            // Rock R2: loose earth on undisturbed ground (old rubble on rock, say) keeps the height, yet that ground no longer shows
+            if (undisturbed != null) undisturbed[at(i, j)] = EarthGrid.undisturbed(v, e.base(k)) && e.loose(k) < TURF / 4;
         }
         return true;
     }
@@ -196,10 +202,32 @@ public final class Earthwork {
                 || b == Blocks.RED_SAND || b == Blocks.GRAVEL || b == Blocks.MUD || b == Blocks.CLAY;
     }
 
-    /** The ground a column's first top turns into once moved: grass and podzol lose their top, the rest stays itself. */
+    /**
+     * Natural rock a pick cuts where it lies bare (Rock R2, docs/gameplay/rock_r2_rock_face_mining_design.md 3.2): stone
+     * only, the one rock Terrain Smooth draws and the earthwork skin can follow; the granite, andesite, diorite and tuff
+     * blobs wait for R3's geology.
+     */
+    public static boolean rock(Block b) {
+        return b == Blocks.STONE;
+    }
+
+    /** What an edited column's ground cells hold (the block invariant): loose ground, or rock under the skin. */
+    public static boolean ground(Block b) {
+        return soil(b) || rock(b);
+    }
+
+    /**
+     * The ground a column's first top turns into once moved: grass and podzol lose their top, rock and the rest stay
+     * themselves (the skin's bare look).
+     */
     public static BlockState bare(BlockState top) {
         Block b = top == null ? Blocks.DIRT : top.getBlock();
-        return b == Blocks.GRASS_BLOCK || b == Blocks.PODZOL || !soil(b) ? Blocks.DIRT.defaultBlockState() : b.defaultBlockState();
+        return b == Blocks.GRASS_BLOCK || b == Blocks.PODZOL || !ground(b) ? Blocks.DIRT.defaultBlockState() : b.defaultBlockState();
+    }
+
+    /** The block a cell of edited column takes once its skin rises into it without loose earth over it: rock comes back as gravel. */
+    private static BlockState refill(BlockState top) {
+        return top != null && rock(top.getBlock()) ? Blocks.GRAVEL.defaultBlockState() : bare(top);
     }
 
     // ------------------------------------------------------------------------------------------------- shapes
@@ -306,13 +334,22 @@ public final class Earthwork {
         int t = d.surface(x, z);
         if (t == SmoothRules.NO_SURFACE) return "no natural surface (built over, water, an overhang)";
         var p = new BlockPos.MutableBlockPos(x, t, z);
+        if (rock(level.getBlockState(p).getBlock())) {   // Rock R2: bare rock, a pick's (its floor is its top)
+            for (int y = t + 1; y <= t + 2; y++)
+                if (!open(level.getBlockState(p.setY(y)))) return (y - t) + " above its top is " + name(level.getBlockState(p)) + ", not open";
+            return TerrainSmooth.notFree(level, x, t, z, true);
+        }
         if (!soil(level.getBlockState(p).getBlock())) return "its top is " + name(level.getBlockState(p)) + ", not loose ground";
-        if (!soil(level.getBlockState(p.setY(t - 1)).getBlock())) return "under its top is " + name(level.getBlockState(p)) + ", not loose ground";
-        BlockState under = level.getBlockState(p.setY(t - 2));
-        if (!under.isSolidRender(level, p)) return "two below its top is " + name(under) + ", not a solid block";
+        // round 2 (2026-10-22): a thin soil straight on rock is loose ground too, its hard floor the rock's top (#hardFloor)
+        Block under1 = level.getBlockState(p.setY(t - 1)).getBlock();
+        if (!soil(under1) && !rock(under1)) return "under its top is " + name(level.getBlockState(p)) + ", neither loose ground nor rock";
+        if (soil(under1)) {
+            BlockState under = level.getBlockState(p.setY(t - 2));
+            if (!under.isSolidRender(level, p)) return "two below its top is " + name(under) + ", not a solid block";
+        }
         for (int y = t + 1; y <= t + 2; y++)
             if (!open(level.getBlockState(p.setY(y)))) return (y - t) + " above its top is " + name(level.getBlockState(p)) + ", not open";
-        return TerrainSmooth.notFree(level, x, t, z);
+        return TerrainSmooth.notFree(level, x, t, z, true);
     }
 
     private static String name(BlockState s) {
@@ -354,7 +391,8 @@ public final class Earthwork {
             else if (o.base(k) != b) mismatches++;   // a neighbour's snapshot put it elsewhere (should not happen: free corners)
             DIRTY.add(ChunkPos.asLong(vx >> 6, vz >> 6));
         }
-        own(level, x >> 4, z >> 4).mark(column(x, z), t, top, hardFloor(level, x, t, z));
+        int floor = rock(top.getBlock()) ? (t + 1) * Q : hardFloor(level, x, t, z);
+        own(level, x >> 4, z >> 4).mark(column(x, z), t, top, floor, rockLimit(level, x, z, Math.floorDiv(floor, Q), t));
         converting = true;
         try {
             var p = new BlockPos.MutableBlockPos();
@@ -371,11 +409,23 @@ public final class Earthwork {
      */
     private static int hardFloor(ServerLevel level, int x, int t, int z) {
         var p = new BlockPos.MutableBlockPos(x, t, z);
-        int f = t - 1;   // #why: t and t - 1 are loose ground
+        int f = soil(level.getBlockState(p.setY(t - 1)).getBlock()) ? t - 1 : t;   // #why: t loose ground, t - 1 loose ground or rock
         while (f > t - DEPTH && soil(level.getBlockState(p.setY(f - 1)).getBlock())) f--;
         BlockState under = level.getBlockState(p.setY(f - 1));
         if (!soil(under.getBlock()) && !under.isSolidRender(level, p)) f++;
         return f * Q;
+    }
+
+    /**
+     * Rock R2: the deepest a pick may cut the rock under a column whose hard floor is the top of cell fc - 1 and whose
+     * first top is cell t (quanta), or NONE when its floor is not rock: down through rock cells to ROCK_DEPTH cells below
+     * t, a cell going only where a solid block stays under it (the lid over a cave or water).
+     */
+    private static int rockLimit(ServerLevel level, int x, int z, int fc, int t) {
+        var p = new BlockPos.MutableBlockPos(x, fc, z);
+        int y = fc;
+        while (y > t + 1 - ROCK_DEPTH && rock(level.getBlockState(p.setY(y - 1)).getBlock()) && level.getBlockState(p.setY(y - 2)).isSolidRender(level, p)) y--;
+        return y < fc ? y * Q : NONE;
     }
 
     /**
@@ -398,7 +448,9 @@ public final class Earthwork {
     private static int natural(ServerLevel level, int vx, int vz, int hv) {
         var table = BulkMaterials.table();
         int x = Math.floorDiv(vx, PER_BLOCK), z = Math.floorDiv(vz, PER_BLOCK);
-        int m = table.of(level.getBlockState(new BlockPos(x, Math.floorDiv(hv - 1, Q), z)).getBlock());
+        Block under = level.getBlockState(new BlockPos(x, Math.floorDiv(hv - 1, Q), z)).getBlock();
+        if (rock(under)) return table.index("rubble");   // Rock R2: rock stands at rubble's excavation angle, the rock's own
+        int m = table.of(under);
         if (m >= 0) return m;
         EarthChunk e = get(level, x >> 4, z >> 4);
         BlockState top = e == null ? null : e.topState(column(x, z));
@@ -413,7 +465,12 @@ public final class Earthwork {
 
     /** Moves vertices by deltas (global vertex key to quanta), no material, no limit (#edit). */
     static Result edit(ServerLevel level, Long2IntOpenHashMap deltas, boolean slopes) {
-        return edit(level, deltas.keySet(), (v, h) -> deltas.get(v), slopes, -1, Long.MAX_VALUE, null);
+        return edit(level, deltas.keySet(), (v, h) -> deltas.get(v), slopes, -1, Long.MAX_VALUE, null, false);
+    }
+
+    static Result edit(ServerLevel level, it.unimi.dsi.fastutil.longs.LongCollection where, Delta delta, boolean slopes, int put, long limit,
+                       Long2IntOpenHashMap rise) {
+        return edit(level, where, delta, slopes, put, limit, rise, false);
     }
 
     /**
@@ -424,9 +481,14 @@ public final class Earthwork {
      * and the edited ground slumps after; without (reset, reconcile) only the columns' ranges hold. Earth put down (of
      * material put, -1 none) is loose earth; limit: quanta the edit moves at most in all (a shovel's room or load), shared
      * out over what each vertex may move (EarthGrid#distribute); rise: how far vertices may rise at most (under entities).
+     * Rock R2: a vertex over rock goes no lower than the rock's surface (EarthGrid#shovelFloor); cut: a pick's strike
+     * instead (round 3, design 12): a vertex where the rock lies bare (every column reading it rock from its first top, or
+     * no natural ground left over the rock, loose earth at most) goes down as far as the rock's depth limit, taking that
+     * loose earth and then the rock out of the world; one over natural ground stays. No slumping: rock stands where it is
+     * cut.
      */
     static Result edit(ServerLevel level, it.unimi.dsi.fastutil.longs.LongCollection where, Delta delta, boolean slopes, int put, long limit,
-                       Long2IntOpenHashMap rise) {
+                       Long2IntOpenHashMap rise, boolean cut) {
         if (!TerrainSmooth.applies(level) || !TerrainSmooth.SERVER.enabled()) return Result.none(where.size());
         Long2ByteOpenHashMap status = new Long2ByteOpenHashMap();
         LongArrayList keep = new LongArrayList();
@@ -465,8 +527,8 @@ public final class Earthwork {
                 int vx = keyX(c) * PER_BLOCK + i, vz = keyZ(c) * PER_BLOCK + j;
                 long v = key(vx, vz);
                 if (f.h.containsKey(v) || !read(level, f, v)) continue;
-                int lo = Integer.MIN_VALUE, hi = Integer.MAX_VALUE;
-                boolean movable = true;
+                int floor = Integer.MIN_VALUE, deepest = Integer.MIN_VALUE, hi = Integer.MAX_VALUE;
+                boolean movable = true, bare = true;
                 for (long r : columnsOf(vx, vz)) {
                     byte s = status.computeIfAbsent(r, k -> status(level, keyX(k), keyZ(k)));
                     if (s != EDITED) {
@@ -476,11 +538,13 @@ public final class Earthwork {
                     }
                     EarthChunk e = get(level, keyX(r) >> 4, keyZ(r) >> 4);
                     int col = column(keyX(r), keyZ(r)), top = e.top0(col);
-                    lo = Math.max(lo, e.floor(col));
+                    bare &= e.topState(col) != null && rock(e.topState(col).getBlock());
+                    floor = Math.max(floor, e.floor(col));
+                    deepest = Math.max(deepest, e.rock(col) == NONE ? e.floor(col) : e.rock(col));
                     hi = Math.min(hi, ceilings.computeIfAbsent(r, k -> ceiling(level, keyX(k), keyZ(k), top)));
                 }
                 if (!movable) continue;
-                int[] range = {lo, hi};
+                int[] range = {(cut ? pickFloor(floor, deepest, f.h.get(v), f.loose.get(v), bare) : shovelFloor(floor, deepest, f.h.get(v), f.loose.get(v))), hi};
                 com.antaurora.apofirstlight.boulder.BoulderEarth.limit(level, vx, vz, f.h.get(v), range);   // Rock R1a: no cutting into rock
                 int nat = natural(level, vx, vz, f.h.get(v));
                 f.lo.put(v, range[0]);
@@ -501,7 +565,7 @@ public final class Earthwork {
         Long2IntOpenHashMap wanted = new Long2IntOpenHashMap();
         for (long v : keep) if (f.movable(v) && !wanted.containsKey(v)) wanted.put(v, delta.of(v, f.h.get(v)));
         long moved = f.apply(wanted, put, limit);
-        if (slopes) f.slump();
+        if (slopes && !cut) f.slump();
         int changed = 0;
         for (long v : f.step.keySet()) {
             int vx = keyX(v), vz = keyZ(v);
@@ -535,8 +599,9 @@ public final class Earthwork {
     }
 
     /**
-     * The blocks of edited column (x, z), from its hard floor to top0 + 2, made to follow its skin; a new block is its loose
-     * earth's material (the one at its middle vertex), else its first top's bare ground. A cell of a buried rock (Rock R1a)
+     * The blocks of edited column (x, z), from its hard floor (Rock R2: the rock's depth limit under it) to top0 + 2, made
+     * to follow its skin; a new block is its loose earth's material (the one at its middle vertex), else its first top's
+     * bare ground (#refill: gravel over rock, which never grows back). A cell of a buried rock (Rock R1a)
      * the skin bares becomes a rock cell (BoulderBlocks), not air. Loose stones (Rock R1b) in the column drop as their items
      * first: the shovel moved the ground they lay on.
      */
@@ -544,9 +609,9 @@ public final class Earthwork {
         int[] h = new int[SIDE * SIDE];
         if (!heights(level, x, z, h, null)) return;
         EarthChunk e = get(level, x >> 4, z >> 4);
-        int col = column(x, z), t = e.top0(col), lo = min(h), hi = max(h), bottom = Math.floorDiv(e.floor(col), Q);
+        int col = column(x, z), t = e.top0(col), lo = min(h), hi = max(h), bottom = Math.floorDiv(e.bottom(col), Q);
         int mid = vertex((x * PER_BLOCK + PER_BLOCK / 2) & 63, (z * PER_BLOCK + PER_BLOCK / 2) & 63);
-        BlockState fill = e.loose(mid) > 0 ? e.matBlock(e.mat(mid)) : bare(e.topState(col));
+        BlockState fill = e.loose(mid) > 0 ? e.matBlock(e.mat(mid)) : refill(e.topState(col));
         var p = new BlockPos.MutableBlockPos();
         converting = true;
         try {
@@ -554,13 +619,13 @@ public final class Earthwork {
                 if (com.antaurora.apofirstlight.boulder.LooseStones.is(level.getBlockState(p.set(x, y, z)))) level.destroyBlock(p, true);
             for (int y = t + RAISE - 1; y >= bottom; y--) {   // top down: nothing is left hanging
                 BlockState s = level.getBlockState(p.set(x, y, z));
-                if (kind(lo, hi, y) == AIR && soil(s.getBlock()))
+                if (kind(lo, hi, y) == AIR && ground(s.getBlock()))
                     level.setBlock(p, com.antaurora.apofirstlight.boulder.BoulderEarth.rock(level, p)
                             ? com.antaurora.apofirstlight.boulder.BoulderBlocks.cell().defaultBlockState() : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             }
             for (int y = bottom; y < t + RAISE; y++) {   // bottom up: every new block stands on ground
                 BlockState s = level.getBlockState(p.set(x, y, z));
-                if (kind(lo, hi, y) != AIR && !soil(s.getBlock()) && open(s)) level.setBlock(p, fill, Block.UPDATE_ALL);
+                if (kind(lo, hi, y) != AIR && !ground(s.getBlock()) && open(s)) level.setBlock(p, fill, Block.UPDATE_ALL);
             }
         } finally {
             converting = false;
@@ -621,10 +686,12 @@ public final class Earthwork {
     // ------------------------------------------------------------------------------------------------- the shovel
 
     /**
-     * Shovel brushes (docs/gameplay/sandbox_v1_design.md 5.3, docs/worldgen/earthwork_a2.md 2): a scoop r 0.5 m at most
-     * 0.42 m deep (about 97 L: user 2026-10-21, about 100 L a stroke); pouring a cone r 0.6 m; scraping r 0.8 m. LIFT: an entity rises with poured earth at most 0.1 m (quanta).
+     * Shovel brushes (docs/gameplay/sandbox_v1_design.md 5.3, docs/worldgen/earthwork_a2.md 2, 4.4): a scoop r 0.8 m at most
+     * 0.5 m deep (about 297 L: user 2026-10-22, the big shovel, about 300 L a stroke; it was r 0.5 m, 0.42 m, 97 L); pouring
+     * a cone r 0.9 m (the big shovel's load spreads wider; it was 0.6 m); scraping r 0.8 m. LIFT: an entity rises with
+     * poured earth at most 0.1 m (quanta).
      */
-    public static final double DIG_RADIUS = 0.5, DIG_DEPTH = 0.42, POUR_RADIUS = 0.6, SCRAPE_RADIUS = 0.8;
+    public static final double DIG_RADIUS = 0.8, DIG_DEPTH = 0.5, POUR_RADIUS = 0.9, SCRAPE_RADIUS = 0.8;
     public static final int LIFT = 25;
 
     /** One scoop at (cx, cz) into a shovel with room quanta left; Result#taken: the earth it took by material. */
@@ -632,6 +699,31 @@ public final class Earthwork {
         if (room <= 0) return Result.none(0);
         Long2IntOpenHashMap w = brush(cx, cz, DIG_RADIUS, DIG_DEPTH, -1);
         return edit(level, w.keySet(), (v, h) -> w.get(v), true, -1, room, null);
+    }
+
+    /**
+     * A pick's strike on bare rock (Rock R2, docs/gameplay/rock_r2_rock_face_mining_design.md 12, user 2026-10-22: as in
+     * Valheim): a brush r STRIKE_RADIUS at most STRIKE_DEPTH deep cuts the rock at (cx, cz) down where it lies bare, no
+     * rubble left and no shovel needed (#edit cut); Result#moved the quanta cut (negative), Result#taken them by material
+     * (rock counts as rubble: #natural), what the strike's stones come from.
+     */
+    public static Result strike(ServerLevel level, double cx, double cz) {
+        Long2IntOpenHashMap w = brush(cx, cz, STRIKE_RADIUS, STRIKE_DEPTH, -1);
+        return edit(level, w.keySet(), (v, h) -> w.get(v), true, -1, Long.MAX_VALUE, null, true);
+    }
+
+    /**
+     * Strike brush (m): r 0.6 m, 0.15 m deep at the middle: 0.297 pi r^2 depth, about 50 L (round 2, user 2026-10-22: 12 L a
+     * strike was too slow).
+     */
+    public static final double STRIKE_RADIUS = 0.6, STRIKE_DEPTH = 0.15;
+
+    /**
+     * Whether the column under (x, z) is one a strike can work at all (server; a quick check before the swing): null when it
+     * can, else the message key's last part ("hard": fixed ground, a cliff).
+     */
+    public static String strikable(ServerLevel level, double x, double z) {
+        return status(level, (int) Math.floor(x), (int) Math.floor(z)) == FIXED ? "hard" : null;
     }
 
     /**
@@ -755,7 +847,8 @@ public final class Earthwork {
             try {
                 for (int y = t + RAISE - 1; y > t; y--) if (soil(level.getBlockState(p.set(x, y, z)).getBlock())) level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 if (top != null) level.setBlock(p.set(x, t, z), top, Block.UPDATE_ALL);
-                if (!soil(level.getBlockState(p.set(x, t - 1, z)).getBlock())) level.setBlock(p, bare(top), Block.UPDATE_ALL);
+                // a rock top (Rock R2) had anything under it: the rock dug out came back as gravel (#refill)
+                if (top != null && soil(top.getBlock()) && !ground(level.getBlockState(p.set(x, t - 1, z)).getBlock())) level.setBlock(p, bare(top), Block.UPDATE_ALL);
             } finally {
                 converting = false;
             }
@@ -795,9 +888,9 @@ public final class Earthwork {
                     continue;
                 }
                 int lo = min(h), hi = max(h);
-                for (int y = Math.floorDiv(e.floor(col), Q); y < t + RAISE; y++)
-                    if ((kind(lo, hi, y) != AIR) != soil(level.getBlockState(p.set(x, y, z)).getBlock())) out[2]++;
-                if (lo < e.floor(col) - Q || hi > (t + RAISE + 1) * Q) out[3]++;
+                for (int y = Math.floorDiv(e.bottom(col), Q); y < t + RAISE; y++)
+                    if ((kind(lo, hi, y) != AIR) != ground(level.getBlockState(p.set(x, y, z)).getBlock())) out[2]++;
+                if (lo < e.bottom(col) - Q || hi > (t + RAISE + 1) * Q) out[3]++;
             }
         }
         return out;
@@ -810,18 +903,46 @@ public final class Earthwork {
         if (converting || level.isClientSide()) return;
         EarthChunk e = get(level, pos.getX() >> 4, pos.getZ() >> 4);
         int col = column(pos.getX(), pos.getZ());
-        if (e == null || !e.edited(col) || pos.getY() < Math.floorDiv(e.floor(col), Q) || pos.getY() >= e.top0(col) + RAISE) return;
+        if (e == null || !e.edited(col) || pos.getY() < Math.floorDiv(e.bottom(col), Q) || pos.getY() >= e.top0(col) + RAISE) return;
         RECONCILE.add(pos.immutable());
     }
 
     @SubscribeEvent
     public static void breaking(BlockEvent.BreakEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || !soil(event.getState().getBlock())) return;
+        if (!(event.getLevel() instanceof ServerLevel level) || !ground(event.getState().getBlock())) return;
         int[] h = new int[SIDE * SIDE];
         BlockPos pos = event.getPos();
         if (!heights(level, pos.getX(), pos.getZ(), h, null) || kind(min(h), max(h), pos.getY()) == AIR) return;
         event.setCanceled(true);
-        event.getPlayer().displayClientMessage(Component.translatable("message.apocalypse_firstlight.earthwork.needs_shovel"), true);
+        event.getPlayer().displayClientMessage(Component.translatable(rock(event.getState().getBlock())
+                ? "message.apocalypse_firstlight.pick.needs_pick" : "message.apocalypse_firstlight.earthwork.needs_shovel"), true);
+    }
+
+    /** Whether pos holds ground of an edited column (a skin cell or below it): the shovel's and the pick's, not a hand's. */
+    private static boolean editedGround(Level level, BlockPos pos, BlockState state) {
+        if (!ground(state.getBlock())) return false;
+        int[] h = new int[SIDE * SIDE];
+        return heights(level, pos.getX(), pos.getZ(), h, null) && kind(min(h), max(h), pos.getY()) != AIR;
+    }
+
+    /**
+     * No break progress there in survival (Rock R2 round 2, user 2026-10-22: a rubble cell cracked and sounded as gravel
+     * under a hand, and only the finished break was refused, #breaking).
+     */
+    @SubscribeEvent
+    public static void breakSpeed(net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed event) {
+        if (event.getEntity().isCreative() || event.getPosition().isEmpty()) return;
+        if (editedGround(event.getEntity().level(), event.getPosition().get(), event.getState())) event.setNewSpeed(0);
+    }
+
+    /** The first hit there says what it takes (server side, once per press; rock: boulder.RockFace). */
+    @SubscribeEvent
+    public static void hit(net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getLevel().isClientSide() || event.getAction() != net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action.START
+                || event.getEntity().isCreative()) return;
+        BlockState s = event.getLevel().getBlockState(event.getPos());
+        if (!rock(s.getBlock()) && editedGround(event.getLevel(), event.getPos(), s))
+            event.getEntity().displayClientMessage(Component.translatable("message.apocalypse_firstlight.earthwork.needs_shovel"), true);
     }
 
     @SubscribeEvent
@@ -834,7 +955,7 @@ public final class Earthwork {
             int[] h = new int[SIDE * SIDE];
             for (BlockPos pos : list) {
                 // a ground cell lost its ground (not to the skin): the skin goes down below it, as far as its vertices may
-                if (soil(level.getBlockState(pos).getBlock()) || !heights(level, pos.getX(), pos.getZ(), h, null)) continue;
+                if (ground(level.getBlockState(pos).getBlock()) || !heights(level, pos.getX(), pos.getZ(), h, null)) continue;
                 int floor = pos.getY() * Q;
                 Long2IntOpenHashMap down = new Long2IntOpenHashMap();
                 for (int j = 0; j <= PER_BLOCK; j++) for (int i = 0; i <= PER_BLOCK; i++)

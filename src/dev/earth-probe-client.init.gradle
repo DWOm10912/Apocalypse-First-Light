@@ -1,0 +1,12 @@
+// Earthwork probe client (dev only; src/dev/java/.../dev/earthwork/EarthProbe.java, Rock R2 round 2).
+// gradlew runClient --offline -I src/dev/earth-probe-client.init.gradle -Pearthprobe=WORLD
+// Runs in build/earth-probe (a copy of the save under saves/WORLD, put there first), never the main run/.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/earth-probe')
+            property 'afl.earthprobe', (project.findProperty('earthprobe') ?: '')
+            args '--width', '1280', '--height', '720'
+        }
+    }
+}

@@ -315,6 +315,21 @@ public final class EarthGrid {
         return h;
     }
 
+    /**
+     * Rock R2: the lowest a shovel may take a vertex at h with l loose earth on it: its hard floor f where natural ground
+     * still lies over that, else the rock's surface (only the loose earth comes off rock), never below r (the deepest the
+     * rock may be cut; f where none may).
+     */
+    public static int shovelFloor(int f, int r, int h, int l) { return Math.max(r, Math.min(f, h - l)); }
+
+    /**
+     * Rock R2 round 3 (docs/gameplay/rock_r2_rock_face_mining_design.md 12): the lowest a pick's strike may cut a vertex at
+     * h with l loose earth on it: down to r (the rock's depth limit) where the rock lies bare (r below the hard floor f, and
+     * the ground there rock from the top: bare, else nothing but loose earth over f), else nowhere (h: natural ground over
+     * the rock is the shovel's).
+     */
+    public static int pickFloor(int f, int r, int h, int l, boolean bare) { return r < f && (bare || h - l <= f) ? r : h; }
+
     // ----------------------------------------------------------------------------------------------- slopes
 
     /** Slope a vertex next to locked ground may take against it at most: 1:1 (docs/gameplay/sandbox_v1_design.md 3.4). */

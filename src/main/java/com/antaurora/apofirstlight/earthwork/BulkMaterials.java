@@ -37,10 +37,11 @@ public final class BulkMaterials {
     /**
      * One material: loose density (kg/m3), angle of repose of loose earth and excavation angle of the natural ground
      * (degrees), the block it is once put down, its grip for vehicles (A3), the natural blocks it comes from, and the
-     * shade its loose earth is drawn with (backfill: the dirt texture a little darker).
+     * shade its loose earth is drawn with (backfill: the dirt texture a little darker), and the block-atlas sprite it is
+     * drawn with instead of its block's top (null: the block's; Rock R2's rubble, which is gravel once put down).
      */
     public record Material(String id, double density, double repose, double excavation, BlockState block, double grip,
-                           List<Block> sources, float shade) {
+                           List<Block> sources, float shade, ResourceLocation texture) {
         /** grams of n quanta (1 quantum = 0.244 L) */
         public long grams(long n) { return Math.round(n * EarthGrid.LITRES_PER_QUANTUM * density); }
     }
@@ -89,13 +90,16 @@ public final class BulkMaterials {
 
     private static List<Material> builtIn() {
         List<Material> out = new ArrayList<>();
-        out.add(new Material("backfill", 1500, 36, 36, Blocks.DIRT.defaultBlockState(), 0.60, List.of(), 0.82F));
-        out.add(new Material("clay", 1700, 40, 70, Blocks.CLAY.defaultBlockState(), 0.50, List.of(Blocks.CLAY), 1));
-        out.add(new Material("gravel", 1700, 38, 45, Blocks.GRAVEL.defaultBlockState(), 0.60, List.of(Blocks.GRAVEL), 1));
-        out.add(new Material("mud", 1900, 20, 30, Blocks.MUD.defaultBlockState(), 0.35, List.of(Blocks.MUD), 1));
-        out.add(new Material("sand", 1600, 34, 34, Blocks.SAND.defaultBlockState(), 0.45, List.of(Blocks.SAND, Blocks.RED_SAND), 1));
+        out.add(new Material("backfill", 1500, 36, 36, Blocks.DIRT.defaultBlockState(), 0.60, List.of(), 0.82F, null));
+        out.add(new Material("clay", 1700, 40, 70, Blocks.CLAY.defaultBlockState(), 0.50, List.of(Blocks.CLAY), 1, null));
+        out.add(new Material("gravel", 1700, 38, 45, Blocks.GRAVEL.defaultBlockState(), 0.60, List.of(Blocks.GRAVEL), 1, null));
+        out.add(new Material("mud", 1900, 20, 30, Blocks.MUD.defaultBlockState(), 0.35, List.of(Blocks.MUD), 1, null));
+        // Rock R2: broken rock off a pick; its excavation angle is the rock's (natural rock reads as it, Earthwork#natural)
+        out.add(new Material("rubble", 1600, 40, 85, Blocks.GRAVEL.defaultBlockState(), 0.60, List.of(), 1,
+                new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/rock/rubble")));
+        out.add(new Material("sand", 1600, 34, 34, Blocks.SAND.defaultBlockState(), 0.45, List.of(Blocks.SAND, Blocks.RED_SAND), 1, null));
         out.add(new Material("topsoil", 1300, 35, 63, Blocks.DIRT.defaultBlockState(), 0.60,
-                List.of(Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.PODZOL), 1));
+                List.of(Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.PODZOL), 1, null));
         return out;
     }
 
@@ -119,8 +123,9 @@ public final class BulkMaterials {
         List<Block> sources = new ArrayList<>();
         if (o.has("sources")) for (JsonElement e : o.getAsJsonArray("sources")) sources.add(block(e.getAsString()));
         float shade = o.has("shade") ? (float) number(o, "shade") : 1;
+        ResourceLocation texture = o.has("texture") ? new ResourceLocation(o.get("texture").getAsString()) : null;
         return new Material(id, number(o, "density_kg_m3"), repose, excavation, block(o.get("block").getAsString()).defaultBlockState(),
-                number(o, "grip"), List.copyOf(sources), Math.min(1, shade));
+                number(o, "grip"), List.copyOf(sources), Math.min(1, shade), texture);
     }
 
     @SubscribeEvent

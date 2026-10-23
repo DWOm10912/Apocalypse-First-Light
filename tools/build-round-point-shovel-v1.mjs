@@ -3,9 +3,9 @@
 // _s / _n, the inventory icon rendered from the textured mesh).
 //   node tools/build-round-point-shovel-v1.mjs            -> writes source, atlas, geo, AFL mesh sidecar, icon, item model
 //   node tools/build-round-point-shovel-v1.mjs --check    -> verifies every output is up to date
-// Built at real size, 1 px = 1/16 m (the player prop's scale 1): 1.5 m over all, the blade 0.34 m across and 0.42 m long
-// (a large contractor's round point blade: user 2026-10-21, the No. 2 size read as a garden tool), its lift 25 degrees off
-// the handle's line, a 40 mm ash handle. Frame: the handle up +Y on
+// Built at real size, 1 px = 1/16 m (the player prop's scale 1): 1.6 m over all, the blade 0.38 m across and 0.45 m long
+// (user 2026-10-22: the big contractor's round point, one scoop about 300 L in game; it was 0.34 x 0.42 m and 1.48 m), its
+// lift 25 degrees off the handle's line, a 40 mm ash handle. Frame: the handle up +Y on
 // x = 0, z = SOCKET_Z; the blade's top edge centred on the origin, its tip down at -Y bent to +Z; the load face (the
 // dished front) faces +Z and a little up. The handle ends in a D grip in the x-y plane (user 2026-10-22: it hangs from
 // one peg of the wooden tool rack by it). The parts named load_* are the heaps (client/ShovelItemRenderer draws the one
@@ -22,9 +22,9 @@ const r4 = v => +v.toFixed(4) || 0;
 // ---------------------------------------------------------------- dimensions (px, 1 px = 62.5 mm)
 const LIFT = 25 * Math.PI / 180;
 const D = [0, -Math.cos(LIFT), Math.sin(LIFT)], N = [0, Math.sin(LIFT), Math.cos(LIFT)], X = [1, 0, 0];   // down the blade, its load face, across
-const BL = 6.72, BW = 5.44, TH = 0.1;                  // blade length (top edge to tip), width, steel (6.25 mm: drawn thicker than the 2 mm sheet)
+const BL = 7.2, BW = 6.08, TH = 0.1;                   // blade length (top edge to tip), width, steel (6.25 mm: drawn thicker than the 2 mm sheet)
 const SOCKET_Z = -0.6, HANDLE_R = 0.32;                // the handle's line behind the blade's top edge; 40 mm handle
-const TIP_Y = -BL * Math.cos(LIFT), TOP_Y = 24 + TIP_Y;     // 1.5 m from the tip to the handle's end
+const TIP_Y = -BL * Math.cos(LIFT), TOP_Y = 26 + TIP_Y;     // 1.625 m from the tip to the handle's end
 const S_ROWS = [0, 0.06, 0.14, 0.24, 0.34, 0.42, 0.5, 0.58, 0.66, 0.74, 0.81, 0.87, 0.92, 0.96, 1];
 const T_COLS = [-1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1];
 const STEP_FROM = 0.4;                                 // the turned steps: |t| >= this along the top edge
@@ -157,9 +157,9 @@ function handle() {
 
 // ---------------------------------------------------------------- the D grip (user 2026-10-22: a ring grip, so the shovel
 // hangs from one peg of the tool rack by it). The shaft ends in a steel ferrule; two split ash arms run up out of it into
-// a crossbar the hand closes round, the D in the blade's plane (x, y) on the handle's line. The crossbar's middle is where
-// the straight handle's top hand was (TOP_Y - 0.9: grip_end unchanged, so the A2 strokes' two hands keep their spacing),
-// so the shovel ends 4 cm short of TOP_Y, 1.48 m over all; hang is the crossbar's underside (the tool rack's peg).
+// a crossbar the hand closes round, the D in the blade's plane (x, y) on the handle's line. The crossbar's middle is
+// grip_end (TOP_Y - 0.9), so the shovel ends 4 cm short of TOP_Y, about 1.6 m over all; hang is the crossbar's underside
+// (the tool rack's peg).
 const D_BAR_R = 0.26, D_ARM_R = 0.2, D_INNER = 0.92, D_CORNER = 0.35;   // 32 mm bar, 25 mm arms, 115 mm across inside
 const D_BAR_Y = TOP_Y - 0.9, D_SPLIT = D_BAR_Y - 2.75, D_SIDE = D_INNER + D_ARM_R;
 
@@ -197,7 +197,7 @@ function ferrule() {
 }
 
 /** Heap k (1..4) of loose earth on the blade's front: a lumpy mound, its rim sunk into the steel. */
-const HEAPS = [null, {h: 1.0, w: 0.62, s: [0.18, 0.78]}, {h: 1.9, w: 0.74, s: [0.12, 0.84]}, {h: 2.8, w: 0.84, s: [0.08, 0.88]}, {h: 3.7, w: 0.9, s: [0.05, 0.9]}];
+const HEAPS = [null, {h: 1.2, w: 0.62, s: [0.18, 0.78]}, {h: 2.3, w: 0.74, s: [0.12, 0.84]}, {h: 3.4, w: 0.84, s: [0.08, 0.88]}, {h: 4.5, w: 0.9, s: [0.05, 0.9]}];
 function heap(k) {
   const {h, w, s: [s0, s1]} = HEAPS[k], p = new Part('load_' + k, 'round_point_shovel', 'soil'), n = 10, G = [];
   const bell = x => Math.pow(Math.max(0, 1 - x * x), 1.3);
@@ -246,7 +246,7 @@ function held(grip, size) {
 export function shovel() {
   const PARTS = [blade(), step(-1), step(1), frog(), socket(), rivet(), handle(), ferrule(), dGrip(), heap(1), heap(2), heap(3), heap(4)];
   const points = {
-    grip_end: [0, D_BAR_Y, SOCKET_Z], hang: [0, D_BAR_Y - D_BAR_R, SOCKET_Z], grip: [0, 10.6, SOCKET_Z], grip_low: [0, 5.6, SOCKET_Z],
+    grip_end: [0, D_BAR_Y, SOCKET_Z], hang: [0, D_BAR_Y - D_BAR_R, SOCKET_Z], grip: [0, 10.0, SOCKET_Z], grip_low: [0, 5.0, SOCKET_Z],
     heel: front(0, 0), blade: front(0, 0.5), tip: front(0, 1), step_r: sub(sub(front(-0.75, 0), mul(N, 0.4)), mul(D, 0.1)),
   };
   return {PARTS, MATS: {

@@ -33,10 +33,10 @@ import java.util.Map;
 public final class ShovelItemRenderer extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation GEOMETRY = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/round_point_shovel.geo.json");
     private static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/round_point_shovel_mesh.png");
-    /** 0.5 - mesh height 23.402 / 32 (the build's verticalOffset; 23.402 since the D grip, 2026-10-22). */
-    public static final double VERTICAL_OFFSET = -0.23132;
+    /** 0.5 - mesh height 25.402 / 32 (the build's verticalOffset; 25.402 since the big shovel, 2026-10-22). */
+    public static final double VERTICAL_OFFSET = -0.29382;
     /** In the mesh (blocks, before the item's (0.5, VERTICAL_OFFSET, 0.5)): the D grip crossbar's underside (point hang), the handle's axis. */
-    public static final double HANG_Y = 1.1988 - VERTICAL_OFFSET, HANDLE_Z = 0.3468 - 0.5;
+    public static final double HANG_Y = 1.2613 - VERTICAL_OFFSET, HANDLE_Z = 0.3191 - 0.5;
     /**
      * The heap's tint by material (multiplies the neutral soil texel, 188 182 172): topsoil dark brown, sand pale, gravel
      * grey, clay red-brown, mud near black, backfill a mixed brown. An unknown id draws as backfill.

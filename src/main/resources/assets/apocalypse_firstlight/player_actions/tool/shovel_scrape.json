@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "Round point shovel, Scrape (sneak; interaction/ShovelAction SCRAPE: 20 ticks, the ground changes at 14 = 0.7 s): crouched low, the blade goes down flat near the feet (0.3 s) and is pushed out along the ground (0.65 s), comes up (0.85 s) and back into the hold. First and third person alike; the own first person sits on the posed eye (it goes down with the hips) and looks down to 50 deg at least. Written by tools/author-shovel-actions-a2.cjs. docs/worldgen/earthwork_a2.md 6",
+  "about": "Round point shovel, Scrape (sneak; interaction/ShovelAction SCRAPE: 28 ticks, the ground changes at 18 = 0.9 s): squatting low, the blade goes down on the ground a metre ahead (0.45 s) and is pushed out along it (0.9 s), comes up (1.15 s) and back into the hold. First and third person alike; the own first person sits on the posed eye (it goes down with the hips) and looks down to 50 deg at least. Written by tools/author-shovel-actions-a2.cjs. docs/worldgen/earthwork_a2.md 6",
   "clip": "tool.shovel_scrape",
   "layer": "action",
   "mask": "full",
@@ -8,8 +8,10 @@
   "first_person": "body",
   "first_person_pitch": 50,
   "first_person_eye": true,
+  "hold_body": true,
+  "hold_head": true,
   "blend": {
-    "in": 0,
+    "in": 0.15,
     "out": 0.2
   },
   "prop": {
@@ -18,42 +20,74 @@
       {
         "at": 0,
         "frame": "shoulder_r",
-        "point": "grip",
-        "pos": [2, 6, -7],
-        "rot": [-20, 0, 45],
+        "point": "grip_end",
+        "pos": [8.72, 3.68, -4.334],
+        "rot": [-34.973, 0.95, 44.054],
         "blend": 0
       },
       {
         "at": 0.001,
         "frame": "anchor:dig",
-        "point": "blade",
-        "pos": [0, 0.5, 3],
-        "rot": [-20, -15, 0],
-        "blend": 0.299
+        "point": "grip_end",
+        "pos": [7.4, -16.71, 17.56],
+        "rot": [-15.4, -26.2, 44.9],
+        "blend": 0.179
       },
       {
-        "at": 0.3,
+        "at": 0.18,
         "frame": "anchor:dig",
-        "point": "blade",
-        "pos": [0, 0.5, -3],
-        "rot": [-30, -5, 0],
-        "blend": 0.35
+        "point": "grip_end",
+        "pos": [7.94, -13.76, 17.3],
+        "rot": [-37.5, -11.6, 22.4],
+        "blend": 0.27
       },
       {
-        "at": 0.65,
+        "at": 0.45,
         "frame": "anchor:dig",
-        "point": "blade",
-        "pos": [0, -6, 3],
-        "rot": [-30, -5, 10],
+        "point": "grip_end",
+        "pos": [8.01, -12.09, 16.32],
+        "rot": [-42, -11.8, 23.7],
+        "blend": 0.25
+      },
+      {
+        "at": 0.7,
+        "frame": "anchor:dig",
+        "point": "grip_end",
+        "pos": [7.8, -10.76, 16.37],
+        "rot": [-50.4, -13.7, 24.1],
         "blend": 0.2
       },
       {
-        "at": 0.85,
-        "frame": "shoulder_r",
-        "point": "grip",
-        "pos": [2, 6, -7],
-        "rot": [-20, 0, 45],
+        "at": 0.9,
+        "frame": "anchor:dig",
+        "point": "grip_end",
+        "pos": [7.94, -13.87, 17.05],
+        "rot": [-46.5, -15, 25.4],
+        "blend": 0.1
+      },
+      {
+        "at": 1,
+        "frame": "anchor:dig",
+        "point": "grip_end",
+        "pos": [7.59, -16.95, 18.88],
+        "rot": [-46.3, -14.9, 24.9],
         "blend": 0.15
+      },
+      {
+        "at": 1.15,
+        "frame": "anchor:dig",
+        "point": "grip_end",
+        "pos": [7.95, -17.89, 17.26],
+        "rot": [-22.6, -25.2, 43.8],
+        "blend": 0.12
+      },
+      {
+        "at": 1.27,
+        "frame": "shoulder_r",
+        "point": "grip_end",
+        "pos": [8.72, 3.68, -4.334],
+        "rot": [-34.973, 0.95, 44.054],
+        "blend": 0.13
       }
     ]
   },
@@ -61,8 +95,20 @@
     "right": [
       {
         "at": 0,
-        "target": "prop:grip",
+        "target": "prop:carry",
         "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.001,
+        "target": "prop:dig_r",
+        "blend": 0.449,
+        "roll": 0
+      },
+      {
+        "at": 1.15,
+        "target": "prop:carry",
+        "blend": 0.25,
         "roll": 0
       }
     ],

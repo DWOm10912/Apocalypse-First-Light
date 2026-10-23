@@ -75,7 +75,7 @@ public final class LevelVehicleWorld implements VehicleWorld {
             BlockState state = chunk.getBlockState(pos.set(bx, y, bz));
             if (state.isAir()) continue;
             Block block = state.getBlock();
-            if (smooth && Earthwork.soil(block) && Earthwork.vehicleGround(level, x, z, earth)) {
+            if (smooth && Earthwork.ground(block) && Earthwork.vehicleGround(level, x, z, earth)) {
                 if (earth[0] < yBottom) break;
                 out.set(earth[0], earth[1], earth[2], earth[3], earth[4] >= 0 ? earth[4] : grip(block), Source.EARTH);
                 return true;
@@ -117,7 +117,7 @@ public final class LevelVehicleWorld implements VehicleWorld {
             if (yy < level.getMinBuildHeight()) break;
             BlockState state = chunk.getBlockState(pos.set(bx, yy, bz));
             if (state.isAir()) continue;
-            if (smooth && Earthwork.soil(state.getBlock()) && Earthwork.vehicleGround(level, x, z, earth)) {
+            if (smooth && Earthwork.ground(state.getBlock()) && Earthwork.vehicleGround(level, x, z, earth)) {
                 if (y >= earth[0]) continue;   // above the skin (a lower cell of the column gives the same skin)
                 out.set(earth[1], earth[2], earth[3], (earth[0] - y) * earth[2]);
                 return true;
