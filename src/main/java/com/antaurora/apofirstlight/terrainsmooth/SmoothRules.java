@@ -203,14 +203,26 @@ public final class SmoothRules {
 
     /** Why #freeCorners fails (development output, English), or null when the corners are free. */
     public static String notFree(Cells c, int mode, int x, int y, int z) {
+        return notFree(c, mode, x, y, z, false);
+    }
+
+    /**
+     * The same; walls: a neighbour two or more higher is allowed too (Rock R2 round 2, Earthwork: the foot of a natural step,
+     * whose neighbour is never edited while it is a wall, so the vertices they share stay where they are and the wall's
+     * side, drawn down to this column's first top, still meets it), and then the corners are not asked to be free.
+     */
+    public static String notFree(Cells c, int mode, int x, int y, int z, boolean walls) {
         if (c.surface(x, z) != y || c.cell(x, y, z) != NATURAL) return "its top is not Terrain Smooth's natural surface";
         if (!open(c.cell(x, y + 1, z))) return "the block above is not open";
         long[] col = new long[9];
+        boolean wall = false;
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) {
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, x + i - 1, y, z + j - 1);
             int k = kind(col[j * 3 + i]);
-            if (k != K_NAT) return "neighbour " + (x + i - 1) + " " + (z + j - 1) + " is " + KIND_NAMES[k];
+            if (walls && k == K_HIGH) wall = true;
+            else if (k != K_NAT) return "neighbour " + (x + i - 1) + " " + (z + j - 1) + " is " + KIND_NAMES[k];
         }
+        if (wall) return null;
         float[][] turf = new float[9][];
         for (int k = 0; k < 4; k++)
             if (Float.isNaN(corner(col, turf, CORNER[k][0], CORNER[k][1], mode)))

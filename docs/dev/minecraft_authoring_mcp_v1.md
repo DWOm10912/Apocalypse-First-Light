@@ -123,6 +123,7 @@ This is development tooling only: every class is under `src/dev/java/.../dev/aut
 - **Java is authoritative.** `AuthoringFixtureRegistry` (dev source set) is the single whitelist; Node only mirrors schemas and forwards requests. `export_target_registry` copies the same metadata for external tools.
 - **Classes:** `SAFE_FIXTURE` and `STORAGE_WITH_INVENTORY` are placeable; `MACHINE` and `UNSAFE` are not. Any BlockEntity block missing from the registry (e.g. `minecraft:furnace`, other mods) is treated as `UNSAFE`.
 - **Final export stays manual.** There is no MCP export tool; only the user runs `/afl_author export`.
+- **Displayed items export (2026-10-22).** `/afl_author export` keeps what hangs or stands in the open as part of the furnishing: the wood gun and tool racks' slots and the workbench pegs (`BuildingAuthoringService.undisplayed`). Workbench drawers, every container and loot tables must still be empty. The bridge's own edit guard is unchanged.
 - **Buildings are authored intact.** Damage, debris, broken glass and scenario-time states are not bridge features; for example `vending_machine` is fixed to `broken=false`.
 
 ### Fixture registry (`describe_block` is authoritative)

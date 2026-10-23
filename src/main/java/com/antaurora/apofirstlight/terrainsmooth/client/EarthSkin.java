@@ -31,7 +31,9 @@ import static com.antaurora.apofirstlight.earthwork.EarthGrid.*;
  * texture (grass, sand...), any other is bare ground (EarthGrid#bare: grass and podzol to dirt). Textures are projected
  * from above in the orientation of the first top's variant, tint and tilt shading baked into the vertex colour (the cell's
  * own block may be other ground than the first top; loose earth, A2: its material's ground, BulkMaterials), lit flat with the light of the open cells around it baked in (the
- * skin lies inside the cell, whose own light is dark), as Terrain Smooth's bands above a cell.
+ * skin lies inside the cell, whose own light is dark), as Terrain Smooth's bands above a cell. Rock R2: bare ground in a
+ * rock cell, or lying on the floor of a cell over rock (a pit dug down to its hard floor), is that rock's top; loose earth
+ * whose material has a sprite of its own (rubble) is drawn with it.
  */
 final class EarthSkin {
     private EarthSkin() {}
@@ -50,7 +52,7 @@ final class EarthSkin {
     static List<BakedQuad> quads(BlockAndTintGetter region, BlockPos pos, BlockState state) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || Earthwork.CLIENT.isEmpty() || !TerrainSmooth.CLIENT.enabled() || !TerrainSmooth.applies(level)) return null;
-        if (!Earthwork.soil(state.getBlock())) return null;
+        if (!Earthwork.ground(state.getBlock())) return null;
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
         int[] h = new int[SIDE * SIDE];
         boolean[] undisturbed = new boolean[SIDE * SIDE];
@@ -63,6 +65,9 @@ final class EarthSkin {
         if (first == null) return null;
         BlockPos topPos = new BlockPos(x, e.top0(col), z);
         Layer top = layer(first, topPos, region), bare = layer(Earthwork.bare(first), topPos, region);
+        BlockState below = region.getBlockState(pos.below());
+        boolean rockCell = Earthwork.rock(state.getBlock());
+        Layer rock = rockCell ? layer(state, pos, region) : Earthwork.rock(below.getBlock()) ? layer(below, pos.below(), region) : null;
         int light = light(region, pos, EarthGrid.top(max(h)));
         List<BakedQuad> out = new ArrayList<>();
         Map<Integer, Layer> loose = new HashMap<>(4);
@@ -74,9 +79,10 @@ final class EarthSkin {
             Layer l;
             if (m >= 0) {
                 BlockState ground = e.matBlock(m);
-                l = ground == null ? bare : loose.computeIfAbsent(m, k -> layer(ground, topPos, region));
+                l = loose.computeIfAbsent(m, k -> e.matTexture(k) != null ? sprite(e.matTexture(k)) : ground == null ? bare : layer(ground, topPos, region));
                 shade = e.matShade(m);
-            } else l = p.disturbed() || top == null ? bare : top;
+            } else if (p.disturbed() && rock != null && (rockCell || onFloor(pts))) l = rock;
+            else l = p.disturbed() || top == null ? bare : top;
             if (l == null) continue;
             double[] n = normal(pts);
             boolean side = n[1] < SIDE_PROJECTION;
@@ -87,11 +93,66 @@ final class EarthSkin {
                 out.add(SmoothSurfaceModel.quad(q, uv, l.sprite, -1, Direction.UP, shaded(tinted(TopTexture.topColor(q), l.tint), shade), light));
             }
         }
+        walls(region, level, x, y, z, h, light, out);
         TerrainSmoothClient.markSloped(state);
         return List.copyOf(out);
     }
 
+    /**
+     * Rock R2 round 2 (user 2026-10-22, sky through a pit's sides): the face of an unedited neighbour's buried block beside
+     * this cell, from the skin's edge on that side up to the cell's top, facing in, with the neighbour's side texture. This
+     * cell's block is a full cube in the data, so the neighbour's own face is culled although the skin there lies lower (the
+     * foot of a natural step, dug or filled). A neighbour's top cell is left to Terrain Smooth's band, which meets the
+     * vertices the two columns share.
+     */
+    private static void walls(BlockAndTintGetter region, ClientLevel level, int x, int y, int z, int[] h, int light, List<BakedQuad> out) {
+        var mc = Minecraft.getInstance();
+        BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
+        for (int s = 0; s < 4; s++) {
+            Direction d = SmoothSurfaceModel.SIDES[s];
+            int nx = x + d.getStepX(), nz = z + d.getStepZ();
+            if (Earthwork.editedTop(level, nx, nz) != Integer.MIN_VALUE) continue;   // edited too: the vertices are shared
+            if (!region.getBlockState(n.set(nx, y + 1, nz)).isSolidRender(region, n)) continue;
+            BlockState nb = region.getBlockState(n.set(nx, y, nz));
+            if (!nb.isSolidRender(region, n)) continue;
+            Direction face = d.getOpposite();
+            List<BakedQuad> layers = mc.getBlockRenderer().getBlockModel(nb).getQuads(nb, face, RandomSource.create(nb.getSeed(n)), ModelData.EMPTY, null);
+            if (layers.isEmpty()) continue;
+            BakedQuad o = layers.get(0);
+            int color = tinted(-1, o.isTinted() ? mc.getBlockColors().getColor(nb, region, n, o.getTintIndex()) : -1);
+            float[] a = SmoothSurfaceModel.SIDE_A[s], b = SmoothSurfaceModel.SIDE_B[s];
+            for (int k = 0; k < PER_BLOCK; k++) {
+                float u0 = (float) k / PER_BLOCK, u1 = (float) (k + 1) / PER_BLOCK;
+                float lo0 = edge(h, a, b, u0, y), lo1 = edge(h, a, b, u1, y);
+                if (lo0 >= 1 && lo1 >= 1) continue;
+                float x0 = a[0] + (b[0] - a[0]) * u0, z0 = a[1] + (b[1] - a[1]) * u0, x1 = a[0] + (b[0] - a[0]) * u1, z1 = a[1] + (b[1] - a[1]) * u1;
+                // Terrain Smooth's outward side a-low, b-low, b-high, a-high reversed: it faces into this cell
+                float[][] q = {{x0, 1, z0}, {x1, 1, z1}, {x1, lo1, z1}, {x0, lo0, z0}};
+                float[][] uv = {{1 - u0, 0}, {1 - u1, 0}, {1 - u1, 1 - lo1}, {1 - u0, 1 - lo0}};
+                out.add(SmoothSurfaceModel.quad(q, uv, o.getSprite(), -1, face, color, light));
+            }
+        }
+    }
+
+    /** The skin's height (0..1 in cell y) at u along the side from a to b (a vertex of the side's edge). */
+    private static float edge(int[] h, float[] a, float[] b, float u, int y) {
+        int i = Math.round((a[0] + (b[0] - a[0]) * u) * PER_BLOCK), j = Math.round((a[1] + (b[1] - a[1]) * u) * PER_BLOCK);
+        return Math.max(0, Math.min(1, (float) h[at(i, j)] / Q - y));
+    }
+
     private static float[] f(double[] p) { return new float[]{(float) p[0], (float) p[1], (float) p[2]}; }
+
+    /** Whether a piece lies on its cell's floor (the top of the block under it). */
+    private static boolean onFloor(List<double[]> pts) {
+        for (double[] q : pts) if (q[1] > 1e-3) return false;
+        return true;
+    }
+
+    /** A block-atlas sprite as a layer, untinted, plainly oriented (a material's own texture). */
+    private static Layer sprite(net.minecraft.resources.ResourceLocation id) {
+        TextureAtlasSprite s = Minecraft.getInstance().getModelManager().getAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS).getSprite(id);
+        return new Layer(s, TopTexture.uv(TopTexture.PLAIN), -1);
+    }
 
     /**
      * The material of the loose earth at the vertex nearest a piece's middle (BulkMaterials index), -1 where none lies:

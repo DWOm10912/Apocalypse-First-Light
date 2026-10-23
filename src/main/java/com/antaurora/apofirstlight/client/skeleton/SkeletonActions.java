@@ -98,9 +98,10 @@ public final class SkeletonActions {
     /**
      * Where a stroke's poses put the blade (the "dig" anchor), as tools/author-shovel-actions-a2.cjs checked them: ahead of
      * the feet along the body (blocks, the ground point's distance clamped to this), this far to the working hand's side,
-     * and the ground point's height over the feet clamped to this.
+     * and the ground point's height over the feet clamped to this. About a metre ahead (2026-10-22): nearer, the 1.6 m
+     * handle of the pour and the scrape can only go into the chest, the D in the left hand beside the hip.
      */
-    private static final double SHOVEL_NEAR = 0.55, SHOVEL_FAR = 0.8, SHOVEL_SIDE = 0.15, SHOVEL_LOW = -0.2, SHOVEL_HIGH = 0.25;
+    private static final double SHOVEL_NEAR = 1.0, SHOVEL_FAR = 1.08, SHOVEL_SIDE = 0.15, SHOVEL_LOW = -0.05, SHOVEL_HIGH = 0.05;
     /**
      * The pick mattock (Rock R1a, tools/author-pick-actions-r1a.cjs): its hold, and its strikes by the rock point's height
      * over the feet (low, middle, high), each with the reach its poses were checked for: ahead of the feet along the body

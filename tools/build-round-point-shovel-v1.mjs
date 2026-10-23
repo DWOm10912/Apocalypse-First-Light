@@ -3,11 +3,12 @@
 // _s / _n, the inventory icon rendered from the textured mesh).
 //   node tools/build-round-point-shovel-v1.mjs            -> writes source, atlas, geo, AFL mesh sidecar, icon, item model
 //   node tools/build-round-point-shovel-v1.mjs --check    -> verifies every output is up to date
-// Built at real size, 1 px = 1/16 m (the player prop's scale 1): 1.5 m over all, the blade 0.34 m across and 0.42 m long
-// (a large contractor's round point blade: user 2026-10-21, the No. 2 size read as a garden tool), its lift 25 degrees off
-// the handle's line, a 40 mm ash handle. Frame: the handle up +Y on
+// Built at real size, 1 px = 1/16 m (the player prop's scale 1): 1.6 m over all, the blade 0.38 m across and 0.45 m long
+// (user 2026-10-22: the big contractor's round point, one scoop about 300 L in game; it was 0.34 x 0.42 m and 1.48 m), its
+// lift 25 degrees off the handle's line, a 40 mm ash handle. Frame: the handle up +Y on
 // x = 0, z = SOCKET_Z; the blade's top edge centred on the origin, its tip down at -Y bent to +Z; the load face (the
-// dished front) faces +Z and a little up. The parts named load_* are the heaps (client/ShovelItemRenderer draws the one
+// dished front) faces +Z and a little up. The handle ends in a D grip in the x-y plane (user 2026-10-22: it hangs from
+// one peg of the wooden tool rack by it). The parts named load_* are the heaps (client/ShovelItemRenderer draws the one
 // the load needs, tinted by its material); they are left out of the icon.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,9 +22,9 @@ const r4 = v => +v.toFixed(4) || 0;
 // ---------------------------------------------------------------- dimensions (px, 1 px = 62.5 mm)
 const LIFT = 25 * Math.PI / 180;
 const D = [0, -Math.cos(LIFT), Math.sin(LIFT)], N = [0, Math.sin(LIFT), Math.cos(LIFT)], X = [1, 0, 0];   // down the blade, its load face, across
-const BL = 6.72, BW = 5.44, TH = 0.1;                  // blade length (top edge to tip), width, steel (6.25 mm: drawn thicker than the 2 mm sheet)
+const BL = 7.2, BW = 6.08, TH = 0.1;                   // blade length (top edge to tip), width, steel (6.25 mm: drawn thicker than the 2 mm sheet)
 const SOCKET_Z = -0.6, HANDLE_R = 0.32;                // the handle's line behind the blade's top edge; 40 mm handle
-const TIP_Y = -BL * Math.cos(LIFT), TOP_Y = 24 + TIP_Y;     // 1.5 m from the tip to the handle's end
+const TIP_Y = -BL * Math.cos(LIFT), TOP_Y = 26 + TIP_Y;     // 1.625 m from the tip to the handle's end
 const S_ROWS = [0, 0.06, 0.14, 0.24, 0.34, 0.42, 0.5, 0.58, 0.66, 0.74, 0.81, 0.87, 0.92, 0.96, 1];
 const T_COLS = [-1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1];
 const STEP_FROM = 0.4;                                 // the turned steps: |t| >= this along the top edge
@@ -148,14 +149,55 @@ function rivet() {
 function handle() {
   const p = new Part('handle', 'round_point_shovel', 'ash');
   const rings = [[3.4, HANDLE_R]];
-  for (let y = 6; y < TOP_Y - 0.5; y += 4) rings.push([y, HANDLE_R]);
-  rings.push([TOP_Y - 0.34, HANDLE_R], [TOP_Y - 0.14, 0.25], [TOP_Y - 0.03, 0.14], [TOP_Y, 0]);
+  for (let y = 6; y < D_SPLIT - 0.5; y += 4) rings.push([y, HANDLE_R]);
+  rings.push([D_SPLIT + 0.1, HANDLE_R]);
   latheY(p, SOCKET_Z, rings, 12);
   return p;
 }
 
+// ---------------------------------------------------------------- the D grip (user 2026-10-22: a ring grip, so the shovel
+// hangs from one peg of the tool rack by it). The shaft ends in a steel ferrule; two split ash arms run up out of it into
+// a crossbar the hand closes round, the D in the blade's plane (x, y) on the handle's line. The crossbar's middle is
+// grip_end (TOP_Y - 0.9), so the shovel ends 4 cm short of TOP_Y, about 1.6 m over all; hang is the crossbar's underside
+// (the tool rack's peg).
+const D_BAR_R = 0.26, D_ARM_R = 0.2, D_INNER = 0.92, D_CORNER = 0.35;   // 32 mm bar, 25 mm arms, 115 mm across inside
+const D_BAR_Y = TOP_Y - 0.9, D_SPLIT = D_BAR_Y - 2.75, D_SIDE = D_INNER + D_ARM_R;
+
+/** A round tube swept along a path in the plane z = z0 (points [x, y, r]), its ends capped. */
+function sweepXY(part, z0, pts, seg) {
+  const rings = pts.map((q, i) => {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], t = norm([b[0] - a[0], b[1] - a[1], 0]), n = [-t[1], t[0], 0];
+    return Array.from({length: seg}, (_, k) => { const w = 2 * Math.PI * k / seg; return part.vtx(add([q[0], q[1], z0], add(mul(n, q[2] * Math.cos(w)), [0, 0, q[2] * Math.sin(w)]))); });
+  });
+  for (let i = 0; i + 1 < rings.length; i++) for (let k = 0; k < seg; k++) {
+    const j = (k + 1) % seg, A = part.v[rings[i][k]], B = part.v[rings[i + 1][j]], m = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2, z0];
+    part.face([rings[i][k], rings[i][j], rings[i + 1][j], rings[i + 1][k]], sub(mul(add(A, B), 0.5), m));
+  }
+  for (const [ring, q, i2] of [[rings[0], pts[0], 1], [rings[rings.length - 1], pts[pts.length - 1], pts.length - 2]])
+    part.face(ring, [q[0] - pts[i2][0], q[1] - pts[i2][1], 0], 'cap');
+}
+function dGrip() {
+  const p = new Part('d_grip', 'round_point_shovel', 'ash'), left = [];
+  const bez = (P0, P1, P2, P3, t) => [0, 1].map(k => (1 - t) ** 3 * P0[k] + 3 * (1 - t) ** 2 * t * P1[k] + 3 * (1 - t) * t * t * P2[k] + t ** 3 * P3[k]);
+  // one arm (+x) up out of the ferrule, round its corner into the bar's end; the other is its mirror
+  for (let i = 0; i <= 8; i++) left.push([...bez([0.13, D_SPLIT], [0.13, D_SPLIT + 0.9], [D_SIDE, D_BAR_Y - D_CORNER - 1.0], [D_SIDE, D_BAR_Y - D_CORNER], i / 8), D_ARM_R]);
+  for (let i = 1; i <= 4; i++) {
+    const a = Math.PI / 2 * i / 4;
+    left.push([D_SIDE - D_CORNER + D_CORNER * Math.cos(a), D_BAR_Y - D_CORNER + D_CORNER * Math.sin(a), D_ARM_R + (D_BAR_R - D_ARM_R) * i / 4]);
+  }
+  const pts = [...left.map(q => [-q[0], q[1], q[2]]), ...left.slice().reverse()];
+  sweepXY(p, SOCKET_Z, pts, 10);
+  return p;
+}
+/** The steel ferrule clamping the split. */
+function ferrule() {
+  const p = new Part('ferrule', 'round_point_shovel', 'coat');
+  latheY(p, SOCKET_Z, [[D_SPLIT - 0.8, HANDLE_R + 0.03], [D_SPLIT - 0.75, HANDLE_R + 0.06], [D_SPLIT + 0.2, HANDLE_R + 0.06], [D_SPLIT + 0.3, HANDLE_R + 0.01]], 12);
+  return p;
+}
+
 /** Heap k (1..4) of loose earth on the blade's front: a lumpy mound, its rim sunk into the steel. */
-const HEAPS = [null, {h: 1.0, w: 0.62, s: [0.18, 0.78]}, {h: 1.9, w: 0.74, s: [0.12, 0.84]}, {h: 2.8, w: 0.84, s: [0.08, 0.88]}, {h: 3.7, w: 0.9, s: [0.05, 0.9]}];
+const HEAPS = [null, {h: 1.2, w: 0.62, s: [0.18, 0.78]}, {h: 2.3, w: 0.74, s: [0.12, 0.84]}, {h: 3.4, w: 0.84, s: [0.08, 0.88]}, {h: 4.5, w: 0.9, s: [0.05, 0.9]}];
 function heap(k) {
   const {h, w, s: [s0, s1]} = HEAPS[k], p = new Part('load_' + k, 'round_point_shovel', 'soil'), n = 10, G = [];
   const bell = x => Math.pow(Math.max(0, 1 - x * x), 1.3);
@@ -202,9 +244,9 @@ function held(grip, size) {
 }
 
 export function shovel() {
-  const PARTS = [blade(), step(-1), step(1), frog(), socket(), rivet(), handle(), heap(1), heap(2), heap(3), heap(4)];
+  const PARTS = [blade(), step(-1), step(1), frog(), socket(), rivet(), handle(), ferrule(), dGrip(), heap(1), heap(2), heap(3), heap(4)];
   const points = {
-    grip_end: [0, TOP_Y - 0.9, SOCKET_Z], grip: [0, 10.6, SOCKET_Z], grip_low: [0, 5.6, SOCKET_Z],
+    grip_end: [0, D_BAR_Y, SOCKET_Z], hang: [0, D_BAR_Y - D_BAR_R, SOCKET_Z], grip: [0, 10.0, SOCKET_Z], grip_low: [0, 5.0, SOCKET_Z],
     heel: front(0, 0), blade: front(0, 0.5), tip: front(0, 1), step_r: sub(sub(front(-0.75, 0), mul(N, 0.4)), mul(D, 0.1)),
   };
   return {PARTS, MATS: {
@@ -235,7 +277,7 @@ if (isMain) {
     const M = hand['_' + v], s = hand[v].scale[0], at = q => apply(M, c(q)).map((x, i) => r4(s * x + hand[v].translation[i]));
     return [v, {grip: at(baked.grip), tip: at(baked.tip), end: at(add(spec.points.grip_end, shift))}];
   }));
-  stats.length = r4(Math.hypot(...sub(spec.points.tip, [0, TOP_Y, SOCKET_Z])) / 16);
+  stats.length = r4(Math.hypot(...sub(spec.points.tip, [0, D_BAR_Y + D_BAR_R, SOCKET_Z])) / 16);   // tip to the top of the D
   console.log(JSON.stringify(stats, null, 1));
   let stale = 0;
   for (const [file, data] of outputs) {

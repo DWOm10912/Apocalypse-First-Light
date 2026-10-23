@@ -54,6 +54,14 @@ public final class BuildingAuthoringService {
         } else if(tag instanceof ListTag list) {for(Tag child:list)if(loot(child))return true;}
         return false;
     }
+    /** The block entity's tag without what it shows in the open (2026-10-22): the gun and tool racks' slots and the
+     *  workbench pegs are part of the furnishing and go into the template; drawers, containers and loot tables stay empty. */
+    private static CompoundTag undisplayed(net.minecraft.world.level.block.entity.BlockEntity be) {
+        CompoundTag tag=be.saveWithFullMetadata();
+        if(be instanceof com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity)tag.remove("Items");
+        else if(be instanceof com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity)tag.remove("Tools");
+        return tag;
+    }
     public static Capture capture(ServerLevel level, BuildingAuthoringSession s, boolean validate) throws IOException {
         accessible(level,s);int blocks=0;
         if(validate) noEntities(level,s);
@@ -63,7 +71,7 @@ public final class BuildingAuthoringService {
             if(forbidden(state))throw new IllegalArgumentException("Forbidden debug/danger/placeholder block at "+p.toShortString());
             var be=level.getBlockEntity(p);
             if(be!=null) {
-                if(loot(be.saveWithFullMetadata()))throw new IllegalArgumentException("Loot/items forbidden at "+p.toShortString());
+                if(loot(undisplayed(be)))throw new IllegalArgumentException("Loot/items forbidden at "+p.toShortString());
                 var handler=be.getCapability(ForgeCapabilities.ITEM_HANDLER).resolve();
                 if(handler.isPresent()) for(int i=0;i<handler.get().getSlots();i++)
                     if(!handler.get().getStackInSlot(i).isEmpty())throw new IllegalArgumentException("Nonempty inventory at "+p.toShortString());

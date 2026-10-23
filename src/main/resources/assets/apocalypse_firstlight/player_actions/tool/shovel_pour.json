@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "Round point shovel, Pour (interaction/ShovelAction POUR: 16 ticks, the load goes down at 9 = 0.45 s): the loaded blade is carried out over the ground point (0.25 s) and turned on its handle (0.45 s), so the load slides off its side, and back into the hold. First and third person alike; the own first person sits on the posed eye (it goes down with the hips) and looks down to 40 deg at least. Written by tools/author-shovel-actions-a2.cjs. docs/worldgen/earthwork_a2.md 6",
+  "about": "Round point shovel, Pour (interaction/ShovelAction POUR: 24 ticks, the load goes down at 14 = 0.7 s): bending at the hips, the loaded blade is carried out a metre ahead over the ground point (0.4 s) and turned on its handle (0.7 s), so the load slides off its side, and back into the hold. First and third person alike; the own first person sits on the posed eye (it goes down with the hips) and looks down to 40 deg at least. Written by tools/author-shovel-actions-a2.cjs. docs/worldgen/earthwork_a2.md 6",
   "clip": "tool.shovel_pour",
   "layer": "action",
   "mask": "full",
@@ -8,8 +8,10 @@
   "first_person": "body",
   "first_person_pitch": 40,
   "first_person_eye": true,
+  "hold_body": true,
+  "hold_head": true,
   "blend": {
-    "in": 0,
+    "in": 0.15,
     "out": 0.2
   },
   "prop": {
@@ -18,34 +20,50 @@
       {
         "at": 0,
         "frame": "shoulder_r",
-        "point": "grip",
-        "pos": [2, 6, -7],
-        "rot": [-20, 0, 45],
+        "point": "grip_end",
+        "pos": [8.72, 3.68, -4.334],
+        "rot": [-34.973, 0.95, 44.054],
         "blend": 0
       },
       {
         "at": 0.001,
         "frame": "anchor:dig",
-        "point": "blade",
-        "pos": [0, -8, 0],
-        "rot": [-40, -5, 0],
-        "blend": 0.249
+        "point": "grip_end",
+        "pos": [8.11, -18.81, 17.26],
+        "rot": [-41.5, -11.6, 39.7],
+        "blend": 0.199
       },
       {
-        "at": 0.25,
+        "at": 0.2,
         "frame": "anchor:dig",
-        "point": "blade",
-        "pos": [0, -6, -1],
-        "rot": [-25, 70, -10],
+        "point": "grip_end",
+        "pos": [8.03, -18.23, 18.65],
+        "rot": [-51.9, -23.8, 29.4],
         "blend": 0.2
       },
       {
-        "at": 0.45,
+        "at": 0.4,
+        "frame": "anchor:dig",
+        "point": "grip_end",
+        "pos": [8.21, -18.35, 17.98],
+        "rot": [1.5, -58.9, 71.2],
+        "blend": 0.15
+      },
+      {
+        "at": 0.55,
+        "frame": "anchor:dig",
+        "point": "grip_end",
+        "pos": [7.91, -17.49, 18.56],
+        "rot": [73.3, -49.6, 137.5],
+        "blend": 0.15
+      },
+      {
+        "at": 0.7,
         "frame": "shoulder_r",
-        "point": "grip",
-        "pos": [2, 6, -7],
-        "rot": [-20, 0, 45],
-        "blend": 0.35
+        "point": "grip_end",
+        "pos": [8.72, 3.68, -4.334],
+        "rot": [-34.973, 0.95, 44.054],
+        "blend": 0.5
       }
     ]
   },
@@ -53,8 +71,20 @@
     "right": [
       {
         "at": 0,
-        "target": "prop:grip",
+        "target": "prop:carry",
         "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.001,
+        "target": "prop:dig_r",
+        "blend": 0.399,
+        "roll": 0
+      },
+      {
+        "at": 0.7,
+        "target": "prop:carry",
+        "blend": 0.5,
         "roll": 0
       }
     ],

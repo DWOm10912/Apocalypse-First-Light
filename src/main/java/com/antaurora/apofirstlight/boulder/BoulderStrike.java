@@ -1,5 +1,8 @@
 package com.antaurora.apofirstlight.boulder;
 
+import com.antaurora.apofirstlight.earthwork.BulkMaterials;
+import com.antaurora.apofirstlight.earthwork.EarthGrid;
+import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.noise.NoiseType;
 import com.antaurora.apofirstlight.noise.RangedSound;
 import com.antaurora.apofirstlight.registry.AflItems;
@@ -12,10 +15,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -39,6 +45,9 @@ import java.util.UUID;
  * {@link #INTERVAL} ticks), runs the strike and at {@link #HIT_AT} lands it on the rock still aimed at: one strike on the
  * piece's count; at its count a piece with pieces of its own splits (BoulderWorld#split), the smallest break into field
  * stones (BoulderWorld#shatter). Each strike costs stamina, throws chips and is heard as far as the infected hear it.
+ * Rock R2 (docs/gameplay/rock_r2_rock_face_mining_design.md 3.2): aimed at bare natural rock instead (no boulder), a strike
+ * loosens the rock there into rubble (Earthwork#strike), for the shovel to take; now and then a field stone or a pebble
+ * comes off with it.
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight")
 public final class BoulderStrike {
@@ -52,7 +61,13 @@ public final class BoulderStrike {
     /** The strike's sound and the noise the infected hear, one radius (blocks): steel on rock carries. */
     private static final double RADIUS = 16;
 
-    /** What a pick is aimed at: the rock point and the root of the rock there. */
+    /**
+     * Rock a ground strike cuts per field stone it breaks off, and per pebble (L; the rest a chance): a full strike (about
+     * 50 L) a field stone every other time and a pebble or so (design 12).
+     */
+    private static final double STONE_LITRES = 100, PEBBLE_LITRES = 40;
+
+    /** What a pick is aimed at: the rock point and the root of the rock there (root null, node -1: bare rock ground). */
     public record Aim(Vec3 at, BlockPos root, int node) {}
 
     private static final Map<UUID, Pending> ACTIVE = new HashMap<>();
@@ -91,10 +106,18 @@ public final class BoulderStrike {
         BlockHitResult hit = level.clip(new ClipContext(eye, eye.add(p.getLookAngle().scale(REACH)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
         if (hit.getType() != HitResult.Type.BLOCK) return null;
         BlockPos pos = hit.getBlockPos();
-        if (!BoulderBlocks.isBoulder(level.getBlockState(pos))) return null;
         Vec3 at = hit.getLocation();
         double dx = at.x - p.getX(), dz = at.z - p.getZ();
         if (dx * dx + dz * dz > FLAT * FLAT) return null;
+        if (!BoulderBlocks.isBoulder(level.getBlockState(pos))) {
+            // bare rock ground: the rock just inside the hit point (a step's side counts as its column's rock), below the
+            // eyes and open above (the ground's top, not a cave's roof)
+            Vec3 in = at.add(p.getLookAngle().scale(0.02));
+            BlockPos cell = BlockPos.containing(in);
+            if (in.y > eye.y - 0.3 || !Earthwork.rock(level.getBlockState(cell).getBlock())
+                    || level.getBlockState(cell.above()).isSolidRender(level, cell.above())) return null;
+            return new Aim(in, null, -1);
+        }
         var found = new ArrayList<BoulderIndex.Root>(2);
         BoulderIndex.of(level).roots(pos.getX(), pos.getY(), pos.getZ(), found);
         Vec3 local = at.subtract(pos.getX(), pos.getY(), pos.getZ());
@@ -117,6 +140,11 @@ public final class BoulderStrike {
         if (last != null && now - last < INTERVAL) return false;
         Aim aim = aim(p);
         if (aim == null) return false;
+        String no = aim.root() == null ? Earthwork.strikable(p.serverLevel(), aim.at().x, aim.at().z) : null;
+        if (no != null) {
+            p.displayClientMessage(Component.translatable("message.apocalypse_firstlight.pick." + no), true);
+            return false;
+        }
         if (PlayerStamina.winded(p)) {
             p.displayClientMessage(Component.translatable("message.apocalypse_firstlight.pick.winded"), true);
             return false;
@@ -156,7 +184,7 @@ public final class BoulderStrike {
             a.hit = true;
             Aim now = aim(p);
             // the aim rechecked: the same rock (it may have split or gone meanwhile), near where the strike began
-            if (now != null && now.root().equals(a.aim.root()) && now.node() == a.aim.node() && now.at().distanceTo(a.aim.at()) <= WANDER)
+            if (now != null && java.util.Objects.equals(now.root(), a.aim.root()) && now.node() == a.aim.node() && now.at().distanceTo(a.aim.at()) <= WANDER)
                 land(p, now);
             PickPacket.send(p, a.id, HIT, a.aim.at());
         }
@@ -169,6 +197,10 @@ public final class BoulderStrike {
     /** The pick lands: one strike on the piece, its effort, chips and sound; at the piece's count it splits or breaks. */
     private static void land(ServerPlayer p, Aim aim) {
         ServerLevel level = p.serverLevel();
+        if (aim.root() == null) {
+            ground(p, level, aim.at());
+            return;
+        }
         BoulderIndex.Root r = null;
         var found = new ArrayList<BoulderIndex.Root>(2);
         BoulderIndex.SERVER.roots(aim.root().getX(), aim.root().getY(), aim.root().getZ(), found);
@@ -190,6 +222,35 @@ public final class BoulderStrike {
                 40, 0.3, 0.3, 0.3, 0.15);
         if (r.node.leaf()) BoulderWorld.shatter(level, r, at, p.position());
         else BoulderWorld.split(level, r);
+    }
+
+    /** The pick lands on bare rock: the rock there is cut down, with its effort, chips, sound and the stones it breaks off. */
+    private static void ground(ServerPlayer p, ServerLevel level, Vec3 at) {
+        Earthwork.Result r = Earthwork.strike(level, at.x, at.z);
+        if (r.moved() >= 0) {
+            p.displayClientMessage(Component.translatable("message.apocalypse_firstlight.pick.hard"), true);
+            return;
+        }
+        PlayerStamina.spend(p, StaminaConfig.get().costs.pickStrike, false);
+        level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.STONE.defaultBlockState()), at.x, at.y, at.z, 12, 0.08, 0.04, 0.08, 0.12);
+        level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 3, 0.02, 0.02, 0.02, 0.2);
+        RangedSound.playWithNoise(level, p, at, SoundEvents.STONE_HIT, RADIUS, 0.7F, NoiseType.INTERACTION, AflItems.PICK_MATTOCK.getId());
+        double litres = Math.max(0, r.taken().get(BulkMaterials.table().index("rubble"))) * EarthGrid.LITRES_PER_QUANTUM;
+        drops(level, at, AflItems.FIELD_STONE.get(), litres / STONE_LITRES);
+        drops(level, at, AflItems.PEBBLE.get(), litres / PEBBLE_LITRES);
+    }
+
+    /** n of item on average: its whole part, and one more by chance for the rest. */
+    private static void drops(ServerLevel level, Vec3 at, Item item, double n) {
+        int count = (int) n + (level.random.nextDouble() < n - (int) n ? 1 : 0);
+        for (int i = 0; i < count; i++) drop(level, at, new ItemStack(item));
+    }
+
+    private static void drop(ServerLevel level, Vec3 at, ItemStack stack) {
+        ItemEntity e = new ItemEntity(level, at.x, at.y + 0.15, at.z, stack);
+        e.setDeltaMovement((level.random.nextDouble() - 0.5) * 0.15, 0.15, (level.random.nextDouble() - 0.5) * 0.15);
+        e.setDefaultPickUpDelay();
+        level.addFreshEntity(e);
     }
 
     @SubscribeEvent

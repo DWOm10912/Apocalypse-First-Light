@@ -1,0 +1,62 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_0_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_0_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_1_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_1_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_2_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_2_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_3_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/stone_3_mirrored",
+        "y": 180
+      }
+    ]
+  }
+}

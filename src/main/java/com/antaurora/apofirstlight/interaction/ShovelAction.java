@@ -12,11 +12,16 @@ import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.stamina.PlayerStamina;
 import com.antaurora.apofirstlight.stamina.StaminaConfig;
 import com.antaurora.apofirstlight.weight.PlayerWeightRuntime;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -37,7 +42,9 @@ import java.util.UUID;
  * and the rate (one start per {@link #INTERVAL} ticks), runs the stroke, and at its commit tick changes the ground and
  * the load in one go. Let go before the commit (client Cancel) and nothing changes.
  * <ul>
- *   <li>DIG: one scoop (Earthwork#scoop) into the room left on the blade; a full blade digs nothing.</li>
+ *   <li>DIG: one scoop (Earthwork#scoop, within {@link #DIG_AT} of the feet) into the room left on the blade (a full
+ *       blade digs nothing); the load stays on the blade until the player pours it (user 2026-10-22: no throw aside, it
+ *       filled the ground round the hole).</li>
  *   <li>POUR: the whole load poured where it is aimed (Earthwork#pour); only what went down leaves the blade.</li>
  *   <li>SCRAPE (sneak): the ground there towards the player's feet: higher ground cut into the blade, lower ground
  *       raised from its load.</li>
@@ -47,14 +54,23 @@ import java.util.UUID;
 public final class ShovelAction {
     public static final int DIG = 0, POUR = 1, SCRAPE = 2;
     public static final int START = 0, COMMIT = 1, CANCEL = 2, END = 3;
-    /** Ticks a stroke lasts and the tick it changes the ground, by mode (dig ~1.1 s, pour ~0.8 s, scrape 1 s). */
-    public static final int[] DURATION = {22, 16, 20}, COMMIT_AT = {16, 9, 14};
+    /**
+     * Ticks a stroke lasts and the tick it changes the ground, by mode (dig 2.2 s: the blade in, a stamp on its step, the
+     * lever back at 1.5 s, then the loaded blade lifted to the carry; pour 1.2 s, the load off at 0.7 s; scrape 1.4 s, the
+     * ground changed at the end of the push, 0.9 s; unhurried, the body bending to a blade a metre ahead).
+     */
+    public static final int[] DURATION = {44, 24, 28}, COMMIT_AT = {30, 14, 18};
     /** One stroke started per player per this many ticks at most (the server's rate limit). */
     public static final int INTERVAL = 20;
     /** The ground a stroke reaches (m, from the eyes), and how far the aim may wander during it (m). */
     public static final double REACH = 2.5, WANDER = 1.0;
     /** The ground a shovel works lies at most this far from the feet, level (m): the blade reaches no further. */
     public static final double FLAT = 1.2;
+    /**
+     * The dig's hole lies at most this far from the feet, level (m), towards the aim: the big shovel goes in a stride ahead
+     * of the right foot, which steps onto its blade (player_actions/tool/shovel_dig.json), so a far aim digs nearer.
+     */
+    public static final double DIG_AT = 0.7;
     /** The stroke's sound and the noise the infected hear, one radius (blocks) by mode. */
     private static final double[] RADIUS = {10, 8, 10};
 
@@ -83,11 +99,23 @@ public final class ShovelAction {
     public static boolean active(ServerPlayer p) { return ACTIVE.containsKey(p.getUUID()); }
 
     /** The loose ground the player aims at within reach (the hit point on the skin), or null. */
-    public static Vec3 target(ServerPlayer p) {
-        Vec3 eye = p.getEyePosition();
-        BlockHitResult hit = p.level().clip(new ClipContext(eye, eye.add(p.getLookAngle().scale(REACH)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        if (hit.getType() != HitResult.Type.BLOCK) return null;
-        if (!Earthwork.soil(p.level().getBlockState(hit.getBlockPos()).getBlock())) return null;
+    public static Vec3 target(ServerPlayer p) { return aimed(p.level(), p); }
+
+    /**
+     * The loose ground a player aims the shovel at within reach, or null; both sides (client/ShovelClient#aim). The ground
+     * is found by collision, so grass and flowers let the ray through; but a block the crosshair meets first that has
+     * collision and is not ground screens it (2026-10-22: the wooden tool rack's pegs have none, so aiming at them reached
+     * the dirt under the rack and a right-click dug instead of hanging the shovel; the same for any block one uses).
+     */
+    public static Vec3 aimed(Level level, net.minecraft.world.entity.player.Player p) {
+        Vec3 eye = p.getEyePosition(), end = eye.add(p.getLookAngle().scale(REACH));
+        BlockHitResult hit = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+        if (hit.getType() != HitResult.Type.BLOCK || !Earthwork.ground(level.getBlockState(hit.getBlockPos()).getBlock())) return null;
+        BlockHitResult first = level.clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p));
+        if (first.getType() == HitResult.Type.BLOCK && !first.getBlockPos().equals(hit.getBlockPos())) {
+            BlockState s = level.getBlockState(first.getBlockPos());
+            if (!Earthwork.ground(s.getBlock()) && !s.getCollisionShape(level, first.getBlockPos()).isEmpty()) return null;
+        }
         return near(p, hit.getLocation()) ? hit.getLocation() : null;
     }
 
@@ -165,6 +193,7 @@ public final class ShovelAction {
                 return;
             }
             a.committed = true;
+            if (a.mode == DIG) at = hole(p, at);
             commit(p, a.mode, at);
             notify(a, COMMIT);
         }
@@ -189,9 +218,11 @@ public final class ShovelAction {
                 moved = keep(load, table, r);
                 material = main(r, true);
                 cost = costs.shovelDig;
-                // a boulder's rock under the blade (Rock R1a): it says so (the pick strikes it, the shovel digs round it)
+                // a boulder's rock under the blade (Rock R1a), or bare rock (R2: the shovel takes only the rubble a pick
+                // loosened): it says so (the pick strikes it, the shovel digs round it)
                 if (moved <= 0) tell(p, load.room() <= 0 ? "full" : com.antaurora.apofirstlight.boulder.BoulderEarth.under(level,
-                        net.minecraft.util.Mth.floor(at.x), net.minecraft.util.Mth.floor(at.z), (int) Math.round(at.y * com.antaurora.apofirstlight.earthwork.EarthGrid.Q)) ? "rock" : "hard");
+                        net.minecraft.util.Mth.floor(at.x), net.minecraft.util.Mth.floor(at.z), (int) Math.round(at.y * com.antaurora.apofirstlight.earthwork.EarthGrid.Q))
+                        || Earthwork.rock(level.getBlockState(net.minecraft.core.BlockPos.containing(at.x, at.y - 0.02, at.z)).getBlock()) ? "rock" : "hard");
             }
             case POUR -> {
                 String m = load.material();
@@ -233,6 +264,22 @@ public final class ShovelAction {
         var event = mode == POUR ? sound.getPlaceSound() : mode == DIG ? sound.getBreakSound() : sound.getHitSound();
         RangedSound.playWithNoise(level, p, at, event, RADIUS[mode], sound.getPitch() * 0.8F, NoiseType.INTERACTION,
                 AflItems.ROUND_POINT_SHOVEL.getId());
+    }
+
+    /** Where the dig goes in for an aim: the aim, drawn in to DIG_AT from the feet (level), on the ground there. */
+    private static Vec3 hole(ServerPlayer p, Vec3 at) {
+        double dx = at.x - p.getX(), dz = at.z - p.getZ(), d = Math.hypot(dx, dz);
+        if (d <= DIG_AT) return at;
+        double x = p.getX() + dx * DIG_AT / d, z = p.getZ() + dz * DIG_AT / d, y = groundAt(p.serverLevel(), x, z);
+        return new Vec3(x, Double.isNaN(y) ? at.y : y, z);
+    }
+
+    /** The ground's height (blocks) at (x, z): the earthwork skin, else the top of the ground block there; NaN where it is no ground. */
+    private static double groundAt(ServerLevel level, double x, double z) {
+        double s = Earthwork.surfaceAt(level, x, z);
+        if (!Double.isNaN(s)) return s;
+        int bx = Mth.floor(x), bz = Mth.floor(z), top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, bx, bz);
+        return Earthwork.ground(level.getBlockState(new BlockPos(bx, top - 1, bz)).getBlock()) ? top : Double.NaN;
     }
 
     /** The earth a cut took, onto the blade (two materials mix into backfill there); the quanta taken. */
