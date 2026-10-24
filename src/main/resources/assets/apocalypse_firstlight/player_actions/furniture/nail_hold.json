@@ -1,0 +1,79 @@
+{
+  "format_version": 1,
+  "about": "The hammer cocked over the set nail, the left hand pressing the piece: looped while the timing bar runs (a press plays a strike, a glance or the seat) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "clip": "tool.furniture_lean",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 55,
+  "first_person": "body",
+  "held_item": "hidden",
+  "loop": "time",
+  "length": 1,
+  "blend": {
+    "in": 0.3,
+    "out": 0.25
+  },
+  "approach": {
+    "anchor": "stand",
+    "distance": 0,
+    "side": 0,
+    "max": 2,
+    "face": "face",
+    "pitch": 40,
+    "in": 0.6
+  },
+  "first_person_view": [
+    [0, 58],
+    [1, 58]
+  ],
+  "props": [
+    {
+      "id": "claw_hammer",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:head",
+          "point": "grip",
+          "pos": [-0.53, -2.59, 4.04],
+          "rot": [122.905, -84.359, 90],
+          "blend": 0
+        },
+        {
+          "at": 0.05,
+          "frame": "anchor:head",
+          "point": "grip",
+          "pos": [-0.53, -2.72, 4.04],
+          "rot": [122.905, -84.359, 90],
+          "blend": 0.45
+        },
+        {
+          "at": 0.5,
+          "frame": "anchor:head",
+          "point": "grip",
+          "pos": [-0.53, -2.59, 4.04],
+          "rot": [122.905, -84.359, 90],
+          "blend": 0.45
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:claw_hammer:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "block:press",
+        "blend": 0,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      }
+    ]
+  }
+}

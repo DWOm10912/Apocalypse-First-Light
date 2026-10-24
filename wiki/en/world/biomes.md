@@ -4,4 +4,6 @@ AFL replaces the vanilla biomes with its own. The table runs from warmest to col
 
 <BiomeTable />
 
+<StatusTag s="test" /> Ground plants: vanilla grass, flowers, ferns, sugar cane, lily pads, seagrass, kelp, bamboo, cactus and small mushrooms no longer generate, so new maps show bare turf for now. AFL's own North American plants are in the works: broadleaf cattail and common reed take the place of sugar cane, blackberries the place of sweet berries
+
 How air temperature affects your body: see [Survival Stats](../guide/survival#temperature)

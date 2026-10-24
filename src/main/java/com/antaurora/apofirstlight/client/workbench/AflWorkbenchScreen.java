@@ -313,6 +313,14 @@ public final class AflWorkbenchScreen extends Screen {
         boolean fresh = WorkbenchRecipes.isFresh(r);
         Component source = Component.translatable("screen.apocalypse_firstlight.workbench.source" + (fresh ? ".fresh" : ""), r.source());
         text(g, source, C_X + 2, 60, 4.8F, fresh ? AflUiStyle.ACCENT : AflUiStyle.TEXT_DIM, 1);
+        // a furniture piece left half done on this bench (WorkbenchBlockEntity's job): which, and how far
+        var half = WorkbenchWork.benchJob(bench);
+        if (half != null) {
+            Component line = Component.translatable("screen.apocalypse_firstlight.workbench.half_built", WorkbenchWork.jobName(half),
+                    WorkbenchWork.stepLine(half, WorkbenchWork.carpentry()));
+            boolean other = r.furniture() && !half.recipe().equals(r.id());
+            text(g, fit(line, 4.8F, C_W - 4), C_X + 2, 67, 4.8F, other ? AflUiStyle.WARN : AflUiStyle.ACCENT, 1);
+        }
 
         // the model, turned by dragging
         hits.add(new Hit(Kind.PREVIEW, C_X, 68, C_W, 90, 0, null));
@@ -324,7 +332,8 @@ public final class AflWorkbenchScreen extends Screen {
         String[][] props = {
                 {"weight", String.format(Locale.ROOT, "%.2f kg", grams / 1000.0)},
                 {"size", I18n.get("screen.apocalypse_firstlight.workbench.prop.size_value", size.w(), size.h())},
-                {"time", I18n.get("screen.apocalypse_firstlight.workbench.prop.time_value", seconds(r.ticks()))},
+                {"time", I18n.get("screen.apocalypse_firstlight.workbench.prop.time_value", seconds(r.furniture()
+                        ? com.antaurora.apofirstlight.cabin.FurnitureWork.estimate(r.steps(), WorkbenchWork.carpentry()) : r.ticks()))},
                 {"owned", Integer.toString(WorkbenchRecipes.carried(minecraft.player, r.result().getItem()))}};
         for (int i = 0; i < props.length; i++) {
             float x = C_X + 2 + i * 44;
@@ -396,7 +405,8 @@ public final class AflWorkbenchScreen extends Screen {
         List<Component> missing = new ArrayList<>();
         for (var m : r.materials()) {
             int have = WorkbenchRecipes.carried(player, m);
-            if (have < m.count()) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench.missing_item", m.name(), m.count() - have));
+            if (have < m.count()) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench."
+                    + (m.unit() == com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Unit.COUNT ? "missing_item" : "missing_amount"), m.name(), m.amount(m.count() - have)));
         }
         Component short_ = null;
         int shortLines = 0;
@@ -419,13 +429,15 @@ public final class AflWorkbenchScreen extends Screen {
         float y = R_Y + 18;
         for (int i = 0; i < lines; i++) {
             var m = r.materials().get(i);
-            int have = WorkbenchRecipes.carried(player, m);
-            boolean ok = have >= m.count();
+            int have = WorkbenchRecipes.carried(player, m), need = m.count() * Math.max(1, quantity);
+            boolean ok = have >= need;
             boolean hover = in(mx, my, x - 2, y - 1, R_W - 8, 18);
             if (hover) AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 18, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.5F);
             slot(g, x, y, 16);
             icon(g, m.shown(net.minecraft.Util.getMillis()), x + 2, y + 2, 12);
-            Component count = Component.literal(have + " / " + m.count());
+            // a metered line in its unit, the need times the quantity: "0.65 / 0.3 L", "172 / 48" (furniture bench work 8)
+            String needText = m.amount(need);
+            Component count = Component.literal(m.amount(have).replace(" L", "") + " / " + needText);
             float countW = width(count, 6.4F);
             text(g, fit(m.name(), 5.6F, right - countW - 3 - (x + 21)), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
             if (m.options().size() > 1)
@@ -476,8 +488,8 @@ public final class AflWorkbenchScreen extends Screen {
         AflUiDraw.button(g, x - 1, y, R_W - 10, 15, craftHover && able, craftStart != 0, able, 1);
         float progress = craftProgress(r);
         ring(g, x + 8, y + 7.5F, 4.2F, progress, able);
-        Component label = Component.translatable("screen.apocalypse_firstlight.workbench." + (craftStart != 0 ? "crafting" : "craft"),
-                craftDone + 1, quantity);
+        Component label = Component.translatable("screen.apocalypse_firstlight.workbench." + (craftStart != 0 ? "crafting"
+                        : discardArmed(r) ? "craft_discard" : "craft"), craftDone + 1, quantity);
         text(g, label, x + 17, y + 4.8F, 5.6F, able ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         hits.add(new Hit(Kind.CRAFT, x - 1, y, R_W - 10, 15, 0, null));
 
@@ -550,7 +562,9 @@ public final class AflWorkbenchScreen extends Screen {
         for (ItemStack option : m.options()) {
             icon(g, option, x + 6, yy + 1, 10);
             text(g, option.getHoverName(), x + 19, yy + 3.6F, 5.2F, AflUiStyle.TEXT, 1);
-            Component have = Component.literal(Integer.toString(WorkbenchRecipes.carried(minecraft.player, option.getItem())));
+            Component have = Component.literal(m.unit() == com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Unit.COUNT
+                    ? Integer.toString(WorkbenchRecipes.carried(minecraft.player, option.getItem()))
+                    : m.amount(com.antaurora.apofirstlight.inventory.CarriedItems.amount(minecraft.player, option.getItem())));
             text(g, have, x + w - 6 - width(have, 5.2F), yy + 3.6F, 5.2F, AflUiStyle.TEXT_DIM, 1);
             yy += rowH;
         }
@@ -583,6 +597,14 @@ public final class AflWorkbenchScreen extends Screen {
         craftDone++;
         craftStart = craftDone < quantity ? System.nanoTime() : 0;
         if (craftStart == 0) craftDone = 0;
+    }
+
+    /** The craft button asked once to throw away another recipe's half-built piece: a second click in 5 s does. */
+    @Nullable private ResourceLocation discardFor;
+    private long discardAt;
+
+    private boolean discardArmed(WorkbenchRecipeView r) {
+        return r.id().equals(discardFor) && System.nanoTime() - discardAt < 5_000_000_000L;
     }
 
     private void stopCrafting() {
@@ -635,9 +657,19 @@ public final class AflWorkbenchScreen extends Screen {
                     stopCrafting();
                     click();
                 } else if (canCraft(recipe) && recipe.work() != null && !recipe.sample()) {
-                    // made at the bench: the page closes and the player works on the top (WorkbenchWork)
+                    // made at the bench: the page closes and the player works on the top (WorkbenchWork). Another
+                    // recipe's half-built piece on the bench is thrown away only on a second click (the button says so)
                     click();
-                    WorkbenchWork.start(bench, recipe, Math.min(quantity, WorkbenchRecipes.craftable(minecraft.player, recipe)));
+                    var half = WorkbenchWork.benchJob(bench);
+                    boolean other = recipe.furniture() && half != null && !half.recipe().equals(recipe.id());
+                    if (other && !discardArmed(recipe)) {
+                        discardFor = recipe.id();
+                        discardAt = System.nanoTime();
+                        setStatus(Component.translatable("screen.apocalypse_firstlight.workbench.discard_ask", WorkbenchWork.jobName(half)));
+                    } else {
+                        discardFor = null;
+                        WorkbenchWork.start(bench, recipe, Math.min(quantity, WorkbenchRecipes.craftable(minecraft.player, recipe)), other);
+                    }
                 } else if (canCraft(recipe)) {
                     craftStart = System.nanoTime();
                     craftDone = 0;

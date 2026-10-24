@@ -1,6 +1,11 @@
 package com.antaurora.apofirstlight.world;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraftforge.event.ItemAttributeModifierEvent;
@@ -11,6 +16,7 @@ import net.minecraftforge.event.brewing.PotionBrewEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.ShieldBlockEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.village.VillagerTradesEvent;
 import net.minecraftforge.event.village.WandererTradesEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -30,6 +36,10 @@ import java.util.List;
  *   <li>Enchantments, sweep, turtle shell, leather freeze and powder snow: the Retired*Mixin classes.</li>
  *   <li>Shield: cannot be raised, and any block still in progress is cancelled.</li>
  *   <li>Swords mine like a bare hand and harvest nothing a hand cannot (cobwebs).</li>
+ *   <li>V1.8 (user 2026-10-23): only a tool digs ({@link #DIGGING_TOOLS}); with an empty hand or anything else, in survival
+ *   and adventure, no block breaks: no crack, no progress, no stamina, not even those that break at once (grass, flowers).
+ *   The client does not even start (client/NoToolDigClient: no sound, particles or swing); these are the server's refusal.
+ *   A tool digs as before (its own speed and drops). Creative as before.</li>
  *   <li>Trades whose result is unobtainable are skipped when a trader rolls its offers.</li>
  *   <li>Brewing: no brew finishes (the stand itself is a refused workstation; this covers hopper-fed stands).</li>
  *   <li>V1.2 mobs (VanillaRetirement.MOBS, every vanilla mob except minecraft:zombie): no new one enters a level, whatever
@@ -70,6 +80,27 @@ public final class VanillaRetirementEvents {
     public static void onHarvestCheck(PlayerEvent.HarvestCheck event) {
         if (event.getTargetBlock().requiresCorrectToolForDrops()
                 && VanillaRetirement.isRetiredSword(event.getEntity().getMainHandItem())) event.setCanHarvest(false);
+    }
+
+    /** The items that dig at all (V1.8): data/apocalypse_firstlight/tags/items/tools/digging.json. */
+    public static final TagKey<Item> DIGGING_TOOLS =
+            TagKey.create(Registries.ITEM, new ResourceLocation(ApocalypseFirstLight.MOD_ID, "tools/digging"));
+
+    /** Whether this player's main hand holds no tool, so it digs nothing (V1.8). */
+    public static boolean cannotDig(Player player) {
+        return VanillaRetirement.enabled() && !player.isCreative() && !player.isSpectator() && !player.getMainHandItem().is(DIGGING_TOOLS);
+    }
+
+    /** First, so nothing below counts a dig that does not happen (stamina); cancelled, the speed is -1 on both sides. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onNoToolSpeed(PlayerEvent.BreakSpeed event) {
+        if (cannotDig(event.getEntity())) event.setCanceled(true);
+    }
+
+    /** The server's last word, for any path that breaks a block for a player without the progress above. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onNoToolBreak(BlockEvent.BreakEvent event) {
+        if (cannotDig(event.getPlayer())) event.setCanceled(true);
     }
 
     @SubscribeEvent

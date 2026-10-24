@@ -1,0 +1,407 @@
+{
+  "format_version": 1,
+  "about": "Open the can, once a batch before the first wipe: the claw pries the lid at three places (0.15-2.4, the left hand steadying the can), the left hand lifts the lid off and lays it upside down (2.4-3.1), the hammer to the hip (2.4-3.4), the right hand takes the stirring stick (3.4-3.7) and stirs slowly (4.0-5.95), leans it in the can (6.0-6.2) and picks the rag up (6.2-6.5) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "clip": "tool.furniture_lean",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 55,
+  "first_person": "body",
+  "held_item": "hidden",
+  "length": 6.5,
+  "blend": {
+    "in": 0.3,
+    "out": 0.25
+  },
+  "approach": {
+    "anchor": "stand",
+    "distance": 0,
+    "side": 0,
+    "max": 2,
+    "face": "face",
+    "pitch": 40,
+    "in": 0.6
+  },
+  "first_person_view": [
+    [0, 58],
+    [6.5, 58]
+  ],
+  "props": [
+    {
+      "id": "claw_hammer",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.5, 8, -8],
+          "rot": [158.199, -85.036, 99.129],
+          "blend": 0
+        },
+        {
+          "at": 0.15,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [0, 0.03, 0.86],
+          "rot": [149.534, -90, 0],
+          "blend": 0.3
+        },
+        {
+          "at": 0.45,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [0, -0.03, 0.86],
+          "rot": [116.565, -90, 0],
+          "blend": 0.3
+        },
+        {
+          "at": 0.75,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [0, -0.31, 1.2],
+          "rot": [149.534, -90, 0],
+          "blend": 0.15
+        },
+        {
+          "at": 0.9,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [-0.74, 0.03, 0.43],
+          "rot": [-180, -29.887, 30.552],
+          "blend": 0.3
+        },
+        {
+          "at": 1.2,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [-0.74, -0.03, 0.43],
+          "rot": [-180, -29.887, 63.514],
+          "blend": 0.3
+        },
+        {
+          "at": 1.5,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [-1.04, -0.31, 0.6],
+          "rot": [-180, -29.887, 30.552],
+          "blend": 0.15
+        },
+        {
+          "at": 1.65,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [0.74, 0.03, 0.43],
+          "rot": [0, -29.887, -149.448],
+          "blend": 0.3
+        },
+        {
+          "at": 1.95,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [0.74, -0.03, 0.43],
+          "rot": [0, -29.887, -116.486],
+          "blend": 0.3
+        },
+        {
+          "at": 2.25,
+          "frame": "anchor:can",
+          "point": "claw",
+          "pos": [1.04, -0.31, 0.6],
+          "rot": [0, -29.887, -149.448],
+          "blend": 0.15
+        },
+        {
+          "at": 2.4,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.5, 8, -8],
+          "rot": [158.199, -85.036, 99.129],
+          "blend": 0.35
+        },
+        {
+          "at": 3.1,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [90, 84.289, 101.255],
+          "blend": 0.3
+        },
+        {
+          "at": 3.4,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [90, 84.289, 101.255],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "furniture_lid",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 2.4,
+          "frame": "anchor:can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 2.45,
+          "frame": "anchor:can",
+          "point": "center",
+          "pos": [0, -0.85, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.25
+        },
+        {
+          "at": 2.7,
+          "frame": "anchor:lid",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-180, 0, 0],
+          "blend": 0.4
+        },
+        {
+          "at": 3.1,
+          "frame": "anchor:lid",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-180, 0, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "furniture_stick",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:stick_bench",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, -90, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 3.45,
+          "frame": "anchor:stick_bench",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, -90, 0],
+          "blend": 0
+        },
+        {
+          "at": 3.7,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0, -1.02, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.3
+        },
+        {
+          "at": 4,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0.38, 1.19, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.15
+        },
+        {
+          "at": 4.15,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0.38, 1.19, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 4.375,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0, 1.19, -0.38],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 4.6,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [-0.38, 1.19, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 4.825,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0, 1.19, 0.38],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 5.05,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0.38, 1.19, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 5.275,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0, 1.19, -0.38],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 5.5,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [-0.38, 1.19, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 5.725,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0, 1.19, 0.38],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.225
+        },
+        {
+          "at": 6,
+          "frame": "anchor:stick_rest",
+          "point": "end",
+          "pos": [0, 0, 0],
+          "rot": [-90, 61.189, 95.008],
+          "blend": 0.2
+        },
+        {
+          "at": 6.2,
+          "frame": "anchor:stick_rest",
+          "point": "end",
+          "pos": [0, 0, 0],
+          "rot": [-90, 61.189, 95.008],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "furniture_rag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:rag_rest",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 6.2,
+          "frame": "anchor:rag_rest",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 6.35,
+          "frame": "chest",
+          "point": "center",
+          "pos": [-4.5, 7.5, -7],
+          "rot": [0, 0, 0],
+          "blend": 0.15
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:claw_hammer:grip",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 3.4,
+        "target": "prop:furniture_stick:grip",
+        "blend": 0.3,
+        "roll": 0
+      },
+      {
+        "at": 6.2,
+        "target": "prop:furniture_rag:hold",
+        "blend": 0.15,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose",
+        "blend": 0
+      },
+      {
+        "at": 0.05,
+        "target": "block:canhold",
+        "blend": 0.3,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 2.3,
+        "target": "prop:furniture_lid:hold",
+        "blend": 0.1,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 3.1,
+        "target": "block:canhold",
+        "blend": 0.3,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 6.2,
+        "target": "block:press",
+        "blend": 0.3,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      }
+    ]
+  },
+  "events": [
+    {
+      "at": 0.05,
+      "sound": "furniture_can_open",
+      "radius": 4,
+      "noise": 4
+    },
+    {
+      "at": 4,
+      "sound": "furniture_stain_stir",
+      "radius": 2,
+      "noise": 2
+    }
+  ]
+}

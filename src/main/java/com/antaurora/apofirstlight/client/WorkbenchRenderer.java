@@ -36,7 +36,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * pegs). The resting tools are drawn by the chunk ({@link WoodGunRackChunking}, a recording of {@link #slot}): a tool is
  * drawn here only until the chunk shows it, plus whatever the chunk cannot take. While a player works at the bench
  * (client/workbench/WorkbenchWork), the log on the top and its kerf ({@link #workpiece}); at the wooden knob the bench hook,
- * the strip on it and its kerf instead ({@link #knobWork}).
+ * the strip on it and its kerf instead ({@link #knobWork}). The furniture's board, piece, nails, hardware and the can's
+ * things: client/FurnitureWorkRenderer (also the half-built piece left on the bench).
  */
 public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlockEntity> {
     /** A sprite tool's model square (smaller than the tool rack's 0.58: the board is lower) and its middle under the pegs. */
@@ -72,6 +73,7 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
             knobWork(knob, state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
             pose.popPose();
         }
+        FurnitureWorkRenderer.render(entity.getBlockPos(), state, partialTick, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
         if (entity.noTools()) return;
         int boardLight = LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above());
         for (int k = 0; k < Workbench.PEGS; k++) {

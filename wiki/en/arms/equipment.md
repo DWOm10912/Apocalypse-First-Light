@@ -96,7 +96,7 @@ See [Inventory and Weight](../guide/inventory)
 <StatusTag s="test" /> A double-faced hammer: a steel head with a face at each end, on a hickory handle. A separate tool from the claw hammer
 
 - The workbench makes building pieces; the building hammer puts them on the house
-- With it in hand, B switches edit mode on and off. Out of edit mode it is a plain tool: it hangs on the pegs of a tool rack or the workbench (the head across two pegs), and picks things up like any item. It is not a digging tool: for mining it counts as a bare hand
+- With it in hand, B switches edit mode on and off. Out of edit mode it is a plain tool: it hangs on the pegs of a tool rack or the workbench (the head across two pegs), and picks things up like any item. It counts as a tool, so it digs blocks (bare hands cannot), but no faster than a bare hand
 - Everything below is in edit mode, where the blocks' own right-click hints and ground pickups give way
 - Right click opens the Building Pieces catalog: the pieces you carry (even without the recipe) and the pieces the workbench can make, each with how many you carry. Click one to choose it, click it again to put it away
 - With a piece chosen, a see-through copy shows at the crosshair: light green where it fits, light red where it does not, with the reason above the hotbar (too far away, the spot is taken, something is in the way, none carried ...)

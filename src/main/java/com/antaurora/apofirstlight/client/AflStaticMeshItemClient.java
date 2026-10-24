@@ -75,6 +75,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.BUILDING_HAMMER.get(), "building_hammer", "building_hammer_mesh", 0.169062);
             // Hand saw (equipment meshes, 2026-10-21): 0.5 - 24.76 / 32
             bind(AflItems.HAND_SAW.get(), "hand_saw", "hand_saw_mesh", -0.27375);
+            // Screwdriver (equipment meshes, 2026-10-22): 0.5 - 8.189 / 32
+            bind(AflItems.SCREWDRIVER.get(), "screwdriver", "screwdriver_mesh", 0.244094);
             // Field Survival Guide (equipment meshes, 2026-10-22): 0.5 - 5.669 / 32
             bind(AflItems.FIELD_SURVIVAL_GUIDE.get(), "field_survival_guide", "field_survival_guide_mesh", 0.322835);
             // Furniture materials (tools/build-furniture-materials-v1.mjs, 2026-10-22): 0.5 - height / 32
@@ -86,6 +88,7 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.EASTERN_HEMLOCK_BOARD.get(), "eastern_hemlock_board", "eastern_hemlock_board_mesh", -0.681102);
             bind(AflItems.WOOD_FINISH_CAN.get(), "wood_finish_can", "wood_finish_can_mesh", 0.342224);
             bind(AflItems.NAIL_BOX.get(), "nail_box", "nail_box_mesh", 0.391732);
+            bind(AflItems.SCREW_BOX.get(), "screw_box", "screw_box_mesh", 0.42126);
             bind(AflItems.CABINET_HINGE.get(), "cabinet_hinge", "cabinet_hinge_mesh", 0.420276);
             bind(AflItems.IRON_KNOB.get(), "iron_knob", "iron_knob_mesh", 0.447835);
             bind(AflItems.WOODEN_KNOB.get(), "wooden_knob", "wooden_knob_mesh", 0.459646);

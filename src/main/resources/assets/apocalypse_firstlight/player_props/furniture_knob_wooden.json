@@ -1,0 +1,14 @@
+{
+  "about": "A wooden knob carried to its place: y along its axis from the tenon's end. base: the foot (the anchor hw); hold: the left palm on its top (the fingertips on it) (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs). Points, bounds: item block units of the wooden_knob mesh as client/AflStaticMeshItemClient draws it (+ (0.5, 0.459646, 0.5)). Scale 0.508: real size.",
+  "items": ["wooden_knob"],
+  "scale": 0.508,
+  "bounds": [
+    [0.472, 0.4596, 0.472],
+    [0.528, 0.5406, 0.528]
+  ],
+  "symmetry": "x",
+  "points": {
+    "base": [0.5, 0.4596, 0.5],
+    "hold": [0.5, 0.7252, 0.1309]
+  }
+}

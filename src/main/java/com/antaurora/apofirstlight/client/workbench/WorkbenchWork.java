@@ -2,7 +2,9 @@ package com.antaurora.apofirstlight.client.workbench;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.building.BuildingPackets;
+import com.antaurora.apofirstlight.cabin.FurnitureWork;
 import com.antaurora.apofirstlight.cabin.Workbench;
+import com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity;
 import com.antaurora.apofirstlight.cabin.WorkbenchCrafting;
 import com.antaurora.apofirstlight.client.ui.AflKeyHint;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
@@ -10,6 +12,7 @@ import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
 import com.antaurora.apofirstlight.client.RangedSoundInstance;
 import com.antaurora.apofirstlight.client.WoodChipParticle;
+import com.antaurora.apofirstlight.client.survivor.SurvivorSheetClient;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.network.RangedSoundS2CPacket;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -64,6 +67,10 @@ import java.util.Map;
  * The own work is kept here and told to the server (BuildingPackets.Work), which tells the players who see this one
  * (BuildingPackets.WorkOf, {@link #remote}): they see the same action, log and sawdust. The anchors' numbers are those of
  * tools/author-hand-saw-actions.mjs WORK (which checks the reach and the clearances offline).
+ * <p>
+ * The furniture (2026-10-22, docs/gameplay/furniture_bench_work_v1.md) is played by FurnitureWorkClient: the server's plans
+ * one action after another, the nails' and screws' timing bar (the use key), Shift or a left click to stop; here only the
+ * session, its stop checks and the page's lines about a half-built piece ({@link #benchJob}, {@link #stepLine}).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class WorkbenchWork {
@@ -97,15 +104,29 @@ public final class WorkbenchWork {
     /** Model px a block (the action's event positions: model px of the body at the stand, from the carve anchor). */
     private static final double PX = 16 / 0.9375;
 
-    /** What a player's skeleton plays now (SkeletonActions): the action, when it started (s, game time), its anchors (world). */
-    public record At(String action, double started, Map<String, Vec3> anchors) {}
+    /** Where the furniture's work starts from (the bench's frame; FurnitureBench's stances are within reach of it). */
+    private static final double FURNITURE_X = 0.78, FURNITURE_Z = -0.13, FURNITURE_REACH = 1.4;
 
-    private static final class Session {
+    /**
+     * What a player's skeleton plays now (SkeletonActions): the action, when it started (s, game time), its anchors (world),
+     * how fast its clock runs (the furniture's nails and screws by the carpentry level), whether it follows the last one
+     * without a blend.
+     */
+    public record At(String action, double started, Map<String, Vec3> anchors, float speed, boolean chain) {
+        public At(String action, double started, Map<String, Vec3> anchors) {
+            this(action, started, anchors, 1F, false);
+        }
+    }
+
+    static final class Session {
         BlockPos bench;
         WorkbenchRecipeView recipe;
         int quantity, done;
         long started, itemStarted;
         Vec3 at;
+        /** A furniture piece (FurnitureWorkClient plays it), and the carpentry level it is worked at. */
+        boolean furniture;
+        int level;
     }
 
     @Nullable private static Session own;
@@ -118,20 +139,25 @@ public final class WorkbenchWork {
 
     // ------------------------------------------------------------------------------------------------ own work
 
-    /** The page's 制作 on a recipe made at the bench: close the page and start (or say where to stand). */
-    public static void start(BlockPos bench, WorkbenchRecipeView recipe, int quantity) {
+    /**
+     * The page's 制作 on a recipe made at the bench: close the page and start (or say where to stand). {@code discard}: the
+     * other recipe's half-built piece on the bench is thrown away (the page asked twice).
+     */
+    public static void start(BlockPos bench, WorkbenchRecipeView recipe, int quantity, boolean discard) {
         var mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null || mc.level == null || quantity < 1) return;
         BlockState state = mc.level.getBlockState(bench);
         if (!(state.getBlock() instanceof Workbench)) return;
         Direction facing = state.getValue(Workbench.FACING);
-        Vec3 stand = KNOB.equals(recipe.work()) ? Workbench.local(bench, facing, KNOB_CUT_X + KNOB_STAND_LEFT, 0, KNOB_Z - KNOB_STAND_BACK)
+        boolean furniture = recipe.furniture();
+        Vec3 stand = furniture ? Workbench.local(bench, facing, FURNITURE_X, 0, FURNITURE_Z)
+                : KNOB.equals(recipe.work()) ? Workbench.local(bench, facing, KNOB_CUT_X + KNOB_STAND_LEFT, 0, KNOB_Z - KNOB_STAND_BACK)
                 : Workbench.local(bench, facing, LOG_X + STAND_LEFT, 0, KERF_FROM - STAND_BACK);
         Vec3 front = Workbench.local(bench, facing, 1, 0, 0.04);
         Vec3 out = Vec3.atLowerCornerOf(facing.getNormal());
         Vec3 p = player.position();
-        if (p.subtract(front).dot(out) < 0 || Math.hypot(p.x - stand.x, p.z - stand.z) > START_REACH) {
+        if (p.subtract(front).dot(out) < 0 || Math.hypot(p.x - stand.x, p.z - stand.z) > (furniture ? FURNITURE_REACH : START_REACH)) {
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.workbench.stand_front"), true);
             return;
         }
@@ -143,18 +169,28 @@ public final class WorkbenchWork {
         s.started = mc.level.getGameTime();
         s.itemStarted = s.started + (STARTS.containsKey(recipe.work()) ? Math.round(SET * 20) : 0);
         s.at = p;
+        s.furniture = furniture;
+        s.level = carpentry();
         own = s;
-        AflNetwork.buildingToServer(new BuildingPackets.Work(s.bench, recipe.id(), true));
+        AflNetwork.buildingToServer(new BuildingPackets.Work(s.bench, recipe.id(), true, discard));
+        if (furniture) FurnitureWorkClient.started(player);
     }
 
     /** Working at a bench now (the building hammer's panel keeps out of the way). */
     public static boolean active() { return own != null; }
 
+    @Nullable
+    static Session ownSession() { return own; }
+
     private static void stop() {
         if (own == null) return;
-        AflNetwork.buildingToServer(new BuildingPackets.Work(own.bench, own.recipe.id(), false));
+        AflNetwork.buildingToServer(new BuildingPackets.Work(own.bench, own.recipe.id(), false, false));
+        if (own.furniture && Minecraft.getInstance().player != null) FurnitureWorkClient.stopped(Minecraft.getInstance().player);
         own = null;
     }
+
+    /** FurnitureWorkClient: the work is over (the can shut, or the bar left alone). */
+    static void stopOwn() { stop(); }
 
     @SubscribeEvent
     public static void tick(TickEvent.ClientTickEvent event) {
@@ -167,22 +203,25 @@ public final class WorkbenchWork {
         if (event.phase == TickEvent.Phase.START) {
             if (own == null) return;
             // the hands are busy: a left click stops the work, a right click does nothing (no block broken or used meanwhile)
-            boolean attack = false;
+            // (at the furniture the right click is the nail's blow or the screw's turn on the bar)
+            boolean attack = false, use = false;
             while (mc.options.keyAttack.consumeClick()) attack = true;
-            while (mc.options.keyUse.consumeClick()) { }
+            while (mc.options.keyUse.consumeClick()) use = true;
             if (attack) stop();
+            else if (use && own.furniture) FurnitureWorkClient.press(own, mc.player);
             return;
         }
         REMOTE.keySet().removeIf(id -> !(mc.level.getEntity(id) instanceof Player));
         dust(mc.level);
         strokes(mc.level);
         knob(mc.level);
+        FurnitureWorkClient.events(mc.level);
         Session s = own;
         if (s == null) return;
         Player player = mc.player;
         var input = mc.player.input;
         if (!player.isAlive() || player.isSpectator() || mc.screen != null || !WorkbenchClient.atBench(player, s.bench)
-                || player.position().distanceTo(s.at) > DRIFT
+                || player.position().distanceTo(s.at) > DRIFT || s.furniture && mc.options.keyShift.isDown()
                 || Math.abs(input.forwardImpulse) > 0.01F || Math.abs(input.leftImpulse) > 0.01F || input.jumping) {
             stop();
             return;
@@ -192,6 +231,10 @@ public final class WorkbenchWork {
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.workbench.no_tool",
                     missing == null ? Component.empty() : missing.getHoverName()), true);
             stop();
+            return;
+        }
+        if (s.furniture) {
+            FurnitureWorkClient.tick(s, player);
             return;
         }
         long now = mc.level.getGameTime();
@@ -210,15 +253,75 @@ public final class WorkbenchWork {
         HALVES.clear();
         KNOB_TICKS.clear();
         WorkbenchRecipes.clear();
+        FurnitureWorkClient.clear();
     }
 
     // ------------------------------------------------------------------------------------------------ others' work
 
-    /** BuildingPackets.WorkOf: another player started (work) or stopped (null) working at a bench. */
+    /**
+     * BuildingPackets.WorkOf: a player started (work) or stopped (null) working at a bench. At the furniture the own player
+     * gets it too: each plan the server makes of a word (FurnitureWorkClient), and the end when the server stops the work.
+     */
     public static void remote(int entity, @Nullable WorkbenchCrafting.Working work) {
         var mc = Minecraft.getInstance();
-        if (work == null || mc.level == null) REMOTE.remove(entity);
+        boolean furniture = work != null && FurnitureWork.queue(work.action());
+        if (mc.player != null && entity == mc.player.getId() && own != null && own.furniture) {
+            if (furniture) FurnitureWorkClient.own(mc.player, work);
+            else if (work == null) {
+                FurnitureWorkClient.stopped(mc.player);
+                own = null;
+            }
+            return;
+        }
+        FurnitureWorkClient.remote(entity, work);
+        if (work == null || mc.level == null || furniture) REMOTE.remove(entity);
         else REMOTE.put(entity, new Remote(work, mc.level.getGameTime()));
+    }
+
+    // ------------------------------------------------------------------------------------------------ the furniture on the page
+
+    /** The half-built piece on a bench (its block entity's job), or null. */
+    @Nullable
+    public static FurnitureWork.Job benchJob(BlockPos bench) {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) return null;
+        BlockPos master = Workbench.master(mc.level.getBlockState(bench), bench);
+        return mc.level.getBlockEntity(master) instanceof WorkbenchBlockEntity be ? be.job() : null;
+    }
+
+    /** A piece's name: its recipe's result when this client knows the recipe, else the item named as the recipe. */
+    public static Component jobName(FurnitureWork.Job job) {
+        var mc = Minecraft.getInstance();
+        WorkbenchRecipeView view = mc.player == null ? null : WorkbenchRecipes.find(mc.player, job.recipe());
+        if (view != null) return view.result().getHoverName();
+        String path = job.recipe().getPath();
+        var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(job.recipe().getNamespace(), path.substring(path.lastIndexOf('/') + 1)));
+        return item == null || item == net.minecraft.world.item.Items.AIR ? Component.literal(path) : new ItemStack(item).getHoverName();
+    }
+
+    /** A piece's step as the panel and the page say it: its name, and which nail, screw or time of how many. */
+    public static Component stepLine(FurnitureWork.Job job, int level) {
+        FurnitureWork.Step step = job.current();
+        if (step == null) return Component.empty();
+        String name = step.step();
+        Component label = Component.translatable("hud.apocalypse_firstlight.workbench.step." + name.substring(name.indexOf('/') + 1));
+        FurnitureWork.Kind kind = FurnitureWork.kind(name);
+        int n, all;
+        if (kind == FurnitureWork.Kind.FIT) {
+            int screws = FurnitureWork.screws(name);
+            n = job.rep() * screws + job.sub() + 1;
+            all = step.times() * screws;
+        } else {
+            n = job.rep() + 1;
+            all = step.times();
+        }
+        if (kind == FurnitureWork.Kind.TIMED && all <= 1) return label;
+        return Component.translatable("hud.apocalypse_firstlight.workbench.step_count", label, Math.min(n, all), all);
+    }
+
+    /** The own carpentry level (survivor_growth/carpentry.json). */
+    public static int carpentry() {
+        return Math.max(0, SurvivorSheetClient.growthLevel(FurnitureWork.GROWTH));
     }
 
     // ------------------------------------------------------------------------------------------------ looks
@@ -251,7 +354,7 @@ public final class WorkbenchWork {
         double now = level.getGameTime() + partial;
         Session s = own;
         if (p == Minecraft.getInstance().player) {
-            if (s == null || s.recipe.work() == null) return null;
+            if (s == null || s.recipe.work() == null || s.furniture) return null;
             bench = s.bench;
             work = s.recipe.work();
             recipe = s.recipe.id();
@@ -278,6 +381,8 @@ public final class WorkbenchWork {
     /** SkeletonActions: what this player plays at a bench now, or null. */
     @Nullable
     public static At at(Player p, float partial) {
+        At furniture = FurnitureWorkClient.at(p, partial);
+        if (furniture != null) return furniture;
         Job j = job(p, partial);
         if (j == null) return null;
         double now = (p.level().getGameTime() + partial) / 20.0, t0 = j.started() / 20.0;
@@ -635,6 +740,10 @@ public final class WorkbenchWork {
         var mc = Minecraft.getInstance();
         Session s = own;
         if (s == null || mc.options.hideGui || mc.player == null || mc.screen != null || mc.level == null) return;
+        if (s.furniture) {
+            FurnitureWorkClient.panel(g, s, partialTick, screenWidth, screenHeight);
+            return;
+        }
         var font = mc.font;
         long nanos = System.nanoTime();
         Component title = Component.translatable("hud.apocalypse_firstlight.workbench.work", s.recipe.result().getHoverName(),

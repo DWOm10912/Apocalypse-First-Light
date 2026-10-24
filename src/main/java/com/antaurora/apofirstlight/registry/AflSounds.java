@@ -232,6 +232,22 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_WOOD = simple("folding_knife_hit_wood");
     public static final RegistryObject<SoundEvent> FOLDING_KNIFE_WHITTLE = simple("folding_knife_whittle");
     public static final RegistryObject<SoundEvent> WORKBENCH_TOOL_DOWN = simple("workbench_tool_down");
+    // Furniture bench work (docs/gameplay/furniture_bench_work_v1.md 7): the user's Firefly takes cut by
+    // design/items/furniture_bench_work_v1/fb_cut_sounds.py; client/workbench/WorkbenchWork plays them at the actions' events
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_TAP = simple("furniture_nail_tap");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_STRIKE = simple("furniture_nail_strike");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_SEAT = simple("furniture_nail_seat");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_GLANCE = simple("furniture_nail_glance");
+    public static final RegistryObject<SoundEvent> FURNITURE_BOX_OPEN = simple("furniture_box_open");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_PICK = simple("furniture_nail_pick");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_PICK = simple("furniture_screw_pick");
+    public static final RegistryObject<SoundEvent> FURNITURE_CAN_OPEN = simple("furniture_can_open");
+    public static final RegistryObject<SoundEvent> FURNITURE_STAIN_STIR = simple("furniture_stain_stir");
+    public static final RegistryObject<SoundEvent> FURNITURE_RAG_DIP = simple("furniture_rag_dip");
+    public static final RegistryObject<SoundEvent> FURNITURE_RAG_WIPE = simple("furniture_rag_wipe");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_TURN = simple("furniture_screw_turn");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_SEAT = simple("furniture_screw_seat");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_SLIP = simple("furniture_screw_slip");
     // Flip lighter V1: placeholders on vanilla events in sounds.json until the user records them (Firefly)
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_OPEN = simple("flip_lighter_open");
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_STRIKE = simple("flip_lighter_strike");

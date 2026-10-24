@@ -385,6 +385,139 @@ function keyholeEscutcheon() {
   return {PARTS, MATS: {iron: IRON}, display, icon: {view: [15, 20, 0], coverage: 0.35}, check: box};
 }
 
+/**
+ * A box of 100 #8 x 1 1/4 inch flat-head wood screws (docs/gameplay/furniture_bench_work_v1.md 3.5): a small kraft
+ * tuck-top carton 5.5 x 8 x 3.5 cm standing on +Y, the lid a hair larger where it folds over, a plain off-white label
+ * (no printing). Parts as the nail box (body, lid, flap, label): the bench draws it open without its lid.
+ */
+export const SCREWS = {W: 5.5, H: 8, D: 3.5};
+function screwBox() {
+  const B = 'screw_box', {W, H, D} = SCREWS;
+  const body = new Part('body', B, 'kraft');
+  extrude(body, 'y', {outer: orient(roundRect(-D / 2, -W / 2, D / 2, W / 2, 0.12, 2), true), holes: []}, 0, H - 0.2, 0.06);
+  const lid = new Part('lid', B, 'kraft');
+  extrude(lid, 'y', {outer: orient(roundRect(-D / 2 - 0.04, -W / 2 - 0.04, D / 2 + 0.04, W / 2 + 0.04, 0.12, 2), true), holes: []}, H - 0.3, H, 0);
+  const flap = new Part('flap', B, 'kraft');
+  extrude(flap, 'z', {outer: orient([[-W / 2 + 0.3, H - 0.3], [W / 2 - 0.3, H - 0.3], [W / 2 - 0.3, H - 1.1], [-W / 2 + 0.3, H - 1.1]], true), holes: []}, D / 2 - 0.02, D / 2 + 0.03, 0);
+  const label = new Part('label', B, 'label');
+  extrude(label, 'z', {outer: orient(roundRect(-W / 2 + 0.45, 1.6, W / 2 - 0.45, 5.4, 0.2, 2), true), holes: []}, D / 2 - 0.02, D / 2 + 0.04, 0);
+  const PARTS = [body, lid, flap, label];
+  for (const q of PARTS) scaleCm(q);
+  const {display, box} = pinch(PARTS, [[20, 35, -10], 1.4, 1.0], [[-8, 30, 6], 1.3]);
+  return {PARTS, MATS: {
+    kraft: {c: [150, 118, 84], hl: 3, sm: 46, se: 52, f0: 20},          // a darker kraft than the nails' box
+    label: {c: [222, 216, 200], hl: 2, sm: 52, se: 58, f0: 20},
+  }, display, icon: {view: [20, 35, 0]}, check: box};
+}
+
+/**
+ * The furniture work at the bench (docs/gameplay/furniture_bench_work_v1.md 3, tools/author-furniture-actions.mjs,
+ * client/WorkbenchRenderer): a mesh drawn by code only, no item. Every part centred on x = z = 0 with its foot on y = 0
+ * (the offcut's 28 x 20 cm bounds the whole mesh symmetrically, so the bake does not move them), cm:
+ *   nail        a 6d common nail standing on its point, 5.1 cm, the head 0.67 cm across
+ *   screw       a #8 x 1 1/4 inch flat-head wood screw standing on its point, screw_slot across its head along x
+ *   rag         an old cotton rag folded to a pad, 11 x 8 cm, lumpy, its working face (-y) wet with stain
+ *   stick       the stir stick, a strip of board 26 x 2.4 x 1.2 cm standing up, stick_wet its lower 9 cm
+ *   offcut      a board crosscut to 28 cm (20 x 2.5 cm in section), lying flat, the length along x
+ *   lid         the quart can's lid, the plug ring down, the stain wet inside the plug
+ *   can_open    the wood finish can without its lid; can_label, can_stain (the stain 2.3 cm under the rim),
+ *               can_bail (folded down round the -z side), can_ear_0/1
+ *   nail_heap   nails lying in the opened nail box (inside its 6.5 x 4.5 cm), screw_heap in the screw box (5.5 x 3.5)
+ */
+export const WORK = {nail: 5.08, nailHead: 0.335, nailShank: 0.144, screw: 3.18, screwHead: 0.42, rag: [11, 1.4, 8], stick: [2.4, 26, 1.2],
+  stickWet: 9, offcut: [28, 2.5, 20], lidR: 5.15, stainDrop: 2.3};
+function furnitureWork() {
+  const B = 'furniture_work', {R, H} = CAN;
+  const nail = new Part('nail', B, 'nail');
+  revolve(nail, 0, 0, [[WORK.nail, 0], [WORK.nail, WORK.nailHead], [WORK.nail - 0.08, WORK.nailHead], [WORK.nail - 0.14, 0.15], [0.55, WORK.nailShank], [0, 0]], 8);
+  zToY(nail);
+  // the screw: a countersunk head over a smooth shank, the thread as alternating rings down to the point
+  const S = WORK.screw, screw = new Part('screw', B, 'zinc'), profile = [[S, 0], [S, WORK.screwHead], [S - 0.05, WORK.screwHead], [S - 0.42, 0.21], [S - 1.0, 0.21]];
+  for (let y = S - 1.1, k = 0; y > 0.5; y -= 0.16, k++) profile.push([y, k % 2 ? 0.2 : 0.15]);
+  profile.push([0.4, 0.14], [0, 0]);
+  revolve(screw, 0, 0, profile, 10);
+  zToY(screw);
+  const slot = new Part('screw_slot', B, 'slot');
+  extrude(slot, 'y', {outer: orient([[-0.05, -WORK.screwHead + 0.03], [0.05, -WORK.screwHead + 0.03], [0.05, WORK.screwHead - 0.03], [-0.05, WORK.screwHead - 0.03]], true), holes: []}, S - 0.002, S + 0.012, 0);
+  // the rag: a folded pad, its top pushed about by the folds (fixed noise), the lower face wet with stain
+  const rag = new Part('rag', B, 'cloth'), [rw, rh, rd] = WORK.rag;
+  extrude(rag, 'y', {outer: orient(roundRect(-rd / 2, -rw / 2, rd / 2, rw / 2, 1.2, 3), true), holes: []}, 0, rh, 0.25);
+  rag.v = rag.v.map(([x, y, z]) => { const k = 0.5 * (vn3(x * 0.45 + 1.3, z * 0.45 + 2.7, 0.5) - 0.5);
+    return [x * (1 + 0.05 * (vn3(z * 0.3, 1, 2) - 0.5)), y > 0.01 ? Math.max(0.3, y + k) : y, z]; });
+  for (const f of rag.f) if (f.ids.every(i => rag.v[i][1] < 0.05)) f.mat = 'stain';
+  const [sw, sh, sd] = WORK.stick;
+  const stick = new Part('stick', B, 'pine');
+  extrude(stick, 'y', {outer: orient(roundRect(-sd / 2, -sw / 2, sd / 2, sw / 2, 0.1, 1), true), holes: []}, WORK.stickWet, sh, 0.05);
+  const stickWet = new Part('stick_wet', B, 'stain');
+  extrude(stickWet, 'y', {outer: orient(roundRect(-sd / 2 - 0.02, -sw / 2 - 0.02, sd / 2 + 0.02, sw / 2 + 0.02, 0.1, 1), true), holes: []}, 0, WORK.stickWet + 0.02, 0.05);
+  const [ol, ot, ow] = WORK.offcut;
+  const offcut = new Part('offcut', B, 'pine');
+  extrude(offcut, 'y', {outer: orient(roundRect(-ow / 2, -ol / 2, ow / 2, ol / 2, 0.15, 1), true), holes: []}, 0, ot, 0.08);
+  for (const f of offcut.f) if (Math.abs(newellOf(offcut, f)[0]) > 0.9) f.mat = 'endgrain';
+  // the lid: tin, the plug ring down (y 0..0.45), the flat top over it; its underside inside the plug wet with stain
+  const lid = new Part('lid', B, 'tin'), Lr = WORK.lidR;
+  revolve(lid, 0, 0, [[0.72, 0], [0.72, Lr], [0.6, Lr + 0.05], [0.45, Lr], [0.05, Lr - 0.25], [0, Lr - 0.45], [0.45, Lr - 0.6], [0.45, 0]], 24);
+  zToY(lid);
+  for (const f of lid.f) if (f.ids.every(i => lid.v[i][1] < 0.5 && Math.hypot(lid.v[i][0], lid.v[i][2]) < Lr - 0.55)) f.mat = 'stain';
+  // the open can: woodFinishCan's body with its inside wall down to the bottom instead of the lid
+  const canOpen = new Part('can_open', B, 'tin'), Ri = R - 0.55;
+  revolve(canOpen, 0, 0, [[0.35, 0], [0.35, Ri], [H - 0.4, Ri], [H - 0.4, R - 0.4], [H, R - 0.25], [H, R + 0.05], [H - 0.5, R + 0.1], [H - 0.6, R],
+    [0.6, R], [0.5, R + 0.1], [0, R + 0.05], [0, R - 0.25], [0.25, R - 0.4], [0.25, 0]], 24);
+  zToY(canOpen);
+  const canLabel = new Part('can_label', B, 'label');
+  revolve(canLabel, 0, 0, [[H - 1.4, R + 0.04], [1.1, R + 0.04], [1.1, R - 0.05], [H - 1.4, R - 0.05]], 24);
+  zToY(canLabel);
+  const canStain = new Part('can_stain', B, 'stain'), sy = H - WORK.stainDrop;
+  revolve(canStain, 0, 0, [[sy, 0], [sy, Ri - 0.01], [sy - 0.1, Ri - 0.01], [sy - 0.1, 0]], 24);
+  zToY(canStain);
+  // the bail folded down: out of the right ear, down round the -z side of the body and up into the left ear
+  const bail = new Part('can_bail', B, 'wire'), Rb = R + 0.35, pts = [[R - 0.05, CAN.ear, 0], [Rb, CAN.ear, 0]];
+  for (let i = 1; i < 12; i++) { const a = Math.PI * i / 12; pts.push([Rb * Math.cos(a), CAN.ear - 3.5 * Math.sin(a), -Rb * Math.sin(a)]); }
+  pts.push([-Rb, CAN.ear, 0], [-R + 0.05, CAN.ear, 0]);
+  tube(bail, pts, CAN.bail, 6);
+  const ears = [1, -1].map((s, i) => {
+    const e = new Part('can_ear_' + i, B, 'tin');
+    extrude(e, 'x', {outer: orient(roundRect(-0.8, CAN.ear - 0.9, 0.8, CAN.ear + 0.9, 0.35, 2), true), holes: []}, s > 0 ? R - 0.1 : -R - 0.15, s > 0 ? R + 0.15 : -R + 0.1, 0);
+    return e;
+  });
+  // the heaps: nails or screws lying mostly along x in layers in the opened box (w along x, d along z), fixed scatter
+  const heap = (name, w, d, n, len, shank, head, mat) => {
+    const p = new Part(name, B, mat);
+    for (let k = 0; k < n; k++) {
+      const a = (vn3(k * 3.1, 0.7, 9.1) - 0.5) * 0.7 + (k % 2) * Math.PI, c = Math.cos(a) * len / 2, s = Math.sin(a) * len / 2;
+      const x = (vn3(k * 1.7 + 0.3, 2.1, 5.5) - 0.5) * Math.max(0, w - 2 * Math.abs(c) - 0.3), z = (vn3(k * 2.3 + 4.1, 7.7, 1.3) - 0.5) * Math.max(0, d - 2 * Math.abs(s) - 0.3);
+      const y = head + 0.3 * (k % 3), tip = [x - c, y, z - s], top = [x + c, y, z + s], dir = norm(sub(top, tip));
+      tube(p, [tip, sub(top, mul(dir, 0.02))], shank, 5);
+      tube(p, [top, add(top, mul(dir, 0.08))], head, 8);
+    }
+    return p;
+  };
+  const nailHeap = heap('nail_heap', NAILS.W, NAILS.D, 16, WORK.nail, WORK.nailShank, WORK.nailHead, 'nail');
+  const screwHeap = heap('screw_heap', SCREWS.W, SCREWS.D, 14, WORK.screw, 0.2, WORK.screwHead, 'zinc');
+  const PARTS = [nail, screw, slot, rag, stick, stickWet, offcut, lid, canOpen, canLabel, canStain, bail, ...ears, nailHeap, screwHeap];
+  for (const q of PARTS) scaleCm(q);
+  const pine = pos => tone3([206, 172, 124], 1 + 0.14 * (fbm3(pos[0] * 0.5 + 2.1, pos[1] * 6, pos[2] * 6) - 0.5) + 0.05 * (vn3(pos[0] * 1.6 + 5.3, pos[1] * 16, pos[2] * 16) - 0.5));
+  const endgrain = pos => tone3([182, 146, 100], 1 + 0.06 * Math.sin(Math.hypot(pos[1] + 3, pos[2] + 9) * 40) + 0.04 * (vn3(pos[1] * 9, pos[2] * 9, 3) - 0.5));
+  const cloth = pos => tone3([196, 190, 176], 1 + 0.1 * (vn3(pos[0] * 9, pos[1] * 9, pos[2] * 9) - 0.5) - 0.2 * Math.max(0, vn3(pos[0] * 2.5 + 3, pos[2] * 2.5, 1) - 0.6));
+  return {PARTS, bg: 'plate', MATS: {
+    plate: {c: [206, 172, 124], hl: 4, sm: 56, se: 62, f0: 20},
+    pine: {c: pine, hl: 4, sm: 56, se: 62, f0: 20},                     // bare softwood (the bench draws the species' own boards)
+    endgrain: {c: endgrain, hl: 3, sm: 50, se: 56, f0: 20},
+    nail: {c: [118, 120, 124], hl: 8, sm: 120, se: 134, f0: 230},       // bright common nails, a little dull
+    zinc: {c: [168, 170, 166], hl: 8, sm: 146, se: 156, f0: 230},       // zinc-plated screws
+    slot: {c: [40, 40, 42], hl: 2, sm: 60, se: 70, f0: 230},            // the slot's shadow
+    cloth: {c: cloth, hl: 3, sm: 30, se: 34, f0: 20},                   // worn cotton
+    stain: {c: [70, 42, 24], hl: 3, sm: 196, se: 210, f0: 20},          // wet walnut stain, glossy
+    tin: {c: [176, 178, 180], hl: 8, sm: 150, se: 166, f0: 230},
+    label: {c: [86, 54, 34], hl: 3, sm: 70, se: 78, f0: 20},
+    wire: {c: [150, 150, 152], hl: 6, sm: 130, se: 150, f0: 230},
+  }, atlas: 1024, meshOnly: true};
+}
+/** A face's unit normal (Newell), for picking the offcut's end grain. */
+const newellOf = (part, f) => { const P = f.ids.map(i => part.v[i]); let n = [0, 0, 0];
+  for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; n = add(n, [(a[1] - b[1]) * (a[2] + b[2]), (a[2] - b[2]) * (a[0] + b[0]), (a[0] - b[0]) * (a[1] + b[1])]); }
+  return norm(n); };
+
 export const ITEMS = {
   ...Object.fromEntries(SPECIES.map(s => [s + '_board', () => board(s)])),
   wood_finish_can: woodFinishCan,
@@ -395,6 +528,8 @@ export const ITEMS = {
   wooden_knob: woodenKnob,
   wooden_knob_work: woodenKnobWork,
   keyhole_escutcheon: keyholeEscutcheon,
+  screw_box: screwBox,
+  furniture_work: furnitureWork,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

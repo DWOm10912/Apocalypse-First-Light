@@ -110,6 +110,10 @@ public final class AflItems {
     // test beam (ripped at the bench, its own animation); hangs on the pegs; a plain tool otherwise; Creative only, no recipe
     public static final RegistryObject<Item> HAND_SAW = ITEMS.register("hand_saw",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    // Screwdriver (2026-10-22, docs/gameplay/furniture_bench_work_v1.md 3.5): a 6 inch flat-blade driver, beech handle;
+    // the bench's third furniture tool (the screws of the hinges, knobs and escutcheons); hangs on the pegs; Creative only
+    public static final RegistryObject<Item> SCREWDRIVER = ITEMS.register("screwdriver",
+            () -> new Item(new Item.Properties().stacksTo(1)));
     // Field Survival Guide (2026-10-22, docs/gameplay/field_survival_guide_v1_design.md): a pocket paperback; use opens it
     // in the reader, its pages from data/apocalypse_firstlight/books/field_survival_guide.json; staying on a page that
     // teaches a recipe learns it; Creative only, no recipe
@@ -129,6 +133,9 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.item.MeteredSupplyItem(1000, true));
     public static final RegistryObject<Item> NAIL_BOX = ITEMS.register("nail_box",
             () -> new com.antaurora.apofirstlight.item.MeteredSupplyItem(180, false));
+    // a box of 100 #8 x 1 1/4 inch wood screws, used by the piece like the nails (docs/gameplay/furniture_bench_work_v1.md 3.5)
+    public static final RegistryObject<Item> SCREW_BOX = ITEMS.register("screw_box",
+            () -> new com.antaurora.apofirstlight.item.MeteredSupplyItem(100, false));
     public static final RegistryObject<Item> CABINET_HINGE = ITEMS.register("cabinet_hinge",
             () -> new Item(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> IRON_KNOB = ITEMS.register("iron_knob",

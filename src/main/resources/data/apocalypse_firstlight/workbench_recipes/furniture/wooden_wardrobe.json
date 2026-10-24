@@ -1,0 +1,69 @@
+{
+  "format_version": 1,
+  "result": {
+    "item": "apocalypse_firstlight:wooden_wardrobe"
+  },
+  "materials": [
+    {
+      "tag": "apocalypse_firstlight:boards",
+      "count": 4
+    },
+    {
+      "item": "apocalypse_firstlight:nail_box",
+      "pieces": 80
+    },
+    {
+      "item": "apocalypse_firstlight:wood_finish_can",
+      "litres": 0.7
+    },
+    {
+      "item": "apocalypse_firstlight:cabinet_hinge",
+      "count": 4
+    },
+    {
+      "tag": "apocalypse_firstlight:cabinet_knobs",
+      "count": 4
+    },
+    {
+      "item": "apocalypse_firstlight:screw_box",
+      "pieces": 28
+    }
+  ],
+  "tools": [
+    "apocalypse_firstlight:hand_saw",
+    "apocalypse_firstlight:claw_hammer",
+    "apocalypse_firstlight:screwdriver"
+  ],
+  "work": [
+    {
+      "step": "furniture/crosscut",
+      "times": 4
+    },
+    {
+      "step": "furniture/nail",
+      "times": 14,
+      "piece": "frame"
+    },
+    {
+      "step": "furniture/wipe",
+      "times": 4
+    },
+    {
+      "step": "furniture/wipe_off"
+    },
+    {
+      "step": "furniture/fit_hinge",
+      "times": 4
+    },
+    {
+      "step": "furniture/fit_knob",
+      "times": 4
+    }
+  ],
+  "unlock": [
+    {
+      "type": "after",
+      "recipe": "apocalypse_firstlight:wooden_storage_chest"
+    }
+  ]
+}

@@ -37,13 +37,14 @@ AFL measures power in FE (Forge Energy). Generators turn diesel, coal or lava in
 
 ### Wooden furniture materials
 
-<StatusTag s="test" /> The materials for the first wooden furniture are in, all in the creative Materials tab for now. The furniture recipes themselves are not: a piece takes 20 to 60 seconds to make, and what you do at the bench in that time is still being designed.
+<StatusTag s="test" /> The materials for the first wooden furniture are in, all in the creative Materials tab for now. Furniture is made at the workbench step by step, see Making furniture below.
 
 | Item | Where it comes from | Mass |
 |---|---|---|
 | <ItemIcon id="white_oak_board" /> Boards (6 species: white oak, white pine, red oak, shagbark hickory, red maple, eastern hemlock) | Sawn from logs at the workbench | White oak <V d="item_mass/core_v1#items.apocalypse_firstlight:white_oak_board.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="wood_finish_can" /> Walnut Wood Finish | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:wood_finish_can.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="nail_box" /> Box of Nails | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
+| Box of Wood Screws (100) | Found in towns, not in hardware boxes | <V d="item_mass/core_v1#items.apocalypse_firstlight:screw_box.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="cabinet_hinge" /> Hinge | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="iron_knob" /> Iron Knob | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="wooden_knob" /> Wooden Knob | Made from a board at the workbench, with the hand saw and the folding knife | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
@@ -55,7 +56,20 @@ AFL measures power in FE (Forge Energy). Generators turn diesel, coal or lava in
 - Hinges and keyhole escutcheons cannot be made, only found; later they will also come from taking old furniture apart
 - A can of finish holds 1 litre and a box of nails 180; what is used comes off, the rest shows in the tooltip, with a bar under the slot once some is gone. Neither stacks
 - <StatusTag s="test" /> Furniture hardware box: hold it and press use to open it; it gives <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.min" /> to <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.max" /> hinges, iron knobs and keyhole escutcheons at random, and the box is gone. It opens with a vanilla sound for now
-- <StatusTag s="planned" /> Furniture recipes (the amounts are set, see the dev doc `docs/gameplay/furniture_recipes_v1.md`), the bench actions while making them, taking old furniture apart
+- <StatusTag s="planned" /> Taking old furniture apart
+
+### Making furniture
+
+<StatusTag s="test" /> The 7 wooden pieces (chair, table, tool rack, gun rack, nightstand, storage chest, wardrobe) are made at the workbench with the hand saw and the claw hammer on you; the nightstand, the storage chest and the wardrobe also need a flat screwdriver (<V d="item_mass/core_v1#items.apocalypse_firstlight:screwdriver.unit_mass_kg" u="kg" />). Press Make and you step up to the bench; a piece is made in steps:
+
+- **Crosscut:** slide the board over the end of the bench, saw a length off and lay it at the back right, 6.5 s a cut
+- **Nailing:** set the nail with a light tap, then a timing bar comes up under the crosshair: press use when the marker is in the green to strike. A miss only costs time, nothing breaks. You drive as many nails as you can see on the bench; the box gives up the real count
+- **Staining, wiping off:** before the first coat the can is pried open and stirred; the rag wipes the stain on along the grain, and the piece turns walnut band by band
+- **Hardware:** set the hinge, knob or escutcheon in place, then drive its screws one by one on the same timing bar; a slip only costs time
+
+- A novice strikes a nail 4 times and turns a screw 4 times; carpentry level 4 makes it 3, level 7 makes it 2, and each level widens the green and quickens the work. Each nail, each screw and each finished piece give carpentry experience
+- Stopping halfway (Shift, left click, walking off, opening a screen) takes no materials; what is done stays on the bench, saved with the world. Anyone who knows the recipe can go on, from the start of that nail or screw. With another recipe's piece on the bench, the page needs a second click to throw it away
+- The materials come off when a piece is done. At the end of a batch the can is closed before you stop
 
 ## Machines
 

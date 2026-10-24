@@ -38,6 +38,11 @@ public final class MeteredSupplyItem extends Item {
         return full;
     }
 
+    /** Kept in mL (true) or pieces (false): a recipe's litres or pieces line must match (WorkbenchRecipeData). */
+    public boolean litres() {
+        return litres;
+    }
+
     /** What is left in this stack (mL or pieces); 0 for any other item. */
     public static int left(ItemStack stack) {
         if (!(stack.getItem() instanceof MeteredSupplyItem m)) return 0;

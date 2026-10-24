@@ -14,6 +14,8 @@
 
 **V1.6 铁栏杆、附魔书、创造栏标签页（2026-10-20）**：同一分支，见 4.11 节和 7.1 节。原版铁栏杆退役；附魔书、附魔之瓶从创造栏拿掉；原版战斗页、红石页只剩重复的东西，拿掉以后不再显示；创造栏标签页改成 AFL 在前、没有空位、一页 15 个（上 5、左 5、下 5）。`compileJava` 通过；**用户 2026-10-20 实机 PASS**，GameTest 已按新规则改、没跑。
 
+**V1.9 原版植被退役（2026-10-23，用户："先退役原版植被，然后再设计各类植被"）**：分支 AFL-Workbench，见 4.13 节。原版的草、蕨、花、甘蔗、睡莲、海草、海带、竹子、藤蔓、仙人掌、小蘑菇不再生成、拿不到；地堡的 6 盆原版盆栽换成空花盆。只改数据，没有 Java 改动，未实机。AFL 植被另见 [vegetation_v1_design.md](vegetation_v1_design.md)。
+
 依据：[V0 审计](vanilla_survival_rework_v0_audit.md)；用户 2026-10-19 的 V1 任务书和 V1a 补充。V2 的配方知识接口另见 [survivor_recipe_knowledge_v2_plan.md](survivor_recipe_knowledge_v2_plan.md)。
 
 ---
@@ -300,6 +302,30 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - **战斗页、红石页**：其他东西退役以后，战斗页只剩雪球和鸡蛋，红石页只剩白色羊毛和线，这几样原料页、彩色方块页里本来就有。`client/VanillaRetirementClient.CreativeTabs` 在开关开着时把这两页里的原版物品全部拿掉，空页自己不显示；雪球、鸡蛋、线还在原料页，羊毛还在彩色方块页。其他模组加进这两页的物品不动。
 - 标签页排布见 7.1 节。
 
+### 4.12 只有工具能挖（V1.8，2026-10-23）
+
+用户 2026-10-23 原话："禁止空手直接挖掘任何东西"，随后："拿着不是工具的东西也不能挖，只有工具能挖"，实机看过后："接下来直接阻止玩家在没有正确的工具下挖掘，包括播放音效和粒子，以及手臂动作，不会有任何的事情发生"。（V1.7 的编号已被土方 R1c 的原版石头建材退役用掉。）
+
+- **规则：** 生存和冒险模式下，主手不是工具（空手，或者拿着方块、食物、材料、枪、书这类东西）时左键对着方块什么都不发生：不开始挖、没有裂纹、没有敲击声、没有碎屑粒子、手臂不挥、没有提示，草、花这类一碰就碎的方块也一样。拿着工具照旧挖，速度和掉落按原来的规则（AFL 工具不是原版挖掘工具的，速度和空手一样）。创造模式和旁观照旧。跟着总开关 `vanilla_retirement.enabled` 走。
+- **什么算工具：** 物品标签 `apocalypse_firstlight:tools/digging`（`data/apocalypse_firstlight/tags/items/tools/digging.json`），改这个文件就能加减。现在是原版的镐、斧、锹、锄四类标签和剪刀（都已退役拿不到，只照顾旧存档），加上 AFL 的撬棍、圆头铲、鹤嘴锄、伐木斧、羊角锤、建筑锤、手锯、折刀、一字螺丝刀、布线扳手。剑已退役、挖掘和空手一样，不算工具；枪、打火机、钥匙、书不算。
+- **客户端（`client/NoToolDigClient`，第二轮）：** `InputEvent.InteractionKeyMappingTriggered` 最后处理（LOWEST），左键、准星对着方块、`cannotDig` 时取消并且不挥手（`setSwingHand(false)`）；第一下（`startAttack`）和按住（`continueAttack`）都走这个事件，所以挖掘根本不开始，声音、粒子、挥手都没有，也不发包给服务端。按住左键时从工具换成别的，正在挖的那一下中止（`stopDestroyBlock`）。枪、门、撬棍砸售货机、环绕镜头转身这些先拿走左键的照旧；对着实体、对着空气照常挥。环绕镜头里按住左键人物仍会先转向中心点。
+- **服务端（`world/VanillaRetirementEvents`）：** `cannotDig(player)`，挡住不经过上面客户端的情况（改过的客户端、别的模组）。`PlayerEvent.BreakSpeed` 最先处理（HIGHEST），不是工具就取消，速度变成 -1，客户端和服务端都不长进度，后面的耐力、骨折处理也收不到（空挥不扣耐力）；`BlockEvent.BreakEvent` 同样最先取消，兜住不经过进度的破坏。第一轮的动作栏提示「得用工具才能挖」按用户要求去掉了（语言键 `message.apocalypse_firstlight.needs_tool` 已删）。
+- **受影响的玩法：** 拆自己放下的家具、灯具这类方块，现在手里得拿着工具；捡散石、喝生水、捡地上的物品是使用键，不受影响；砍树本来就要斧头，土方的地面本来就要铲子（拿着别的工具时仍提示要铲子，不是工具时什么都不发生）。
+- **GameTest：** 按 AGENTS.md 挖掘审计"空手拆一次看掉不掉"的测试会和这条冲突，开关开着时会失败：`ForestHomeM2GameTests`（收音机空手拆、挖掘审计）、`ForestHomeM3aGameTests`（挖掘审计）、`FurnitureV2GameTests`（冰柜右半、床尾、储物箱右半空手拆）、`CommercialWallMountedSinkGameTests`、`CashRegisterIntegrationGameTests`、`ChestFreezerGameTests`（工具列表里的空手）。本轮没改、没跑，等用户定是改成"空手拆不动"还是测试时关掉这条。
+
+### 4.13 原版植被（V1.9，2026-10-23）
+
+用户 2026-10-23 原话："我指的是先退役原版植被，然后再设计各类植被 / 甘蔗什么的也可以做，但是要做afl的"，随后："先退役原版植被（P0）"。AFL 自己的植被见 [vegetation_v1_design.md](vegetation_v1_design.md)（P1 起）。
+
+- **物品清单**：`retired/vegetation.json`，30 个明确 ID，接进 `unobtainable` 和 `creative_hidden`：草、高草、蕨、大型蕨、枯萎的灌木；12 种小花（蒲公英、虞美人、兰花、绒球葱、蓝花美耳草、4 种郁金香、滨菊、矢车菊、铃兰）、4 种高花（向日葵、丁香、玫瑰丛、牡丹）；甘蔗、睡莲、海草、海带、竹子、藤蔓、仙人掌、棕色和红色小蘑菇。甜浆果、发光浆果、干海带、骨粉在 V1.3 已退。
+- **效果**（第 2 节三条规则）：战利品和方块掉落不再给这些物品（挖草不掉草，挖花不掉花）；创造栏隐藏，`/give` 照常能拿。没有原版配方输出它们，所以配方表不变；以它们为原料的配方（纸、糖、染料）留着，只是原料拿不到。
+- **世界生成**：`forge/biome_modifier/remove_vanilla_vegetation.json`（`forge:remove_features`，`forge:any`，`vegetal_decoration` 步骤），54 个原版地物，ID 按 1.20.1 官方映射表 `VegetationPlacements` / `AquaticPlacements` 核对：`patch_grass_*`（8 个）、`patch_tall_grass*`、`patch_large_fern`、`patch_dead_bush*`、`patch_sunflower`、`flower_*`（含 `flower_forest_flowers`）、`forest_flowers`、`patch_berry_*`、`patch_waterlily`、`patch_sugar_cane*`、`patch_cactus_*`、`bamboo`、`bamboo_light`、`vines`、`brown_mushroom_*` / `red_mushroom_*`（下界的不算）、`seagrass_*`（9 个）、`kelp_cold`、`kelp_warm`。20 个联邦群系 JSON 没动，只影响新区块。和总开关无关（同 V1.5 的地物修改器），数据加载就生效。
+- **没动的**：农作物和野生南瓜、西瓜（`patch_pumpkin`、`patch_melon*`，留给农业设计）；树和带树的混合地物（`trees_*`、`bamboo_vegetation`、`dark_forest_vegetation`）；洞穴植被（繁茂洞穴的苔藓、洞穴藤蔓、垂根、杜鹃丛，归地下重做）；`disk_grass`（草方块圆盘，是地面不是植物）。
+- **结构**：`structures/bunker.nbt` 调色板里的盆栽兰花（2）、盆栽虞美人、盆栽蕨、盆栽滨菊、盆栽矢车菊 → `minecraft:flower_pot`（空花盆，6 个方块，只改调色板名字），有 AFL 植物以后再种回去。`forest_home_b.nbt`、`gas_station_01.nbt` 里没有原版植物（脚本读调色板确认）。
+- **代码里认原版植物的地方保留**（只用来识别，旧存档里还有）：`block/FlattenedPlantBlock`（车压倒的草、蕨、花）、`survivor/SurvivorSpawns`（仙人掌算危险）、`world/bunker/BunkerPlacementHygiene`、`BunkerSurfaceIntegration`、`dev/worldgen/GradedTurfGameTests`（直接放原版草做样本，不受影响）。
+- **空窗期**：P1 / P2 之前新世界地面只有草皮，没有地上植物（植被设计问题 1，用户同意先单独做 P0）。
+- **GameTest**：没改。`VanillaRetirementGameTests` 的配方清单只列被移除的配方，这批没有被移除的配方。
+
 ## 5. 获取途径覆盖
 
 | 途径 | 处理 | 说明 |
@@ -314,6 +340,7 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 | 青金石矿、红石矿（V1.2） | `remove_retired_ores` 群系修改器 | 只影响新区块 |
 | 钻石矿、绿宝石矿（V1.4） | `remove_retired_ores` 群系修改器 | 只影响新区块 |
 | 荧光地衣、孢子花、垂滴叶、珊瑚、海泡菜、巨型蘑菇、粉红色花簇、化石、蓝冰（V1.5） | `remove_fantasy_features` 群系修改器 | 只影响新区块 |
+| 原版草、花、蕨、甘蔗、睡莲、海草、海带、竹子、藤蔓、仙人掌、小蘑菇（V1.9） | `remove_vanilla_vegetation` 群系修改器 | 只影响新区块 |
 | 紫水晶晶洞（V1.3） | `remove_amethyst_geodes` 群系修改器 | 只影响新区块 |
 | 原版生物（V1.2） | 进入世界时取消、转化取消（4.7 节） | 存档里已有的照常加载 |
 | 附魔装备 | 退役装备整件拿不到；附魔书拿不到 | 附魔的弓、钓竿、工具不在 V1 范围 |
@@ -327,6 +354,7 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - 生物身上已有的装备不动。
 - V1.1：已经放下的原版木头方块（含旧区块里的原版树、玩家用原版木板盖的房子）留着、照常能用，但挖掉**不掉落**；背包里已有的木头物品照常能用。
 - V1.2：同上，已经放下的熔炉等功能方块、红石电路、铁轨照常工作，挖掉不掉落；旧区块里的青金石矿、红石矿留着，挖了不掉落；存档里已有的原版生物（包括玩家养的动物）照常加载，但不能繁殖出新的。
+- V1.9：旧区块里已有的原版草、花、甘蔗等留在原地，打掉不掉落；打掉旧盆栽只掉花盆；右键把花取出来仍会给花（原版直接给物品，不经过战利品修改器），只有旧存档里的盆栽会这样，记进第 10 节的覆盖不到的入口。
 
 ## 7. 创造模式、开发和客户端隐藏
 
@@ -381,6 +409,7 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 
 - 运行中改开关：已穿戴装备的属性修饰符要换装或重进世界才刷新。
 - 已经生成交易的村民（旧存档）保留原来的交易。AFL 世界从 2026-08-16 起不生成村庄，实际只剩治愈的僵尸村民。
+- V1.9 旧存档里的原版盆栽：右键取花时原版直接把花塞给玩家，不经过战利品修改器，所以还能拿到原版花。新生成的地堡已经换成空花盆。
 - 漏斗喂料的酿造台：酿造被取消，但燃料仍会扣掉（原版先扣燃料再发事件）。
 - 附魔的弓、钓竿、工具（钓鱼宝藏、生物出生附魔）不在 V1 范围。
 - 流浪商人的隐身药水、马铠、弓、箭、三叉戟、金苹果、不死图腾、末影珍珠不在 V1 范围。
@@ -427,7 +456,8 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 ## 14. 代码和资源
 
 - `world/VanillaRetirement.java`：标签、开关、`closed_dimensions`、判断方法。
-- `world/VanillaRetirementEvents.java`：属性、盾牌、剑挖掘、交易、酿造；V1.2 原版生物（进入世界、放置检查、转化）。
+- `world/VanillaRetirementEvents.java`：属性、盾牌、剑挖掘、交易、酿造；V1.2 原版生物（进入世界、放置检查、转化）；V1.8 只有工具能挖（`cannotDig`、`DIGGING_TOOLS`）。
+- `client/NoToolDigClient.java`：V1.8 没拿工具时客户端不开始挖、不挥手。
 - `world/VanillaRecipePruningEvents.java`：读清单、修剪配方。
 - `world/VanillaProgressionEvents.java`：经验、工作站。
 - `world/WorldAccessEvents.java`：下界、末地。
@@ -443,3 +473,4 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - V1.4：`tags/items/retired/masonry.json`、`copper_blocks.json`、`gems.json`（一次性生成）；`remove_retired_ores.json` 加钻石、绿宝石矿。
 - V1.5：`tags/items/retired/mob_drops.json`、`archaeology.json`、`nature.json`、`storage_blocks.json`、`decor_blocks.json`（一次性生成）；`forge/biome_modifier/remove_fantasy_features.json`。
 - V1.6：`retired/misc_blocks.json` 加铁栏杆，`creative_hidden.json` 加附魔书、附魔之瓶；`client/VanillaRetirementClient.CreativeTabs` 拿掉战斗页、红石页的原版物品；`client/CreativeTabLayout`、`mixin/client/CreativeTabLayoutMixin`（标签页排布）；`compat/jei/AflJeiPlugin` 加左侧标签列的额外区域。
+- V1.9：`tags/items/retired/vegetation.json`（手写，30 个）；`forge/biome_modifier/remove_vanilla_vegetation.json`（54 个地物）；`structures/bunker.nbt` 调色板 5 项改名。

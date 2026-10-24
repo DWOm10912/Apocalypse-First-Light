@@ -1572,6 +1572,57 @@ function pickupT15Key() {
   icon: {view: [35, -50, 0]}};
 }
 
+/**
+ * Screwdriver (2026-10-22, docs/gameplay/furniture_bench_work_v1.md 3.5.1: the workbench's third tool, for the cabinet
+ * hardware's screws): an old 6 inch flat-blade cabinet screwdriver, 26 cm overall. Authored in cm along +Y from the
+ * handle's butt and scaled to the felling axe's px (1 px = 1.25 inch), so it hangs and is held at the claw hammer's scale:
+ * a fluted beech handle (3 cm across, eight shallow flutes, a domed butt) worn to amber varnish, a brass ferrule, a round
+ * 6 mm shaft of satin tool steel flaring into a ground flat tip 6.5 mm wide, 1.2 mm thick.
+ */
+export const DRIVER = {handle: 10, ferrule: 11.3, length: 26, grip: 5};
+function screwdriver() {
+  const B = 'screwdriver', S = 1 / 3.175, X = [1, 0, 0], Z = [0, 0, 1];
+  const ring = (r, n, flutes = 0, depth = 0) => Array.from({length: n}, (_, k) => { const a = 2 * Math.PI * k / n, f = flutes ? 1 - depth * (0.5 + 0.5 * Math.cos(flutes * a)) : 1;
+    return [r * f * Math.cos(a) * S, r * f * Math.sin(a) * S]; });
+  const blade = (w, t, n) => Array.from({length: n}, (_, k) => { const a = 2 * Math.PI * k / n, c = Math.cos(a), s = Math.sin(a);
+    return [w * Math.sign(c) * Math.abs(c) ** 0.4 * S, t * Math.sign(s) * Math.abs(s) ** 0.4 * S]; });
+  // handle: [y cm, radius cm], fluted between the butt's dome and the neck
+  const handle = new Part('handle', B, 'beech');
+  const HY = [[0, 0.55], [0.12, 1.05], [0.4, 1.38], [0.9, 1.5], [3.5, 1.52], [6.5, 1.46], [8.4, 1.3], [9.4, 1.0], [DRIVER.handle, 0.86]];
+  const hc = HY.map(([y]) => [0, y * S, 0]);
+  loft(handle, HY.map(([, r], i) => ringAt(handle, hc[i], X, Z, ring(r, 24, i > 1 && i < HY.length - 2 ? 8 : 0, 0.07))), hc);
+  const ferrule = new Part('ferrule', B, 'brass');
+  const FY = [[DRIVER.handle - 0.1, 0.84], [DRIVER.handle + 0.05, 0.86], [DRIVER.ferrule - 0.15, 0.86], [DRIVER.ferrule, 0.7]];
+  const fc = FY.map(([y]) => [0, y * S, 0]);
+  loft(ferrule, FY.map(([, r], i) => ringAt(ferrule, fc[i], X, Z, ring(r, 16))), fc);
+  // shaft: round, then flared and ground flat at the tip (the flats facing +-z)
+  const shaft = new Part('shaft', B, 'steel');
+  const L = DRIVER.length, SY = [[DRIVER.ferrule - 0.1, 0.3, 0.3], [L - 2.6, 0.3, 0.3], [L - 1.2, 0.34, 0.22], [L - 0.35, 0.33, 0.08], [L, 0.32, 0.06]];
+  const sc = SY.map(([y]) => [0, y * S, 0]);
+  loft(shaft, SY.map(([, w, t], i) => ringAt(shaft, sc[i], X, Z, i < 2 ? ring(w, 12) : blade(w, t, 12))), sc, {mat: i => i >= 2 ? 'tip' : 'steel', capMat: 'tip'});
+  // beech worn to amber under old varnish: long grain streaks, the grip a little darker where hands held it
+  const beech = pos => tone3([178, 120, 64], (1 - 0.1 * Math.exp(-((pos[1] / S - 5) ** 2) / 6)) * (1 + 0.14 * (fbm3(pos[1] * 0.25, pos[0] * 6, pos[2] * 6) - 0.5) + 0.05 * (vn3(pos[1] * 1.3 + 2.2, pos[0] * 12, pos[2] * 12) - 0.5)));
+  const PARTS = [handle, ferrule, shaft];
+  const grip = [0, DRIVER.grip * S, 0];
+  return {PARTS, bg: 'plate', MATS: {
+    plate: {c: [178, 120, 64], hl: 6, sm: 150, se: 160, f0: 20},
+    beech: {c: beech, hl: 6, sm: 150, se: 160, f0: 20},              // varnished beech, worn satin
+    brass: {c: [176, 140, 74], hl: 10, sm: 150, se: 170, f0: 230},   // the ferrule, dulled brass
+    steel: {c: [150, 152, 156], hl: 12, sm: 150, se: 166, f0: 230},  // satin tool steel
+    tip: {c: [120, 122, 126], hl: 10, sm: 128, se: 140, f0: 230},    // the ground tip, darker
+  },
+  // held as the claw hammer (the handle in the fist, the tip where the hammer's head is: forward in first person, ahead
+  // in third), its grip on the hammer's
+  display: {
+    ...fitHeld(PARTS, grip, 'firstperson', [0, -75, 50], 1.4),
+    ...fitHeld(PARTS, grip, 'thirdperson', [0, -90, 15], 1.05),
+    ground: {rotation: [0, 0, 90], translation: [0, -1, 0], scale: [0.8, 0.8, 0.8]},
+    fixed: {rotation: [0, 0, -45], translation: [0, 0, 0], scale: [1.1, 1.1, 1.1]},
+  },
+  atlas: 512, icon: {view: [0, 0, -45], coverage: 0.3, mat: {beech: [178, 120, 64], brass: [176, 140, 74], steel: [150, 152, 156], tip: [120, 122, 126]}},
+  points: {axis: [0, 0, 0], grip, tip: [0, L * S, 0], butt: [0, 0, 0]}};
+}
+
 export const ITEMS = {
   pickup_t15_key: pickupT15Key,
   clinical_thermometer: clinicalThermometer,
@@ -1596,6 +1647,7 @@ export const ITEMS = {
   claw_hammer: clawHammer,
   building_hammer: buildingHammer,
   hand_saw: handSaw,
+  screwdriver,
   field_survival_guide: fieldSurvivalGuide,
   folding_knife: foldingKnife,
 };

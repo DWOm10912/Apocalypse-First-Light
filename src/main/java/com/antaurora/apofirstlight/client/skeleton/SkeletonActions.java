@@ -78,11 +78,17 @@ import java.util.Map;
 public final class SkeletonActions {
     /**
      * What a player does now, as its source sees it: the anchors in the world, the parameter, the side, its time's speed;
-     * {@code gun}: the held gun's own (SkeletonGunStance#action), played only with the gun stance.
+     * {@code gun}: the held gun's own (SkeletonGunStance#action), played only with the gun stance; {@code chain}: straight
+     * on from the action before (a furniture step's next action, WorkbenchWork: no blend in from the base pose).
      */
-    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun) {
+    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun,
+                        boolean chain) {
         Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror) {
-            this(id, started, param, anchors, mirror, 1F, false);
+            this(id, started, param, anchors, mirror, 1F, false, false);
+        }
+
+        Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun) {
+            this(id, started, param, anchors, mirror, speed, gun, false);
         }
     }
 
@@ -245,10 +251,11 @@ public final class SkeletonActions {
                     return null;
                 }
                 boolean resumed = live.id().equals(t.id) && t.stoppedAt >= 0;
+                boolean chained = live.chain() && t.id != null && t.stoppedAt < 0;
                 t.id = live.id();
                 t.action = a;
                 t.start = resumed ? t.start : now;
-                t.shown = resumed ? t.shown : now;
+                t.shown = resumed || chained ? t.shown : now;
                 t.stoppedAt = -1;
             }
             if (!Double.isNaN(live.started())) t.start = live.started();   // a source with its own clock
@@ -371,7 +378,7 @@ public final class SkeletonActions {
         FallLandingClient.Playing landing = FallLandingClient.playing(p, now);
         if (landing != null) return new Live(landing.id(), landing.started(), 0F, Map.of(), landing.mirror());
         var work = com.antaurora.apofirstlight.client.workbench.WorkbenchWork.at(p, partial);
-        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false);
+        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false, work.speed(), false, work.chain());
         SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
         if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed(), true);
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);

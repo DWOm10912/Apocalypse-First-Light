@@ -1,0 +1,146 @@
+{
+  "format_version": 1,
+  "about": "Fit the escutcheon: the left hand takes it from beside the screw box (0.25 s) and lays it on its place (0.3-0.85; drawn by the bench from then), the screwdriver from the right hip to the rest (0.15-0.65), the left hand presses it (0.85-1.0) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "clip": "tool.furniture_lean",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 55,
+  "first_person": "body",
+  "held_item": "hidden",
+  "length": 1,
+  "blend": {
+    "in": 0.3,
+    "out": 0.25
+  },
+  "approach": {
+    "anchor": "stand",
+    "distance": 0,
+    "side": 0,
+    "max": 2,
+    "face": "face",
+    "pitch": 40,
+    "in": 0.6
+  },
+  "first_person_view": [
+    [0, 58],
+    [1, 58]
+  ],
+  "props": [
+    {
+      "id": "screwdriver",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [-163.301, 0, 5.471],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.15,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [-163.301, 0, 5.471],
+          "blend": 0
+        },
+        {
+          "at": 0.2,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.5, 7, -8],
+          "rot": [120.964, 0, 4.901],
+          "blend": 0.45
+        }
+      ]
+    },
+    {
+      "id": "furniture_escutcheon",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:box",
+          "point": "base",
+          "pos": [0, 0, 0],
+          "rot": [-90, 0, -180],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.25,
+          "frame": "anchor:box",
+          "point": "base",
+          "pos": [0, 0, 0],
+          "rot": [-90, 0, -180],
+          "blend": 0
+        },
+        {
+          "at": 0.3,
+          "frame": "anchor:hw",
+          "point": "base",
+          "pos": [0, 0, 0],
+          "rot": [-90, 0, -180],
+          "blend": 0.55
+        },
+        {
+          "at": 0.85,
+          "frame": "anchor:hw",
+          "point": "base",
+          "pos": [0, 0, 0],
+          "rot": [-90, 0, -180],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:screwdriver:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose",
+        "blend": 0
+      },
+      {
+        "at": 0.02,
+        "target": "block:box",
+        "blend": 0.25,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 0.27,
+        "target": "prop:furniture_escutcheon:hold",
+        "blend": 0.05,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 0.85,
+        "target": "block:press",
+        "blend": 0.15,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      }
+    ]
+  },
+  "events": [
+    {
+      "at": 0.85,
+      "sound": "workbench_tool_down",
+      "radius": 2,
+      "volume": 0.3,
+      "pitch": 1.7
+    }
+  ]
+}

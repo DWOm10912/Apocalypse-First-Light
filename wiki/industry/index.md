@@ -37,13 +37,14 @@ AFL 的电能以 FE（Forge Energy）计量。发电机把柴油、煤或岩浆�
 
 ### 木家具材料
 
-<StatusTag s="test" /> 第一批木家具要用的材料已经有了，都只在创造模式"材料"栏里。家具本身的配方还没有：做一件家具要 20 到 60 秒，这段时间在台前做什么还在设计。
+<StatusTag s="test" /> 第一批木家具要用的材料已经有了，都只在创造模式"材料"栏里。家具在工作台上一段一段做出来，见下面的"做家具"。
 
 | 物品 | 怎么来 | 质量 |
 |---|---|---|
 | <ItemIcon id="white_oak_board" /> 板材（6 个树种：白栎、白松、北方红栎、裂皮山核桃、红枫、加拿大铁杉） | 工作台上锯原木 | 白栎 <V d="item_mass/core_v1#items.apocalypse_firstlight:white_oak_board.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="wood_finish_can" /> 胡桃木色木器漆 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wood_finish_can.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="nail_box" /> 圆钉 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
+| 木螺丝（一盒 100 颗） | 城镇里找，不在配件盒里 | <V d="item_mass/core_v1#items.apocalypse_firstlight:screw_box.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="cabinet_hinge" /> 合页 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="iron_knob" /> 铁拉手 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
 | <ItemIcon id="wooden_knob" /> 木拉手 | 工作台上用板材做，要带手锯和折刀 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
@@ -55,7 +56,20 @@ AFL 的电能以 FE（Forge Energy）计量。发电机把柴油、煤或岩浆�
 - 合页和锁眼盖做不出来，只能找到，以后拆旧家具也能拆出来
 - 木器漆一罐 1 升，圆钉一盒 180 根，用多少扣多少，剩下的写在物品提示里，不满时物品格下面有一条进度条。这两样不叠放
 - <StatusTag s="test" /> 家具配件盒：拿在手里按使用键打开，随机出 <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.min" /> 到 <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.max" /> 件合页、铁拉手和锁眼盖，盒子用掉。开盒声暂时用原版的
-- <StatusTag s="planned" /> 家具配方（用量已定，见开发文档 `docs/gameplay/furniture_recipes_v1.md`）、制作时台前的动作、拆旧家具
+- <StatusTag s="planned" /> 拆旧家具
+
+### 做家具
+
+<StatusTag s="test" /> 7 种木家具（木椅、木桌、木质工具架、木质枪架、木床头柜、木制储物箱、木衣柜）在工作台上做，身上要带手锯和羊角锤；床头柜、储物箱、衣柜还要一把一字螺丝刀（<V d="item_mass/core_v1#items.apocalypse_firstlight:screwdriver.unit_mass_kg" u="kg" />）。点"制作"后人走到台前，一件家具分几段做完：
+
+- **下料：** 把板材推出台端，用手锯截下一段，短料放到台面右后方，一段 6.5 秒
+- **钉钉子：** 先把钉子扶正轻敲一下，然后准星下方出现时机条，指针走到绿区时按使用键钉一锤。敲偏只多花时间，不会坏。台上看得见几根钉就钉几根，扣的圆钉按真实用量
+- **上漆、擦余漆：** 第一次上漆前撬开漆罐、搅匀，抹布蘸漆顺着木纹一道一道擦，台上的木件一条一条变成胡桃木色
+- **装五金：** 把合页、拉手、锁眼盖放到位，再一颗一颗拧螺丝，同样看时机条，按准拧一下，打滑只多花时间
+
+- 新手一根钉要敲 4 锤、一颗螺丝拧 4 下；木工成长到 4 级是 3 下，7 级是 2 下，每升一级绿区变宽、动作变快。钉一根、拧一颗、做完一件都给木工经验
+- 中途停下（Shift、左键、走开、打开界面）不扣材料，做到的部分留在工作台上，存档也在。谁会这条配方都能接着做，从这根钉、这颗螺丝重新开始。台上有别的家具的半成品时，制作页要点两次才会丢掉它
+- 材料在一件做完时一次扣齐。一批做完，漆罐盖好再停
 
 ## 机器一览
 

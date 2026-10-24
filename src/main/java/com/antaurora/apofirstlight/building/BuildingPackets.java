@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.building;
 
+import com.antaurora.apofirstlight.cabin.FurnitureWork;
 import com.antaurora.apofirstlight.cabin.WorkbenchCrafting;
 import com.antaurora.apofirstlight.cabin.WorkbenchKnowledge;
 import com.antaurora.apofirstlight.client.workbench.WorkbenchRecipes;
@@ -38,8 +39,21 @@ public final class BuildingPackets {
     /** One item of the recipe, finished on the page of the bench at {@code bench}. */
     public record Craft(BlockPos bench, ResourceLocation recipe) {}
 
-    /** Start or stop working at the bench on a work recipe (WorkbenchCrafting#work). */
-    public record Work(BlockPos bench, ResourceLocation recipe, boolean start) {}
+    /**
+     * Start or stop working at the bench on a work recipe (WorkbenchCrafting#work); {@code discard}: the player said yes to
+     * throwing away the half-built piece of another recipe on the bench (furniture, FurnitureWork).
+     */
+    public record Work(BlockPos bench, ResourceLocation recipe, boolean start, boolean discard) {
+        public Work(BlockPos bench, ResourceLocation recipe, boolean start) {
+            this(bench, recipe, start, false);
+        }
+    }
+
+    /**
+     * A furniture piece's word (FurnitureWork, WorkbenchCrafting#act): a timed step played to its end ({@code press} false),
+     * or a press on the nail's or screw's bar ({@code good}: in the zone, the client's word as the generator's pull).
+     */
+    public record Act(BlockPos bench, ResourceLocation recipe, boolean press, boolean good) {}
 
     /** Server to the players around: what a player works at now, or null when it stopped. */
     public record WorkOf(int entity, @Nullable WorkbenchCrafting.Working work) {}
@@ -68,8 +82,9 @@ public final class BuildingPackets {
             b.writeBlockPos(p.bench());
             b.writeResourceLocation(p.recipe());
             b.writeBoolean(p.start());
-        }, b -> new Work(b.readBlockPos(), b.readResourceLocation(), b.readBoolean()),
-                (p, s) -> server(s, player -> WorkbenchCrafting.work(player, p.bench(), p.recipe(), p.start())), Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            b.writeBoolean(p.discard());
+        }, b -> new Work(b.readBlockPos(), b.readResourceLocation(), b.readBoolean(), b.readBoolean()),
+                (p, s) -> server(s, player -> WorkbenchCrafting.work(player, p.bench(), p.recipe(), p.start(), p.discard())), Optional.of(NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(id++, WorkOf.class, (p, b) -> {
             b.writeVarInt(p.entity());
             b.writeBoolean(p.work() != null);
@@ -92,6 +107,13 @@ public final class BuildingPackets {
                     context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> WorkbenchRecipes.receive(p.recipes())));
                     context.setPacketHandled(true);
                 }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Act.class, (p, b) -> {
+            b.writeBlockPos(p.bench());
+            b.writeResourceLocation(p.recipe());
+            b.writeBoolean(p.press());
+            b.writeBoolean(p.good());
+        }, b -> new Act(b.readBlockPos(), b.readResourceLocation(), b.readBoolean(), b.readBoolean()),
+                (p, s) -> server(s, player -> WorkbenchCrafting.act(player, p.bench(), p.recipe(), p.press(), p.good())), Optional.of(NetworkDirection.PLAY_TO_SERVER));
         return id;
     }
 
@@ -108,11 +130,18 @@ public final class BuildingPackets {
                 b.writeVarInt(m.items().size());
                 for (var item : m.items()) b.writeResourceLocation(item);
                 b.writeVarInt(m.count());
+                b.writeEnum(m.unit());
             }
             b.writeVarInt(r.tools().size());
             for (var tool : r.tools()) b.writeResourceLocation(tool);
             b.writeVarInt(r.ticks());
             b.writeNullable(r.work(), FriendlyByteBuf::writeUtf);
+            b.writeVarInt(r.steps().size());
+            for (var st : r.steps()) {
+                b.writeUtf(st.step());
+                b.writeVarInt(st.times());
+                b.writeNullable(st.piece(), FriendlyByteBuf::writeUtf);
+            }
             b.writeVarInt(r.unlock().size());
             for (var u : r.unlock()) {
                 b.writeUtf(u.type());
@@ -137,17 +166,20 @@ public final class BuildingPackets {
                 int k = b.readVarInt();
                 List<ResourceLocation> items = new ArrayList<>(k);
                 for (int l = 0; l < k; l++) items.add(b.readResourceLocation());
-                materials.add(new WorkbenchCrafting.Material(List.copyOf(items), b.readVarInt()));
+                materials.add(new WorkbenchCrafting.Material(List.copyOf(items), b.readVarInt(), b.readEnum(WorkbenchCrafting.Unit.class)));
             }
             int t = b.readVarInt();
             List<ResourceLocation> tools = new ArrayList<>(t);
             for (int j = 0; j < t; j++) tools.add(b.readResourceLocation());
             int ticks = b.readVarInt();
             String work = b.readNullable(FriendlyByteBuf::readUtf);
+            int ns = b.readVarInt();
+            List<FurnitureWork.Step> steps = new ArrayList<>(ns);
+            for (int j = 0; j < ns; j++) steps.add(new FurnitureWork.Step(b.readUtf(), b.readVarInt(), b.readNullable(FriendlyByteBuf::readUtf)));
             int u = b.readVarInt();
             List<WorkbenchCrafting.Unlock> unlock = new ArrayList<>(u);
             for (int j = 0; j < u; j++) unlock.add(new WorkbenchCrafting.Unlock(b.readUtf(), b.readNullable(FriendlyByteBuf::readUtf)));
-            var recipe = new WorkbenchCrafting.Recipe(id, category, result, count, List.copyOf(materials), List.copyOf(tools), ticks, work, List.copyOf(unlock));
+            var recipe = new WorkbenchCrafting.Recipe(id, category, result, count, List.copyOf(materials), List.copyOf(tools), ticks, work, List.copyOf(unlock), List.copyOf(steps));
             recipes.add(new WorkbenchKnowledge.Entry(recipe, new WorkbenchKnowledge.How(b.readUtf(), b.readNullable(FriendlyByteBuf::readResourceLocation))));
         }
         return new Known(List.copyOf(recipes));

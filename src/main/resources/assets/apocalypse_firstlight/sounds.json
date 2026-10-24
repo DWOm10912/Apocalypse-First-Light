@@ -818,6 +818,62 @@
     "subtitle": "subtitles.apocalypse_firstlight.workbench_tool_down",
     "sounds": [{"name": "apocalypse_firstlight:workbench/tool_down_1"}]
   },
+  "furniture_nail_tap": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_nail_tap",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_strike_1", "attenuation_distance": 4, "volume": 0.35, "pitch": 1.2}, {"name": "apocalypse_firstlight:furniture/nail_strike_2", "attenuation_distance": 4, "volume": 0.35, "pitch": 1.2}, {"name": "apocalypse_firstlight:furniture/nail_strike_3", "attenuation_distance": 4, "volume": 0.35, "pitch": 1.2}, {"name": "apocalypse_firstlight:furniture/nail_strike_4", "attenuation_distance": 4, "volume": 0.35, "pitch": 1.2}, {"name": "apocalypse_firstlight:furniture/nail_strike_5", "attenuation_distance": 4, "volume": 0.35, "pitch": 1.2}, {"name": "apocalypse_firstlight:furniture/nail_strike_6", "attenuation_distance": 4, "volume": 0.35, "pitch": 1.2}]
+  },
+  "furniture_nail_strike": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_nail",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_strike_1", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_strike_2", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_strike_3", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_strike_4", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_strike_5", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_strike_6", "attenuation_distance": 10}]
+  },
+  "furniture_nail_seat": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_nail",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_seat_1", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_seat_2", "attenuation_distance": 10}, {"name": "apocalypse_firstlight:furniture/nail_seat_3", "attenuation_distance": 10}]
+  },
+  "furniture_box_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_box_open",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/box_open_1", "attenuation_distance": 2}]
+  },
+  "furniture_nail_pick": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_nail_pick",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_pick_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/nail_pick_2", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/nail_pick_3", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/nail_pick_4", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/nail_pick_5", "attenuation_distance": 2}]
+  },
+  "furniture_screw_pick": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_screw_pick",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_pick_1", "attenuation_distance": 2, "pitch": 0.9}, {"name": "apocalypse_firstlight:furniture/nail_pick_2", "attenuation_distance": 2, "pitch": 0.9}, {"name": "apocalypse_firstlight:furniture/nail_pick_3", "attenuation_distance": 2, "pitch": 0.9}, {"name": "apocalypse_firstlight:furniture/nail_pick_4", "attenuation_distance": 2, "pitch": 0.9}, {"name": "apocalypse_firstlight:furniture/nail_pick_5", "attenuation_distance": 2, "pitch": 0.9}]
+  },
+  "furniture_can_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_can_open",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/can_open_1", "attenuation_distance": 4}]
+  },
+  "furniture_stain_stir": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_stain_stir",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/stain_stir_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/stain_stir_2", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/stain_stir_3", "attenuation_distance": 2}]
+  },
+  "furniture_rag_dip": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_rag_dip",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/rag_dip_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/rag_dip_2", "attenuation_distance": 2}]
+  },
+  "furniture_rag_wipe": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_rag_wipe",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/rag_wipe_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/rag_wipe_2", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/rag_wipe_3", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/rag_wipe_4", "attenuation_distance": 2}]
+  },
+  "furniture_screw_turn": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_screw",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/screw_turn_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_2", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_3", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_4", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_5", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_6", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_7", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_turn_8", "attenuation_distance": 2}]
+  },
+  "furniture_screw_seat": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_screw",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/screw_seat_1", "attenuation_distance": 2}, {"name": "apocalypse_firstlight:furniture/screw_seat_2", "attenuation_distance": 2}]
+  },
+  "furniture_nail_glance": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_nail_glance",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_strike_1", "attenuation_distance": 4, "volume": 0.5, "pitch": 1.35}, {"name": "apocalypse_firstlight:furniture/nail_strike_2", "attenuation_distance": 4, "volume": 0.5, "pitch": 1.35}, {"name": "apocalypse_firstlight:furniture/nail_strike_3", "attenuation_distance": 4, "volume": 0.5, "pitch": 1.35}, {"name": "apocalypse_firstlight:furniture/nail_strike_4", "attenuation_distance": 4, "volume": 0.5, "pitch": 1.35}, {"name": "apocalypse_firstlight:furniture/nail_strike_5", "attenuation_distance": 4, "volume": 0.5, "pitch": 1.35}, {"name": "apocalypse_firstlight:furniture/nail_strike_6", "attenuation_distance": 4, "volume": 0.5, "pitch": 1.35}]
+  },
+  "furniture_screw_slip": {
+    "subtitle": "subtitles.apocalypse_firstlight.furniture_screw_slip",
+    "sounds": [{"name": "apocalypse_firstlight:furniture/nail_pick_1", "attenuation_distance": 2, "volume": 0.5, "pitch": 1.3}, {"name": "apocalypse_firstlight:furniture/nail_pick_2", "attenuation_distance": 2, "volume": 0.5, "pitch": 1.3}, {"name": "apocalypse_firstlight:furniture/nail_pick_3", "attenuation_distance": 2, "volume": 0.5, "pitch": 1.3}, {"name": "apocalypse_firstlight:furniture/nail_pick_4", "attenuation_distance": 2, "volume": 0.5, "pitch": 1.3}, {"name": "apocalypse_firstlight:furniture/nail_pick_5", "attenuation_distance": 2, "volume": 0.5, "pitch": 1.3}]
+  },
   "tree_crack": {
     "subtitle": "subtitles.apocalypse_firstlight.tree_crack",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/crack", "attenuation_distance": 12}]
