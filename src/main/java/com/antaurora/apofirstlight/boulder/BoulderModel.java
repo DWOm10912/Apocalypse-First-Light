@@ -35,9 +35,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * to the nearest cell the rock fills above the ground (or the anchor), so a dug-out rock shows its buried part. Solid
  * layer, flat light from the cell, no ambient occlusion; without a shader pack the vanilla direction shading is baked
  * into the vertex colour (by the normal), with one the pack lights by the normal and the sprites' _n / _s.</li>
- * <li>Without model data (a voxel or map view, other mods): a granite cube.</li>
+ * <li>Without model data (a voxel or map view, other mods): a cube of the state's rock.</li>
  * </ul>
- * Baked quads are cached per node, turn and shading; a model reload clears them (atlas UVs change).
+ * R3: a rock draws in its rock's sprites (the root's {@link BoulderBlocks#ROCK}); one model per rock, for the cube and the
+ * particles. Baked quads are cached per node, turn, rock and shading; a model reload clears them (atlas UVs change).
  */
 final class BoulderModel implements IDynamicBakedModel {
     static final class Cell {
@@ -53,16 +54,22 @@ final class BoulderModel implements IDynamicBakedModel {
     static final ModelProperty<Cell> CELL = new ModelProperty<>();
     static final Cell NOTHING = new Cell(List.of());
     private static final ChunkRenderTypeSet SOLID = ChunkRenderTypeSet.of(RenderType.solid());
-    private static final ResourceLocation[] SPRITES = new ResourceLocation[BoulderData.SPRITES.length];
+    /** The sprites by rock and quad sprite number. */
+    private static final ResourceLocation[][] SPRITES = new ResourceLocation[BoulderRock.values().length][BoulderData.SPRITES.length];
     static {
-        for (int i = 0; i < SPRITES.length; i++) SPRITES[i] = new ResourceLocation("apocalypse_firstlight", "block/boulder/" + BoulderData.SPRITES[i]);
+        for (BoulderRock r : BoulderRock.values())
+            for (int i = 0; i < BoulderData.SPRITES.length; i++)
+                SPRITES[r.ordinal()][i] = new ResourceLocation("apocalypse_firstlight", "block/boulder/" + r.sprite(BoulderData.SPRITES[i]));
     }
     private static final Map<Integer, Map<Integer, Cell>> BAKED = new ConcurrentHashMap<>();
-    private static volatile Map<Direction, List<BakedQuad>> proxy;
+    private static final Map<BoulderRock, Map<Direction, List<BakedQuad>>> PROXY = new ConcurrentHashMap<>();
+    private final BoulderRock rock;
+
+    BoulderModel(BoulderRock rock) { this.rock = rock; }
 
     static void clearCache() {
         BAKED.clear();
-        proxy = null;
+        PROXY.clear();
     }
 
     // ------------------------------------------------------------------------------------------- model data
@@ -75,7 +82,7 @@ final class BoulderModel implements IDynamicBakedModel {
         Cell found = null;
         List<BakedQuad> merged = null;
         for (var r : roots) {
-            Cell c = baked(r.node, r.turn, shade).get(BoulderData.key(r.formX(pos.getX(), pos.getZ()), pos.getY() - r.oy, r.formZ(pos.getX(), pos.getZ())));
+            Cell c = baked(r.node, r.turn, r.rock, shade).get(BoulderData.key(r.formX(pos.getX(), pos.getZ()), pos.getY() - r.oy, r.formZ(pos.getX(), pos.getZ())));
             if (c == null) continue;
             if (found == null) found = c;
             else {
@@ -100,9 +107,7 @@ final class BoulderModel implements IDynamicBakedModel {
         Cell c = data.get(CELL);
         if (c == null) {
             if (state == null) return List.of();
-            var p = proxy;
-            if (p == null) proxy = p = buildProxy();
-            var faces = p.get(side);
+            var faces = PROXY.computeIfAbsent(rock, BoulderModel::buildProxy).get(side);
             return faces == null ? List.of() : faces;
         }
         return side == null ? c.quads : List.of();
@@ -114,13 +119,14 @@ final class BoulderModel implements IDynamicBakedModel {
         return Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(id);
     }
 
-    /** A node turned t at a shading: form cell key -> what that cell draws. */
-    static Map<Integer, Cell> baked(BoulderData.Node n, int t, int shade) {
-        int key = (n.index * 4 + (t & 3)) * 2 + shade;
+    /** A node turned t of a rock at a shading: form cell key -> what that cell draws. */
+    static Map<Integer, Cell> baked(BoulderData.Node n, int t, BoulderRock rock, int shade) {
+        int key = ((n.index * 4 + (t & 3)) * BoulderRock.values().length + rock.ordinal()) * 2 + shade;
         var done = BAKED.get(key);
         if (done != null) return done;
-        TextureAtlasSprite[] sprites = new TextureAtlasSprite[SPRITES.length];
-        for (int i = 0; i < sprites.length; i++) sprites[i] = sprite(SPRITES[i]);
+        ResourceLocation[] ids = SPRITES[rock.ordinal()];
+        TextureAtlasSprite[] sprites = new TextureAtlasSprite[ids.length];
+        for (int i = 0; i < sprites.length; i++) sprites[i] = sprite(ids[i]);
         var lists = new HashMap<Integer, List<BakedQuad>>();
         for (int q = 0; q < n.quads; q++) {
             int ck = n.quadCell[q];
@@ -161,9 +167,9 @@ final class BoulderModel implements IDynamicBakedModel {
         return new BakedQuad(data, -1, Direction.getNearest(fx, fy, fz), sprite, shade == 0, false);
     }
 
-    /** The granite cube without model data: one face per side, on the cell boundary. */
-    private static Map<Direction, List<BakedQuad>> buildProxy() {
-        TextureAtlasSprite sprite = sprite(SPRITES[0]);
+    /** A rock's cube without model data: one face per side, on the cell boundary. */
+    private static Map<Direction, List<BakedQuad>> buildProxy(BoulderRock rock) {
+        TextureAtlasSprite sprite = sprite(SPRITES[rock.ordinal()][0]);
         float u0 = sprite.getU0(), du = (sprite.getU1() - u0) / 2, v0 = sprite.getV0(), dv = (sprite.getV1() - v0) / 2;
         var map = new EnumMap<Direction, List<BakedQuad>>(Direction.class);
         for (Direction d : Direction.values()) {
@@ -203,6 +209,6 @@ final class BoulderModel implements IDynamicBakedModel {
     @Override public boolean isGui3d() { return false; }
     @Override public boolean usesBlockLight() { return true; }
     @Override public boolean isCustomRenderer() { return false; }
-    @Override public @NotNull TextureAtlasSprite getParticleIcon() { return sprite(SPRITES[0]); }
+    @Override public @NotNull TextureAtlasSprite getParticleIcon() { return sprite(SPRITES[rock.ordinal()][0]); }
     @Override public @NotNull ItemOverrides getOverrides() { return ItemOverrides.EMPTY; }
 }

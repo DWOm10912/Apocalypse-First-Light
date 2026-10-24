@@ -1,6 +1,6 @@
 # 挖土和凿石
 
-- <StatusTag s="test" /> <StatusTag s="creative" /> 本页的工具和石头都只在创造模式物品栏里，还在测试分支上。散石现在只能用开发命令放，世界生成里还没有
+- <StatusTag s="test" /> <StatusTag s="creative" /> 本页的工具和石头都只在创造模式物品栏里，还在测试分支上。世界生成里，巨石和散石现在只出现在深世界测试世界的洞口附近，别的地方的散石还只能用开发命令放
 
 地面可以用铲子一铲一铲地挖开、填平。地表散落着半埋在土里的花岗岩巨石，铲子挖不动，要用鹤嘴锄凿开。露出地面的岩石也用鹤嘴锄凿，凿一下地面就低一点。地上还有随手能捡的石子和石块
 
@@ -37,7 +37,10 @@
 
 ## 巨石
 
-巨石是半埋在地里的花岗岩，有圆的漂砾、平板石、碎石块、石堆等十几种样子。空手、铲子和别的工具都打不动它，对着它会提示“要用镐”
+巨石是半埋在地里的石头，有圆的漂砾、平板石、碎石块、石堆等十几种样子。空手、铲子和别的工具都打不动它，对着它会提示“要用镐”
+
+- <StatusTag s="test" /> 洞口附近常能看到巨石：塌陷坑底是顶板塌下来的平板石和碎石块，覆盖型落水洞底是从土里露出来的圆漂砾，大天坑底散着塌下来的顶板碎块，落石堆脚下是滚下来的石块，越大的滚得越远。山坡洞口前的坡面两边偶尔有一两块。巨石不会挡在下洞的路上
+- <StatusTag s="test" /> 洞口的巨石和散石看得出是什么岩石：多数是浅灰的石灰岩，也有黄褐的砂岩、深灰的页岩；覆盖型落水洞里的圆漂砾是冰川带来的花岗岩。凿碎后掉的是那种岩石的石块：石灰岩巨石掉石灰岩石块，砂岩掉砂岩石块，页岩掉页岩碎片，花岗岩掉花岗岩石块
 
 用鹤嘴锄凿：
 
@@ -45,7 +48,7 @@
 - 只能凿离脚不远的地方：从眼睛算起 <V j="BoulderStrike.REACH" u="格" /> 以内
 - 每凿中一下扣 <V d="stamina/stamina_v1#costs.pick_strike" /> 耐力。耐力用光时凿不动
 - 声音很响，附近的感染体能听到
-- 大巨石凿够次数后先**裂开**成几块，每块再凿，凿够次数后**碎掉**，掉下<ItemIcon id="field_stone" />石块，有时还有几颗<ItemIcon id="pebble" />石子
+- 大巨石凿够次数后先**裂开**成几块，每块再凿，凿够次数后**碎掉**，掉下这种岩石的石块（如<ItemIcon id="field_stone" />花岗岩石块），有时还有几颗<ItemIcon id="pebble" />石子
 - 一整块巨石从开始到全部凿碎，最多凿 50 下
 - 巨石凿掉以后留下一个坑，坑边的土会塌下来
 
@@ -61,15 +64,22 @@
 - 岩石上还盖着土的地方，先用铲子把土挖掉，露出岩石再凿。凿的地方有碎石或倒下的土时，镐会先把它们凿走
 - 最深凿到原来地面往下 <V j="Earthwork.ROCK_DEPTH" u="格" />。下面是洞穴时，会留一层石头不凿穿
 - 三格以上的崖壁顶上那一圈、路和房子旁边凿不动，提示“这里凿不动”。两格高的台阶顶上能凿。崖壁脚下的地面能凿，贴着三格以上崖壁的那一圈边留着不动
-- 凿下来的石头按体积掉落：平均每凿两下掉一块<ItemIcon id="field_stone" />石块，每凿一下掉一两颗<ItemIcon id="pebble" />石子
+- 凿下来的石头按体积掉落：平均每凿两下掉一块石块，每凿一下掉一两颗<ItemIcon id="pebble" />石子。石块是凿的那种岩石的（花岗岩凿出<ItemIcon id="field_stone" />花岗岩石块）。软的岩石一下凿掉得多，页岩、泥灰岩比花岗岩快
+- <StatusTag s="test" /> 每凿一下都会飞出碎石片，扬起一小股浅色石粉，撒下细砂，颜色跟着岩石走；花岗岩、砂岩这类含石英的硬岩石偶尔会冒火星。硬岩石凿起来声音清脆，石灰岩、页岩发闷；凿穿一格或凿碎巨石时能听到石块掉下来滚落，凿击声多远，感染者就能听到多远（16 格）
 
 旧存档里凿出来的碎石还在：它是一种松土，和沙、砾石一样能装进铲子、倒出来、堆成坡，倒在地上平整以后是砾石
 
 - <StatusTag s="planned" /> 地下的岩石（隧道、竖井）和花岗岩、安山岩、闪长岩团块的开采
+- <StatusTag s="test" /> 深世界测试世界的地下换成了真实的岩层：花岗岩、片麻岩、片岩、砂岩、石灰岩、白云岩、页岩、泥灰岩、岩盐，按地质分布，路堑上露出来的也是当地的岩石。和天然石头一样，生存模式里要用镐凿，凿下来是那种岩石的石块。贴图除了花岗岩都还是临时的
+- <StatusTag s="test" /> 露天地面以外的天然岩石（洞壁、洞顶、崖壁）也能凿：用鹤嘴锄对着岩面凿一下，落点就掉下一块，缺口马上看得见，每次的形状都不一样，新断面颜色偏浅。凿掉一整格的量，花岗岩大约要 20 下，页岩 13 下，泥灰岩 11 下，一格凿空就没了。缺口按实际形状碰撞，可以站进去。土方挖过的地方和巨石底下不能这样凿，坑底往下也还不行
+- <StatusTag s="verified" d="2026-10-24" /> 洞壁、洞顶、崖壁和露天的岩石不再是一格一格的方块面，而是连续、不规则的岩面：花岗岩是节理切出来的斜平面，石灰岩是溶蚀的圆坑和鼓包，页岩、砂岩是一层凸一层凹的横向岩层。地板和岩台顶面也不平：石灰岩是平缓的流石起伏，页岩、砂岩、花岗岩是一级级很浅的石板台阶，走起来没有影响；岩台和露头的边是圆的，但 1 格高的岩石台阶要跳上去。岩面按看到的形状碰撞，凹进去的地方能站进去、能凿；贴着岩面放火把、梯子或方块，那一面就是原来的平面。陡的土坎、洞口的土壁和悬空土块的底面也是连续的面，边缘圆钝，和岩面接在一起；普通的土坡照旧是平滑的斜坡。深世界的洞里不再有泥土地板和泥土墙，土只铺在地表；原版矿也去掉了，以后的矿见下一条
+- <StatusTag s="planned" /> 矿埋在岩石里，凿含矿岩偶尔掉一块原矿，要再加工
 
 ## 地上的散石
 
 野外的地上零星散着几颗石头：几颗石子，有时有一块石块。河床和河岸上的是河卵石，被水磨得更圆、更扁、更光滑
+
+- <StatusTag s="test" /> 洞口的洼地底和落石堆上散石最多，成片出现，往洼地边上越来越稀。石灰岩、白云岩里的洞口，散石里有时有燧石
 
 - 对着散石按一下使用键捡一个：先捡石块，再捡燧石，最后一颗颗捡石子
 - 不需要工具，空手就能捡。捡到的石头算进负重
@@ -79,15 +89,23 @@
 
 | 物品 | 从哪来 | 重量 | 最多叠 |
 |---|---|---|---|
-| <ItemIcon id="field_stone" /> 石块 | 散石，凿碎的巨石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:field_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="field_stone" /> 花岗岩石块 | 花岗岩和天然石头，花岗岩的巨石和散石，河卵石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:field_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="gneiss_stone" /> 片麻岩石块 | 片麻岩 | <V d="item_mass/core_v1#items.apocalypse_firstlight:gneiss_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="schist_stone" /> 片岩石块 | 片岩 | <V d="item_mass/core_v1#items.apocalypse_firstlight:schist_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="sandstone_stone" /> 砂岩石块 | 砂岩，砂岩的巨石和散石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:sandstone_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="limestone_stone" /> 石灰岩石块 | 石灰岩，石灰岩的巨石和散石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:limestone_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="dolomite_stone" /> 白云岩石块 | 白云岩 | <V d="item_mass/core_v1#items.apocalypse_firstlight:dolomite_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="shale_shard" /> 页岩碎片 | 页岩，页岩的巨石和散石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:shale_shard.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="marl_lump" /> 泥灰岩块 | 泥灰岩 | <V d="item_mass/core_v1#items.apocalypse_firstlight:marl_lump.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="rock_salt_lump" /> 岩盐块 | 岩盐 | <V d="item_mass/core_v1#items.apocalypse_firstlight:rock_salt_lump.unit_mass_kg" u="kg" /> | 8 |
 | <ItemIcon id="pebble" /> 石子 | 散石，凿碎的巨石 | <V d="item_mass/core_v1#items.apocalypse_firstlight:pebble.unit_mass_kg" u="kg" /> | 32 |
 | <ItemIcon id="flint" /> 燧石 | 散石里偶尔有 | <V d="item_mass/core_v1#items.apocalypse_firstlight:flint.unit_mass_kg" u="kg" /> | 16 |
 
 燧石很少见，多在石灰岩地区和河里的砾石中。它颜色深、有蜡一样的光泽，和旁边灰白的花岗岩不一样。山里出来的燧石外面裹着一层白色的皮，河里冲下来的皮已经磨掉了
 
-河卵石捡到手里就是普通的石子和石块，和田野里捡的叠在一起
+河卵石捡到手里就是普通的石子和花岗岩石块，和田野里捡的叠在一起（河里的石头从上游各处冲下来，不按河床的岩石分）
 
-这三样现在都还没有用途
+这些都是材料，现在都还没有用途。以后的建造用材料直接建 Mesh，石块不会再做成方块
 
 - <StatusTag s="planned" /> 世界生成里的散石：森林、田野、河床
 - <StatusTag s="test" /> 原版的石头、圆石、石砖、安山岩、花岗岩、闪长岩和它们的楼梯、台阶、墙都拿不到了，原版燧石也是。挖砾石只掉砾石

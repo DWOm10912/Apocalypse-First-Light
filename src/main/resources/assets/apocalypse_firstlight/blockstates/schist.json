@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/rock/schist"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/schist_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

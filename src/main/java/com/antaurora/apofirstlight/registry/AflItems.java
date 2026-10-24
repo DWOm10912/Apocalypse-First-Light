@@ -88,6 +88,24 @@ public final class AflItems {
             () -> new Item(new Item.Properties().stacksTo(32)));
     public static final RegistryObject<Item> FLINT = ITEMS.register("flint",
             () -> new Item(new Item.Properties().stacksTo(16)));
+    // U3a-2 (docs/worldgen/underground_u3_rocks_ores_design.md 3.1): each rock's own stone, what a pick breaks off it and
+    // what its boulders and loose stones hold; materials (never made back into blocks; no recipe before the rework)
+    public static final RegistryObject<Item> GNEISS_STONE = ITEMS.register("gneiss_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> SCHIST_STONE = ITEMS.register("schist_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> SANDSTONE_STONE = ITEMS.register("sandstone_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> LIMESTONE_STONE = ITEMS.register("limestone_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> DOLOMITE_STONE = ITEMS.register("dolomite_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> SHALE_SHARD = ITEMS.register("shale_shard",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> MARL_LUMP = ITEMS.register("marl_lump",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> ROCK_SALT_LUMP = ITEMS.register("rock_salt_lump",
+            () -> new Item(new Item.Properties().stacksTo(8)));
     // Felling axe (2026-10-20, docs/gameplay/felling_axe_v1.md): fells trees and is a melee weapon; Creative only, no recipe
     public static final RegistryObject<Item> FELLING_AXE = ITEMS.register("felling_axe",
             com.antaurora.apofirstlight.item.FellingAxeItem::new);
@@ -199,6 +217,24 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.WOLFRAMITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> SPODUMENE_ORE = ITEMS.register("spodumene_ore",
             () -> new BlockItem(AflBlocks.SPODUMENE_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GRANITE_ROCK = ITEMS.register("granite",
+            () -> new BlockItem(AflBlocks.GRANITE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GNEISS_ROCK = ITEMS.register("gneiss",
+            () -> new BlockItem(AflBlocks.GNEISS_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SCHIST_ROCK = ITEMS.register("schist",
+            () -> new BlockItem(AflBlocks.SCHIST_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SANDSTONE_ROCK = ITEMS.register("sandstone",
+            () -> new BlockItem(AflBlocks.SANDSTONE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> LIMESTONE_ROCK = ITEMS.register("limestone",
+            () -> new BlockItem(AflBlocks.LIMESTONE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DOLOMITE_ROCK = ITEMS.register("dolomite",
+            () -> new BlockItem(AflBlocks.DOLOMITE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SHALE_ROCK = ITEMS.register("shale",
+            () -> new BlockItem(AflBlocks.SHALE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> MARL_ROCK = ITEMS.register("marl",
+            () -> new BlockItem(AflBlocks.MARL_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ROCK_SALT_ROCK = ITEMS.register("rock_salt",
+            () -> new BlockItem(AflBlocks.ROCK_SALT_ROCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -649,9 +685,9 @@ public final class AflItems {
             if (!kind.item()) continue;
             int stack = switch (kind) {
                 case HEADLIGHT_SIGN, NAME_PLATE, EMERGENCY_CABINET, STOP_SIGN, SIDE_ROAD_SIGN, CURVE_SIGN, DO_NOT_ENTER_SIGN, WRONG_WAY_SIGN,
-                     GUIDE_SIGN -> 1;
+                     GUIDE_SIGN, TRAIL_SIGN, CAVE_SIGN -> 1;
                 case LANE_SIGNAL -> 2;
-                case EGRESS_SIGN -> 8;
+                case EGRESS_SIGN, TRAIL_MARKER -> 8;
                 default -> 4;
             };
             out.put(kind, ITEMS.register(kind.id(), () -> new com.antaurora.apofirstlight.item.TunnelFixtureItem(

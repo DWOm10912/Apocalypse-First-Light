@@ -790,6 +790,18 @@
     "subtitle": "subtitles.apocalypse_firstlight.tree_crash",
     "sounds": [{"name": "apocalypse_firstlight:tree_felling/crash", "attenuation_distance": 24}]
   },
+  "pick_strike_hard": {
+    "subtitle": "subtitles.apocalypse_firstlight.pick_strike",
+    "sounds": [{"name": "apocalypse_firstlight:rock_strike/hard_1"}, {"name": "apocalypse_firstlight:rock_strike/hard_2"}, {"name": "apocalypse_firstlight:rock_strike/hard_3"}, {"name": "apocalypse_firstlight:rock_strike/hard_4"}, {"name": "apocalypse_firstlight:rock_strike/hard_5"}]
+  },
+  "pick_strike_soft": {
+    "subtitle": "subtitles.apocalypse_firstlight.pick_strike",
+    "sounds": [{"name": "apocalypse_firstlight:rock_strike/soft_1"}, {"name": "apocalypse_firstlight:rock_strike/soft_2"}, {"name": "apocalypse_firstlight:rock_strike/soft_3"}, {"name": "apocalypse_firstlight:rock_strike/soft_4"}, {"name": "apocalypse_firstlight:rock_strike/soft_5"}]
+  },
+  "rock_break": {
+    "subtitle": "subtitles.apocalypse_firstlight.rock_break",
+    "sounds": [{"name": "apocalypse_firstlight:rock_strike/break_1"}, {"name": "apocalypse_firstlight:rock_strike/break_2"}, {"name": "apocalypse_firstlight:rock_strike/break_3"}, {"name": "apocalypse_firstlight:rock_strike/break_4"}]
+  },
   "flip_lighter_open": {
     "subtitle": "subtitles.apocalypse_firstlight.flip_lighter_open",
     "sounds": [{"name": "minecraft:block.iron_trapdoor.open", "type": "event", "pitch": 1.9, "volume": 0.35}]

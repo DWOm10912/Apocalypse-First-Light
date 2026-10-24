@@ -36,7 +36,7 @@ public final class SmoothModels {
     public static void wrap(ModelEvent.ModifyBakingResult event) {
         Map<ResourceLocation, BakedModel> models = event.getModels();
         int surface = 0, plants = 0;
-        for (Block block : TerrainSmooth.GROUND) surface += wrap(models, block, SmoothSurfaceModel::new);
+        for (Block block : TerrainSmooth.groundBlocks()) surface += wrap(models, block, SmoothSurfaceModel::new);
         for (Block block : ForgeRegistries.BLOCKS) {
             if (block instanceof BushBlock && !(block instanceof WaterlilyBlock)) plants += wrap(models, block, SinkPlantModel::new);
         }

@@ -34,6 +34,26 @@ const ITEMS = {
     body: 'granite', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
   pebble: {...loose('pebble_field_0'), level: 2, body: 'granite', tp: [[20, 35, -10], 2.4, 0.3], fp: [[-8, 40, 6], 2.0]},
   flint: {...loose('flint_1'), level: 3, body: 'flint_cortex', cap: 'flint', tp: [[20, 35, -10], 2.4, 0.4], fp: [[-8, 40, 6], 2.0]},
+  // U3a-2 (docs/worldgen/underground_u3_rocks_ores_design.md 3.1): each rock's own stone, shaped as the rock breaks:
+  // crystalline rock in angular blocks, the bedded rocks squarer along their beds, schist and shale in slabs and flakes
+  // along their cleavage, marl and rock salt blunt. The bodies are the boulders' sprites; gneiss, schist, dolomite, marl and
+  // rock salt borrow a neighbour's until their own photos (U3a-4); every one the sprite its block has (a fresh break).
+  gneiss_stone: {spec: {L: 0.2, r: [1, 0.62, 0.78], planes: 5, pre: 1, round: 1, amp: 0.1, cut: [0.55, 0.8]}, seed: 4111, level: 3,
+    body: 'granite_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  schist_stone: {spec: {L: 0.2, r: [1, 0.4, 0.76], planes: 4, pre: 1, round: 1, amp: 0.08, top: true}, seed: 4113, level: 3,
+    body: 'shale_worn', tp: [[20, 35, -10], 2.2, 0.8], fp: [[-8, 40, 6], 1.7]},
+  sandstone_stone: {spec: {L: 0.2, r: [1, 0.6, 0.8], planes: 6, pre: 0, round: 1, amp: 0.06, cut: [0.5, 0.74]}, seed: 4117, level: 3,
+    body: 'sandstone_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  limestone_stone: {spec: {L: 0.2, r: [1, 0.62, 0.78], planes: 6, pre: 0, round: 1, amp: 0.07, cut: [0.52, 0.76]}, seed: 4119, level: 3,
+    body: 'limestone_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  dolomite_stone: {spec: {L: 0.19, r: [1, 0.68, 0.82], planes: 5, pre: 1, round: 1, amp: 0.1, cut: [0.58, 0.84]}, seed: 4123, level: 3,
+    body: 'limestone', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  shale_shard: {spec: {L: 0.16, r: [1, 0.2, 0.72], planes: 3, pre: 1, round: 0, amp: 0.06, top: true}, seed: 4127, level: 3,
+    body: 'shale_fresh', tp: [[20, 35, -10], 2.4, 0.5], fp: [[-8, 40, 6], 1.9]},
+  marl_lump: {spec: {L: 0.19, r: [1, 0.68, 0.85], planes: 2, pre: 3, round: 2, amp: 0.16}, seed: 4129, level: 3,
+    body: 'limestone_worn', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  rock_salt_lump: {spec: {L: 0.18, r: [1, 0.7, 0.85], planes: 4, pre: 2, round: 2, amp: 0.1}, seed: 4131, level: 3,
+    body: 'limestone_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
 };
 const PX = 16;                      // px per metre
 const ATLAS = 64, DENSITY = 128;    // the sprite's texels per metre (2 m over 256 texels)

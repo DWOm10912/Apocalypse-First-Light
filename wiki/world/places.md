@@ -8,6 +8,16 @@
 
 - <StatusTag s="verified" d="2026-10-19" /> 老宅距县道至少 <V j="RoadCounty.PLOT_HARD" u="m" />，从路上看不到房子。一条碎石车道沿溪接入县道，见 [道路](./roads#县道和老宅车道)
 
+## Bear Hollow Cave
+
+<StatusTag s="test" /> 老宅附近一个只带灯就能走进去的干洞，现在只在深世界测试世界里有
+
+- <StatusTag s="test" /> 有一条小路从最近的双车道公路、县道或镇子边上通到洞口，哪个近从哪里走；州际公路和匝道边上不开小路。起点立着一块棕色木牌，写着 BEAR HOLLOW CAVE TRAIL 和小路有多少英里
+- <StatusTag s="test" /> 小路是踩出来的土路，1–2 格宽，坡陡的地方绕着走，不穿过别的洞口和天坑。路中间 <V j="CaveTrail.TREE_CLEAR" u="m" /> 以内不长树，路面上不长草
+- <StatusTag s="test" /> 沿路大约每 <V j="CaveTrail.MARKER_EVERY" u="m" /> 和每个转弯处有一根棕色标桩，上面一条白色竖条，立在进洞方向的右边
+- <StatusTag s="test" /> 洞口前几米的步道边上有一块同样的棕色木牌，写着 CAUTION / CAVE ENTRANCE / ENTER AT YOUR OWN RISK
+- <StatusTag s="test" /> 路牌、警示牌和标桩可以用撬棍拆下来带走
+
 ## 加油站
 
 <StatusTag s="integrated" /> 北美式的公路加油站：加油机、雨棚、地下油罐。设备已经能用（见 [燃料与加油](../vehicles/fuel)）

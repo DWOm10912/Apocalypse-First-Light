@@ -27,11 +27,15 @@ package com.antaurora.apofirstlight.terrainsmooth;
 public final class SmoothRules {
     public static final int MODE_OFF = 0, MODE_A = 1, MODE_B = 2;
     /** cell codes (TREE: logs and the like, solid for the slopes, see-through for the natural-surface scan) */
-    public static final int AIR = 0, COVER = 1, LEAF = 2, FLUID = 3, NATURAL = 4, OTHER = 5, UNKNOWN = 6, TREE = 7;
+    /**
+     * ROCK: natural rock (U6 V3, user 2026-10-24): never sloped here, its faces are RockRelief's continuous Mesh; it is still
+     * its column's natural surface (the earthwork reads it), and soil above it slopes down onto its top (#corner)
+     */
+    public static final int AIR = 0, COVER = 1, LEAF = 2, FLUID = 3, NATURAL = 4, OTHER = 5, UNKNOWN = 6, TREE = 7, ROCK = 8;
     /** Cells#surface of a column without natural surface (water, a roof, an overhang on top) or not loaded */
     public static final int NO_SURFACE = Integer.MIN_VALUE;
     /** column kinds */
-    static final int K_NAT = 0, K_FIXED = 1, K_FLUID = 2, K_LOW = 3, K_HIGH = 4, K_UNKNOWN = 5;
+    static final int K_NAT = 0, K_FIXED = 1, K_FLUID = 2, K_LOW = 3, K_HIGH = 4, K_UNKNOWN = 5, K_ROCK = 6;
     /**
      * Collision / selection boxes per side of a block. Offline (SmoothCheck, mode B): 2 x 2 leaves feet up to 0.375 in or
      * over the drawn top and 0.5 steps; 4 x 4 0.188 (p95 0.094) and 0.25 steps; 8 x 8 0.125 (p95 0.063) and 1/8 steps.
@@ -50,9 +54,26 @@ public final class SmoothRules {
 
     private SmoothRules() {}
 
-    static boolean solid(int c) { return c == NATURAL || c == OTHER || c == TREE; }
+    static boolean solid(int c) { return c == NATURAL || c == OTHER || c == TREE || c == ROCK; }
 
-    static boolean open(int c) { return c == AIR || c == COVER; }
+    public static boolean open(int c) { return c == AIR || c == COVER; }
+
+    /**
+     * A soil wall (U6 V3, user 2026-10-24: soil cubes did not join the worn rock): natural ground with an open face this
+     * class cannot slope: open below (an overhang's underside), open beside while buried (a cut or a cave mouth's wall),
+     * or open beside with the column there open a level lower too (the rim of a drop of two or more). RockRelief wears
+     * it like rock, so here it is as bare rock: never sloped, the soil around pinned to it or sloping down onto it.
+     */
+    public static boolean soilWall(Cells c, int x, int y, int z) {
+        if (c.cell(x, y, z) != NATURAL) return false;
+        if (open(c.cell(x, y - 1, z))) return true;
+        boolean buried = !open(c.cell(x, y + 1, z));
+        for (int d = 0; d < 4; d++) {
+            int nx = x + (d == 0 ? -1 : d == 1 ? 1 : 0), nz = z + (d == 2 ? -1 : d == 3 ? 1 : 0);
+            if (open(c.cell(nx, y, nz)) && (buried || open(c.cell(nx, y - 1, nz)))) return true;
+        }
+        return false;
+    }
 
     /** Passed over by the natural-surface scan: sky, plants and snow, tree crowns and trunks. */
     public static boolean skyward(int c) { return c == AIR || c == COVER || c == LEAF || c == TREE; }
@@ -65,7 +86,7 @@ public final class SmoothRules {
         for (int y = top; y >= bottom; y--) {
             int k = c.cell(x, y, z);
             if (skyward(k)) continue;
-            return k == NATURAL ? y : NO_SURFACE;
+            return k == NATURAL || k == ROCK ? y : NO_SURFACE;
         }
         return NO_SURFACE;
     }
@@ -92,13 +113,20 @@ public final class SmoothRules {
         if (c1 == FLUID) return pack(K_FLUID, y + 2);
         if (solid(c1)) {
             if (solid(c2) || c2 == UNKNOWN) return pack(K_HIGH, y + 3);
-            return pack(natural(c, c1, c2, x, y + 1, z) ? K_NAT : K_FIXED, y + 2);
+            return pack(kindAt(c, c1, c2, x, y + 1, z), y + 2);
         }
         if (c0 == FLUID) return pack(K_FLUID, y + 1);
-        if (solid(c0)) return pack(natural(c, c0, c1, x, y, z) ? K_NAT : K_FIXED, y + 1);
+        if (solid(c0)) return pack(kindAt(c, c0, c1, x, y, z), y + 1);
         if (cm == FLUID) return pack(K_FLUID, y);
-        if (solid(cm)) return pack(natural(c, cm, c0, x, y - 1, z) ? K_NAT : K_FIXED, y);
+        if (solid(cm)) return pack(kindAt(c, cm, c0, x, y - 1, z), y);
         return pack(K_LOW, y - 1);
+    }
+
+    /** A solid column top's kind: natural (#natural), bare rock open above (K_ROCK: soil slopes onto it), else fixed. */
+    private static int kindAt(Cells c, int cell, int above, int x, int top, int z) {
+        if (!open(above)) return K_FIXED;
+        if (cell == ROCK || cell == NATURAL && soilWall(c, x, top, z)) return K_ROCK;
+        return natural(c, cell, above, x, top, z) ? K_NAT : K_FIXED;
     }
 
     /** A column top that takes part: natural ground, open above, and the column's natural surface. */
@@ -116,10 +144,17 @@ public final class SmoothRules {
      */
     static float corner(long[] col, float[][] turf, int oi, int oj, int mode) {
         int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0, nlo = Integer.MAX_VALUE, nhi = Integer.MIN_VALUE;
+        int rlo = Integer.MAX_VALUE, rhi = Integer.MIN_VALUE, rsum = 0;
         float t = Float.NaN;
         boolean pinned = false;
         for (int j = oj; j <= oj + 1; j++) for (int i = oi; i <= oi + 1; i++) {
             long c = col[j * 3 + i];
+            if (kind(c) == K_ROCK) {
+                rlo = Math.min(rlo, height(c));
+                rhi = Math.max(rhi, height(c));
+                rsum += height(c);
+                continue;
+            }
             if (turf[j * 3 + i] != null) {
                 float v = turf[j * 3 + i][(oi + 1 - i) + 2 * (oj + 1 - j)];
                 if (Float.isNaN(t)) t = v;
@@ -136,6 +171,14 @@ public final class SmoothRules {
             nhi = Math.max(nhi, h);
             sum += h;
         }
+        // bare rock (U6 V3) is never sloped: soil lower than it or level with it would bare the rock's side under the
+        // corner, so the point is pinned; rock lower than every other column there takes part, the soil sloping down onto
+        // its top (a corner above a rock top by at least 3/4: the rock's side is never bared)
+        if (rhi != Integer.MIN_VALUE) {
+            if (rhi >= lo) pinned = true;
+            lo = Math.min(lo, rlo);
+            sum += rsum;
+        }
         if (pinned || hi - lo > 1) return Float.NaN;
         if (!Float.isNaN(t)) return t >= nhi - 1 && t <= nlo + 1 ? t : Float.NaN;
         return mode == MODE_A ? lo : sum * 0.25F;
@@ -151,7 +194,7 @@ public final class SmoothRules {
     /** The geometry key of block (x, y, z), or -1 when it keeps its vanilla shape. */
     public static long geometry(Cells c, int mode, int x, int y, int z) {
         if (mode == MODE_OFF || c.surface(x, z) != y) return -1;
-        if (c.cell(x, y, z) != NATURAL || !open(c.cell(x, y + 1, z))) return -1;
+        if (c.cell(x, y, z) != NATURAL || !open(c.cell(x, y + 1, z)) || soilWall(c, x, y, z)) return -1;
         long[] col = new long[9];
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++)
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, x + i - 1, y, z + j - 1);
@@ -198,7 +241,7 @@ public final class SmoothRules {
     }
 
     private static final String[] KIND_NAMES = {"natural", "not natural ground or not open above (built, a path, a plant block...)",
-            "water", "two or more lower", "two or more higher (a wall)", "not loaded"};
+            "water", "two or more lower", "two or more higher (a wall)", "not loaded", "bare rock"};
     private static final String[] CORNER_NAMES = {"north-west", "north-east", "south-west", "south-east"};
 
     /** Why #freeCorners fails (development output, English), or null when the corners are free. */
@@ -213,7 +256,8 @@ public final class SmoothRules {
      * to the one edited first (Earthwork#convert); EarthSkin closes the side between the skin and an unedited neighbour.
      */
     public static String notFree(Cells c, int mode, int x, int y, int z, boolean walls) {
-        if (c.surface(x, z) != y || c.cell(x, y, z) != NATURAL) return "its top is not Terrain Smooth's natural surface";
+        int self = c.cell(x, y, z);
+        if (c.surface(x, z) != y || self != NATURAL && self != ROCK) return "its top is not Terrain Smooth's natural surface";
         if (!open(c.cell(x, y + 1, z))) return "the block above is not open";
         long[] col = new long[9];
         boolean wall = false;
@@ -221,7 +265,8 @@ public final class SmoothRules {
             int nx = x + i - 1, nz = z + j - 1;
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, nx, y, nz);
             int k = kind(col[j * 3 + i]);
-            if (walls && (k == K_HIGH || k == K_LOW && stepDown(c, nx, y - 2, nz))) wall = true;
+            // bare rock beside (U6 V3, never sloped) is as a wall: EarthSkin closes the side toward it
+            if (walls && (k == K_HIGH || k == K_ROCK || k == K_LOW && stepDown(c, nx, y - 2, nz))) wall = true;
             else if (k == K_LOW && walls) return "neighbour " + nx + " " + nz + " is three or more lower (a cliff)";
             else if (k != K_NAT) return "neighbour " + nx + " " + nz + " is " + KIND_NAMES[k];
         }
@@ -235,7 +280,8 @@ public final class SmoothRules {
 
     /** Column (x, z)'s natural surface is natural ground at y, open above: the foot of a two-cell step below a rim. */
     private static boolean stepDown(Cells c, int x, int y, int z) {
-        return c.surface(x, z) == y && c.cell(x, y, z) == NATURAL && open(c.cell(x, y + 1, z));
+        int k = c.cell(x, y, z);
+        return c.surface(x, z) == y && (k == NATURAL || k == ROCK) && open(c.cell(x, y + 1, z));
     }
 
     /** Bottom of B's side band at a corner, in quarters above B's floor: the neighbour column's surface there. */
@@ -247,7 +293,7 @@ public final class SmoothRules {
             return Math.max(0, Math.min(8, (int) Math.floor((turf[index][(oi + 1 - index % 3) + 2 * (oj + 1 - index / 3)] - y) * 4 + 1e-4F)));
         return switch (kind(n)) {
             case K_NAT -> { float v = corner(col, turf, oi, oj, mode); yield q((Float.isNaN(v) ? height(n) : v) - y); }
-            case K_FIXED, K_HIGH -> q(height(n) - y);
+            case K_FIXED, K_HIGH, K_ROCK -> q(height(n) - y);
             default -> 0;   // water, a drop of two or more, not loaded: the whole side shows
         };
     }

@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:schist",
+  "density_kg_m3": 2750,
+  "strike_litres": 60,
+  "boulder_look": "granite",
+  "anchor": true,
+  "stone": "apocalypse_firstlight:schist_stone"
+}

@@ -171,6 +171,8 @@ public final class RoadChunkPass {
                         // a rock cut's face: bare stone (the surface rules' grass and dirt replaced), nothing grows on it
                         for (int k = 0; k < ROCK_SKIN; k++) set(chunk, p, x, c.y() - k, z, stone);
                         fill(chunk, p, x, c.y() - ROCK_SKIN, z, stone, lowest);
+                        // a deep world's cut shows its own strata (U3a)
+                        com.antaurora.apofirstlight.worldgen.underground.GeologyPass.restone(level, chunk, x, z, Math.min(lowest, c.y() - ROCK_SKIN - MAX_FILL), c.y());
                         clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
                         break;
                     }

@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/gneiss_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

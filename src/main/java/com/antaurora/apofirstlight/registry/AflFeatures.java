@@ -21,6 +21,9 @@ public final class AflFeatures {
             () -> new DegradedGroundPatchFeature(AflBlocks.FALLOUT_SOIL.get().defaultBlockState(), 3));
     public static final RegistryObject<Feature<?>> PRIMARY_HIGHWAY = FEATURES.register("primary_highway",
             PrimaryHighwayFeature::new);
+    /** U4b: the boulders and loose stones on the cave entrances' cuts (underground design 22.7). */
+    public static final RegistryObject<Feature<?>> ENTRANCE_ROCKS = FEATURES.register("entrance_rocks",
+            com.antaurora.apofirstlight.worldgen.underground.EntranceRocksFeature::new);
 
     private AflFeatures() {
     }

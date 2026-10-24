@@ -1,6 +1,6 @@
 # Digging and Rock
 
-- <StatusTag s="test" /> <StatusTag s="creative" /> The tools and stones on this page are in the Creative inventory only, still on a test branch. Loose stones can only be placed with a dev command for now, not by world generation yet
+- <StatusTag s="test" /> <StatusTag s="creative" /> The tools and stones on this page are in the Creative inventory only, still on a test branch. World generation puts boulders and loose stones only round the cave entrances of the deep test world for now; elsewhere loose stones can only be placed with a dev command
 
 The ground can be dug out and filled in one shovelful at a time. Granite boulders lie half buried in the soil. A shovel can't move them; a pick mattock breaks them up. Bare rock in the open is struck with the pick mattock too, and every strike takes the ground a little lower. Loose stones lie on the ground, free to pick up
 
@@ -37,7 +37,10 @@ A thin soil lying straight on rock can be dug and poured on too. The shovel can'
 
 ## Boulders
 
-Boulders are granite half sunk into the ground: round erratics, flat slabs, talus blocks, clusters and more. Bare hands, a shovel or any other tool can't touch them, and aiming at one says "Needs a pick"
+Boulders are rock half sunk into the ground: round erratics, flat slabs, talus blocks, clusters and more. Bare hands, a shovel or any other tool can't touch them, and aiming at one says "Needs a pick"
+
+- <StatusTag s="test" /> Boulders often lie round cave entrances: slabs and blocks of the fallen roof on a collapse pit's floor, rounded erratics bared from the soil in a cover sinkhole, broken roof scattered over a great sinkhole's floor, blocks rolled past the foot of a rockfall heap, the biggest furthest out. Now and then one or two sit at the sides of the cut in front of a hillside mouth. No boulder blocks the way down
+- <StatusTag s="test" /> Boulders and loose stones round cave entrances show their rock: mostly pale grey limestone, some tan sandstone and dark grey shale; the round erratics in a cover sinkhole are granite, carried in by the ice. A broken boulder drops its own rock's stones: limestone stones from limestone, sandstone stones from sandstone, shale shards from shale, granite stones from granite
 
 Strike it with a pick mattock:
 
@@ -45,7 +48,7 @@ Strike it with a pick mattock:
 - Only rock close to your feet can be struck: within <V j="BoulderStrike.REACH" u="blocks" /> of your eyes
 - Every strike that lands costs <V d="stamina/stamina_v1#costs.pick_strike" /> stamina. Out of stamina, you can't strike
 - It is loud: infected nearby hear it
-- After enough strikes a big boulder **splits** into pieces. Strike each piece until it **breaks**, dropping <ItemIcon id="field_stone" /> field stones and sometimes a few <ItemIcon id="pebble" /> pebbles
+- After enough strikes a big boulder **splits** into pieces. Strike each piece until it **breaks**, dropping its rock's stones (such as <ItemIcon id="field_stone" /> granite stones) and sometimes a few <ItemIcon id="pebble" /> pebbles
 - A whole boulder takes at most 50 strikes from the first to the last piece
 - A boulder that is gone leaves a pit, and the soil at its edges slumps in
 
@@ -61,33 +64,48 @@ Every strike takes the rock a little lower, no shovel needed:
 - Where soil still lies over the rock, dig the soil off with the shovel first, then strike the rock. Rubble or poured earth on the spot comes off first under the pick
 - The pick goes down at most <V j="Earthwork.ROCK_DEPTH" u="blocks" /> below the first ground. Over a cave a layer of rock is always left, never broken through
 - The top edge of a cliff three blocks or higher, and ground next to roads and houses, can't be struck: it says "Can't cut the rock here". The top of a two-block step can be struck. The ground at the foot of a cliff can be struck; a narrow edge along a cliff three blocks or higher stays as it is
-- The stone it breaks off drops by volume: on average a <ItemIcon id="field_stone" /> field stone every two strikes and a <ItemIcon id="pebble" /> pebble or two every strike
+- The stone it breaks off drops by volume: on average a stone every two strikes and a <ItemIcon id="pebble" /> pebble or two every strike. The stone is the rock you struck (granite gives a <ItemIcon id="field_stone" /> granite stone). Softer rock gives more to a strike: shale and marl go faster than granite
+- <StatusTag s="test" /> Every strike throws out chips of rock, a faint puff of pale rock powder and a sprinkle of grit, all in the rock's own colour; hard quartz-bearing rock such as granite and sandstone now and then strikes sparks. Hard rock rings under the pick, limestone and shale sound dull; when a block or a boulder goes you hear the chunk drop and tumble, and the infected hear a strike as far as you do (16 blocks)
 
 Rubble struck loose in older saves is still there: it is loose earth, and like sand and gravel it goes into the shovel, pours out and heaps into slopes; poured on the ground and levelled it becomes gravel
 
 - <StatusTag s="planned" /> Rock underground (tunnels, shafts) and the granite, andesite and diorite patches
+- <StatusTag s="test" /> In deep test worlds the underground is now real rock layers: granite, gneiss, schist, sandstone, limestone, dolomite, shale, marl and rock salt, laid out by the geology, and road cuts show the local rock too. Like natural stone it takes a pick in Survival, and it breaks into that rock's stones. All textures but granite's are still stand-ins
+- <StatusTag s="test" /> Natural rock away from the open ground (cave walls and roofs, cliff faces) can be cut too: each strike of the pick mattock breaks a piece off where it lands, and the hollow shows at once, never the same shape twice, its fresh faces paler than the weathered rock. A block's worth takes about 20 strikes in granite, 13 in shale, 11 in marl, and a block cut hollow is gone. The hollows collide as they look, so you can stand in them. Ground the earthwork has dug and rock under a boulder can't be cut this way, and neither can the floor of a pit downwards yet
+- <StatusTag s="verified" d="2026-10-24" /> Cave walls, roofs, cliff faces and rock in the open are no longer block faces but continuous, irregular rock: granite breaks into jointed, tilted planes, limestone into rounded solution hollows and bulges, shale and sandstone into beds that stand out and set back in bands. Floors and ledge tops are uneven too: limestone in gentle flowstone swells, shale, sandstone and granite in shallow slab terraces that don't hinder walking; ledges and outcrops have rounded edges, but a one-block rock step has to be jumped. The rock collides as it looks, so you can step into its hollows and cut into them; a torch, ladder or block placed against a face leaves that face flat. Steep soil banks, the soil walls of cave mouths and the undersides of overhanging soil are continuous surfaces too, slumped round at the edges and joined to the rock; ordinary soil slopes stay smooth slopes. Caves in deep worlds no longer have dirt floors and dirt walls, soil lies only at the surface; vanilla ores are gone there too, see the next item for the ores to come
+- <StatusTag s="planned" /> Ore lies inside the rock, and ore-bearing rock now and then gives a piece of raw ore that needs further processing
 
 ## Loose Stones
 
-Out in the wild a few stones lie on the ground here and there: some pebbles, sometimes a field stone. On riverbeds and banks they are river cobbles, worn rounder, flatter and smoother by the water
+Out in the wild a few stones lie on the ground here and there: some pebbles, sometimes a bigger stone. On riverbeds and banks they are river cobbles, worn rounder, flatter and smoother by the water
 
-- Aim at loose stones and press Use once to pick one up: the field stone first, then the flint, then the pebbles one by one
+- <StatusTag s="test" /> Loose stones lie thickest in patches on the floors of entrance hollows and on rockfall heaps, thinning out up the sides. At entrances in limestone or dolomite there is sometimes a flint among them
+
+- Aim at loose stones and press Use once to pick one up: the big stone first, then the flint, then the pebbles one by one
 - No tool needed, bare hands will do. The stones you pick up count towards your load
 - With the round point shovel in hand, Use digs. Digging where loose stones lie knocks them out as items
 
-## Field Stone, Pebble and Flint
+## Stones, Pebbles and Flint
 
 | Item | Where from | Weight | Stack |
 |---|---|---|---|
-| <ItemIcon id="field_stone" /> Field Stone | Loose stones, broken boulders | <V d="item_mass/core_v1#items.apocalypse_firstlight:field_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="field_stone" /> Granite Stone | Granite and natural stone, granite boulders and loose stones, river cobbles | <V d="item_mass/core_v1#items.apocalypse_firstlight:field_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="gneiss_stone" /> Gneiss Stone | Gneiss | <V d="item_mass/core_v1#items.apocalypse_firstlight:gneiss_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="schist_stone" /> Schist Stone | Schist | <V d="item_mass/core_v1#items.apocalypse_firstlight:schist_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="sandstone_stone" /> Sandstone Stone | Sandstone, its boulders and loose stones | <V d="item_mass/core_v1#items.apocalypse_firstlight:sandstone_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="limestone_stone" /> Limestone Stone | Limestone, its boulders and loose stones | <V d="item_mass/core_v1#items.apocalypse_firstlight:limestone_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="dolomite_stone" /> Dolomite Stone | Dolomite | <V d="item_mass/core_v1#items.apocalypse_firstlight:dolomite_stone.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="shale_shard" /> Shale Shard | Shale, its boulders and loose stones | <V d="item_mass/core_v1#items.apocalypse_firstlight:shale_shard.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="marl_lump" /> Marl Lump | Marl | <V d="item_mass/core_v1#items.apocalypse_firstlight:marl_lump.unit_mass_kg" u="kg" /> | 8 |
+| <ItemIcon id="rock_salt_lump" /> Rock Salt Lump | Rock salt | <V d="item_mass/core_v1#items.apocalypse_firstlight:rock_salt_lump.unit_mass_kg" u="kg" /> | 8 |
 | <ItemIcon id="pebble" /> Pebble | Loose stones, broken boulders | <V d="item_mass/core_v1#items.apocalypse_firstlight:pebble.unit_mass_kg" u="kg" /> | 32 |
 | <ItemIcon id="flint" /> Flint | Now and then among loose stones | <V d="item_mass/core_v1#items.apocalypse_firstlight:flint.unit_mass_kg" u="kg" /> | 16 |
 
 Flint is rare, mostly in limestone country and in river gravel. It is dark with a waxy sheen, unlike the pale granite around it. Flint from the hills still wears a white rind; flint washed down a river has had it worn away
 
-River cobbles in your hand are ordinary pebbles and field stones, and stack with the ones from the fields
+River cobbles in your hand are ordinary pebbles and granite stones, and stack with the ones from the fields (river stones come down from everywhere upstream, not from the rock of their bed)
 
-None of the three has a use yet
+These are all materials and none has a use yet. Building will use materials to build Mesh directly; stones will never be made into blocks
 
 - <StatusTag s="planned" /> Loose stones placed by world generation: forests, fields, riverbeds
 - <StatusTag s="test" /> Vanilla stone, cobblestone, stone bricks, andesite, granite and diorite, with their stairs, slabs and walls, can no longer be obtained, and neither can vanilla flint. Gravel drops only gravel

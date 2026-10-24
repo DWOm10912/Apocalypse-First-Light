@@ -34,4 +34,7 @@ public final class AflParticles {
             PARTICLE_TYPES.register("gasoline_drip", () -> new SimpleParticleType(false));
     public static final RegistryObject<SimpleParticleType> DIESEL_DRIP =
             PARTICLE_TYPES.register("diesel_drip", () -> new SimpleParticleType(false));
+    /** The chips a pick strike breaks off rock (client/RockStrikeParticles; its dust and sparks are FireFx's). */
+    public static final RegistryObject<SimpleParticleType> ROCK_CHIP =
+            PARTICLE_TYPES.register("rock_chip", () -> new SimpleParticleType(false));
 }

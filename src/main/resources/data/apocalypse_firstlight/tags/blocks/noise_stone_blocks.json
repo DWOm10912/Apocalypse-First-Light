@@ -188,6 +188,15 @@
     "apocalypse_firstlight:porcelain_floor_tile",
     "apocalypse_firstlight:restroom_floor_tile",
     "apocalypse_firstlight:fieldstone",
-    "apocalypse_firstlight:flagstone"
+    "apocalypse_firstlight:flagstone",
+    "apocalypse_firstlight:granite",
+    "apocalypse_firstlight:gneiss",
+    "apocalypse_firstlight:schist",
+    "apocalypse_firstlight:sandstone",
+    "apocalypse_firstlight:limestone",
+    "apocalypse_firstlight:dolomite",
+    "apocalypse_firstlight:shale",
+    "apocalypse_firstlight:marl",
+    "apocalypse_firstlight:rock_salt"
   ]
 }

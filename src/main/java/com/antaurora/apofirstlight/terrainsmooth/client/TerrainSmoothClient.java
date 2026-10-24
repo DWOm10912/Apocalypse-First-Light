@@ -48,6 +48,8 @@ public final class TerrainSmoothClient {
     static {
         TerrainSmooth.clientHooks = TerrainSmoothClient::blockChanged;
         Earthwork.clientHooks = TerrainSmoothClient::earthChanged;
+        com.antaurora.apofirstlight.earthwork.RockCarve.clientHooks = RockCarveMesh::changed;
+        com.antaurora.apofirstlight.earthwork.RockCarve.clientChanged = RockCarveMesh::around;
     }
 
     private TerrainSmoothClient() {}
@@ -238,7 +240,7 @@ public final class TerrainSmoothClient {
             n.setWithOffset(pos, SIDE_DIRS[s]);
             BlockState neighbour = region.getBlockState(n);
             int k = TerrainSmooth.cell(neighbour);
-            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
+            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE || k == SmoothRules.ROCK) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
             // a graded_turf column one level down: its top line may cross this block's floor along the edge, where the
             // band's straight foot and the turf's edge part; the part below the band closes that (2026-10-15, C3.3a seams)
             else if ((k == SmoothRules.AIR || k == SmoothRules.COVER) && region.getBlockState(n.move(Direction.DOWN)).getBlock() instanceof GradedTurfBlock)

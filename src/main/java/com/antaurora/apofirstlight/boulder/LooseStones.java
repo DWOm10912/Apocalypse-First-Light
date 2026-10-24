@@ -87,6 +87,8 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
     public static final EnumProperty<Kind> KIND = EnumProperty.create("kind", Kind.class);
     public static final IntegerProperty TURN = IntegerProperty.create("turn", 0, 3);
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    /** R3: the rock the stones look like; U3a-2: the field stone it holds is that rock's (a river cobble stays granite's). */
+    public static final EnumProperty<BoulderRock> ROCK = EnumProperty.create("rock", BoulderRock.class);
     /** Picking the stones out: the ray finds them a little under the cell floor (a lowered slope) and above it (a raised one). */
     private static final VoxelShape PICK = Shapes.box(0.04, -0.45, 0.04, 0.96, 0.35, 0.96);
 
@@ -112,12 +114,12 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
                 .sound(SoundType.STONE).pushReaction(PushReaction.DESTROY).isValidSpawn((s, l, p, e) -> false)
                 .isSuffocating((s, l, p) -> false).isViewBlocking((s, l, p) -> false));
         registerDefaultState(stateDefinition.any().setValue(STONES, 2).setValue(COBBLE, false).setValue(FLINT, false)
-                .setValue(KIND, Kind.FIELD).setValue(TURN, 0).setValue(WATERLOGGED, false));
+                .setValue(KIND, Kind.FIELD).setValue(TURN, 0).setValue(WATERLOGGED, false).setValue(ROCK, BoulderRock.GRANITE));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(STONES, COBBLE, FLINT, KIND, TURN, WATERLOGGED);
+        builder.add(STONES, COBBLE, FLINT, KIND, TURN, WATERLOGGED, ROCK);
     }
 
     // ------------------------------------------------------------------------------------------- contents
@@ -126,9 +128,17 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
     public static List<ItemStack> contents(BlockState s) {
         var out = new ArrayList<ItemStack>(3);
         if (s.getValue(STONES) > 0) out.add(new ItemStack(AflItems.PEBBLE.get(), s.getValue(STONES)));
-        if (s.getValue(COBBLE)) out.add(new ItemStack(AflItems.FIELD_STONE.get()));
+        if (s.getValue(COBBLE)) out.add(new ItemStack(cobble(s)));
         if (s.getValue(FLINT)) out.add(new ItemStack(AflItems.FLINT.get()));
         return out;
+    }
+
+    /**
+     * The field stone a block holds: its rock's stone (U3a-2); a river cobble is granite's whatever the ground (washed down
+     * from anywhere upstream, design 3.2).
+     */
+    static net.minecraft.world.item.Item cobble(BlockState s) {
+        return s.getValue(KIND) == Kind.RIVER ? AflItems.FIELD_STONE.get() : com.antaurora.apofirstlight.earthwork.RockTypes.stone(s.getValue(ROCK));
     }
 
     private static boolean empty(BlockState s) {
@@ -148,7 +158,7 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
         if (level.isClientSide) return InteractionResult.SUCCESS;
         ItemStack take;
         BlockState left;
-        if (state.getValue(COBBLE)) { take = new ItemStack(AflItems.FIELD_STONE.get()); left = state.setValue(COBBLE, false); }
+        if (state.getValue(COBBLE)) { take = new ItemStack(cobble(state)); left = state.setValue(COBBLE, false); }
         else if (state.getValue(FLINT)) { take = new ItemStack(AflItems.FLINT.get()); left = state.setValue(FLINT, false); }
         else if (state.getValue(STONES) > 0) { take = new ItemStack(AflItems.PEBBLE.get()); left = state.setValue(STONES, state.getValue(STONES) - 1); }
         else { level.setBlock(pos, state.getFluidState().createLegacyBlock(), Block.UPDATE_ALL); return InteractionResult.CONSUME; }
@@ -167,7 +177,7 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         BlockPos below = pos.below();
         BlockState s = level.getBlockState(below);
-        return s.isFaceSturdy(level, below, Direction.UP) || TerrainSmooth.cell(s) == SmoothRules.NATURAL;
+        return s.isFaceSturdy(level, below, Direction.UP) || (TerrainSmooth.cell(s) == SmoothRules.NATURAL || TerrainSmooth.cell(s) == SmoothRules.ROCK);
     }
 
     /** The ground gone: air, so Block#updateOrDestroy breaks it with its drops (a riverbed's water stays: Level#destroyBlock). */
@@ -218,7 +228,7 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
      * (waterlogged), and on dry ground next to it as field does. Each patch 0-4 pebbles, a field stone in about 1 of 3 (2 of
      * 5 in a river), a flint at flintShare. The number placed.
      */
-    public static int scatter(ServerLevel level, BlockPos centre, int radius, Kind kind, float flintShare) {
+    public static int scatter(ServerLevel level, BlockPos centre, int radius, Kind kind, float flintShare, BoulderRock rock) {
         RandomSource rng = level.random;
         int placed = 0;
         var p = new BlockPos.MutableBlockPos();
@@ -235,7 +245,7 @@ public final class LooseStones extends Block implements SimpleWaterloggedBlock {
             int stones = rng.nextInt(5);
             if (stones == 0 && !cobble && !flint) stones = 1 + rng.nextInt(2);
             BlockState s = block.defaultBlockState().setValue(STONES, stones).setValue(COBBLE, cobble).setValue(FLINT, flint)
-                    .setValue(KIND, kind).setValue(TURN, rng.nextInt(4)).setValue(WATERLOGGED, water);
+                    .setValue(KIND, kind).setValue(TURN, rng.nextInt(4)).setValue(WATERLOGGED, water).setValue(ROCK, rock);
             if (!s.canSurvive(level, p)) continue;
             level.setBlock(p, s, Block.UPDATE_ALL);
             placed++;

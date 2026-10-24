@@ -1,5 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
+import com.antaurora.apofirstlight.worldgen.underground.CaveTrail;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -125,6 +127,12 @@ public final class TunnelFixtures {
                 yield new double[][]{{-h, TunnelMesh.RAIL_H - TunnelMesh.RAIL - 0.06, -0.1, h, TunnelMesh.RAIL_H + TunnelMesh.RAIL,
                         TunnelMesh.RAIL_X + TunnelMesh.RAIL + 0.04}};
             }
+            // U5b cave trail (worldgen/underground/CaveTrail): the trailhead and caution signs' board on its two posts, a marker post
+            case "trail_sign", "cave_sign" -> {
+                double w = CaveTrail.SIGN_W / 2, y0 = CaveTrail.SIGN_BOTTOM, y1 = y0 + CaveTrail.SIGN_H, px = CaveTrail.SIGN_POST_X;
+                yield new double[][]{{-w, y0, -0.13, w, y1, 0.11}, {-px - 0.12, 0, -0.185, -px + 0.12, y0, 0.055}, {px - 0.12, 0, -0.185, px + 0.12, y0, 0.055}};
+            }
+            case "trail_marker" -> new double[][]{{-0.12, 0, -0.12, 0.12, CaveTrail.MARKER_H, 0.12}};
             default -> new double[][]{{-0.25, 0, -0.25, 0.25, 0.5, 0.25}};
         };
     }

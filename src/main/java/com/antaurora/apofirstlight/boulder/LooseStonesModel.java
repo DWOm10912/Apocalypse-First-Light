@@ -41,15 +41,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * map view, other mods) the cell floor.</li>
  * <li>Drawing as the boulders (BoulderModel): solid layer, flat light from the cell, no ambient occlusion; without a shader
  * pack the vanilla direction shading baked into the vertex colour by the normal.</li>
+ * <li>R3: the stones (not the flints) in the sprites of the state's rock; one model per rock, for its particles.</li>
  * </ul>
  */
 final class LooseStonesModel implements IDynamicBakedModel {
     private static final ModelProperty<List<BakedQuad>> QUADS = new ModelProperty<>();
     private static final ChunkRenderTypeSet SOLID = ChunkRenderTypeSet.of(RenderType.solid());
-    private static final ResourceLocation[] SPRITES = new ResourceLocation[LooseStoneData.SPRITES.length];
+    /** The sprites by rock and quad sprite number. */
+    private static final ResourceLocation[][] SPRITES = new ResourceLocation[BoulderRock.values().length][LooseStoneData.SPRITES.length];
     static {
-        for (int i = 0; i < SPRITES.length; i++) SPRITES[i] = new ResourceLocation("apocalypse_firstlight", "block/boulder/" + LooseStoneData.SPRITES[i]);
+        for (BoulderRock r : BoulderRock.values())
+            for (int i = 0; i < LooseStoneData.SPRITES.length; i++)
+                SPRITES[r.ordinal()][i] = new ResourceLocation("apocalypse_firstlight", "block/boulder/" + r.sprite(LooseStoneData.SPRITES[i]));
     }
+    private final BoulderRock rock;
+
+    LooseStonesModel(BoulderRock rock) { this.rock = rock; }
     /** How deep a stone lies in the ground, of its height. */
     private static final float SINK = 0.15F;
     private static final Map<BlockState, List<BakedQuad>> FLAT = new ConcurrentHashMap<>();
@@ -123,8 +130,9 @@ final class LooseStonesModel implements IDynamicBakedModel {
         Rng rng = new Rng(cell * 0xD1B54A32D192ED03L + state.getValue(LooseStones.TURN) * 0x632BE59BD9B4E019L);
         int shade = AflShaderCompat.shaderPackInUse() ? 0 : 1;
         var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
-        TextureAtlasSprite[] sprites = new TextureAtlasSprite[SPRITES.length];
-        for (int i = 0; i < sprites.length; i++) sprites[i] = atlas.apply(SPRITES[i]);
+        ResourceLocation[] ids = SPRITES[state.getValue(LooseStones.ROCK).ordinal()];
+        TextureAtlasSprite[] sprites = new TextureAtlasSprite[ids.length];
+        for (int i = 0; i < sprites.length; i++) sprites[i] = atlas.apply(ids[i]);
         float[] px = new float[kinds.size()], pz = new float[kinds.size()], pr = new float[kinds.size()];
         var out = new ArrayList<BakedQuad>(kinds.size() * 160);
         for (int i = 0; i < kinds.size(); i++) {
@@ -183,7 +191,7 @@ final class LooseStonesModel implements IDynamicBakedModel {
     @Override public boolean usesBlockLight() { return true; }
     @Override public boolean isCustomRenderer() { return false; }
     @Override public @NotNull TextureAtlasSprite getParticleIcon() {
-        return Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(SPRITES[0]);
+        return Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(SPRITES[rock.ordinal()][0]);
     }
     @Override public @NotNull ItemOverrides getOverrides() { return ItemOverrides.EMPTY; }
 }

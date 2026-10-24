@@ -8,6 +8,16 @@
 
 - <StatusTag s="verified" d="2026-10-19" /> The farmhouse plot sits at least <V j="RoadCounty.PLOT_HARD" u="m" /> from the county road, out of sight. A gravel driveway follows the creek to the road, see [Roads](./roads#county-road-and-farmhouse-driveway)
 
+## Bear Hollow Cave
+
+<StatusTag s="test" /> A dry cave near the farmhouse that you can walk into with just a light; for now only in deep test worlds
+
+- <StatusTag s="test" /> A trail runs to its mouth from the nearest two-lane road, county road or town edge, whichever is closer; no trail leaves an interstate or a ramp. A brown wooden sign at the start reads BEAR HOLLOW CAVE TRAIL with the trail's length in miles
+- <StatusTag s="test" /> The trail is a worn dirt path one to two blocks wide. It winds around steep ground and keeps clear of other cave mouths and sinkholes. No tree grows within <V j="CaveTrail.TREE_CLEAR" u="m" /> of its middle, and no grass on the tread
+- <StatusTag s="test" /> Brown marker posts with a white blaze stand on the right going in, about every <V j="CaveTrail.MARKER_EVERY" u="m" /> and at each bend
+- <StatusTag s="test" /> A few metres before the mouth, a matching brown board beside the trail reads CAUTION / CAVE ENTRANCE / ENTER AT YOUR OWN RISK
+- <StatusTag s="test" /> The signs and the posts come down with a crowbar
+
 ## Fuel stations
 
 <StatusTag s="integrated" /> A North American roadside station: dispensers, canopy and underground tanks. The equipment works (see [Fuel and Refueling](../vehicles/fuel))

@@ -51,6 +51,8 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Integer> UNDER = new ModelProperty<>();
     /** Earthwork A1: an edited column's skin cell, its skin quads (EarthSkin; unculled, solid layer) */
     static final ModelProperty<List<BakedQuad>> SKIN = new ModelProperty<>();
+    /** U3a-3 round 2: a carved rock block, its surface net (RockCarveMesh; unculled, solid layer, no vanilla face at all) */
+    static final ModelProperty<List<BakedQuad>> CARVE = new ModelProperty<>();
     static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
     /** floor points a (left) and b (right) of each side seen from outside, and which corners stand above them (also SnowSkinModel) */
     static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
@@ -62,9 +64,14 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         super(original);
     }
 
+    /** The vanilla model it wraps. */
+    BakedModel original() { return originalModel; }
+
     @Override
     public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull ModelData data) {
         ModelData base = super.getModelData(level, pos, state, data);
+        List<BakedQuad> carve = RockCarveMesh.quads(level, pos, state);   // carved rock (U3a-3 round 2)
+        if (carve != null) return base.derive().with(CARVE, carve).build();
         List<BakedQuad> skin = EarthSkin.quads(level, pos, state);   // an edited column's skin cell (Earthwork)
         if (skin != null) return base.derive().with(SKIN, skin).build();
         long g = TerrainSmoothClient.renderGeometry(level, pos, state);   // every ground block of every chunk passes here
@@ -77,7 +84,7 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     /** A skin cell is drawn in the solid layer only (its tops are opaque, a grass top's overlay sides are not drawn). */
     @Override
     public @NotNull ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource rand, @NotNull ModelData data) {
-        return data.get(SKIN) != null ? SOLID : super.getRenderTypes(state, rand, data);
+        return data.get(SKIN) != null || data.get(CARVE) != null ? SOLID : super.getRenderTypes(state, rand, data);
     }
 
     private static final ChunkRenderTypeSet SOLID = ChunkRenderTypeSet.of(RenderType.solid());
@@ -91,6 +98,11 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     @Override
     public @NotNull List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, @NotNull RandomSource random,
                                              @NotNull ModelData data, @Nullable RenderType renderType) {
+        List<BakedQuad> carve = data.get(CARVE);
+        if (carve != null && state != null) {
+            if (renderType != null && renderType != RenderType.solid()) return List.of();
+            return side == null ? carve : List.of();
+        }
         List<BakedQuad> skin = data.get(SKIN);
         if (skin != null && state != null) {
             if (renderType != null && renderType != RenderType.solid()) return List.of();

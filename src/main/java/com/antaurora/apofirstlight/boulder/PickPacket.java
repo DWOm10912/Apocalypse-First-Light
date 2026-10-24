@@ -26,7 +26,7 @@ public record PickPacket(UUID player, UUID action, int phase, Vec3 target) {
 
     public record Cancel(UUID action) {}
 
-    /** Registers the three messages from id on; the next free id. */
+    /** Registers the four messages from id on (RockStrikeFx: U3a-3 round 2, protocol 72); the next free id. */
     public static int register(SimpleChannel ch, int id) {
         channel = ch;
         ch.registerMessage(id++, PickPacket.class, PickPacket::encode, PickPacket::decode, PickPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -40,6 +40,9 @@ public record PickPacket(UUID player, UUID action, int phase, Vec3 target) {
             c.enqueueWork(() -> { if (c.getSender() != null) BoulderStrike.cancel(c.getSender(), p.action); });
             c.setPacketHandled(true);
         }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        ch.registerMessage(id++, RockStrikeFx.class, RockStrikeFx::encode, RockStrikeFx::decode, RockStrikeFx::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        RockStrikeFx.channel = ch;
         return id;
     }
 

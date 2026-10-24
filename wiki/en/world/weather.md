@@ -56,3 +56,9 @@
 ## Dynamic lights
 
 <StatusTag s="verified" d="2026-10-17" /> Without shaders the T15's lamps really light their surroundings (needs Embeddium). Flashlights and torches don't cast dynamic light yet
+
+## Darkness
+
+<StatusTag s="verified" d="2026-10-24" /> Where there is no light it is truly dark: in caves, unlit rooms and underground, light level 0 shows nothing, and turning up the brightness doesn't help; place torches, switch on lamps or use the truck's lights. Walk from the light into a cave and the far end darkens within half a second
+
+<StatusTag s="verified" d="2026-10-24" /> How bright the night is outdoors depends on the moon phase: a full moon shows paths and the lie of the land, in faint grey-blue with little colour; a half moon barely shows the way; a new moon is nearly black and you need a light. The brightness setting brightens torches and lamps, not the moon

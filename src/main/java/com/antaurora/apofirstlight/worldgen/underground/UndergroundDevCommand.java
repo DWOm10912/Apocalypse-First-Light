@@ -118,6 +118,11 @@ public final class UndergroundDevCommand {
                 cave < 0 ? "no" : "#" + cave + " " + u.caves.get(cave).kind)));
 
         for (UndergroundPlan.Destination d : u.destinations) lines.add(destinationLine(u, d, x, z, built));
+        long boulders = u.rocks.stream().filter(UndergroundPlan.Rock::boulder).count();
+        lines.add(Component.literal(String.format(Locale.ROOT, "Entrance rocks planned: %d boulders, %d stone patches. %s", boulders, u.rocks.size() - boulders,
+                built ? "This session's " + EntranceRocksFeature.report() + "." : "")).withStyle(ChatFormatting.GRAY));
+        if (built && !u.trails.isEmpty())
+            lines.add(Component.literal("This session's " + CaveTrailPass.report() + ".").withStyle(ChatFormatting.GRAY));
 
         // cave systems, giant caves and canyons
         lines.add(Component.literal("Nearest cave systems:").withStyle(ChatFormatting.YELLOW));
@@ -201,6 +206,14 @@ public final class UndergroundDevCommand {
         l.append(Component.literal(String.format(Locale.ROOT, "; way in with kit %s: %.0f m, down %.0f m, %d places, to the room at (%.0f, %.0f, %.0f)",
                 kitName(d.kit()), d.length(), d.drop(), d.route().size(), room[0], room[1], room[2])));
         if (built) l.append(" ").append(link("[in]", "/afl dev underground cave " + cv.id));
+        for (UndergroundPlan.Trail t : u.trails) {
+            if (t.destination() != d.id()) continue;
+            double[] line = t.line();
+            l.append(Component.literal(String.format(Locale.ROOT, "; trail from road %s: %.0f m (%.1f mi), steepest %.0f%%, %d fords, %d markers, sign %s, caution sign %s, trailhead ",
+                    t.road(), t.length(), t.length() / CaveTrail.MILE, 100 * t.grade(), t.fords(), t.markers().size(), t.sign() == null ? "none" : t.sign().bone(),
+                    t.caution() == null ? "none" : "yes")));
+            l.append(go(line[0], line[1]));
+        }
         return l;
     }
 

@@ -29,6 +29,7 @@ public final class BoulderIndex {
     public static final class Root {
         public final int x, y, z, turn;
         public final BoulderData.Node node;
+        public final BoulderRock rock;
         /** The form's origin cell. */
         public final int ox, oy, oz;
         public final int minX, minY, minZ, maxX, maxY, maxZ;
@@ -37,6 +38,7 @@ public final class BoulderIndex {
             x = pos.getX(); y = pos.getY(); z = pos.getZ();
             node = BoulderData.node(state.getValue(BoulderBlocks.PIECE));
             turn = state.getValue(BoulderBlocks.TURN);
+            rock = state.getValue(BoulderBlocks.ROCK);
             ox = x - BoulderData.turnX(turn, node.ax, node.az);
             oy = y - node.ay;
             oz = z - BoulderData.turnZ(turn, node.ax, node.az);

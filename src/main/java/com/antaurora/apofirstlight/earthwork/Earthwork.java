@@ -204,11 +204,11 @@ public final class Earthwork {
 
     /**
      * Natural rock a pick cuts where it lies bare (Rock R2, docs/gameplay/rock_r2_rock_face_mining_design.md 3.2): stone
-     * only, the one rock Terrain Smooth draws and the earthwork skin can follow; the granite, andesite, diorite and tuff
-     * blobs wait for R3's geology.
+     * and the geology's rocks (U3a, NaturalRockBlock; tag apocalypse_firstlight:natural_rock), the rocks Terrain Smooth
+     * draws and the earthwork skin can follow; the vanilla granite, andesite, diorite and tuff blobs are not rock here.
      */
     public static boolean rock(Block b) {
-        return b == Blocks.STONE;
+        return b == Blocks.STONE || b instanceof com.antaurora.apofirstlight.block.NaturalRockBlock;
     }
 
     /** What an edited column's ground cells hold (the block invariant): loose ground, or rock under the skin. */
@@ -335,6 +335,9 @@ public final class Earthwork {
         if (t == SmoothRules.NO_SURFACE) return "no natural surface (built over, water, an overhang)";
         var p = new BlockPos.MutableBlockPos(x, t, z);
         if (rock(level.getBlockState(p).getBlock())) {   // Rock R2: bare rock, a pick's (its floor is its top)
+            // U3a-3 round 2: rock carved block by block within the open cut's reach stays carved (no skin over a carving)
+            CarveChunk carved = RockCarve.get(level, x >> 4, z >> 4);
+            if (carved != null && carved.anyInColumn(x, z, t - ROCK_DEPTH - 1, t)) return "its rock is carved by the pick block by block";
             for (int y = t + 1; y <= t + 2; y++)
                 if (!open(level.getBlockState(p.setY(y)))) return (y - t) + " above its top is " + name(level.getBlockState(p)) + ", not open";
             return TerrainSmooth.notFree(level, x, t, z, true);
@@ -621,9 +624,10 @@ public final class Earthwork {
                 if (com.antaurora.apofirstlight.boulder.LooseStones.is(level.getBlockState(p.set(x, y, z)))) level.destroyBlock(p, true);
             for (int y = t + RAISE - 1; y >= bottom; y--) {   // top down: nothing is left hanging
                 BlockState s = level.getBlockState(p.set(x, y, z));
-                if (kind(lo, hi, y) == AIR && ground(s.getBlock()))
-                    level.setBlock(p, com.antaurora.apofirstlight.boulder.BoulderEarth.rock(level, p)
-                            ? com.antaurora.apofirstlight.boulder.BoulderBlocks.cell().defaultBlockState() : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                if (kind(lo, hi, y) == AIR && ground(s.getBlock())) {
+                    var rock = com.antaurora.apofirstlight.boulder.BoulderEarth.rockAt(level, p);
+                    level.setBlock(p, rock != null ? com.antaurora.apofirstlight.boulder.BoulderBlocks.cellState(rock) : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                }
             }
             for (int y = bottom; y < t + RAISE; y++) {   // bottom up: every new block stands on ground
                 BlockState s = level.getBlockState(p.set(x, y, z));
@@ -710,7 +714,12 @@ public final class Earthwork {
      * (rock counts as rubble: #natural), what the strike's stones come from.
      */
     public static Result strike(ServerLevel level, double cx, double cz) {
-        Long2IntOpenHashMap w = brush(cx, cz, STRIKE_RADIUS, STRIKE_DEPTH, -1);
+        return strike(level, cx, cz, STRIKE_DEPTH);
+    }
+
+    /** The same with the brush depth at the middle given (U3a-2: a softer rock gives more to a strike, RockTypes#strikeScale). */
+    public static Result strike(ServerLevel level, double cx, double cz, double depth) {
+        Long2IntOpenHashMap w = brush(cx, cz, STRIKE_RADIUS, depth, -1);
         return edit(level, w.keySet(), (v, h) -> w.get(v), true, -1, Long.MAX_VALUE, null, true);
     }
 

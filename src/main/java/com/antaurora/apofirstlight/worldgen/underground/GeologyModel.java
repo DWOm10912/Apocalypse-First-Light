@@ -355,6 +355,65 @@ public final class GeologyModel {
 
     public RockType rockAt(double x, double y, double z) { return rockAt(column(x, z), y); }
 
+    /**
+     * The rock of every block of the column from y0 to y1 (out[y - y0] = {@link #rockAt(Column, double)} at the block's
+     * middle, y + 0.5, exactly: the same arithmetic in the same order), for the chunk pass (U3a GeologyPass): the faults'
+     * frames and the column's noises once per column instead of once per block.
+     */
+    public void rocks(Column c, int y0, int y1, RockType[] out) {
+        int nf = faults.size(), live = 0;
+        double[] d0 = new double[nf], tap = new double[nf], tan = new double[nf];
+        for (Fault f : faults) {
+            double ux = f.bx() - f.ax(), uz = f.bz() - f.az(), len = Math.hypot(ux, uz);
+            ux /= len;
+            uz /= len;
+            double px = c.x - f.ax(), pz = c.z - f.az();
+            double t = (px * ux + pz * uz) / len, d = -px * uz + pz * ux;
+            // a fault adds its throw only where the plane is crossed (d0 > the dip's run), never with d0 <= 0
+            if (d <= 0) continue;
+            d0[live] = d;
+            tap[live] = taper(f, t);
+            tan[live] = Math.tan(f.dip());
+            live++;
+        }
+        double schist = PlanNoise.fbm(noiseSeed, c.x, c.z, 1500, 2, 0.5, 740);
+        double seam = c.coalW > 0.3 ? (0.6 + 1.9 * (0.5 + 0.5 * PlanNoise.fbm(noiseSeed, c.x, c.z, 2500, 2, 0.5, 741))) * Math.min(1, (c.coalW - 0.3) * 2) : 0;
+        double[] tp = new double[UNIT.length + 1];
+        for (int yi = y0; yi <= y1; yi++) {
+            double y = yi + 0.5;
+            RockType r;
+            if (y > c.h) r = null;
+            else if (c.h - y < c.soil) r = c.loess && c.h - y < 1.5 ? RockType.LOESS : c.soilType;
+            else {
+                double off = 0;
+                for (int k = 0; k < live; k++) if (d0[k] - Math.max(0, c.reg - y) / tan[k] > 0) off += tap[k];
+                for (int i = 0; i < tp.length; i++) tp[i] = c.tops[i] - off;
+                r = stackRock(c, y, tp, schist, seam);
+            }
+            out[yi - y0] = r;
+        }
+    }
+
+    /** rockAt below the loose ground, the tops after the faults given (the column's two noises given). */
+    private static RockType stackRock(Column c, double y, double[] tp, double schist, double seam) {
+        if (y < tp[0]) {
+            double below = tp[0] - y;
+            if (below > 250) return RockType.GNEISS;
+            return schist > 0.35 ? RockType.SCHIST : RockType.GRANITE;
+        }
+        for (int u = 0; u < UNIT.length; u++) {
+            if (y < tp[u + 1]) {
+                if (u == COAL_MEASURES && c.coalW > 0.3) {
+                    double th = tp[u + 1] - tp[u], share = (y - tp[u]) / Math.max(1e-6, th);
+                    for (double s : SEAMS) if (Math.abs(share - s) * th < seam / 2) return RockType.COAL_SEAM;
+                }
+                return UNIT[u];
+            }
+        }
+        for (int u = UNIT.length - 1; u >= 0; u--) if (tp[u + 1] - tp[u] > 2) return UNIT[u];
+        return RockType.GRANITE;
+    }
+
     /** The first rock under the loose ground (the bedrock map). */
     public RockType bedrock(Column c) { return rockAt(c, c.h - c.soil - 0.5); }
 

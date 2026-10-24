@@ -141,6 +141,42 @@
       "unit_mass_kg": 1,
       "estimated": true
     },
+    "apocalypse_firstlight:granite": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:gneiss": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:schist": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sandstone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:limestone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:dolomite": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shale": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:marl": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rock_salt": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:edge_lane_white": {
       "unit_mass_kg": 0.05,
       "estimated": true
@@ -647,6 +683,18 @@
     },
     "apocalypse_firstlight:road_speed_limit_sign": {
       "unit_mass_kg": 11,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_trail_sign": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_trail_marker": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_cave_sign": {
+      "unit_mass_kg": 18,
       "estimated": true
     },
     "apocalypse_firstlight:road_guide_sign": {

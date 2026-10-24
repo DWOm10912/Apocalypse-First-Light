@@ -94,12 +94,12 @@ public final class PickClient {
                 && BoulderBlocks.isBoulder(mc.level.getBlockState(hit.getBlockPos()));
     }
 
-    /** Whether the crosshair is on bare rock ground (Rock R2) within a strike's reach, with the pick in hand. */
+    /** Whether the crosshair is on bare rock ground (Rock R2) or a natural rock face (U3a-3) within a strike's reach, with the pick in hand. */
     private static boolean onRock(Minecraft mc) {
         if (mc.level == null || !holding(mc) || !(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK
                 || !Earthwork.rock(mc.level.getBlockState(hit.getBlockPos()).getBlock())) return false;
         var aim = BoulderStrike.aim(mc.player);
-        return aim != null && aim.root() == null;
+        return aim != null && (aim.root() == null || aim.node() == com.antaurora.apofirstlight.boulder.RockMining.NODE);
     }
 
     /** The prompt (WorldInteractionHint): strike with the pick at a boulder or bare rock in reach; any other hand at a boulder: it needs a pick. */

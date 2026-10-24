@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "69";
+    private static final String PROTOCOL = "72";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -143,6 +143,11 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.earthwork.EarthChunkPacket.class,
                 com.antaurora.apofirstlight.earthwork.EarthChunkPacket::encode, com.antaurora.apofirstlight.earthwork.EarthChunkPacket::decode,
                 com.antaurora.apofirstlight.earthwork.EarthChunkPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        // U3a-3 round 2 (docs/worldgen/underground_u3_rocks_ores_design.md 13): one chunk's carved rock (protocol 72)
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.earthwork.CarveChunkPacket.class,
+                com.antaurora.apofirstlight.earthwork.CarveChunkPacket::encode, com.antaurora.apofirstlight.earthwork.CarveChunkPacket::decode,
+                com.antaurora.apofirstlight.earthwork.CarveChunkPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         // Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 11.2): boulder roots and the pick mattock's strikes (protocol 66)
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket.class,
@@ -275,6 +280,11 @@ public final class AflNetwork {
     /** Earthwork A1: a chunk's height field to every player tracking the chunk. */
     public static void sendEarth(net.minecraft.world.level.chunk.LevelChunk chunk, com.antaurora.apofirstlight.earthwork.EarthChunkPacket packet) {
         if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
+    }
+
+    /** U3a-3 round 2: a chunk's carved rock to one player (it starts tracking the chunk). */
+    public static void carveTo(ServerPlayer player, com.antaurora.apofirstlight.earthwork.CarveChunkPacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Earthwork A1: a chunk's height field to one player (it starts tracking the chunk). */

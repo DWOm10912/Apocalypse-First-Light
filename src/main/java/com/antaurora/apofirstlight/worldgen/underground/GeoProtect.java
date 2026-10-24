@@ -47,10 +47,13 @@ public final class GeoProtect {
     /** Roads' sampled centrelines {x, z, y} per design (the check draws them). */
     public final List<double[]> roadLines = new ArrayList<>();
     public final List<TownPlan> towns;
+    /** The road designs (the cave trails start from the two-lane and county ones, CaveTrail). */
+    public final List<RoadDesign> roads;
 
     public GeoProtect(TerrainPlanSurface s, List<RoadDesign> roads, List<TownPlan> towns, RoadCounty.Home h) {
         this.s = s;
         this.towns = towns == null ? List.of() : towns;
+        this.roads = roads == null ? List.of() : roads;
         n = s.gridN;
         origin = s.gridOrigin;
         cell = TerrainPlanSurface.CELL;

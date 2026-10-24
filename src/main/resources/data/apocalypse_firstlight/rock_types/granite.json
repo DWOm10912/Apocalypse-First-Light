@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:granite",
+  "density_kg_m3": 2700,
+  "strike_litres": 50,
+  "boulder_look": "granite",
+  "anchor": true,
+  "stone": "apocalypse_firstlight:field_stone"
+}

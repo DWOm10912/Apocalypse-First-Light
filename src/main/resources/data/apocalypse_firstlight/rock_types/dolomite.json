@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:dolomite",
+  "density_kg_m3": 2800,
+  "strike_litres": 55,
+  "boulder_look": "limestone",
+  "anchor": true,
+  "stone": "apocalypse_firstlight:dolomite_stone"
+}

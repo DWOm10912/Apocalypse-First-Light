@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 
 /**
  * Rock R1a / R1b: puts {@link BoulderModel} on every state of the boulder blocks and {@link LooseStonesModel} on the loose
- * stones' (their JSON is particle-only), clears their caches.
+ * stones' (their JSON is particle-only), one of each per rock (R3: the particles), clears their caches.
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class BoulderModels {
@@ -19,13 +19,17 @@ public final class BoulderModels {
     @SubscribeEvent
     public static void wrap(ModelEvent.ModifyBakingResult event) {
         if (!BoulderBlocks.ready()) return;
-        var model = new BoulderModel();
+        BoulderRock[] rocks = BoulderRock.values();
+        var models = new BoulderModel[rocks.length];
+        for (BoulderRock r : rocks) models[r.ordinal()] = new BoulderModel(r);
         for (Block b : new Block[]{BoulderBlocks.root(), BoulderBlocks.cell()})
-            for (BlockState state : b.getStateDefinition().getPossibleStates()) event.getModels().put(BlockModelShaper.stateToModelLocation(state), model);
+            for (BlockState state : b.getStateDefinition().getPossibleStates())
+                event.getModels().put(BlockModelShaper.stateToModelLocation(state), models[state.getValue(BoulderBlocks.ROCK).ordinal()]);
         if (!LooseStones.ready()) return;
-        var loose = new LooseStonesModel();
+        var loose = new LooseStonesModel[rocks.length];
+        for (BoulderRock r : rocks) loose[r.ordinal()] = new LooseStonesModel(r);
         for (BlockState state : LooseStones.block().getStateDefinition().getPossibleStates())
-            event.getModels().put(BlockModelShaper.stateToModelLocation(state), loose);
+            event.getModels().put(BlockModelShaper.stateToModelLocation(state), loose[state.getValue(LooseStones.ROCK).ordinal()]);
     }
 
     @SubscribeEvent

@@ -1,5 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.underground;
 
+import com.antaurora.apofirstlight.worldgen.network.road.TunnelMesh;
+
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -36,7 +38,7 @@ public final class UndergroundPlan {
      * U4 (22.2–22.3): a cut open to the sky, the ground taken down to floorAt inside its footprint. It cuts only what is
      * solid, so above the planned ground it changes nothing and the ground after the cut is min(planned, floorAt).
      */
-    public sealed interface Open extends Shape permits Bowl, Notch {
+    public sealed interface Open extends Shape permits Bowl, Notch, Pit {
         /** The cut's floor over (x, z), +inf outside the footprint. */
         double floorAt(double x, double z);
     }
@@ -100,6 +102,83 @@ public final class UndergroundPlan {
         }
 
         public boolean inside(double px, double py, double pz) { return py < top && py > floorAt(px, pz); }
+    }
+
+    /**
+     * A great sinkhole (22.8), a big chamber's roof fallen in: the flat floor floorY inside a lobed outline (radius r,
+     * stretched along the unit (ux, uz) the chamber's passages run), cliffs up to collarY in bedding bands `band` m high,
+     * each band's face set back by a sparse ledge and roughened by its own amount (never back in, so the ground stays
+     * one height per column), then the collar's shelf and its slope, 3–9 m of it, and over that the cliff again up to the
+     * ground (top: the highest ground round it), so a pit under a hill keeps its footprint. At the
+     * angles k0..k3 (NaN: unused; the rim, the talus side, the rope stages) the face stays at r all the way up, so the
+     * rigging of 19.2 stands where it would on a round shaft.
+     */
+    public record Pit(int owner, double x, double z, double floorY, double r, double collarY, double top, double ux, double uz,
+                      double band, double k0, double k1, double k2, double k3, int salt) implements Open {
+        /** Outline lobes and stretch (shares of r), a ledge's width and the most the bands step back in all, the face's roughness, m. */
+        public static final double LOBE = 0.14, STRETCH = 0.08, LEDGE = 2.2, STEP_BACK = 6, ROUGH = 0.7;
+        /** The collar: its shelf at collarY, then its slope per m, easing in over its first TOE m, RUN to RUN + RUN_VAR m long. */
+        public static final double SHELF = 2.5, COLLAR = 0.6, TOE = 2, RUN = 3, RUN_VAR = 6;
+
+        /** The farthest the cliff top reaches from (x, z). */
+        public double cliffReach() { return r * (1 + LOBE + STRETCH) + STEP_BACK + ROUGH; }
+
+        /** The footprint's radius: the cliff top, the shelf and the collar's slope at its longest. */
+        public double outer() { return cliffReach() + SHELF + RUN + RUN_VAR + 0.5; }
+
+        public double[] bounds() {
+            double e = outer();
+            return new double[]{x - e, floorY, z - e, x + e, top, z + e};
+        }
+
+        /** 1 away from the kept angles, 0 at them (smooth over max(0.2 rad, 9 m of arc)). */
+        double weight(double cx, double cz) {
+            double th = Math.atan2(cz, cx), wd = Math.max(0.2, 9 / r), w = 1;
+            for (double k : new double[]{k0, k1, k2, k3}) {
+                if (Double.isNaN(k)) continue;
+                double d = Math.abs(Math.IEEEremainder(th - k, 2 * Math.PI)) / wd;
+                if (d < 1) w *= d * d * (3 - 2 * d);
+            }
+            return w;
+        }
+
+        /** The face's distance from the centre at the floor, in the unit direction (cx, cz) of weight w. */
+        public double base(double cx, double cz, double w) {
+            double d = cx * ux + cz * uz;
+            return r * (1 + w * (STRETCH * (2 * d * d - 1) + LOBE * (2 * valueNoise(50 + 1.3 * cx, 50 + 1.3 * cz, 0, salt) - 1)));
+        }
+
+        /** The face of band j given the face of the band under it (cum[0]: the step-backs so far, carried up). */
+        double face(double cx, double cz, double w, double base, int j, double below, double[] cum) {
+            if (w <= 0) return base;
+            if (j > 0) {
+                double l = (valueNoise(cx * r / 14, j * 0.7, cz * r / 14, salt + 3) - 0.55) / 0.3;
+                cum[0] = Math.min(STEP_BACK, cum[0] + LEDGE * Math.max(0, Math.min(1, l)));
+            }
+            return Math.max(below, base + w * (cum[0] + ROUGH * (2 * valueNoise(cx * r / 3.5, j * 1.7, cz * r / 3.5, salt + 5) - 1)));
+        }
+
+        public double floorAt(double px, double pz) {
+            double dx = px - x, dz = pz - z, rr = Math.sqrt(dx * dx + dz * dz);
+            if (rr >= outer()) return Double.POSITIVE_INFINITY;
+            double cx = rr < 1e-6 ? 1 : dx / rr, cz = rr < 1e-6 ? 0 : dz / rr, w = weight(cx, cz), base = base(cx, cz, w);
+            if (rr < base) return floorY;
+            double[] cum = {0};
+            double f = face(cx, cz, w, base, 0, base, cum);
+            if (rr < f) return floorY;
+            int n = Math.max(1, (int) Math.ceil((collarY - floorY) / band));
+            for (int j = 1; j < n; j++) {
+                f = face(cx, cz, w, base, j, f, cum);
+                if (rr < f) return Math.min(collarY, floorY + j * band);
+            }
+            double u = rr - f - SHELF;
+            if (u <= 0) return collarY;
+            if (u >= RUN + RUN_VAR * valueNoise(cx * r / 10, 0, cz * r / 10, salt + 7)) return Double.POSITIVE_INFINITY;
+            double c = collarY + COLLAR * (u < TOE ? u * u / (2 * TOE) : u - TOE / 2);
+            return c >= top ? Double.POSITIVE_INFINITY : c;
+        }
+
+        public boolean inside(double px, double py, double pz) { return py < top && py > floorY && py > floorAt(px, pz); }
     }
 
     /**
@@ -503,6 +582,41 @@ public final class UndergroundPlan {
                               double length, double drop, List<double[]> route, double homeDistance, double homeBearing,
                               double roadX, double roadZ, double roadWalk) {}
 
+    /**
+     * U5b (design 24.5): the footpath to a destination's mouth from the nearest two-lane or county road. line: {x, z, y}
+     * a metre apart from the trailhead on the road's shoulder to the mouth's rim (y the planned ground after the cuts);
+     * length: its walk; grade: its steepest 10 m; fords: the streams it wades; road: the design it leaves ("town:" and
+     * a town's name from a town's edge); the trailhead sign, the caution sign before the mouth and the marker posts as
+     * road fixtures (block/TunnelFixtureBlock trail_sign / cave_sign / trail_marker; null: no room), each wholly in one
+     * chunk, y the planned ground (CaveTrailPass stands them on the real one).
+     */
+    public record Trail(int destination, double[] line, double length, double grade, int fords, String road,
+                        TunnelMesh.Placement sign, TunnelMesh.Placement caution, List<TunnelMesh.Placement> markers) {
+        public int points() { return line.length / 3; }
+    }
+
+    /** The boulder forms the plan names (Rock R1a's data ids, docs/gameplay/rock_r1_stones_boulders_design.md 11.1). */
+    public static final String[] ROCK_FORMS = {"erratic_round", "erratic_long", "erratic_big", "slab_flat", "slab_tilted", "talus_block",
+            "talus_wedge", "split_pair", "tall_block", "small_round", "cluster_three", "cluster_two"};
+    /** Their lengths, m (the same table). */
+    public static final double[] ROCK_LENGTH = {1.6, 2.4, 3.0, 2.0, 1.7, 1.2, 1.4, 2.2, 1.0, 0.7, 0.9, 1.3};
+
+    /** R3 (22.9): the rocks a boulder or loose stone looks like (boulder/BoulderRock ids, in its order). */
+    public static final String[] ROCK_LOOKS = {"granite", "limestone", "sandstone", "shale"};
+
+    /** The look a rock type's entrance rocks take (EntranceRocks#look), by name: RockTypes' boulder_look must agree. */
+    public static String rockLook(RockType r) { return ROCK_LOOKS[EntranceRocks.look(r)]; }
+
+    /**
+     * U4b (22.7): a rock on an entrance cut, in the block column (x, z), on the planned ground y after the cut. form >= 0:
+     * a boulder of {@link #ROCK_FORMS} at turn (its origin cell over the ground there); form -1: a patch of loose stones
+     * (stones pebbles, a field stone, a flint). shape: the cut or talus it lies on; look: what rock it is of (R3,
+     * {@link #ROCK_LOOKS}).
+     */
+    public record Rock(int x, double y, int z, int form, int turn, int stones, boolean cobble, boolean flint, int shape, int look) {
+        public boolean boulder() { return form >= 0; }
+    }
+
     // ------------------------------------------------------------------ the plan
 
     public final long seed;
@@ -526,6 +640,13 @@ public final class UndergroundPlan {
     public final List<Anchor> anchors = new ArrayList<>();
     public final List<Succession> successions = new ArrayList<>();
     public final List<Destination> destinations = new ArrayList<>();
+    /** The entrance rocks (22.7), boulders first; by chunk in {@link #rocksIn}. */
+    public final List<Rock> rocks = new ArrayList<>();
+    private Map<Long, Rock[]> rockIndex = Map.of();
+    /** The cave trails (U5b, 24.5); their segments by chunk {trail, first point} pairs and their fixtures by chunk. */
+    public final List<Trail> trails = new ArrayList<>();
+    private Map<Long, int[]> trailIndex = Map.of();
+    private Map<Long, List<TunnelMesh.Placement>> trailParts = Map.of();
     /** Planning times, ms, by stage (the check's report). */
     public final Map<String, Long> times = new java.util.LinkedHashMap<>();
 
@@ -558,6 +679,74 @@ public final class UndergroundPlan {
         for (Map.Entry<Long, List<Integer>> e : m.entrySet()) out.put(e.getKey(), e.getValue().stream().mapToInt(Integer::intValue).toArray());
         index = out;
     }
+
+    /** Indexes the rocks by chunk, each chunk's in the plan's order (call after the last rock). */
+    public void indexRocks() {
+        Map<Long, List<Rock>> m = new HashMap<>();
+        for (Rock r : rocks) m.computeIfAbsent(cellKey(r.x() >> 4, r.z() >> 4), k -> new ArrayList<>()).add(r);
+        Map<Long, Rock[]> out = new HashMap<>();
+        for (Map.Entry<Long, List<Rock>> e : m.entrySet()) out.put(e.getKey(), e.getValue().toArray(new Rock[0]));
+        rockIndex = out;
+    }
+
+    private static final Rock[] NO_ROCKS = new Rock[0];
+
+    /** Indexes the trails' segments (their bounds grown by reach) and their fixtures by chunk (call after the last trail). */
+    public void indexTrails(double reach) {
+        Map<Long, List<Integer>> m = new HashMap<>();
+        Map<Long, List<TunnelMesh.Placement>> parts = new HashMap<>();
+        for (int t = 0; t < trails.size(); t++) {
+            Trail tr = trails.get(t);
+            double[] l = tr.line();
+            for (int i = 0; i + 5 < l.length; i += 3) {
+                int x0 = (int) Math.floor((Math.min(l[i], l[i + 3]) - reach) / 16), x1 = (int) Math.floor((Math.max(l[i], l[i + 3]) + reach) / 16);
+                int z0 = (int) Math.floor((Math.min(l[i + 1], l[i + 4]) - reach) / 16), z1 = (int) Math.floor((Math.max(l[i + 1], l[i + 4]) + reach) / 16);
+                for (int cz = z0; cz <= z1; cz++) for (int cx = x0; cx <= x1; cx++) {
+                    List<Integer> c = m.computeIfAbsent(cellKey(cx, cz), k -> new ArrayList<>());
+                    c.add(t);
+                    c.add(i / 3);
+                }
+            }
+            List<TunnelMesh.Placement> all = new ArrayList<>(tr.markers());
+            if (tr.sign() != null) all.add(0, tr.sign());
+            if (tr.caution() != null) all.add(tr.caution());
+            for (TunnelMesh.Placement p : all)
+                parts.computeIfAbsent(cellKey((int) Math.floor(p.x()) >> 4, (int) Math.floor(p.z()) >> 4), k -> new ArrayList<>()).add(p);
+        }
+        Map<Long, int[]> out = new HashMap<>();
+        for (Map.Entry<Long, List<Integer>> e : m.entrySet()) out.put(e.getKey(), e.getValue().stream().mapToInt(Integer::intValue).toArray());
+        trailIndex = out;
+        trailParts = parts;
+    }
+
+    private static final int[] NO_SEGMENTS = new int[0];
+
+    /** The trail segments near chunk (cx, cz) as {trail, first point} pairs (empty: none). */
+    public int[] trailSegments(int cx, int cz) { return trailIndex.getOrDefault(cellKey(cx, cz), NO_SEGMENTS); }
+
+    /** The trail fixtures standing in chunk (cx, cz). */
+    public List<TunnelMesh.Placement> trailParts(int cx, int cz) { return trailParts.getOrDefault(cellKey(cx, cz), List.of()); }
+
+    /**
+     * The horizontal distance from (x, z) to the nearest trail's centreline and how far along that trail it lies, m
+     * ({distance, along}); distance +inf when no trail segment is indexed near (only within the index's reach).
+     */
+    public double[] trailNear(double x, double z) {
+        int[] segs = trailSegments((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
+        double best = Double.POSITIVE_INFINITY, along = 0;
+        for (int k = 0; k + 1 < segs.length; k += 2) {
+            double[] l = trails.get(segs[k]).line();
+            int i = segs[k + 1] * 3;
+            double ax = l[i], az = l[i + 1], dx = l[i + 3] - ax, dz = l[i + 4] - az, L2 = dx * dx + dz * dz;
+            double f = L2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
+            double d = Math.hypot(x - ax - f * dx, z - az - f * dz);
+            if (d < best) { best = d; along = segs[k + 1] + f * Math.sqrt(L2); }
+        }
+        return new double[]{best, along};
+    }
+
+    /** The rocks whose column is in chunk (cx, cz). */
+    public Rock[] rocksIn(int cx, int cz) { return rockIndex.getOrDefault(cellKey(cx, cz), NO_ROCKS); }
 
     /** The shape ids whose bounds overlap the index cell of (x, z) (empty array if none). */
     public int[] shapesNear(double x, double z) {

@@ -57,7 +57,7 @@ public final class ForestHomeChunkPass {
         if (x1 < a.minX() || x0 > a.maxX() || z1 < a.minZ() || z0 > a.maxZ()) return;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int x = Math.max(x0, a.minX()); x <= Math.min(x1, a.maxX()); x++)
-            for (int z = Math.max(z0, a.minZ()); z <= Math.min(z1, a.maxZ()); z++) grade(chunk, a, x, z, p);
+            for (int z = Math.max(z0, a.minZ()); z <= Math.min(z1, a.maxZ()); z++) grade(level, chunk, a, x, z, p);
         BoundingBox slice = new BoundingBox(x0, chunk.getMinBuildHeight(), z0, x1, chunk.getMaxBuildHeight() - 1, z1);
         if (!slice.intersects(a.box())) return;
         StructurePlaceSettings s = AflTemplatePlacer.settings(a.rotation(), Mirror.NONE, false)
@@ -71,7 +71,7 @@ public final class ForestHomeChunkPass {
     }
 
     /** One column of the plot or its ring. */
-    static void grade(ChunkAccess chunk, ForestHomeRuntime.Active a, int x, int z, BlockPos.MutableBlockPos p) {
+    static void grade(WorldGenLevel level, ChunkAccess chunk, ForestHomeRuntime.Active a, int x, int z, BlockPos.MutableBlockPos p) {
         double d = a.plot().distance(x + 0.5, z + 0.5);
         if (d > ForestHomeLayout.GRADE_MARGIN) return;
         int top = chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x & 15, z & 15);
@@ -79,6 +79,7 @@ public final class ForestHomeChunkPass {
         int y0 = a.reservation().y();
         if (d <= 0) {
             for (int y = Math.max(top + 1, y0 - MAX_FILL); y < y0; y++) set(chunk, p, x, y, z, (y < y0 - 3 ? Blocks.STONE : Blocks.DIRT).defaultBlockState());
+            if (level != null) com.antaurora.apofirstlight.worldgen.underground.GeologyPass.restone(level, chunk, x, z, Math.max(top + 1, y0 - MAX_FILL), y0 - 4);
             for (int y = y0 + ForestHomeLayout.SIZE_Y; y <= open; y++) set(chunk, p, x, y, z, Blocks.AIR.defaultBlockState());
             return;
         }

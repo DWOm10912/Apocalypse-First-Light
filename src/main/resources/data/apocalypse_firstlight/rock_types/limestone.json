@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:limestone",
+  "density_kg_m3": 2600,
+  "strike_litres": 60,
+  "boulder_look": "limestone",
+  "anchor": true,
+  "stone": "apocalypse_firstlight:limestone_stone"
+}

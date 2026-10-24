@@ -17,6 +17,15 @@
     "minecraft:yellow_terracotta",
     "minecraft:brown_terracotta",
     "minecraft:red_terracotta",
-    "minecraft:light_gray_terracotta"
+    "minecraft:light_gray_terracotta",
+    "apocalypse_firstlight:granite",
+    "apocalypse_firstlight:gneiss",
+    "apocalypse_firstlight:schist",
+    "apocalypse_firstlight:sandstone",
+    "apocalypse_firstlight:limestone",
+    "apocalypse_firstlight:dolomite",
+    "apocalypse_firstlight:shale",
+    "apocalypse_firstlight:marl",
+    "apocalypse_firstlight:rock_salt"
   ]
 }
