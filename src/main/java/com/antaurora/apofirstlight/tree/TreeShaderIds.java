@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  * map being changed. The formal version would add the aliases inside {@code setBlockStateIds} (a mixin), before any chunk
  * is meshed: no second rebuild. No third-party file is changed.
  */
-final class TreeShaderIds {
+public final class TreeShaderIds {
     private static final String SETTINGS = "net.irisshaders.iris.shaderpack.materialmap.WorldRenderingSettings";
     private static boolean initialized;
     private static Object settings;
@@ -37,8 +37,20 @@ final class TreeShaderIds {
     private static Object lastMap;
     private static String status = "not checked yet";
     static int leafId = -1, needleId = -1, logId = -1;
+    /** Other AFL blocks that take a vanilla block's ID (AFL vegetation: the standing mesh grass as the pack's short grass). */
+    private record Extra(Block block, Block like, java.util.function.Predicate<BlockState> which) {}
+    private static final java.util.List<Extra> EXTRA = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private TreeShaderIds() {}
+
+    /**
+     * From now on the pack's ID of {@code like}'s default state goes to the states of {@code block} that {@code which}
+     * takes (client thread); the others keep no ID (the pack's default: not waving).
+     */
+    public static void aliasLike(Block block, Block like, java.util.function.Predicate<BlockState> which) {
+        EXTRA.add(new Extra(block, like, which));
+        lastMap = null;   // the next tick copies the map again with the new alias
+    }
 
     private static void init() {
         if (initialized) return;
@@ -72,6 +84,7 @@ final class TreeShaderIds {
             int added = alias(copy, TreeBlocks.root(), logId) + alias(copy, TreeBlocks.wood(), logId);
             for (var crown : TreeBlocks.crowns())
                 added += alias(copy, crown, crown.species.conifer ? needleId : leafId);
+            for (Extra e : EXTRA) added += alias(copy, e.block(), ids.getOrDefault(e.like().defaultBlockState(), -1), e.which());
             if (added == 0) {
                 lastMap = map;
                 status = "pack " + AflShaderCompat.currentPackLabel() + " defines no oak leaves / log ID (or lists the sample itself): nothing to alias";
@@ -91,13 +104,17 @@ final class TreeShaderIds {
     }
 
     private static int alias(Object2IntOpenHashMap<BlockState> ids, Block block, int id) {
+        return alias(ids, block, id, s -> true);
+    }
+
+    private static int alias(Object2IntOpenHashMap<BlockState> ids, Block block, int id, java.util.function.Predicate<BlockState> which) {
         if (id < 0) return 0;
         int n = 0;
-        for (BlockState s : block.getStateDefinition().getPossibleStates()) if (!ids.containsKey(s)) { ids.put(s, id); n++; }
+        for (BlockState s : block.getStateDefinition().getPossibleStates()) if (which.test(s) && !ids.containsKey(s)) { ids.put(s, id); n++; }
         return n;
     }
 
-    static String describe() {
+    public static String describe() {
         return status;
     }
 }

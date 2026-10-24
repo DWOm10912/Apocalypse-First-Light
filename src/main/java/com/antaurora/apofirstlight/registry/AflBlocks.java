@@ -624,6 +624,45 @@ public final class AflBlocks {
     public static final RegistryObject<Block> FLATTENED_PLANT = BLOCKS.register("flattened_plant",
             () -> new com.antaurora.apofirstlight.block.FlattenedPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
                     .offsetType(BlockBehaviour.OffsetType.NONE)));
+    // AFL vegetation P1a (2026-10-23, docs/gameplay/vegetation_v1_design.md): Kentucky bluegrass (Poa pratensis), a square
+    // metre of turf per block, drawn by client/vegetation (mesh clumps, distance levels, wind, bending). Placed by the dev
+    // command only for now; replaceable like vanilla grass, no loot (picking comes with P3), no item.
+    public static final RegistryObject<Block> KENTUCKY_BLUEGRASS = BLOCKS.register("kentucky_bluegrass",
+            () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                    .offsetType(BlockBehaviour.OffsetType.NONE), com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.BLUEGRASS));
+    // AFL vegetation P1c (docs/gameplay/vegetation_v1_design.md 13): broadleaf cattail (Typha latifolia), on wet ground or in
+    // water a block deep (waterlogged), and common yarrow (Achillea millefolium) among turf. Dev command only for now.
+    public static final RegistryObject<Block> BROADLEAF_CATTAIL = BLOCKS.register("broadleaf_cattail",
+            () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Wet(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                    .offsetType(BlockBehaviour.OffsetType.NONE), com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.CATTAIL));
+    public static final RegistryObject<Block> COMMON_YARROW = BLOCKS.register("common_yarrow",
+            () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                    .offsetType(BlockBehaviour.OffsetType.NONE), com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.YARROW));
+    // AFL vegetation P2b batch 1 (docs/gameplay/vegetation_v1_design.md 15): big bluestem (Andropogon gerardii), little
+    // bluestem (Schizachyrium scoparium), Pennsylvania sedge (Carex pensylvanica), bracken (Pteridium aquilinum). Grown by
+    // the vegetation feature (VegetationPlan) and the dev command; no loot, no item.
+    public static final RegistryObject<Block> BIG_BLUESTEM = meshPlant("big_bluestem", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.BIG_BLUESTEM);
+    public static final RegistryObject<Block> LITTLE_BLUESTEM = meshPlant("little_bluestem", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.LITTLE_BLUESTEM);
+    public static final RegistryObject<Block> PENNSYLVANIA_SEDGE = meshPlant("pennsylvania_sedge", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.PENNSYLVANIA_SEDGE);
+    public static final RegistryObject<Block> BRACKEN_FERN = meshPlant("bracken_fern", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.BRACKEN_FERN);
+    // P2b batch 2 (doc 16): broadleaf plantain (Plantago major), common dandelion (Taraxacum officinale), purple coneflower
+    // (Echinacea purpurea), black-eyed Susan (Rudbeckia hirta)
+    public static final RegistryObject<Block> BROADLEAF_PLANTAIN = meshPlant("broadleaf_plantain", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.PLANTAIN);
+    public static final RegistryObject<Block> DANDELION = meshPlant("dandelion", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.DANDELION);
+    public static final RegistryObject<Block> PURPLE_CONEFLOWER = meshPlant("purple_coneflower", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.PURPLE_CONEFLOWER);
+    public static final RegistryObject<Block> BLACK_EYED_SUSAN = meshPlant("black_eyed_susan", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.BLACK_EYED_SUSAN);
+    // P2b batch 3 (doc 18): Canada goldenrod (Solidago canadensis), common reed (Phragmites australis; on wet ground or in
+    // water a block deep, as the cattail), Allegheny blackberry (Rubus allegheniensis)
+    public static final RegistryObject<Block> CANADA_GOLDENROD = meshPlant("canada_goldenrod", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.CANADA_GOLDENROD);
+    public static final RegistryObject<Block> COMMON_REED = BLOCKS.register("common_reed",
+            () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Wet(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                    .offsetType(BlockBehaviour.OffsetType.NONE), com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.COMMON_REED));
+    public static final RegistryObject<Block> ALLEGHENY_BLACKBERRY = meshPlant("allegheny_blackberry", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.ALLEGHENY_BLACKBERRY);
+
+    private static RegistryObject<Block> meshPlant(String id, com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species species) {
+        return BLOCKS.register(id, () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                .offsetType(BlockBehaviour.OffsetType.NONE), species));
+    }
     // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
     // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
     public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",

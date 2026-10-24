@@ -232,6 +232,11 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_WOOD = simple("folding_knife_hit_wood");
     public static final RegistryObject<SoundEvent> FOLDING_KNIFE_WHITTLE = simple("folding_knife_whittle");
     public static final RegistryObject<SoundEvent> WORKBENCH_TOOL_DOWN = simple("workbench_tool_down");
+    // AFL vegetation P2c (docs/gameplay/vegetation_v1_design.md 19.3): a foot in the mesh plants (vegetation/VegetationFootfalls),
+    // one Firefly take per kind (the user's, 2026-10-24): short turf and rosettes, tall grass and stems, the bramble
+    public static final RegistryObject<SoundEvent> VEGETATION_RUSTLE_LOW = simple("vegetation_rustle_low");
+    public static final RegistryObject<SoundEvent> VEGETATION_RUSTLE_TALL = simple("vegetation_rustle_tall");
+    public static final RegistryObject<SoundEvent> VEGETATION_RUSTLE_BRAMBLE = simple("vegetation_rustle_bramble");
     // Furniture bench work (docs/gameplay/furniture_bench_work_v1.md 7): the user's Firefly takes cut by
     // design/items/furniture_bench_work_v1/fb_cut_sounds.py; client/workbench/WorkbenchWork plays them at the actions' events
     public static final RegistryObject<SoundEvent> FURNITURE_NAIL_TAP = simple("furniture_nail_tap");

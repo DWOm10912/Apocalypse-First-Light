@@ -91,6 +91,8 @@ public final class FlattenedPlantBlock extends BushBlock implements EntityBlock 
     public static boolean flatten(ServerLevel level, BlockPos pos, Direction facing) {
         BlockState state = level.getBlockState(pos);
         Block block = state.getBlock();
+        // AFL mesh plants lie down as themselves (vegetation/MeshPlantBlock)
+        if (block instanceof com.antaurora.apofirstlight.vegetation.MeshPlantBlock plant) return plant.flatten(level, pos, state, facing);
         if (!(block instanceof BushBlock) || block instanceof FlattenedPlantBlock) return false;
         BlockPos base = pos;
         boolean tall = block instanceof DoublePlantBlock;

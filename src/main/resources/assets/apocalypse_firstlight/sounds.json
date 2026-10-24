@@ -986,5 +986,17 @@
   "thunder_cloud": {
     "subtitle": "subtitles.apocalypse_firstlight.thunder_cloud",
     "sounds": [{"name": "apocalypse_firstlight:weather/thunder_cloud_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_cloud_2", "attenuation_distance": 16}]
+  },
+  "vegetation_rustle_low": {
+    "subtitle": "subtitles.apocalypse_firstlight.vegetation_rustle_low",
+    "sounds": [{"name": "apocalypse_firstlight:vegetation/rustle_low"}]
+  },
+  "vegetation_rustle_tall": {
+    "subtitle": "subtitles.apocalypse_firstlight.vegetation_rustle_tall",
+    "sounds": [{"name": "apocalypse_firstlight:vegetation/rustle_tall"}]
+  },
+  "vegetation_rustle_bramble": {
+    "subtitle": "subtitles.apocalypse_firstlight.vegetation_rustle_bramble",
+    "sounds": [{"name": "apocalypse_firstlight:vegetation/rustle_bramble"}]
   }
 }
