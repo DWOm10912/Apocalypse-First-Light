@@ -387,8 +387,10 @@ public final class Earthwork {
             EarthChunk o = own(level, vx >> 6, vz >> 6);
             int k = vertex(vx & 63, vz & 63);
             int b = t * Q + (int) Math.round(SmoothRules.surface(c, (double) i / PER_BLOCK, (double) j / PER_BLOCK) * Q);
+            // a neighbour's snapshot put it elsewhere: the two columns of a natural step (Rock R2 round 4, SmoothRules#notFree),
+            // whose pinned corners each take their own top; the column edited first keeps the vertex, EarthSkin closes the side
             if (o.h(k) == NONE) o.first(k, b);
-            else if (o.base(k) != b) mismatches++;   // a neighbour's snapshot put it elsewhere (should not happen: free corners)
+            else if (o.base(k) != b) mismatches++;
             DIRTY.add(ChunkPos.asLong(vx >> 6, vz >> 6));
         }
         int floor = rock(top.getBlock()) ? (t + 1) * Q : hardFloor(level, x, t, z);

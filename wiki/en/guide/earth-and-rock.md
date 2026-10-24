@@ -31,7 +31,7 @@ Ground that has been dug or poured on takes only the shovel. Bare hands can't br
 
 A thin soil lying straight on rock can be dug and poured on too. The shovel can't work these places, and a pour that can't go down says so:
 
-- The top edge of a natural bank or cliff two blocks or higher
+- The top edge of a natural bank or cliff three blocks or higher. <StatusTag s="test" /> The top of a two-block bank can be dug and poured on
 - Next to roads, houses and tree roots
 - Under a block less than two blocks overhead
 
@@ -60,7 +60,7 @@ Every strike takes the rock a little lower, no shovel needed:
 - Strike after strike you dig one continuous pit, and its sides can be steep
 - Where soil still lies over the rock, dig the soil off with the shovel first, then strike the rock. Rubble or poured earth on the spot comes off first under the pick
 - The pick goes down at most <V j="Earthwork.ROCK_DEPTH" u="blocks" /> below the first ground. Over a cave a layer of rock is always left, never broken through
-- A cliff two blocks or higher itself, and ground next to roads and houses, can't be struck: it says "Can't cut the rock here". The ground at the foot of a cliff can be struck; a narrow edge along the cliff stays as it is
+- The top edge of a cliff three blocks or higher, and ground next to roads and houses, can't be struck: it says "Can't cut the rock here". The top of a two-block step can be struck. The ground at the foot of a cliff can be struck; a narrow edge along a cliff three blocks or higher stays as it is
 - The stone it breaks off drops by volume: on average a <ItemIcon id="field_stone" /> field stone every two strikes and a <ItemIcon id="pebble" /> pebble or two every strike
 
 Rubble struck loose in older saves is still there: it is loose earth, and like sand and gravel it goes into the shovel, pours out and heaps into slopes; poured on the ground and levelled it becomes gravel

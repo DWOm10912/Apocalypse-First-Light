@@ -24,6 +24,11 @@ import static com.antaurora.apofirstlight.earthwork.EarthGrid.*;
  *   <li>rock (R2 round 3): pick strikes cut bare rock down (old rubble on it first) and leave no rubble, never below the
  *   rock limit, never where natural ground lies over the rock; scoops take only the loose earth over rock; ground plus
  *   blade plus what was carried away plus what the pick cut stays to the quantum;</li>
+ *   <li>sides (R2 round 4): EarthGrid#sideGaps closes a segment of a skin cell's side exactly, between the skin's edge and
+ *   the neighbour's ground clipped to the cell, inward where the neighbour is higher, outward where the skin is, nothing
+ *   twice;</li>
+ *   <li>steps (R2 round 4): SmoothRules#notFree with walls frees the foot of a step and the rim of a two-cell step, not
+ *   the rim of a three-cell cliff, not a rim without walls;</li>
  *   <li>vehicle ground (A3): EarthGrid#ground's height is the skin's, its normal is a unit vector up and agrees with the
  *   skin's slope measured a step away inside the same triangle.</li>
  * </ul>
@@ -47,10 +52,92 @@ public final class EarthworkCheck {
         volume(r);
         shovel(r);
         rock(r);
+        sides(r);
+        steps();
         vehicleGround(r);
         System.out.printf("Earthwork check: %d checks, %d failures (grid %d per block, %d quanta per block, %.4f L per quantum)%n",
                 checks, failures, PER_BLOCK, Q, LITRES_PER_QUANTUM);
         if (failures > 0) System.exit(1);
+    }
+
+    /**
+     * EarthGrid#sideGaps over random segments (ends from below the cell to above it, a quarter of them meeting the
+     * neighbour at one end): at every sample point between the pieces' ends exactly one piece covers it when the skin and
+     * the neighbour part there, from the lower to the higher clipped to the cell, facing the right way; none otherwise.
+     */
+    private static void sides(Random r) {
+        int segments = 20000, pieces = 0;
+        double worst = 0;
+        for (int n = 0; n < segments; n++) {
+            float e0 = r.nextFloat() * 4 - 1.5F, e1 = r.nextFloat() * 4 - 1.5F;
+            float t0 = r.nextInt(4) == 0 ? e0 : r.nextFloat() * 4 - 1.5F, t1 = r.nextInt(4) == 0 ? e1 : r.nextFloat() * 4 - 1.5F;
+            var out = EarthGrid.sideGaps(e0, e1, t0, t1);
+            pieces += out.size();
+            double length = 0;
+            for (float[] p : out) {
+                length += p[1] - p[0];
+                check(p[0] >= 0 && p[1] <= 1 && p[0] < p[1], "sides: piece within the segment");
+                for (int k = 2; k < 6; k++) check(p[k] >= 0 && p[k] <= 1, "sides: piece within the cell");
+            }
+            check(length <= 1 + 1e-5, "sides: pieces overlap along the segment");
+            for (int s = 0; s <= 64; s++) {
+                float u = (s + 0.37F) / 65.37F;
+                float e = Math.max(0, Math.min(1, e0 + (e1 - e0) * u)), t = Math.max(0, Math.min(1, t0 + (t1 - t0) * u));
+                float[] hit = null;
+                int hits = 0;
+                for (float[] p : out) if (u > p[0] && u < p[1]) { hit = p; hits++; }
+                if (Math.abs(e - t) < 1e-4F) {
+                    if (hit != null) {
+                        float w = (u - hit[0]) / (hit[1] - hit[0]);
+                        check(hit[4] + (hit[5] - hit[4]) * w - hit[2] - (hit[3] - hit[2]) * w < 1e-3F, "sides: a face where skin and neighbour meet");
+                    }
+                    continue;
+                }
+                check(hits == 1, "sides: " + hits + " pieces at u " + u + " of " + e0 + " " + e1 + " / " + t0 + " " + t1);
+                if (hit == null) continue;
+                float w = (u - hit[0]) / (hit[1] - hit[0]);
+                float bottom = hit[2] + (hit[3] - hit[2]) * w, top = hit[4] + (hit[5] - hit[4]) * w;
+                worst = Math.max(worst, Math.max(Math.abs(bottom - Math.min(e, t)), Math.abs(top - Math.max(e, t))));
+                check(Math.abs(bottom - Math.min(e, t)) < 1e-4F && Math.abs(top - Math.max(e, t)) < 1e-4F, "sides: piece spans skin to neighbour at u " + u);
+                check((hit[6] == 1) == (t > e), "sides: piece faces the wrong way");
+            }
+        }
+        System.out.printf("Sides: %d segments, %d pieces, worst span error %.6f%n", segments, pieces, worst);
+    }
+
+    /**
+     * SmoothRules#notFree on a small height map (natural ground up to each column's top, air above): a rim two above its
+     * west neighbours, the same three above, the foot of a two-cell step, a rim beside water.
+     */
+    private static void steps() {
+        String rim2 = notFree(10, 8, -1, true), rim2plain = notFree(10, 8, -1, false), rim3 = notFree(10, 7, -1, true);
+        String foot = notFree(8, 10, -1, true), wet = notFree(10, 8, 9, true);
+        check(rim2 == null, "steps: rim of a two-cell step locked: " + rim2);
+        check(rim2plain != null, "steps: rim free without walls");
+        check(rim3 != null && rim3.contains("cliff"), "steps: rim of a three-cell cliff not locked as a cliff: " + rim3);
+        check(foot == null, "steps: foot of a two-cell step locked: " + foot);
+        check(wet != null, "steps: rim beside water free");
+        System.out.printf("Steps: rim of 2 %s, rim of 3 %s, foot %s, rim beside water %s%n", rim2 == null ? "free" : rim2,
+                rim3 == null ? "free" : rim3, foot == null ? "free" : foot, wet == null ? "free" : wet);
+    }
+
+    /** notFree of column (0, 0) with top cell top, the three columns west of it at west (water standing to y water, -1 none). */
+    private static String notFree(int top, int west, int water, boolean walls) {
+        var cells = new com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells() {
+            int top(int x, int z) { return x < 0 ? west : top; }
+
+            @Override
+            public int cell(int x, int y, int z) {
+                if (y <= top(x, z)) return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NATURAL;
+                return x < 0 && y <= water ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.FLUID : com.antaurora.apofirstlight.terrainsmooth.SmoothRules.AIR;
+            }
+
+            @Override
+            public int surface(int x, int z) {
+                return x < 0 && water > west ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NO_SURFACE : top(x, z);
+            }
+        };
+        return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.notFree(cells, com.antaurora.apofirstlight.terrainsmooth.SmoothRules.MODE_B, 0, top, 0, walls);
     }
 
     /** EarthGrid#ground against #skin: height, and the normal against the slope a small step away in the same triangle. */

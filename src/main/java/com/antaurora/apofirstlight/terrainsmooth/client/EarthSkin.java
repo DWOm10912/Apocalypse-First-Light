@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.terrainsmooth.client;
 import com.antaurora.apofirstlight.earthwork.EarthChunk;
 import com.antaurora.apofirstlight.earthwork.EarthGrid;
 import com.antaurora.apofirstlight.earthwork.Earthwork;
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -93,51 +94,136 @@ final class EarthSkin {
                 out.add(SmoothSurfaceModel.quad(q, uv, l.sprite, -1, Direction.UP, shaded(tinted(TopTexture.topColor(q), l.tint), shade), light));
             }
         }
-        walls(region, level, x, y, z, h, light, out);
+        walls(region, level, x, y, z, h, light, state, out);
         TerrainSmoothClient.markSloped(state);
         return List.copyOf(out);
     }
 
     /**
-     * Rock R2 round 2 (user 2026-10-22, sky through a pit's sides): the face of an unedited neighbour's buried block beside
-     * this cell, from the skin's edge on that side up to the cell's top, facing in, with the neighbour's side texture. This
-     * cell's block is a full cube in the data, so the neighbour's own face is culled although the skin there lies lower (the
-     * foot of a natural step, dug or filled). A neighbour's top cell is left to Terrain Smooth's band, which meets the
-     * vertices the two columns share.
+     * The sides of this cell toward unedited neighbours (an edited neighbour shares the vertices: its skin goes on). This
+     * cell's block is a full cube in the data, so the neighbour's face toward it is culled, and the skin itself has no
+     * sides. Along each side, between the skin's edge and the neighbour's ground there (EarthGrid#sideGaps):
+     * <ul>
+     *   <li>the neighbour higher: its face, facing in, with its side texture (Rock R2 round 2, user 2026-10-22, sky through
+     *   a pit's sides: the foot of a natural step, dug or filled; round 4: also the neighbour's top cell, up to its drawn
+     *   top, or up to its band where that band is not culled);</li>
+     *   <li>the skin higher: this cell's own side, facing out (round 4, 2026-10-23: the rim of a two-cell step, and the
+     *   corner of a step whose shared vertex went to the column edited first, SmoothRules#notFree).</li>
+     * </ul>
      */
-    private static void walls(BlockAndTintGetter region, ClientLevel level, int x, int y, int z, int[] h, int light, List<BakedQuad> out) {
+    private static void walls(BlockAndTintGetter region, ClientLevel level, int x, int y, int z, int[] h, int light, BlockState own, List<BakedQuad> out) {
         var mc = Minecraft.getInstance();
         BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos g = new BlockPos.MutableBlockPos();
         for (int s = 0; s < 4; s++) {
             Direction d = SmoothSurfaceModel.SIDES[s];
             int nx = x + d.getStepX(), nz = z + d.getStepZ();
             if (Earthwork.editedTop(level, nx, nz) != Integer.MIN_VALUE) continue;   // edited too: the vertices are shared
-            if (!region.getBlockState(n.set(nx, y + 1, nz)).isSolidRender(region, n)) continue;
-            BlockState nb = region.getBlockState(n.set(nx, y, nz));
-            if (!nb.isSolidRender(region, n)) continue;
-            Direction face = d.getOpposite();
-            List<BakedQuad> layers = mc.getBlockRenderer().getBlockModel(nb).getQuads(nb, face, RandomSource.create(nb.getSeed(n)), ModelData.EMPTY, null);
-            if (layers.isEmpty()) continue;
-            BakedQuad o = layers.get(0);
-            int color = tinted(-1, o.isTinted() ? mc.getBlockColors().getColor(nb, region, n, o.getTintIndex()) : -1);
+            Ground ground = ground(region, n, g, nx, y, nz, d.getOpposite());
             float[] a = SmoothSurfaceModel.SIDE_A[s], b = SmoothSurfaceModel.SIDE_B[s];
+            Face in = null, outward = null;
+            BlockPos cell = new BlockPos(x, y, z);
             for (int k = 0; k < PER_BLOCK; k++) {
                 float u0 = (float) k / PER_BLOCK, u1 = (float) (k + 1) / PER_BLOCK;
-                float lo0 = edge(h, a, b, u0, y), lo1 = edge(h, a, b, u1, y);
-                if (lo0 >= 1 && lo1 >= 1) continue;
-                float x0 = a[0] + (b[0] - a[0]) * u0, z0 = a[1] + (b[1] - a[1]) * u0, x1 = a[0] + (b[0] - a[0]) * u1, z1 = a[1] + (b[1] - a[1]) * u1;
-                // Terrain Smooth's outward side a-low, b-low, b-high, a-high reversed: it faces into this cell
-                float[][] q = {{x0, 1, z0}, {x1, 1, z1}, {x1, lo1, z1}, {x0, lo0, z0}};
-                float[][] uv = {{1 - u0, 0}, {1 - u1, 0}, {1 - u1, 1 - lo1}, {1 - u0, 1 - lo0}};
-                out.add(SmoothSurfaceModel.quad(q, uv, o.getSprite(), -1, face, color, light));
+                float[] p0 = along(a, b, u0), p1 = along(a, b, u1);
+                for (float[] piece : sideGaps(edge(h, p0, y), edge(h, p1, y), ground.at(p0, d), ground.at(p1, d))) {
+                    float v0 = u0 + (u1 - u0) * piece[0], v1 = u0 + (u1 - u0) * piece[1];
+                    float[] q0 = along(a, b, v0), q1 = along(a, b, v1);
+                    float b0 = piece[2], b1 = piece[3], t0 = piece[4], t1 = piece[5];
+                    if (piece[6] == 1) {
+                        if (in == null && (in = face(mc, region, ground.block, ground.blockPos, d.getOpposite(), light)) == null) break;
+                        // Terrain Smooth's outward side a-low, b-low, b-high, a-high reversed: it faces into this cell
+                        float[][] q = {{q0[0], t0, q0[1]}, {q1[0], t1, q1[1]}, {q1[0], b1, q1[1]}, {q0[0], b0, q0[1]}};
+                        float[][] uv = {{1 - v0, 1 - t0}, {1 - v1, 1 - t1}, {1 - v1, 1 - b1}, {1 - v0, 1 - b0}};
+                        out.add(SmoothSurfaceModel.quad(q, uv, in.sprite, -1, d.getOpposite(), in.color, in.light));
+                    } else {
+                        if (outward == null && (outward = face(mc, region, own, cell, d, ground.open ? LevelRenderer.getLightColor(region, n.set(nx, y, nz)) : light)) == null) break;
+                        float[][] q = {{q0[0], b0, q0[1]}, {q1[0], b1, q1[1]}, {q1[0], t1, q1[1]}, {q0[0], t0, q0[1]}};
+                        float[][] uv = {{v0, 1 - b0}, {v1, 1 - b1}, {v1, 1 - t1}, {v0, 1 - t0}};
+                        out.add(SmoothSurfaceModel.quad(q, uv, outward.sprite, -1, d, outward.color, outward.light));
+                    }
+                }
             }
         }
     }
 
-    /** The skin's height (0..1 in cell y) at u along the side from a to b (a vertex of the side's edge). */
-    private static float edge(int[] h, float[] a, float[] b, float u, int y) {
-        int i = Math.round((a[0] + (b[0] - a[0]) * u) * PER_BLOCK), j = Math.round((a[1] + (b[1] - a[1]) * u) * PER_BLOCK);
-        return Math.max(0, Math.min(1, (float) h[at(i, j)] / Q - y));
+    /** One side face's sprite, colour and light. */
+    private record Face(TextureAtlasSprite sprite, int color, int light) {}
+
+    /** The face of block s at pos toward side, null when its model has none there. */
+    private static Face face(Minecraft mc, BlockAndTintGetter region, BlockState s, BlockPos pos, Direction side, int light) {
+        List<BakedQuad> layers = mc.getBlockRenderer().getBlockModel(s).getQuads(s, side, RandomSource.create(s.getSeed(pos)), ModelData.EMPTY, null);
+        if (layers.isEmpty()) return null;
+        BakedQuad o = layers.get(0);
+        return new Face(o.getSprite(), tinted(-1, o.isTinted() ? mc.getBlockColors().getColor(s, region, pos, o.getTintIndex()) : -1), light);
+    }
+
+    /**
+     * An unedited neighbour's ground beside a cell at level y, as it is drawn there: its top (cell heights relative to y;
+     * above 1 for a buried block), the block whose side shows, whether its cell at y is open. Where Terrain Smooth draws
+     * that block's band toward the cell unculled (one reaching above its own cell), the band's bottom stands for the top:
+     * the band closes the rest, and two faces would fight.
+     */
+    private record Ground(BlockState block, BlockPos blockPos, boolean open, float base, float[] corners, float[] band, Direction toward) {
+        /** The ground's height at p, a point of the cell's side toward d (cell coordinates). */
+        float at(float[] p, Direction d) {
+            if (corners == null && band == null) return base;
+            float fx = p[0] - d.getStepX(), fz = p[1] - d.getStepZ();   // the same point in the neighbour's cell
+            if (band != null) {
+                int s = sideIndex(toward);
+                float[] a = SmoothSurfaceModel.SIDE_A[s], b = SmoothSurfaceModel.SIDE_B[s];
+                float w = (fx - a[0]) * (b[0] - a[0]) + (fz - a[1]) * (b[1] - a[1]);
+                return base + band[0] + (band[1] - band[0]) * w;
+            }
+            return base + (float) SmoothRules.surface(corners, fx, fz);
+        }
+    }
+
+    private static int sideIndex(Direction d) {
+        for (int s = 0; s < 4; s++) if (SmoothSurfaceModel.SIDES[s] == d) return s;
+        throw new IllegalArgumentException(d.toString());
+    }
+
+    /**
+     * The neighbour's ground (#Ground) at column (nx, nz) beside cell y; toward: the neighbour's side facing the cell. Its
+     * cell at y solid: buried under another solid (2: above the cell), else its top there (Terrain Smooth's slope, or the
+     * block's top); open: the top of a slope of the block under it rising into y, else the cell's floor or below (-1).
+     */
+    private static Ground ground(BlockAndTintGetter region, BlockPos.MutableBlockPos n, BlockPos.MutableBlockPos g, int nx, int y, int nz, Direction toward) {
+        BlockState here = region.getBlockState(n.set(nx, y, nz));
+        if (here.isSolidRender(region, n)) {
+            BlockPos at = n.immutable();
+            if (region.getBlockState(g.set(nx, y + 1, nz)).isSolidRender(region, g)) return new Ground(here, at, false, 2, null, null, toward);
+            return sloped(region, here, at, 0, false, toward);
+        }
+        BlockState under = region.getBlockState(g.set(nx, y - 1, nz));
+        if (under.isSolidRender(region, g)) return sloped(region, under, g.immutable(), -1, true, toward);
+        return new Ground(here, n.immutable(), true, -1, null, null, toward);
+    }
+
+    /** A solid block's drawn top as ground (base: its floor relative to the cell), its band toward the cell if unculled. */
+    private static Ground sloped(BlockAndTintGetter region, BlockState s, BlockPos pos, float base, boolean open, Direction toward) {
+        long geo = TerrainSmoothClient.renderGeometry(region, pos, s);
+        if (geo < 0) return new Ground(s, pos, open, base + 1, null, null, toward);
+        float[] c = SmoothRules.corners(geo);
+        int side = sideIndex(toward);
+        float la = (geo >>> (16 + 8 * side) & 15) / 4F, lb = (geo >>> (20 + 8 * side) & 15) / 4F;
+        float ua = c[SmoothSurfaceModel.SIDE_CORNERS[side][0]], ub = c[SmoothSurfaceModel.SIDE_CORNERS[side][1]];
+        la = Math.min(la, ua);
+        lb = Math.min(lb, ub);
+        boolean band = ua > la + 1e-4F || ub > lb + 1e-4F, above = ua > 1 + 1e-4F || ub > 1 + 1e-4F;
+        return new Ground(s, pos, open, base, c, band && above ? new float[]{la, lb} : null, toward);
+    }
+
+    /** The point u along the side from a to b (cell x, z). */
+    private static float[] along(float[] a, float[] b, float u) {
+        return new float[]{a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u};
+    }
+
+    /** The skin's height (cell y, unclamped) at a vertex p of the cell's edge. */
+    private static float edge(int[] h, float[] p, int y) {
+        int i = Math.round(p[0] * PER_BLOCK), j = Math.round(p[1] * PER_BLOCK);
+        return (float) h[at(i, j)] / Q - y;
     }
 
     private static float[] f(double[] p) { return new float[]{(float) p[0], (float) p[1], (float) p[2]}; }
