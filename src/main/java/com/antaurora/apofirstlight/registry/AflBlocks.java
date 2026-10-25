@@ -658,6 +658,26 @@ public final class AflBlocks {
             () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Wet(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
                     .offsetType(BlockBehaviour.OffsetType.NONE), com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.COMMON_REED));
     public static final RegistryObject<Block> ALLEGHENY_BLACKBERRY = meshPlant("allegheny_blackberry", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.ALLEGHENY_BLACKBERRY);
+    // P4a batch 1 (doc 21): switchgrass (Panicum virgatum), smooth cordgrass (Spartina alterniflora; on tidal mud or in water a
+    // block deep, as the reed), Christmas fern (Polystichum acrostichoides), cinnamon fern (Osmundastrum cinnamomeum)
+    public static final RegistryObject<Block> SWITCHGRASS = meshPlant("switchgrass", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.SWITCHGRASS);
+    public static final RegistryObject<Block> SMOOTH_CORDGRASS = BLOCKS.register("smooth_cordgrass",
+            () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Wet(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
+                    .offsetType(BlockBehaviour.OffsetType.NONE), com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.SMOOTH_CORDGRASS));
+    public static final RegistryObject<Block> CHRISTMAS_FERN = meshPlant("christmas_fern", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.CHRISTMAS_FERN);
+    public static final RegistryObject<Block> CINNAMON_FERN = meshPlant("cinnamon_fern", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.CINNAMON_FERN);
+    // P4a batch 2 (doc 23): common mullein (Verbascum thapsus), wild mint (Mentha arvensis), common milkweed (Asclepias
+    // syriaca), poison ivy (Toxicodendron radicans, its ground form)
+    public static final RegistryObject<Block> COMMON_MULLEIN = meshPlant("common_mullein", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.COMMON_MULLEIN);
+    public static final RegistryObject<Block> WILD_MINT = meshPlant("wild_mint", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.WILD_MINT);
+    public static final RegistryObject<Block> COMMON_MILKWEED = meshPlant("common_milkweed", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.COMMON_MILKWEED);
+    public static final RegistryObject<Block> POISON_IVY = meshPlant("poison_ivy", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.POISON_IVY);
+    // P4a batch 3 (doc 24): lowbush blueberry (Vaccinium angustifolium), American elderberry (Sambucus canadensis), big
+    // sagebrush (Artemisia tridentata), American beachgrass (Ammophila breviligulata; on sand too)
+    public static final RegistryObject<Block> LOWBUSH_BLUEBERRY = meshPlant("lowbush_blueberry", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.LOWBUSH_BLUEBERRY);
+    public static final RegistryObject<Block> AMERICAN_ELDERBERRY = meshPlant("american_elderberry", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.AMERICAN_ELDERBERRY);
+    public static final RegistryObject<Block> BIG_SAGEBRUSH = meshPlant("big_sagebrush", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.BIG_SAGEBRUSH);
+    public static final RegistryObject<Block> AMERICAN_BEACHGRASS = meshPlant("american_beachgrass", com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species.AMERICAN_BEACHGRASS);
 
     private static RegistryObject<Block> meshPlant(String id, com.antaurora.apofirstlight.vegetation.MeshPlantBlock.Species species) {
         return BLOCKS.register(id, () -> new com.antaurora.apofirstlight.vegetation.MeshPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()

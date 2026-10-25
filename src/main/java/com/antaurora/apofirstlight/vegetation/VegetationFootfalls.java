@@ -88,8 +88,11 @@ public final class VegetationFootfalls {
         return switch (species) {
             case BLUEGRASS, YARROW, PENNSYLVANIA_SEDGE, PLANTAIN, DANDELION -> AflSounds.VEGETATION_RUSTLE_LOW.get();
             case BIG_BLUESTEM, LITTLE_BLUESTEM, BRACKEN_FERN, PURPLE_CONEFLOWER, BLACK_EYED_SUSAN, CANADA_GOLDENROD, CATTAIL,
-                 COMMON_REED -> AflSounds.VEGETATION_RUSTLE_TALL.get();
-            case ALLEGHENY_BLACKBERRY -> AflSounds.VEGETATION_RUSTLE_BRAMBLE.get();
+                 COMMON_REED, SWITCHGRASS, SMOOTH_CORDGRASS, CINNAMON_FERN, COMMON_MULLEIN, COMMON_MILKWEED,
+                 AMERICAN_BEACHGRASS -> AflSounds.VEGETATION_RUSTLE_TALL.get();
+            case CHRISTMAS_FERN, WILD_MINT, POISON_IVY -> AflSounds.VEGETATION_RUSTLE_LOW.get();
+            // the sagebrush with the brambles until its own dry-brush take (doc 20.2, 24)
+            case ALLEGHENY_BLACKBERRY, LOWBUSH_BLUEBERRY, AMERICAN_ELDERBERRY, BIG_SAGEBRUSH -> AflSounds.VEGETATION_RUSTLE_BRAMBLE.get();
         };
     }
 

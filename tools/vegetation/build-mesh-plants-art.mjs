@@ -3,7 +3,7 @@
 // mesh_plants_still.png (what lies or leans takes that copy: the shader moves only the first); --check compares instead
 // of writing.
 //
-// One sprite, 2048 x 128 (P2b; was 1024 x 128): 64 columns of 32 x 128 (a part's foot at the bottom row, its tip at the top: the wind reads the
+// One sprite, 4096 x 128 (P4, doc 20.6; P2b 2048, P1 1024): 128 columns of 32 x 128 (a part's foot at the bottom row, its tip at the top: the wind reads the
 // height from v; client/vegetation/PlantShape and the species' shapes map them by column). Grey where the biome's grass
 // colour tints it, real colours elsewhere.
 //   0-3   Kentucky bluegrass leaf strip (LOD0 blades are geometry, drawn solid): darker edges, a faint lighter midrib and
@@ -76,6 +76,54 @@
 //   62    blackberry parts: twelve 9-row bands centred on rows 5 + 10.5 k, each a leaflet across its left three quarters
 //         (ovate, long tip, toothed, pinnate veins; tinted) and a cluster of drupes in its right quarter (real colours)
 //   63    bramble card: canes arching out of a mound of leaves, dark fruit
+//   64    switchgrass leaf strip (middle half): a little glaucous, a pale midrib, a drier tip
+//   65    switchgrass culm: smooth, darker nodes, a reddish flush under the panicle
+//   66    switchgrass parts: rows 0-38 the open pyramidal panicle (its foot at row 38, full width; real colours); the three
+//         culm leaves across the rows of their heights (0.2, 0.35, 0.5; tinted)
+//   67    switchgrass foliage card, 68 its panicle card (real colours)
+//   69    smooth cordgrass culm: stout, the leaf sheaths overlapping, tan at the foot
+//   70    cordgrass parts: rows 0-23 the narrow head of appressed spikes (real colours); the five leaves across the rows of
+//         their heights (0.12-0.6; tinted)
+//   71    cordgrass stand card
+//   72    Christmas fern frond (cut out): the scaly stipe up to row 100, the once-pinnate blade above it (eared pinnae)
+//   73    fertile Christmas fern frond: the upper pinnae smaller and darker
+//   74    Christmas fern card
+//   75    cinnamon fern frond (cut out): woolly stipe up to row 100, the blade of deeply lobed pinnae above it
+//   76    fertile cinnamon fern frond (real colours, cut out): a stalk, the cinnamon club of sporangia on its upper 55 %
+//   77    cinnamon fern card
+//   78    common mullein rosette leaf (real colours, cut out): obovate-oblong, a winged base, grey-green felt, pale midrib
+//   79    mullein stalk (real colours): grey-green felt
+//   80    mullein spike at the stalk's heights (rows 0-80; real colours): woolly buds at the tip, a band of open yellow
+//         flowers, green-brown capsules below
+//   81    mullein parts (real colours): the four stem leaf bands (0.08-0.38)
+//   82    mullein stalk card (real colours)
+//   83    wild mint stem: square, hairy, purplish low down
+//   84    mint parts: rows 0-9 the pale lilac flower whorl (real colours); the five leaf bands (0.2-0.84; ovate, toothed)
+//   85    mint card
+//   86    common milkweed stem: stout, pale, downy
+//   87    milkweed parts: rows 0-16 the drooping pink-purple umbel (left half) and the warty pod (right half), real
+//         colours; the six leaf bands (0.22-0.72; broad oblong, pale midrib, straight side veins)
+//   88    milkweed foliage card, 89 its flower card (umbels and a pod; real colours)
+//   90    poison ivy petiole: reddish at the foot and the top
+//   91    poison ivy parts: the leaflets in bands (end leaflets 0.25 and 0.85, side leaflets lobed outward 0.45 and 0.65;
+//         glossy)
+//   92    poison ivy card
+//   93    lowbush blueberry spray (real colours, cut out): a red-brown twig, side twigs, small blue-green leaves
+//   94    the same with clusters of blue berries
+//   95    blueberry mat card (real colours)
+//   96    American elderberry cane (real colours): grey-brown, warty lenticels, greener up the cane
+//   97    elderberry compound leaf (cut out): the rachis, three pairs of toothed leaflets and the end one
+//   98    elderberry parts (real colours): the left half rows 0-15 the flat-topped white cyme from above, the right half
+//         rows 0-31 the hanging purple-black berry cluster
+//   99    elderberry foliage card, 100 its flower card (cymes and berries; real colours)
+//   101   big sagebrush bark (real colours): grey-brown, shredding
+//   102   sagebrush foliage (real colours, cut out): rows 0-31 a silver-grey mass from the side, rows 32-63 from above
+//   103   sagebrush card (real colours)
+//   104   American beachgrass leaf strip: rolled, glaucous, a drier tip
+//   105   beachgrass culm
+//   106   beachgrass spike at the culm's heights (rows 0-36; real colours): pale straw
+//   107   beachgrass card
+//   108-127 empty (the water plants, the thistle, the mushrooms)
 // Drawn 4 x 4 supersampled and cut at half coverage; every transparent pixel takes the colour of the nearest drawn one
 // in its column (empty columns a neutral green), so the atlas mipmaps do not darken the edges. No LabPBR maps.
 import fs from 'node:fs';
@@ -85,7 +133,7 @@ import {png} from '../cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/block/vegetation');
-const COL = 32, H = 128, COLS = 64, W = COL * COLS, SS = 4;
+const COL = 32, H = 128, COLS = 128, W = COL * COLS, SS = 4;
 
 function rng(seed) {
   let s = seed >>> 0;
@@ -1097,6 +1145,717 @@ fill(57, (px, py) => {
     }
   }
   for (let k = 0; k < 40; k++) blob(63, 16 + (r() - 0.5) * 22, H - 1 - r() * 50, 1.8, 1.2, [0.66 * 0.95 * 255, 0.66 * 255, 0.66 * 0.88 * 255]);
+}
+
+// ------------------------------------------------------------------------------ P4a batch 1 (64-77)
+
+/** A point on a polyline at share t, with its direction (radians). */
+function along(pts, t) {
+  const s = Math.max(0, Math.min(0.9999, t)) * (pts.length - 1), i = Math.floor(s), u = s - i;
+  return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u,
+    Math.atan2(pts[i + 1][1] - pts[i][1], pts[i + 1][0] - pts[i][0])];
+}
+
+/** A long grass leaf across a band of a parts column: its foot at the left, tapering evenly to a point at the right. */
+function grassBand(c, at, half, g, foot = 5) {
+  const cy = H * (1 - at);
+  poly(c, [[0.5, cy - half], [foot, cy - half], [31.5, cy], [foot, cy + half], [0.5, cy + half]], [g * 0.95 * 255, g * 255, g * 0.9 * 255]);
+  seg(c, 0.5, cy, 29, cy, 0.6, 0.3, [Math.min(255, g * 1.1 * 0.95 * 255), Math.min(255, g * 1.1 * 255), Math.min(255, g * 1.1 * 0.9 * 255)]);
+}
+
+/**
+ * An open grass panicle in column c from its foot (x, y0) up to y1 (rows, y down): branches from the axis spreading up and
+ * out, longest low down (a pyramid `spread` px either side at the foot), each with fine branchlets and spikelets at their
+ * ends (real colours).
+ */
+function panicle(c, x, y0, y1, spread, r, colours) {
+  const axis = [150, 128, 104];
+  seg(c, x, y0, x, y1, 0.9, 0.7, axis);
+  const whorls = Math.round((y0 - y1) / 3.2);
+  for (let k = 0; k < whorls; k++) {
+    const t = (k + 0.5) / whorls, y = y0 - (y0 - y1) * t, reach = spread * Math.pow(1 - t, 0.85) + 1.2;
+    for (const side of [-1, 1]) {
+      if (r() < 0.25) continue;
+      const a = (0.45 + r() * 0.5) * side, len = reach / Math.max(0.35, Math.abs(Math.sin(a))) * (0.75 + r() * 0.3);
+      const ex = x + Math.sin(a) * len, ey = y - Math.cos(a) * len;
+      seg(c, x, y, ex, ey, 0.8, 0.7, axis);
+      for (let j = 1; j <= 3; j++) {
+        const s = 0.35 + 0.22 * j, bx = x + (ex - x) * s, by = y + (ey - y) * s, b = a + (r() - 0.5) * 0.9, bl = 2 + r() * 3;
+        const fx = bx + Math.sin(b) * bl, fy = by - Math.cos(b) * bl;
+        seg(c, bx, by, fx, fy, 0.75, 0.7, axis);
+        blob(c, fx, fy, 0.8, 1.1, colours[Math.floor(r() * colours.length)]);
+      }
+      blob(c, ex, ey, 0.8, 1.1, colours[Math.floor(r() * colours.length)]);
+    }
+  }
+}
+
+// 64: switchgrass leaf, grey for the tint: a little glaucous (blue), a pale midrib, fine veins, a drier tip
+{
+  const r = rng(0x5A6A64);
+  const streak = Array.from({length: COL}, () => 0.97 + r() * 0.06);
+  fill(64, (px, py) => {
+    const f = 1 - (py + 0.5) / H, a = across(px);
+    let g = (0.8 + 0.1 * Math.min(1, f * 1.6)) * streak[px];
+    if (a < 0.09) g *= 1.1;
+    else if (px % 3 === 0) g *= 1.02;
+    if (a > 0.88) g *= 0.9;
+    const foot = Math.max(0, 1 - f / 0.08), dry = Math.max(0, (f - 0.9) / 0.1);
+    return [Math.min(1, g * (0.9 + 0.08 * foot + 0.14 * dry)) * 255, Math.min(1, g * (1 - 0.04 * foot)) * 255,
+      Math.min(1, g * (1.08 - 0.06 * foot - 0.2 * dry)) * 255];
+  });
+}
+
+// 65: switchgrass culm, grey for the tint: smooth, faint ribs, darker nodes, a reddish flush under the panicle
+{
+  const nodes = [0.18, 0.36, 0.52, 0.66];
+  fill(65, (px, py) => {
+    const f = 1 - (py + 0.5) / H;
+    let g = 0.82 * (1 + 0.03 * Math.sin(px / COL * Math.PI * 2 * 5));
+    const red = Math.max(0, (f - 0.55) / 0.15) * 0.3;
+    for (const n of nodes) {
+      const d = Math.abs(f - n) * H;
+      if (d < 1.2) g *= 0.8; else if (d < 2.5) g *= 1.04;
+    }
+    return [Math.min(1, g * (0.92 + 0.14 * Math.min(0.3, red))) * 255, Math.min(1, g * (1 - 0.08 * Math.min(0.3, red))) * 255,
+      Math.min(1, g * 1.04) * 255];
+  });
+}
+
+// 66: switchgrass parts. Rows 0-38: the panicle (real colours), its foot at row 38 (0.7 of the culm) across the full width
+// and its tip at row 0 narrow: a loose pyramid of hair-fine branches with tiny purple-red and tan spikelets at their ends
+// (the panicle quads are trapezoids mapped the same way). The three culm leaves across the rows of their heights (0.2,
+// 0.35, 0.5; tinted).
+{
+  const r = rng(0x5A6A66);
+  panicle(66, 16, 38, 0.8, 14.5, r, [[138, 86, 98], [160, 104, 108], [176, 150, 118], [150, 132, 104]]);
+  for (const at of [0.2, 0.35, 0.5]) grassBand(66, at, 3.2, 0.8, 6);
+}
+
+// 67 / 68: a switchgrass clump from the side (about 1.5 m over 128 px, 0.4 m over 32): a vase of upright leaves arching
+// at their tips to about half the height, four culms with their leaves (tinted); on the panicle card the airy panicles
+// at their tops (real colours)
+{
+  const r = rng(0x5A6A67);
+  for (let k = 0; k < 24; k++) {
+    const side = k % 2 === 0 ? -1 : 1, reach = 2 + r() * 13, rise = 44 + r() * 34, pts = [];
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8;
+      pts.push([16 + side * (0.5 + reach * Math.pow(t, 1.6)), H - 1 - rise * Math.sin(t * Math.PI * 0.55) + Math.max(0, t - 0.75) * 14]);
+    }
+    curve(67, pts, 2.0, 0.4, [0.8 * 0.92 * 255, (0.78 + r() * 0.1) * 255, 0.8 * 1.0 * 255]);
+  }
+  for (const [sx, top] of [[9, 12], [14, 4], [19, 8], [24, 16]]) {
+    const foot = 16 + (sx - 16) * 0.2;
+    curve(67, [[foot, H - 1], [16 + (sx - 16) * 0.6, H * 0.55], [sx, top + 34]], 0.9, 0.7, [0.82 * 0.92 * 255, 0.82 * 255, 0.82 * 255]);
+    for (const [t, dir] of [[0.25, -1], [0.45, 1], [0.62, -1]]) {
+      const y = H - 1 - (H - 1 - top - 34) * t, x = foot + (sx - foot) * t;
+      curve(67, [[x, y], [x + dir * 3, y - 6], [x + dir * 6, y - 8], [x + dir * 8, y - 5]], 1.1, 0.3, [0.8 * 0.92 * 255, 0.8 * 255, 0.8 * 255]);
+    }
+    panicle(68, sx, top + 34, top, 5.5, r, [[138, 86, 98], [176, 150, 118], [150, 132, 104]]);
+  }
+}
+
+// 69: smooth cordgrass culm, grey for the tint: stout and smooth, the leaf sheaths overlapping (a fine line every 14 rows,
+// lighter above it), tan to reddish at the foot
+fill(69, (px, py) => {
+  const f = 1 - (py + 0.5) / H, s = (py % 14) / 14;
+  let g = 0.86 * (0.94 + 0.08 * s) * (1 + 0.025 * Math.sin(px / COL * Math.PI * 2 * 4));
+  if (py % 14 < 1) g *= 0.84;
+  const foot = Math.max(0, 1 - f / 0.12);
+  return [Math.min(1, g * (0.95 + 0.2 * foot)) * 255, Math.min(1, g * (1 - 0.1 * foot)) * 255, Math.min(1, g * (0.88 - 0.08 * foot)) * 255];
+});
+
+// 70: cordgrass parts. Rows 0-23: the flowering head (real colours): from its foot at row 23 (0.82 of the culm) a narrow
+// spike-like panicle of 9-12 spikes pressed close to the axis, each a double row of overlapping straw-green spikelets
+// with yellow anthers. The five leaves across the rows of their heights (0.12-0.6; flat, broad at the base, drawn out to
+// an inrolled point; tinted).
+{
+  const r = rng(0x5BA770);
+  seg(70, 16, 23.4, 16, 0.6, 1.0, 0.7, [150, 150, 100]);
+  const spikes = 9 + Math.floor(r() * 4);
+  for (let k = 0; k < spikes; k++) {
+    const t = k / spikes, y = 22 - 20 * t, side = k % 2 === 0 ? 1 : -1, len = 7 + r() * 5;
+    const a = side * (0.1 + r() * 0.15), x0 = 16 + side * 0.8, ex = x0 + Math.sin(a) * len + side * (3 + r() * 6), ey = Math.max(0.5, y - Math.cos(a) * len);
+    seg(70, x0, y, ex, ey, 1.0, 0.8, [140, 146, 92]);
+    for (let j = 0; j < 7; j++) {
+      const s = (j + 0.5) / 7, bx = x0 + (ex - x0) * s, by = y + (ey - y) * s;
+      blob(70, bx + (j % 2 === 0 ? 1 : -1) * 0.9, by, 1.1, 0.9, r() < 0.5 ? [178, 176, 112] : [154, 164, 98]);
+      if (r() < 0.3) blob(70, bx + (j % 2 === 0 ? 2 : -2), by, 0.6, 0.6, [222, 196, 96]);
+    }
+  }
+  for (const at of [0.12, 0.24, 0.36, 0.48, 0.6]) grassBand(70, at, 3.4, 0.82, 4);
+}
+
+// 71: a stand of cordgrass from the side (about 1.4 m over 128 px, 0.6 m over 32): upright shoots, stiff leaves rising
+// alternately off them, the narrow heads at their tops (tinted, the heads lighter)
+{
+  const r = rng(0x5BA771);
+  for (let k = 0; k < 11; k++) {
+    const bx = 2.5 + k * 2.7 + (r() - 0.5) * 1.5, top = 6 + r() * 40, tx = bx + (r() - 0.5) * 3;
+    curve(71, [[bx, H - 1], [tx, top]], 1.0, 0.7, [0.86 * 0.95 * 255, 0.86 * 255, 0.86 * 0.88 * 255]);
+    for (let l = 0; l < 5; l++) {
+      const f = 0.12 + l * 0.12, y = H - 1 - (H - 1 - top) * f, x = bx + (tx - bx) * f, dir = l % 2 === 0 ? 1 : -1, len = 9 + r() * 6;
+      curve(71, [[x, y], [x + dir * len * 0.35, y - len * 0.7], [x + dir * len * 0.6, y - len * 0.95]], 1.3, 0.3, [0.8 * 0.95 * 255, 0.8 * 255, 0.8 * 0.88 * 255]);
+    }
+    if (r() < 0.6) seg(71, tx, top, tx + (r() - 0.5) * 2, top - 14, 1.6, 0.9, [0.96 * 0.98 * 255, 0.96 * 255, 0.96 * 0.8 * 255]);
+  }
+}
+
+/**
+ * A once-pinnate fern frond in column c (cut out): the stipe from the bottom row up to row `blade`, then the blade to row
+ * 1 along the rachis in the middle, `pairs` pairs of alternate pinnae nearly at right angles, each an oblong pinna len(t)
+ * px long curving a little towards the tip, with an ear on its upper side at the base (Polystichum); grey g, the pinnae
+ * from share `small` up smaller and darker (a fertile frond's sori), scales on the stipe.
+ */
+function oncePinnate(c, blade, pairs, len, g, r, small = 2) {
+  const col = [g * 0.92 * 255, g * 255, g * 0.84 * 255], dark = [g * 0.8 * 255, g * 0.82 * 255, g * 0.62 * 255];
+  seg(c, 16, H - 0.5, 16, blade, 1.9, 1.5, [g * 0.84 * 255, g * 0.82 * 255, g * 0.64 * 255]);
+  for (let y = H - 2; y > blade; y -= 3 + r() * 3) blob(c, 16 + (r() - 0.5) * 1.6, y, 0.7, 1.2, [g * 0.7 * 255, g * 0.58 * 255, g * 0.42 * 255]);
+  seg(c, 16, blade + 0.5, 16, 1, 1.4, 0.6, col);
+  for (let k = 0; k < pairs * 2; k++) {
+    const side = k % 2 === 0 ? -1 : 1, t = (k + 0.5) / (pairs * 2), y = blade - (blade - 1.5) * t;
+    const fertile = t >= small, L = len(t) * (fertile ? 0.6 : 1) * (0.92 + r() * 0.16);
+    if (L < 1) continue;
+    const th = (78 - 14 * t) * Math.PI / 180, dx = side * Math.sin(th), dy = -Math.cos(th);
+    const nx = side > 0 ? dy : -dy, ny = side > 0 ? -dx : dx;   // across the pinna, towards the frond's tip (up)
+    const w = (fertile ? 1.0 : 1.5) * Math.min(1, 0.6 + L / 10), P = (s, q) => [16 + dx * s + nx * q + side * 0.6, y + dy * s + ny * q - s * s * 0.012];
+    const pts = [P(0, -w * 0.9), P(L * 0.6, -w * 0.85), P(L * 0.92, -w * 0.5), P(L, 0), P(L * 0.92, w * 0.6), P(L * 0.4, w),
+      P(fertile ? L * 0.15 : L * 0.2, fertile ? w * 1.3 : w * 1.9), P(L * 0.06, w * 1.2), P(0, w * 0.9)];
+    poly(c, pts, fertile ? dark : col);
+    seg(c, ...P(0, 0), ...P(L * 0.85, 0), 0.5, 0.4, [Math.min(255, g * 1.08 * 0.92 * 255), Math.min(255, g * 1.08 * 255), Math.min(255, g * 1.08 * 0.84 * 255)]);
+  }
+}
+
+/** A Christmas fern's pinna length along the blade: a little shorter at the foot, even, tapering over the last third. */
+const christmasPinna = L => t => L * (0.82 + 0.18 * Math.min(1, t / 0.2)) * (t < 0.62 ? 1 : Math.pow((1 - t) / 0.38, 0.75));
+
+// 72: Christmas fern frond (tinted, cut out): the scaly stipe up to row 100, the blade above it: 24 pairs of oblong pinnae,
+// each with its ear (the "stocking"), narrowing to the tip; dark, leathery
+{
+  const r = rng(0xC4F72);
+  oncePinnate(72, 100, 24, christmasPinna(13.5), 0.62, r);
+}
+
+// 73: a fertile Christmas fern frond: as 72, the pinnae of its upper part smaller, narrower and darker (the sori beneath)
+{
+  const r = rng(0xC4F73);
+  oncePinnate(73, 96, 24, christmasPinna(13), 0.6, r, 0.58);
+}
+
+// 74: a Christmas fern from the side (about 0.45 m over 128 px, 0.27 m over 32): a fountain of fronds arching out from a
+// crown, a few lying out flat at the foot (tinted, dark)
+{
+  const r = rng(0xC4F74);
+  for (let k = 0; k < 12; k++) {
+    const side = k % 2 === 0 ? -1 : 1, reach = 4 + r() * 11, rise = k < 2 ? 10 + r() * 10 : 50 + r() * 70, pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10;
+      pts.push([16 + side * (0.5 + reach * Math.pow(t, 1.3)), H - 1 - rise * Math.sin(t * Math.PI * 0.6) + Math.max(0, t - 0.7) * rise * 0.5]);
+    }
+    const g = 0.6 + r() * 0.06, col = [g * 0.92 * 255, g * 255, g * 0.84 * 255];
+    curve(74, pts, 0.9, 0.5, col);
+    for (let j = 2; j < 18; j++) {
+      const [x, y, d] = along(pts, j / 18), l = 2.6 * Math.sin(Math.PI * j / 18) + 0.6;
+      for (const s of [-1, 1]) seg(74, x, y, x + Math.cos(d + s * 1.35) * l, y + Math.sin(d + s * 1.35) * l, 1.1, 0.7, col);
+    }
+  }
+}
+
+// 75: cinnamon fern frond (tinted, cut out): the stipe up to row 100, woolly at the foot; the blade above it lanceolate
+// (widest a little below the middle), 20 pairs of pinnae nearly opposite, each deeply cut into rounded lobes, a tuft of
+// cinnamon wool at each pinna's base; fresh yellow-green
+{
+  const r = rng(0xC1A75), g = 0.84, col = [g * 0.95 * 255, g * 255, g * 0.82 * 255];
+  seg(75, 16, H - 0.5, 16, 100, 1.9, 1.4, [g * 0.92 * 255, g * 0.96 * 255, g * 0.8 * 255]);
+  for (let y = H - 2; y > 108; y -= 1.5 + r() * 1.5) blob(75, 16 + (r() - 0.5) * 2.4, y, 0.9, 0.9, [g * 1.05 * 255, g * 0.88 * 255, g * 0.62 * 255]);
+  seg(75, 16, 100.5, 16, 1, 1.3, 0.6, col);
+  const pairs = 20;
+  for (let k = 0; k < pairs; k++) {
+    const t = (k + 0.5) / pairs, y = 100 - 98.5 * t, L = 15 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.95 + 0.06)), 0.65) * (0.92 + r() * 0.12);
+    for (const side of [-1, 1]) {
+      if (L < 1.2) continue;
+      const yy = y + (side > 0 ? 0.8 : 0), th = (70 - 10 * t) * Math.PI / 180, dx = side * Math.sin(th), dy = -Math.cos(th);
+      seg(75, 16, yy, 16 + dx * L, yy + dy * L, 1.1, 0.6, col);
+      const lobes = Math.max(2, Math.round(L / 1.7));
+      for (let l = 0; l < lobes; l++) {
+        const s = (l + 0.6) / (lobes + 0.4), bx = 16 + dx * L * s, by = yy + dy * L * s, rw = 0.85 * (1 - 0.5 * s) + 0.3;
+        // a lobe either side of the pinna's axis, rounded
+        for (const q of [-1, 1]) blob(75, bx - dy * q * rw * 0.75, by + dx * q * rw * 0.75, rw, rw * 0.85, col);
+      }
+      blob(75, 16 + dx * 1.2, yy + dy * 1.2, 0.8, 0.6, [g * 1.08 * 255, g * 0.84 * 255, g * 0.58 * 255]);
+    }
+  }
+}
+
+// 76: a fertile cinnamon fern frond (real colours, cut out): a stiff stalk, green low down turning cinnamon; on its upper
+// 55 % short erect fertile pinnae packed with round sporangia, a narrow cinnamon-brown club
+{
+  const r = rng(0xC1A76);
+  seg(76, 16, H - 0.5, 16, 1, 1.8, 1.0, t => t < 0.4 ? [110, 118, 70] : [138, 98, 56]);
+  for (let k = 0; k < 26; k++) {
+    const t = k / 26, y = 70 - 68 * t, half = 6 * Math.pow(1 - t, 0.5) + 1.5;
+    for (const side of [-1, 1]) {
+      const ex = 16 + side * half, ey = y - 2.2;
+      seg(76, 16, y, ex, ey, 0.9, 0.7, [124, 84, 48]);
+      for (let j = 0; j < 3; j++) {
+        const s = (j + 0.6) / 3, bx = 16 + (ex - 16) * s, by = y + (ey - y) * s;
+        blob(76, bx, by - 0.5, 1.1 + r() * 0.3, 1.1, r() < 0.5 ? [152, 90, 48] : [178, 112, 60]);
+      }
+    }
+  }
+}
+
+// 77: a cinnamon fern from the side (about 1.0 m over 128 px, 0.4 m over 32): a vase of large fronds rising and arching out
+// at their tips (tinted)
+{
+  const r = rng(0xC1A77);
+  for (let k = 0; k < 10; k++) {
+    const side = k % 2 === 0 ? -1 : 1, reach = 4 + r() * 11, rise = 80 + r() * 44, pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10;
+      pts.push([16 + side * (0.8 + reach * Math.pow(t, 1.4)), H - 1 - rise * Math.sin(t * Math.PI * 0.55) + Math.max(0, t - 0.75) * 30]);
+    }
+    const g = 0.82 + r() * 0.06, col = [g * 0.95 * 255, g * 255, g * 0.82 * 255];
+    curve(77, pts, 1.0, 0.5, col);
+    for (let j = 3; j < 20; j++) {
+      const [x, y, d] = along(pts, j / 20), l = 4.2 * Math.pow(Math.sin(Math.PI * Math.min(1, (j / 20) * 0.95 + 0.05)), 0.7) + 0.6;
+      for (const s of [-1, 1]) seg(77, x, y, x + Math.cos(d + s * 1.25) * l, y + Math.sin(d + s * 1.25) * l, 1.6, 0.9, col);
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------ P4a batch 2 (78-92)
+
+/** Speckle: a deterministic 0..1 per pixel (the felt, the gloss). */
+const speck = (seed, x, y) => { const s = Math.sin(x * 12.9898 + y * 78.233 + seed * 37.719) * 43758.5453; return s - Math.floor(s); };
+
+/**
+ * A leaf across a parts column at the rows of its height (0..1 of the stem), its base at the left: half(u) the half width
+ * in rows (u 0 the base .. 1 the tip), notch(u, side) rows cut off its edge (side -1 the upper edge, 1 the lower), colour
+ * (u, a, x, y) -> [r, g, b] (a: -1 the upper edge .. 1 the lower).
+ */
+function leafBand(c, at, half, notch, colour) {
+  const cy = H * (1 - at), pts = [], N = 60;
+  for (let i = 0; i <= N; i++) { const u = i / N; pts.push([1 + 29.5 * u, cy - Math.max(0, half(u) - notch(u, -1))]); }
+  for (let i = N; i >= 0; i--) { const u = i / N; pts.push([1 + 29.5 * u, cy + Math.max(0, half(u) - notch(u, 1))]); }
+  poly(c, pts, (x, y) => {
+    const u = Math.max(0, Math.min(1, (x - 1) / 29.5)), w = Math.max(0.3, half(u));
+    return colour(u, (y - cy) / w, x, y);
+  });
+}
+
+/** Pinnate veins on a band leaf: 1 on the midrib, 0.6 on the side veins (angled out towards the tip), else 0. */
+const pinnate = (u, a, spacing, slope) => Math.abs(a) < 0.12 ? 1 : (((u * 30 - Math.abs(a) * slope) / spacing) % 1 + 1) % 1 < 0.13 && u > 0.05 ? 0.6 : 0;
+
+// 78: mullein rosette leaf (real colours, cut out): obovate-oblong, broadest a little above the middle, narrowing to a
+// winged base at the foot, the tip blunt; grey-green felt (speckled), a broad pale midrib, a net of faint veins
+{
+  const half = t => 15 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.06 + 0.94 * Math.pow(t, 0.85))), 0.55) * (0.32 + 0.68 * Math.min(1, t / 0.55));
+  const top = 4, base = H - 1, pts = [], N = 60;
+  for (let i = 0; i <= N; i++) { const t = i / N; pts.push([16 - half(t), base - (base - top) * t]); }
+  for (let i = N; i >= 0; i--) { const t = i / N; pts.push([16 + half(t), base - (base - top) * t]); }
+  poly(78, pts, (x, y) => {
+    const t = (base - y) / (base - top), a = (x - 16) / Math.max(0.5, half(Math.max(0, Math.min(1, t))));
+    const rib = Math.abs(a) < 0.1 ? 1 : 0, vein = (((t * 9 - Math.abs(a) * 0.9) % 1) + 1) % 1 < 0.08 && t > 0.08 ? 1 : 0;
+    const k = (0.94 + 0.12 * speck(78, x, y)) * (1 + 0.1 * rib + 0.04 * vein) * (Math.abs(a) > 0.92 ? 1.05 : 1);
+    return [150 * k, 160 * k, 118 * k];
+  });
+}
+
+// 79: mullein stalk (real colours): grey-green felt, faint lengthwise wings where the leaf bases run down it
+fill(79, (px, py) => {
+  const k = (0.94 + 0.12 * speck(79, px, py)) * (1 + 0.05 * Math.sin(px / COL * Math.PI * 2 * 3));
+  return [146 * k, 158 * k, 116 * k];
+});
+
+// 80: mullein spike at the stalk's heights (rows 0-80; real colours): the tip tight woolly buds (rows 0-14), a band of
+// open yellow flowers (14-42, thinning below), then green-brown capsules among the felt; below row 80 the stalk's felt
+fill(80, (px, py) => {
+  const s = speck(80, px, py), k = 0.92 + 0.14 * s;
+  if (py > 80) return [146 * k, 158 * k, 116 * k];
+  if (py >= 42) return s < 0.45 ? [122 * k, 118 * k, 78 * k] : [140 * k, 150 * k, 106 * k];
+  return [156 * k, 166 * k, 122 * k];
+});
+{
+  const r = rng(0x3E80);
+  for (let k = 0; k < 150; k++) {
+    const y = 13 + Math.pow(r(), 1.4) * 34, x = r() * COL;
+    if (y > 30 && r() < (y - 30) / 20) continue;
+    blob(80, x, y, 1.5, 1.1, [240, 204, 58]);
+    blob(80, x, y, 0.5, 0.5, [214, 150, 40]);
+  }
+  for (let k = 0; k < 40; k++) blob(80, r() * COL, 2 + r() * 12, 1.0, 0.8, [128, 146, 92]);
+}
+
+// 81: mullein parts (real colours): the four stem leaf bands (0.08-0.38), oblong, pointed, felted
+for (const at of [0.08, 0.18, 0.28, 0.38])
+  leafBand(81, at, u => 4.4 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.08 + 0.92 * u)), 0.6), () => 0,
+    (u, a, x, y) => { const k = (0.94 + 0.12 * speck(81, x, y)) * (Math.abs(a) < 0.15 ? 1.1 : 1); return [150 * k, 160 * k, 118 * k]; });
+
+// 82: mullein stalk card (about 1.8 m over 128 px, 0.4 m over 32; real colours): the felted stalk, its stem leaves rising
+// out, smaller up it, and the thick spike on its upper part with the yellow band
+{
+  const r = rng(0x3E82), felt = [146, 158, 116];
+  seg(82, 16, H - 1, 16.4, 4, 2.6, 1.8, felt);
+  for (let k = 0; k < 8; k++) {
+    const t = k / 7, y = H - 6 - t * 50, side = k % 2 ? 1 : -1, len = 13 - 8 * t;
+    curve(82, [[16, y], [16 + side * len * 0.5, y - len * 0.45], [16 + side * len, y - len * 0.5]], 3.4 - 1.4 * t, 0.9, felt);
+  }
+  for (let y = 4; y < 62; y += 0.6) {
+    const w = 3.6 * (y < 8 ? 0.6 + 0.4 * (y - 4) / 4 : 1);
+    blob(82, 16.3 + (r() - 0.5) * 1.2, y, w, 0.8, y > 40 ? (r() < 0.5 ? [122, 118, 78] : [140, 150, 106]) : [154, 164, 120]);
+    if (y > 12 && y < 40 && r() < 0.55) blob(82, 16.3 + (r() - 0.5) * 6, y, 1.2, 0.8, [240, 204, 58]);
+  }
+}
+
+// 83: wild mint stem (tinted): square, finely hairy, flushed purple low down
+hairyStem(83, 0x3183, 0.78, f => 0.25 * Math.max(0, 1 - f / 0.5));
+
+// 84: mint parts. Rows 0-9 the flower whorl (real colours): a ring of tiny pale lilac flowers round the stem, green calyx
+// specks between them. The five leaf bands (tinted): ovate, toothed, the veins sunk (darker), short-stalked.
+{
+  const r = rng(0x3184);
+  for (let k = 0; k < 90; k++) {
+    const x = 2 + r() * 28, y = 1 + r() * 8, d = Math.abs(x - 16) / 14;
+    if (r() < d * 0.6) continue;
+    blob(84, x, y, 1.1, 0.9, r() < 0.2 ? [110, 132, 80] : [218 + r() * 14, 188 + r() * 14, 230]);
+  }
+  for (const at of [0.2, 0.36, 0.52, 0.68, 0.84])
+    leafBand(84, at, u => u < 0.1 ? 1.2 : 4.4 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.04 + 0.96 * Math.pow((u - 0.1) / 0.9, 0.75))), 0.75),
+      (u, side) => u > 0.2 && u < 0.95 && Math.floor(u * 26) % 2 ? 0.7 : 0,
+      (u, a, x, y) => { const g = 0.74 * (1 - 0.12 * pinnate(u, a, 5, 3)); return [g * 0.95 * 255, g * 255, g * 0.9 * 255]; });
+}
+
+// 85: mint card (about 0.6 m over 128 px, 0.3 m over 32; tinted): stems leaning out of the patch, pairs of leaves
+{
+  const r = rng(0x3185), g = 0.74, col = [g * 0.95 * 255, g * 255, g * 0.9 * 255];
+  for (let k = 0; k < 6; k++) {
+    const x0 = 4 + r() * 24, lean = (r() - 0.5) * 10, top = 6 + r() * 50;
+    seg(85, x0, H - 1, x0 + lean, top, 1.1, 0.7, col);
+    for (let n = 0; n < 6; n++) {
+      const t = 0.18 + n * 0.13, y = H - 1 - (H - 1 - top) * t, x = x0 + lean * t, len = 3.6 + 1.2 * Math.sin(Math.PI * t);
+      for (const side of [-1, 1]) curve(85, [[x, y], [x + side * len * 0.5, y - 1.4], [x + side * len, y - 0.6]], 2.6, 0.6, col);
+    }
+  }
+}
+
+// 86: milkweed stem (tinted): stout, pale, finely downy
+hairyStem(86, 0xA586, 0.84, () => 0);
+
+// 87: milkweed parts. Left half rows 0-16: an umbel (real colours): pedicels from its stalk at the top, a drooping ball of
+// pink-purple flowers, darker hoods at their middles. Right half rows 0-16: a seed pod, grey-green, warty, pointed at the
+// top, a short stalk below. The six leaf bands (tinted): broad oblong, a broad pale midrib, straight side veins.
+{
+  const r = rng(0xA587);
+  for (let k = 0; k < 14; k++) {
+    const a = Math.PI * (0.15 + 0.7 * k / 13), x = 8 + Math.cos(a) * 6, y = 9 + Math.sin(a) * 3.5 - 2;
+    seg(87, 8, 0.5, x, y, 0.5, 0.4, [120, 140, 82]);
+  }
+  for (let k = 0; k < 46; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()), x = 8 + Math.cos(a) * d * 6.6, y = 9.5 + Math.sin(a) * d * 6;
+    if (y < 3) continue;
+    blob(87, x, y, 1.15, 1.0, [204 + r() * 20, 116 + r() * 20, 156 + r() * 16]);
+    blob(87, x, y, 0.45, 0.45, [150, 70, 108]);
+  }
+  for (let py = 0; py <= 16; py++) {
+    const t = py / 16, w = py < 2 ? 0 : 4.6 * Math.pow(Math.sin(Math.PI * Math.min(1, (t - 0.1) / 0.85)), 0.8);
+    for (let px = 16; px < 32; px++) {
+      const d = Math.abs(px + 0.5 - 24);
+      if (t > 0.92) { if (d < 0.7) add(87 * COL + px, py, 112, 132, 84, 1); continue; }
+      if (d > w) continue;
+      const wart = speck(87, px, py) < 0.18 ? 1.18 : 1, k = (0.92 + 0.1 * (1 - d / Math.max(1, w))) * wart;
+      add(87 * COL + px, py, 136 * k, 150 * k, 104 * k, 1);
+    }
+  }
+  for (const at of [0.22, 0.32, 0.42, 0.52, 0.62, 0.72])
+    leafBand(87, at, u => 4.5 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.07 + 0.93 * u)), 0.42), () => 0,
+      (u, a, x, y) => { const v = Math.abs(a) < 0.16 ? 1.14 : pinnate(u, a, 3.2, 0.6) ? 1.05 : 1, g = 0.7 * v; return [g * 0.95 * 255, g * 255, g * 0.9 * 255]; });
+}
+
+// 88 / 89: milkweed seen from the side (about 1.4 m over 128 px, 0.5 m over 32): the stout stem, broad leaves held out in
+// pairs (tinted); on the flower card the drooping pink umbels in the upper axils and a pod (real colours)
+{
+  const r = rng(0xA588), g = 0.72, col = [g * 0.95 * 255, g * 255, g * 0.9 * 255];
+  seg(88, 16, H - 1, 16.5, 4, 1.8, 1.1, [0.84 * 0.95 * 255, 0.84 * 255, 0.84 * 0.9 * 255]);
+  for (let n = 0; n < 7; n++) {
+    const t = 0.22 + n * 0.1, y = H - 1 - (H - 5) * Math.min(t, 0.86), len = n === 6 ? 7 : 10.5 - Math.abs(t - 0.4) * 6;
+    for (const side of [-1, 1]) {
+      const s = n % 2 ? side * 0.55 : side;
+      curve(88, [[16, y], [16 + s * len * 0.5, y - 2.4], [16 + s * len, y - 1.2]], 4.2, 1.2, col);
+    }
+  }
+  for (const [x, y] of [[10, 22], [22, 16], [12, 10]]) {
+    seg(89, 16, y - 4, x, y - 1, 0.6, 0.6, [120, 140, 82]);
+    for (let k = 0; k < 14; k++) blob(89, x + (r() - 0.5) * 5, y + 1 + (r() - 0.5) * 4, 1.1, 1.0, [208, 118, 158]);
+  }
+  for (let py = 26; py < 40; py++) { const w = 1.6 * Math.sin(Math.PI * (py - 26) / 14); seg(89, 21 - w, py, 21 + w, py, 1, 1, [136, 150, 104]); }
+}
+
+// 90: poison ivy petiole (tinted): smooth, reddish at the foot and at the top where the leaflets join
+fill(90, (px, py) => {
+  const f = 1 - (py + 0.5) / H, red = Math.max(0, 1 - f / 0.25) + Math.max(0, (f - 0.9) / 0.1) * 0.6;
+  const k = 0.76 * (1 + 0.03 * Math.sin(px / COL * Math.PI * 2 * 3));
+  return [Math.min(1, k * (0.95 + 0.35 * red)) * 255, k * (1 - 0.22 * red) * 255, k * (0.88 - 0.1 * red) * 255];
+});
+
+// 91: poison ivy parts (tinted): the leaflets in their bands, base at the left. End leaflets (0.25, 0.85): ovate, a long
+// point, two or three coarse teeth a side (fewer on the second). Side leaflets (0.45, 0.65): lopsided, a lobe on the outer
+// side (the upper edge on 0.45, the lower on 0.65). Glossy: a lighter sheen along one half, the veins pale.
+{
+  const ovate = u => 4.5 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.05 + 0.95 * Math.pow(u, 0.72))), 0.7) * (u > 0.8 ? 1 - (u - 0.8) * 1.6 : 1);
+  const tooth = (u, centres) => centres.reduce((m, c) => Math.max(m, 1.5 * Math.max(0, 1 - Math.abs(u - c) / 0.05)), 0);
+  const gloss = (u, a, x, y) => {
+    const sheen = a < 0 ? 0.1 * Math.max(0, 1 - Math.abs(a + 0.45) / 0.4) : 0, v = pinnate(u, a, 4, 1.2) ? 0.08 : 0;
+    const g = 0.66 * (1 + sheen + v) * (0.97 + 0.06 * speck(91, x, y));
+    return [g * 0.93 * 255, g * 255, g * 0.86 * 255];
+  };
+  leafBand(91, 0.25, ovate, (u, side) => tooth(u, side < 0 ? [0.42, 0.6] : [0.5, 0.68]), gloss);
+  leafBand(91, 0.85, ovate, (u, side) => tooth(u, side < 0 ? [0.55] : [0.47]), gloss);
+  const notchSide = lobeSide => (u, side) => side === lobeSide ? tooth(u, [0.36]) * 1.6 : tooth(u, [0.62]) * 0.6;
+  // the lobe: the outer edge wider below the middle, a deep notch above it
+  leafBand(91, 0.45, u => ovate(u) * (1 + 0.12 * Math.max(0, 1 - Math.abs(u - 0.3) / 0.2)), notchSide(-1), gloss);
+  leafBand(91, 0.65, u => ovate(u) * (1 + 0.12 * Math.max(0, 1 - Math.abs(u - 0.3) / 0.2)), notchSide(1), gloss);
+}
+
+// 92: poison ivy card (about 0.5 m over 128 px, 0.4 m over 32; tinted): petioles arching up and out, each holding three
+// leaflets spread level, the end one longer
+{
+  const r = rng(0x7A92), g = 0.68, col = [g * 0.93 * 255, g * 255, g * 0.86 * 255];
+  for (let k = 0; k < 7; k++) {
+    const side = k % 2 ? 1 : -1, reach = 3 + r() * 9, top = 20 + r() * 80, tx = 16 + side * reach, ty = top;
+    curve(92, [[16, H - 1], [16 + side * reach * 0.4, (H + top) / 2], [tx, ty]], 1.0, 0.8, [0.76 * 255, 0.66 * 255, 0.6 * 255]);
+    const len = 6 + r() * 3;
+    curve(92, [[tx, ty], [tx + side * len * 0.5, ty - 1.5], [tx + side * len, ty - 0.5]], 3.4, 0.6, col);
+    curve(92, [[tx, ty], [tx - side * len * 0.35, ty - 1.2], [tx - side * len * 0.75, ty - 0.2]], 3.0, 0.6, col);
+    curve(92, [[tx, ty], [tx + side * 0.6, ty - len * 0.4], [tx + side * 1.4, ty - len * 0.85]], 3.2, 0.6, col);
+  }
+}
+
+// ------------------------------------------------------------------------------ P4a batch 3 (93-107)
+
+/** A small pointed-elliptic leaf in column c from (x, y) along angle a (radians, 0 = up, positive = to the right), len long, wid wide. */
+function smallLeaf(c, x, y, a, len, wid, col) {
+  const dx = Math.sin(a), dy = -Math.cos(a), nx = -dy, ny = dx, pts = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10, w = wid / 2 * Math.pow(Math.sin(Math.PI * t), 0.8); pts.push([x + dx * len * t + nx * w, y + dy * len * t + ny * w]); }
+  for (let i = 10; i >= 0; i--) { const t = i / 10, w = wid / 2 * Math.pow(Math.sin(Math.PI * t), 0.8); pts.push([x + dx * len * t - nx * w, y + dy * len * t - ny * w]); }
+  poly(c, pts, col);
+}
+
+/**
+ * 93 / 94: a lowbush blueberry spray (real colours, cut out; about 0.3 m over 128 px, 0.09 m over 32): the twig from the
+ * foot, red-brown low down and green-red above, four side twigs branching up and out, small alternate elliptic leaves
+ * along all of them (blue-green, now and then one reddening); on 94 clusters of blue berries with their pale bloom
+ * hanging under the twigs.
+ */
+function blueberrySpray(c, seed, berries) {
+  const r = rng(seed), twig = t => [130 - 30 * t, 72 + 40 * t, 52 + 4 * t];
+  const leaf = () => r() < 0.04 ? [136 + r() * 16, 92, 66] : [80 + r() * 18, 118 + r() * 16, 84 + r() * 14];
+  const main = [[16, H - 1], [15, 96], [17.5, 60], [16, 30], [16.5, 3]];
+  curve(c, main, 1.6, 0.8, t => twig(t));
+  const tips = [];
+  for (const [y0, side, len] of [[92, -1, 13], [72, 1, 12], [52, -1, 11], [34, 1, 9]]) {
+    const pts = [[16, y0], [16 + side * len * 0.5, y0 - len * 0.9], [16 + side * len, y0 - len * 1.6]];
+    curve(c, pts, 1.0, 0.6, t => twig(0.5 + 0.5 * t));
+    tips.push(pts);
+  }
+  // leaves: along the main twig above row 100 and along each side twig
+  for (let y = 100; y > 4; y -= 6.5) {
+    const side = Math.round((100 - y) / 6.5) % 2 ? 1 : -1, a = side * (0.7 + r() * 0.3);
+    smallLeaf(c, 16 + side * 0.6, y, a, 8 + r() * 3, 3.6 + r() * 0.8, leaf());
+  }
+  for (const pts of tips)
+    for (let t = 0.3; t <= 1.0; t += 0.23) {
+      const x = pts[0][0] + (pts[2][0] - pts[0][0]) * t, y = pts[0][1] + (pts[2][1] - pts[0][1]) * t, side = Math.round(t * 4.3) % 2 ? 1 : -1;
+      smallLeaf(c, x, y, Math.atan2(pts[2][0] - pts[0][0], pts[0][1] - pts[2][1]) + side * 0.8, 7 + r() * 3, 3.4, leaf());
+    }
+  if (!berries) return;
+  for (const [x, y] of [[9, 82], [23, 62], [10, 44], [20, 26]]) {
+    const n = 3 + Math.floor(r() * 4);
+    for (let k = 0; k < n; k++) {
+      const bx = x + (r() - 0.5) * 5, by = y + r() * 6;
+      blob(c, bx, by, 1.5, 1.3, [72 + r() * 14, 88 + r() * 14, 146 + r() * 18]);
+      blob(c, bx - 0.4, by - 0.4, 0.6, 0.5, [150, 166, 200]);
+    }
+  }
+}
+blueberrySpray(93, 0xB1B93, false);
+blueberrySpray(94, 0xB1B94, true);
+
+// 95: a blueberry mat from the side (about 0.4 m over 128 px, 0.5 m over 32; real colours): many short sprays in a low
+// mound, a few berry clusters
+{
+  const r = rng(0xB1B95);
+  for (let k = 0; k < 22; k++) {
+    const x0 = 2 + r() * 28, lean = (r() - 0.5) * 16, top = 30 + r() * 70;
+    seg(95, x0, H - 1, x0 + lean, top, 0.9, 0.6, [118, 90, 56]);
+    for (let n = 0; n < 6; n++) {
+      const t = 0.3 + n * 0.12, x = x0 + lean * t, y = H - 1 - (H - 1 - top) * t;
+      blob(95, x + (n % 2 ? 1.2 : -1.2), y, 1.4, 2.6, [80 + r() * 18, 118 + r() * 16, 84 + r() * 14]);
+    }
+  }
+  for (let k = 0; k < 9; k++) blob(95, 3 + r() * 26, 60 + r() * 50, 1.0, 0.8, [74, 90, 150]);
+}
+
+// 96: elderberry cane (real colours): grey-brown bark with pale warty lenticels low down, smoother and greener up the cane
+fill(96, (px, py) => {
+  const f = 1 - (py + 0.5) / H, green = Math.max(0, Math.min(1, (f - 0.45) / 0.35)), s = speck(96, px, py);
+  const lent = f < 0.6 && s < 0.06 ? 1.35 : 1, k = (0.92 + 0.1 * speck(97, px, py)) * lent;
+  return [(124 - 20 * green) * k, (112 + 12 * green) * k, (92 - 14 * green) * k];
+});
+
+// 97: elderberry compound leaf (tinted, cut out; about 25 cm over 128 px, 19 cm over 32): the petiole and rachis up the
+// middle, three pairs of lanceolate, finely toothed leaflets angled out and up, the end leaflet on the tip
+{
+  const g = 0.72, col = [g * 0.94 * 255, g * 255, g * 0.86 * 255], rib = [g * 1.06 * 0.94 * 255, g * 1.06 * 255, g * 1.06 * 0.86 * 255];
+  const X = cm => 16 + cm / 0.6, Y = cm => H - 0.5 - cm / 0.2;
+  seg(97, 16, H - 0.5, 16, Y(21), 1.6, 1.0, rib);
+  const leaflet = (bx, by, ang, len, wid) => {
+    const dx = Math.sin(ang), dy = Math.cos(ang), nx = dy, ny = -dx, pts = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24, w = wid / 2 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.04 + 0.96 * Math.pow(t, 0.8))), 0.8) * (i % 2 && t > 0.15 && t < 0.92 ? 0.9 : 1);
+      pts.push([X(bx + dx * len * t + nx * w), Y(by + dy * len * t + ny * w)]);
+    }
+    for (let i = 24; i >= 0; i--) {
+      const t = i / 24, w = wid / 2 * Math.pow(Math.sin(Math.PI * Math.min(1, 0.04 + 0.96 * Math.pow(t, 0.8))), 0.8) * (i % 2 && t > 0.15 && t < 0.92 ? 0.9 : 1);
+      pts.push([X(bx + dx * len * t - nx * w), Y(by + dy * len * t - ny * w)]);
+    }
+    poly(97, pts, col);
+    seg(97, X(bx), Y(by), X(bx + dx * len * 0.9), Y(by + dy * len * 0.9), 0.7, 0.4, rib);
+  };
+  for (const [y, len] of [[6, 7.5], [11, 8], [16, 7.5]])
+    for (const side of [-1, 1]) leaflet(0, y, side * 1.15, len, 3.8);
+  leaflet(0, 19.5, 0, 6, 3.6);
+}
+
+// 98: elderberry parts (real colours). Left half rows 0-15: a flat-topped cyme from above, a disc of tiny cream-white
+// flowers on fine green branches. Right half rows 0-31: a hanging berry cluster, red stalks branching down from the top,
+// the purple-black berries with a little shine.
+{
+  const r = rng(0xE1D98);
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; seg(98, 8, 8, 8 + Math.cos(a) * 6.5, 8 + Math.sin(a) * 6.5, 0.6, 0.4, [120, 140, 84]); }
+  for (let k = 0; k < 120; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 7.2, x = 8 + Math.cos(a) * d, y = 8 + Math.sin(a) * d;
+    blob(98, x, y, 0.75, 0.75, r() < 0.12 ? [226, 214, 150] : [242, 238, 220]);
+  }
+  for (let k = 0; k < 5; k++) {
+    const x = 18.5 + k * 2.8;
+    curve(98, [[24, 0.5], [24 + (x - 24) * 0.4, 5], [x, 11 + r() * 6]], 0.45, 0.35, [150, 44, 54]);
+  }
+  for (let k = 0; k < 60; k++) {
+    const x = 18 + r() * 12, y = 10 + r() * 20 - Math.abs(x - 24) * 0.7;
+    if (y < 8) continue;
+    blob(98, x, y, 1.1, 1.0, [44 + r() * 14, 24 + r() * 10, 52 + r() * 14]);
+    if (r() < 0.3) blob(98, x - 0.3, y - 0.3, 0.35, 0.35, [120, 96, 140]);
+  }
+}
+
+// 99 / 100: an elderberry from the side (about 2.5 m over 128 px, 1.25 m over 32): canes fanning out of the crown and
+// arching over, their compound leaves in masses along the upper two thirds (tinted); on the flower card the flat white
+// cymes on the cane tips and two dark berry clusters (real colours)
+{
+  const r = rng(0xE1D99), g = 0.72, col = [g * 0.94 * 255, g * 255, g * 0.86 * 255];
+  const tips = [];
+  for (let k = 0; k < 6; k++) {
+    // canes fanning out from the crown and arching over to the sides: the shrub as wide as the card
+    const side = (k / 5) * 2 - 1, tx = 16 + side * 15, ty = 14 + Math.abs(side) * 36 + r() * 8, mx = 16 + side * 8, my = 30 + Math.abs(side) * 10;
+    const pts = [[16, H - 1], [16 + side * 3, 80], [mx, my], [tx, ty]];
+    curve(99, pts, 1.6, 0.9, [0.6 * 255, 0.58 * 255, 0.5 * 255]);
+    for (let t = 0.3; t <= 1.0; t += 0.07) {
+      const i = Math.min(2, Math.floor(t * 3)), u = t * 3 - i, x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u;
+      blob(99, x + (r() - 0.5) * 5, y + (r() - 0.5) * 4, 3.0, 3.6, col);
+    }
+    tips.push([tx, ty]);
+  }
+  tips.forEach(([x, y], k) => {
+    if (k % 3 === 2) for (let n = 0; n < 8; n++) blob(100, x + (r() - 0.5) * 3, y + 3 + r() * 4, 1.0, 1.0, [48, 26, 54]);
+    else { blob(100, x, y - 1, 4.2, 1.6, [240, 236, 218]); blob(100, x, y - 1.6, 2.6, 0.8, [248, 246, 232]); }
+  });
+}
+
+// 101: sagebrush bark (real colours): grey-brown, shredding in long strips (lighter and darker streaks down the trunk)
+{
+  const r = rng(0x5A101), strip = Array.from({length: COL}, () => r());
+  fill(101, (px, py) => {
+    const s = strip[px], wave = Math.sin(py * 0.15 + s * 9) * 0.5 + 0.5, k = 0.9 + 0.12 * speck(101, px, py);
+    const tone = s < 0.3 ? 0.78 : s > 0.75 ? 1.22 : 1;
+    return [118 * tone * k * (0.95 + 0.1 * wave), 106 * tone * k, 90 * tone * k * (0.97 + 0.05 * wave)];
+  });
+}
+
+// 102: sagebrush foliage (real colours, cut out). Rows 0-31: a mass from the side, the small grey three-toothed leaves
+// crowded on the twigs, ragged at the edge, darker in its gaps, twig ends showing below. Rows 32-63: the same from above.
+{
+  const r = rng(0x5A102), leafCol = () => { const k = 0.88 + r() * 0.2; return [160 * k, 168 * k, 146 * k]; };
+  for (let k = 0; k < 8; k++) seg(102, 16 + (r() - 0.5) * 6, 31, 6 + r() * 20, 14 + r() * 10, 0.9, 0.5, [112, 98, 82]);
+  for (let k = 0; k < 420; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()), x = 16 + Math.cos(a) * d * 15, y = 16 + Math.sin(a) * d * 13 - 2;
+    if (y > 29 || y < 1) continue;
+    const dark = r() < 0.12 && d < 0.75;
+    blob(102, x, y, 1.1, 0.75, dark ? [104, 112, 96] : leafCol());
+  }
+  for (let k = 0; k < 520; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()), x = 16 + Math.cos(a) * d * 15, y = 48 + Math.sin(a) * d * 15;
+    const dark = r() < 0.1 && d < 0.8;
+    blob(102, x, y, 1.0, 1.0, dark ? [104, 112, 96] : leafCol());
+  }
+}
+
+// 103: a sagebrush from the side (about 1.2 m over 128 px, 1.25 m over 32; real colours): gnarled trunks spreading from
+// the base, the ragged silver crown over them in several rounded masses
+{
+  const r = rng(0x5A103);
+  for (let k = 0; k < 4; k++) curve(103, [[16 + (r() - 0.5) * 3, H - 1], [16 + (r() - 0.5) * 12, 96], [4 + r() * 24, 60]], 1.6, 0.8, [108, 96, 80]);
+  for (const [cx, cy, rx, ry] of [[10, 52, 9, 22], [22, 46, 9, 26], [16, 34, 10, 24], [6, 70, 6, 14], [26, 68, 6, 14]])
+    for (let k = 0; k < 160; k++) {
+      const a = r() * Math.PI * 2, d = Math.sqrt(r()), x = cx + Math.cos(a) * d * rx, y = cy + Math.sin(a) * d * ry;
+      const kk = 0.86 + r() * 0.22;
+      blob(103, x, y, 1.0, 1.4, r() < 0.1 ? [104, 112, 96] : [160 * kk, 168 * kk, 146 * kk]);
+    }
+}
+
+// 104: American beachgrass leaf, grey for the tint: rolled in (the upper face hidden: fine light lines along it), a
+// little glaucous, stiff, a drier tip
+{
+  const r = rng(0xA3B104);
+  const streak = Array.from({length: COL}, () => 0.97 + r() * 0.06);
+  fill(104, (px, py) => {
+    const f = 1 - (py + 0.5) / H, a = across(px);
+    let g = (0.78 + 0.08 * Math.min(1, f * 1.6)) * streak[px];
+    if (px % 2 === 0) g *= 1.04;
+    if (a > 0.85) g *= 0.9;
+    const dry = Math.max(0, (f - 0.85) / 0.15);
+    return [Math.min(1, g * (0.9 + 0.2 * dry)) * 255, Math.min(1, g * (1 - 0.02 * dry)) * 255, Math.min(1, g * (1.06 - 0.24 * dry)) * 255];
+  });
+}
+
+// 105: beachgrass culm, grey for the tint: smooth, two darker nodes
+fill(105, (px, py) => {
+  const f = 1 - (py + 0.5) / H;
+  let g = 0.84 * (1 + 0.03 * Math.sin(px / COL * Math.PI * 2 * 4));
+  for (const n of [0.25, 0.5]) if (Math.abs(f - n) * H < 1.2) g *= 0.82;
+  return [g * 0.95 * 255, g * 255, g * 0.9 * 255];
+});
+
+// 106: beachgrass spike at the culm's heights (rows 0-36; real colours): the dense spike-like panicle, pale straw, the
+// spikelets pressed close (short darker lines); below row 36 the culm's pale green
+fill(106, (px, py) => {
+  const k = 0.92 + 0.1 * speck(106, px, py);
+  if (py > 36) return [150 * k, 164 * k, 112 * k];
+  const line = (px + Math.floor(py / 3)) % 4 === 0 ? 0.86 : 1;
+  return [214 * k * line, 198 * k * line, 150 * k * line];
+});
+
+// 107: beachgrass from the side (about 0.9 m over 128 px, 0.35 m over 32; tinted): a fountain of narrow rolled leaves
+// arching out, two culms standing above them with their spikes
+{
+  const r = rng(0xA3B107), g = 0.8, col = [g * 0.92 * 255, g * 255, g * 1.02 * 255];
+  for (let k = 0; k < 16; k++) {
+    const side = k % 2 ? 1 : -1, reach = 6 + r() * 10, rise = 45 + r() * 60, pts = [];
+    for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push([16 + side * reach * Math.pow(t, 1.3), H - 1 - rise * Math.sin(t * Math.PI * 0.75) / Math.sin(Math.PI * 0.5)]); }
+    curve(107, pts, 1.3, 0.5, col);
+  }
+  for (const x of [13, 19.5]) { seg(107, 16, H - 1, x, 8, 0.9, 0.8, col); seg(107, x, 8, x + (x - 16) * 0.05, 34, 2.2, 2.4, [0.94 * 255, 0.92 * 255, 0.8 * 255]); }
 }
 
 // --------------------------------------------------------------------------------------------- finish

@@ -24,15 +24,17 @@ import java.nio.FloatBuffer;
 /**
  * The mesh plants' wind for a shader pack that waves them itself (docs/gameplay/vegetation_v1_design.md 13.9; Aureveil
  * from alpha.70, its interface of 2026-10-24): the pack switches it on with its boolean option {@value #OPTION} and reads
- * {@code apocalypse_firstlight:dynamic/afl_vegetation}, RGBA32F 16 x 2 (layout 2, P2b; layout 1 was 8 x 2 with 32
- * columns), nearest, one level, written at the start of every
+ * {@code apocalypse_firstlight:dynamic/afl_vegetation}, RGBA32F 32 x 3 (layout 3, P4, agreed with Aureveil 2026-10-24,
+ * doc 20.6; layout 2 was 16 x 2 with 64 columns, layout 1 8 x 2 with 32), nearest, one level, written at the start of every
  * frame (RenderTickEvent START: before the pack's shadow pass, so both passes read the same values):
  * <ul>
- * <li>row 0: texel 0 (layout 2, 0, 0, 4244: the pack's check that AFL is there); texel 1 this frame's wind (time s, x and
+ * <li>row 0: texel 0 (layout 3, 0, 0, 4244: the pack's check that AFL is there); texel 1 this frame's wind (time s, x and
  * z m/s the way it blows, gust 0..1: VegetationWindMath#now); texel 2 the last frame's (the pack's motion vectors);
- * texel 3 the standing sheet's atlas rectangle (u0, v0, u1, v1); texel 4 the still sheet's; texels 5-15 zero.</li>
- * <li>row 1: the 64 columns' wind reach (PlantShape#WIND), four to a texel (texels 0-15), as afl_VegScale; a vertex's
- * column is its u's share of the rectangle times 64.</li>
+ * texel 3 the standing sheet's atlas rectangle (u0, v0, u1, v1); texel 4 the still sheet's; texel 5 the underwater sway
+ * (period s, reach factor, 0, 0: zero until the water plants, P4b); texels 6-31 zero.</li>
+ * <li>row 1: the 128 columns' wind reach (PlantShape#WIND), four to a texel (texels 0-31), as afl_VegScale; a vertex's
+ * column is its u's share of the rectangle times 128.</li>
+ * <li>row 2: the 128 columns' mode, four to a texel: 0 the wind, 1 underwater, 2 a floating leaf (all 0 until P4b).</li>
  * </ul>
  * The pack finds AFL's plants by their texture coordinates in those rectangles, in the chunk mesh and in the near layer
  * alike, waves the standing ones with VegetationWind's formula (its world position wrapped by itself) and gives both the
@@ -43,7 +45,7 @@ import java.nio.FloatBuffer;
 public final class VegetationShaderData {
     public static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/afl_vegetation");
     static final String OPTION = "AFL_VEGETATION";
-    static final int W = PlantShape.COLUMNS / 4, H = 2, LAYOUT = 2;
+    static final int W = PlantShape.COLUMNS / 4, H = 3, LAYOUT = 3;
     private static final float CHECK = 4244.0F;
 
     private static final DataTexture TEX = new DataTexture();
@@ -100,6 +102,7 @@ public final class VegetationShaderData {
         rect(d, 12, PlantModel.sprite());
         rect(d, 16, PlantModel.stillSprite());
         for (int c = 0; c < PlantShape.COLUMNS; c++) d.put(W * 4 + c, PlantShape.WIND[c]);
+        // row 2: every column waves in the wind (mode 0) until the water plants (P4b)
         d.position(0).limit(d.capacity());
         GlTex.checkFinite("afl_vegetation", d, W);
         int id = TEX.getId();

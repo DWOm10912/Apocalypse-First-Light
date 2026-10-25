@@ -273,7 +273,13 @@ public final class VegetationClient {
                     (MeshPlantBlock) AflBlocks.BRACKEN_FERN.get(), (MeshPlantBlock) AflBlocks.BROADLEAF_PLANTAIN.get(),
                     (MeshPlantBlock) AflBlocks.DANDELION.get(), (MeshPlantBlock) AflBlocks.PURPLE_CONEFLOWER.get(),
                     (MeshPlantBlock) AflBlocks.BLACK_EYED_SUSAN.get(), (MeshPlantBlock) AflBlocks.CANADA_GOLDENROD.get(),
-                    (MeshPlantBlock) AflBlocks.COMMON_REED.get(), (MeshPlantBlock) AflBlocks.ALLEGHENY_BLACKBERRY.get()};
+                    (MeshPlantBlock) AflBlocks.COMMON_REED.get(), (MeshPlantBlock) AflBlocks.ALLEGHENY_BLACKBERRY.get(),
+                    (MeshPlantBlock) AflBlocks.SWITCHGRASS.get(), (MeshPlantBlock) AflBlocks.SMOOTH_CORDGRASS.get(),
+                    (MeshPlantBlock) AflBlocks.CHRISTMAS_FERN.get(), (MeshPlantBlock) AflBlocks.CINNAMON_FERN.get(),
+                    (MeshPlantBlock) AflBlocks.COMMON_MULLEIN.get(), (MeshPlantBlock) AflBlocks.WILD_MINT.get(),
+                    (MeshPlantBlock) AflBlocks.COMMON_MILKWEED.get(), (MeshPlantBlock) AflBlocks.POISON_IVY.get(),
+                    (MeshPlantBlock) AflBlocks.LOWBUSH_BLUEBERRY.get(), (MeshPlantBlock) AflBlocks.AMERICAN_ELDERBERRY.get(),
+                    (MeshPlantBlock) AflBlocks.BIG_SAGEBRUSH.get(), (MeshPlantBlock) AflBlocks.AMERICAN_BEACHGRASS.get()};
         }
 
         @SubscribeEvent

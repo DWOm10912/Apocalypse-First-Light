@@ -52,7 +52,10 @@ public class MeshPlantBlock extends BushBlock {
     public enum Species {
         BLUEGRASS(false), CATTAIL(true), YARROW(false), BIG_BLUESTEM(true), LITTLE_BLUESTEM(false), PENNSYLVANIA_SEDGE(false), BRACKEN_FERN(false),
         PLANTAIN(false), DANDELION(false), PURPLE_CONEFLOWER(false), BLACK_EYED_SUSAN(false),
-        CANADA_GOLDENROD(true), COMMON_REED(true), ALLEGHENY_BLACKBERRY(true);
+        CANADA_GOLDENROD(true), COMMON_REED(true), ALLEGHENY_BLACKBERRY(true),
+        SWITCHGRASS(true), SMOOTH_CORDGRASS(true), CHRISTMAS_FERN(false), CINNAMON_FERN(false),
+        COMMON_MULLEIN(true), WILD_MINT(false), COMMON_MILKWEED(true), POISON_IVY(false),
+        LOWBUSH_BLUEBERRY(false), AMERICAN_ELDERBERRY(true), BIG_SAGEBRUSH(true), AMERICAN_BEACHGRASS(true);
 
         public final boolean tall;
 
@@ -90,10 +93,11 @@ public class MeshPlantBlock extends BushBlock {
         return Shapes.empty();
     }
 
-    /** Soil (the dirt tag: grass block, dirt, podzol, mud ...) and the road's graded turf. */
+    /** Soil (the dirt tag: grass block, dirt, podzol, mud ...) and the road's graded turf; the beachgrass also sand (doc 24). */
     @Override
     protected boolean mayPlaceOn(BlockState state, BlockGetter level, BlockPos pos) {
-        return state.is(BlockTags.DIRT) || state.getBlock() instanceof GradedTurfBlock;
+        return state.is(BlockTags.DIRT) || state.getBlock() instanceof GradedTurfBlock
+                || species == Species.AMERICAN_BEACHGRASS && state.is(BlockTags.SAND);
     }
 
     // ------------------------------------------------------------------------------------------- directions

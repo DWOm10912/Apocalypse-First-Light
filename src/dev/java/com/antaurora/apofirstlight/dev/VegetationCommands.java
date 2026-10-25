@@ -36,6 +36,12 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
  * round the player (default 128 m), without generating anything: each biome's cover, the species, the plants a chunk
  * holds, and the quads the player would see from here at the distance levels (P1's measured means per block); the
  * feature's own counts so far. The real ground (roads, floors, deeper water) refuses some of these columns.</li>
+ * <li>{@code /afl dev vegetation why [radius]} (doc 22): the real ground columns in a square round the player (default 24)
+ * counted by why each has no plant: a town's limit, the home's plot, a biome without plants, the plan's cover or site, the
+ * roads' bare turf, ground that is not soil (and what it is), water; and how many have one. Where the plan wants a plant
+ * and none stands, it tries again now: the road guard (RoadChunkPass#guarded), the plant's own ground rule, or it would
+ * grow (the feature never planted it there, or something took it away later); and it lists the chunks the plan wants ten
+ * or more plants in that have none.</li>
  * </ul>
  * The client's own side: {@code /afl_vegetation status|lod <auto|0|1|2|off>}.
  */
@@ -62,6 +68,8 @@ public final class VegetationCommands {
                         .then(Commands.argument("radius", IntegerArgumentType.integer(1, 64)).executes(x -> clear(x, IntegerArgumentType.getInteger(x, "radius")))))
                 .then(Commands.literal("plan").executes(x -> plan(x, 128))
                         .then(Commands.argument("radius", IntegerArgumentType.integer(16, 512)).executes(x -> plan(x, IntegerArgumentType.getInteger(x, "radius")))))
+                .then(Commands.literal("why").executes(x -> why(x, 24))
+                        .then(Commands.argument("radius", IntegerArgumentType.integer(4, 64)).executes(x -> why(x, IntegerArgumentType.getInteger(x, "radius")))))
                 .then(Commands.literal("flatten").executes(x -> flatten(x, 3))
                         .then(Commands.argument("radius", IntegerArgumentType.integer(1, 16)).executes(x -> flatten(x, IntegerArgumentType.getInteger(x, "radius")))));
         event.getDispatcher().register(Commands.literal("afl").then(Commands.literal("dev").then(c)));
@@ -178,9 +186,11 @@ public final class VegetationCommands {
         return removed;
     }
 
-    /** The measured mean quads per block (LOD0, LOD1, LOD2) of the species blocks, in MeshPlantBlock.Species' order (doc 11.7, 13.3, 13.4, 15.6, 16.5, 17.2, 18.5, 18.8). */
+    /** The measured mean quads per block (LOD0, LOD1, LOD2) of the species blocks, in MeshPlantBlock.Species' order (doc 11.7, 13.3, 13.4, 15.6, 16.5, 17.2, 18.5, 18.8, 21). */
     private static final int[][] QUADS = {{423, 34, 6}, {566, 77, 4}, {650, 57, 6}, {473, 24, 4}, {445, 21, 4}, {426, 57, 6}, {120, 62, 43},
-            {341, 112, 2}, {418, 59, 2}, {624, 46, 10}, {640, 56, 10}, {650, 50, 10}, {493, 86, 8}, {529, 14, 4}};
+            {341, 112, 2}, {418, 59, 2}, {624, 46, 10}, {640, 56, 10}, {650, 50, 10}, {493, 86, 8}, {529, 14, 4},
+            {497, 56, 8}, {374, 36, 4}, {127, 44, 12}, {114, 42, 11}, {214, 39, 12}, {464, 20, 4}, {313, 57, 10}, {274, 21, 4},
+            {155, 27, 8}, {301, 16, 8}, {158, 10, 5}, {365, 31, 4}};
     /** Where the client's distance levels give way (m, the middles of VegetationClient.BANDS, doc 17.3). */
     private static final double[] LEVELS = {32, 68, 108};
 
@@ -239,6 +249,78 @@ public final class VegetationCommands {
         for (String line : out.toString().split("\n")) x.getSource().sendSuccess(() -> Component.literal(line), false);
         com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[AFL vegetation plan]\n{}", out);
         return chunks;
+    }
+
+    /** Why the real ground columns round the player have no plant (doc 22), counted. */
+    private static int why(CommandContext<CommandSourceStack> x, int radius) {
+        ServerPlayer player = (ServerPlayer) x.getSource().getEntity();
+        ServerLevel level = player.serverLevel();
+        var plan = com.antaurora.apofirstlight.vegetation.VegetationGate.plan(level);
+        if (plan == null) {
+            x.getSource().sendFailure(Component.literal("No vegetation plan here (the overworld of an AFL world with a Terrain V2 plan only)"));
+            return 0;
+        }
+        java.util.Map<String, Integer> why = new java.util.TreeMap<>();
+        java.util.Map<String, Integer> ground = new java.util.TreeMap<>();
+        java.util.Map<Long, com.antaurora.apofirstlight.vegetation.VegetationPlan.Area> areas = new java.util.HashMap<>();
+        BlockPos at = player.blockPosition();
+        var pos = new BlockPos.MutableBlockPos();
+        java.util.Map<Long, int[]> chunks = new java.util.TreeMap<>();
+        int columns = 0;
+        for (int wx = at.getX() - radius; wx <= at.getX() + radius; wx++)
+            for (int wz = at.getZ() - radius; wz <= at.getZ() + radius; wz++) {
+                if (!level.hasChunk(wx >> 4, wz >> 4)) continue;
+                columns++;
+                int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz) - 1;
+                pos.set(wx, top, wz);
+                BlockState s = level.getBlockState(pos);
+                String reason;
+                int[] chunk = chunks.computeIfAbsent(net.minecraft.world.level.ChunkPos.asLong(wx >> 4, wz >> 4), k -> new int[2]);
+                if (s.getBlock() instanceof MeshPlantBlock) {
+                    reason = "has a plant";
+                    chunk[0]++;
+                    chunk[1]++;
+                } else {
+                    int cx = wx >> 4, cz = wz >> 4;
+                    var area = areas.computeIfAbsent(net.minecraft.world.level.ChunkPos.asLong(cx, cz), k -> plan.area(cx, cz));
+                    String biome = level.getBiome(pos).unwrapKey().map(k -> k.location().getPath()).orElse("?");
+                    if (!s.getFluidState().isEmpty()) reason = "water";
+                    else if (area.inTown(wx, wz)) reason = "a town's limit";
+                    else if (area.inHome(wx, wz)) reason = "the home's plot";
+                    else if (com.antaurora.apofirstlight.vegetation.VegetationPlan.community(biome) == null) reason = "biome " + biome + " grows none";
+                    else if (s.getBlock() instanceof com.antaurora.apofirstlight.block.GradedTurfBlock && plan.roadBare(wx, wz)) reason = "the roads' bare turf";
+                    else {
+                        var p = area.choose(wx, wz, biome);
+                        if (p == null) reason = "the plan's cover / site";
+                        else {
+                            chunk[0]++;
+                            BlockPos up = pos.above();
+                            BlockState plant = com.antaurora.apofirstlight.vegetation.VegetationGate.block(p);
+                            if (com.antaurora.apofirstlight.worldgen.network.RoadChunkPass.guarded(level, up, plant)) reason = "the plan wants one: the road guard refuses";
+                            else if (!plant.canSurvive(level, up)) reason = "the plan wants one: it cannot stand on the ground";
+                            else reason = "the plan wants one: it would grow now (never planted, or taken away)";
+                            ground.merge(net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(s.getBlock()).toString(), 1, Integer::sum);
+                        }
+                    }
+                }
+                why.merge(reason, 1, Integer::sum);
+            }
+        var out = new StringBuilder(String.format(java.util.Locale.ROOT, "Vegetation why over %d loaded columns (%d m round %d %d):\n", columns, radius, at.getX(), at.getZ()));
+        int n = columns;
+        why.forEach((k, v) -> out.append(String.format(java.util.Locale.ROOT, "  %s: %d (%.0f%%)\n", k, v, 100.0 * v / Math.max(1, n))));
+        if (!ground.isEmpty()) out.append("  ground under the missing plants: ").append(ground).append('\n');
+        var empty = new StringBuilder();
+        int emptyChunks = 0, wanting = 0;
+        for (var e : chunks.entrySet()) {
+            if (e.getValue()[0] < 10) continue;
+            wanting++;
+            if (e.getValue()[1] > 0) continue;
+            if (emptyChunks++ < 12) empty.append(' ').append(net.minecraft.world.level.ChunkPos.getX(e.getKey())).append(',').append(net.minecraft.world.level.ChunkPos.getZ(e.getKey()));
+        }
+        out.append(String.format(java.util.Locale.ROOT, "  chunks the plan wants 10+ plants in: %d, with none: %d%s\n", wanting, emptyChunks, emptyChunks > 0 ? " (chunk x,z:" + empty + ")" : ""));
+        for (String line : out.toString().split("\n")) x.getSource().sendSuccess(() -> Component.literal(line), false);
+        com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[AFL vegetation why]\n{}", out);
+        return columns;
     }
 
     private static int flatten(CommandContext<CommandSourceStack> x, int radius) {

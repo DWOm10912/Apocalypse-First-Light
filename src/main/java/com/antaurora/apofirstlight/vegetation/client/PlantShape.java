@@ -7,7 +7,10 @@ import java.util.List;
  * The shared geometry of the mesh plants (AFL vegetation, docs/gameplay/vegetation_v1_design.md 10-13): pure, no
  * Minecraft types. A block is a square metre of one species: {@value #VARIANTS} fixed layouts per species (BluegrassShape,
  * CattailShape, YarrowShape; P2b: BigBluestemShape, LittleBluestemShape, SedgeShape, FernShape, PlantainShape,
- * DandelionShape, ConeflowerShape, SusanShape, GoldenrodShape, ReedShape, BlackberryShape), picked by the position,
+ * DandelionShape, ConeflowerShape, SusanShape, GoldenrodShape, ReedShape, BlackberryShape; P4a: SwitchgrassShape,
+ * CordgrassShape, ChristmasFernShape, CinnamonFernShape; P4a batch 2: MulleinShape, MintShape, MilkweedShape,
+ * PoisonIvyShape; P4a batch 3: BlueberryShape, ElderberryShape, SagebrushShape, BeachgrassShape), picked by the
+ * position,
  * each with its clumps at three levels of detail.
  * <ul>
  * <li>A {@link Blade} is anything that bends along its length: a leaf (a flat strip, both faces drawn), a stem (a tube),
@@ -26,9 +29,12 @@ final class PlantShape {
     static final int VARIANTS = 32, LEVELS = 3, NONE = LEVELS;
     /** The species in MeshPlantBlock.Species' order (the layouts' index). */
     static final int BLUEGRASS = 0, CATTAIL = 1, YARROW = 2, BIG_BLUESTEM = 3, LITTLE_BLUESTEM = 4, SEDGE = 5, FERN = 6,
-            PLANTAIN = 7, DANDELION = 8, CONEFLOWER = 9, SUSAN = 10, GOLDENROD = 11, REED = 12, BLACKBERRY = 13, SPECIES = 14;
-    /** Sheet columns, each 32 px wide and 128 tall (the art: tools/vegetation/build-mesh-plants-art.mjs; P2b: 32 -> 64). */
-    static final int COLUMNS = 64;
+            PLANTAIN = 7, DANDELION = 8, CONEFLOWER = 9, SUSAN = 10, GOLDENROD = 11, REED = 12, BLACKBERRY = 13,
+            SWITCHGRASS = 14, CORDGRASS = 15, CHRISTMAS_FERN = 16, CINNAMON_FERN = 17,
+            MULLEIN = 18, MINT = 19, MILKWEED = 20, POISON_IVY = 21,
+            BLUEBERRY = 22, ELDERBERRY = 23, SAGEBRUSH = 24, BEACHGRASS = 25, SPECIES = 26;
+    /** Sheet columns, each 32 px wide and 128 tall (the art: tools/vegetation/build-mesh-plants-art.mjs; P2b: 32 -> 64, P4: 128). */
+    static final int COLUMNS = 128;
     /** A column's card is 32 px wide and 128 px tall: width = height * ASPECT before the stretch. */
     static final float ASPECT = 0.25F;
     /** The two sprites: the standing sheet (waves) and its still copy (lies or leans, does not move). */
@@ -69,6 +75,22 @@ final class PlantShape {
         for (int c : new int[]{GoldenrodShape.STEM, GoldenrodShape.PARTS, GoldenrodShape.CARD, GoldenrodShape.CARD_FLOWERS}) WIND[c] = 1.2F;
         for (int c : new int[]{ReedShape.CULM, ReedShape.PARTS, ReedShape.CARD, ReedShape.CARD_PLUMES}) WIND[c] = 1.6F;
         for (int c : new int[]{BlackberryShape.CANE, BlackberryShape.PARTS, BlackberryShape.CARD}) WIND[c] = 0.8F;
+        // P4a batch 1 (doc 21): switchgrass as big bluestem, the stiff cordgrass a little, the leathery Christmas fern less
+        for (int c : new int[]{SwitchgrassShape.LEAF, SwitchgrassShape.CULM, SwitchgrassShape.PARTS, SwitchgrassShape.CARD, SwitchgrassShape.CARD_PANICLES}) WIND[c] = 1.4F;
+        for (int c : new int[]{CordgrassShape.CULM, CordgrassShape.PARTS, CordgrassShape.CARD}) WIND[c] = 1.1F;
+        for (int c : new int[]{ChristmasFernShape.FROND, ChristmasFernShape.FERTILE, ChristmasFernShape.CARD}) WIND[c] = 0.7F;
+        // P4a batch 2 (doc 23): the mullein's stalk stiff and its rosette flat on the ground, the milkweed as the goldenrod
+        for (int c : new int[]{MulleinShape.STALK, MulleinShape.SPIKE, MulleinShape.PARTS, MulleinShape.CARD}) WIND[c] = 0.8F;
+        WIND[MulleinShape.LEAF] = 0.5F;
+        for (int c : new int[]{MilkweedShape.STEM, MilkweedShape.PARTS, MilkweedShape.CARD, MilkweedShape.CARD_FLOWERS}) WIND[c] = 1.1F;
+        for (int c : new int[]{PoisonIvyShape.STEM, PoisonIvyShape.PARTS, PoisonIvyShape.CARD}) WIND[c] = 0.9F;
+        // P4a batch 3 (doc 24): the woody shrubs stiff (the sagebrush stiffest), the beachgrass a tall grass
+        for (int c : new int[]{BlueberryShape.SPRAY, BlueberryShape.BERRIES, BlueberryShape.CARD}) WIND[c] = 0.6F;
+        WIND[ElderberryShape.CANE] = 0.7F;
+        for (int c : new int[]{ElderberryShape.LEAF, ElderberryShape.PARTS, ElderberryShape.CARD, ElderberryShape.CARD_FLOWERS}) WIND[c] = 0.9F;
+        for (int c : new int[]{SagebrushShape.BARK, SagebrushShape.FOLIAGE, SagebrushShape.CARD}) WIND[c] = 0.4F;
+        WIND[BeachgrassShape.LEAF] = 1.3F;
+        for (int c : new int[]{BeachgrassShape.CULM, BeachgrassShape.SPIKE, BeachgrassShape.CARD}) WIND[c] = 1.2F;
     }
 
     /**
@@ -91,13 +113,28 @@ final class PlantShape {
             {{1, 1}, {0.68F, 0.87F}, {0.65F, 1.78F}},   // black-eyed Susan
             {{1, 1}, {0.80F, 0.40F}, {0.81F, 0.63F}},   // goldenrod
             {{1, 1}, {0.99F, 0.31F}, {0.90F, 0.53F}},   // common reed
-            {{1, 1}, {0.91F, 0.23F}, {0.88F, 0.29F}}};  // blackberry (its leaves face every way: a sparse silhouette)
+            {{1, 1}, {0.91F, 0.23F}, {0.88F, 0.29F}},   // blackberry (its leaves face every way: a sparse silhouette)
+            {{1, 1}, {0.99F, 0.41F}, {0.98F, 0.59F}},   // switchgrass
+            {{1, 1}, {1.05F, 0.21F}, {0.98F, 0.29F}},   // smooth cordgrass (its shoots stand apart: a sparse silhouette)
+            {{1, 1}, {1, 1}, {0.83F, 1.67F}},           // Christmas fern (LOD1 is fronds)
+            {{1, 1}, {1, 1}, {0.92F, 1.61F}},           // cinnamon fern (LOD1 is fronds)
+            {{1, 1}, {0.82F, 0.82F}, {0.69F, 1.30F}},   // common mullein (rosette-only blocks keep their leaves)
+            {{1, 1}, {0.99F, 0.23F}, {1.00F, 0.27F}},   // wild mint (thin stems: a sparse silhouette)
+            {{1, 1}, {0.86F, 0.53F}, {0.82F, 0.75F}},   // common milkweed
+            {{1, 1}, {1.26F, 0.52F}, {1.15F, 0.67F}},   // poison ivy
+            {{1, 1}, {1, 1}, {1.35F, 0.77F}},           // lowbush blueberry (LOD1 is sprays)
+            {{1, 1}, {0.83F, 0.23F}, {0.86F, 0.21F}},   // American elderberry (arching canes: a sparse silhouette)
+            {{1, 1}, {1.24F, 0.62F}, {1.24F, 0.61F}},   // big sagebrush
+            {{1, 1}, {0.68F, 0.71F}, {0.61F, 1.05F}}};  // American beachgrass
 
     @SuppressWarnings("unchecked")
     private static final List<Clump>[][][] RAW = new List[][][]{BluegrassShape.layouts(), CattailShape.layouts(), YarrowShape.layouts(),
             BigBluestemShape.layouts(), LittleBluestemShape.layouts(), SedgeShape.layouts(), FernShape.layouts(),
             PlantainShape.layouts(), DandelionShape.layouts(), ConeflowerShape.layouts(), SusanShape.layouts(),
-            GoldenrodShape.layouts(), ReedShape.layouts(), BlackberryShape.layouts()};
+            GoldenrodShape.layouts(), ReedShape.layouts(), BlackberryShape.layouts(),
+            SwitchgrassShape.layouts(), CordgrassShape.layouts(), ChristmasFernShape.layouts(), CinnamonFernShape.layouts(),
+            MulleinShape.layouts(), MintShape.layouts(), MilkweedShape.layouts(), PoisonIvyShape.layouts(),
+            BlueberryShape.layouts(), ElderberryShape.layouts(), SagebrushShape.layouts(), BeachgrassShape.layouts()};
     private static List<Clump>[][][] LAYOUTS = fitted(FIT);
 
     private PlantShape() {}

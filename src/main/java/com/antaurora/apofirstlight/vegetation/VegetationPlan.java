@@ -20,22 +20,37 @@ import java.util.Map;
  * <li>Whether a column has a plant: the cover times a 12 m cover noise (bare spots and thick tufts, their edges thinning
  * out), dithered by the column's hash.</li>
  * <li>Which one: each weight times the species' own 30 m patch noise (it grows in drifts) times its site factor (water
- * within {@value #WET_REACH} blocks, the crowns' shade, a steep slope, the road's edge), drawn by a second hash.</li>
+ * within {@value #WET_REACH} blocks, the crowns' shade, a steep slope, the road's edge), drawn by a second hash. The
+ * flowering forbs ({@link Plant#forb}) also need the shared 48 m flower patch noise ({@link #FORB_PATCH}): between the
+ * patches the ground is grass only (v4, doc 22).</li>
  * <li>Excluded: a town's limit (it lays its own lawns later) and the forest home's plot. Roads, driveways, rock cuts and
  * buildings are written before any feature (C's chunk passes): the feature finds no soil there.</li>
  * </ul>
  * P2a had three species blocks and the other eleven stood in as the nearest of them ({@link Plant#standIn}), at the
  * final cover; P2b gives them their own blocks batch by batch (batch 1: the bluestems, the sedge, bracken; batch 2:
  * plantain, dandelion, purple coneflower, black-eyed Susan; batch 3: goldenrod, common reed, blackberry: every plant
- * has its own block now).
+ * has its own block now). P4a batch 1 (doc 21) adds switchgrass, smooth cordgrass, the Christmas and cinnamon ferns to
+ * the communities ({@link #extend}: the others' weights scaled down, the cover unchanged); P4a batch 2 (doc 23) common
+ * mullein, wild mint, common milkweed and poison ivy; batch 3 (doc 24) lowbush blueberry, American elderberry, big
+ * sagebrush and American beachgrass.
  */
 public final class VegetationPlan {
     /**
      * The plan's generation version (docs/worldgen/worldgen_version_lock_v1.md): a change that moves plants raises it; a
      * world would then keep the version it grows (as ForestPlan.VERSION). 1: P2a. 2: covers times 0.6, a stronger cover
-     * noise (user 2026-10-24: one tuft-sized block on two columns of three made a carpet).
+     * noise (user 2026-10-24: one tuft-sized block on two columns of three made a carpet). 3: P4a batch 1's four species.
+     * 4: covers times {@value #COVER_V4}, the forbs in shared flower patches and none under the crowns (user 2026-10-24: too
+     * dense, flowers everywhere; doc 22). 5: P4a batch 2's four species (doc 23). 6: batch 3's four (doc 24).
      */
-    public static final int VERSION = 2;
+    public static final int VERSION = 6;
+    /** v4: every community's cover times this (doc 22.3). */
+    static final double COVER_V4 = 0.75;
+    /**
+     * v4 flower patches (doc 22.3): a forb's weight times FORB_PATCH times clamp((n - FORB_FROM) / 0.6, 0, 1) of a shared
+     * 48 m noise n, so a third of the ground has none and the forbs are about 15% of temperate grassland's plants (real
+     * tallgrass prairie: forbs 10-20% of the biomass, in patches).
+     */
+    static final double FORB_PATCH = 3.5, FORB_FROM = 0.4;
     /** Wetland plants grow within this many blocks of planned water (and in water a block deep). */
     static final int WET_REACH = 6;
     /** Planned slope beyond which only the plants that hold on steep ground stay, and fewer. */
@@ -47,7 +62,8 @@ public final class VegetationPlan {
     /** Road edges within this many metres bring the trampled-ground weeds. */
     static final double ROADSIDE = 10;
 
-    private static final int WATER = 0, MOIST = 1, DRY = 2, WET = 3;
+    /** TIDAL: the low marsh's edge, within 3 blocks of water and in water a block deep, most at the water (cordgrass). */
+    private static final int WATER = 0, MOIST = 1, DRY = 2, WET = 3, TIDAL = 4;
     private static final int OPEN = 0, SHADE = 1, BORDER = 2;
 
     /**
@@ -69,7 +85,24 @@ public final class VegetationPlan {
         CONEFLOWER(WATER, OPEN, false, false, MeshPlantBlock.Species.PURPLE_CONEFLOWER),
         BLACK_EYED_SUSAN(WATER, OPEN, false, false, MeshPlantBlock.Species.BLACK_EYED_SUSAN),
         GOLDENROD(MOIST, OPEN, false, false, MeshPlantBlock.Species.CANADA_GOLDENROD),
-        BLACKBERRY(WATER, BORDER, false, false, MeshPlantBlock.Species.ALLEGHENY_BLACKBERRY);
+        BLACKBERRY(WATER, BORDER, false, false, MeshPlantBlock.Species.ALLEGHENY_BLACKBERRY),
+        // P4a batch 1 (doc 20.2, 21)
+        SWITCHGRASS(MOIST, OPEN, false, false, MeshPlantBlock.Species.SWITCHGRASS),
+        SMOOTH_CORDGRASS(TIDAL, OPEN, false, false, MeshPlantBlock.Species.SMOOTH_CORDGRASS),
+        CHRISTMAS_FERN(WATER, SHADE, true, false, MeshPlantBlock.Species.CHRISTMAS_FERN),
+        CINNAMON_FERN(MOIST, SHADE, false, false, MeshPlantBlock.Species.CINNAMON_FERN),
+        // P4a batch 2 (doc 20.2, 23): the mullein of dry, trodden ground (roadsides, gravel), the mint of moist ground, the
+        // poison ivy at the crowns' edges as the blackberry
+        COMMON_MULLEIN(DRY, OPEN, false, true, MeshPlantBlock.Species.COMMON_MULLEIN),
+        WILD_MINT(MOIST, OPEN, false, false, MeshPlantBlock.Species.WILD_MINT),
+        COMMON_MILKWEED(WATER, OPEN, false, false, MeshPlantBlock.Species.COMMON_MILKWEED),
+        POISON_IVY(WATER, BORDER, false, false, MeshPlantBlock.Species.POISON_IVY),
+        // P4a batch 3 (doc 20.2, 24): the blueberry of dry ledges under open crowns, the elderberry of moist wood edges, the
+        // sagebrush of dry open slopes, the beachgrass of the dunes (on sand too: MeshPlantBlock#mayPlaceOn)
+        LOWBUSH_BLUEBERRY(DRY, BORDER, true, false, MeshPlantBlock.Species.LOWBUSH_BLUEBERRY),
+        AMERICAN_ELDERBERRY(MOIST, BORDER, false, false, MeshPlantBlock.Species.AMERICAN_ELDERBERRY),
+        BIG_SAGEBRUSH(DRY, OPEN, true, false, MeshPlantBlock.Species.BIG_SAGEBRUSH),
+        AMERICAN_BEACHGRASS(DRY, OPEN, false, false, MeshPlantBlock.Species.AMERICAN_BEACHGRASS);
 
         final int water, light;
         final boolean steep, trampled;
@@ -84,7 +117,15 @@ public final class VegetationPlan {
             this.standIn = standIn;
         }
 
-        public boolean wet() { return water == WET; }
+        public boolean wet() { return water == WET || water == TIDAL; }
+
+        /** A flowering forb (not a grass, sedge, fern or shrub): grows only in the flower patches, never under crowns (v4). */
+        public boolean forb() {
+            return switch (this) {
+                case YARROW, PLANTAIN, DANDELION, CONEFLOWER, BLACK_EYED_SUSAN, GOLDENROD, COMMON_MULLEIN, WILD_MINT, COMMON_MILKWEED -> true;
+                default -> false;
+            };
+        }
     }
 
     /** A biome's community: cover (share of ground columns with a plant) and weights in Plant order. */
@@ -100,7 +141,18 @@ public final class VegetationPlan {
     private static void community(String biome, double cover, Object... weights) {
         double[] w = new double[Plant.values().length];
         for (int i = 0; i < weights.length; i += 2) w[((Plant) weights[i]).ordinal()] = ((Number) weights[i + 1]).doubleValue();
-        COMMUNITIES.put(biome, new Community(cover, w));
+        COMMUNITIES.put(biome, new Community(cover * COVER_V4, w));
+    }
+
+    /** Adds species to a biome's community (doc 20.2): the weights already there scaled down so all still sum to 1. */
+    private static void extend(String biome, Object... weights) {
+        Community c = COMMUNITIES.get(biome);
+        double added = 0;
+        for (int i = 1; i < weights.length; i += 2) added += ((Number) weights[i]).doubleValue();
+        double[] w = c.weights.clone();
+        for (int i = 0; i < w.length; i++) w[i] *= 1 - added;
+        for (int i = 0; i < weights.length; i += 2) w[((Plant) weights[i]).ordinal()] = ((Number) weights[i + 1]).doubleValue();
+        COMMUNITIES.put(biome, new Community(c.cover, w));
     }
 
     static {
@@ -131,7 +183,38 @@ public final class VegetationPlan {
         community("alpine_peaks", 0.03, Plant.PENNSYLVANIA_SEDGE, 0.60, Plant.YARROW, 0.40);
         community("plateau_steppe", 0.27, Plant.LITTLE_BLUESTEM, 0.55, Plant.BIG_BLUESTEM, 0.15, Plant.YARROW, 0.15, Plant.GOLDENROD, 0.15);
         community("canyon_badlands", 0.05, Plant.LITTLE_BLUESTEM, 0.70, Plant.GOLDENROD, 0.30);
-        community("fallout_barrens", 0.07, Plant.PLANTAIN, 0.30, Plant.DANDELION, 0.30, Plant.GOLDENROD, 0.40);
+        // no fallout_barrens: a Terrain V2 world (the only kind with a plan) never makes it (doc 23.5)
+        // P4a batch 1 (doc 20.2; cordgrass takes the low marsh at the water, the reed and cattail the higher ground)
+        extend("temperate_grassland", Plant.SWITCHGRASS, 0.08);
+        extend("wet_prairie", Plant.SWITCHGRASS, 0.12);
+        extend("riparian_forest", Plant.SWITCHGRASS, 0.05);
+        extend("tidal_marsh", Plant.SMOOTH_CORDGRASS, 0.45);
+        extend("oak_hickory_woodland", Plant.CHRISTMAS_FERN, 0.08);
+        extend("mixed_mesophytic_forest", Plant.CHRISTMAS_FERN, 0.15);
+        extend("hemlock_hollow", Plant.CHRISTMAS_FERN, 0.25, Plant.CINNAMON_FERN, 0.25);
+        extend("lakeshore_mixed_forest", Plant.CHRISTMAS_FERN, 0.08);
+        extend("coastal_swamp_forest", Plant.CINNAMON_FERN, 0.15);
+        extend("lake_fen", Plant.CINNAMON_FERN, 0.10);
+        // P4a batch 2 (doc 20.2, 23)
+        extend("temperate_grassland", Plant.COMMON_MILKWEED, 0.05, Plant.COMMON_MULLEIN, 0.02);
+        extend("wet_prairie", Plant.WILD_MINT, 0.06, Plant.COMMON_MILKWEED, 0.04);
+        extend("oak_hickory_woodland", Plant.POISON_IVY, 0.05);
+        extend("mixed_mesophytic_forest", Plant.POISON_IVY, 0.05);
+        extend("riparian_forest", Plant.WILD_MINT, 0.06, Plant.POISON_IVY, 0.05);
+        extend("coastal_pine_oak_forest", Plant.POISON_IVY, 0.05);
+        extend("coastal_sandy_clearing", Plant.COMMON_MULLEIN, 0.05);
+        extend("coastal_swamp_forest", Plant.POISON_IVY, 0.05);
+        extend("lake_fen", Plant.WILD_MINT, 0.08);
+        // P4a batch 3 (doc 20.2, 24)
+        extend("ridge_oak_forest", Plant.LOWBUSH_BLUEBERRY, 0.15);
+        extend("coastal_pine_oak_forest", Plant.LOWBUSH_BLUEBERRY, 0.15);
+        extend("lakeshore_mixed_forest", Plant.LOWBUSH_BLUEBERRY, 0.06);
+        extend("montane_conifer_forest", Plant.LOWBUSH_BLUEBERRY, 0.20);
+        extend("alpine_meadow", Plant.LOWBUSH_BLUEBERRY, 0.10);
+        extend("riparian_forest", Plant.AMERICAN_ELDERBERRY, 0.08);
+        extend("plateau_steppe", Plant.BIG_SAGEBRUSH, 0.30);
+        extend("canyon_badlands", Plant.BIG_SAGEBRUSH, 0.35);
+        extend("coastal_sandy_clearing", Plant.AMERICAN_BEACHGRASS, 0.25);
     }
 
     /** The community of an apocalypse_firstlight biome (its path), or null: nothing grows there (sea, beach, lake ...). */
@@ -156,6 +239,14 @@ public final class VegetationPlan {
         this.forest = forest;
         this.works = works;
         this.noiseSeed = PlanNoise.mix(seed ^ 0x56656765746174L);
+    }
+
+    /**
+     * Whether the roads keep a column of their graded turf bare (RoadWorks#bare: under the pavement's edge, a junction's
+     * sight triangles, a pad; C's road guard refuses plants there). Dev statistics only.
+     */
+    public boolean roadBare(int x, int z) {
+        return works != null && works.bare(x, z);
     }
 
     /** Planned water at a column: the mesh forest's test (ForestPlan#site); a swamp is not water. */
@@ -234,7 +325,16 @@ public final class VegetationPlan {
 
         /** A town's limit (its own lawns later) or the forest home's plot (C, 2026-10-24: the plot itself, not its tree clearance). */
         public boolean excluded(int x, int z) {
-            if (plan.works != null && plan.works.towns().clear(x + 0.5, z + 0.5, 0)) return true;
+            return inTown(x, z) || inHome(x, z);
+        }
+
+        /** Inside a town's limit. */
+        public boolean inTown(int x, int z) {
+            return plan.works != null && plan.works.towns().clear(x + 0.5, z + 0.5, 0);
+        }
+
+        /** On the forest home's plot. */
+        public boolean inHome(int x, int z) {
             return home != null && home.plot().distance(x + 0.5, z + 0.5) < 0;
         }
 
@@ -259,11 +359,15 @@ public final class VegetationPlan {
             double road = c.trampled() ? roadDistance(x, z) : Double.POSITIVE_INFINITY;
             Plant[] all = Plant.values();
             double[] w = new double[all.length];
-            double total = 0;
+            double total = 0, flowers = -1;
             for (Plant s : all) {
                 double base = c.weights[s.ordinal()];
                 if (base <= 0) continue;
                 double f = site(s, dw, lit, steep, road);
+                if (f > 0 && s.forb()) {
+                    if (flowers < 0) flowers = FORB_PATCH * Math.max(0, Math.min(1, (PlanNoise.fbm(plan.noiseSeed, x, z, 48, 2, 0.5, 9) - FORB_FROM) / 0.6));
+                    f *= flowers;
+                }
                 if (f <= 0) continue;
                 w[s.ordinal()] = base * f * Math.max(0.05, 1 + 0.9 * PlanNoise.fbm(plan.noiseSeed, x, z, 30, 2, 0.5, 10 + s.ordinal()));
                 total += w[s.ordinal()];
@@ -278,11 +382,12 @@ public final class VegetationPlan {
             return null;
         }
 
-        /** A species' site factor: water within reach, crown light, a steep slope, the road's edge. */
+        /** A species' site factor: water within reach, crown light (a forb: none under the crowns), a steep slope, the road's edge. */
         static double site(Plant s, double water, int light, boolean steep, double road) {
             double f;
             double near = Math.max(0, 1 - water / (WET_REACH + 1));
             if (s.water == WET) f = water > WET_REACH ? 0 : water == 0 ? 1.5 : 2 * near;
+            else if (s.water == TIDAL) f = water > 3 ? 0 : water == 0 ? 2.5 : 2.5 * (1 - water / 4);
             else if (water == 0) return 0;
             else if (s.water == MOIST) f = 1 + 0.6 * near;
             else if (s.water == DRY) f = water > WET_REACH ? 1 : 0.3 + 0.7 * (1 - near);
@@ -290,7 +395,7 @@ public final class VegetationPlan {
             f *= switch (s.light) {
                 case SHADE -> light == SHADE ? 2 : light == BORDER ? 1.3 : 0.6;
                 case BORDER -> light == SHADE ? 0.4 : light == BORDER ? 2.5 : 0.8;
-                default -> light == SHADE ? 0.15 : light == BORDER ? 0.6 : 1;
+                default -> light == SHADE ? (s.forb() ? 0 : 0.15) : light == BORDER ? 0.6 : 1;
             };
             if (steep && !s.steep) return 0;
             if (s.trampled) f *= 1 + 3 * Math.max(0, 1 - road / ROADSIDE);

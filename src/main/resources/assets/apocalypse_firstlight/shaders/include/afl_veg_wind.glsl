@@ -5,7 +5,7 @@
 uniform vec4 afl_VegRect;   // the vegetation sprite's atlas rectangle (u0, v0, u1, v1); empty: off
 uniform vec4 afl_VegWind;   // time (s), wind x and z (m/s, the way it blows), gust (0..1)
 uniform vec3 afl_VegCam;    // the camera position, wrapped (Java's %: a phase fixed to the world)
-uniform vec4 afl_VegScale[16];  // the wind's reach per sheet column (64 since P2b: PlantShape#WIND)
+uniform vec4 afl_VegScale[32];  // the wind's reach per sheet column (128 since P4: PlantShape#WIND)
 // a hash without a sine (VegetationWindMath#hash computes the same on the CPU)
 float afl_vegHash(vec2 c) {
     vec3 p3 = fract(vec3(c.xyx) * 0.1031);
@@ -23,7 +23,7 @@ vec3 afl_vegWind(vec3 p, vec2 uv) {
     if (afl_VegRect.z <= afl_VegRect.x || uv.x < afl_VegRect.x || uv.x > afl_VegRect.z || uv.y < afl_VegRect.y || uv.y > afl_VegRect.w) return p;
     float h = clamp((afl_VegRect.w - uv.y) / (afl_VegRect.w - afl_VegRect.y), 0.0, 1.0);
     if (h <= 0.001) return p;
-    int column = clamp(int((uv.x - afl_VegRect.x) / (afl_VegRect.z - afl_VegRect.x) * 64.0), 0, 63);
+    int column = clamp(int((uv.x - afl_VegRect.x) / (afl_VegRect.z - afl_VegRect.x) * 128.0), 0, 127);
     float scale = afl_VegScale[column >> 2][column & 3];
     vec2 wind = afl_VegWind.yz;
     float speed = length(wind);

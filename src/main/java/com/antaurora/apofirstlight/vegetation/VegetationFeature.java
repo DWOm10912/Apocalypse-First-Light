@@ -62,6 +62,18 @@ final class VegetationFeature extends Feature<NoneFeatureConfiguration> {
             case CANADA_GOLDENROD -> AflBlocks.CANADA_GOLDENROD.get().defaultBlockState();
             case COMMON_REED -> AflBlocks.COMMON_REED.get().defaultBlockState();
             case ALLEGHENY_BLACKBERRY -> AflBlocks.ALLEGHENY_BLACKBERRY.get().defaultBlockState();
+            case SWITCHGRASS -> AflBlocks.SWITCHGRASS.get().defaultBlockState();
+            case SMOOTH_CORDGRASS -> AflBlocks.SMOOTH_CORDGRASS.get().defaultBlockState();
+            case CHRISTMAS_FERN -> AflBlocks.CHRISTMAS_FERN.get().defaultBlockState();
+            case CINNAMON_FERN -> AflBlocks.CINNAMON_FERN.get().defaultBlockState();
+            case COMMON_MULLEIN -> AflBlocks.COMMON_MULLEIN.get().defaultBlockState();
+            case WILD_MINT -> AflBlocks.WILD_MINT.get().defaultBlockState();
+            case COMMON_MILKWEED -> AflBlocks.COMMON_MILKWEED.get().defaultBlockState();
+            case POISON_IVY -> AflBlocks.POISON_IVY.get().defaultBlockState();
+            case LOWBUSH_BLUEBERRY -> AflBlocks.LOWBUSH_BLUEBERRY.get().defaultBlockState();
+            case AMERICAN_ELDERBERRY -> AflBlocks.AMERICAN_ELDERBERRY.get().defaultBlockState();
+            case BIG_SAGEBRUSH -> AflBlocks.BIG_SAGEBRUSH.get().defaultBlockState();
+            case AMERICAN_BEACHGRASS -> AflBlocks.AMERICAN_BEACHGRASS.get().defaultBlockState();
         };
     }
 
