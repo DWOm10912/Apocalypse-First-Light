@@ -32,8 +32,10 @@ public final class UndergroundRuntime {
      * 8: the trail from the road to the start cave's mouth, its sign and markers, no trees on it (U5b; design 24.5).
      * 9: the geology's rocks instead of stone and deepslate, no vanilla rock blobs (U3a; underground_u3_rocks_ores_design.md 2.2).
      * 10: soil only in each column's top run (GeologyPass#unroof), no vanilla ores (U6 V3; underground_u6_rock_faces_design.md 2.2).
+     * 11: the ore rocks, batch 1: coal seams, banded iron, quartz veins, lead-zinc dolomite, copper breccia (U3b;
+     * underground_u3_rocks_ores_design.md 14).
      */
-    public static final int RULES = 10;
+    public static final int RULES = 11;
 
     /** The bound plans by seed: the mesh forest keeps its trunks off their trails (ForestPlan exclusion; U5b). */
     private static final Map<Long, UndergroundPlan> ACTIVE = new java.util.concurrent.ConcurrentHashMap<>();

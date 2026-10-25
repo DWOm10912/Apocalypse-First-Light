@@ -215,6 +215,30 @@
       "unit_mass_kg": 3.2,
       "estimated": true
     },
+    "apocalypse_firstlight:coal_lump": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:raw_hematite": {
+      "unit_mass_kg": 2.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:raw_chalcopyrite": {
+      "unit_mass_kg": 1.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:gold_quartz": {
+      "unit_mass_kg": 1.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:raw_galena": {
+      "unit_mass_kg": 2.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:raw_sphalerite": {
+      "unit_mass_kg": 1.6,
+      "estimated": true
+    },
     "apocalypse_firstlight:pebble": {
       "unit_mass_kg": 0.15,
       "estimated": true

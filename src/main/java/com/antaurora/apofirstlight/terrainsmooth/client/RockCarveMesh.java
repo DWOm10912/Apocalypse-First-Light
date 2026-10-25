@@ -45,7 +45,7 @@ import static com.antaurora.apofirstlight.earthwork.CarveChunk.N;
  *   it (the carving is inside an opaque block, whose own light is dark), as the earthwork skin.</li>
  * </ul>
  */
-final class RockCarveMesh {
+public final class RockCarveMesh {
     private RockCarveMesh() {}
 
     private static final int L = CarveNet.L, LO = CarveNet.LO;
@@ -167,21 +167,80 @@ final class RockCarveMesh {
         if (f.light[n] >= 0) return f.light[n];
         BlockPos at = pos.offset(n % 3 - 1, n / 3 % 3 - 1, n / 9 - 1);
         int l;
-        if (!f.carved[n]) {
+        if (f.carved[n]) l = openLight(region, at);
+        else {
             l = LevelRenderer.getLightColor(region, at);
-        } else {
-            int sky = 0, block = 0;
-            for (Direction d : Direction.values()) {
-                BlockPos o = at.relative(d);
-                BlockState s = region.getBlockState(o);
-                if (s.isSolidRender(region, o)) continue;
-                int c = LevelRenderer.getLightColor(region, o);
-                sky = Math.max(sky, LightTexture.sky(c));
-                block = Math.max(block, LightTexture.block(c));
-            }
-            l = LightTexture.pack(block, sky);
+            if (besideCarve(region, at)) l = brighter(l, openLight(region, at));
         }
         return f.light[n] = l;
+    }
+
+    /**
+     * Whether pos is open space next to pick-carved rock (client copies): a block cleared to air under a half-carved one is
+     * a sealed pocket to the light engine (dark), though open to the pit (user 2026-10-24: drops black in those cells).
+     */
+    public static boolean besideCarve(BlockAndTintGetter g, BlockPos pos) {
+        if (RockCarve.CLIENT.isEmpty() || g.getBlockState(pos).isSolidRender(g, pos)) return false;
+        for (Direction d : Direction.values()) if (RockCarve.bits(null, pos.relative(d)) != null) return true;
+        return false;
+    }
+
+    /** The brighter of two packed lights, sky and block each. */
+    public static int brighter(int a, int b) {
+        return LightTexture.pack(Math.max(LightTexture.block(a), LightTexture.block(b)), Math.max(LightTexture.sky(a), LightTexture.sky(b)));
+    }
+
+    /**
+     * The light of something at pos (packed), own the cell's: for a carved or worn block (its hollow) or an open cell beside a
+     * carving at least its {@link #openLight}. The level or a chunk build region (client carve copies, relief read from g):
+     * entities and particles (the light mixins) and the ground items the chunk draws (GroundItemChunking#emit).
+     */
+    public static int lightAt(BlockAndTintGetter g, BlockPos pos, int own) {
+        BlockState s = g.getBlockState(pos);
+        boolean dark = s.isSolidRender(g, pos) ? RockCarve.occupancy(null, g, pos, s.getBlock()) != null : besideCarve(g, pos);
+        return dark ? brighter(own, openLight(g, pos)) : own;
+    }
+
+    /** How many blocks round a carved or worn block {@link #openLight} looks for open space. */
+    static final int LIGHT_STEPS = 4;
+
+    /**
+     * The light of a carved or worn block's hollow (packed): the block is a full block in the light data, dark inside
+     * (user 2026-10-24: a pit's drops, the hand and a deep hollow went black). The brightest open cell (not a full block)
+     * next to it, or through pick-carved blocks round it up to LIGHT_STEPS blocks out, one level darker for every carved
+     * block passed (as light falls off). Chunk meshing (any thread: the client's carve copies) and the entity and particle
+     * light hooks (EarthworkEntityLightMixin, EarthworkParticleLightMixin).
+     */
+    public static int openLight(BlockAndTintGetter g, BlockPos start) {
+        int sky = 0, block = 0;
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet seen = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+        seen.add(start.asLong());
+        List<BlockPos> frontier = new ArrayList<>(List.of(start)), next = new ArrayList<>();
+        for (int d = 0; d < LIGHT_STEPS && !frontier.isEmpty(); d++) {
+            for (BlockPos p : frontier) for (Direction dir : Direction.values()) {
+                BlockPos o = p.relative(dir);
+                if (!seen.add(o.asLong())) continue;
+                BlockState os = g.getBlockState(o);
+                if (!os.isSolidRender(g, o)) {
+                    // the overload with the state: the light hooks (EarthworkParticleLightMixin) sit on the other, no recursion
+                    int c = LevelRenderer.getLightColor(g, os, o);
+                    sky = Math.max(sky, LightTexture.sky(c) - d);
+                    block = Math.max(block, LightTexture.block(c) - d);
+                } else if (RockCarve.bits(null, o) != null) next.add(o);   // a carved block: look on through its hollow
+            }
+            List<BlockPos> t = frontier;
+            frontier = next;
+            next = t;
+            next.clear();
+        }
+        return LightTexture.pack(Math.max(0, block), Math.max(0, sky));
+    }
+
+    /** Whether the block at pos is drawn with a hollow (carved or worn natural rock or soil, client copies) and lit by {@link #openLight}. */
+    public static boolean hollow(net.minecraft.world.level.Level level, BlockPos pos) {
+        BlockState s = level.getBlockState(pos);
+        if (!s.isSolidRender(level, pos)) return false;
+        return RockCarve.carved(s.getBlock(), level, pos);
     }
 
     // ------------------------------------------------------------------------------------------------- textures

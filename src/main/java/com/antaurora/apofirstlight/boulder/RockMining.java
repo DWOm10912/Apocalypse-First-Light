@@ -5,7 +5,6 @@ import com.antaurora.apofirstlight.earthwork.EarthGrid;
 import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.earthwork.RockCarve;
 import com.antaurora.apofirstlight.earthwork.RockTypes;
-import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.stamina.PlayerStamina;
 import com.antaurora.apofirstlight.stamina.StaminaConfig;
 import net.minecraft.core.BlockPos;
@@ -21,7 +20,8 @@ import net.minecraft.world.phys.Vec3;
  * visibly take a piece off, no cube blocks, no vanilla cracks): each strike carves a piece of the rock's
  * {@code strike_litres} (rock_types) out of the rock where it lands (RockCarve: 1/8 m sub-cells, drawn as a smooth
  * surface); a block with nothing left is gone. The stones come off by volume as R2's do (one stone a STONE_LITRES, one
- * pebble a PEBBLE_LITRES, the rest a chance), each block's own rock's stone (RockTypes#stone).
+ * pebble a PEBBLE_LITRES, the rest a chance), each block's own rock's stone (RockTypes#stone); an ore rock gives its raw ore
+ * by volume too (U3b, OreRockBlock#drops).
  * <p>
  * Not here: a cell of an earthwork-edited column the earthwork still manages (its skin, its pick floor and the lid under
  * it: down to top0 - ROCK_DEPTH - 1), a cell under a boulder. The rock above stands where it is (no roof fall: the
@@ -59,8 +59,7 @@ public final class RockMining {
         Vec3 drop = at.add(out.lengthSqr() > 1e-6 ? out.normalize().scale(0.25) : Vec3.ZERO);
         for (var en : cut.taken().object2IntEntrySet()) {
             double litres = en.getIntValue() * RockCarve.SUB_LITRES;
-            BoulderStrike.drops(level, drop, RockTypes.stone(RockTypes.of(en.getKey().getBlock())), litres / BoulderStrike.STONE_LITRES);
-            BoulderStrike.drops(level, drop, AflItems.PEBBLE.get(), litres / BoulderStrike.PEBBLE_LITRES);
+            com.antaurora.apofirstlight.block.OreRockBlock.drops(level, drop, en.getKey(), litres, BoulderStrike.STONE_LITRES, BoulderStrike.PEBBLE_LITRES);
         }
         RockStrikeFx.sound(level, p, at, state, cut.emptied() > 0);
     }

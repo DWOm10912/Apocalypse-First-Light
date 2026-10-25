@@ -40,7 +40,7 @@ import java.util.WeakHashMap;
  * Every place has a [go] that runs {@code /afl dev underground goto <x> <z>}, which sets the caller on the ground there.
  * In a deep world (U2 preset federal_deep_proto) the caves are cut into its chunks, and each cave also has an [in] that
  * runs {@code /afl dev underground cave <id>}: the caller is set inside it. In any other world the plan is read-only
- * (nothing is built). {@code /afl dev underground destinations} lists the plan's destinations (U5 sample, design 24). The plan is UndergroundRuntime's, made once per world (about 1–2 s on the server thread).
+ * (nothing is built). {@code /afl dev underground destinations} lists the plan's destinations (U5 sample, design 24); {@code ores} the nearest ore body of each placed kind (U3b, underground_u3_rocks_ores_design.md 14). The plan is UndergroundRuntime's, made once per world (about 1–2 s on the server thread).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class UndergroundDevCommand {
@@ -57,6 +57,7 @@ public final class UndergroundDevCommand {
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("here").executes(c -> here(c.getSource())))
                 .then(Commands.literal("destinations").executes(c -> destinations(c.getSource())))
+                .then(Commands.literal("ores").executes(c -> ores(c.getSource())))
                 .then(Commands.literal("goto").then(Commands.argument("x", DoubleArgumentType.doubleArg())
                         .then(Commands.argument("z", DoubleArgumentType.doubleArg())
                                 .executes(c -> go(c.getSource(), DoubleArgumentType.getDouble(c, "x"), DoubleArgumentType.getDouble(c, "z"))))))
@@ -123,6 +124,8 @@ public final class UndergroundDevCommand {
                 built ? "This session's " + EntranceRocksFeature.report() + "." : "")).withStyle(ChatFormatting.GRAY));
         if (built && !u.trails.isEmpty())
             lines.add(Component.literal("This session's " + CaveTrailPass.report() + ".").withStyle(ChatFormatting.GRAY));
+        // the rocks and ore rock laid in this session's new chunks, and the pass's time (U3a, U3b)
+        if (built) lines.add(Component.literal("This session's " + GeologyPass.report() + ".").withStyle(ChatFormatting.GRAY));
 
         // cave systems, giant caves and canyons
         lines.add(Component.literal("Nearest cave systems:").withStyle(ChatFormatting.YELLOW));
@@ -185,6 +188,45 @@ public final class UndergroundDevCommand {
         MutableComponent all = Component.literal(u.destinations.isEmpty() ? "AFL underground: this plan has no destinations (no start cave near the home)."
                 : "AFL underground destinations (plan data; the way in is walked with the kit named):").withStyle(ChatFormatting.GRAY);
         for (UndergroundPlan.Destination d : u.destinations) all.append("\n").append(destinationLine(u, d, pos.x, pos.z, built));
+        source.sendSuccess(() -> all, false);
+        return 1;
+    }
+
+    /** The nearest ore body of each kind batch 1 places (U3b design 14): its centre, top under the ground, size, [go]. */
+    private static int ores(CommandSourceStack source) {
+        ServerLevel level = source.getServer().overworld();
+        RoadNetworkRuntime.Network n = RoadNetworkRuntime.bound(level);
+        if (n == null) {
+            source.sendFailure(Component.literal("AFL underground: not a federal world (no terrain plan, roads or towns)."));
+            return 0;
+        }
+        UndergroundPlan u = planned(n).q().plan;
+        GeologyModel g = UndergroundRuntime.geology(u.seed);
+        Vec3 pos = source.getPosition();
+        MutableComponent all = Component.literal("AFL underground ores, the nearest body of each kind (plan data; "
+                + (built(level) ? "laid in this world's new chunks" : "not laid: not a deep world") + "):").withStyle(ChatFormatting.GRAY);
+        for (UndergroundPlan.OreKind kind : UndergroundPlan.OreKind.values()) {
+            if (!OreBodies.placed(kind)) continue;
+            UndergroundPlan.OreBody best = null;
+            double bd = Double.MAX_VALUE;
+            for (UndergroundPlan.OreBody o : u.ores) {
+                if (o.kind() != kind) continue;
+                double d = Math.hypot(o.x() - pos.x, o.z() - pos.z);
+                if (d < bd) { bd = d; best = o; }
+            }
+            String name = kind.name().toLowerCase(Locale.ROOT);
+            if (best == null) {
+                all.append("\n").append(Component.literal("  " + name + ": none in this plan").withStyle(ChatFormatting.YELLOW));
+                continue;
+            }
+            int[] yr = OreBodies.yRange(best);
+            String under = g == null ? "?" : String.format(Locale.ROOT, "%.0f", g.column(best.x(), best.z()).h - yr[1]);
+            String metal = kind == UndergroundPlan.OreKind.HYDROTHERMAL_VEIN
+                    ? " " + new String[]{"gold", "copper", "lead"}[OreBodies.veinMetal(u.seed, best.district())] : "";
+            MutableComponent l = Component.literal(String.format(Locale.ROOT, "  %s%s #%d: centre (%.0f, %.0f, %.0f) %.0f m away, top y %d (%s m under the ground), %.0f x %.0f x %.0f m",
+                    name, metal, best.id(), best.x(), best.y(), best.z(), bd, yr[1], under, best.rx() * 2, best.rz() * 2, best.ry() * 2)).withStyle(ChatFormatting.GREEN);
+            all.append("\n").append(l.append(" ").append(go(best.x(), best.z())));
+        }
         source.sendSuccess(() -> all, false);
         return 1;
     }

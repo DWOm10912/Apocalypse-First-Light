@@ -73,6 +73,13 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.SHALE_SHARD.get(), "shale_shard", "shale_shard_mesh", 0.485658);
             bind(AflItems.MARL_LUMP.get(), "marl_lump", "marl_lump_mesh", 0.447311);
             bind(AflItems.ROCK_SALT_LUMP.get(), "rock_salt_lump", "rock_salt_lump_mesh", 0.443647);
+            // The raw ores (U3b batch 1, the same generator on the ore rocks' sprites, 2026-10-24): 0.5 - height / 32
+            bind(AflItems.COAL_LUMP.get(), "coal_lump", "coal_lump_mesh", 0.450015);
+            bind(AflItems.RAW_HEMATITE.get(), "raw_hematite", "raw_hematite_mesh", 0.471257);
+            bind(AflItems.RAW_CHALCOPYRITE.get(), "raw_chalcopyrite", "raw_chalcopyrite_mesh", 0.457635);
+            bind(AflItems.GOLD_QUARTZ.get(), "gold_quartz", "gold_quartz_mesh", 0.459505);
+            bind(AflItems.RAW_GALENA.get(), "raw_galena", "raw_galena_mesh", 0.45841);
+            bind(AflItems.RAW_SPHALERITE.get(), "raw_sphalerite", "raw_sphalerite_mesh", 0.459492);
             // Pebble and flint (Rock R1b, the same generator, 2026-10-21): 0.5 - height / 32
             bind(AflItems.PEBBLE.get(), "pebble", "pebble_mesh", 0.481284);
             bind(AflItems.FLINT.get(), "flint", "flint_mesh", 0.485968);

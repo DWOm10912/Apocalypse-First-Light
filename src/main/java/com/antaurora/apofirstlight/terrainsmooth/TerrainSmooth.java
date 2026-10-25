@@ -136,6 +136,7 @@ public final class TerrainSmooth {
     public static java.util.List<Block> groundBlocks() {
         java.util.List<Block> out = new java.util.ArrayList<>(java.util.List.of(GROUND));
         for (var r : com.antaurora.apofirstlight.registry.AflBlocks.NATURAL_ROCKS) out.add(r.get());
+        for (var r : com.antaurora.apofirstlight.registry.AflBlocks.ORE_ROCKS) out.add(r.get());   // U3b
         return out;
     }
 

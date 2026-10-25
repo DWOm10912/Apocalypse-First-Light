@@ -748,6 +748,27 @@ public final class UndergroundPlan {
     /** The rocks whose column is in chunk (cx, cz). */
     public Rock[] rocksIn(int cx, int cz) { return rockIndex.getOrDefault(cellKey(cx, cz), NO_ROCKS); }
 
+    private Map<Long, OreBody[]> oreIndex = Map.of();
+    private static final OreBody[] NO_ORES = new OreBody[0];
+
+    /** Indexes the ore bodies batch 1 places by the chunks their reach covers (U3b; call after the last body). */
+    public void indexOres() {
+        Map<Long, List<OreBody>> m = new HashMap<>();
+        for (OreBody o : ores) {
+            if (!OreBodies.placed(o.kind())) continue;
+            double r = OreBodies.reach(o);
+            int x0 = (int) Math.floor(o.x() - r) >> 4, x1 = (int) Math.floor(o.x() + r) >> 4;
+            int z0 = (int) Math.floor(o.z() - r) >> 4, z1 = (int) Math.floor(o.z() + r) >> 4;
+            for (int cz = z0; cz <= z1; cz++) for (int cx = x0; cx <= x1; cx++) m.computeIfAbsent(cellKey(cx, cz), k -> new ArrayList<>()).add(o);
+        }
+        Map<Long, OreBody[]> out = new HashMap<>();
+        for (Map.Entry<Long, List<OreBody>> e : m.entrySet()) out.put(e.getKey(), e.getValue().toArray(new OreBody[0]));
+        oreIndex = out;
+    }
+
+    /** The ore bodies (batch 1's kinds) that may reach into chunk (cx, cz). */
+    public OreBody[] oresIn(int cx, int cz) { return oreIndex.getOrDefault(cellKey(cx, cz), NO_ORES); }
+
     /** The shape ids whose bounds overlap the index cell of (x, z) (empty array if none). */
     public int[] shapesNear(double x, double z) {
         int[] a = index.get(cellKey((int) Math.floor(x / INDEX_CELL), (int) Math.floor(z / INDEX_CELL)));

@@ -1,0 +1,196 @@
+{
+  "variants": {
+    "grade=lean,metal=gold": [
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_lean_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=rich,metal=gold": [
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_gold_rich_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=lean,metal=copper": [
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_lean_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=rich,metal=copper": [
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_copper_rich_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=lean,metal=lead": [
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_lean_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=rich,metal=lead": [
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/quartz_vein_lead_rich_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

@@ -68,6 +68,26 @@ public final class RockCarve {
     private static final LongOpenHashSet DIRTY = new LongOpenHashSet();
     /** How far a piece may reach from its centre, sub-cells; how much flatter than wide (along the blow). */
     static final double REACH = 6, FLAT = 1.7, ROUGH = 0.45;
+    /**
+     * Digging down in a pit or shaft (user 2026-10-24: straight walls, no funnel): a downward blow into a block whose space
+     * above has rock on two sides or more takes its piece across that whole block, the distance across weighted by
+     * PIT_ACROSS (the floor goes down level, the corners along the walls with it).
+     */
+    static final double PIT_ACROSS = 0.05;
+    /** A block with this many sub-cells or fewer left (1/8) is cleared to air, its rest counted in the piece. */
+    public static final int CLEAR_LEFT = 64;
+
+    /** Whether a block with gone sub-cells gone is cleared ({@link #CLEAR_LEFT}). */
+    public static boolean clears(int gone) { return gone >= CarveChunk.CELLS - CLEAR_LEFT; }
+
+    /**
+     * The rim a pit floor leaves along the walls of the block above it: with this many sub-cells or fewer left (1/4) that
+     * block is cleared with the blow that digs the floor under it, its rest counted in the piece.
+     */
+    public static final int RIM_LEFT = 128;
+
+    /** Whether the block over a pit floor with gone sub-cells gone goes with the floor's blow ({@link #RIM_LEFT}). */
+    public static boolean rimClears(int gone) { return gone >= CarveChunk.CELLS - RIM_LEFT; }
 
     /** The client half's reaction to a new copy (re-mesh), set by RockCarveMesh. */
     public interface ClientHooks {
@@ -206,8 +226,30 @@ public final class RockCarve {
     public static Cut cut(ServerLevel level, Vec3 at, Vec3 dir, double litres, long seed, BiPredicate<Level, BlockPos> cuttable) {
         Work w = new Work(level, cuttable);
         if (level.dimension() != Level.OVERWORLD) return new Cut(w.taken, 0, 0);
-        int removed = piece(w, at.x, at.y, at.z, dir.x, dir.y, dir.z, Math.max(1, (int) Math.round(litres / SUB_LITRES)), seed);
-        return new Cut(w.taken, removed, w.apply());
+        long pit = pit(level, at, dir);
+        int removed = piece(w, at.x, at.y, at.z, dir.x, dir.y, dir.z, Math.max(1, (int) Math.round(litres / SUB_LITRES)), seed, pit);
+        if (pit != Long.MIN_VALUE && removed > 0) w.rim(BlockPos.of(pit).above());
+        int emptied = w.apply();
+        return new Cut(w.taken, removed, emptied);
+    }
+
+    /** The block a downward blow digs a pit floor in ({@link #PIT_ACROSS}; BlockPos#asLong), else Long.MIN_VALUE. */
+    static long pit(Level level, Vec3 at, Vec3 dir) {
+        double l = dir.length();
+        if (l < 1e-9 || dir.y / l > -0.6) return Long.MIN_VALUE;
+        BlockPos b = BlockPos.containing(at.x + dir.x / l * 0.02, at.y + dir.y / l * 0.02, at.z + dir.z / l * 0.02);
+        BlockPos up = b.above();
+        int walls = 0;
+        for (net.minecraft.core.Direction d : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+            BlockPos o = up.relative(d);
+            if (level.getBlockState(o).isSolidRender(level, o)) walls++;
+        }
+        return walls >= 2 ? b.asLong() : Long.MIN_VALUE;
+    }
+
+    /** {@link #piece(Grid, double, double, double, double, double, double, int, long, long)} with no pit. */
+    public static int piece(Grid w, double ax, double ay, double az, double dx, double dy, double dz, int want, long seed) {
+        return piece(w, ax, ay, az, dx, dy, dz, want, seed, Long.MIN_VALUE);
     }
 
     /**
@@ -215,9 +257,10 @@ public final class RockCarve {
      * sub-cell just inside it if it lies on the face (next to open space), else the face's sub-cell nearest the centre,
      * so it always comes off the face struck and never leaves a hidden pocket; nearest first by the
      * distance across the blow plus FLAT times the distance along it (a chip: wider than deep), each roughened by the hash
-     * (no two alike). The number taken.
+     * (no two alike). In the pit block (BlockPos#asLong of whole blocks, or Long.MIN_VALUE) the distance across counts
+     * PIT_ACROSS and the reach does not apply. The number taken.
      */
-    public static int piece(Grid w, double ax, double ay, double az, double dx, double dy, double dz, int want, long seed) {
+    public static int piece(Grid w, double ax, double ay, double az, double dx, double dy, double dz, int want, long seed, long pit) {
         double dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (dl < 1e-9) {
             dx = 0;
@@ -263,9 +306,10 @@ public final class RockCarve {
                 if (!seen.add(pack(x - sx, y - sy, z - sz))) continue;
                 double vx = x + 0.5 - cx, vy = y + 0.5 - cy, vz = z + 0.5 - cz;
                 double len2 = vx * vx + vy * vy + vz * vz;
-                if (len2 > REACH * REACH || !w.solid(x, y, z)) continue;
+                boolean inPit = pit != Long.MIN_VALUE && BlockPos.asLong(x >> 3, y >> 3, z >> 3) == pit;
+                if (!inPit && len2 > REACH * REACH || !w.solid(x, y, z)) continue;
                 double along = vx * dx + vy * dy + vz * dz;
-                double score = (len2 - along * along) + sq(FLAT * along);
+                double score = (len2 - along * along) * (inPit ? PIT_ACROSS : 1) + sq(FLAT * along);
                 queue.add(new Node(score * (1 + ROUGH * hash(x, y, z, seed)), x, y, z));
             }
         }
@@ -360,7 +404,20 @@ public final class RockCarve {
             changed.add(k);
         }
 
-        /** Write the blocks cut back; a block with nothing left turns to air. The number emptied. */
+        /** The rim over a pit floor ({@link #rimClears}): a cut block there with little left loses the rest. */
+        void rim(BlockPos p) {
+            int x = p.getX() * N, y = p.getY() * N, z = p.getZ() * N;
+            if (kind(x, y, z) != 1) return;
+            long k = p.asLong();
+            long[] b = bits.get(k);
+            int gone = CarveChunk.count(b);
+            if (gone == 0 || !rimClears(gone)) return;
+            taken.addTo(states.get(k), CarveChunk.CELLS - gone);
+            Arrays.fill(b, -1L);
+            changed.add(k);
+        }
+
+        /** Write the blocks cut back; a block with little left ({@link #clears}) turns to air, its rest taken too. The number emptied. */
         int apply() {
             int emptied = 0;
             for (var en : bits.long2ObjectEntrySet()) {
@@ -372,7 +429,8 @@ public final class RockCarve {
                 LevelChunk chunk = level.getChunkAt(p);
                 CarveChunk c = ((CarveChunkHolder) chunk).afl$carve();
                 if (c == null) ((CarveChunkHolder) chunk).afl$setCarve(c = new CarveChunk());
-                if (n >= CarveChunk.CELLS) {
+                if (clears(n)) {
+                    taken.addTo(states.get(en.getLongKey()), CarveChunk.CELLS - n);
                     c.remove(p.getX(), p.getY(), p.getZ());
                     level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                     emptied++;

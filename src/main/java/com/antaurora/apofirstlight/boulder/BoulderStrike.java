@@ -60,7 +60,7 @@ public final class BoulderStrike {
      * Rock a ground strike cuts per field stone it breaks off, and per pebble (L; the rest a chance): a full strike (about
      * 50 L) a field stone every other time and a pebble or so (design 12).
      */
-    static final double STONE_LITRES = 100, PEBBLE_LITRES = 40;
+    public static final double STONE_LITRES = 100, PEBBLE_LITRES = 40;
 
     /**
      * What a pick is aimed at: the rock point and the root of the rock there (root null, node -1: bare rock ground; node
@@ -247,12 +247,12 @@ public final class BoulderStrike {
         RockStrikeFx.sound(level, p, at, struck, false);
         double litres = Math.max(0, r.taken().get(BulkMaterials.table().index("rubble"))) * EarthGrid.LITRES_PER_QUANTUM;
         RockStrikeFx.send(level, at, p.getEyePosition(), struck, litres, false);
-        drops(level, at, com.antaurora.apofirstlight.earthwork.RockTypes.stone(rock), litres / STONE_LITRES);
-        drops(level, at, AflItems.PEBBLE.get(), litres / PEBBLE_LITRES);
+        // its stones and pebbles, an ore rock's raw ore (U3b)
+        com.antaurora.apofirstlight.block.OreRockBlock.drops(level, at, struck, litres, STONE_LITRES, PEBBLE_LITRES);
     }
 
     /** n of item on average: its whole part, and one more by chance for the rest. */
-    static void drops(ServerLevel level, Vec3 at, Item item, double n) {
+    public static void drops(ServerLevel level, Vec3 at, Item item, double n) {
         int count = (int) n + (level.random.nextDouble() < n - (int) n ? 1 : 0);
         for (int i = 0; i < count; i++) drop(level, at, new ItemStack(item));
     }

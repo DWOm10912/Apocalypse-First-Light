@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * Once the chunk's surface is built (the surface rules replace only the noise's default stone, so the rocks cannot be
  * laid by the noise), every {@code minecraft:stone} and {@code minecraft:deepslate} of the chunk becomes the natural
  * rock GeologyModel#rocks answers at the block's middle. Loose ground in the geology where the surface rules left stone
- * (their soil is thinner than the geology's) takes the column's first rock under the loose ground; a coal seam is
- * shale until U3b's coal seam block.
+ * (their soil is thinner than the geology's) takes the column's first rock under the loose ground; a coal seam is the
+ * coal seam ore rock (lean; U3b).
  * <p>
  * Rock to rock: both block motion and light alike, so the heightmaps and light stay as they were, and the sections are
  * written straight (no updates). The vanilla rock blobs and ores that come later in the features replace only vanilla
@@ -36,6 +36,9 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * under air near the surface, a cave's included, so shallow caves had soil floors and soil walls (cubes beside the worn
  * rock). {@link #unroof}: soil stays only in each column's top run (from its first solid block down to the first air or
  * water under it) and only above the run's first rock; soil anywhere else becomes the column's rock.
+ * <p>
+ * U3b batch 1 (underground_u3_rocks_ores_design.md 14): {@link #placeOres} last, the plan's ore bodies in this chunk
+ * (OreBodies: shape, grade, a vein's metal) turn their rock into ore rock; a coal seam body makes its seam rich coal.
  */
 public final class GeologyPass {
     private GeologyPass() {}
@@ -51,14 +54,13 @@ public final class GeologyPass {
         s = new BlockState[RockType.values().length];
         for (int i = 0; i < RockTypes.BLOCKS.size(); i++)
             s[RockTypes.BLOCKS.get(i).ordinal()] = AflBlocks.NATURAL_ROCKS.get(i).get().defaultBlockState();
-        s[RockType.COAL_SEAM.ordinal()] = s[RockType.SHALE.ordinal()];
+        s[RockType.COAL_SEAM.ordinal()] = AflBlocks.COAL_SEAM.get().defaultBlockState();
         return byRock = s;
     }
 
-    /** The rock type a stone block becomes: loose ground and above the plan the bedrock, a seam its shale. */
+    /** The rock type a stone block becomes: loose ground and above the plan the bedrock (a seam is the coal seam, U3b). */
     public static RockType placed(RockType r, RockType bedrock) {
-        if (r == null || r.soil) r = bedrock;
-        return r == RockType.COAL_SEAM ? RockType.SHALE : r;
+        return r == null || r.soil ? bedrock : r;
     }
 
     /** The column's first rock under its loose ground (GeologyModel#bedrock, never loose ground). */
@@ -77,11 +79,14 @@ public final class GeologyPass {
     }
 
     public static void apply(ChunkAccess chunk, RandomState state) {
-        GeologyModel g = geology(state);
+        UndergroundRef ref = ((RandomStateSeedAccess) (Object) state).apocalypse$underground();
+        UndergroundPlan plan = ref == null ? null : ref.get();
+        GeologyModel g = plan == null ? null : UndergroundRuntime.geology(plan.seed);
         if (g == null) return;
         long t0 = System.nanoTime();
         restoneAll(chunk, g);
         unroof(chunk, g);
+        placeOres(chunk, plan);
         CHUNKS.incrementAndGet();
         NANOS.addAndGet(System.nanoTime() - t0);
     }
@@ -250,6 +255,78 @@ public final class GeologyPass {
         }
     }
 
+    private static final AtomicLongArray ORES = new AtomicLongArray(UndergroundPlan.OreKind.values().length * 2);
+    private static volatile BlockState[][] oreStates;
+
+    /** The ore rock of a kind by grade {lean, rich} (a vein: by metal, three pairs in a row; null: not batch 1). */
+    private static BlockState[][] oreStates() {
+        BlockState[][] s = oreStates;
+        if (s != null) return s;
+        s = new BlockState[UndergroundPlan.OreKind.values().length][];
+        var G = com.antaurora.apofirstlight.block.OreRockBlock.GRADE;
+        var lean = com.antaurora.apofirstlight.block.OreRockBlock.Grade.LEAN;
+        var rich = com.antaurora.apofirstlight.block.OreRockBlock.Grade.RICH;
+        java.util.function.Function<Block, BlockState[]> pair = b -> new BlockState[]{b.defaultBlockState().setValue(G, lean), b.defaultBlockState().setValue(G, rich)};
+        s[UndergroundPlan.OreKind.COAL_SEAM.ordinal()] = pair.apply(AflBlocks.COAL_SEAM.get());
+        s[UndergroundPlan.OreKind.BANDED_IRON.ordinal()] = pair.apply(AflBlocks.BANDED_IRON_FORMATION.get());
+        s[UndergroundPlan.OreKind.MVT_LEAD_ZINC.ordinal()] = pair.apply(AflBlocks.LEAD_ZINC_DOLOMITE.get());
+        s[UndergroundPlan.OreKind.BRECCIA_PIPE.ordinal()] = pair.apply(AflBlocks.COPPER_BRECCIA.get());
+        var metal = com.antaurora.apofirstlight.block.QuartzVeinBlock.METAL;
+        var metals = com.antaurora.apofirstlight.block.QuartzVeinBlock.Metal.values();
+        BlockState[] vein = new BlockState[6];
+        for (int m = 0; m < 3; m++) {
+            BlockState b = AflBlocks.QUARTZ_VEIN.get().defaultBlockState().setValue(metal, metals[m]);
+            vein[m * 2] = b.setValue(G, lean);
+            vein[m * 2 + 1] = b.setValue(G, rich);
+        }
+        s[UndergroundPlan.OreKind.HYDROTHERMAL_VEIN.ordinal()] = vein;
+        return oreStates = s;
+    }
+
+    /** Rock (not ore, soil, air or water) an ore body may take. */
+    private static boolean host(BlockState s) {
+        Block b = s.getBlock();
+        return b instanceof com.antaurora.apofirstlight.block.NaturalRockBlock && !(b instanceof com.antaurora.apofirstlight.block.OreRockBlock);
+    }
+
+    /** The plan's ore bodies reaching into this chunk lay their ore rock (class comment; OreBodies). */
+    static void placeOres(ChunkAccess chunk, UndergroundPlan plan) {
+        UndergroundPlan.OreBody[] bodies = plan.oresIn(chunk.getPos().x, chunk.getPos().z);
+        if (bodies.length == 0) return;
+        BlockState[][] os = oreStates();
+        Block coal = AflBlocks.COAL_SEAM.get();
+        BlockState richCoal = os[UndergroundPlan.OreKind.COAL_SEAM.ordinal()][1];
+        int bx = chunk.getPos().getMinBlockX(), bz = chunk.getPos().getMinBlockZ();
+        int minY = chunk.getMinBuildHeight(), maxY = chunk.getMaxBuildHeight() - 1;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (UndergroundPlan.OreBody o : bodies) {
+            int[] yr = OreBodies.yRange(o);
+            int y0 = Math.max(minY, yr[0]), y1 = Math.min(maxY, yr[1]);
+            if (y1 < y0) continue;
+            int k = o.kind().ordinal();
+            BlockState[] st = os[k];
+            int metal = o.kind() == UndergroundPlan.OreKind.HYDROTHERMAL_VEIN ? OreBodies.veinMetal(plan.seed, o.district()) : 0;
+            for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
+                int x = bx + lx, z = bz + lz;
+                if (o.kind() == UndergroundPlan.OreKind.COAL_SEAM) {
+                    if (!OreBodies.inSeam(o, plan.seed, x, z)) continue;
+                    for (int y = y0; y <= y1; y++) {
+                        if (chunk.getBlockState(p.set(x, y, z)).getBlock() != coal) continue;
+                        chunk.setBlockState(p, richCoal, false);
+                        ORES.incrementAndGet(k * 2 + 1);
+                    }
+                    continue;
+                }
+                for (int y = y0; y <= y1; y++) {
+                    int gr = OreBodies.grade(o, plan.seed, x, y, z);
+                    if (gr < 0 || !host(chunk.getBlockState(p.set(x, y, z)))) continue;
+                    chunk.setBlockState(p, st[metal * 2 + gr], false);
+                    ORES.incrementAndGet(k * 2 + gr);
+                }
+            }
+        }
+    }
+
     /** For /afl dev underground: chunks done, their mean time, the rocks laid. */
     public static String report() {
         long n = CHUNKS.get();
@@ -261,6 +338,13 @@ public final class GeologyPass {
         for (RockType r : RockTypes.BLOCKS) {
             long k = PLACED.get(r.ordinal());
             if (k > 0) sb.append(String.format(java.util.Locale.ROOT, " %s %.1f%%", r.id, 100.0 * k / all));
+        }
+        long seam = PLACED.get(RockType.COAL_SEAM.ordinal());
+        if (seam > 0) sb.append(String.format(java.util.Locale.ROOT, " coal seam %.2f%%", 100.0 * seam / all));
+        sb.append("; ore rock (lean/rich):");
+        for (UndergroundPlan.OreKind kind : UndergroundPlan.OreKind.values()) {
+            long a = ORES.get(kind.ordinal() * 2), b = ORES.get(kind.ordinal() * 2 + 1);
+            if (a + b > 0) sb.append(' ').append(kind.name().toLowerCase(java.util.Locale.ROOT)).append(' ').append(a).append('/').append(b);
         }
         return sb.toString();
     }

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_mirrored_all",
+  "textures": {
+    "all": "apocalypse_firstlight:block/ore/lead_zinc_dolomite_lean"
+  }
+}

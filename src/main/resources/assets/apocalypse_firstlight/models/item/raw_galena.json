@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/raw_galena"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/raw_galena"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          0.1541,
+          0.9216,
+          1.2954
+        ],
+        "scale": [
+          2.4,
+          2.4,
+          2.4
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          40,
+          6
+        ],
+        "translation": [
+          1.1113,
+          0.784,
+          2.3172
+        ],
+        "scale": [
+          1.9,
+          1.9,
+          1.9
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          2.511,
+          2.511,
+          2.511
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          4.394,
+          4.394,
+          4.394
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/raw_galena"
+      }
+    }
+  }
+}

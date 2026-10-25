@@ -10,16 +10,17 @@ import {readPng, png} from '../cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
-const MODELS = path.join(ASSETS, 'models/block/rock');
+// the natural rocks' models and the ore rocks' (U3b)
+const MODELS = [path.join(ASSETS, 'models/block/rock'), path.join(ASSETS, 'models/block/ore')];
 const OUT = path.join(ASSETS, 'textures/block/rock/cut');
 const check = process.argv.includes('--check');
 /** how far toward grey (saturation kept), toward the mean (contrast kept), toward white (lift) */
 const SAT = 0.75, CONTRAST = 0.82, LIFT = 0.15;
 
 const sprites = new Set();
-for (const f of fs.readdirSync(MODELS)) {
+for (const dir of MODELS) for (const f of fs.readdirSync(dir)) {
   if (!f.endsWith('.json')) continue;
-  const all = JSON.parse(fs.readFileSync(path.join(MODELS, f), 'utf8')).textures?.all;
+  const all = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).textures?.all;
   if (all) sprites.add(all);
 }
 

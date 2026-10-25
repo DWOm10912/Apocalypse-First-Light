@@ -7,7 +7,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "apocalypse_firstlight:galena_ore"
+          "name": "apocalypse_firstlight:raw_galena"
         }
       ],
       "conditions": [

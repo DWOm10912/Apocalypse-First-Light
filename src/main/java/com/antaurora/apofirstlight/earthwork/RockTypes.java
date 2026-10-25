@@ -55,6 +55,7 @@ public final class RockTypes {
 
     /** A block's rock data: a natural rock's own, vanilla stone as granite (Rock R2 drew it so), else null. */
     public static Rock of(Block b) {
+        if (b instanceof com.antaurora.apofirstlight.block.OreRockBlock o) return o.data;   // U3b: an ore rock's own
         if (b instanceof NaturalRockBlock r) return table.get(r.rock);
         return b == net.minecraft.world.level.block.Blocks.STONE ? table.get(RockType.GRANITE) : null;
     }

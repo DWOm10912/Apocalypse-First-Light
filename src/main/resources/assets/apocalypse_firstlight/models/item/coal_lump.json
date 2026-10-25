@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/coal_lump"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/coal_lump"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          -0.1631,
+          1.0515,
+          1.5689
+        ],
+        "scale": [
+          2.3,
+          2.3,
+          2.3
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          40,
+          6
+        ],
+        "translation": [
+          0.8665,
+          1.0744,
+          2.5129
+        ],
+        "scale": [
+          1.8,
+          1.8,
+          1.8
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          2.287,
+          2.287,
+          2.287
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          4.002,
+          4.002,
+          4.002
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/coal_lump"
+      }
+    }
+  }
+}

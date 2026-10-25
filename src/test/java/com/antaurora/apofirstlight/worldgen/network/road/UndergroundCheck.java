@@ -144,6 +144,87 @@ public final class UndergroundCheck {
     record Result(String line, List<String> bad) {}
 
     /**
+     * U3b batch 1 (underground_u3_rocks_ores_design.md 14): each placed kind's bodies (up to 25) sampled block by block
+     * through OreBodies (lean/rich cells, empty bodies; a coal seam body by its rich columns), the vein districts' metals,
+     * and the ore blocks and raw ores as real content (blockstate, loot, names, model, mesh, mass, grid size).
+     */
+    static void oreRocks(List<String> bad, long seed, UndergroundPlan u) {
+        EnumMap<UndergroundPlan.OreKind, List<OreBody>> byKind = new EnumMap<>(UndergroundPlan.OreKind.class);
+        for (OreBody o : u.ores) if (com.antaurora.apofirstlight.worldgen.underground.OreBodies.placed(o.kind()))
+            byKind.computeIfAbsent(o.kind(), q -> new ArrayList<>()).add(o);
+        StringBuilder sb = new StringBuilder();
+        for (var e : byKind.entrySet()) {
+            List<OreBody> list = e.getValue();
+            int n = Math.min(25, list.size()), empty = 0;
+            long lean = 0, rich = 0;
+            for (int i = 0; i < n; i++) {
+                OreBody o = list.get(i * list.size() / n);
+                int r = (int) Math.ceil(com.antaurora.apofirstlight.worldgen.underground.OreBodies.reach(o));
+                int[] yr = com.antaurora.apofirstlight.worldgen.underground.OreBodies.yRange(o);
+                int x0 = (int) Math.floor(o.x()) - r, z0 = (int) Math.floor(o.z()) - r;
+                long cells = 0;
+                for (int z = z0; z <= z0 + 2 * r; z++) for (int x = x0; x <= x0 + 2 * r; x++) {
+                    if (e.getKey() == UndergroundPlan.OreKind.COAL_SEAM) {
+                        if (com.antaurora.apofirstlight.worldgen.underground.OreBodies.inSeam(o, seed, x, z)) { rich++; cells++; }
+                        continue;
+                    }
+                    for (int y = yr[0]; y <= yr[1]; y++) {
+                        int gr = com.antaurora.apofirstlight.worldgen.underground.OreBodies.grade(o, seed, x, y, z);
+                        if (gr < 0) continue;
+                        cells++;
+                        if (gr == 0) lean++; else rich++;
+                    }
+                }
+                if (cells == 0) empty++;
+            }
+            sb.append(String.format(Locale.ROOT, " %s %d bodies (%d sampled, %d empty) lean %d rich %d;", e.getKey().name().toLowerCase(Locale.ROOT),
+                    list.size(), n, empty, lean, rich));
+            if (lean + rich == 0) bad.add("ore " + e.getKey() + ": the sampled bodies lay no ore rock");
+            if (empty * 10 > n) bad.add("ore " + e.getKey() + ": " + empty + " of " + n + " sampled bodies empty");
+            if (e.getKey() != UndergroundPlan.OreKind.COAL_SEAM && rich == 0) bad.add("ore " + e.getKey() + ": no rich ore");
+        }
+        out("  ore rock (batch 1, block cells; a coal seam: rich columns):%s", sb);
+        int[] metals = new int[3];
+        for (UndergroundPlan.District d : u.districts) if (d.kind() == UndergroundPlan.OreKind.HYDROTHERMAL_VEIN)
+            metals[com.antaurora.apofirstlight.worldgen.underground.OreBodies.veinMetal(seed, d.id())]++;
+        out("  vein districts by metal: gold %d, copper %d, lead %d", metals[0], metals[1], metals[2]);
+        long iron = u.districts.stream().filter(d -> d.kind() == UndergroundPlan.OreKind.BANDED_IRON).count();
+        if (iron == 0) bad.add("no banded iron district (shield edge)");
+
+        java.nio.file.Path res = java.nio.file.Path.of("src/main/resources");
+        if (!Files.isDirectory(res)) res = java.nio.file.Path.of("D:/Minecraft Modding/AFL-federal-worldgen-v1/src/main/resources");
+        String en, zh, mass, gridSize, blockMass;
+        try {
+            en = Files.readString(res.resolve("assets/apocalypse_firstlight/lang/en_us.json"));
+            zh = Files.readString(res.resolve("assets/apocalypse_firstlight/lang/zh_cn.json"));
+            mass = Files.readString(res.resolve("data/apocalypse_firstlight/item_mass/core_v1.json"));
+            gridSize = Files.readString(res.resolve("data/apocalypse_firstlight/item_size/core_v1.json"));
+            blockMass = Files.readString(res.resolve("data/apocalypse_firstlight/item_mass/afl_content_v1.json"));
+        } catch (Exception ex) {
+            bad.add("ore files: " + ex.getMessage());
+            return;
+        }
+        int ok = 0;
+        for (String b : new String[]{"coal_seam", "banded_iron_formation", "quartz_vein", "lead_zinc_dolomite", "copper_breccia"}) {
+            String key = "\"block.apocalypse_firstlight." + b + "\"";
+            if (!Files.exists(res.resolve("assets/apocalypse_firstlight/blockstates/" + b + ".json"))) bad.add(b + " has no blockstate");
+            else if (!Files.exists(res.resolve("data/apocalypse_firstlight/loot_tables/blocks/" + b + ".json"))) bad.add(b + " has no loot table");
+            else if (!en.contains(key) || !zh.contains(key)) bad.add(b + " has no name in en_us or zh_cn");
+            else if (!blockMass.contains("\"apocalypse_firstlight:" + b + "\"")) bad.add(b + " has no mass");
+            else ok++;
+        }
+        for (String id : new String[]{"coal_lump", "raw_hematite", "raw_chalcopyrite", "gold_quartz", "raw_galena", "raw_sphalerite"}) {
+            String key = "\"item.apocalypse_firstlight." + id + "\"", desc = "\"tooltip.apocalypse_firstlight." + id + ".description\"";
+            if (!Files.exists(res.resolve("assets/apocalypse_firstlight/models/item/" + id + ".json"))) bad.add(id + " has no item model");
+            else if (!Files.exists(res.resolve("assets/apocalypse_firstlight/meshes/" + id + ".aflmesh.json"))) bad.add(id + " has no mesh");
+            else if (!en.contains(key) || !zh.contains(key) || !en.contains(desc) || !zh.contains(desc)) bad.add(id + " has no name or description in en_us or zh_cn");
+            else if (!mass.contains("\"apocalypse_firstlight:" + id + "\"") || !gridSize.contains("\"apocalypse_firstlight:" + id + "\"")) bad.add(id + " has no mass or grid size");
+            else ok++;
+        }
+        out("  ore blocks and raw ores: %d of 11 complete", ok);
+    }
+
+    /**
      * U3a GeologyPass (docs/worldgen/underground_u3_rocks_ores_design.md 2.2, 9): GeologyModel#rocks against #rockAt block
      * by block (must be 0 apart), the rocks the pass lays by state and by depth, and the pass's column work per chunk
      * (the section scan and writes not counted: the game's /afl dev underground reports the whole pass).
@@ -193,7 +274,7 @@ public final class UndergroundCheck {
         for (RockType r : RockType.values()) {
             long n = 0;
             for (long[] v : byState.values()) n += v[r.ordinal()];
-            if (n > 0 && (r.soil || r == RockType.COAL_SEAM)) bad.add("the pass lays " + r.id);
+            if (n > 0 && r.soil) bad.add("the pass lays " + r.id);
         }
 
         // the column work per chunk: 256 columns, y from the floor to 8 above the plan
@@ -258,6 +339,7 @@ public final class UndergroundCheck {
         }
         out("  rock carve (strikes a block's volume; 10 stones and 25 pebbles a block):%s", cuts);
         carve(bad, seed);
+        shaft(bad, seed);
         relief(bad);
         smoothRock(bad);
     }
@@ -269,6 +351,96 @@ public final class UndergroundCheck {
      * as often (no gap, no flipped face); each strike takes its full piece, connected and touching open space; the
      * collision boxes (RockCarve#shapeOf) hold exactly the sub-cells left.
      */
+    /**
+     * Digging a shaft (user 2026-10-24: straight walls, no funnel; RockCarve PIT_ACROSS, CLEAR_LEFT, RIM_LEFT): a 3 x 7 x 3 block
+     * rock column, the middle column dug from the top block (y 5) down to y 2 with granite pieces (26 sub-cells) aimed at
+     * the floor near the middle; with the pit rule (fails: a level left uncleared, or wall bites over 10% of the shaft) and
+     * without it (reported: the funnel the rule removes).
+     */
+    static void shaft(List<String> bad, long seed) {
+        StringBuilder sb = new StringBuilder();
+        for (int mode = 1; mode >= 0; mode--) {
+            final boolean pitRule = mode == 1;
+            final int W = 3, H = 7;
+            int[] kind = new int[W * H * W];   // 0 air, 1 rock
+            for (int z = 0; z < W; z++) for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) kind[x + W * (y + H * z)] = y <= 5 ? 1 : 0;
+            java.util.Map<Integer, long[]> carved = new java.util.HashMap<>();
+            int[] wall = new int[1];
+            class World implements com.antaurora.apofirstlight.earthwork.RockCarve.Grid {
+                int kindOf(int bx, int by, int bz) {
+                    return bx < 0 || by < 0 || bz < 0 || bx >= W || by >= H || bz >= W ? 1 : kind[bx + W * (by + H * bz)];
+                }
+
+                @Override
+                public boolean solid(int x, int y, int z) {
+                    int bx = Math.floorDiv(x, 8), by = Math.floorDiv(y, 8), bz = Math.floorDiv(z, 8);
+                    if (bx < 0 || by < 0 || bz < 0 || bx >= W || by >= H || bz >= W || kindOf(bx, by, bz) != 1) return false;
+                    long[] b = carved.get(bx + W * (by + H * bz));
+                    return b == null || !com.antaurora.apofirstlight.earthwork.CarveChunk.gone(b, x & 7, y & 7, z & 7);
+                }
+
+                @Override
+                public boolean open(int x, int y, int z) {
+                    int bx = Math.floorDiv(x, 8), by = Math.floorDiv(y, 8), bz = Math.floorDiv(z, 8);
+                    if (bx < 0 || by < 0 || bz < 0 || bx >= W || by >= H || bz >= W) return false;
+                    return kindOf(bx, by, bz) == 0 || !solid(x, y, z);
+                }
+
+                @Override
+                public void take(int x, int y, int z) {
+                    int bx = Math.floorDiv(x, 8), by = Math.floorDiv(y, 8), bz = Math.floorDiv(z, 8);
+                    carved.computeIfAbsent(bx + W * (by + H * bz), k -> new long[8])[y & 7] |= 1L << ((x & 7) | (z & 7) << 3);
+                    if (bx != 1 || bz != 1) wall[0]++;
+                }
+            }
+            World w = new World();
+            java.util.Random rnd = new java.util.Random(seed ^ 0x5AF7L);
+            int strikes = 0;
+            while (strikes < 600 && kind[1 + W * (2 + H)] == 1) {
+                // aim at the floor near the middle of the shaft: the highest rock sub-cell under a point 0.3 m round it
+                double ax = 1.5 + (rnd.nextDouble() - 0.5) * 0.6, az = 1.5 + (rnd.nextDouble() - 0.5) * 0.6;
+                int sx = (int) Math.floor(ax * 8), sz = (int) Math.floor(az * 8), top = -1;
+                for (int y = H * 8 - 1; y >= 0 && top < 0; y--) if (w.solid(sx, y, sz)) top = y;
+                if (top < 0) break;
+                double ay = (top + 1) / 8.0;
+                double dx = (rnd.nextDouble() - 0.5) * 0.3, dz = (rnd.nextDouble() - 0.5) * 0.3;
+                int by = top >> 3;
+                long pit = Long.MIN_VALUE;
+                if (pitRule) {
+                    int walls = 0;
+                    for (int[] o : new int[][]{{0, 1}, {2, 1}, {1, 0}, {1, 2}}) if (w.kindOf(o[0], by + 1, o[1]) == 1) walls++;
+                    if (walls >= 2) pit = net.minecraft.core.BlockPos.asLong(1, by, 1);
+                }
+                int got = com.antaurora.apofirstlight.earthwork.RockCarve.piece(w, ax, ay, az, dx, -1, dz, 26, rnd.nextLong(), pit);
+                strikes++;
+                // the rim over the pit floor goes with the blow (RockCarve RIM_LEFT)
+                long[] over = pit == Long.MIN_VALUE || got == 0 ? null : carved.get(1 + W * (by + 1 + H));
+                if (over != null && kind[1 + W * (by + 1 + H)] == 1
+                        && com.antaurora.apofirstlight.earthwork.RockCarve.rimClears(com.antaurora.apofirstlight.earthwork.CarveChunk.count(over)))
+                    java.util.Arrays.fill(over, -1L);
+                for (var it = carved.entrySet().iterator(); it.hasNext(); ) {
+                    var en = it.next();
+                    if (com.antaurora.apofirstlight.earthwork.RockCarve.clears(com.antaurora.apofirstlight.earthwork.CarveChunk.count(en.getValue()))) {
+                        kind[en.getKey()] = 0;
+                        it.remove();
+                    }
+                }
+            }
+            int cleared = 0;
+            StringBuilder left = new StringBuilder();
+            for (int y = 5; y >= 2; y--) {
+                long[] b = carved.get(1 + W * (y + H));
+                if (kind[1 + W * (y + H)] == 0) cleared++;
+                else left.append(String.format(Locale.ROOT, " y%d %d%%", y, b == null ? 100 : 100 * (512 - com.antaurora.apofirstlight.earthwork.CarveChunk.count(b)) / 512));
+            }
+            sb.append(String.format(Locale.ROOT, " %s: %d strikes, %d of 4 levels cleared%s, wall bites %d sub-cells;", pitRule ? "pit rule" : "without",
+                    strikes, cleared, left.length() == 0 ? "" : " (left:" + left + ")", wall[0]));
+            if (pitRule && cleared < 4) bad.add("shaft: " + cleared + " of 4 levels cleared in " + strikes + " strikes");
+            if (pitRule && wall[0] > 4 * 512 / 10) bad.add("shaft: wall bites " + wall[0] + " sub-cells");
+        }
+        out("  shaft (3 x 7 x 3 rock, dug down 4 blocks):%s", sb);
+    }
+
     static void carve(List<String> bad, long seed) {
         final int W = 6;
         // rock: y <= 3 except a room x >= 4 from y 2 up; dirt (a full cube that is not rock) at (2, 3, 2); outside: air
@@ -743,7 +915,30 @@ public final class UndergroundCheck {
             out("    %-14s n=%4d%s", e.getKey(), n, sb);
         }
         out("  faults: %d (%s)", g.faultList().size(), faultText(g));
+        {
+            // the shield edge north of the lake basin (U3b design 14.9): its land, its bedrock, its basement depth
+            int n = 0, full = 0;
+            double depth = 0;
+            EnumMap<RockType, Integer> bed = new EnumMap<>(RockType.class);
+            for (double z = s.gridOrigin + 128; z < s.gridOrigin + size; z += 256) for (double x = s.gridOrigin + 128; x < s.gridOrigin + size; x += 256) {
+                if (s.waterAt(x, z) || !map.isLand(x, z)) continue;
+                Column c = g.column(x, z);
+                if (c.shield < 0.5) continue;
+                n++;
+                if (c.shield > 0.95) full++;
+                depth += c.hs - c.tops[0];
+                bed.merge(g.bedrock(c), 1, Integer::sum);
+            }
+            StringBuilder sb = new StringBuilder();
+            int nn = n;
+            bed.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(4)
+                    .forEach(q -> sb.append(String.format(Locale.ROOT, " %s %.0f%%", q.getKey().id, 100.0 * q.getValue() / nn)));
+            out("  shield edge: %d land cells over half (%.1f km2), %d full; basement %.0f m down on average; bedrock%s",
+                    n, n * 0.065536, full, n == 0 ? 0 : depth / n, sb);
+            if (n == 0) bad.add("no shield edge north of the lake basin");
+        }
         geologyPass(bad, seed, s, map, g);
+        oreRocks(bad, seed, u);
         {
             int landN = 0, road = 0, town = 0, home = 0, wet = 0, river = 0, ok = 0;
             for (double z = s.gridOrigin + 128; z < s.gridOrigin + size; z += 256) for (double x = s.gridOrigin + 128; x < s.gridOrigin + size; x += 256) {

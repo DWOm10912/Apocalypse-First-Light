@@ -71,9 +71,41 @@ Rubble struck loose in older saves is still there: it is loose earth, and like s
 
 - <StatusTag s="planned" /> Rock underground (tunnels, shafts) and the granite, andesite and diorite patches
 - <StatusTag s="test" /> In deep test worlds the underground is now real rock layers: granite, gneiss, schist, sandstone, limestone, dolomite, shale, marl and rock salt, laid out by the geology, and road cuts show the local rock too. Like natural stone it takes a pick in Survival, and it breaks into that rock's stones. All textures but granite's are still stand-ins
-- <StatusTag s="test" /> Natural rock away from the open ground (cave walls and roofs, cliff faces) can be cut too: each strike of the pick mattock breaks a piece off where it lands, and the hollow shows at once, never the same shape twice, its fresh faces paler than the weathered rock. A block's worth takes about 20 strikes in granite, 13 in shale, 11 in marl, and a block cut hollow is gone. The hollows collide as they look, so you can stand in them. Ground the earthwork has dug and rock under a boulder can't be cut this way, and neither can the floor of a pit downwards yet
+- <StatusTag s="test" /> Natural rock away from the open ground (cave walls and roofs, cliff faces) can be cut too: each strike of the pick mattock breaks a piece off where it lands, and the hollow shows at once, never the same shape twice, its fresh faces paler than the weathered rock. A block's worth takes about 20 strikes in granite, 13 in shale, 11 in marl; a block with less than an eighth left is cleared, the rest still counted in the drops. Digging down in a pit or shaft (rock on two sides or more above the floor), the floor goes down level and takes the corners along the walls with it, so the walls stay straight and the shaft does not narrow; cleared blocks let daylight down the shaft, and drops, cut faces and what you hold in a pit or hollow are lit by the light at its mouth, darker further in. The hollows collide as they look, so you can stand in them. Ground the earthwork has dug and rock under a boulder can't be cut this way, and neither can the floor of a pit downwards yet
 - <StatusTag s="verified" d="2026-10-24" /> Cave walls, roofs, cliff faces and rock in the open are no longer block faces but continuous, irregular rock: granite breaks into jointed, tilted planes, limestone into rounded solution hollows and bulges, shale and sandstone into beds that stand out and set back in bands. Floors and ledge tops are uneven too: limestone in gentle flowstone swells, shale, sandstone and granite in shallow slab terraces that don't hinder walking; ledges and outcrops have rounded edges, but a one-block rock step has to be jumped. The rock collides as it looks, so you can step into its hollows and cut into them; a torch, ladder or block placed against a face leaves that face flat. Steep soil banks, the soil walls of cave mouths and the undersides of overhanging soil are continuous surfaces too, slumped round at the edges and joined to the rock; ordinary soil slopes stay smooth slopes. Caves in deep worlds no longer have dirt floors and dirt walls, soil lies only at the surface; vanilla ores are gone there too, see the next item for the ores to come
-- <StatusTag s="planned" /> Ore lies inside the rock, and ore-bearing rock now and then gives a piece of raw ore that needs further processing
+- <StatusTag s="test" /> Ore lies inside the rock, and cutting ore-bearing rock gives raw ore, see Ores below
+
+## Ores
+
+<StatusTag s="test" /> In newly created deep test worlds the rock now holds ore. Ore bodies sit in the strata where the geology puts them. There are five ore-bearing rocks so far:
+
+| Ore rock | Look | Cutting it gives |
+|---|---|---|
+| Coal Seam | Black, banded bright and dull, running in beds between shale and sandstone | <ItemIcon id="coal_lump" />Coal Lump |
+| Banded Iron Formation | Thin maroon and steel-grey bands, layer on layer | <ItemIcon id="raw_hematite" />Raw Hematite |
+| Mineralized Quartz Vein | Thin veins of white quartz with dark ribbons and rust stains; the veins of one district carry one metal | <ItemIcon id="gold_quartz" />Gold-Bearing Quartz, <ItemIcon id="raw_chalcopyrite" />Raw Chalcopyrite or <ItemIcon id="raw_galena" />Raw Galena |
+| Lead-Zinc Dolomite | Lead-grey and dark brown grains along the bedding of grey dolomite | <ItemIcon id="raw_galena" />Raw Galena, <ItemIcon id="raw_sphalerite" />Raw Sphalerite, and dolomite stones |
+| Copper Breccia | Grey rock fragments cemented together by brassy mineral | <ItemIcon id="raw_chalcopyrite" />Raw Chalcopyrite |
+
+- The middle of an ore body is rich ore and its edges lean. Rich ore holds more mineral and gives more raw ore: a whole block of rich ore gives about 4 pieces, lean about 1. A coal seam gives far more (a dozen or so lumps a block), gold-bearing quartz less
+- Ore rock is cut with the pick mattock like any rock, and gives pebbles besides its raw ore
+- A coal seam is coal all through, mostly lean; inside the planned coalfields it is rich
+- Banded iron formation lies only on the shield edge along the lake country's north shore: northwards the sedimentary rock thins until granite and schist come to the surface, and the iron lies in that old rock
+
+| Raw ore | Weight | Stack |
+|---|---|---|
+| <ItemIcon id="coal_lump" /> Coal Lump | <V d="item_mass/core_v1#items.apocalypse_firstlight:coal_lump.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_hematite" /> Raw Hematite | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_hematite.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_chalcopyrite" /> Raw Chalcopyrite | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_chalcopyrite.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="gold_quartz" /> Gold-Bearing Quartz | <V d="item_mass/core_v1#items.apocalypse_firstlight:gold_quartz.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_galena" /> Raw Galena | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_galena.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_sphalerite" /> Raw Sphalerite | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_sphalerite.unit_mass_kg" u="kg" /> | 16 |
+
+Raw ore has no use yet. Later it is hand-sorted, crushed and washed to concentrate, then smelted
+
+- <StatusTag s="planned" /> Batch two: nickel-copper sulfide, pegmatite, greisen, bauxite
+- <StatusTag s="planned" /> Signs of ore: rust-coloured gossans, coal seams showing in river banks, ore fragments washed down rivers, abandoned mines
+- <StatusTag s="test" /> The old ore blocks (Galena Ore, Sphalerite Ore and the rest) can no longer be obtained; those already placed in a save stay. Breaking Galena Ore or Sphalerite Ore gives the matching raw ore
 
 ## Loose Stones
 

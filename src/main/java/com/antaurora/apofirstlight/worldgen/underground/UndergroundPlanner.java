@@ -2234,7 +2234,12 @@ public final class UndergroundPlanner {
                 plan.districts.add(d);
                 acc.add(new double[]{v.x, v.z, 3000});
             }
+            if (acc.size() < r.districts) plan.notes.put("ore districts short " + r.kind.name().toLowerCase(java.util.Locale.ROOT), r.districts - acc.size());
         }
+        int shield = 0;
+        for (Survey v : survey) if (v.c.shield >= 0.5) shield++;
+        plan.notes.put("shield survey points", shield);
+        plan.indexOres();
     }
 
     double oreScore(OreKind kind, Survey v) {
@@ -2243,7 +2248,8 @@ public final class UndergroundPlanner {
             case COAL_SEAM -> w[GeologyModel.HILLS] + w[GeologyModel.PLAINS];
             case HYDROTHERMAL_VEIN -> v.faultD < 400 ? w[GeologyModel.MOUNTAIN] + w[GeologyModel.HILLS] : 0;
             case MVT_LEAD_ZINC -> (w[GeologyModel.HILLS] + w[GeologyModel.PLAINS]) * v.kL3;
-            case BANDED_IRON, NICKEL_COPPER -> v.c.hs - v.c.tops[0] < 220 ? w[GeologyModel.LAKE] : 0;
+            // the shield edge north of the lake basin (GeologyModel#shield; U3b design 14.9)
+            case BANDED_IRON, NICKEL_COPPER -> v.c.shield;
             case PEGMATITE -> w[GeologyModel.MOUNTAIN];
             case GREISEN_SKARN -> w[GeologyModel.MOUNTAIN] > 0.25 && w[GeologyModel.MOUNTAIN] < 0.75 ? 0.5 + w[GeologyModel.MOUNTAIN] * 0.2 : 0;
             case BAUXITE -> w[GeologyModel.COAST];
@@ -2283,16 +2289,19 @@ public final class UndergroundPlanner {
                 rx = 10 + 30 * h(k(183, sk)); rz = 10 + 30 * h(k(184, sk)); ry = 4 + 10 * h(k(185, sk));
             }
             case BANDED_IRON -> {
+                // in the basement's top, under at least 10 m of fresh rock (the shield: near the surface, mostly buried)
+                if (c.shield < 0.3) return false;
                 double[] tp = new double[GeologyModel.UNIT.length + 1];
                 g.tops(c, c.hs - 150, tp);
-                y = tp[0] - 15;
                 rx = 200 + 400 * h(k(183, sk)); rz = 60 + 120 * h(k(184, sk)); ry = 5 + 10 * h(k(185, sk));
+                y = Math.min(tp[0], c.h - c.t1) - 10 - ry;
             }
             case NICKEL_COPPER -> {
+                if (c.shield < 0.3) return false;
                 double[] tp = new double[GeologyModel.UNIT.length + 1];
                 g.tops(c, c.hs - 150, tp);
-                y = tp[0] - 5;
                 rx = 20 + 40 * h(k(183, sk)); rz = 20 + 40 * h(k(184, sk)); ry = 10 + 20 * h(k(185, sk));
+                y = Math.min(tp[0], c.h - c.t1) - 10 - ry;
             }
             case PEGMATITE -> {
                 y = b[1] - 10 - (b[1] - b[3]) * h(k(182, sk));

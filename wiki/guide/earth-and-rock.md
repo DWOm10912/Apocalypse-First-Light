@@ -71,9 +71,41 @@
 
 - <StatusTag s="planned" /> 地下的岩石（隧道、竖井）和花岗岩、安山岩、闪长岩团块的开采
 - <StatusTag s="test" /> 深世界测试世界的地下换成了真实的岩层：花岗岩、片麻岩、片岩、砂岩、石灰岩、白云岩、页岩、泥灰岩、岩盐，按地质分布，路堑上露出来的也是当地的岩石。和天然石头一样，生存模式里要用镐凿，凿下来是那种岩石的石块。贴图除了花岗岩都还是临时的
-- <StatusTag s="test" /> 露天地面以外的天然岩石（洞壁、洞顶、崖壁）也能凿：用鹤嘴锄对着岩面凿一下，落点就掉下一块，缺口马上看得见，每次的形状都不一样，新断面颜色偏浅。凿掉一整格的量，花岗岩大约要 20 下，页岩 13 下，泥灰岩 11 下，一格凿空就没了。缺口按实际形状碰撞，可以站进去。土方挖过的地方和巨石底下不能这样凿，坑底往下也还不行
+- <StatusTag s="test" /> 露天地面以外的天然岩石（洞壁、洞顶、崖壁）也能凿：用鹤嘴锄对着岩面凿一下，落点就掉下一块，缺口马上看得见，每次的形状都不一样，新断面颜色偏浅。凿掉一整格的量，花岗岩大约要 20 下，页岩 13 下，泥灰岩 11 下；一格只剩不到八分之一时整格清空，剩下的照样算进掉落。往下凿坑或竖井时（坑上面两边以上是岩壁），坑底整层往下走，贴着井壁的边角一起带走，井壁是直的，不会越挖越窄；井里清空的格子能透进天光，凿出来的坑和凹处里的掉落物、凿面和你手里的东西都按坑口的光照亮，越往里越暗。缺口按实际形状碰撞，可以站进去。土方挖过的地方和巨石底下不能这样凿，坑底往下也还不行
 - <StatusTag s="verified" d="2026-10-24" /> 洞壁、洞顶、崖壁和露天的岩石不再是一格一格的方块面，而是连续、不规则的岩面：花岗岩是节理切出来的斜平面，石灰岩是溶蚀的圆坑和鼓包，页岩、砂岩是一层凸一层凹的横向岩层。地板和岩台顶面也不平：石灰岩是平缓的流石起伏，页岩、砂岩、花岗岩是一级级很浅的石板台阶，走起来没有影响；岩台和露头的边是圆的，但 1 格高的岩石台阶要跳上去。岩面按看到的形状碰撞，凹进去的地方能站进去、能凿；贴着岩面放火把、梯子或方块，那一面就是原来的平面。陡的土坎、洞口的土壁和悬空土块的底面也是连续的面，边缘圆钝，和岩面接在一起；普通的土坡照旧是平滑的斜坡。深世界的洞里不再有泥土地板和泥土墙，土只铺在地表；原版矿也去掉了，以后的矿见下一条
-- <StatusTag s="planned" /> 矿埋在岩石里，凿含矿岩偶尔掉一块原矿，要再加工
+- <StatusTag s="test" /> 矿埋在岩石里，凿含矿岩会掉原矿，见下面的「矿石」
+
+## 矿石
+
+<StatusTag s="test" /> 新建的深世界测试世界里，岩石里有矿了。矿体按地质分布在岩层里。现在有 5 种含矿岩：
+
+| 含矿岩 | 样子 | 凿下来掉 |
+|---|---|---|
+| 煤层 | 黑色，亮层和暗层相间，夹在页岩、砂岩里一层层延伸 | <ItemIcon id="coal_lump" />煤块 |
+| 条带状铁矿 | 栗红色和钢灰色的细条带一层层相间 | <ItemIcon id="raw_hematite" />赤铁矿原矿 |
+| 含矿石英脉 | 白色石英的薄脉，夹深色条带和锈斑；一个矿区的脉只出一种金属 | <ItemIcon id="gold_quartz" />含金石英、<ItemIcon id="raw_chalcopyrite" />黄铜矿原矿或<ItemIcon id="raw_galena" />方铅矿原矿 |
+| 含铅锌白云岩 | 灰色白云岩里顺着层理的铅灰色、深棕色矿物颗粒 | <ItemIcon id="raw_galena" />方铅矿原矿、<ItemIcon id="raw_sphalerite" />闪锌矿原矿，还有白云岩石块 |
+| 含铜角砾岩 | 灰色的岩石碎块，被黄铜色的矿物胶结在一起 | <ItemIcon id="raw_chalcopyrite" />黄铜矿原矿 |
+
+- 同一个矿体中间是富矿，边上是贫矿。富矿上矿物多，凿下来的原矿也多：一整格富矿大约出 4 块原矿，贫矿大约 1 块。煤层出得多（一格十几块煤块），含金石英出得少
+- 含矿岩和岩石一样用鹤嘴锄凿，除了原矿还掉石子
+- 煤层整层都是煤，大部分是贫的；规划里的煤田范围内是富煤
+- 条带状铁矿只在湖区北岸的地盾边缘：越往北，沉积岩越薄，最后花岗岩、片岩直接露出地表，铁矿就埋在这些古老的岩石里
+
+| 原矿 | 重量 | 最多叠 |
+|---|---|---|
+| <ItemIcon id="coal_lump" /> 煤块 | <V d="item_mass/core_v1#items.apocalypse_firstlight:coal_lump.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_hematite" /> 赤铁矿原矿 | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_hematite.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_chalcopyrite" /> 黄铜矿原矿 | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_chalcopyrite.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="gold_quartz" /> 含金石英 | <V d="item_mass/core_v1#items.apocalypse_firstlight:gold_quartz.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_galena" /> 方铅矿原矿 | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_galena.unit_mass_kg" u="kg" /> | 16 |
+| <ItemIcon id="raw_sphalerite" /> 闪锌矿原矿 | <V d="item_mass/core_v1#items.apocalypse_firstlight:raw_sphalerite.unit_mass_kg" u="kg" /> | 16 |
+
+原矿现在还没有用途。以后要手选、破碎、洗选成精矿，再冶炼
+
+- <StatusTag s="planned" /> 第二批：镍铜硫化矿、伟晶岩、云英岩、铝土矿
+- <StatusTag s="planned" /> 找矿线索：铁锈色的铁帽、河岸上露出的煤层、河里冲下来的矿石碎块、废弃矿井
+- <StatusTag s="test" /> 旧的矿石方块（方铅矿石、闪锌矿石等）拿不到了，存档里放着的还在。打掉方铅矿石、闪锌矿石掉对应的原矿
 
 ## 地上的散石
 

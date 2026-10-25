@@ -181,6 +181,34 @@ public final class AflBlocks {
     /** The natural rocks in RockTypes.BLOCKS order (GeologyPass#block reads them by RockType). */
     public static final java.util.List<RegistryObject<Block>> NATURAL_ROCKS = java.util.List.of(GRANITE_ROCK, GNEISS_ROCK,
             SCHIST_ROCK, SANDSTONE_ROCK, LIMESTONE_ROCK, DOLOMITE_ROCK, SHALE_ROCK, MARL_ROCK, ROCK_SALT_ROCK);
+    // U3b ore rocks, batch 1 (docs/worldgen/underground_u3_rocks_ores_design.md 14): the rock with its ore, grade a state;
+    // OreRockBlock(host, density kg/m3, strike L, face look, stone, gives stones, litres a raw piece {lean, rich}, raw ores, shares)
+    public static final RegistryObject<Block> COAL_SEAM = BLOCKS.register("coal_seam",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SHALE,
+                    1350, 120, "shale", "shale_shard", false, 120, 60, new String[]{"coal_lump"}, new double[]{1},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(0.9F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.COLOR_BLACK).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> BANDED_IRON_FORMATION = BLOCKS.register("banded_iron_formation",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SHALE,
+                    3300, 40, "shale", "shale_shard", false, 500, 200, new String[]{"raw_hematite"}, new double[]{1},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.2F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_RED).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> QUARTZ_VEIN = BLOCKS.register("quartz_vein",
+            () -> new com.antaurora.apofirstlight.block.QuartzVeinBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F)
+                    .sound(SoundType.STONE).mapColor(net.minecraft.world.level.material.MapColor.QUARTZ).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> LEAD_ZINC_DOLOMITE = BLOCKS.register("lead_zinc_dolomite",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.DOLOMITE,
+                    3000, 55, "limestone", "dolomite_stone", true, 1000, 250, new String[]{"raw_galena", "raw_sphalerite"}, new double[]{0.4, 0.6},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.6F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_LIGHT_GRAY).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> COPPER_BRECCIA = BLOCKS.register("copper_breccia",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.GRANITE,
+                    2800, 55, "granite", "field_stone", false, 1000, 250, new String[]{"raw_chalcopyrite"}, new double[]{1},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.8F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.STONE).requiresCorrectToolForDrops()));
+    /** The ore rocks (GeologyPass places them; Terrain Smooth wraps their models). */
+    public static final java.util.List<RegistryObject<Block>> ORE_ROCKS = java.util.List.of(COAL_SEAM, BANDED_IRON_FORMATION,
+            QUARTZ_VEIN, LEAD_ZINC_DOLOMITE, COPPER_BRECCIA);
     public static final RegistryObject<Block> STEEL_BLOCK_SLAB = BLOCKS.register("steel_block_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_BLOCK.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_BLOCK_STAIRS = BLOCKS.register("steel_block_stairs",

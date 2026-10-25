@@ -177,6 +177,26 @@
       "unit_mass_kg": 0.25,
       "estimated": true
     },
+    "apocalypse_firstlight:coal_seam": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:banded_iron_formation": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:quartz_vein": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lead_zinc_dolomite": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:copper_breccia": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:edge_lane_white": {
       "unit_mass_kg": 0.05,
       "estimated": true

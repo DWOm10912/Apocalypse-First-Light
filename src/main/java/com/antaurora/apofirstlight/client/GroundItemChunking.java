@@ -244,7 +244,8 @@ public final class GroundItemChunking {
     static void emit(List<Copy> copies, int shading, BlockAndTintGetter view, VertexConsumer out) {
         long now = frame;
         for (Copy c : copies) {
-            int light = LevelRenderer.getLightColor(view, c.lightAt);
+            // in a carved or worn rock block, or a pocket a carving seals off, the hollow's light (user 2026-10-24: drops black)
+            int light = com.antaurora.apofirstlight.terrainsmooth.client.RockCarveMesh.lightAt(view, c.lightAt, LevelRenderer.getLightColor(view, c.lightAt));
             for (int[] d : c.split.quads) {
                 for (int i = 0; i < 4; i++) {
                     int o = i * 8;
