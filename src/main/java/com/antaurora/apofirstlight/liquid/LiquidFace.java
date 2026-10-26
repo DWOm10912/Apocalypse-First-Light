@@ -27,6 +27,8 @@ public final class LiquidFace {
     /** Millilitres due but not moved yet, a to b positive (not liquid: dropping it loses nothing). */
     double carry;
     boolean removed;
+    /** The last tick the flow looked at this face. */
+    long seen = -1;
     /** The drawn ground is one slope across this face (GroundViewV0#ramp): -1 not asked yet, 0 no, 1 yes. */
     byte ramp = -1;
 

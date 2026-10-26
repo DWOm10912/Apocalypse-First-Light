@@ -73,6 +73,13 @@ public final class LiquidWorld {
         final it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap sent = new it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap();
         /** Readout: Surface packets sent and skipped as unchanged since the last reset. */
         long surfacesSent, surfacesSkipped;
+        /**
+         * /afl dev water perf: ns summed since the last reading, by part (chunks loading and ground changes, natural rain,
+         * pours, engine, sync), the ticks counted and the syncs among them, and the engine's own phases at that reading.
+         */
+        final long[] perfNanos = new long[5];
+        long perfTicks, perfSyncs;
+        long[] perfSpent = new long[4];
         /** Players pouring (LiquidPours), by entity id. */
         final Map<Integer, LiquidPours.Pour> pours = new java.util.LinkedHashMap<>();
 
@@ -93,6 +100,12 @@ public final class LiquidWorld {
     /** The level's engine (dev commands, readouts). */
     public static LiquidEngine engine(ServerLevel level) {
         return state(level).engine;
+    }
+
+    /** The level's engine when it has one already (WaterQuery: asking about water makes none). */
+    public static LiquidEngine engineIfPresent(ServerLevel level) {
+        State st = STATES.get(level.dimension());
+        return st == null ? null : st.engine;
     }
 
     // ---- chunks ---------------------------------------------------------------------------------------------------
@@ -219,7 +232,16 @@ public final class LiquidWorld {
         st.lastRainNanos = t2 - t1;
         st.lastPourNanos = t3 - t2;
         st.lastEngineNanos = t4 - t3;
-        if (level.getGameTime() % SYNC_EVERY == 0) st.lastSyncNanos = t5 - t4;
+        if (level.getGameTime() % SYNC_EVERY == 0) {
+            st.lastSyncNanos = t5 - t4;
+            st.perfSyncs++;
+        }
+        st.perfNanos[0] += t1 - t0;
+        st.perfNanos[1] += t2 - t1;
+        st.perfNanos[2] += t3 - t2;
+        st.perfNanos[3] += t4 - t3;
+        st.perfNanos[4] += t5 - t4;
+        st.perfTicks++;
         if (level.getGameTime() % MARK_EVERY == 0) {
             // the autosave writes only chunks marked unsaved
             for (long key : e.wetChunks()) {

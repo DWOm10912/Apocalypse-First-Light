@@ -37,6 +37,8 @@ import java.util.Locale;
  *   <li>{@code surface}: the natural rain's surface water on the column at the feet and its chunk's account (package 3a,
  *   LiquidRain); {@code rainstats [reset]}: how long settling every loaded chunk takes (the server stress test);
  *   {@code rainforce <mm/h>} / {@code rainforce off}: natural rain over every loaded chunk whatever the weather;</li>
+ *   <li>{@code perf}: the water's cost a tick since the last {@code perf}, by part and by engine phase, and what was
+ *   stepping (river plan docs/gameplay/water_river_v1_design.md 9, step 1);</li>
  *   <li>{@code ledger}: the chunk's account and the engine's own check (every chunk's liquid against its account);</li>
  *   <li>{@code clear [radius]}: take out all the liquid around (written in the account as taken);</li>
  *   <li>{@code pause} / {@code resume}: stop and go on stepping (the liquid stays as it is).</li>
@@ -74,6 +76,7 @@ public final class LiquidDevCommand {
                         .then(Commands.argument("mm_per_hour", DoubleArgumentType.doubleArg(0, 500))
                                 .executes(c -> rainForce(c.getSource(), DoubleArgumentType.getDouble(c, "mm_per_hour")))))
                 .then(Commands.literal("ledger").executes(c -> ledger(c.getSource())))
+                .then(Commands.literal("perf").executes(c -> perf(c.getSource())))
                 .then(Commands.literal("clear").executes(c -> clear(c.getSource(), 16))
                         .then(Commands.argument("radius", IntegerArgumentType.integer(1, 128))
                                 .executes(c -> clear(c.getSource(), IntegerArgumentType.getInteger(c, "radius")))))
@@ -237,6 +240,32 @@ public final class LiquidDevCommand {
         e.setRain(new Rain(mm, (int) Math.floor(p.x), (int) Math.floor(p.z), radius));
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                 "AFL water: test rain %.1f mm/h on every open column within %d m (package 1's stand-in: the water runs off the slopes cell by cell; catchment and infiltration are package 3). 1 mm/h = 1 L/m2 a game hour; /afl dev water rain 0 stops it.", mm, radius)), false);
+        return 1;
+    }
+
+    /** The averages since the last reading (or the world's start), then a fresh window. */
+    private static int perf(CommandSourceStack source) {
+        LiquidWorld.State st = LiquidWorld.state(source.getLevel());
+        LiquidEngine e = st.engine;
+        long n = Math.max(1, st.perfTicks);
+        long[] spent = e.spentNanos();
+        double[] phase = new double[4];
+        for (int i = 0; i < 4; i++) phase[i] = (spent[i] - st.perfSpent[i]) / 1e6 / n;
+        long[] p = st.perfNanos;
+        double total = (p[0] + p[1] + p[2] + p[3] + p[4]) / 1e6 / n;
+        List<String> lines = new ArrayList<>();
+        lines.add(String.format(Locale.ROOT, "AFL water over the last %d ticks: %.3f ms a tick; chunks + ground changes %.3f, natural rain %.3f, pours %.3f, engine %.3f, sync %.3f (%.3f ms each of %d syncs)",
+                st.perfTicks, total, p[0] / 1e6 / n, p[1] / 1e6 / n, p[2] / 1e6 / n, p[3] / 1e6 / n, p[4] / 1e6 / n,
+                st.perfSyncs == 0 ? 0 : p[4] / 1e6 / st.perfSyncs, st.perfSyncs));
+        int awake = e.awakeWetCells();
+        double engineNs = (phase[0] + phase[1] + phase[2] + phase[3]) * 1e6;
+        lines.add(String.format(Locale.ROOT, "  engine phases, ms a tick: rain + levels %.3f, wake %.3f, flow %.3f, quiet + sleep + soak %.3f; now %d flowing cells, %d substeps (%.0f ns a flowing cell a substep, budget 80-120)",
+                phase[0], phase[1], phase[2], phase[3], awake, e.substeps(), awake == 0 ? 0 : engineNs / awake / Math.max(1, e.substeps())));
+        lines.add("  " + e.stats());
+        java.util.Arrays.fill(p, 0);
+        st.perfTicks = st.perfSyncs = 0;
+        st.perfSpent = spent;
+        send(source, lines);
         return 1;
     }
 

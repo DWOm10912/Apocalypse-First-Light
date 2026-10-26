@@ -129,9 +129,12 @@ public final class LiquidPackets {
     /**
      * One chunk's wet cells, all of them (none: the chunk has no liquid left): per cell its column in the chunk
      * (x << 4 | z), its layer's floor (slabs, 1/16 m), its surface (1/4096 m), {@link #BOUNDARY} / {@link #STILL} and its
-     * joined sides.
+     * joined sides, and its water's velocity east and south ({@link #VELOCITY} m/s: WaterQuery, package 4).
      */
-    public record Surface(int chunkX, int chunkZ, byte[] column, int[] floor, int[] level, byte[] flags) {
+    public record Surface(int chunkX, int chunkZ, byte[] column, int[] floor, int[] level, byte[] flags, short[] vx, short[] vz) {
+        /** Velocity units a m/s (2 cm/s each). */
+        public static final double VELOCITY = 50;
+
         /** Water shallower than this (m) is not sent: the client draws no surface for it (ClientLiquid.SHOW_FULL). */
         static final double SHOWN = 0.008;
 
@@ -151,21 +154,33 @@ public final class LiquidPackets {
             int h = java.util.Arrays.hashCode(column);
             h = 31 * h + java.util.Arrays.hashCode(floor);
             h = 31 * h + java.util.Arrays.hashCode(level);
-            return 31 * h + java.util.Arrays.hashCode(flags);
+            h = 31 * h + java.util.Arrays.hashCode(flags);
+            h = 31 * h + java.util.Arrays.hashCode(vx);
+            return 31 * h + java.util.Arrays.hashCode(vz);
         }
 
         static Surface of(int chunkX, int chunkZ, List<LiquidCell> wet) {
             int n = wet.size();
             byte[] column = new byte[n], flags = new byte[n];
             int[] floor = new int[n], level = new int[n];
+            short[] vx = new short[n], vz = new short[n];
+            double[] v = new double[2];
             for (int i = 0; i < n; i++) {
                 LiquidCell c = wet.get(i);
                 column[i] = (byte) ((c.x() & 15) << 4 | (c.z() & 15));
                 floor[i] = c.floorSlab();
                 level[i] = (int) Math.round(c.level() * 4096);
                 flags[i] = (byte) ((c.boundary() ? BOUNDARY : 0) | (c.sleeping() ? STILL : 0) | c.joinedSides() << SIDES_SHIFT);
+                if (c.boundary()) continue;
+                c.velocity(v);
+                vx[i] = velocity(v[0]);
+                vz[i] = velocity(v[1]);
             }
-            return new Surface(chunkX, chunkZ, column, floor, level, flags);
+            return new Surface(chunkX, chunkZ, column, floor, level, flags, vx, vz);
+        }
+
+        private static short velocity(double v) {
+            return (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, Math.round(v * VELOCITY)));
         }
 
         static void encode(Surface p, FriendlyByteBuf b) {
@@ -177,6 +192,8 @@ public final class LiquidPackets {
                 b.writeInt(p.floor[i]);
                 b.writeInt(p.level[i]);
                 b.writeByte(p.flags[i]);
+                b.writeShort(p.vx[i]);
+                b.writeShort(p.vz[i]);
             }
         }
 
@@ -185,13 +202,16 @@ public final class LiquidPackets {
             if (n < 0 || n > 16 * 16 * 64) throw new IllegalArgumentException("liquid surface: " + n + " cells");
             byte[] column = new byte[n], flags = new byte[n];
             int[] floor = new int[n], level = new int[n];
+            short[] vx = new short[n], vz = new short[n];
             for (int i = 0; i < n; i++) {
                 column[i] = b.readByte();
                 floor[i] = b.readInt();
                 level[i] = b.readInt();
                 flags[i] = b.readByte();
+                vx[i] = b.readShort();
+                vz[i] = b.readShort();
             }
-            return new Surface(cx, cz, column, floor, level, flags);
+            return new Surface(cx, cz, column, floor, level, flags, vx, vz);
         }
 
         static void handle(Surface p, Supplier<NetworkEvent.Context> s) {

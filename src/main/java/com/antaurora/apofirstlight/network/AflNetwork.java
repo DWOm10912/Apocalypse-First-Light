@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 public final class AflNetwork {
     // 75: master + B (73: item inspect, chair sitting, physical water) and C (74: world time), merged 2026-10-25
-    private static final String PROTOCOL = "75";
+    private static final String PROTOCOL = "76";
     private static SimpleChannel channel;
     private static int nextId;
 
