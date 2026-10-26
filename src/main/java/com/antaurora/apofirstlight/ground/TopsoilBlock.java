@@ -32,11 +32,12 @@ public class TopsoilBlock extends NaturalGroundBlock {
 
     public TopsoilBlock(Properties properties) {
         super("topsoil", properties);
-        registerDefaultState(stateDefinition.any().setValue(COVER, Cover.GRASS));
+        registerDefaultState(defaultBlockState().setValue(COVER, Cover.GRASS));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(COVER);
     }
 

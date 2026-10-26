@@ -35,6 +35,13 @@ public final class SmoothRules {
      * its column's natural surface (the earthwork reads it), and soil above it slopes down onto its top (#corner)
      */
     public static final int AIR = 0, COVER = 1, LEAF = 2, FLUID = 3, NATURAL = 4, OTHER = 5, UNKNOWN = 6, TREE = 7, ROCK = 8;
+    /**
+     * WET: natural loose ground holding water (NaturalGroundBlock#WATERLOGGED; river / lake V1 R0,
+     * docs/worldgen/river_lake_v1_design.md 4.9). It takes part as NATURAL does, and water over it is open to it: a column
+     * whose natural surface is wet reads its water as air (#column), so a bed slopes under the water and a shore into it
+     * instead of being pinned by it. Water over dry ground still pins (old worlds' rivers keep their shape).
+     */
+    public static final int WET = 9;
     /** Cells#surface of a column without natural surface (water, a roof, an overhang on top) or not loaded */
     public static final int NO_SURFACE = Integer.MIN_VALUE;
     /** column kinds */
@@ -64,9 +71,15 @@ public final class SmoothRules {
 
     private SmoothRules() {}
 
-    static boolean solid(int c) { return c == NATURAL || c == OTHER || c == TREE || c == ROCK; }
+    static boolean solid(int c) { return c == NATURAL || c == OTHER || c == TREE || c == ROCK || c == WET; }
 
     public static boolean open(int c) { return c == AIR || c == COVER; }
+
+    /** Natural loose ground, dry or wet. */
+    public static boolean natural(int c) { return c == NATURAL || c == WET; }
+
+    /** Open over a natural cell: air or a cover, or water over wet ground. */
+    public static boolean openOver(int cell, int above) { return open(above) || cell == WET && above == FLUID; }
 
     /** Passed over by the natural-surface scan: sky, plants and snow, tree crowns and trunks. */
     public static boolean skyward(int c) { return c == AIR || c == COVER || c == LEAF || c == TREE; }
@@ -74,12 +87,15 @@ public final class SmoothRules {
     /**
      * A column's natural surface: going down from {@code top} (its highest block), past sky, plants, leaves and trunks,
      * the first other cell if it is natural ground, else NO_SURFACE (water, anything built or a rock overhang on top).
+     * Past water only wet ground counts (a river's wet bed, R0): dry ground or rock under water is no natural surface.
      */
     public static int surface(Cells c, int x, int z, int top, int bottom) {
+        boolean water = false;
         for (int y = top; y >= bottom; y--) {
             int k = c.cell(x, y, z);
             if (skyward(k)) continue;
-            return k == NATURAL || k == ROCK ? y : NO_SURFACE;
+            if (k == FLUID) { water = true; continue; }
+            return k == WET || !water && (k == NATURAL || k == ROCK) ? y : NO_SURFACE;
         }
         return NO_SURFACE;
     }
@@ -100,8 +116,20 @@ public final class SmoothRules {
         return solid(c0) ? k | SOLID_HERE : k;
     }
 
+    /** Column (x, z)'s natural surface is wet ground (R0): its water reads as air for the slopes. */
+    static boolean wetColumn(Cells c, int x, int z) {
+        int s = c.surface(x, z);
+        return s != NO_SURFACE && c.cell(x, s, z) == WET;
+    }
+
     private static long kindOf(Cells c, int c0, int x, int y, int z) {
         int c2 = c.cell(x, y + 2, z), c1 = c.cell(x, y + 1, z), cm = c.cell(x, y - 1, z);
+        if ((c2 == FLUID || c1 == FLUID || c0 == FLUID || cm == FLUID) && wetColumn(c, x, z)) {
+            if (c2 == FLUID) c2 = AIR;
+            if (c1 == FLUID) c1 = AIR;
+            if (c0 == FLUID) c0 = AIR;
+            if (cm == FLUID) cm = AIR;
+        }
         if (c1 == UNKNOWN || c0 == UNKNOWN || cm == UNKNOWN) return pack(K_UNKNOWN, 0);
         if (c1 == FLUID) return pack(K_FLUID, y + 2);
         if (solid(c1)) {
@@ -117,7 +145,7 @@ public final class SmoothRules {
 
     /** A solid column top's kind, open above: GroundClass H natural (K_NAT), V rock or a soil wall (K_ROCK: soil slopes onto it), else fixed. */
     private static int kindAt(Cells c, int cell, int above, int x, int top, int z) {
-        if (!open(above)) return K_FIXED;
+        if (!openOver(cell, above)) return K_FIXED;
         return switch (GroundClass.of(c, cell, above, x, top, z)) {
             case GroundClass.V -> K_ROCK;
             case GroundClass.H -> K_NAT;
@@ -255,6 +283,8 @@ public final class SmoothRules {
             int nx = x + i - 1, nz = z + j - 1;
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, nx, y, nz);
             int k = kind(col[j * 3 + i]);
+            // wet ground beside (R0) is water to the earthwork: its skin must not open a shore
+            if (!(i == 1 && j == 1) && wetColumn(c, nx, nz)) return "neighbour " + nx + " " + nz + " is water";
             // bare rock beside (U6 V3, never sloped) is as a wall: EarthSkin closes the side toward it
             if (walls && (k == K_HIGH || k == K_ROCK || k == K_LOW && stepDown(c, nx, y - 2, nz))) wall = true;
             else if (k == K_LOW && walls) return "neighbour " + nx + " " + nz + " is three or more lower (a cliff)";

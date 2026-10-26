@@ -169,7 +169,9 @@ const GAME = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
  */
 const LOOKS = {
   soil: {photo: ['ph', 'dirt', 2], color: [0.37, 0.29, 0.21], chroma: 0.5, detail: 1.6, tilt: 14, smooth: [20, 40], b: 60},
-  grass: {photo: ['acg', 'Grass004', 1.4], color: [0.50, 0.50, 0.50], chroma: 0, detail: 1.4, tilt: 10, smooth: [30, 60], b: 75},
+  // turf retune B (user 2026-10-25, doc 13): vanilla's brightness, the photo's colour variation, clumps in albedo and relief
+  grass: {photo: ['acg', 'Grass004', 1.4], color: [0.58, 0.58, 0.58], chroma: 1.0, chromaVar: true, detail: 0.85, mid: [2.8, 2], flatten: 12,
+    tilt: 10, clumpTilt: 17, smooth: [30, 60], b: 75},
   litter: {photo: ['ph', 'forest_leaves_03', 2.3], color: [0.33, 0.26, 0.17], chroma: 0.35, detail: 0.9, tilt: 14, smooth: [20, 40], b: 60},
   moss: {photo: ['acg', 'Moss001', 0.45], color: [0.32, 0.37, 0.17], chroma: 0.4, detail: 1.5, tilt: 10, smooth: [20, 40], b: 75},
   mud: {photo: ['ph', 'brown_mud', 1.3], color: [0.27, 0.22, 0.17], chroma: 0.4, detail: 1.5, tilt: 10, smooth: [90, 150], b: 20},
@@ -252,21 +254,53 @@ function gameTile(src, look, k) {
   const col = window(src.col, 3, n, Math.floor(fx * n), Math.floor(fy * n), src.mcol);
   const pn = window(src.nrm, 3, n, Math.floor(fx * n), Math.floor(fy * n), src.mnrm);
   const L = new Float32Array(RES * RES).map((_, i) => lumOf(col, i)), mean = L.reduce((a, v) => a + v, 0) / L.length;
-  const low = blurWrap(L, 10), target = lumOf(look.color, 0);
+  const low = blurWrap(L, look.flatten ?? 10), target = lumOf(look.color, 0);
+  // mid: [gain, r]: the band between a radius r blur and the flattening (clumps and tufts) at its own gain, the finer grain at detail
+  const lowMid = look.mid ? blurWrap(L, look.mid[1]) : null;
+  // chromaVar: only the colour's variation stays (its mean cast taken off): a tinted tile keeps its tint's hue on average
+  const mc = means(col, 3), cast = look.chromaVar ? [0, 1, 2].map(ch => mc[ch] - mean) : [0, 0, 0];
   const out = new Float32Array(RES * RES * 3), nrm = new Float32Array(RES * RES * 3), smooth = new Uint8Array(RES * RES);
   for (let i = 0; i < RES * RES; i++) {
-    const d = look.detail * (L[i] - low[i]) / mean, v = Math.max(0.2, 1 + d) * gain;
-    for (let ch = 0; ch < 3; ch++) out[i * 3 + ch] = clamp01(look.color[ch] * v + look.chroma * (col[i * 3 + ch] - L[i]) * target / mean);
+    const d = lowMid ? (look.detail * (L[i] - lowMid[i]) + look.mid[0] * (lowMid[i] - low[i])) / mean : look.detail * (L[i] - low[i]) / mean;
+    const v = Math.max(0.2, 1 + d) * gain;
+    for (let ch = 0; ch < 3; ch++) out[i * 3 + ch] = clamp01(look.color[ch] * v + look.chroma * (col[i * 3 + ch] - L[i] - cast[ch]) * target / mean);
     nrm.set(V.norm([pn[i * 3] * 2 - 1, pn[i * 3 + 1] * 2 - 1, pn[i * 3 + 2] * 2 - 1]), i * 3);
     smooth[i] = Math.round(look.smooth[0] + (look.smooth[1] - look.smooth[0]) * clamp01(0.5 + 2 * d));
   }
   const r = relief(nrm, RES, look.tilt);
+  if (look.clumpTilt && lowMid) r.nrm = clumpRelief(r.height, lowMid, low, mean, look.clumpTilt);
   const albedo = Buffer.alloc(RES * RES * 4), s = Buffer.alloc(RES * RES * 4);
   for (let i = 0; i < RES * RES; i++) {
     albedo.set([...[0, 1, 2].map(ch => Math.round(out[i * 3 + ch] * 255)), 255], i * 4);
     s.set([smooth[i], 10, look.b, 255], i * 4);
   }
   return {col: out, nrm: r.nrm, res: RES, png: {albedo, s, n: encodeN(r.nrm, r.ao, RES)}};
+}
+
+/** Unit OpenGL normals of a wrapping RES height (texels), by central differences (as rock-pbr.mjs normalsOf). */
+function normalsOfHeight(h) {
+  const out = new Float32Array(RES * RES * 3);
+  for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
+    const dx = (h[y * RES + mod(x + 1, RES)] - h[y * RES + mod(x - 1, RES)]) / 2, dr = (h[mod(y + 1, RES) * RES + x] - h[mod(y - 1, RES) * RES + x]) / 2;
+    const nx = -dx, ny = dr, l = Math.hypot(nx, ny, 1), i = y * RES + x;
+    out[i * 3] = nx / l; out[i * 3 + 1] = ny / l; out[i * 3 + 2] = 1 / l;
+  }
+  return out;
+}
+
+const lean90 = n => { const a = Float32Array.from({length: RES * RES}, (_, i) => Math.acos(Math.min(1, n[i * 3 + 2]))).sort(); return a[Math.floor(a.length * 0.9)] * 180 / Math.PI; };
+
+/**
+ * The turf's clumps in its relief (doc 13): the albedo's clump band (the mid blur less the flattening: bright tufts up,
+ * dark gaps down) added to the photo's relief height at the scale that makes 90% of the texels lean at most `tilt`
+ * degrees. Only that band grows: the photo's fine grain stays at the look's tilt (no fine lines in a tiling normal).
+ */
+function clumpRelief(height, lowMid, low, mean, tilt) {
+  const c = Float32Array.from({length: RES * RES}, (_, i) => (lowMid[i] - low[i]) / mean);
+  const at = k => normalsOfHeight(height.map((v, i) => v + k * c[i]));
+  let lo = 0, hi = 4000;
+  for (let it = 0; it < 40; it++) { const k = (lo + hi) / 2; if (lean90(at(k)) > tilt) hi = k; else lo = k; }
+  return at(lo);
 }
 
 /** Periodic value noise over a RES tile (cells of c texels, c divides RES), 0..1 (as build-rock-face.mjs pnoise). */
@@ -423,3 +457,56 @@ if (at >= 0) {
 if (args.includes('--write')) await writeGame(loadSharp());
 const ti = args.indexOf('--tiles');
 if (ti >= 0) await tilesSheet(loadSharp(), path.resolve(args[ti + 1] ?? path.join(ROOT, 'build/n1b-preview')));
+
+/**
+ * Turf retune (doc 13): the grass look's candidates against the current one and vanilla's grass top (env
+ * AFL_VANILLA_GRASS, its 16 px PNG), each 3 x 3 m of random tiles under a plains green, flat and lit; the third value
+ * mixes the tint toward white by that share (as NaturalGroundColors would).
+ *   node tools/ground/build-natural-ground.mjs --turf DIR
+ */
+const TURF = [
+  // round 1 (doc 13) was: 现在 (color 0.50, chroma 0, detail 1.4), A, B (picked: now LOOKS.grass), C (B, tint 15% paler)
+  ['游戏贴图（B，草簇法线 17°）', LOOKS.grass, 0],
+  ['A 留色 + 草簇（未选）', {...LOOKS.grass, chroma: 0.5, detail: 0.9, mid: [2.2, 2], flatten: 10, clumpTilt: 0}, 0],
+];
+
+async function turfSheet(sharp, dir) {
+  fs.mkdirSync(dir, {recursive: true});
+  const P = 384, gap = 16, head = 30, top0 = 56, plains = [0x91 / 255, 0xBD / 255, 0x59 / 255], vanilla = process.env.AFL_VANILLA_GRASS;
+  const cols = TURF.length + (vanilla ? 1 : 0), W = cols * (P + gap) + gap, H = top0 + 2 * (P + head) + gap;
+  const comp = [], text = [`<text x="${gap}" y="34" font-family="Microsoft YaHei, sans-serif" font-size="24" fill="#f0f0f0">草皮重调　每格 3 × 3 m，平原绿着色，上平光、下斜光</text>`];
+  const put = async (c, label, mk) => {
+    const left = gap + c * (P + gap);
+    for (let r = 0; r < 2; r++) {
+      const top = top0 + r * (P + head) + head;
+      comp.push({input: await sharp(mk(r === 1), {raw: {width: P, height: P, channels: 4}}).png().toBuffer(), left, top});
+      text.push(`<text x="${left}" y="${top - 8}" font-family="Microsoft YaHei, sans-serif" font-size="19" fill="#d8d8d8">${label}${r ? '　斜光' : ''}</text>`);
+    }
+  };
+  const src = await lookSource(sharp, LOOKS.grass);
+  for (let c = 0; c < TURF.length; c++) {
+    const [label, look, pale] = TURF[c], tiles = [0, 1, 2, 3].map(k => gameTile(src, look, k)), tint = plains.map(v => v + (1 - v) * pale);
+    const m = means(tiles.flatMap(t => [...t.col]), 3);
+    console.log(`${label}: mean ${m.map(v => v.toFixed(3)).join(' ')}, tinted ${m.map((v, ch) => (v * tint[ch]).toFixed(3)).join(' ')}`);
+    await put(c, label, lit => tilePanel(P, tiles, lit, 900, tint));
+  }
+  if (vanilla) {
+    // its 16 px top at 1 block = 1 m (8 px a texel), plains green, flat in both rows (no normal map)
+    const v = await sharp(vanilla).removeAlpha().raw().toBuffer({resolveWithObject: true});
+    await put(TURF.length, '原版草方块（参考）', () => {
+      const o = Buffer.alloc(P * P * 4);
+      for (let y = 0; y < P; y++) for (let x = 0; x < P; x++) {
+        const i = (Math.floor((y % RES) / 8) * v.info.width + Math.floor((x % RES) / 8)) * v.info.channels;
+        for (let ch = 0; ch < 3; ch++) o[(y * P + x) * 4 + ch] = Math.round(v.data[i + ch] * plains[ch]);
+        o[(y * P + x) * 4 + 3] = 255;
+      }
+      return o;
+    });
+  }
+  comp.push({input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${text.join('')}</svg>`), left: 0, top: 0});
+  const file = path.join(dir, 'n1_turf_retune.png');
+  await sharp({create: {width: W, height: H, channels: 4, background: '#202224'}}).composite(comp).png().toFile(file);
+  console.log('wrote', file);
+}
+const tu = args.indexOf('--turf');
+if (tu >= 0) await turfSheet(loadSharp(), path.resolve(args[tu + 1] ?? path.join(ROOT, 'build/n1-turf')));
