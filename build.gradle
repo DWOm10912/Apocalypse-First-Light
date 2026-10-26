@@ -451,6 +451,13 @@ tasks.register('naturalGroundCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.ground.NaturalGroundCheck'
 }
 
+// River / lake V1 R0 (docs/worldgen/river_lake_v1_design.md 7, 11): wet ground on the technical sample, no spill, no pocket, shores slope.
+tasks.register('wetGroundCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.river.WetGroundCheck'
+}
+
 // World Time V1 (docs/gameplay/world_time_v1_design.md 5): the world clock's fixed-point step never drifts.
 tasks.register('worldClockCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

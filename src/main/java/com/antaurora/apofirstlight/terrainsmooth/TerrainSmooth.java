@@ -163,6 +163,7 @@ public final class TerrainSmooth {
     /** SmoothRules cell code of a block state. */
     public static int cell(BlockState s) {
         if (s.isAir()) return AIR;
+        if (com.antaurora.apofirstlight.ground.NaturalGroundBlock.wet(s)) return WET;   // river / lake V1 R0
         if (!s.getFluidState().isEmpty()) return FLUID;
         Block b = s.getBlock();
         // a bridge's invisible collision (road_structure, under the client's mesh) covers the ground like a plant: the ground
@@ -220,10 +221,12 @@ public final class TerrainSmooth {
     /** SmoothRules#surface of one column of a chunk, from its WORLD_SURFACE heightmap (the highest non-air block) down. */
     static int columnSurface(LevelChunk chunk, BlockPos.MutableBlockPos pos, int x, int z) {
         int bottom = chunk.getMinBuildHeight();
+        boolean water = false;
         for (int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15); y >= bottom; y--) {
             int k = cell(chunk.getBlockState(pos.set(x, y, z)));
             if (skyward(k)) continue;
-            return k == NATURAL || k == ROCK ? y : NO_SURFACE;
+            if (k == FLUID) { water = true; continue; }   // SmoothRules#surface: past water only wet ground counts
+            return k == WET || !water && (k == NATURAL || k == ROCK) ? y : NO_SURFACE;
         }
         return NO_SURFACE;
     }

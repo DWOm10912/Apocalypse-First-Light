@@ -27,11 +27,12 @@ public class GravelGroundBlock extends NaturalGroundBlock {
 
     public GravelGroundBlock(Properties properties) {
         super("gravel", properties);
-        registerDefaultState(stateDefinition.any().setValue(KIND, Kind.ROUND));
+        registerDefaultState(defaultBlockState().setValue(KIND, Kind.ROUND));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(KIND);
     }
 }

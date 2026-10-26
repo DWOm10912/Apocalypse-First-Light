@@ -1,8 +1,8 @@
 {
   "loader": "apocalypse_firstlight:graded_turf",
   "textures": {
-    "top": "minecraft:block/grass_block_top",
-    "side": "minecraft:block/dirt",
-    "particle": "minecraft:block/dirt"
+    "top": "apocalypse_firstlight:block/ground/grass_0",
+    "side": "apocalypse_firstlight:block/ground/soil_0",
+    "particle": "apocalypse_firstlight:block/ground/soil_0"
   }
 }

@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
+import com.antaurora.apofirstlight.ground.TopsoilBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.terrainsmooth.client.TopTexture;
 import com.google.gson.JsonDeserializationContext;
@@ -22,7 +23,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.GrassColor;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ChunkRenderTypeSet;
@@ -52,6 +52,8 @@ import java.util.function.Function;
  * C3.3a group B (docs/worldgen/federal_highways_c3.md 11.11): it looks like the grass block beside it: the top texture in
  * the orientation of the vanilla grass block's variant at the position (TopTexture), shaded by its tilt without a shader
  * pack as the natural slopes are, and the sides with the grass block's side layers (the fringe follows the top edge).
+ * Natural ground N1 (docs/worldgen/natural_ground_n1_design.md 14, 2026-10-25): it looks like topsoil's turf instead (the
+ * AFL turf tile and orientation topsoil takes at the position, soil sides), in every world.
  * Model JSON: {@code {"loader": "apocalypse_firstlight:graded_turf", "textures": {"top": ..., "side": ..., "particle": ...}}}.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -105,8 +107,10 @@ public final class GradedTurfModel {
         private static final ChunkRenderTypeSet LAYERS = ChunkRenderTypeSet.of(RenderType.solid(), RenderType.cutoutMipped());
         private final TextureAtlasSprite top, side, particle;
         private final ItemTransforms transforms;
-        /** per state: [orientation code (TopTexture, 8 bits) | shader pack << 8] */
-        private final Map<BlockState, Quads[]> cache = new ConcurrentHashMap<>();
+        /** per state: by the top's sprite (the turf tile) and [orientation code (TopTexture, 8 bits) | shader pack << 8] */
+        private final Map<BlockState, Map<TopKey, Quads>> cache = new ConcurrentHashMap<>();
+
+        private record TopKey(TextureAtlasSprite sprite, int key) {}
 
         Baked(TextureAtlasSprite top, TextureAtlasSprite side, TextureAtlasSprite particle, ItemTransforms transforms) {
             this.top = top;
@@ -115,9 +119,16 @@ public final class GradedTurfModel {
             this.transforms = transforms;
         }
 
-        /** The vanilla grass block's model: its top variants (orientation) and side layers are the turf's look. */
+        /**
+         * Topsoil's turf (natural ground N1, docs/worldgen/natural_ground_n1_design.md 14): its model's top variants (tile
+         * and orientation) and its sides (soil) are the turf's look, so a road verge meets the grass beside it.
+         */
+        private static BlockState turf() {
+            return AflBlocks.TOPSOIL.get().defaultBlockState().setValue(TopsoilBlock.COVER, TopsoilBlock.Cover.GRASS);
+        }
+
         private static BakedModel grass() {
-            return Minecraft.getInstance().getBlockRenderer().getBlockModel(Blocks.GRASS_BLOCK.defaultBlockState());
+            return Minecraft.getInstance().getBlockRenderer().getBlockModel(turf());
         }
 
         @Override
@@ -126,12 +137,14 @@ public final class GradedTurfModel {
             if (state == null || !(state.getBlock() instanceof GradedTurfBlock)) return List.of();
             boolean cutout = renderType == RenderType.cutoutMipped();
             if (renderType != null && renderType != RenderType.solid() && !cutout) return List.of();
-            // the orientation the vanilla grass block takes at this position (the renderer seeded random as for it)
-            int orientation = TopTexture.orientation(grass().getQuads(Blocks.GRASS_BLOCK.defaultBlockState(), Direction.UP, random, ModelData.EMPTY, null));
-            int key = orientation | (TopTexture.shaderPack() ? 256 : 0);
-            Quads[] byKey = cache.computeIfAbsent(state, s -> new Quads[512]);
-            Quads q = byKey[key];
-            if (q == null) byKey[key] = q = build(state, orientation);
+            // the tile and orientation topsoil's turf takes at this position (the renderer seeded random as for it)
+            List<BakedQuad> up = grass().getQuads(turf(), Direction.UP, random, ModelData.EMPTY, null);
+            TextureAtlasSprite sprite = up.isEmpty() ? top : up.get(0).getSprite();
+            int orientation = TopTexture.orientation(up);
+            TopKey key = new TopKey(sprite, orientation | (TopTexture.shaderPack() ? 256 : 0));
+            Map<TopKey, Quads> byKey = cache.computeIfAbsent(state, s -> new ConcurrentHashMap<>());
+            Quads q = byKey.get(key);
+            if (q == null) byKey.put(key, q = build(state, sprite, orientation));
             if (renderType == null) {
                 if (direction == null) return q.freeWithoutTop();
                 if (direction == Direction.UP) return q.top();
@@ -141,22 +154,21 @@ public final class GradedTurfModel {
             return q.culled().getOrDefault(direction, List.of());
         }
 
-        private Quads build(BlockState state, int orientation) {
+        private Quads build(BlockState state, TextureAtlasSprite top, int orientation) {
             float[] c = GradedTurfBlock.corners(state);   // nw, ne, sw, se
             float nw = c[0], ne = c[1], sw = c[2], se = c[3];
             List<BakedQuad> free = new ArrayList<>(), cutoutFree = new ArrayList<>();
             Map<Direction, List<BakedQuad>> culled = new EnumMap<>(Direction.class), cutoutCulled = new EnumMap<>(Direction.class);
-            // top: nw (0,0) -> sw (0,1) -> se (1,1) -> ne (1,0), normal up; the texture as the vanilla grass block's variant at
-            // the position (TopTexture), shaded by its tilt like the natural slopes without a shader pack
+            // top: nw (0,0) -> sw (0,1) -> se (1,1) -> ne (1,0), normal up; the tile and orientation as topsoil's turf variant
+            // at the position (TopTexture), shaded by its tilt like the natural slopes without a shader pack
             float[][] t = {{0, nw, 0}, {0, sw, 1}, {1, se, 1}, {1, ne, 0}};
             BakedQuad topQuad = quad(t, TopTexture.uv(orientation), top, 0, Direction.UP, TopTexture.topColor(t));
             free.add(topQuad);
             float tall = Math.max(Math.max(nw, ne), Math.max(sw, se));
             boolean above = tall > 1.0001F;
-            // sides, seen from outside, counter-clockwise: bottom-left, bottom-right, top-right, top-left; the grass block's
-            // side layers (dirt with the fringe, and the tinted overlay) mapped down from the top edge, so the fringe follows
-            // the slope like the natural slopes' bands (SmoothSurfaceModel)
-            List<BakedQuad> layers = grass().getQuads(Blocks.GRASS_BLOCK.defaultBlockState(), Direction.NORTH, RandomSource.create(42), ModelData.EMPTY, null);
+            // sides, seen from outside, counter-clockwise: bottom-left, bottom-right, top-right, top-left; topsoil's side (soil,
+            // no grass fringe: a turf's edge shows the soil under it, as a topsoil wall does) mapped down from the top edge
+            List<BakedQuad> layers = grass().getQuads(turf(), Direction.NORTH, RandomSource.create(42), ModelData.EMPTY, null);
             side(free, culled, cutoutFree, cutoutCulled, layers, above, Direction.NORTH, new float[]{1, 0, 0}, new float[]{0, 0, 0}, ne, nw);
             side(free, culled, cutoutFree, cutoutCulled, layers, above, Direction.SOUTH, new float[]{0, 0, 1}, new float[]{1, 0, 1}, sw, se);
             side(free, culled, cutoutFree, cutoutCulled, layers, above, Direction.WEST, new float[]{0, 0, 0}, new float[]{0, 0, 1}, nw, sw);

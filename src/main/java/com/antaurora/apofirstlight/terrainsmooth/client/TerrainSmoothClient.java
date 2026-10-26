@@ -194,7 +194,7 @@ public final class TerrainSmoothClient {
         c.level = level;
         try {
             int above = c.cell(x, y + 1, z);
-            if (above != SmoothRules.AIR && above != SmoothRules.COVER) return -1;
+            if (!SmoothRules.openOver(c.cell(x, y, z), above)) return -1;
             if (c.surface(x, z) != y) return -1;
             long begin = System.nanoTime();
             long g = SmoothRules.geometry(c, TerrainSmooth.MODE, x, y, z);
@@ -241,7 +241,7 @@ public final class TerrainSmoothClient {
             n.setWithOffset(pos, SIDE_DIRS[s]);
             BlockState neighbour = region.getBlockState(n);
             int k = TerrainSmooth.cell(neighbour);
-            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE || k == SmoothRules.ROCK) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
+            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE || k == SmoothRules.ROCK || k == SmoothRules.WET) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
             // a graded_turf column one level down: its top line may cross this block's floor along the edge, where the
             // band's straight foot and the turf's edge part; the part below the band closes that (2026-10-15, C3.3a seams)
             else if ((k == SmoothRules.AIR || k == SmoothRules.COVER) && region.getBlockState(n.move(Direction.DOWN)).getBlock() instanceof GradedTurfBlock)

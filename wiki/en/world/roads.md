@@ -26,6 +26,7 @@ The six states are linked by two road classes. Pavement, guardrails, markings an
 - Deep cuts are rock cuts: steep rock faces with a <V j="CrossSection.ROCK_BENCH" u="m" /> bench every <V j="CrossSection.ROCK_LIFT" u="m" /> of height. Shallow cuts keep their grass slopes
 - Beside the interstates, a very deep cut can still end in a lower sheer wall at its outer edge
 - <StatusTag s="verified" d="2026-10-25" /> The grass slopes beside a road follow the designed ditch and slopes, and only blend into the natural ground within <V j="RoadWorks.JOIN" u="m" /> of where they meet it: no block-high lumps in the ditch, and stray faces between neighbouring grass slopes are rare (a few remain at the edge of steep rock cuts)
+- <StatusTag s="verified" d="2026-10-25" /> The turf on the grass slopes beside a road is the same as the turf on the topsoil next to it: the same tufts, the same biome colour, and soil, not vanilla's grass fringe, at its edges. In worlds created earlier the road slopes use this turf too; the vanilla grass blocks beside them stay
 - <StatusTag s="verified" d="2026-10-25" /> Between two curves turning opposite ways, an undivided road's whole pavement tilts from one side over to the other, so no water lies along its centre line
 
 ## Digging Up a Road

@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.ground;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells;
 
-import static com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NATURAL;
 import static com.antaurora.apofirstlight.terrainsmooth.SmoothRules.ROCK;
 
 /**
@@ -19,6 +18,7 @@ import static com.antaurora.apofirstlight.terrainsmooth.SmoothRules.ROCK;
  *   wears its open faces (air only) in 1/8 m sub-cells; the soil around slopes onto it.</li>
  *   <li>{@link #C} cube: everything else (ground under the surface or under a roof, built blocks, water, plants).</li>
  * </ul>
+ * Wet ground (SmoothRules#WET, river / lake V1 R0) is natural loose ground like NATURAL, and the water over it is open to it.
  */
 public final class GroundClass {
     private GroundClass() {}
@@ -33,9 +33,9 @@ public final class GroundClass {
     /** The same with the cell and the one above it already read (SmoothRules#column reads them anyway). */
     public static int of(Cells c, int cell, int above, int x, int y, int z) {
         if (cell == ROCK) return V;
-        if (cell != NATURAL) return C;
+        if (!SmoothRules.natural(cell)) return C;
         if (soilWall(c, x, y, z)) return V;
-        return SmoothRules.open(above) && c.surface(x, z) == y ? H : C;
+        return SmoothRules.openOver(cell, above) && c.surface(x, z) == y ? H : C;
     }
 
     /**
@@ -43,7 +43,9 @@ public final class GroundClass {
      * are not (the column's cached surface first, the soil wall's neighbours last).
      */
     public static boolean surface(Cells c, int x, int y, int z) {
-        return c.surface(x, z) == y && c.cell(x, y, z) == NATURAL && SmoothRules.open(c.cell(x, y + 1, z)) && !soilWall(c, x, y, z);
+        if (c.surface(x, z) != y) return false;
+        int cell = c.cell(x, y, z);
+        return SmoothRules.natural(cell) && SmoothRules.openOver(cell, c.cell(x, y + 1, z)) && !soilWall(c, x, y, z);
     }
 
     /**
@@ -54,9 +56,10 @@ public final class GroundClass {
      * beside it, one level down to one up: the reason a change re-shapes tops two columns away (SmoothRules#REACH).
      */
     public static boolean soilWall(Cells c, int x, int y, int z) {
-        if (c.cell(x, y, z) != NATURAL) return false;
+        int cell = c.cell(x, y, z);
+        if (!SmoothRules.natural(cell)) return false;
         if (SmoothRules.open(c.cell(x, y - 1, z))) return true;
-        boolean buried = !SmoothRules.open(c.cell(x, y + 1, z));
+        boolean buried = !SmoothRules.openOver(cell, c.cell(x, y + 1, z));
         for (int d = 0; d < 4; d++) {
             int nx = x + (d == 0 ? -1 : d == 1 ? 1 : 0), nz = z + (d == 2 ? -1 : d == 3 ? 1 : 0);
             if (SmoothRules.open(c.cell(nx, y, nz)) && (buried || SmoothRules.open(c.cell(nx, y - 1, nz)))) return true;

@@ -82,11 +82,12 @@ Rubble struck loose in older saves is still there: it is loose earth, and like s
 - <StatusTag s="test" /> In a newly created federal world all natural ground is made of them: grassland is topsoil with turf, conifer forest floors have leaf litter, river and lake beds are rounded pebbles, mountains have angular scree, swamps are mud, snowy peaks are snow; the Altamesa badlands are no longer terracotta but beds of red sandstone, sandstone and shale. Worlds created earlier keep vanilla dirt and sand, in newly explored areas too
 
 - Ground textures are drawn from real photos like the rock, one block to a metre, with no visible repeat between neighbouring blocks
-- There is no grass block. Topsoil is soil on its sides and bottom, and its top shows what grows on it: turf, leaf litter, moss or bare soil. Turf takes the biome's grass colour. A wall or a pit dug in topsoil shows no strip of grass at its sides
+- There is no grass block. Topsoil is soil on its sides and bottom, and its top shows what grows on it: turf, leaf litter, moss or bare soil. Turf takes the biome's grass colour; up close it shows tufts of grass and the gaps between them. A wall or a pit dug in topsoil shows no strip of grass at its sides
 - Gravel comes in two looks: rounded pebbles in river beds, angular scree in the mountains
 - This ground slopes smoothly and can be dug and poured with the shovel like vanilla dirt (except snow). Dug topsoil turns bare on top; dug and poured earth stays the ground it came from, and red sand stays red
 - Mud sinks a little underfoot, as vanilla mud does
 - Sand and gravel do not fall as in vanilla: loose ground slumps into a slope at its angle of repose
+- <StatusTag s="planned" /> River and lake banks are slopes that run down into the water, not one-block steps. Most small streams can be waded at their riffles, usually 0.15–0.4 m deep; the pools on the outside of bends and the larger rivers have to be swum
 
 ## Ores
 
