@@ -1,0 +1,205 @@
+## BakedQuadMixin.java  -> net/minecraft/client/render/model/BakedQuad [net/minecraft/class_777]  class@1.20.1=YES
+## BillboardParticleAccessor.java  -> net/minecraft/client/particle/BillboardParticle [net/minecraft/class_3940]  class@1.20.1=YES
+## BiomeMixin.java  -> net/minecraft/world/biome/Biome [net/minecraft/class_1959]  class@1.20.1=YES
+   getFoliageColor [method_8698]: SAME signature
+   getGrassColorAt [method_8711]: SAME signature
+## BlockBufferBuilderPoolMixin.java  -> net/minecraft/client/render/chunk/BlockBufferBuilderPool [net/minecraft/class_8901]  class@1.20.1=NO
+   allocate [method_54643]: MISSING in 1.20.1
+## BlockEntityRenderDispatcherMixin.java  -> net/minecraft/client/render/block/entity/BlockEntityRenderDispatcher [net/minecraft/class_824]  class@1.20.1=YES
+   render(Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;)V [method_23079]: SAME signature
+   render(Lnet/minecraft/block/entity/BlockEntity;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;)V [method_3555]: SAME signature
+## BuiltChunkBuffersMixin.java  -> net/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk [net/minecraft/class_846$class_851]  class@1.20.1=YES
+   <init>: ctor
+   getBuffer [method_3656]: SAME signature
+## BuiltChunkMixin.java  -> net/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk [net/minecraft/class_846$class_851]  class@1.20.1=YES
+   clear()V [method_3675]: SAME signature
+   createRebuildTask(Lnet/minecraft/client/render/chunk/ChunkRendererRegionBuilder;) [method_3674]: SAME signature
+   method_60908(Lnet/minecraft/client/render/chunk/ChunkBuilder$ChunkData;)V [method_60908]: MISSING in 1.20.1
+   setOrigin(III)V [method_3653]: SAME signature
+## BuiltChunkStorageMixin.java  -> net/minecraft/client/render/BuiltChunkStorage [net/minecraft/class_769]  class@1.20.1=YES
+   updateCameraPosition(DD)V [method_3330]: SAME signature
+## ChunkDataSenderMixin.java  -> net/minecraft/server/network/ChunkDataSender [net/minecraft/class_8608]  class@1.20.1=NO
+   add [method_52390]: MISSING in 1.20.1
+   makeBatch [method_52385]: MISSING in 1.20.1
+   sendChunkBatches [method_52386]: MISSING in 1.20.1
+   unload [method_52387]: MISSING in 1.20.1
+## ChunkHolderMixin.java  -> net/minecraft/server/world/ChunkHolder [net/minecraft/class_3193]  class@1.20.1=YES
+## ChunkLightProviderAccessor.java  -> net/minecraft/world/chunk/light/ChunkLightProvider [net/minecraft/class_3558]  class@1.20.1=YES
+## ChunkRendererRegionBuilderMixin.java  -> net/minecraft/client/render/chunk/ChunkRendererRegionBuilder [net/minecraft/class_6850]  class@1.20.1=YES
+## ChunkRendererRegionMixin.java  -> net/minecraft/client/render/chunk/ChunkRendererRegion [net/minecraft/class_853]  class@1.20.1=YES
+   <init>: ctor
+## ChunkRenderingDataPreparerMixin.java  -> net/minecraft/client/render/ChunkRenderingDataPreparer [net/minecraft/class_8679]  class@1.20.1=NO
+   method_52820 [method_52820]: MISSING in 1.20.1
+   method_52821 [method_52821]: MISSING in 1.20.1
+   method_52825 [method_52825]: MISSING in 1.20.1
+   method_52826 [method_52826]: MISSING in 1.20.1
+   method_52828 [method_52828]: MISSING in 1.20.1
+   method_52833 [method_52833]: MISSING in 1.20.1
+   method_52834 [method_52834]: MISSING in 1.20.1
+   method_52835 [method_52835]: MISSING in 1.20.1
+## ChunkSkyLightMixin.java  -> net/minecraft/world/chunk/light/ChunkSkyLight [net/minecraft/class_8528]  class@1.20.1=YES
+## ClientChunkManagerMixin.java  -> net/minecraft/client/world/ClientChunkManager [net/minecraft/class_631]  class@1.20.1=YES
+   loadChunkFromPacket [method_16020]: SAME signature
+   onLightUpdate: UNRESOLVED(inherited/lambda?)
+   unload [method_2859]: SIGNATURE CHANGED
+        1.21.1: ['(LChunkPos;)V']
+        1.20.1: ['(II)V']
+## ClientChunkMixin.java  -> net/minecraft/client/render/chunk/ChunkRendererRegionBuilder$ClientChunk [net/minecraft/class_6850$class_6851]  class@1.20.1=YES
+   getRenderedChunk [method_39972]: SAME signature
+## ClientChunkSnapshotAccess.java  -> net/minecraft/client/render/chunk/ChunkRendererRegionBuilder$ClientChunk [net/minecraft/class_6850$class_6851]  class@1.20.1=YES
+## ClientWorldColorMixin.java  -> net/minecraft/client/world/ClientWorld [net/minecraft/class_638]  class@1.20.1=YES
+   calculateColor [method_23780]: SAME signature
+## ClientWorldMixin.java  -> net/minecraft/client/world/ClientWorld [net/minecraft/class_638]  class@1.20.1=YES
+   doRandomBlockDisplayTicks [method_2941]: SAME signature
+   tick [method_8441]: SAME signature
+   tickEntities [method_18116]: SAME signature
+## CuboidMixin.java  -> net/minecraft/client/model/ModelPart$Cuboid [net/minecraft/class_630$class_628]  class@1.20.1=YES
+   renderCuboid [method_32089]: SIGNATURE CHANGED
+        1.21.1: ['(LMatrixStack$Entry;LVertexConsumer;III)V']
+        1.20.1: ['(LMatrixStack$Entry;LVertexConsumer;IIFFFF)V']
+## Deadmau5FeatureRendererMixin.java  -> net/minecraft/client/render/entity/feature/Deadmau5FeatureRenderer [net/minecraft/class_978]  class@1.20.1=YES
+   render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/network/AbstractClientPlayerEntity;FFFFFF)V: UNRESOLVED(inherited/lambda?)
+## DownloadingTerrainScreenMixin.java  -> net/minecraft/client/gui/screen/DownloadingTerrainScreen [net/minecraft/class_434]  class@1.20.1=YES
+   close: UNRESOLVED(inherited/lambda?)
+## EntityRenderDispatcherAccessor.java  -> net/minecraft/client/render/entity/EntityRenderDispatcher [net/minecraft/class_898]  class@1.20.1=YES
+## EntityRenderDispatcherMixin.java  -> net/minecraft/client/render/entity/EntityRenderDispatcher [net/minecraft/class_898]  class@1.20.1=YES
+   render(Lnet/minecraft/entity/Entity;DDDFFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V [method_3954]: SAME signature
+## FoliageColorsMixin.java  -> net/minecraft/world/biome/FoliageColors [net/minecraft/class_1926]  class@1.20.1=YES
+   setColorMap [method_8340]: SAME signature
+## FrustumAccessor.java  -> net/minecraft/client/render/Frustum [net/minecraft/class_4604]  class@1.20.1=YES
+## GameRendererMixin.java  -> net/minecraft/client/render/GameRenderer [net/minecraft/class_757]  class@1.20.1=YES
+   render [method_3192]: SIGNATURE CHANGED
+        1.21.1: ['(LRenderTickCounter;Z)V']
+        1.20.1: ['(FJZ)V']
+   renderHand [method_3172]: SIGNATURE CHANGED
+        1.21.1: ['(LCamera;FLMatrix4f;)V']
+        1.20.1: ['(LMatrixStack;LCamera;F)V']
+   renderWorld [method_3188]: SIGNATURE CHANGED
+        1.21.1: ['(LRenderTickCounter;)V']
+        1.20.1: ['(FJLMatrixStack;)V']
+## GlStateManagerUploadMixin.java  -> com/mojang/blaze3d/platform/GlStateManager [com/mojang/blaze3d/platform/GlStateManager]  class@1.20.1=NO
+   _upload [_upload]: MISSING in 1.20.1
+## GlyphAtlasTextureMixin.java  -> net/minecraft/client/font/GlyphAtlasTexture [net/minecraft/class_380]  class@1.20.1=YES
+   getGlyphRenderer [method_2022]: SAME signature
+## GrassColorsMixin.java  -> net/minecraft/world/biome/GrassColors [net/minecraft/class_1933]  class@1.20.1=YES
+   setColorMap [method_8376]: SAME signature
+## HeldItemRendererMixin.java  -> net/minecraft/client/render/item/HeldItemRenderer [net/minecraft/class_759]  class@1.20.1=YES
+   renderFirstPersonItem [method_3228]: SAME signature
+## ItemRendererMixin.java  -> net/minecraft/client/render/item/ItemRenderer [net/minecraft/class_918]  class@1.20.1=YES
+   renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V [method_23177]: SAME signature
+   renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V [method_23178]: SAME signature
+   renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V [method_23179]: SAME signature
+## KeyboardMixin.java  -> net/minecraft/client/Keyboard [net/minecraft/class_309]  class@1.20.1=YES
+   onChar [method_1457]: SAME signature
+   onKey [method_1466]: SAME signature
+## LightStorageMixin.java  -> net/minecraft/world/chunk/light/LightStorage [net/minecraft/class_3560]  class@1.20.1=YES
+   notifyChanges [method_15530]: SAME signature
+## LivingEntityRendererNameMixin.java  -> net/minecraft/client/render/entity/LivingEntityRenderer [net/minecraft/class_922]  class@1.20.1=YES
+   shouldFlipUpsideDown [method_38563]: SAME signature
+## MatrixStackAccessor.java  -> net/minecraft/client/util/math/MatrixStack [net/minecraft/class_4587]  class@1.20.1=YES
+## MatrixStackEntryAccessor.java  -> net/minecraft/client/util/math/MatrixStack$Entry [net/minecraft/class_4587$class_4665]  class@1.20.1=YES
+## MinecraftClientMixin.java  -> net/minecraft/client/MinecraftClient [net/minecraft/class_310]  class@1.20.1=YES
+   close: UNRESOLVED(inherited/lambda?)
+   render [method_1523]: SAME signature
+   tick [method_1574]: SAME signature
+## ModelPartMixin.java  -> net/minecraft/client/model/ModelPart [net/minecraft/class_630]  class@1.20.1=YES
+   renderCuboids(Lnet/minecraft/client/util/math/MatrixStack$Entry;Lnet/minecraft/client/render/VertexConsumer;III)V [method_22702]: SIGNATURE CHANGED
+        1.21.1: ['(LMatrixStack$Entry;LVertexConsumer;III)V']
+        1.20.1: ['(LMatrixStack$Entry;LVertexConsumer;IIFFFF)V']
+   rotate(Lnet/minecraft/client/util/math/MatrixStack;)V [method_22703]: SAME signature
+   rotate(Lnet/minecraft/client/util/math/MatrixStack;)V [method_41922]: SAME signature
+## MouseMixin.java  -> net/minecraft/client/Mouse [net/minecraft/class_312]  class@1.20.1=YES
+   getX [method_1603]: SAME signature
+   getY [method_1604]: SAME signature
+   lockCursor [method_1612]: SAME signature
+   onCursorPos [method_1600]: SAME signature
+   onMouseButton [method_1601]: SAME signature
+   onMouseScroll [method_1598]: SAME signature
+## MultipartBakedModelMixin.java  -> net/minecraft/client/render/model/MultipartBakedModel [net/minecraft/class_1095]  class@1.20.1=YES
+   getQuads: UNRESOLVED(inherited/lambda?)
+## NativeImageAccessor.java  -> net/minecraft/client/texture/NativeImage [net/minecraft/class_1011]  class@1.20.1=YES
+## NativeImageBackedTextureMixin.java  -> net/minecraft/client/texture/NativeImageBackedTexture [net/minecraft/class_1043]  class@1.20.1=YES
+   upload [method_4524]: SAME signature
+## NativeImageUploadMixin.java  -> net/minecraft/client/texture/NativeImage [net/minecraft/class_1011]  class@1.20.1=YES
+   uploadInternal [method_4321]: SAME signature
+## PackedIntegerArrayMixin.java  -> net/minecraft/util/collection/PackedIntegerArray [net/minecraft/class_3508]  class@1.20.1=YES
+   copy: UNRESOLVED(inherited/lambda?)
+## ParticleAccessor.java  -> net/minecraft/client/particle/Particle [net/minecraft/class_703]  class@1.20.1=YES
+## ParticleManagerAccessor.java  -> net/minecraft/client/particle/ParticleManager [net/minecraft/class_702]  class@1.20.1=YES
+## ParticleManagerMixin.java  -> net/minecraft/client/particle/ParticleManager [net/minecraft/class_702]  class@1.20.1=YES
+   tick [method_3057]: SAME signature
+   tickParticles [method_3048]: SAME signature
+## ParticleStateMixin.java  -> net/minecraft/client/particle/Particle [net/minecraft/class_703]  class@1.20.1=YES
+   move(DDD)V [method_3069]: SAME signature
+   move(DDD)V [method_3075]: SAME signature
+## PlayerEntityNameMixin.java  -> net/minecraft/entity/player/PlayerEntity [net/minecraft/class_1657]  class@1.20.1=YES
+## PlayerSkinTextureMixin.java  -> net/minecraft/client/texture/PlayerSkinTexture [net/minecraft/class_1046]  class@1.20.1=YES
+   uploadTexture [method_4531]: SAME signature
+## RebuildTaskMixin.java  -> net/minecraft/client/render/chunk/ChunkBuilder$BuiltChunk$RebuildTask [net/minecraft/class_846$class_851$class_4578]  class@1.20.1=YES
+   run: UNRESOLVED(inherited/lambda?)
+## RenderSystemMixin.java  -> com/mojang/blaze3d/systems/RenderSystem [com/mojang/blaze3d/systems/RenderSystem]  class@1.20.1=NO
+   flipFrame [flipFrame]: MISSING in 1.20.1
+## RenderableChunksMixin.java  -> net/minecraft/client/render/ChunkRenderingDataPreparer/RenderableChunks [net/minecraft/client/render/ChunkRenderingDataPreparer/RenderableChunks]  class@1.20.1=NO
+   <init>: ctor
+## RenderedChunkMixin.java  -> net/minecraft/client/render/chunk/RenderedChunk [net/minecraft/class_6849]  class@1.20.1=YES
+## SectionBuilderMixin.java  -> net/minecraft/client/render/chunk/SectionBuilder [net/minecraft/class_9810]  class@1.20.1=NO
+   build [method_60904]: MISSING in 1.20.1
+## ServerChunkManagerMixin.java  -> net/minecraft/server/world/ServerChunkManager [net/minecraft/class_3215]  class@1.20.1=YES
+   tickChunks [method_14161]: SAME signature
+## SpriteAtlasAccessor.java  -> net/minecraft/client/texture/SpriteAtlasTexture [net/minecraft/class_1059]  class@1.20.1=YES
+## SpriteAtlasTextureMixin.java  -> net/minecraft/client/texture/SpriteAtlasTexture [net/minecraft/class_1059]  class@1.20.1=YES
+   tickAnimatedSprites [method_4612]: SAME signature
+   upload [method_45848]: SAME signature
+## SpriteBillboardParticleAccessor.java  -> net/minecraft/client/particle/SpriteBillboardParticle [net/minecraft/class_4003]  class@1.20.1=YES
+## SpriteContentsAccessor.java  -> net/minecraft/client/texture/SpriteContents [net/minecraft/class_7764]  class@1.20.1=YES
+## SpriteContentsUploadMixin.java  -> net/minecraft/client/texture/SpriteContents [net/minecraft/class_7764]  class@1.20.1=YES
+   upload(IIII[Lnet/minecraft/client/texture/NativeImage;)V [method_45809]: SAME signature
+   upload(IIII[Lnet/minecraft/client/texture/NativeImage;)V [method_45811]: SAME signature
+## TextureManagerMixin.java  -> net/minecraft/client/texture/TextureManager [net/minecraft/class_1060]  class@1.20.1=YES
+   registerTexture [method_4616]: SAME signature
+## ThreadExecutorMixin.java  -> net/minecraft/util/thread/ThreadExecutor [net/minecraft/class_1255]  class@1.20.1=YES
+   executeTask [method_18859]: SAME signature
+## TorchBlockAccessor.java  -> net/minecraft/block/TorchBlock [net/minecraft/class_2527]  class@1.20.1=YES
+## UnfocusedFramerateMixin.java  -> net/minecraft/client/MinecraftClient [net/minecraft/class_310]  class@1.20.1=YES
+   getFramerateLimit()I [method_16009]: SAME signature
+## VertexBufferMixin.java  -> net/minecraft/client/gl/VertexBuffer [net/minecraft/class_291]  class@1.20.1=YES
+   uploadIndexBuffer(Lnet/minecraft/client/render/BuiltBuffer$DrawParameters;Ljava/nio/ByteBuffer;)Lcom/mojang/blaze3d/systems/RenderSystem$ShapeIndexBuffer; [method_43443]: SIGNATURE CHANGED
+        1.21.1: ['(LBuiltBuffer$DrawParameters;LByteBuffer;)LRenderSystem$ShapeIndexBuffer;']
+        1.20.1: ['(LBufferBuilder$DrawParameters;LByteBuffer;)LRenderSystem$ShapeIndexBuffer;']
+   uploadIndexBuffer(Lnet/minecraft/client/render/BuiltBuffer$DrawParameters;Ljava/nio/ByteBuffer;)Lcom/mojang/blaze3d/systems/RenderSystem$ShapeIndexBuffer; [method_60829]: MISSING in 1.20.1
+   uploadIndexBuffer(Lnet/minecraft/client/util/BufferAllocator$CloseableBuffer;)V [method_43443]: SIGNATURE CHANGED
+        1.21.1: ['(LBuiltBuffer$DrawParameters;LByteBuffer;)LRenderSystem$ShapeIndexBuffer;']
+        1.20.1: ['(LBufferBuilder$DrawParameters;LByteBuffer;)LRenderSystem$ShapeIndexBuffer;']
+   uploadIndexBuffer(Lnet/minecraft/client/util/BufferAllocator$CloseableBuffer;)V [method_60829]: MISSING in 1.20.1
+   uploadVertexBuffer [method_43442]: SIGNATURE CHANGED
+        1.21.1: ['(LBuiltBuffer$DrawParameters;LByteBuffer;)LVertexFormat;']
+        1.20.1: ['(LBufferBuilder$DrawParameters;LByteBuffer;)LVertexFormat;']
+## WallBlockMixin.java  -> net/minecraft/block/WallBlock [net/minecraft/class_2544]  class@1.20.1=YES
+   shouldConnectTo [method_16704]: SAME signature
+   shouldHavePost [method_27092]: SAME signature
+## WeightedBakedModelMixin.java  -> net/minecraft/client/render/model/WeightedBakedModel [net/minecraft/class_1097]  class@1.20.1=YES
+   getQuads: UNRESOLVED(inherited/lambda?)
+## WindowMixin.java  -> net/minecraft/client/util/Window [net/minecraft/class_1041]  class@1.20.1=YES
+   <init>: ctor
+## WorldChunkMixin.java  -> net/minecraft/world/chunk/WorldChunk [net/minecraft/class_2818]  class@1.20.1=YES
+   loadFromPacket [method_12224]: SAME signature
+## WorldRendererMixin.java  -> net/minecraft/client/render/WorldRenderer [net/minecraft/class_761]  class@1.20.1=YES
+   buildStarsBuffer [method_3255]: SIGNATURE CHANGED
+        1.21.1: ['(LTessellator;)LBuiltBuffer;']
+        1.20.1: ['(LBufferBuilder;)LBufferBuilder$BuiltBuffer;']
+   render [method_22710]: SIGNATURE CHANGED
+        1.21.1: ['(LRenderTickCounter;ZLCamera;LGameRenderer;LLightmapTextureManager;LMatrix4f;LMatrix4f;)V']
+        1.20.1: ['(LMatrixStack;FJZLCamera;LGameRenderer;LLightmapTextureManager;LMatrix4f;)V']
+   renderClouds [method_3259]: SIGNATURE CHANGED
+        1.21.1: ['(LMatrixStack;LMatrix4f;LMatrix4f;FDDD)V']
+        1.20.1: ['(LMatrixStack;LMatrix4f;FDDD)V']
+   renderLayer [method_3251]: SIGNATURE CHANGED
+        1.21.1: ['(LRenderLayer;DDDLMatrix4f;LMatrix4f;)V']
+        1.20.1: ['(LRenderLayer;LMatrixStack;DDDLMatrix4f;)V']
+   renderWeather [method_22714]: SAME signature
+   scheduleBlockRenders(III)V [method_18145]: SAME signature
+   scheduleBlockRenders(III)V [method_18146]: SAME signature
+   scheduleBlockRenders(IIIIII)V [method_18145]: SAME signature
+   scheduleBlockRenders(IIIIII)V [method_18146]: SAME signature
+   setupTerrain [method_3273]: SAME signature
+   updateChunks [method_3269]: SAME signature

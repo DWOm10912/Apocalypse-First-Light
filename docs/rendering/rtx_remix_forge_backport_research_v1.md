@@ -84,7 +84,7 @@ d3d9.dll = dxvk-remix 运行时（私有 Minecraft 分支构建，Vulkan 路径�
 
 ### 1.5 Fabric API、Mixin、1.21.1 依赖清单
 
-**Mixin：共 73 个**（`NV:src/main/resources/rtx-remix-renderer.mixins.json`）。其中 3 个 common，70 个 client。`compatibilityLevel JAVA_21`，`defaultRequire 1`；9 个文件使用 MixinExtras（`@WrapOperation`、`@WrapMethod`、`@ModifyReturnValue`）。完整表见证据文件 `evidence_nvidia_java_subsystems.md` 的 A 节。
+**Mixin：共 73 个**（`NV:src/main/resources/rtx-remix-renderer.mixins.json`）。其中 3 个 common，70 个 client。`compatibilityLevel JAVA_21`，`defaultRequire 1`；9 个文件使用 MixinExtras（`@WrapOperation`、`@WrapMethod`、`@ModifyReturnValue`）。完整表见 `docs/rendering/rtx_research_evidence/nvidia_java_subsystems.md` 的 A 节。
 
 **Fabric API：19 个文件，39 个不同的 import。**
 
@@ -140,7 +140,7 @@ d3d9.dll = dxvk-remix 运行时（私有 Minecraft 分支构建，Vulkan 路径�
 
 ### 2.2 Mixin 逐项比对
 
-方法：yarn 1.21.1 名 → intermediary → 检查 1.20.1 intermediary 中类与方法是否存在、描述符是否一致。脚本输出：`evidence_mixin_1.21.1_vs_1.20.1.txt`。
+方法：yarn 1.21.1 名 → intermediary → 检查 1.20.1 intermediary 中类与方法是否存在、描述符是否一致。脚本输出：`docs/rendering/rtx_research_evidence/mixin_1.21.1_vs_1.20.1.txt`。
 
 **A 类：目标类在 1.20.1 不存在（必须换目标重写）**
 
@@ -460,12 +460,14 @@ A → B → C 三个阶段（约 1–2 周专职工作量，凭经验估计）�
 
 ---
 
-### 附：证据文件（调研会话临时目录，未入库）
+### 附：证据文件
 
-- `evidence_nvidia_java_subsystems.md`：NVIDIA Mod 子系统映射与 73 个 Mixin 完整表（子任务输出）。
-- `evidence_mixin_1.21.1_vs_1.20.1.txt`：Mixin 目标逐项映射比对脚本输出。
-- `map/forge-1.20.1/patches/...ChunkRenderDispatcher.java.patch`：Forge 分块编译补丁。
-- `javac17/`：`rtxremix-java` 的 Java 17 / 21 编译测试产物。
+位于 `docs/rendering/rtx_research_evidence/`，说明与复现步骤见该目录的 `README.md`：
+
+- `nvidia_java_subsystems.md`：NVIDIA Mod 子系统映射与 73 个 Mixin 完整表。
+- `mixin_1.21.1_vs_1.20.1.txt`：Mixin 目标逐项映射比对的脚本输出。
+- `scripts/yarnparse.py`、`scripts/mixincheck2.py`：生成上述比对的脚本。
+- 未收录：Forge 分块编译补丁（公开文件，README 中给出位置）和 `rtxremix-java` 编译产物（README 中给出复现命令）。
 
 ---
 
