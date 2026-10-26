@@ -11,9 +11,7 @@ import com.antaurora.apofirstlight.survivor.SurvivorScenes;
 import com.antaurora.apofirstlight.survivor.SurvivorSetup;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.GenericDirtMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -38,13 +36,15 @@ import java.util.Set;
 
 /**
  * The survivor setup screen (docs/gameplay/survivor_background_skills_v1_plan.md 9, scheme A2): background on the left,
- * body levels and traits in the middle, the survivor, its name and what it starts with on the right. Two ways in:
+ * body levels and traits in the middle, the survivor, its name and what it starts with on the right. Since character
+ * creation V1 (plan A, user 2026-10-26) it is the second step: the appearance page (AflAppearanceScreen) comes first and
+ * opens this one; Esc goes back to it, and the look and starting clothes chosen there ride along with Start. Two ways in:
  * <ul>
- * <li>before the world: the AFL New World page opens it after "Next" (the catalog the data packs just loaded); Start
- * creates the world with the setup handed over (SurvivorSetupFlow confirms it at the host's first login); Esc goes back
- * to the New World page;</li>
+ * <li>before the world: the AFL New World page opens the appearance page after "Next" (the catalog the data packs just
+ * loaded); Start creates the world with the setup handed over (SurvivorSetupFlow confirms it at the host's first
+ * login);</li>
  * <li>in the world: a first survivor still choosing (multiplayer, a dev reset, a world made another way) gets it from
- * the server with the catalog files; Start sends the choice; Esc leaves to the title screen.</li>
+ * the server with the catalog files; Start sends the choice.</li>
  * </ul>
  * Everything here is a preview: the screen checks with the same rules as the server (SurvivorSetup.check), and the
  * server checks again.
@@ -65,7 +65,9 @@ public final class AflSurvivorSetupScreen extends Screen {
     /** The New World page this was opened from (before the world), or null in the world. */
     @Nullable
     private final AflNewWorldScreen newWorld;
-    private final SurvivorDoll doll = new SurvivorDoll();
+    /** The appearance page this came from: its look, and where Esc goes back to. */
+    private final AflAppearanceScreen appearance;
+    private final BodyPreview body3d = new BodyPreview();
     /** The trait whose conflict was just clicked, and when (the hint flashes red). */
     @Nullable
     private String conflictClicked;
@@ -88,25 +90,27 @@ public final class AflSurvivorSetupScreen extends Screen {
     private List<String> refusal = List.of();
     private final Random random = new Random();
 
-    /** In the world: the server's prompt. */
-    public AflSurvivorSetupScreen(SurvivorPackets.SetupPrompt prompt) {
-        this(SurvivorCatalog.parse(prompt.catalog()), prompt.info(), null);
+    /** In the world: the server's prompt, after the appearance page. */
+    AflSurvivorSetupScreen(SurvivorPackets.SetupPrompt prompt, AflAppearanceScreen appearance) {
+        this(SurvivorCatalog.parse(prompt.catalog()), prompt.info(), null, appearance);
     }
 
     /** Before the world: the catalog the Create World screen's data packs loaded, the scene picked on the page. */
-    static AflSurvivorSetupScreen beforeWorld(AflNewWorldScreen newWorld, String scene) {
+    static AflSurvivorSetupScreen beforeWorld(AflNewWorldScreen newWorld, String scene, AflAppearanceScreen appearance) {
         CompoundTag info = new CompoundTag();
         info.put("Bases", com.antaurora.apofirstlight.survivor.SurvivorSetupFlow.bases());
         info.putString("Scene", scene);
         info.putString("Account", net.minecraft.client.Minecraft.getInstance().getUser().getName());
-        return new AflSurvivorSetupScreen(SurvivorCatalog.get(), info, newWorld);
+        return new AflSurvivorSetupScreen(SurvivorCatalog.get(), info, newWorld, appearance);
     }
 
-    private AflSurvivorSetupScreen(SurvivorCatalog.Snapshot catalog, CompoundTag info, @Nullable AflNewWorldScreen newWorld) {
+    private AflSurvivorSetupScreen(SurvivorCatalog.Snapshot catalog, CompoundTag info, @Nullable AflNewWorldScreen newWorld,
+                                   AflAppearanceScreen appearance) {
         super(SetupCanvas.tr("setup.title"));
         this.catalog = catalog;
         this.info = info;
         this.newWorld = newWorld;
+        this.appearance = appearance;
         String recommended = SurvivorScenes.byId(info.getString("Scene")).recommended();
         background = recommended != null && catalog.backgrounds().containsKey(recommended) ? recommended
                 : catalog.backgrounds().isEmpty() ? SurvivorSetup.ORDINARY : catalog.backgrounds().keySet().iterator().next();
@@ -233,7 +237,7 @@ public final class AflSurvivorSetupScreen extends Screen {
     }
 
     private void header(GuiGraphics g, SurvivorSetup.Check check) {
-        SetupCanvas.keyHint(g, font, "Esc", SetupCanvas.tr(newWorld != null ? "newworld.back" : "setup.leave"), 15, 12, 0.75F);
+        SetupCanvas.keyHint(g, font, "Esc", SetupCanvas.tr("setup.back_look"), 15, 12, 0.75F);
         SetupCanvas.centred(g, font, SetupCanvas.tr("setup.title"), 240, 9, AflUiStyle.TEXT, 1, 1.3F);
         SetupCanvas.centred(g, font, SetupCanvas.tr("setup.subtitle"), 240, 23, AflUiStyle.TEXT_DIM, 1, 0.62F);
         int left = check.pointsLeft();
@@ -520,8 +524,9 @@ public final class AflSurvivorSetupScreen extends Screen {
         canvas.scissor(g, RIGHT_X + 1, TOP + 1, RIGHT_W - 2, PREVIEW_H - 2);
         // the turn follows the mouse in GUI units, like the inventory's doll
         float sx = canvas.originX + cx * canvas.scale, sy = canvas.originY + (feet - size * 1.6F) * canvas.scale;
-        SurvivorDoll.Skin skin = minecraft.player != null ? SurvivorDoll.Skin.of(minecraft.player) : SurvivorDoll.Skin.account(minecraft);
-        doll.render(g, skin, cx, feet, size, (sx - mouseX) / canvas.scale, (sy - mouseY) / canvas.scale);
+        // the B5 body in the appearance page's look (character creation V1), turned a little towards the mouse
+        float yaw = (float) Math.atan((sx - mouseX) / canvas.scale / 40.0F) * 20, pitch = (float) Math.atan((sy - mouseY) / canvas.scale / 40.0F) * 8;
+        body3d.render(g, appearance.look(), cx, feet, size, -yaw, pitch);
         g.disableScissor();
     }
 
@@ -904,10 +909,12 @@ public final class AflSurvivorSetupScreen extends Screen {
         waiting = true;
         refusal = List.of();
         if (newWorld != null) {
-            newWorld.create(com.antaurora.apofirstlight.survivor.SurvivorSetupFlow.encode(choice(), name));
+            newWorld.create(com.antaurora.apofirstlight.survivor.SurvivorSetupFlow.encode(choice(), name, appearance.look()));
             return;
         }
-        AflNetwork.survivorToServer(new SurvivorPackets.SetupChoice(background, Map.copyOf(body), List.copyOf(traits), name));
+        var look = appearance.look();
+        AflNetwork.survivorToServer(new SurvivorPackets.SetupChoice(background, Map.copyOf(body), List.copyOf(traits), name,
+                look.tone(), look.hair(), look.outfit()));
     }
 
     @Override
@@ -924,8 +931,7 @@ public final class AflSurvivorSetupScreen extends Screen {
     @Override
     public boolean keyPressed(int key, int scanCode, int modifiers) {
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            if (newWorld != null) minecraft.setScreen(newWorld);
-            else leave();
+            if (!waiting) minecraft.setScreen(appearance);
             return true;
         }
         if (nameFocused && customName) {
@@ -949,14 +955,6 @@ public final class AflSurvivorSetupScreen extends Screen {
             return true;
         }
         return super.charTyped(c, modifiers);
-    }
-
-    /** As the death screen leaves: disconnect, save, title screen. The setup waits for the next join. */
-    private void leave() {
-        if (minecraft == null) return;
-        if (minecraft.level != null) minecraft.level.disconnect();
-        minecraft.clearLevel(new GenericDirtMessageScreen(Component.translatable("menu.savingLevel")));
-        minecraft.setScreen(new TitleScreen());
     }
 
     @Override

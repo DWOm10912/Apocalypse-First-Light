@@ -293,10 +293,21 @@ public final class SurvivorSetupGameTests {
 
         // the host's setup made before the world: stored, saved, read back the same
         var made = choice("afl:forest_resident", Map.of("afl:strength", 4, "afl:fitness", 2), "afl:light_step", "afl:heat_sensitive");
-        var tag = SurvivorSetupFlow.encode(made, "Ada");
+        var look = new SurvivorAppearance.Look(4, "buzz", SurvivorAppearance.Garment.SHIRT.bit() | SurvivorAppearance.Garment.SHOES.bit());
+        var tag = SurvivorSetupFlow.encode(made, "Ada", look);
         var decoded = SurvivorSetupFlow.decode(tag);
         log.check(decoded.background().equals(made.background()) && decoded.body().equals(made.body()) && decoded.traits().equals(made.traits())
                 && "Ada".equals(tag.getString("Name")), "host setup encode / decode");
+        // character creation V1: the appearance page's look rides along; an older host setup reads as the defaults
+        log.check(SurvivorAppearance.Look.read(tag).equals(look), "host setup look encode / decode");
+        log.check(SurvivorAppearance.Look.read(new net.minecraft.nbt.CompoundTag()).equals(SurvivorAppearance.Look.DEFAULT), "old host setup: default look");
+        log.check(new SurvivorAppearance.Look(9, "mohawk", 0xFF).equals(new SurvivorAppearance.Look(SurvivorAppearance.DEFAULT_TONE,
+                SurvivorAppearance.DEFAULT_HAIR, SurvivorAppearance.FULL_OUTFIT)), "a bad look is put into range");
+        var rolled = new SurvivorRecord(java.util.UUID.randomUUID(), 2, "A", "B", 12345L, SurvivorRecord.State.PENDING);
+        SurvivorAppearance.roll(rolled, 12345L);
+        var rolledBack = SurvivorRecord.load(rolled.save());
+        log.check(rolledBack.tone == rolled.tone && rolled.tone >= 1 && rolled.tone <= SurvivorAppearance.TONES
+                && java.util.Objects.equals(rolledBack.hair, rolled.hair) && SurvivorAppearance.HAIR.contains(rolled.hair), "successor tone / hair roll survives save and load");
         SurvivorWorldData hosted = new SurvivorWorldData();
         hosted.hostSetup = tag;
         var hostedBack = SurvivorWorldData.load(hosted.save(new net.minecraft.nbt.CompoundTag()));

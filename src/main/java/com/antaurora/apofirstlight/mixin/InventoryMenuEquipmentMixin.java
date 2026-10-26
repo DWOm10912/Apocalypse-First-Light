@@ -40,6 +40,9 @@ public abstract class InventoryMenuEquipmentMixin extends AbstractContainerMenu 
         // the worn rig's clips (user 2026-10-21, RigClips), indices 51 and 52: only the AFL inventory page shows them
         for (int i = 0; i < AflEquipmentSlots.CLIPS; i++)
             this.addSlot(new AflEquipmentSlot(owner, AflEquipmentSlots.CLIP, i, "empty_slot_clip", -2000, -2000));
+        // the base layer and the coat (character creation V1), indices 53 and 54: only the AFL inventory page shows them
+        for (String id : AflEquipmentSlots.CLOTHES)
+            this.addSlot(new AflEquipmentSlot(owner, id, "empty_slot_" + id, -2000, -2000));
     }
 
     /** From the main inventory, hotbar or off-hand (9..45): one item into the first empty AFL slot that takes it. */

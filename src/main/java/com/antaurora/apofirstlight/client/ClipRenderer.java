@@ -76,6 +76,8 @@ public final class ClipRenderer implements ICurioRenderer {
             if (clipped.isEmpty()) continue;
             pose.pushPose();
             ClientEquipmentSlots.WornMeshRenderer.apply(humanoid, ClientEquipmentSlots.WornMeshRenderer.Part.BODY, pose);
+            // with the rig over a coat (WornMeshRenderer#coatOut)
+            pose.translate(0, 0, ClientEquipmentSlots.WornMeshRenderer.coatOut(entity) / 16F);
             if (clipped.is(AflItems.COMPASS.get())) compass(entity, humanoid, clipped, spots[i], lift, pose, buffer, light);
             else if (clipped.is(AflItems.GEIGER_COUNTER.get())) geiger(entity, clipped, spots[i], lift, pose, buffer, light);
             pose.popPose();

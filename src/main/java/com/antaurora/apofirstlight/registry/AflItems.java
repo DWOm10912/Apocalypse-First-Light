@@ -745,6 +745,16 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.inventory.grid.GunSlingItem(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> PISTOL_HOLSTER = ITEMS.register("pistol_holster",
             () -> new com.antaurora.apofirstlight.inventory.grid.PistolHolsterItem(new Item.Properties()));
+    // Character creation V1 clothes (docs/ui/character_creation_v1.md, user 2026-10-26): B5's mesh garments; the shirt and
+    // jacket in the base / coat Curios slots, the jeans and shoes in vanilla's legs / feet slots; no recipe yet
+    public static final RegistryObject<Item> CLOTHING_SHIRT = ITEMS.register("clothing_shirt",
+            () -> new com.antaurora.apofirstlight.item.ClothingItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.BASE));
+    public static final RegistryObject<Item> CLOTHING_JACKET = ITEMS.register("clothing_jacket",
+            () -> new com.antaurora.apofirstlight.item.ClothingItem(com.antaurora.apofirstlight.equipment.AflEquipmentSlots.COAT));
+    public static final RegistryObject<Item> CLOTHING_JEANS = ITEMS.register("clothing_jeans",
+            () -> new com.antaurora.apofirstlight.item.ClothingItem.Armour(net.minecraft.world.entity.EquipmentSlot.LEGS));
+    public static final RegistryObject<Item> CLOTHING_SHOES = ITEMS.register("clothing_shoes",
+            () -> new com.antaurora.apofirstlight.item.ClothingItem.Armour(net.minecraft.world.entity.EquipmentSlot.FEET));
     // Vehicle keys (docs/vehicles/t15_hotwire_v1_design.md 9, 2026-10-21): one per vehicle, bound by its UUID; one key item
     // per vehicle model, its maker's badge on the head (user 2026-10-21); Creative tab only (an unbound key), no recipe.
     // Saves from before the split hold vehicle_key: VehicleKeyLegacyMappings

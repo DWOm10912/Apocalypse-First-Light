@@ -1,0 +1,6 @@
+{
+  "order": 60,
+  "icon": "apocalypse_firstlight:item/empty_slot_base",
+  "use_native_gui": false,
+  "validators": ["curios:tag"]
+}

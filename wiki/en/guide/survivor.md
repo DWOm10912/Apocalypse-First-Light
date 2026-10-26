@@ -6,6 +6,22 @@ A new world starts with picking a survivor: a past life (background), two body l
 - <StatusTag s="verified" d="2026-10-18" /> Character page in the inventory (name, background, traits, body and growth levels)
 - <StatusTag s="verified" d="2026-10-20" /> The character page's Status panel: every state affecting you now, each with its name, effect and time left; point at one to see where it comes from and how it goes. Many states or traits scroll with the mouse wheel
 
+## Appearance
+
+Before the survivor setup, the Appearance page decides how your survivor looks and what they start in; then press Next. Esc on the setup page goes back to it, and both pages keep your choices. Appearance can't be changed once you start
+
+<StatusTag s="verified" d="2026-10-26" />
+
+| Option | Choices |
+|---|---|
+| Sex | Male. The female body is still being made and can't be picked yet |
+| Skin tone | 5 tones |
+| Hair | Short, buzz cut, bald |
+| Hair colour | Dark brown; more later |
+| Starting clothes | Base layer (denim shirt), coat (leather jacket), trousers (jeans), shoes (leather shoes); each can be left off |
+
+The chosen clothes are worn from the start, in the base layer, coat, legs and feet slots of the inventory screen, and come off as ordinary items. In Normal mode a successor gets a random skin tone and hair and starts in the shirt, jeans and shoes
+
 ## Survivor mode
 
 | Mode | After death |

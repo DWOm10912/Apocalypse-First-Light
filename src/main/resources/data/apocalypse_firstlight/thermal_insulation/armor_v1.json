@@ -25,7 +25,11 @@
     "minecraft:netherite_leggings": 3,
     "minecraft:netherite_boots": 2,
     "minecraft:turtle_helmet": 1,
-    "apocalypse_firstlight:simple_hearing_protection": 1
+    "apocalypse_firstlight:simple_hearing_protection": 1,
+    "apocalypse_firstlight:clothing_shirt": 2,
+    "apocalypse_firstlight:clothing_jacket": 5,
+    "apocalypse_firstlight:clothing_jeans": 3,
+    "apocalypse_firstlight:clothing_shoes": 2
   },
   "tags": []
 }

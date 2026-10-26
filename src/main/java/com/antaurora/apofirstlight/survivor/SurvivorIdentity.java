@@ -61,13 +61,14 @@ public final class SurvivorIdentity {
                 .append(Component.literal(" " + account).withStyle(ChatFormatting.GRAY)));
     }
 
-    /** The name and look every client draws for this player. */
+    /** The name and look every client draws for this player (with the B5 body's tone and hair). */
     static SurvivorPackets.Identity identity(ServerPlayer player) {
         SurvivorRecord shown = shown(player.server, player.getUUID());
         return shown == null
                 ? new SurvivorPackets.Identity(player.getUUID(), player.getGameProfile().getName(), SurvivorSkins.ACCOUNT,
-                SurvivorSkins.Arms.ACCOUNT.id())
-                : new SurvivorPackets.Identity(player.getUUID(), shown.fullName(), shown.skin, shown.arms.id());
+                SurvivorSkins.Arms.ACCOUNT.id(), SurvivorAppearance.DEFAULT_TONE, SurvivorAppearance.DEFAULT_HAIR)
+                : new SurvivorPackets.Identity(player.getUUID(), shown.fullName(), shown.skin, shown.arms.id(),
+                SurvivorAppearance.tone(shown), SurvivorAppearance.hair(shown));
     }
 
     /** The player's survivor changed (takeover, name choice, login): display name, tab entry, every client's copy. */

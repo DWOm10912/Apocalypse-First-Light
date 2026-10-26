@@ -25,7 +25,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -53,7 +52,9 @@ import java.nio.charset.StandardCharsets;
  * (rigs/afl_block_mesh_v2.json, SkeletonRig#blockMeshV2) and draws the body's skinned mesh the rig names (since 2026-10-25
  * B3: skins/block_mesh_v2/b3_body.json, continuous box arms under their own sleeves, a straight jacket over the waist, and its
  * 256 x 256 sample skin with two mip levels, BlockMeshSkin; design/characters/block_mesh_v2/source/bm2_b3.py --game; B2's
- * b_body.json from bm2_game.py is kept) in
+ * b_body.json from bm2_game.py is kept; since 2026-10-26 "用方案A" B5: skins/block_mesh_v2/b5/body.json, B3's look rebuilt
+ * in Blender, drawn in layers, BlockMeshWardrobe: the body in the survivor's skin tone, briefs, hair and the clothes worn,
+ * one set of bone matrices for all; B3's files are kept) in
  * place of the C-min skin mesh and
  * vanilla's head. Off: the vanilla rig and the player's own skin, as before. Everything else (clips, actions, the gun
  * stances, seats, the camera, the hitbox) is the same code on the other rig.
@@ -78,7 +79,10 @@ public final class BlockMeshBody {
     private static final int STRIDE = 13;
 
     private static boolean on = true, chairCamera = true, failed;
+    /** The rig's mesh (its bones drive every layer) and each layer's, by path. */
     private static Mesh mesh;
+    private static final java.util.Map<String, Mesh> LAYERS = new java.util.HashMap<>();
+    private static final java.util.Set<String> MISSING = new java.util.HashSet<>();
     private static long frame, eyeFrame;
     @Nullable
     private static Vec3 eye;
@@ -103,7 +107,7 @@ public final class BlockMeshBody {
      * Per mesh bone where its matrix comes from: the poser bone ({@code source}) and how ({@code kind}). Vertices
      * {@link #STRIDE} floats: x y z u v j0..j3 w0..w3 (Java model px).
      */
-    private record Mesh(int[] source, int[] kind, Vector3f[] pivot, int[] quadPart, String[] parts, float[] v, ResourceLocation texture,
+    private record Mesh(int[] source, int[] kind, Vector3f[] pivot, int[] quadPart, String[] parts, float[] v,
                         int toesR, int toesL, int footR, int footL, int torso) {}
 
     private static final int SAME = 0, SPINE = 1, TOES = 2, CLAVICLE = 3;
@@ -117,15 +121,37 @@ public final class BlockMeshBody {
     @Nullable
     private static Mesh mesh(SkeletonRig rig) {
         if (mesh == null && !failed && rig.profile != null) {
-            try (InputStream in = BlockMeshBody.class.getClassLoader().getResourceAsStream("assets/" + ApocalypseFirstLight.MOD_ID + "/" + rig.profile.mesh())) {
-                if (in == null) throw new IOException("missing " + rig.profile.mesh());
-                mesh = load(JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject(), rig);
+            try {
+                mesh = read(rig.profile.mesh(), rig);
             } catch (IOException | RuntimeException e) {
                 fail(e instanceof RuntimeException r ? r : new IllegalStateException(e));
                 PlayerSkeleton.reset();
             }
         }
         return mesh;
+    }
+
+    /** A layer's mesh (BlockMeshWardrobe), loaded once; one that fails is logged once and left out. */
+    @Nullable
+    private static Mesh layer(SkeletonRig rig, String path) {
+        Mesh m = LAYERS.get(path);
+        if (m != null || MISSING.contains(path)) return m;
+        try {
+            m = read(path, rig);
+            if (m.source.length != mesh.source.length) throw new IllegalArgumentException("block mesh: " + path + " has other bones than the rig's mesh");
+            LAYERS.put(path, m);
+        } catch (IOException | RuntimeException e) {
+            MISSING.add(path);
+            ApocalypseFirstLight.LOGGER.error("[AFL Block-Mesh V2] layer {} failed to load, drawn without it", path, e);
+        }
+        return m;
+    }
+
+    private static Mesh read(String path, SkeletonRig rig) throws IOException {
+        try (InputStream in = BlockMeshBody.class.getClassLoader().getResourceAsStream("assets/" + ApocalypseFirstLight.MOD_ID + "/" + path)) {
+            if (in == null) throw new IOException("missing " + path);
+            return load(JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject(), rig);
+        }
     }
 
     private static Mesh load(JsonObject json, SkeletonRig rig) {
@@ -161,8 +187,7 @@ public final class BlockMeshBody {
         for (JsonElement e : verts) v[i++] = e.getAsFloat();
         if (v.length != quadPart.length * 4 * STRIDE) throw new IllegalArgumentException("block mesh: vertices vs quads");
         int torso = java.util.Arrays.asList(parts).indexOf("torso");
-        return new Mesh(source, kind, pivot, quadPart, parts, v, new ResourceLocation(ApocalypseFirstLight.MOD_ID, rig.profile.texture()),
-                toesR, toesL, findBone(bones, "foot_r"), findBone(bones, "foot_l"), torso);
+        return new Mesh(source, kind, pivot, quadPart, parts, v, toesR, toesL, findBone(bones, "foot_r"), findBone(bones, "foot_l"), torso);
     }
 
     private static int findBone(JsonArray bones, String name) {
@@ -176,15 +201,33 @@ public final class BlockMeshBody {
     private static final Vector3f[] CORNER = {new Vector3f(), new Vector3f(), new Vector3f(), new Vector3f()};
 
     /**
-     * The B body in the solved pose, from the model-origin pose stack (model px / 16), in its own skin. {@code ground}: the
-     * ground's model y (px) for the toes, NaN off it (riding). False when the mesh is missing (the caller draws vanilla's).
+     * The B body in the solved pose, from the model-origin pose stack (model px / 16): the player's layers
+     * (BlockMeshWardrobe: skin tone, hair, clothes worn; a null player: the defaults). {@code ground}: the ground's model y
+     * (px) for the toes, NaN off it (riding). False when the mesh is missing (the caller draws vanilla's).
      */
     static boolean draw(SkeletonPose pose, PlayerModel<?> model, PoseStack stack, MultiBufferSource buffers, int light, int overlay,
-                        float r, float g, float b, float a, float ground) {
-        Mesh m = mesh(pose.rig);
-        if (m == null) return false;
-        Matrix4f[] mats = matrices(m, pose, ground);
-        VertexConsumer consumer = buffers.getBuffer(BlockMeshSkin.body(m.texture));
+                        float r, float g, float b, float a, float ground, @Nullable Player player) {
+        return draw(pose, model, stack, buffers, light, overlay, r, g, b, a, ground, BlockMeshWardrobe.layers(player));
+    }
+
+    /**
+     * The B body in the given layers (the appearance page's preview: {@code model} null, every part shown). False when
+     * the rig's mesh is missing.
+     */
+    public static boolean draw(SkeletonPose pose, @Nullable PlayerModel<?> model, PoseStack stack, MultiBufferSource buffers, int light,
+                               int overlay, float r, float g, float b, float a, float ground, java.util.List<BlockMeshWardrobe.Layer> layers) {
+        Mesh rigMesh = mesh(pose.rig);
+        if (rigMesh == null) return false;
+        Matrix4f[] mats = matrices(rigMesh, pose, ground);
+        for (BlockMeshWardrobe.Layer layer : layers) {
+            Mesh m = layer.mesh().equals(pose.rig.profile.mesh()) ? rigMesh : layer(pose.rig, layer.mesh());
+            if (m != null) emit(m, mats, pose, model, stack, buffers.getBuffer(BlockMeshSkin.body(layer.texture())), light, overlay, r, g, b, a);
+        }
+        return true;
+    }
+
+    private static void emit(Mesh m, Matrix4f[] mats, SkeletonPose pose, @Nullable PlayerModel<?> model, PoseStack stack,
+                             VertexConsumer consumer, int light, int overlay, float r, float g, float b, float a) {
         PoseStack.Pose last = stack.last();
         Matrix4f mp = last.pose();
         Matrix3f mn = last.normal();
@@ -195,7 +238,7 @@ public final class BlockMeshBody {
             consumer.vertex(p.x, p.y, p.z, r, g, b, a, u, v, overlay, light, n.x, n.y, n.z);
         };
         boolean[] shown = new boolean[m.parts.length];
-        for (int i = 0; i < shown.length; i++) shown[i] = visible(model, m.parts[i]);
+        for (int i = 0; i < shown.length; i++) shown[i] = model == null || visible(model, m.parts[i]);
         float squash = pose.squash[pose.rig.chest], waist = pose.rig.pivot[pose.rig.chest].y;
         float[] uv = new float[8];
         Vector3f rest = new Vector3f(), part = new Vector3f();
@@ -220,7 +263,6 @@ public final class BlockMeshBody {
             }
             SkinMesh.quad(sink, CORNER[0], uv[0], uv[1], CORNER[1], uv[2], uv[3], CORNER[2], uv[4], uv[5], CORNER[3], uv[6], uv[7]);
         }
-        return true;
     }
 
     private static boolean visible(PlayerModel<?> m, String part) {
@@ -385,8 +427,8 @@ public final class BlockMeshBody {
         if (value && failed) return say(c, "Block-Mesh V2 骨架或网格加载失败，看日志 [AFL Block-Mesh V2]");
         on = value;
         PlayerSkeleton.reset();
-        return say(c, value ? "Block-Mesh V2（B3）已打开：所有玩家用 B 的骨架和身体，皮肤是 B 的样例皮肤"
-                : "Block-Mesh V2 已关闭，所有玩家恢复原来的骨架和皮肤（只到这次退出游戏，下次启动默认又是 B3）");
+        return say(c, value ? "Block-Mesh V2（B5）已打开：所有玩家用 B 的骨架和身体，肤色、发型和衣服按幸存者"
+                : "Block-Mesh V2 已关闭，所有玩家恢复原来的骨架和皮肤（只到这次退出游戏，下次启动默认又是 B5）");
     }
 
     private static int chairCam(CommandContext<CommandSourceStack> c, boolean value) {

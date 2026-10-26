@@ -57,6 +57,12 @@ public final class SurvivorRecord {
      * guessed from the account) and for successors saved before the sex roll existed.
      */
     @Nullable Sex sex;
+    /**
+     * The B5 body's skin tone (1..5) and hair style (SurvivorAppearance, character creation V1): the first survivor's from
+     * the appearance page, a successor's from its roll; 0 / null (saved before them): the defaults.
+     */
+    int tone;
+    @Nullable String hair;
 
     // Reserved for later systems; never filled yet.
     @Nullable String originState;
@@ -212,6 +218,8 @@ public final class SurvivorRecord {
         tag.putString("Skin", skin);
         tag.putString("Arms", arms.id());
         if (sex != null) tag.putString("Sex", sex.name());
+        if (tone > 0) tag.putInt("Tone", tone);
+        putString(tag, "Hair", hair);
         putString(tag, "OriginState", originState);
         putString(tag, "Background", background);
         putString(tag, "Profession", profession);
@@ -271,6 +279,8 @@ public final class SurvivorRecord {
                 // an unknown value stays unset, like an older save
             }
         }
+        r.tone = tag.getInt("Tone");
+        r.hair = getString(tag, "Hair");
         r.originState = getString(tag, "OriginState");
         r.background = getString(tag, "Background");
         r.profession = getString(tag, "Profession");

@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.survivor;
 
+import com.antaurora.apofirstlight.survivor.SurvivorAppearance;
 import com.antaurora.apofirstlight.survivor.SurvivorSkins;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -30,6 +31,13 @@ public final class SurvivorIdentityClient {
 
     private static final Map<UUID, Look> LOOKS = new HashMap<>();
     private static final Map<UUID, String> NAMES = new HashMap<>();
+
+    /** The B5 body's skin tone and hair (SurvivorAppearance); missing: the defaults. */
+    public record Body(int tone, String hair) {
+        public static final Body DEFAULT = new Body(SurvivorAppearance.DEFAULT_TONE, SurvivorAppearance.DEFAULT_HAIR);
+    }
+
+    private static final Map<UUID, Body> BODIES = new HashMap<>();
     /** Set while a caller reads a PlayerInfo's own account skin (corpses of a first survivor). */
     private static boolean bypass;
 
@@ -37,7 +45,8 @@ public final class SurvivorIdentityClient {
     }
 
     /** Packet: the name and look of one player. A changed name refreshes that player's display name at once. */
-    public static void set(UUID player, String name, String skin, String arms) {
+    public static void set(UUID player, String name, String skin, String arms, int tone, String hair) {
+        BODIES.put(player, new Body(tone, hair));
         if (SurvivorSkins.ACCOUNT.equals(skin)) {
             LOOKS.remove(player);
         } else {
@@ -49,6 +58,11 @@ public final class SurvivorIdentityClient {
             Player entity = mc.level == null ? null : mc.level.getPlayerByUUID(player);
             if (entity != null) entity.refreshDisplayName();
         }
+    }
+
+    /** The B5 body's tone and hair of this account (the defaults before the server sent them). */
+    public static Body body(UUID player) {
+        return BODIES.getOrDefault(player, Body.DEFAULT);
     }
 
     /** The survivor name of this account, or null before the server sent it. */
@@ -90,5 +104,6 @@ public final class SurvivorIdentityClient {
     static void clear() {
         LOOKS.clear();
         NAMES.clear();
+        BODIES.clear();
     }
 }

@@ -43,10 +43,10 @@ public final class SurvivorPackets {
 
     /**
      * Server, to every client: who a player is now (SurvivorIdentity): the survivor's name, and the look to draw
-     * (SurvivorSkins id and arm model id; "account" for both is the account's own skin). Sent on login, when a successor
-     * takes over and when the first survivor's name is chosen.
+     * (SurvivorSkins id and arm model id; "account" for both is the account's own skin; the B5 body's skin tone and hair,
+     * SurvivorAppearance). Sent on login, when a successor takes over and when the first survivor's setup or name is chosen.
      */
-    public record Identity(UUID player, String name, String skin, String arms) {
+    public record Identity(UUID player, String name, String skin, String arms, int tone, String hair) {
     }
 
     /**
@@ -75,8 +75,12 @@ public final class SurvivorPackets {
     public record SetupPrompt(boolean open, String catalog, net.minecraft.nbt.CompoundTag info) {
     }
 
-    /** Client: the setup to confirm; the server checks all of it (SurvivorSetupFlow). Empty name = the account name. */
-    public record SetupChoice(String background, java.util.Map<String, Integer> body, java.util.List<String> traits, String name) {
+    /**
+     * Client: the setup to confirm; the server checks all of it (SurvivorSetupFlow). Empty name = the account name. The
+     * appearance page's look and starting outfit (SurvivorAppearance) ride along.
+     */
+    public record SetupChoice(String background, java.util.Map<String, Integer> body, java.util.List<String> traits, String name,
+                              int tone, String hair, int outfit) {
     }
 
     /** Server: why the confirm was refused (problem lines; "name.invalid", "name.taken" for the name). */
@@ -132,8 +136,10 @@ public final class SurvivorPackets {
             b.writeUtf(p.name(), 64);
             b.writeUtf(p.skin(), 64);
             b.writeUtf(p.arms(), 16);
-        }, b -> new Identity(b.readUUID(), b.readUtf(64), b.readUtf(64), b.readUtf(16)),
-                (p, s) -> client(s, () -> SurvivorIdentityClient.set(p.player(), p.name(), p.skin(), p.arms())),
+            b.writeVarInt(p.tone());
+            b.writeUtf(p.hair(), 16);
+        }, b -> new Identity(b.readUUID(), b.readUtf(64), b.readUtf(64), b.readUtf(16), b.readVarInt(), b.readUtf(16)),
+                (p, s) -> client(s, () -> SurvivorIdentityClient.set(p.player(), p.name(), p.skin(), p.arms(), p.tone(), p.hair())),
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, NamePrompt.class, (p, b) -> {
             b.writeBoolean(p.open());
@@ -165,8 +171,12 @@ public final class SurvivorPackets {
             b.writeMap(p.body(), (buf, k) -> buf.writeUtf(k, 256), net.minecraft.network.FriendlyByteBuf::writeVarInt);
             b.writeCollection(p.traits(), (buf, t) -> buf.writeUtf(t, 256));
             b.writeUtf(p.name(), 64);
+            b.writeVarInt(p.tone());
+            b.writeUtf(p.hair(), 16);
+            b.writeVarInt(p.outfit());
         }, b -> new SetupChoice(b.readUtf(256), b.readMap(java.util.LinkedHashMap::new, buf -> buf.readUtf(256),
-                net.minecraft.network.FriendlyByteBuf::readVarInt), b.readList(buf -> buf.readUtf(256)), b.readUtf(64)),
+                net.minecraft.network.FriendlyByteBuf::readVarInt), b.readList(buf -> buf.readUtf(256)), b.readUtf(64),
+                b.readVarInt(), b.readUtf(16), b.readVarInt()),
                 (p, s) -> server(s, player -> SurvivorSetupFlow.onChoice(player, p)), Optional.of(NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(id++, SetupResult.class, (p, b) -> b.writeCollection(p.problems(), (buf, t) -> buf.writeUtf(t, 512)),
                 b -> new SetupResult(b.readList(buf -> buf.readUtf(512))),

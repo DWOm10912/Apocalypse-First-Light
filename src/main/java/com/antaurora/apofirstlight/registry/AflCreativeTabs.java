@@ -337,6 +337,10 @@ public final class AflCreativeTabs {
             AflItems.HIKING_BACKPACK,
             AflItems.GUN_SLING,
             AflItems.PISTOL_HOLSTER,
+            AflItems.CLOTHING_SHIRT,
+            AflItems.CLOTHING_JACKET,
+            AflItems.CLOTHING_JEANS,
+            AflItems.CLOTHING_SHOES,
             AflItems.PICKUP_T15_KEY);
 
     // Thirst V1: water first; later drinks, food and medicine

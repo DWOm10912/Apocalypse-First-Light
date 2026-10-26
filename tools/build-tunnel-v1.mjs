@@ -61,7 +61,7 @@ export class Raster {
       }
       const k = ss * ss, i = (ry + y) * this.W + rx + x, o = i * 4;
       c.forEach((v, j) => { this.col[o + j] = clamp(Math.round(v / k), 0, 255); }); this.col[o + 3] = 255;
-      this.spec[o] = clamp(Math.round(s / k), 0, 255); this.spec[o + 1] = clamp(Math.round(f0 / k), 0, 229); this.spec[o + 2] = clamp(Math.round(p / k), 0, 64);
+      this.spec[o] = clamp(Math.round(s / k), 0, 255); this.spec[o + 1] = clamp(Math.round(f0 / k), 0, 255);   // F0 230+ = metal (the galvanised steel) this.spec[o + 2] = clamp(Math.round(p / k), 0, 64);
       this.spec[o + 3] = 255;   // no emission anywhere
       this.h[i] = h / k; this.ao[i] = ao / k; this.id[i] = id;
     }
@@ -107,12 +107,15 @@ function archTexture() {
   });
   return R.finish(true);
 }
-/** Hot-dip galvanised steel (handrails, brackets): even, with a faint spangle, 1 m (240). */
+/**
+ * Hot-dip galvanised steel (handrails, brackets): even, with a faint spangle, 1 m (240). A metal (Aureveil's request
+ * 2026-10-25): F0 230, the colour is the reflectance (light zinc grey; was 150 as a dielectric with F0 40).
+ */
 function steelTexture() {
-  const W = 240, R = new Raster(W, W), base = [150, 153, 154];
+  const W = 240, R = new Raster(W, W), base = [172, 175, 176];
   R.paint(0, 0, W, W, (x, y) => {
     const t = 1 + 0.03 * vn(x, y, 31, 24, W, W) + 0.02 * vn(x, y, 32, 8, W, W);
-    return {c: mul(base, t), s: 105 + 12 * vn(x, y, 33, 16, W, W), f0: 40, p: 0, h: 0.05 * vn(x, y, 34, 8, W, W)};
+    return {c: mul(base, t), s: 130 + 12 * vn(x, y, 33, 16, W, W), f0: 230, p: 0, h: 0.05 * vn(x, y, 34, 8, W, W)};
   });
   return R.finish(true);
 }

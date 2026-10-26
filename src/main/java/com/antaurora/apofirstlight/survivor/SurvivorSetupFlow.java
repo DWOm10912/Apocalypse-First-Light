@@ -73,15 +73,18 @@ public final class SurvivorSetupFlow {
         }
         data.hostSetup = null;
         data.setDirty();
-        List<String> problems = confirm(player, decode(tag), tag.getString("Name"));
+        List<String> problems = confirm(player, decode(tag), tag.getString("Name"), SurvivorAppearance.Look.read(tag));
         if (!problems.isEmpty()) {
             ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] host setup made before the world refused ({}); opening the screen", problems);
         }
         return problems.isEmpty();
     }
 
-    /** A setup as stored for the host (Background, Body, Traits, Name): the client writes it on the Create World path. */
-    public static CompoundTag encode(SurvivorSetup.Choice choice, String name) {
+    /**
+     * A setup as stored for the host (Background, Body, Traits, Name, and the appearance page's Tone, Hair, Outfit): the
+     * client writes it on the Create World path.
+     */
+    public static CompoundTag encode(SurvivorSetup.Choice choice, String name, SurvivorAppearance.Look look) {
         CompoundTag tag = new CompoundTag();
         tag.putString("Background", choice.background());
         CompoundTag body = new CompoundTag();
@@ -91,6 +94,7 @@ public final class SurvivorSetupFlow {
         for (String id : choice.traits()) traits.add(net.minecraft.nbt.StringTag.valueOf(id));
         tag.put("Traits", traits);
         tag.putString("Name", name);
+        look.write(tag);
         return tag;
     }
 
@@ -263,16 +267,17 @@ public final class SurvivorSetupFlow {
             AflNetwork.survivor(player, new SurvivorPackets.SetupPrompt(false, "", new CompoundTag()));
             return;
         }
-        List<String> problems = confirm(player, new SurvivorSetup.Choice(packet.background(), packet.body(), packet.traits()), packet.name());
+        List<String> problems = confirm(player, new SurvivorSetup.Choice(packet.background(), packet.body(), packet.traits()), packet.name(),
+                new SurvivorAppearance.Look(packet.tone(), packet.hair(), packet.outfit()));
         if (!problems.isEmpty()) AflNetwork.survivor(player, new SurvivorPackets.SetupResult(problems));
     }
 
     /**
      * Checks a setup (name by SurvivorIdentity's rules, the rest by SurvivorSetup) for the player's choosing survivor and,
-     * when it passes, writes it: name, setup, scene, start time; the hold ends, the modifiers apply, the screen closes.
-     * Returns the problems (empty = done).
+     * when it passes, writes it: name, setup, scene, start time, the body's tone and hair; the starting outfit is put on;
+     * the hold ends, the modifiers apply, the screen closes. Returns the problems (empty = done).
      */
-    static List<String> confirm(ServerPlayer player, SurvivorSetup.Choice choice, String rawName) {
+    static List<String> confirm(ServerPlayer player, SurvivorSetup.Choice choice, String rawName, SurvivorAppearance.Look look) {
         SurvivorRecord record = living(player);
         if (record == null || !SurvivorSetup.CHOOSING.equals(record.setup)) return List.of("not choosing");
         List<String> problems = new ArrayList<>();
@@ -287,6 +292,9 @@ public final class SurvivorSetupFlow {
         if (!record.named) SurvivorIdentity.applyName(player, record, name.name());
         SurvivorSetup.confirm(record, catalog, choice);
         record.scene = data.scene();
+        record.tone = look.tone();
+        record.hair = look.hair();
+        SurvivorAppearance.dress(player, look.outfit());
         Survivors.start(player, record);
         data.setDirty();
         Survivors.markFlush();
@@ -295,9 +303,9 @@ public final class SurvivorSetupFlow {
         SurvivorIdentity.changed(player);
         AflNetwork.survivor(player, new SurvivorPackets.SetupPrompt(false, "", new CompoundTag()));
         sendSheet(player);
-        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} set up survivor #{} {}: {} body {} traits {} scene {} ({} points unused)",
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} set up survivor #{} {}: {} body {} traits {} scene {} ({} points unused), look {}",
                 player.getGameProfile().getName(), record.lifeIndex, record.fullName(), record.background, choice.body(),
-                record.traits, record.scene, check.pointsLeft());
+                record.traits, record.scene, check.pointsLeft(), look);
         return List.of();
     }
 

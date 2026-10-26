@@ -385,7 +385,7 @@ public final class AflNewWorldScreen extends Screen {
     private void next() {
         vanilla.getUiState().setName(nameField.getValue());
         vanilla.getUiState().setSeed(seedField.getValue());
-        if (setupFirst()) minecraft.setScreen(AflSurvivorSetupScreen.beforeWorld(this, scene));
+        if (setupFirst()) minecraft.setScreen(AflAppearanceScreen.beforeWorld(this, scene));
         else create(null);
     }
 

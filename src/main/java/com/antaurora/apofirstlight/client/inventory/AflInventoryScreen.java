@@ -68,6 +68,8 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
     /** Menu indices: 2x2 crafting result and grid, armour (head, chest, legs, feet), the off hand (never drawn: NoOffHand empties it; overflow shows a stack still in it), the AFL Curios slots. */
     private static final int RESULT = 0, CRAFT = 1, HEAD = 5, CHEST = 6, LEGS = 7, FEET = 8, OFFHAND = 45;
     private static final int BACK_SLOT = 46, WRIST_SLOT = 47, EARS_SLOT = 48, RIG_SLOT = 49, HOLSTER_SLOT = 50, CLIP_SLOT = 51;
+    /** The base layer and the coat (character creation V1, AflEquipmentSlots.CLOTHES), after the two clips. */
+    private static final int BASE_SLOT = 53, COAT_SLOT = 54;
     /** Menu indices of the weapon positions and the hand (hotbar 0..3, HotbarRoles). */
     private static final int PRIMARY_MENU = 36, PISTOL_MENU = 37, MELEE_MENU = 38, HAND_MENU = 39;
     /** The slot id vanilla uses for a click outside the window: drops the cursor stack. */
@@ -262,7 +264,7 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         String[] left = {"head", "face", "ears", "watch", "legs"};
         int[] leftSlots = {HEAD, PLACEHOLDER, EARS_SLOT, WRIST_SLOT, LEGS};
         String[] right = {"base", "coat", "armor", "gloves", "feet"};
-        int[] rightSlots = {PLACEHOLDER, PLACEHOLDER, CHEST, PLACEHOLDER, FEET};
+        int[] rightSlots = {BASE_SLOT, COAT_SLOT, CHEST, PLACEHOLDER, FEET};
         for (int i = 0; i < 5; i++) {
             float y = 30 + i * 31;
             gearBox(g, left[i], leftSlots[i], 15, y, BOX, BOX);
@@ -669,6 +671,8 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         switch (menuIndex) {
             case HEAD -> { name = "slot.head"; line = "wear_hint"; }
             case EARS_SLOT -> { name = "slot.ears"; line = "wear_hint"; }
+            case BASE_SLOT -> { name = "slot.base"; line = "wear_hint"; }
+            case COAT_SLOT -> { name = "slot.coat"; line = "wear_hint"; }
             case WRIST_SLOT -> { name = "slot.watch"; line = "wear_hint"; }
             case LEGS -> { name = "slot.legs"; line = "wear_hint"; }
             case CHEST -> { name = "slot.armor"; line = "wear_hint"; }

@@ -47,6 +47,13 @@ public final class AflEquipmentSlots {
      * first three in the column right of the player model; the AFL inventory page places all of them itself.
      */
     public static final List<String> INVENTORY_PAGE = List.of(BACK, WRIST, EARS, RIG, HOLSTER);
+    /**
+     * Clothes (character creation V1, docs/ui/character_creation_v1.md, user 2026-10-26): the base layer (the shirt) and the
+     * coat (the jacket), AFL's own Curios slots. Menu indices 53 and 54, after the clips; only the AFL inventory page shows
+     * them (the trousers and shoes use vanilla's legs and feet slots). Not worn on pickup (#wearIfFree).
+     */
+    public static final String BASE = "base", COAT = "coat";
+    public static final List<String> CLOTHES = List.of(BASE, COAT);
     private AflEquipmentSlots() {}
 
     @SubscribeEvent public static void setup(FMLCommonSetupEvent event) {

@@ -653,8 +653,8 @@
    2,
    15
   ],
-  "mesh": "skins/block_mesh_v2/b3_body.json",
-  "texture": "textures/entity/block_mesh_v2/b3_sample.png",
+  "mesh": "skins/block_mesh_v2/b5/body.json",
+  "texture": "textures/entity/block_mesh_v2/b5/body_t2.png",
   "clavicle_dead_deg": 8.0
  }
 }

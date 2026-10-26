@@ -217,6 +217,7 @@ public final class Survivors {
                 person.first(), person.last(), seed, SurvivorRecord.State.PENDING);
         record.sex = person.sex();
         record.setAppearance(SurvivorSkins.of(person));
+        SurvivorAppearance.roll(record, seed);
         SurvivorSetup.rollSuccessor(record, SurvivorCatalog.get(), seed);
         return record;
     }
@@ -341,6 +342,8 @@ public final class Survivors {
             next = lineage.pending();
             if (next == null) return;
         }
+        // a successor rolled before character creation existed: its tone and hair from its own seed now
+        if (next.tone == 0) SurvivorAppearance.roll(next, next.rollSeed);
         // a successor rolled before setups existed gets its background and body from its own seed now
         if (next.setup == null) SurvivorSetup.rollSuccessor(next, SurvivorCatalog.get(), next.rollSeed);
         SurvivorSpawns.Start start = SurvivorSpawns.resolve(server, lineage, current, next);
@@ -370,6 +373,8 @@ public final class Survivors {
         player.setRespawnPosition(Level.OVERWORLD, null, 0.0F, false, false);
         data.setDirty();
         flushPending = true;
+        // the new body takes over in everyday clothes (character creation V1)
+        SurvivorAppearance.dress(player, SurvivorAppearance.SUCCESSOR_OUTFIT);
         announce(player, next);
         SurvivorIdentity.changed(player);
         SurvivorSetupFlow.sendSheet(player);

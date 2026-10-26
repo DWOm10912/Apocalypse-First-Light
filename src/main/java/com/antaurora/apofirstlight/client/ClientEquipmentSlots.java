@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.equipment.AflEquipmentSlots;
 import com.antaurora.apofirstlight.inventory.AflEquipmentSlot;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -53,11 +54,11 @@ public final class ClientEquipmentSlots {
                     () -> new WornMeshRenderer(WornMeshRenderer.Part.HEAD, "simple_hearing_protection", 0F, -1.7504F, 0.2F));
             // the chest rig with what hangs on its straps' clips (ClipRenderer)
             CuriosRendererRegistry.register(AflItems.FIELD_CHEST_RIG.get(), () -> new ClipRenderer(
-                    new WornMeshRenderer(WornMeshRenderer.Part.BODY, "field_chest_rig", 0F, 10.175F, -0.73F), ClipRenderer.FIELD_CHEST_RIG));
+                    new WornMeshRenderer(WornMeshRenderer.Part.BODY, "field_chest_rig", 0F, 10.175F, -0.73F, 1), ClipRenderer.FIELD_CHEST_RIG));
             CuriosRendererRegistry.register(AflItems.CANVAS_BACKPACK.get(),
-                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "canvas_backpack", 0F, 9.3F, 1.58F));
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "canvas_backpack", 0F, 9.3F, 1.58F, -1));
             CuriosRendererRegistry.register(AflItems.HIKING_BACKPACK.get(),
-                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "hiking_backpack", 0F, 11.6F, 1.855F));
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "hiking_backpack", 0F, 11.6F, 1.855F, -1));
             CuriosRendererRegistry.register(AflItems.PISTOL_HOLSTER.get(),
                     () -> new WornMeshRenderer(WornMeshRenderer.Part.RIGHT_LEG, "pistol_holster", -0.605F, 7.6F, 0F));
             CuriosRendererRegistry.register(AflItems.WRIST_THERMOMETER.get(), WristItemRenderer::new);
@@ -119,17 +120,28 @@ public final class ClientEquipmentSlots {
      * Worn gear drawn as its mesh on the body part it sits on (tools/build-equipment-meshes-v1.mjs authors each piece in
      * that part's frame: BODY and HEAD +X the player's left, +Y up, +Z to the front, origin at the part's pivot; RIGHT_LEG
      * +X outward, +Y up, +Z to the back, origin at the hip joint). The bake rests the mesh on y = 0 centred on X / Z; the
-     * build prints that shift as "origin", undone here. Moves with the part (crouching, walking, looking around).
+     * build prints that shift as "origin", undone here. Moves with the part (crouching, walking, looking around). Gear
+     * fitted to the B body's torso (its front or back, {@code coatSide} +1 / -1) moves out by {@link #COAT_PX} over a worn
+     * coat (character creation V1: B5's jacket stands that much off the shirt and B3's torso the gear was fitted to).
      */
     public static final class WornMeshRenderer implements ICurioRenderer {
         public enum Part { BODY, HEAD, RIGHT_LEG }
 
+        /** B5's jacket over the shirt: torso depth 2.625 against 2.25 px each side (skins/block_mesh_v2/b5/jacket.json). */
+        public static final float COAT_PX = 0.375F;
+
         private final Part part;
         private final ResourceLocation geometry, texture;
         private final float ox, oy, oz;
+        private final int coatSide;
 
         public WornMeshRenderer(Part part, String model, float ox, float oy, float oz) {
+            this(part, model, ox, oy, oz, 0);
+        }
+
+        public WornMeshRenderer(Part part, String model, float ox, float oy, float oz, int coatSide) {
             this.part = part;
+            this.coatSide = coatSide;
             this.geometry = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json");
             this.texture = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + model + "_mesh.png");
             this.ox = ox;
@@ -144,8 +156,14 @@ public final class ClientEquipmentSlots {
             if (!(parent.getModel() instanceof HumanoidModel<?> humanoid) || !visible(humanoid, part)) return;
             poseStack.pushPose();
             apply(humanoid, part, poseStack);
+            if (coatSide != 0) poseStack.translate(0, 0, coatOut(slotContext.entity()) * coatSide / 16F);
             draw(poseStack, buffer, light);
             poseStack.popPose();
+        }
+
+        /** How far torso gear moves out for this entity's coat (px): {@link #COAT_PX} with one worn, else 0. */
+        public static float coatOut(LivingEntity entity) {
+            return AflEquipmentSlots.get(entity, AflEquipmentSlots.COAT).isEmpty() ? 0 : COAT_PX;
         }
 
         /** Draws the mesh in the frame {@link #apply} set up. */

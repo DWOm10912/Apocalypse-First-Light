@@ -80,7 +80,7 @@ public final class SurvivorClient {
     public static void setupPrompt(com.antaurora.apofirstlight.survivor.SurvivorPackets.SetupPrompt packet) {
         setupPrompt = packet.open() ? packet : null;
         Minecraft mc = Minecraft.getInstance();
-        if (!packet.open() && mc.screen instanceof AflSurvivorSetupScreen) mc.setScreen(null);
+        if (!packet.open() && (mc.screen instanceof AflSurvivorSetupScreen || mc.screen instanceof AflAppearanceScreen)) mc.setScreen(null);
     }
 
     /** Packet: the server refused the confirm; the screen shows why and can send again. */
@@ -116,7 +116,7 @@ public final class SurvivorClient {
         if (modePrompt) {
             mc.setScreen(new AflSurvivorModeScreen());
         } else if (setupPrompt != null) {
-            mc.setScreen(new AflSurvivorSetupScreen(setupPrompt));
+            mc.setScreen(new AflAppearanceScreen(setupPrompt));
         } else if (namePrompt) {
             mc.setScreen(new AflSurvivorNameScreen());
         }

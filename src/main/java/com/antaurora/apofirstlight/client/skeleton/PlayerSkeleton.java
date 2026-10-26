@@ -414,8 +414,8 @@ public final class PlayerSkeleton {
         SkeletonRig rig = d.solved.pose.rig;
         // the own first person's arms thinner with a pistol held out (GunStance#firstPersonArm)
         float arms = d.solved.hold != null ? d.solved.hold.arms() : 1F;
-        // AFL Block-Mesh V2 dev test: the B body in its own skin in place of the skin mesh, the head and the wound marks
-        if (rig.profile != null && BlockMeshBody.draw(d.solved.pose, m, pose, d.buffers, light, overlay, r, g, b, a, d.solved.ground)) {
+        // AFL Block-Mesh V2: the B body in its layers (BlockMeshWardrobe) in place of the skin mesh, the head and the wound marks
+        if (rig.profile != null && BlockMeshBody.draw(d.solved.pose, m, pose, d.buffers, light, overlay, r, g, b, a, d.solved.ground, d.player)) {
             drawGear(d, pose, light, overlay, 1F);
             return true;
         }

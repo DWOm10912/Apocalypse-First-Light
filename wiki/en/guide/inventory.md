@@ -7,6 +7,7 @@ AFL replaces the vanilla inventory with a grid: every item takes up a block of c
 - **Pockets**: you always have 4 small pockets
 - **Chest rig**: wearing the field chest rig adds magazine pouches. See [Equipment](../arms/equipment)
 - **Backpack**: the canvas backpack has 5×6 cells, the hiking backpack 6×10
+- **Clothes** <StatusTag s="verified" d="2026-10-26" />: the denim shirt goes in the base layer slot, the leather jacket in the coat slot, jeans in the legs slot and leather shoes in the feet slot. Right-click or drag one into its slot to wear it, and your body shows it. Clothes have weight and keep you warm
 - Press **R** while dragging to rotate an item, **Q** to drop the item under the cursor
 - Items on the ground are not picked up automatically: look at one and press Use, or Sneak + Use to put it straight into your grid
 

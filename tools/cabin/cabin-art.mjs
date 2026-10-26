@@ -248,16 +248,23 @@ const VALLEY_SHADE = 0.1;
  * Aged galvanised steel: dull zinc, a soft spangle mottle. Mid grey, rough and dielectric (F0 10): the M1 zinc
  * ([160, 165, 165], smoothness 105, F0 45) glared white under Sundial in game (2026-10-12, M1 and again in M1.1).
  */
-function zinc(x, y, seed) { return mul([134, 139, 140], 1 + 0.04 * vn(x, y, seed, 20) + 0.03 * vn(x, y, seed + 1, 120, 60)); }
-export function roofGalvanized() { return (x, y) => ({c: zinc(x, y, 2900), s: 70, f0: 10, p: 0, h: 0, ao: 1}); }
-/** The corrugated galvanised sheet: valleys a shade darker, faint white rust in them. */
+/**
+ * Galvanised steel is a metal (Aureveil's request 2026-10-25, docs/afl-request-metal-pbr.md in its repo: the roof read as
+ * matte as the boards): LabPBR F0 230 (iron, the nearest preset to zinc), the colour is the reflectance, so it is a light
+ * zinc grey (sRGB ~175; was 135 as a dielectric). Weathered, not new: smoothness 120-150, mottled by the spangle.
+ */
+function zinc(x, y, seed) { return mul([172, 177, 178], 1 + 0.04 * vn(x, y, seed, 20) + 0.03 * vn(x, y, seed + 1, 120, 60)); }
+function zincSmooth(x, y, seed) { return 135 + 10 * vn(x, y, seed + 5, 12) + 5 * vn(x, y, seed + 6, 60, 30); }
+export function roofGalvanized() { return (x, y) => ({c: zinc(x, y, 2900), s: zincSmooth(x, y, 2900), f0: 230, p: 0, h: 0, ao: 1}); }
+/** The corrugated galvanised sheet: valleys a shade darker, faint white rust in them (rougher there; still the metal). */
 export function roofGalvanizedSheet() {
   const seed = 2900;
   return (x, y) => {
     const w = wave(x);
     let c = mul(zinc(x, y, seed), 1 - VALLEY_SHADE * (1 - w) / 2);
-    c = mix(c, [154, 157, 152], 0.2 * sstep(0.2, 1, -w) * sstep(0.2, 1, vn(x, y, seed + 2, 40, 120)));
-    return {c, s: 70, f0: 10, p: 0, h: 0, ao: 0.92 + 0.08 * (w + 1) / 2};
+    const white = 0.2 * sstep(0.2, 1, -w) * sstep(0.2, 1, vn(x, y, seed + 2, 40, 120));
+    c = mix(c, [190, 192, 187], white);
+    return {c, s: zincSmooth(x, y, seed) - 200 * white, f0: 230, p: 0, h: 0, ao: 0.92 + 0.08 * (w + 1) / 2};
   };
 }
 /** Rusted steel: brown rust with orange-brown patches. */
@@ -305,7 +312,8 @@ export function wovenWire() {
     const stay = wrapD(x - N / 16, N / 8) < 1.5 && v > 0.03 && v < 0.98;
     const knot = stay && d < 3.5;
     const on = d < 1.5 || stay || knot;
-    return {c: mul([152, 157, 154], 1 + 0.05 * vn(x, y, 3600, 20)), s: 100, f0: 45, p: 0, h: 0, ao: 1, a: on ? 255 : 0};
+    // galvanised wire: the metal, as the roof (F0 230, a light zinc grey)
+    return {c: mul([174, 179, 176], 1 + 0.05 * vn(x, y, 3600, 20)), s: 125, f0: 230, p: 0, h: 0, ao: 1, a: on ? 255 : 0};
   };
 }
 
