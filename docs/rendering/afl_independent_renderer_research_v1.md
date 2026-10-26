@@ -40,6 +40,7 @@
 | `MCVR:` | Minecraft-Radiance/MCVR | 6719d74（= `release-0.1.6`） | **GPLv3 为主**；少量文件为 Apache-2.0 / MIT（`MCVR:LICENSE.md`） |
 | `SL:` | NVIDIA-RTX/Streamline | 625db07（SDK 2.14.16，2026-10-16） | MIT（`SL:license.txt:1-21`） |
 | `NGX:` | NVIDIA/DLSS | 9981c63（DLSS 310.9.16 SDK） | NVIDIA RTX SDKs License（`NGX:LICENSE.txt`） |
+| `DLSSPG:` / `RTXUI:` | NVIDIA/DLSS 仓库 `doc/DLSS_Programming_Guide_Release.pdf`、`doc/RTX UI Developer Guidelines.pdf` | 9981c63（指南日期 2026-03-31） | 随 NVIDIA RTX SDKs License 提供 |
 | `VM:` | xCollateral/VulkanMod，分支 `1.20.x` | 14efa9d | **LGPL-3.0**（`VM:LICENSE`） |
 | `AFL:` / `AUR:` | 本地 AFL、Aureveil | 研究分支，未改动 | — |
 
@@ -352,7 +353,7 @@ afl-renderer-api（公开、宽松许可证，纯 Java 接口）
      - 须在启动画面、关于页、制作人员名单中署名并放置 NVIDIA 商标（`:89`）；
      - 分发条款至少同等保护（`:17`）。
    - **对专有核心而言反而比 GPLv3 项目更容易合规**（Radiance 选择不分发 DLL）。
-   - 是否需要 NVIDIA 应用 ID 或项目 ID 需查阅 DLSS Programming Guide（PDF，本次未读），列为待办。
+   - **不需要向 NVIDIA 申请应用 ID**：可以用自定义的 GUID 形式 Project ID 加 `NVSDK_NGX_ENGINE_TYPE_CUSTOM` 初始化。另有 DLL 签名、放置位置、第三方声明等发布要求，见 §6.9。
 8. **无法绕过的接口阻碍：**
    - (a) **OpenGL 不能直接调用 DLSS**。绕行办法是 Vulkan 互操作，两个项目已验证可行。
    - (b) **运动矢量必须由真正绘制几何的渲染器生成**。这是 Aureveil 路线的硬阻碍：`AUR:shaderpack/shaders/program/taa.fsh:52-57` 写明 "Oculus 1.8 gives no previous positions (no velocity attribute)"；Aureveil 虽有 Halton jitter（`AUR:…/lib/taa.glsl:24-27`），但实体 MV 拿不到。
@@ -365,6 +366,71 @@ afl-renderer-api（公开、宽松许可证，纯 Java 接口）
 - 光追在其上作为可选开关。
 
 **提醒**：DLSS SR 降低的是像素着色成本。AFL 当前的瓶颈多在 CPU 顶点吞吐（T15 约 40 万顶点/帧、BER、近处植物，见 `AFL:docs/dev/render_performance_v1.md`），这些 **DLSS 解决不了**。
+
+### 6.9 DLSS Programming Guide 核对结果（2026-10-26 追加）
+
+来源：`DLSSPG:` = NVIDIA/DLSS 仓库提交 9981c63（DLSS 310.9.16 SDK）中的 `doc/DLSS_Programming_Guide_Release.pdf`（文档日期 2026-03-31，共 84 页），以及同目录的 `RTX UI Developer Guidelines.pdf`（`RTXUI:`）。页码为 PDF 页脚页码。
+
+**集成前提**
+
+| 项目 | 指南要求 | 对 AFL Renderer 的含义 |
+|---|---|---|
+| 图形 API | 只支持 DirectX 11、DirectX 12 或 Vulkan；Vulkan 路径要求 Vulkan 1.1 及以上（`DLSSPG:` p.2 §2.2） | 与 §5.7 结论一致，OpenGL 不在列 |
+| 硬件 / 驱动 / 系统 | NVIDIA RTX GPU；DLSS 2.4.11+ 要求 2022-03-03 之后的驱动（如 512.15）；Windows 10 v1709 64 位及以上（p.1 §2.1） | RTX 3080 Ti 满足 |
+| 每帧输入 | 原始颜色、16 或 32 位精度的屏幕空间运动矢量、深度、HDR 时的曝光值（p.2 §2.2） | 与 §6 第 3–4 条一致 |
+| 抖动 | 至少 16 个相位，32 个以上更好（p.2 §2.2）；推荐 Halton 序列，训练数据就用 Halton（§3.7.1）；相位数 = 8 ×（输出分辨率 / 渲染分辨率）²（§3.7.1.1） | Performance 档（0.5 倍）需要 32 个相位 |
+| 运动矢量格式 | `RG16_FLOAT` 或 `RG32_FLOAT`，单位为渲染分辨率下的像素位移，指向上一帧；可通过 MV scale 换算（§3.6.1–3.6.3） | 实体、蒙皮、水体、植被都要按此标准输出 |
+| 深度 | 默认近平面 0、远平面 1；反向深度需设置 `DepthInverted` 标志（§3.8） | 按渲染器实际约定设置 |
+| 曝光 | 1×1 纹理（推荐 R16F），每帧提供；**只有预设 J 和 K 使用曝光输入，预设 L 总是自动曝光**（§3.9） | 由色调映射器统一给出 |
+| 场景切换 | 重大切换后第一帧设置 `InReset`（§3.13） | 换维度、传送、死亡重生、关闭菜单时需要 reset |
+| **纹理 Mip 偏置** | 启用 DLSS 时必须使用负 LOD 偏置：`NativeBias + log2(渲染宽 / 显示宽) - 1.0`，Performance 档约为 -2.0；指南也承认这可能带来闪烁和摩尔纹（p.14–15 §3.5） | **Minecraft 专属风险**：16×16 像素风贴图使用最近邻采样，负偏置很可能放大闪烁。需要在 S0 / P7 实测，并按材质分组调整 |
+
+**初始化与 ID**
+
+- 没有 NVIDIA 提供的 Application ID 时，用 `NVSDK_NGX_*_Init_with_ProjectID()`，传入 GUID 形式的 Project ID（例如 `a0f57b54-1daf-4934-90ae-c4035c19df04` 这种格式）、引擎类型 `CUSTOM` 和引擎版本。驱动会校验格式，失败原因写在 NGX 日志中（p.42 §5.2.1）。
+- 只有在 NVIDIA 开发者关系人员提供了 Application ID 时，才改用 `NVSDK_NGX_*_Init()`（同上）。
+- 结论：**AFL Renderer 自行生成一个固定的 Project ID 即可，无需申请**。
+- 注意：部署检查表写的是"Game specific Application ID is used"（p.8 §2.5），与 §5.2.1 的 Project ID 路径并存。正式发布前可以向 NVIDIA 确认，单独记为合规待办。
+- NGX API 不是线程安全的（§5.2.4）；在 Vulkan 下，命令缓冲状态由应用自己维护（§5.2.5）。
+
+**发布要求（第 4 章，p.35–36）**
+
+| 要求 | 内容 |
+|---|---|
+| 只能分发 release 版 DLL | 正式发布只能带 `lib/<平台>_<架构>/rel/` 下的 `nvngx_dlss.dll`；`dev/` 版带屏幕水印和调试叠加层，**禁止公开分发**（§4.2） |
+| 放置位置 | 默认与游戏可执行文件同目录，作为插件时与插件 DLL 同目录；也可以通过 `InFeatureInfo` 中的 `NVSDK_NGX_PathListInfo` 指定搜索路径（§4.2） |
+| 签名 | DLL 由 NVIDIA 签名，驱动（NGX Core）校验签名后才加载。如果对发行包做签名，必须**追加**签名，不能剥离 NVIDIA 的签名，否则 DLSS 无法加载（§4.2.2） |
+| 卸载 | 安装程序卸载时要一并删除 DLL（§4.2.1） |
+| 第三方声明 | DLL 内含第三方代码（CURL、8x13 bitmap font、d3dx12.h、xml、npy、stb、DirectX-Graphics-Samples、Vulkan-Headers，§9.6），需要在产品公开文档中收录其版权与许可证全文（§4.2.3） |
+| 商标与署名 | 见 §6 第 7 条（`NGX:LICENSE.txt:89`） |
+
+**对 Minecraft Mod 的含义**：Mod 没有自己的可执行文件，`java.exe` 不归我们控制，所以必须用 PathListInfo 指向 Mod 自己的原生库目录。Radiance 用 `<instance>/radiance/` 存放 DLL，也是这个思路（`RAD:README.md`）。
+
+**3080 Ti 上的 DLSS 自身开销**
+
+NVIDIA 用命令行工具实测（不含渲染器开销），模式为 Performance，即输入为输出的 1/4 像素（p.6–7 §2.4）：
+
+| RTX 3080 Ti | 1920×1080 | 2560×1440 | 3840×2160 |
+|---|---|---|---|
+| 预设 E、F | 0.30 ms | 0.44 ms | 0.87 ms |
+| 预设 J、K | 0.65 ms | 1.02 ms | 2.06 ms |
+| 预设 L | 1.67 ms | 2.63 ms | 5.32 ms |
+| 预设 M | 1.19 ms | 2.04 ms | 4.35 ms |
+
+DLSS 内部显存占用，RTX 30 系、2560×1440：预设 J/K 约 144 MB，预设 M 约 207 MB（p.5）。
+
+**含义**：在 1440p 下，DLSS 本身每帧要花约 1–2 ms。只有当原生分辨率的着色成本明显高于这个数时，SR 才有收益。纯光栅、着色很轻的场景收益有限，光追场景收益明显。
+
+**OTA 更新**：`NVSDK_NGX_UpdateFeature` 可以选择接收预设的在线更新，需要在独立线程调用，下次初始化 NGX 时生效（p.5 §2.4）。是否启用属于产品决策。
+
+**UI 规范要点（`RTXUI:` DLSS 节）**
+
+- 模式顺序：Off、Auto、Quality、Balanced、Performance、Ultra-Performance、DLAA。检测到 RTX 硬件时默认选 Auto。
+- 开启 SR 时，需要禁用其他抗锯齿和分辨率缩放选项。
+- 需要提供锐度滑条，首选 NVIDIA Image Scaling。
+- 不支持的硬件或驱动上要禁用 DLSS。
+- **RR** 适用于所有 RTX 显卡，但必须同时开启 SR 和光追，否则要禁用。
+- **FG** 需要 RTX 40 系及以上，并且必须集成 Reflex，FG 开启时用户不能关闭 Reflex；还要求 Windows 开启"硬件加速 GPU 计划"。在 3080 Ti 上不可用，与本报告"FG 不是必要条件"的定位一致。
 
 ---
 
