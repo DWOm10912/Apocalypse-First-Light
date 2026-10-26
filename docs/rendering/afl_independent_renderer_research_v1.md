@@ -257,6 +257,8 @@
 
 核心是 **"AFL 场景提交 API"**，提交数据而不是 GL 绘制：
 
+（完整接口设计见 `docs/rendering/afl_renderer_api_design_v1.md`。下面是最早的概要示意，以设计文档为准。）
+
 ```
 afl-renderer-api（公开、宽松许可证，纯 Java 接口）
   RenderScene.submitStaticMesh(meshId, vertices, indices, materialId)      // 一次性
@@ -473,6 +475,8 @@ DLSS 内部显存占用，RTX 30 系、2560×1440：预设 J/K 约 144 MB，预�
 
 ### 8.2 第三方依赖与来源初始清单（发布前需复核）
 
+完整的核对结果（每项附上游提交与许可证原文位置）见 `docs/rendering/afl_renderer_license_inventory_v1.md`，以该文件为准。
+
 | 组件 | 许可证 | 专有核心可用？ | 义务 |
 |---|---|---|---|
 | LWJGL（vulkan / vma / shaderc 绑定） | BSD-3 | 是 | 保留声明 |
@@ -481,7 +485,7 @@ DLSS 内部显存占用，RTX 30 系、2560×1440：预设 J/K 约 144 MB，预�
 | Streamline | MIT（`SL:license.txt`） | 是 | 保留声明 |
 | DLSS / NGX（`nvngx_*.dll`） | NVIDIA RTX SDKs License | 是 | 只能内嵌在应用内分发；署名与商标；条款等同保护；禁止开源化 |
 | NRD、SHARC | NVIDIA RTX SDKs License（`Ljiong201108/NRD:LICENSE.txt`、`NVIDIA-RTX/SHARC:License.md`） | 是 | 同上 |
-| AMD FidelityFX（FSR） | MIT（外部知识；MCVR 所用 fork 根目录未见 LICENSE 文件） | 是 | 保留声明 |
+| AMD FidelityFX（FSR） | **按版本区分**（2026-10-26 核对原文）：SDK v1.1.4（FSR 3.1）为 MIT；当前主线 FSR SDK 2.3.0 为 AMD 自有许可，只能以二进制再分发，禁止逆向（`docs/license.md`）。初稿写的"MIT（外部知识）"只对 v1.1.x 成立 | 是 | 保留声明；2.x 另须复制免责条款 |
 | Intel XeSS | Intel Simplified Software License（仅二进制、不可修改，`intel/xess:LICENSE.txt`） | 是 | 按其条款再分发 |
 | NVIDIA rtxremix-java / remixbridge | Apache-2.0 | 是（如走 D 路线） | NOTICE 与修改声明 |
 | VulkanMod | LGPL-3.0 | **不并入核心** | 只作参考 |
