@@ -143,7 +143,7 @@ public final class Earthwork {
     /**
      * The cell whose light stands for pos (A3): pos itself, or, when it is a skin cell in the client's copies (a full block
      * in the data, so it stores no light, though open above its skin), the first cell above that is not one. For what is
-     * drawn standing in a pit: entities, the hand, particles (EarthworkEntityLightMixin, EarthworkParticleLightMixin).
+     * drawn standing in a pit: entities, the hand, particles (RockCarveMesh#lightAt, EarthworkParticleLightMixin).
      */
     public static BlockPos clientLightCell(BlockGetter level, BlockPos pos) {
         if (CLIENT.isEmpty() || !clientSkinCell(level.getBlockState(pos).getBlock(), pos.getX(), pos.getY(), pos.getZ())) return pos;
@@ -199,7 +199,8 @@ public final class Earthwork {
     /** Loose ground a shovel moves (all of them Terrain Smooth ground: their models draw the skin). */
     public static boolean soil(Block b) {
         return b == Blocks.GRASS_BLOCK || b == Blocks.DIRT || b == Blocks.COARSE_DIRT || b == Blocks.PODZOL || b == Blocks.SAND
-                || b == Blocks.RED_SAND || b == Blocks.GRAVEL || b == Blocks.MUD || b == Blocks.CLAY;
+                || b == Blocks.RED_SAND || b == Blocks.GRAVEL || b == Blocks.MUD || b == Blocks.CLAY
+                || b instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock g && g.loose();   // natural ground N1 (not snow)
     }
 
     /**
@@ -218,16 +219,25 @@ public final class Earthwork {
 
     /**
      * The ground a column's first top turns into once moved: grass and podzol lose their top, rock and the rest stay
-     * themselves (the skin's bare look).
+     * themselves (the skin's bare look); AFL's topsoil keeps its soil with a bare top, its other soils stay as they are
+     * (gravel keeps its kind).
      */
     public static BlockState bare(BlockState top) {
         Block b = top == null ? Blocks.DIRT : top.getBlock();
+        if (b instanceof com.antaurora.apofirstlight.ground.TopsoilBlock t) return t.bare();
+        if (b instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock g && g.loose()) return top;
         return b == Blocks.GRASS_BLOCK || b == Blocks.PODZOL || !ground(b) ? Blocks.DIRT.defaultBlockState() : b.defaultBlockState();
     }
 
     /** The block a cell of edited column takes once its skin rises into it without loose earth over it: rock comes back as gravel. */
     private static BlockState refill(BlockState top) {
-        return top != null && rock(top.getBlock()) ? Blocks.GRAVEL.defaultBlockState() : bare(top);
+        if (top == null || !rock(top.getBlock())) return bare(top);
+        // broken rock settles as AFL's angular gravel (natural ground N1b, 2026-10-25); vanilla's where the registry is not up
+        // (the offline checks)
+        var gravel = com.antaurora.apofirstlight.registry.AflBlocks.GRAVEL;
+        return gravel.isPresent()
+                ? gravel.get().defaultBlockState().setValue(com.antaurora.apofirstlight.ground.GravelGroundBlock.KIND, com.antaurora.apofirstlight.ground.GravelGroundBlock.Kind.ANGULAR)
+                : Blocks.GRAVEL.defaultBlockState();
     }
 
     // ------------------------------------------------------------------------------------------------- shapes
@@ -254,7 +264,7 @@ public final class Earthwork {
         int y = pos.getY();
         if (kind(min(h), max(h), y) != SURFACE) return null;
         int grid = collision ? SmoothRules.GRID : 4;
-        int[] b = boxes(h, y, grid, collision && block == Blocks.MUD ? 2 : 0);
+        int[] b = boxes(h, y, grid, collision && (block == Blocks.MUD || block instanceof com.antaurora.apofirstlight.ground.MudGroundBlock) ? 2 : 0);
         ShapeKey key = new ShapeKey(b, grid);
         VoxelShape s = SHAPES.get(key);
         if (s != null) return s;
@@ -405,6 +415,41 @@ public final class Earthwork {
         } finally {
             converting = false;
         }
+    }
+
+    /**
+     * Road Mesh-ification P2 (docs/worldgen/road_mesh_damage_v1_design.md 8): a road column whose asphalt is all gone
+     * becomes an edited column. Its road_surface blocks go (the cells the base reaches become gravel, the ones above air,
+     * quietly: no reconcile), its vertices not set yet take the aggregate base's top (base: world y at each of the 25,
+     * EarthGrid order), its first top is gravel. Its vertices shared with a road column still paved stay where they are:
+     * that column is FIXED (#why: no natural surface), so the asphalt left locks the ground under it. False: not loaded or
+     * edited already.
+     */
+    public static boolean road(ServerLevel level, int x, int z, double[] base, BlockState gravel) {
+        if (!loaded(level, x, z)) return false;
+        LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+        EarthChunk e = ((EarthChunkHolder) chunk).afl$earth();
+        if (e != null && e.edited(column(x, z))) return false;
+        int hi = Integer.MIN_VALUE;
+        int[] q = new int[base.length];
+        for (int i = 0; i < base.length; i++) hi = Math.max(hi, q[i] = (int) Math.round(base[i] * Q));
+        int t = Math.floorDiv(hi - 1, Q);
+        quietly(() -> {
+            var p = new BlockPos.MutableBlockPos();
+            for (int y = t + 2; y >= t - 2; y--)
+                if (level.getBlockState(p.set(x, y, z)).is(com.antaurora.apofirstlight.registry.AflBlocks.ROAD_SURFACE.get()))
+                    level.setBlock(p, y <= t ? gravel : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        });
+        for (int j = 0; j <= PER_BLOCK; j++) for (int i = 0; i <= PER_BLOCK; i++) {
+            int vx = x * PER_BLOCK + i, vz = z * PER_BLOCK + j;
+            EarthChunk o = own(level, vx >> 6, vz >> 6);
+            int k = vertex(vx & 63, vz & 63);
+            if (o.h(k) == NONE) o.first(k, q[at(i, j)]);
+            DIRTY.add(ChunkPos.asLong(vx >> 6, vz >> 6));
+        }
+        int floor = hardFloor(level, x, t, z);
+        own(level, x >> 4, z >> 4).mark(column(x, z), t, gravel, floor, rockLimit(level, x, z, Math.floorDiv(floor, Q), t));
+        return true;
     }
 
     /**
@@ -983,6 +1028,9 @@ public final class Earthwork {
             chunk.setUnsaved(true);
             for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) TerrainSmooth.forget(level, cx + dx, cz + dz);
             AflNetwork.sendEarth(chunk, new EarthChunkPacket(cx, cz, e));
+            int[] ys = e == null ? null : e.yRange();
+            com.antaurora.apofirstlight.ground.GroundEvents.areaChanged(level, cx, cz,
+                    ys == null ? level.getMinBuildHeight() : ys[0], ys == null ? level.getMaxBuildHeight() : ys[1]);
         }
         DIRTY.clear();
     }

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_mirrored_all",
+  "textures": {
+    "all": "apocalypse_firstlight:block/ground/gravel_angular_2"
+  }
+}

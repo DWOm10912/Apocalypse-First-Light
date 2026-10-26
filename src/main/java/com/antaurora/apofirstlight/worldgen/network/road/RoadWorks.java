@@ -53,8 +53,11 @@ public final class RoadWorks {
     public static final double REACH = MAX_HALF_WIDTH + 2;
     /** Half width the forest and the spawn keep clear of (the engineered zone of a normal cut or fill), m. */
     public static final double CLEAR = 40;
-    /** Turf edge to the natural surface (#toNatural): blend height band, and the band kept off the pavement, m. */
-    public static final double TO_NATURAL = 1.0, EDGE_KEEP = 1.5, EDGE_RAMP = 3.0;
+    /**
+     * Turf edge to the natural surface (#toNatural): blend height band, the band kept off the pavement, and how far in
+     * from the natural ground the blend reaches (#joint, 2026-10-25), m.
+     */
+    public static final double TO_NATURAL = 1.0, EDGE_KEEP = 1.5, EDGE_RAMP = 3.0, JOIN = 3.5;
     /**
      * How far beyond the pavement's bevels a turf column's square must stay to carry plants (a plant's cross fills its
      * square and is offset up to 0.25 m), m (#bare).
@@ -195,6 +198,10 @@ public final class RoadWorks {
 
     /** The ramps' marks (#RampMarks) by ramp and by host. */
     private final Map<RoadDesign, List<RampMarks>> marks = new HashMap<>();
+    /** Per thread: the columns before their corners agree (#separate), direct-mapped. */
+    private final ThreadLocal<ColumnCache> columnCache = ThreadLocal.withInitial(ColumnCache::new);
+    /** Per thread: which corner points the works leave natural (#natural), direct-mapped. */
+    private final ThreadLocal<NaturalCache> naturalCache = ThreadLocal.withInitial(NaturalCache::new);
 
     public RoadWorks(List<RoadDesign> roads, Water water) { this(roads, water, TownWorks.EMPTY); }
 
@@ -900,6 +907,18 @@ public final class RoadWorks {
     }
 
     /**
+     * Whether a natural column (one the works leave alone, #naturalTops) meets corner point (x + a, z + b): only there do
+     * natural blocks meet the turf. A corner the works leave natural with none (the roadside crossing the planned ground
+     * within NATURAL_TOLERANCE in the middle of the works: a ditch's floor or a foreslope at ground level) lies amid turf,
+     * and the natural tops there (#naturalSurface: all four, the noise's whole blocks) stood up to a block over it, a lump
+     * (2026-10-25): it takes the planned ground instead.
+     */
+    static boolean joins(int[] tops, int a, int b) {
+        for (int j = b; j <= b + 1; j++) for (int i = a; i <= a + 1; i++) if (tops[9 + i + 3 * j] == 0) return true;
+        return false;
+    }
+
+    /**
      * naturalTop of the 3 x 3 columns x - 1 .. x + 1, z - 1 .. z + 1 ([i + 3 * j]), the cell corners read once, then
      * whether the works reach each of them ([9 + i + 3 * j]: 1 when a corner of it is off the natural ground).
      */
@@ -920,8 +939,7 @@ public final class RoadWorks {
         // which columns the works reach: any of their corners (the 4 x 4 corner points x - 1 .. x + 2) off the natural ground
         boolean[] off = new boolean[16];
         for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) {
-            double px = x - 1 + i, pz = z - 1 + j;
-            off[i + 4 * j] = !Double.isNaN(surface(px, pz, ground.at(px, pz)));
+            off[i + 4 * j] = !natural(x - 1 + i, z - 1 + j, ground);
         }
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++)
             if (off[i + 4 * j] || off[i + 1 + 4 * j] || off[i + 4 * (j + 1)] || off[i + 1 + 4 * (j + 1)]) out[9 + i + 3 * j] = 1;
@@ -940,13 +958,114 @@ public final class RoadWorks {
      * whole block over it, on average half a block higher), so a turf edge at the planned ground lay up to a block under
      * the grass beside it and the first row of natural blocks tilted down to it, a dark stepped band. Within TO_NATURAL of
      * the planned ground the turf blends over to the drawn natural surface (fully where the works meet the ground), and
-     * not next to the pavement: from EDGE_KEEP beyond the paved edge (or the route's end) over EDGE_RAMP.
+     * not next to the pavement: from EDGE_KEEP beyond the paved edge (or the route's end) over EDGE_RAMP. Only at the joint
+     * with the natural ground (#joint): the rise alone let it in all over a shallow roadside, and the natural tops under a
+     * ditch (the noise's blocks, whole-block steps over 4 m cells) pulled its corners up into lumps and over-steep blocks
+     * whose lifted corners tore from their neighbours (the user's county road 2026-10-25, docs road_drainage_v1_design 12).
      */
     static double toNatural(Hit h, double rise) {
         if (h == null) return 0;
         CrossSection sec = h.road().section;
         double dp = elevated(h) ? Double.POSITIVE_INFINITY : Math.hypot(Math.max(0, h.v() - sec.edge), h.beyond());
         return CrossSection.smooth((dp - EDGE_KEEP) / EDGE_RAMP) * CrossSection.smooth(1 - Math.abs(rise) / TO_NATURAL);
+    }
+
+    /**
+     * How near (0..1) corner point (x, z), itself off the natural ground, lies to it, and how far the natural surface as
+     * drawn stands over the planned ground there (lift[0]): every corner point R a natural column meets (#open) within
+     * JOIN (JOIN points each way) weighs 1 - d / JOIN, d its distance; the result is the largest weight (none: 0), the
+     * lift the weighted mean of R's (#drawn(R) - the planned ground at R). The natural blocks are the noise's whole blocks
+     * (up to one over the planned ground): the turf climbs to them over JOIN, not at the first block; linearly (a smooth
+     * step's steeper middle tore more blocks, the sweep in docs road_drainage_v1_design.md 12). The same for every column
+     * sharing the point.
+     */
+    double joint(int x, int z, Ground ground, double[] lift) {
+        double best = 0, sum = 0, weights = 0;
+        int r = (int) Math.floor(JOIN);
+        for (int j = -r; j <= r; j++) for (int i = -r; i <= r; i++) {
+            if (i == 0 && j == 0) continue;
+            double w = 1 - Math.sqrt(i * i + j * j) / JOIN;
+            if (w <= 0 || !open(x + i, z + j, ground)) continue;
+            best = Math.max(best, w);
+            sum += w * (drawn(x + i, z + j, ground) - ground.at(x + i, z + j));
+            weights += w;
+        }
+        lift[0] = weights > 0 ? sum / weights : 0;
+        return best;
+    }
+
+    /** The natural surface as drawn at corner point (x, z) a natural column meets (#naturalSurface: those columns' tops). */
+    double drawn(int x, int z, Ground ground) {
+        int sum = 0, n = 0;
+        for (int cz = z - 1; cz <= z; cz++) for (int cx = x - 1; cx <= x; cx++)
+            if (natural(cx, cz, ground) && natural(cx + 1, cz, ground) && natural(cx, cz + 1, ground) && natural(cx + 1, cz + 1, ground)) {
+                sum += top(cx, cz, ground);
+                n++;
+            }
+        return (double) sum / n;
+    }
+
+    /** Whether a natural column (all four corners natural, #natural) meets corner point (x, z) (#joins). */
+    boolean open(int x, int z, Ground ground) {
+        if (!natural(x, z, ground)) return false;
+        for (int cz = z - 1; cz <= z; cz++) for (int cx = x - 1; cx <= x; cx++)
+            if (natural(cx, cz, ground) && natural(cx + 1, cz, ground) && natural(cx, cz + 1, ground) && natural(cx + 1, cz + 1, ground)) return true;
+        return false;
+    }
+
+    /** Whether the works leave corner point (x, z) natural (#surface NaN), cached per thread. */
+    boolean natural(int x, int z, Ground ground) {
+        NaturalCache c = naturalCache.get();
+        if (c.ground != ground) {
+            java.util.Arrays.fill(c.keys, Long.MIN_VALUE);
+            c.ground = ground;
+        }
+        long k = (long) x << 32 | (z & 0xffffffffL);
+        int i = (int) ((x * 0x9E3779B1L + z * 0x85EBCA6BL) >>> 7) & (NaturalCache.SIZE - 1);
+        if (c.keys[i] == k) return c.values[i];
+        boolean n = Double.isNaN(surface(x, z, ground.at(x, z)));
+        c.keys[i] = k;
+        c.values[i] = n;
+        return n;
+    }
+
+    /** #naturalTop, cached per thread. */
+    private int top(int x, int z, Ground ground) {
+        NaturalCache c = naturalCache.get();
+        if (c.topGround != ground) {
+            java.util.Arrays.fill(c.topKeys, Long.MIN_VALUE);
+            c.topGround = ground;
+        }
+        long k = (long) x << 32 | (z & 0xffffffffL);
+        int i = (int) ((x * 0x9E3779B1L + z * 0x85EBCA6BL) >>> 7) & (NaturalCache.SIZE - 1);
+        if (c.topKeys[i] == k) return c.tops[i];
+        int t = naturalTop(x, z, ground);
+        c.topKeys[i] = k;
+        c.tops[i] = t;
+        return t;
+    }
+
+    private static final class ColumnCache {
+        static final int SIZE = 1024;
+        final long[] keys = new long[SIZE];
+        final Column[] values = new Column[SIZE];
+        Ground ground;
+
+        ColumnCache() { java.util.Arrays.fill(keys, Long.MIN_VALUE); }
+    }
+
+    private static final class NaturalCache {
+        static final int SIZE = 4096;
+        final long[] keys = new long[SIZE];
+        final boolean[] values = new boolean[SIZE];
+        final long[] topKeys = new long[SIZE];
+        final int[] tops = new int[SIZE];
+        Ground ground, topGround;
+
+        NaturalCache() {
+            java.util.Arrays.fill(keys, Long.MIN_VALUE);
+            java.util.Arrays.fill(topKeys, Long.MIN_VALUE);
+        }
     }
 
     /** RoadWorksRef#height at a cell corner. */
@@ -1032,8 +1151,79 @@ public final class RoadWorks {
      * turf never rises through the asphalt.
      */
     public Column column(int x, int z, Ground ground) {
+        Column c = separate(x, z, ground);
+        return turf(c) ? agreed(c, x, z, ground, AGREE) : c;
+    }
+
+    /** Rounds of #agreed. */
+    private static final int AGREE = 2;
+
+    /** Column (x, z) after the given rounds of #agreed (0: #separate). */
+    private Column agreed(int x, int z, Ground ground, int rounds) {
+        Column c = separate(x, z, ground);
+        return rounds == 0 || !turf(c) ? c : agreed(c, x, z, ground, rounds);
+    }
+
+    /** #column before its turf corners agree with its neighbours' (#agreed), cached per thread. */
+    private Column separate(int x, int z, Ground ground) {
+        ColumnCache cc = columnCache.get();
+        if (cc.ground != ground) {
+            java.util.Arrays.fill(cc.keys, Long.MIN_VALUE);
+            cc.ground = ground;
+        }
+        long k = (long) x << 32 | (z & 0xffffffffL);
+        int i = (int) ((x * 0x9E3779B1L + z * 0x85EBCA6BL) >>> 7) & (ColumnCache.SIZE - 1);
+        if (cc.keys[i] == k) return cc.values[i];
         Column c = unpadded(x, z, ground);
-        return drive.isEmpty() || !drive.nearPad(x, z) ? c : padded(c, x, z, ground);
+        if (!drive.isEmpty() && drive.nearPad(x, z)) c = padded(c, x, z, ground);
+        cc.keys[i] = k;
+        cc.values[i] = c;
+        return c;
+    }
+
+    /** Graded turf whose corners meet its neighbours' (#agreed): not a rock cut's face, not under a tunnel's works. */
+    private static boolean turf(Column c) {
+        return c.kind() == Kind.TURF && (c.data() & (ROCK_CUT | TUNNEL_OVER)) == 0;
+    }
+
+    /** Corner k (nw, ne, sw, se) of a graded_turf column, m. */
+    static double corner(Column c, int k) {
+        int base = c.y() * 8 + ((c.data() >> 16 & 1) != 0 ? 4 : 0);
+        return (base + (c.data() >> 4 * k & 15)) / 8.0;
+    }
+
+    /**
+     * A turf column whose shared corners agree with its neighbours' (2026-10-25, docs road_drainage_v1_design.md 12): each
+     * column fits its own four corners to one block (#fit), and one steeper than the block holds lifts its low corners
+     * alone; the neighbours sharing such a corner kept it lower, and between them a torn face (sides between turf blocks
+     * are culled: a wedge of sky, a loose triangle). Every corner takes the highest of the turf columns sharing it, and the
+     * column fits again; AGREE rounds, each over the neighbours after the round before (one that must lift again after the
+     * last still tears: rare, at the edge of a steep cut).
+     */
+    private Column agreed(Column c, int x, int z, Ground ground, int rounds) {
+        // this round starts from the column after the round before, as its neighbours' do: all four take the same highest
+        if (rounds > 1) c = agreed(c, x, z, ground, rounds - 1);
+        double[] q = new double[4];
+        boolean changed = false;
+        for (int k = 0; k < 4; k++) {
+            int px = x + (k & 1), pz = z + (k >> 1);
+            q[k] = corner(c, k);
+            for (int j = 0; j <= 1; j++) for (int i = 0; i <= 1; i++) {
+                int dx = px - 1 + i, dz = pz - 1 + j;
+                if (dx == x && dz == z) continue;
+                Column d = agreed(dx, dz, ground, rounds - 1);
+                if (!turf(d)) continue;
+                double v = corner(d, (px - dx) + 2 * (pz - dz));
+                if (v > q[k] + 1e-9) {
+                    q[k] = v;
+                    changed = true;
+                }
+            }
+        }
+        if (!changed) return c;
+        int[] fit = fit(q);
+        int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16 | c.data() & ~0x1ffff;
+        return new Column(c.kind(), fit[0], c.layers(), c.upper(), data, c.bottom(), c.paveLo(), c.paveHi(), c.roof(), c.deck());
     }
 
     /**
@@ -1149,6 +1339,7 @@ public final class RoadWorks {
             // a wing wall's coping can only lie over a corner near a span end of this road (its corners are within 1 m)
             boolean wings = onRoute && BridgeMesh.nearEnd(d, centre.s(), 2);
             int[] tops = null;
+            double[] lift = new double[1];
             Hit[] hits = new Hit[4];
             // the deepest corner's cut and whether a corner lies under a pavement or by a pad (a rock face never does)
             double dig = 0;
@@ -1163,11 +1354,15 @@ public final class RoadWorks {
                 double w = tunnel != null ? 0 : natural ? 1 : toNatural(h, f - g);
                 // and not next to a junction pad (C3.3b)
                 if (nearPad && !natural && w > 0) w *= CrossSection.smooth((padDistance(x + a, z + b) - EDGE_KEEP) / EDGE_RAMP);
+                // and only at the joint with the natural ground (#joint), lifted by what the natural surface stands over it
+                if (!natural && w > 0) {
+                    w *= joint(x + a, z + b, ground, lift);
+                    f += lift[0] * w;
+                }
                 if (tunnel != null && natural) f = g;
-                if (w > 0) {
+                if (natural && w > 0) {
                     if (tops == null) tops = naturalTops(x, z, ground);
-                    double n = naturalSurface(tops, a, b);
-                    f = natural ? n : f + (n - g) * w;
+                    f = joins(tops, a, b) ? naturalSurface(tops, a, b) : g;
                 }
                 if (!natural) {
                     any = true;
@@ -1574,23 +1769,27 @@ public final class RoadWorks {
     }
 
     /**
-     * A town's turf column: corners on the finished field (#surface); off the footprint toward the slope's toe they meet
-     * the natural surface as drawn (as the roads' turf, #toNatural), on the street strips they round down (the turf never
+     * A town's turf column: corners on the finished field (#surface); off the footprint at the slope's toe they meet
+     * the natural surface as drawn (as the roads' turf, #toNatural, #joint), on the street strips they round down (the turf never
      * rises through a pavement).
      */
     private Column townTurf(int x, int z, Ground ground) {
         double[] q = new double[4];
         boolean any = false;
         int[] tops = null;
+        double[] lift = new double[1];
         for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
             double px = x + a, pz = z + b, g = ground.at(px, pz), f = surface(px, pz, g);
             boolean natural = Double.isNaN(f);
             TownWorks.Spot sp = natural ? null : towns.spot(px, pz);
             double w = natural ? 1 : sp != null ? 0 : CrossSection.smooth(1 - Math.abs(f - g) / TO_NATURAL);
-            if (w > 0) {
+            if (!natural && w > 0) {
+                w *= joint(x + a, z + b, ground, lift);
+                f += lift[0] * w;
+            }
+            if (natural) {
                 if (tops == null) tops = naturalTops(x, z, ground);
-                double n = naturalSurface(tops, a, b);
-                f = natural ? n : f + (n - g) * w;
+                f = joins(tops, a, b) ? naturalSurface(tops, a, b) : g;
             }
             if (!natural) {
                 any = true;

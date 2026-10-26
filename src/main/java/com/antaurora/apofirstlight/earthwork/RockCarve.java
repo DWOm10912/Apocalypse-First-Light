@@ -477,6 +477,17 @@ public final class RockCarve {
             }
             chunk.setUnsaved(true);
             AflNetwork.sendTrackingChunk(chunk, new CarveChunkPacket(ChunkPos.getX(k), ChunkPos.getZ(k), c));
+            if (!com.antaurora.apofirstlight.ground.GroundEvents.listening()) continue;
+            int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight();
+            if (c != null) {
+                minY = Integer.MAX_VALUE;
+                maxY = Integer.MIN_VALUE;
+                for (var b : c.entries()) {
+                    minY = Math.min(minY, CarveChunk.keyY(b.getIntKey()));
+                    maxY = Math.max(maxY, CarveChunk.keyY(b.getIntKey()));
+                }
+            }
+            com.antaurora.apofirstlight.ground.GroundEvents.areaChanged(level, ChunkPos.getX(k), ChunkPos.getZ(k), minY, maxY);
         }
         DIRTY.clear();
     }

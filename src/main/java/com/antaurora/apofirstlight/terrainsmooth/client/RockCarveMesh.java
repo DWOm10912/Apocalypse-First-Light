@@ -21,6 +21,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.model.data.ModelData;
 
@@ -191,14 +193,47 @@ public final class RockCarveMesh {
     }
 
     /**
-     * The light of something at pos (packed), own the cell's: for a carved or worn block (its hollow) or an open cell beside a
-     * carving at least its {@link #openLight}. The level or a chunk build region (client carve copies, relief read from g):
-     * entities and particles (the light mixins) and the ground items the chunk draws (GroundItemChunking#emit).
+     * The light of something at pos (packed), own the cell's: an edited column's skin cell takes the first cell above it
+     * that is not one (Earthwork#clientLightCell); a carved or worn block (its hollow) or an open cell beside a carving at
+     * least its {@link #openLight}. The level or a chunk build region (client carve copies, relief read from g): every live
+     * read of the client level (#brightness) and the ground items the chunk draws (GroundItemChunking#emit).
      */
     public static int lightAt(BlockAndTintGetter g, BlockPos pos, int own) {
         BlockState s = g.getBlockState(pos);
+        if (Earthwork.clientSkinCell(s.getBlock(), pos.getX(), pos.getY(), pos.getZ()))
+            return brighter(own, LevelRenderer.getLightColor(g, Earthwork.clientLightCell(g, pos)));
         boolean dark = s.isSolidRender(g, pos) ? RockCarve.occupancy(null, g, pos, s.getBlock()) != null : besideCarve(g, pos);
         return dark ? brighter(own, openLight(g, pos)) : own;
+    }
+
+    private static final ThreadLocal<boolean[]> READING = ThreadLocal.withInitial(() -> new boolean[1]);
+
+    /**
+     * The one point the client level's light is read through (terrain rework R0, docs/worldgen/terrain_rework_v1_design.md
+     * 3.7; GroundLightMixin on ClientLevel#getBrightness): entities, the hand, particles, block entities and everything else
+     * drawn from the live level get {@link #lightAt} in an edited column's skin cell, a carved or worn block, or a pocket
+     * beside a carving, all of which the light engine stores as dark. raw: the engine's value for the layer. The reads
+     * lightAt makes itself come back raw (no recursion). Chunk meshing reads its build region, not this.
+     */
+    public static int brightness(BlockAndTintGetter level, LightLayer layer, BlockPos pos, int raw) {
+        boolean[] busy = READING.get();
+        if (busy[0]) return raw;
+        BlockState s = level.getBlockState(pos);
+        Block b = s.getBlock();
+        if (s.isSolidRender(level, pos)) {
+            if (!Earthwork.ground(b) && !RockRelief.soil(b)) return raw;   // only natural ground has skins and hollows
+        } else if (RockCarve.CLIENT.isEmpty() && !Earthwork.clientSkinCell(b, pos.getX(), pos.getY(), pos.getZ())) {
+            return raw;   // open, and no carving anywhere to seal it: nearly every read ends here
+        }
+        busy[0] = true;
+        try {
+            var engine = level.getLightEngine();
+            int own = LightTexture.pack(engine.getLayerListener(LightLayer.BLOCK).getLightValue(pos), engine.getLayerListener(LightLayer.SKY).getLightValue(pos));
+            int l = lightAt(level, pos, own);
+            return layer == LightLayer.SKY ? LightTexture.sky(l) : LightTexture.block(l);
+        } finally {
+            busy[0] = false;
+        }
     }
 
     /** How many blocks round a carved or worn block {@link #openLight} looks for open space. */
@@ -208,8 +243,7 @@ public final class RockCarveMesh {
      * The light of a carved or worn block's hollow (packed): the block is a full block in the light data, dark inside
      * (user 2026-10-24: a pit's drops, the hand and a deep hollow went black). The brightest open cell (not a full block)
      * next to it, or through pick-carved blocks round it up to LIGHT_STEPS blocks out, one level darker for every carved
-     * block passed (as light falls off). Chunk meshing (any thread: the client's carve copies) and the entity and particle
-     * light hooks (EarthworkEntityLightMixin, EarthworkParticleLightMixin).
+     * block passed (as light falls off). Chunk meshing (any thread: the client's carve copies) and #lightAt.
      */
     public static int openLight(BlockAndTintGetter g, BlockPos start) {
         int sky = 0, block = 0;
@@ -222,7 +256,7 @@ public final class RockCarveMesh {
                 if (!seen.add(o.asLong())) continue;
                 BlockState os = g.getBlockState(o);
                 if (!os.isSolidRender(g, o)) {
-                    // the overload with the state: the light hooks (EarthworkParticleLightMixin) sit on the other, no recursion
+                    // on the client level these reads come back raw (#brightness is busy)
                     int c = LevelRenderer.getLightColor(g, os, o);
                     sky = Math.max(sky, LightTexture.sky(c) - d);
                     block = Math.max(block, LightTexture.block(c) - d);

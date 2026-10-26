@@ -194,6 +194,25 @@ public final class CrossSection {
         return out;
     }
 
+    /**
+     * An undivided road's lane slopes after the runoff, in place, without an inverted crown (2026-10-25, docs
+     * road_drainage_v1_design.md 11.3): each side runs off on its own, and between reverse curves one side's rotation out
+     * of the first curve overlaps the other's into the second, so both lanes fell toward the centreline (their sum held at
+     * -4 %), a V whose line along the centre held the water. A pair of slopes is a rotation k = (left - right) / 2 plus a
+     * crown c = (left + right) / 2; the crown is kept at 0 or more, so there the pavement is one plane turning through level
+     * (as a short tangent between reverse curves is built). Unchanged wherever c >= 0 (one curve's runoff always is), and
+     * continuous: c only stops at 0; no lane turns faster than before (k changes by half the two sides' changes).
+     */
+    static void noInvertedCrown(double[] left, double[] right) {
+        for (int i = 0; i < left.length; i++) {
+            double c = (left[i] + right[i]) / 2;
+            if (c >= 0) continue;
+            double k = (left[i] - right[i]) / 2;
+            left[i] = k;
+            right[i] = -k;
+        }
+    }
+
     /** Inner shoulder slope, positive falling towards the median; the crest at the crown line breaks by at most 8 %. */
     static double innerSlope(double lane) {
         return lane <= 0 ? Math.max(SHOULDER_SLOPE, -lane) : Math.min(SHOULDER_SLOPE, MAX_ROLLOVER - lane);
@@ -203,6 +222,24 @@ public final class CrossSection {
     static double outerSlope(double lane) {
         return lane >= 0 ? Math.max(SHOULDER_SLOPE, lane) : Math.min(SHOULDER_SLOPE, lane + MAX_ROLLOVER);
     }
+
+    /**
+     * The asphalt wearing course's thickness under the pavement, m (road Mesh-ification P0, 2026-10-25, docs
+     * road_mesh_damage_v1_design.md 3.1): the interstate and its ramps 25 cm, a state road 15 cm, a county road 10 cm, as
+     * North American flexible pavements of their traffic are built (Maine DOT's design guide: 4-6 in of HMA over 20-24 in
+     * of aggregate for low and moderate loads). Under it lie the aggregate base and subbase (RoadChunkPass), what a dug
+     * hole shows below the asphalt (RoadCells#walls).
+     */
+    public double asphaltDepth() {
+        return switch (name) {
+            case "R4", "RAMP" -> 0.25;
+            case "R2" -> 0.15;
+            default -> 0.10;
+        };
+    }
+
+    /** A junction pad's asphalt (the state roads': RoadCells#walls, RoadSurfaceBlock's chunks). */
+    public static final double PAD_ASPHALT = 0.15;
 
     /** Whether lateral v lies on the paved band (between the inner and the outer shoulder edges). */
     public boolean paved(double v) { return v >= halfMedian - 1e-9 && v <= edge + 1e-9; }

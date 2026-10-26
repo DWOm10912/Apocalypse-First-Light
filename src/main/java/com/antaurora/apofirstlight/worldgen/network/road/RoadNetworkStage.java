@@ -44,9 +44,12 @@ public final class RoadNetworkStage {
      * whole block, the fallback search out to TownExits.FALLBACK_SEARCH with steeper blocks, 2026-10-20; 19: Fuel Stop A1's
      * corner lot takes its template's two entrances as driveways, the side one on the cross street, TownBuildings#fuelStop,
      * 2026-10-20; 20: Fuel Stop A1's lot at its template's surface, banked along its streets, its aprons up to that
-     * surface at the lot line, TownBuildings#bank, 2026-10-20).
+     * surface at the lot line, TownBuildings#bank, 2026-10-20; 21: the roadside turf blended toward the natural surface
+     * only at its joint with the natural ground, RoadWorks#joint, a corner left natural amid the works on the planned
+     * ground, RoadWorks#joins, every turf corner the highest its neighbours fit it to, RoadWorks#agreed, and no inverted
+     * crown between reverse curves, CrossSection#noInvertedCrown, 2026-10-25).
      */
-    public static final int WORKS_VERSION = 20;
+    public static final int WORKS_VERSION = 21;
 
     /**
      * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
@@ -77,9 +80,13 @@ public final class RoadNetworkStage {
      * planned round it, FixedTownSite / RoadNetworkPlan#pins, 2026-10-20; 27: 25 and 26 withdrawn, the towns grown round
      * their exits again with a landmark's block and the fallback search, TownSites#landmarks / TownExits#site, 2026-10-20; 28:
      * Fuel Stop A1's driveway aprons, TownBuildings#fuelStop, 2026-10-20; 29: its lot at its surface, its banked strips and
-     * the objects on them raised, its aprons up to its surface, TownBuildings#bank, 2026-10-20).
+     * the objects on them raised, its aprons up to its surface, TownBuildings#bank, 2026-10-20; 30: an undivided road's
+     * pavement one plane turning through level between reverse curves, no inverted crown, CrossSection#noInvertedCrown,
+     * 2026-10-25; 31: road Mesh-ification P0, under the pavement the aggregate base and subbase in AFL gravel and the fill
+     * in AFL backfill, no asphalt cube or vanilla dirt, gravel and cobblestone, RoadChunkPass, 2026-10-25; 32: the county road's driveway never crosses its road to the far edge,
+     * RoadCounty#drive, 2026-10-25).
      */
-    public static final int SURFACE_VERSION = 29;
+    public static final int SURFACE_VERSION = 32;
 
     /** The road_network system version: the plan's rules, the stage, the built set and the surface version. */
     public static String networkVersion(String planVersion) {

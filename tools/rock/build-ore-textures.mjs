@@ -11,8 +11,13 @@
 //                             lead-grey galena cubes
 //   copper_breccia            angular clasts of several rocks in a dark matrix with chalcopyrite and green-blue chrysocolla
 // Each in lean and rich grade (block state grade). The LabPBR maps: _n DirectX from the height field, B ambient occlusion,
-// A height; _s R smoothness, G F0 (reflectance x 255: quartz 11, sphalerite 43, hematite 70, chalcopyrite 107, galena 110;
+// A 255 (Rock PBR R1: no parallax on the rock face mesh's 1/8 m pieces, docs/worldgen/rock_pbr_v1.md 3); _s R smoothness, G F0 (reflectance x 255: quartz 11, sphalerite 43, hematite 70, chalcopyrite 107, galena 110;
 // gold flecks 231 = gold), B 48 (the rocks' porosity), A 255.
+// Rock PBR R1 (rock_pbr_v1.md 6): the grains a lamp catches. Besides each ore's own masses, disseminated grains a texel each
+// in the rock between them (pyrite in coal and in the quartz, chalcopyrite, galena, sphalerite, magnetite: DISSEM), the
+// hematite bands' specular flakes, and every metallic grain (F0 40 and up) a crystal face: its normal leaned at random per
+// 2 x 2 texels (FACET), so the grains flash one by one, not as one sheen. The height field's relief is made as strong as
+// the natural rocks' (rock-pbr.mjs relief, 90% of the texels at most 22 degrees) with its crevice AO, before the facets.
 //   node tools/rock/build-ore-textures.mjs            -> writes the sprites and the comparison sheet
 //   node tools/rock/build-ore-textures.mjs --check    -> verifies the sprites are up to date
 // The sheet (design/world/ore_u3b/ore_u3b_candidates.png, needs sharp from the wiki's node_modules) is what the user looks
@@ -22,6 +27,7 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {readPng, png} from '../cube-slab-mesh-lib.mjs';
+import {relief} from './rock-pbr.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const TEX = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/block');
@@ -308,7 +314,24 @@ const ORES = [
 ];
 const BUMP = 6;
 
-function build(fn, rich) {
+/**
+ * Disseminated grains (rock_pbr_v1.md 6): a mineral, its share of the texels in the lean and the rich grade, on the texels
+ * of rock or gangue (F0 under 20) of the sprite; or a sheen: on the texels of F0 `on`, a share of them as smooth as `sm`.
+ */
+const PYRITE = {c: [0.66, 0.6, 0.38], sm: 0.85, f0: 138};
+const DISSEM = {
+  coal_seam: [{m: PYRITE, lean: 0.006, rich: 0.01}],
+  banded_iron_formation: [{on: 70, sm: 0.88, lean: 0.25, rich: 0.3}, {m: M.magnetite, lean: 0.02, rich: 0.03}],
+  quartz_vein_gold: [{m: PYRITE, lean: 0.015, rich: 0.025}],
+  quartz_vein_copper: [{m: PYRITE, lean: 0.01, rich: 0.015}, {m: M.chalcopyrite, lean: 0.015, rich: 0.025}],
+  quartz_vein_lead: [{m: PYRITE, lean: 0.01, rich: 0.015}, {m: M.galena, lean: 0.015, rich: 0.025}],
+  lead_zinc_dolomite: [{m: M.galena, lean: 0.015, rich: 0.025}, {m: M.sphalerite, lean: 0.015, rich: 0.02}],
+  copper_breccia: [{m: M.chalcopyrite, lean: 0.02, rich: 0.03}, {m: PYRITE, lean: 0.01, rich: 0.015}],
+};
+/** The largest lean of a metallic grain's face (degrees). */
+const FACET = 25;
+
+function build(fn, rich, dissem = []) {
   const S = 2, n = RES * RES, col = new Float32Array(n * 3), H = new Float32Array(n), SM = new Float32Array(n), F0 = new Float32Array(n);
   for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
     // 2 x 2 supersampled (the small cubes and flecks keep clean edges)
@@ -323,22 +346,47 @@ function build(fn, rich) {
     // F0: a metal preset wins the texel; otherwise the mean reflectance
     F0[i] = preset || f;
   }
+  dissem.forEach((d, di) => {
+    const share = rich ? d.rich : d.lean;
+    for (let i = 0; i < n; i++) {
+      const x = i % RES, y = (i - x) / RES;
+      if (hash(x, y, 500 + di) >= share) continue;
+      if (d.on != null) { if (Math.round(F0[i]) === d.on) SM[i] = Math.max(SM[i], d.sm); continue; }
+      if (F0[i] >= 20) continue;
+      const k = 0.85 + 0.3 * hash(x, y, 520 + di);
+      for (let c = 0; c < 3; c++) col[i * 3 + c] = clamp(d.m.c[c] * k);
+      SM[i] = d.m.sm; F0[i] = d.m.f0; H[i] += 0.02;
+    }
+  });
   const albedo = Buffer.alloc(n * 4), sB = Buffer.alloc(n * 4), nB = Buffer.alloc(n * 4), nrm = new Float32Array(n * 3);
+  // the height field's normals (OpenGL: y up the image), then their relief as strong as the rocks'
+  const base = new Float32Array(n * 3);
   for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
     const i = y * RES + x;
     const hx = (H[y * RES + wrap(x + 1, RES)] - H[y * RES + wrap(x - 1, RES)]) / 2, hy = (H[wrap(y + 1, RES) * RES + x] - H[wrap(y - 1, RES) * RES + x]) / 2;
-    let nx = -hx * BUMP, ny = -hy * BUMP, nz = 1;
+    const l = Math.hypot(hx * BUMP, hy * BUMP, 1);
+    base[i * 3] = -hx * BUMP / l; base[i * 3 + 1] = hy * BUMP / l; base[i * 3 + 2] = 1 / l;
+  }
+  const rel = relief(base, RES, 22);
+  for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
+    const i = y * RES + x, rz = rel.nrm[i * 3 + 2];
+    let nx = rel.nrm[i * 3] / rz, ny = -rel.nrm[i * 3 + 1] / rz, nz = 1;
+    if (F0[i] >= 40) {
+      // a crystal face: leaned at random, one lean per 2 x 2 texels
+      const gx = x >> 1, gy = y >> 1, lean = Math.tan(FACET * Math.PI / 180 * Math.sqrt(hash(gx, gy, 540))), az = hash(gx, gy, 541) * TAU;
+      nx += lean * Math.cos(az); ny += lean * Math.sin(az);
+    }
     const l = Math.hypot(nx, ny, nz);
     nx /= l; ny /= l; nz /= l;
     nrm[i * 3] = nx; nrm[i * 3 + 1] = ny; nrm[i * 3 + 2] = nz;
     // ambient occlusion: lower than the neighbourhood is darker
     let around = 0;
     for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) around += H[wrap(y + dy, RES) * RES + wrap(x + dx, RES)] / 4;
-    const ao = clamp(1 - Math.max(0, around - H[i]) * 3, 0.6, 1);
+    const ao = Math.min(rel.ao[i], clamp(1 - Math.max(0, around - H[i]) * 3, 0.6, 1));
     for (let c = 0; c < 3; c++) albedo[i * 4 + c] = Math.round(clamp(col[i * 3 + c]) * 255);
     albedo[i * 4 + 3] = 255;
     nB[i * 4] = Math.round((nx * 0.5 + 0.5) * 255); nB[i * 4 + 1] = Math.round((ny * 0.5 + 0.5) * 255);
-    nB[i * 4 + 2] = Math.round(ao * 255); nB[i * 4 + 3] = Math.round(clamp(H[i]) * 255);
+    nB[i * 4 + 2] = Math.round(ao * 255); nB[i * 4 + 3] = 255;
     sB[i * 4] = Math.round(clamp(SM[i]) * 255); sB[i * 4 + 1] = Math.round(F0[i]); sB[i * 4 + 2] = 48; sB[i * 4 + 3] = 255;
   }
   return {albedo, s: sB, n: nB, col, nrm, sm: SM, f0: F0};
@@ -347,7 +395,7 @@ function build(fn, rich) {
 // ---------------------------------------------------------------- write / check
 
 const sprites = [];
-for (const [name, fn] of ORES) for (const grade of ['lean', 'rich']) sprites.push({name: name + '_' + grade, ore: name, grade, ...build(fn, grade === 'rich')});
+for (const [name, fn] of ORES) for (const grade of ['lean', 'rich']) sprites.push({name: name + '_' + grade, ore: name, grade, ...build(fn, grade === 'rich', DISSEM[name])});
 let bad = 0, n = 0;
 if (!check) fs.mkdirSync(OUT, {recursive: true});
 for (const sp of sprites) for (const [sfx, buf] of [['', sp.albedo], ['_s', sp.s], ['_n', sp.n]]) {

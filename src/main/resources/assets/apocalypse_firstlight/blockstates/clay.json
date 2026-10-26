@@ -1,0 +1,62 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_0_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_0_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_1_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_1_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_2_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_2_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_3_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/clay_3_mirrored",
+        "y": 180
+      }
+    ]
+  }
+}

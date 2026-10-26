@@ -21,6 +21,7 @@ import {fileURLToPath} from 'node:url';
 import {FORMS, form, fragments, volume, centroid, translate, level1Count, level2Count, strikes, budget, MAX_STRIKES, hash, V} from './boulder-shapes.mjs';
 import {soup, addMesh, addGround, render} from './raster.mjs';
 import {exportForms, encode, checkExport, SPRITES} from './export.mjs';
+import {relief, encodeN} from '../rock/rock-pbr.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CACHE = path.join(ROOT, 'build/cc0-rock');
@@ -92,15 +93,19 @@ const GRANITE = [0.53, 0.52, 0.5], LICHEN = [0.76, 0.78, 0.68];
  * how often it repeats across the 2 m tile (a 1 m photo twice; other sizes are scaled to the tile); color: the weathered
  * rock's grey (sRGB 0..1); detail, mott: gains on the photo's fine grain and its broad mottle about that grey; chroma: how
  * much of the photo's own tint is added back, keep: how far the colour goes over to the photo's own (scaled to the grey's
- * brightness); speckle: granite's light and dark feldspar and biotite grains; nrm: the photo normal's strength; lichen: the
- * share of the crust on the plain and the weathered sprite.
+ * brightness); speckle: granite's light and dark feldspar and biotite grains; nrm: the photo normal's strength; tilt: Rock
+ * PBR R1 (docs/worldgen/rock_pbr_v1.md 4): the relief made stronger until 90% of the bare rock's texels lean at most this many
+ * degrees (rock-pbr.mjs relief, with its crevice AO); lichen: the share of the crust on the plain and the weathered sprite.
  */
 export const ROCKS = {
-  granite: {photo: 'rock_surface', rep: 1, color: GRANITE, detail: 2.4, mott: 0.7, chroma: 0.35, keep: 0, speckle: true, nrm: 0.8, lichen: [0.16, 0.62]},
+  granite: {photo: 'rock_surface', rep: 1, color: GRANITE, detail: 2.4, mott: 0.7, chroma: 0.35, keep: 0, speckle: true, nrm: 0.8, tilt: 24, lichen: [0.16, 0.62]},
   // user 2026-10-23 from design/world/rock_r3/boulders_r3_candidates.png: limestone row 3, sandstone row 4, shale row 6
-  limestone: {photo: 'rock_05', rep: 1, color: [0.70, 0.69, 0.64], detail: 0.8, mott: 0.4, chroma: 0.06, keep: 0, nrm: 0.6, lichen: [0.16, 0.55]},
-  sandstone: {photo: 'worn_rock_natural_01', rep: 1, color: [0.63, 0.56, 0.45], detail: 1.4, mott: 0.5, chroma: 0.1, keep: 0.4, nrm: 0.8, lichen: [0.12, 0.45]},
-  shale: {photo: 'dark_rock_02', rep: 1, color: [0.37, 0.37, 0.37], detail: 1.6, mott: 0.5, chroma: 0.05, keep: 0.1, nrm: 0.8, lichen: [0.08, 0.35]},
+  limestone: {photo: 'rock_05', rep: 1, color: [0.70, 0.69, 0.64], detail: 0.8, mott: 0.4, chroma: 0.06, keep: 0, nrm: 0.6, tilt: 22, lichen: [0.16, 0.55]},
+  sandstone: {photo: 'worn_rock_natural_01', rep: 1, color: [0.63, 0.56, 0.45], detail: 1.4, mott: 0.5, chroma: 0.1, keep: 0.4, nrm: 0.8, tilt: 22, lichen: [0.12, 0.45]},
+  // natural ground N1 (docs/worldgen/natural_ground_n1_design.md 9, user 2026-10-24): the badlands' red beds, sandstone's
+  // photo in an iron-oxide red
+  red_sandstone: {photo: 'worn_rock_natural_01', rep: 1, color: [0.62, 0.40, 0.29], detail: 1.4, mott: 0.5, chroma: 0.1, keep: 0.3, nrm: 0.8, tilt: 22, lichen: [0.08, 0.35]},
+  shale: {photo: 'dark_rock_02', rep: 1, color: [0.37, 0.37, 0.37], detail: 1.6, mott: 0.5, chroma: 0.05, keep: 0.1, nrm: 0.8, tilt: 26, lichen: [0.08, 0.35]},
 };
 
 /**
@@ -114,8 +119,8 @@ async function sprite(sharp, rock, lichen, gain = 1) {
   const base = rock.color, baseLum = (base[0] + base[1] + base[2]) / 3;
   const L = new Float32Array(RES * RES).map((_, i) => lum(rs, i)), mean = L.reduce((a, v) => a + v, 0) / L.length;
   const low = blurWrap(L, 12);
-  const col = new Float32Array(RES * RES * 3), nrm = new Float32Array(RES * RES * 3);
-  const albedo = Buffer.alloc(RES * RES * 4), sB = Buffer.alloc(RES * RES * 4), nB = Buffer.alloc(RES * RES * 4);
+  const col = new Float32Array(RES * RES * 3), nrm = new Float32Array(RES * RES * 3), bare = new Float32Array(RES * RES * 3);
+  const albedo = Buffer.alloc(RES * RES * 4), sB = Buffer.alloc(RES * RES * 4);
   const th = 1 - lichen;
   for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
     const i = y * RES + x;
@@ -134,13 +139,15 @@ async function sprite(sharp, rock, lichen, gain = 1) {
     col.set(c.map(a => Math.max(0, Math.min(1, a))), i * 3);
     // normal: OpenGL from the photo, a little softer, flattened under the crust
     let n = [(rn[i * 3] * 2 - 1) * rock.nrm, (rn[i * 3 + 1] * 2 - 1) * rock.nrm, rn[i * 3 + 2] * 2 - 1];
+    bare.set(V.norm(n), i * 3);
     n = V.norm(n.map((a, k) => a + ([0, 0, 1][k] - a) * crust * 0.5));
     nrm.set(n, i * 3);
     albedo.set([...col.slice(i * 3, i * 3 + 3)].map(a => Math.round(a * 255)).concat(255), i * 4);
     sB.set([Math.round((1 - rough[i]) * 170), 10, 48, 255], i * 4);
-    nB.set([Math.round((n[0] * 0.5 + 0.5) * 255), Math.round((-n[1] * 0.5 + 0.5) * 255), 255, 255], i * 4);
   }
-  return {res: RES, tile: TILE, col, nrm, png: {albedo, s: sB, n: nB}};
+  // the relief: the bare rock's scale, so the rock under a crust is as rough as without one
+  const scale = relief(bare, RES, rock.tilt).gain, r = relief(nrm, RES, rock.tilt, {gain: scale});
+  return {res: RES, tile: TILE, col, nrm: r.nrm, png: {albedo, s: sB, n: encodeN(r.nrm, r.ao, RES)}};
 }
 
 /** Closed mesh: every directed edge has its reverse exactly once. */

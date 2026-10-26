@@ -57,6 +57,8 @@ public final class WorldgenRules {
     static final int FEDERAL_WATER = 1;
     // federal ecology: FederalEcology zones, FederalEcologyBiomes mapping, federal biome JSONs, surface rule branch
     static final int FEDERAL_ECOLOGY = 1;
+    // N1c (2026-10-25): the AFL natural ground swap (NaturalGroundTable, NaturalGroundPass), a gated system
+    static final int NATURAL_GROUND = 1;
 
     /** The rules of this build for an r1 overworld; forestEnabled is the world's mesh forest switch. */
     public static List<WorldgenSystem> current(boolean forestEnabled) {
@@ -108,6 +110,9 @@ public final class WorldgenRules {
                         "town_buildings#" + com.antaurora.apofirstlight.worldgen.network.town.TownBuildings.VERSION + "#"
                                 + com.antaurora.apofirstlight.worldgen.building.BuildingKits.VERSION,
                         Severity.HARD, "the town buildings: which stands on each lot, where, and how it is built"),
+                // C, N1c (2026-10-25): the natural ground made of the AFL blocks (gated like the roads)
+                new WorldgenSystem(WorldgenGates.NATURAL_GROUND, "natural_ground#" + NATURAL_GROUND, Severity.HARD,
+                        "natural ground blocks: topsoil, mud, sand, gravel, clay, snow and the badlands beds"),
                 new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
                         "natural trees"));
         return List.of(

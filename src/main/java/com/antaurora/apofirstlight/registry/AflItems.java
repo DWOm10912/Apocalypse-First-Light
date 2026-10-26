@@ -88,6 +88,10 @@ public final class AflItems {
             () -> new Item(new Item.Properties().stacksTo(32)));
     public static final RegistryObject<Item> FLINT = ITEMS.register("flint",
             () -> new Item(new Item.Properties().stacksTo(16)));
+    // Road Mesh-ification P0 (docs/worldgen/road_mesh_damage_v1_design.md 6): a chunk of broken asphalt, what a dug road's
+    // wearing course drops (RoadSurfaceBlock#chunks); a material only (never a block, no recipe before the rework)
+    public static final RegistryObject<Item> ASPHALT_CHUNK = ITEMS.register("asphalt_chunk",
+            () -> new Item(new Item.Properties().stacksTo(16)));
     // U3a-2 (docs/worldgen/underground_u3_rocks_ores_design.md 3.1): each rock's own stone, what a pick breaks off it and
     // what its boulders and loose stones hold; materials (never made back into blocks; no recipe before the rework)
     public static final RegistryObject<Item> GNEISS_STONE = ITEMS.register("gneiss_stone",
@@ -243,6 +247,16 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.MARL_ROCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> ROCK_SALT_ROCK = ITEMS.register("rock_salt",
             () -> new BlockItem(AflBlocks.ROCK_SALT_ROCK.get(), new Item.Properties()));
+    // Natural ground N1: creative tab only (natural blocks are terrain)
+    public static final RegistryObject<Item> RED_SANDSTONE_ROCK = ITEMS.register("red_sandstone",
+            () -> new BlockItem(AflBlocks.RED_SANDSTONE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TOPSOIL = ITEMS.register("topsoil", () -> new BlockItem(AflBlocks.TOPSOIL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> MUD = ITEMS.register("mud", () -> new BlockItem(AflBlocks.MUD.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SAND = ITEMS.register("sand", () -> new BlockItem(AflBlocks.SAND.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RED_SAND = ITEMS.register("red_sand", () -> new BlockItem(AflBlocks.RED_SAND.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GRAVEL = ITEMS.register("gravel", () -> new BlockItem(AflBlocks.GRAVEL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CLAY = ITEMS.register("clay", () -> new BlockItem(AflBlocks.CLAY.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SNOW = ITEMS.register("snow", () -> new BlockItem(AflBlocks.SNOW.get(), new Item.Properties()));
     public static final RegistryObject<Item> COAL_SEAM = ITEMS.register("coal_seam",
             () -> new BlockItem(AflBlocks.COAL_SEAM.get(), new Item.Properties()));
     public static final RegistryObject<Item> BANDED_IRON_FORMATION = ITEMS.register("banded_iron_formation",

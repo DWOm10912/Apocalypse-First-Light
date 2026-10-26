@@ -114,13 +114,14 @@ public final class TerrainSmoothClient {
     static void blockChanged(int x, int y, int z, int oldSurface, int newSurface) {
         var mc = Minecraft.getInstance();
         if (!mc.isSameThread() || mc.level == null) return;
-        if (oldSurface == newSurface && !surfaceNear(mc.level, x, z, y - 2, y + 1)) return;   // deep under or high above every top around
+        if (oldSurface == newSurface && !surfaceNear(mc.level, x, z, y - 2, y + 2)) return;   // deep under or high above every top around
         int[] r = SmoothRules.affected(y, oldSurface, newSurface);
-        markDirty(x - 1, z - 1, x + 1, z + 1, r[0], r[1] + 2);   // + plants standing on the tops, tall ones two high
+        int R = SmoothRules.REACH;
+        markDirty(x - R, z - R, x + R, z + R, r[0], r[1] + 2);   // + plants standing on the tops, tall ones two high
     }
 
     private static boolean surfaceNear(ClientLevel level, int x, int z, int lo, int hi) {
-        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = -SmoothRules.REACH; dx <= SmoothRules.REACH; dx++) for (int dz = -SmoothRules.REACH; dz <= SmoothRules.REACH; dz++) {
             LevelChunk c = level.getChunkSource().getChunk((x + dx) >> 4, (z + dz) >> 4, ChunkStatus.FULL, false);
             if (c == null) continue;
             SmoothChunkData d = TerrainSmooth.peek(c, TerrainSmooth.CLIENT);

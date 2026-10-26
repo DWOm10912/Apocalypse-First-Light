@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "72";
+    private static final String PROTOCOL = "74";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -134,6 +134,11 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.health.LightningPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.weather.WeatherPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
+        // World Time V1 (docs/gameplay/world_time_v1_design.md 4): the server's day length
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.time.WorldTimePacket.class,
+                com.antaurora.apofirstlight.time.WorldTimePacket::encode, com.antaurora.apofirstlight.time.WorldTimePacket::decode,
+                com.antaurora.apofirstlight.time.WorldTimePacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
@@ -148,6 +153,11 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.earthwork.CarveChunkPacket.class,
                 com.antaurora.apofirstlight.earthwork.CarveChunkPacket::encode, com.antaurora.apofirstlight.earthwork.CarveChunkPacket::decode,
                 com.antaurora.apofirstlight.earthwork.CarveChunkPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        // road Mesh-ification P1 (docs/worldgen/road_mesh_damage_v1_design.md 4): one chunk's broken asphalt (protocol 74)
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.road.RoadDamagePacket.class,
+                com.antaurora.apofirstlight.road.RoadDamagePacket::encode, com.antaurora.apofirstlight.road.RoadDamagePacket::decode,
+                com.antaurora.apofirstlight.road.RoadDamagePacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         // Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 11.2): boulder roots and the pick mattock's strikes (protocol 66)
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket.class,
@@ -272,6 +282,11 @@ public final class AflNetwork {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
+    /** World Time V1: the server's day length. */
+    public static void sendWorldTime(ServerPlayer player, com.antaurora.apofirstlight.time.WorldTimePacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
     /** Rock R1a: a boulder root change to every player tracking its chunk. */
     public static void sendTrackingChunk(net.minecraft.world.level.chunk.LevelChunk chunk, Object packet) {
         if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
@@ -284,6 +299,11 @@ public final class AflNetwork {
 
     /** U3a-3 round 2: a chunk's carved rock to one player (it starts tracking the chunk). */
     public static void carveTo(ServerPlayer player, com.antaurora.apofirstlight.earthwork.CarveChunkPacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Road Mesh-ification P1: a chunk's broken asphalt to one player (it starts tracking the chunk). */
+    public static void roadDamageTo(ServerPlayer player, com.antaurora.apofirstlight.road.RoadDamagePacket packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 

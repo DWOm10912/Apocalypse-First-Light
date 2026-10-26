@@ -1,0 +1,120 @@
+{
+  "variants": {
+    "kind=round": [
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_0_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_0_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_1_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_1_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_2_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_2_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_3_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_round_3_mirrored",
+        "y": 180
+      }
+    ],
+    "kind=angular": [
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_0_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_0_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_1_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_1_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_2_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_2_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_3_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/gravel_angular_3_mirrored",
+        "y": 180
+      }
+    ]
+  }
+}

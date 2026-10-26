@@ -13,11 +13,14 @@
 // Rubble: the CC0 rock_ground photo (Poly Haven, 1.5 x 1.5 m: angular broken rock with its grit; build/cc0-rubble, --fetch)
 // as a 1 m tile the same way, its brown regraded to the stone's grey, a little lighter (fresh breaks).
 // (A procedural power-diagram rubble was tried first, 2026-10-22: it read as crazy paving, not a loose heap.)
+// Rock PBR R1 (docs/worldgen/rock_pbr_v1.md 4): the photo's relief made stronger (rock-pbr.mjs relief: 90% of the texels
+// lean at most 24 degrees on the stone, 26 on the rubble) with its crevice AO in _n blue.
 import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {hash, V} from '../boulders/boulder-shapes.mjs';
+import {relief, encodeN} from './rock-pbr.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CACHE = path.join(ROOT, 'build/cc0-rock'), RUBBLE_CACHE = path.join(ROOT, 'build/cc0-rubble');
@@ -138,7 +141,7 @@ function stone(src, [ox, oy, gain, seed]) {
   const L = new Float32Array(RES * RES).map((_, i) => lum(rs, i)), mean = L.reduce((a, v) => a + v, 0) / L.length;
   const low = blurWrap(L, RES, 6);
   const col = new Float32Array(RES * RES * 3), nrm = new Float32Array(RES * RES * 3);
-  const albedo = Buffer.alloc(RES * RES * 4), sB = Buffer.alloc(RES * RES * 4), nB = Buffer.alloc(RES * RES * 4);
+  const albedo = Buffer.alloc(RES * RES * 4), sB = Buffer.alloc(RES * RES * 4);
   for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
     const i = y * RES + x;
     const detail = (L[i] - low[i]) / mean, mott = low[i] / mean - 1;
@@ -152,9 +155,9 @@ function stone(src, [ox, oy, gain, seed]) {
     nrm.set(n, i * 3);
     albedo.set(c.map(a => Math.round(a * 255)).concat(255), i * 4);
     sB.set([Math.round((1 - clamp01(rough[i])) * 150), 10, 48, 255], i * 4);
-    nB.set([Math.round((n[0] * 0.5 + 0.5) * 255), Math.round((-n[1] * 0.5 + 0.5) * 255), 255, 255], i * 4);
   }
-  return {col, nrm, png: {albedo, s: sB, n: nB}};
+  const r = relief(nrm, RES, 24);
+  return {col, nrm: r.nrm, png: {albedo, s: sB, n: encodeN(r.nrm, r.ao, RES)}};
 }
 
 /** Rubble from the rock_ground photo: its luminance (contrast kept) on the stone's grey, a trace of its own colour. */
@@ -167,7 +170,7 @@ function rubble(src) {
   // the same for the relief: the footpath's broad dents go, the pieces' edges stay
   const nx = blurWrap(new Float32Array(RES * RES).map((_, i) => gn[i * 3]), RES, 8), ny = blurWrap(new Float32Array(RES * RES).map((_, i) => gn[i * 3 + 1]), RES, 8);
   const col = new Float32Array(RES * RES * 3), nrm = new Float32Array(RES * RES * 3);
-  const albedo = Buffer.alloc(RES * RES * 4), sB = Buffer.alloc(RES * RES * 4), nB = Buffer.alloc(RES * RES * 4);
+  const albedo = Buffer.alloc(RES * RES * 4), sB = Buffer.alloc(RES * RES * 4);
   for (let i = 0; i < RES * RES; i++) {
     const d = 1.5 * (L[i] - low[i]) / mean, v = 1 + (d < 0 ? -0.45 * Math.tanh(-d / 0.45) : d);
     const c = STONE.map((b, k) => clamp01(b * 1.04 * v + 0.08 * (gs[i * 3 + k] - L[i])));
@@ -176,9 +179,9 @@ function rubble(src) {
     nrm.set(n, i * 3);
     albedo.set(c.map(a => Math.round(a * 255)).concat(255), i * 4);
     sB.set([Math.round((1 - clamp01(rough[i])) * 150), 10, 48, 255], i * 4);
-    nB.set([Math.round((n[0] * 0.5 + 0.5) * 255), Math.round((-n[1] * 0.5 + 0.5) * 255), 255, 255], i * 4);
   }
-  return {col, nrm, png: {albedo, s: sB, n: nB}};
+  const r = relief(nrm, RES, 26);
+  return {col, nrm: r.nrm, png: {albedo, s: sB, n: encodeN(r.nrm, r.ao, RES)}};
 }
 
 /** RGB float tile of a game PNG (scaled to `to` texels, nearest), with flat normals unless an _n exists beside it. */

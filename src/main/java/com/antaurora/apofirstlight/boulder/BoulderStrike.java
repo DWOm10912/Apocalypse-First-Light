@@ -42,7 +42,8 @@ import java.util.UUID;
  * stones (BoulderWorld#shatter). Each strike costs stamina, throws chips and is heard as far as the infected hear it.
  * Rock R2 (docs/gameplay/rock_r2_rock_face_mining_design.md 3.2): aimed at bare natural rock instead (no boulder), a strike
  * loosens the rock there into rubble (Earthwork#strike), for the shovel to take; now and then a field stone or a pebble
- * comes off with it.
+ * comes off with it. Road Mesh-ification P0 (2026-10-25): aimed at a road's pavement, a strike takes its asphalt
+ * (PavementMining).
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight")
 public final class BoulderStrike {
@@ -107,6 +108,8 @@ public final class BoulderStrike {
         Vec3 at = hit.getLocation();
         double dx = at.x - p.getX(), dz = at.z - p.getZ();
         if (dx * dx + dz * dz > FLAT * FLAT) return null;
+        // a road's pavement (road Mesh-ification P0): the road_surface block struck, its asphalt taken a strike at a time
+        if (PavementMining.pavement(level.getBlockState(pos))) return new Aim(at, pos.immutable(), PavementMining.NODE);
         if (!BoulderBlocks.isBoulder(level.getBlockState(pos))) {
             // bare rock ground: the rock just inside the hit point (a step's side counts as its column's rock), below the
             // eyes and open above (the ground's top, not a cave's roof); any other face of natural rock (a wall, a roof)
@@ -214,6 +217,10 @@ public final class BoulderStrike {
         }
         if (aim.node() == RockMining.NODE) {
             RockMining.strike(p, level, aim.root(), aim.at());
+            return;
+        }
+        if (aim.node() == PavementMining.NODE) {
+            PavementMining.strike(p, level, aim.root(), aim.at());
             return;
         }
         BoulderIndex.Root r = null;

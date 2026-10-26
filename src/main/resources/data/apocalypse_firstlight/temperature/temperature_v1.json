@@ -79,6 +79,7 @@
     { "block": "minecraft:snow", "strength": -1, "radius": 2 },
     { "block": "minecraft:snow_block", "strength": -2, "radius": 2 },
     { "block": "minecraft:powder_snow", "strength": -2, "radius": 2 },
+    { "block": "apocalypse_firstlight:snow", "strength": -2, "radius": 2 },
     { "block": "minecraft:ice", "strength": -2, "radius": 2 },
     { "block": "minecraft:packed_ice", "strength": -3, "radius": 3 },
     { "block": "minecraft:blue_ice", "strength": -4, "radius": 3 }

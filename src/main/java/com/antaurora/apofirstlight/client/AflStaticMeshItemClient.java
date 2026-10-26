@@ -82,6 +82,7 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.RAW_SPHALERITE.get(), "raw_sphalerite", "raw_sphalerite_mesh", 0.459492);
             // Pebble and flint (Rock R1b, the same generator, 2026-10-21): 0.5 - height / 32
             bind(AflItems.PEBBLE.get(), "pebble", "pebble_mesh", 0.481284);
+            bind(AflItems.ASPHALT_CHUNK.get(), "asphalt_chunk", "asphalt_chunk_mesh", 0.448939);
             bind(AflItems.FLINT.get(), "flint", "flint_mesh", 0.485968);
             // Felling axe (equipment meshes, 2026-10-20): 0.5 - 25.92 / 32
             bind(AflItems.FELLING_AXE.get(), "felling_axe", "felling_axe_mesh", -0.31);

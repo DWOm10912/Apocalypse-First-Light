@@ -40,8 +40,8 @@ import java.util.function.Consumer;
  * of a window is compared with what the road's chunk pass must have built there (RoadChunkPass.columns, the same pure
  * function):
  * <ul>
- *   <li>collision columns (road_surface and its layers), asphalt, turf states, the bridge's road_structure (deck under its
- *   collision, parapet and wing tops with their layers);</li>
+ *   <li>collision columns (road_surface and its layers), the aggregate base (AFL angular gravel, P0), turf states, the
+ *   bridge's road_structure (deck under its collision, parapet and wing tops with their layers);</li>
  *   <li>nothing standing above a finished column (trees, plants, snow, structure pieces);</li>
  *   <li>the collision top the server sees (block collision shapes) against the designed pavement;</li>
  *   <li>under the bridge: water present and no solid block between the planned ground and the deck;</li>
@@ -266,7 +266,8 @@ final class C3RoadProbe {
         List<TunnelMesh.Placement> signs = RoadSigns.all(n.works(), plan);
         List<String> examples = new ArrayList<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        BlockState asphalt = AflBlocks.ASPHALT.get().defaultBlockState(), structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState();
+        BlockState base = AflBlocks.GRAVEL.get().defaultBlockState().setValue(com.antaurora.apofirstlight.ground.GravelGroundBlock.KIND,
+                com.antaurora.apofirstlight.ground.GravelGroundBlock.Kind.ANGULAR), structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState();
         for (int cz = 0; cz < 2 * r + 1; cz++) for (int cx = 0; cx < 2 * r + 1; cx++) {
             LevelChunk c = chunks[cx][cz];
             int ccx = c.getPos().x, ccz = c.getPos().z;
@@ -333,7 +334,7 @@ final class C3RoadProbe {
                         if (!b.is(AflBlocks.ROAD_SURFACE.get()) || b.getValue(RoadSurfaceBlock.LAYERS) != col.layers()) why = "collision " + b;
                         else if (col.upper() > 0 && c.getBlockState(p.set(x, col.y() + 1, z)).getOptionalValue(RoadSurfaceBlock.LAYERS).orElse(-1) != col.upper())
                             why = "upper collision";
-                        else if (col.kind() == RoadWorks.Kind.PAVED && c.getBlockState(p.set(x, col.y() - 1, z)) != asphalt) why = "no asphalt";
+                        else if (col.kind() == RoadWorks.Kind.PAVED && c.getBlockState(p.set(x, col.y() - 1, z)) != base) why = "no aggregate base";
                         else if (col.kind() != RoadWorks.Kind.PAVED && col.bottom() < col.y() && c.getBlockState(p.set(x, col.y() - 1, z)) != structure
                                 && !naturalGround(c.getBlockState(p))) why = "no deck";
                         if (why == null) {

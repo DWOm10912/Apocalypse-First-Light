@@ -9,7 +9,7 @@ The ground can be dug out and filled in one shovelful at a time. Granite boulder
 | Tool | Use | Weight |
 |---|---|---|
 | <ItemIcon id="round_point_shovel" /> Round Point Shovel | Dig, pour, scrape | <V d="item_mass/core_v1#items.apocalypse_firstlight:round_point_shovel.unit_mass_kg" u="kg" /> |
-| <ItemIcon id="pick_mattock" /> Pick Mattock | Strike boulders and rock | <V d="item_mass/core_v1#items.apocalypse_firstlight:pick_mattock.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="pick_mattock" /> Pick Mattock | Strike boulders and rock, break up asphalt roads (see [Roads](../world/roads#digging-up-a-road)) | <V d="item_mass/core_v1#items.apocalypse_firstlight:pick_mattock.unit_mass_kg" u="kg" /> |
 
 ## Shovel
 
@@ -32,7 +32,7 @@ Ground that has been dug or poured on takes only the shovel. Bare hands can't br
 A thin soil lying straight on rock can be dug and poured on too. The shovel can't work these places, and a pour that can't go down says so:
 
 - The top edge of a natural bank or cliff three blocks or higher. <StatusTag s="test" /> The top of a two-block bank can be dug and poured on
-- Next to roads, houses and tree roots
+- Next to roads, houses and tree roots (a block of asphalt road can be dug once all its asphalt is broken out, see [Roads](../world/roads#digging-up-a-road))
 - Under a block less than two blocks overhead
 
 ## Boulders
@@ -74,6 +74,19 @@ Rubble struck loose in older saves is still there: it is loose earth, and like s
 - <StatusTag s="test" /> Natural rock away from the open ground (cave walls and roofs, cliff faces) can be cut too: each strike of the pick mattock breaks a piece off where it lands, and the hollow shows at once, never the same shape twice, its fresh faces paler than the weathered rock. A block's worth takes about 20 strikes in granite, 13 in shale, 11 in marl; a block with less than an eighth left is cleared, the rest still counted in the drops. Digging down in a pit or shaft (rock on two sides or more above the floor), the floor goes down level and takes the corners along the walls with it, so the walls stay straight and the shaft does not narrow; cleared blocks let daylight down the shaft, and drops, cut faces and what you hold in a pit or hollow are lit by the light at its mouth, darker further in. The hollows collide as they look, so you can stand in them. Ground the earthwork has dug and rock under a boulder can't be cut this way, and neither can the floor of a pit downwards yet
 - <StatusTag s="verified" d="2026-10-24" /> Cave walls, roofs, cliff faces and rock in the open are no longer block faces but continuous, irregular rock: granite breaks into jointed, tilted planes, limestone into rounded solution hollows and bulges, shale and sandstone into beds that stand out and set back in bands. Floors and ledge tops are uneven too: limestone in gentle flowstone swells, shale, sandstone and granite in shallow slab terraces that don't hinder walking; ledges and outcrops have rounded edges, but a one-block rock step has to be jumped. The rock collides as it looks, so you can step into its hollows and cut into them; a torch, ladder or block placed against a face leaves that face flat. Steep soil banks, the soil walls of cave mouths and the undersides of overhanging soil are continuous surfaces too, slumped round at the edges and joined to the rock; ordinary soil slopes stay smooth slopes. Caves in deep worlds no longer have dirt floors and dirt walls, soil lies only at the surface; vanilla ores are gone there too, see the next item for the ores to come
 - <StatusTag s="test" /> Ore lies inside the rock, and cutting ore-bearing rock gives raw ore, see Ores below
+- <StatusTag s="verified" d="2026-10-24" /> With shaders on (Aureveil), rock surfaces have more relief and darker crevices. A fresh break cut with the pick shows its mineral faces: feldspar, quartz and mica in granite and gneiss, calcite in limestone, quartz grains in sandstone, mica along the foliation in schist, flashing one by one as the light or your view moves. Ores hold more grains of their metallic minerals (galena, chalcopyrite, pyrite, hematite), each catching the light its own way. Without shaders the rock looks the same, and ores show a few more mineral grains
+
+## Natural ground
+
+- <StatusTag s="test" /> <StatusTag s="creative" /> AFL has its own ground blocks: topsoil, mud, sand, red sand, gravel, clay, snow, and red sandstone. They are in the Creative inventory
+- <StatusTag s="test" /> In a newly created federal world all natural ground is made of them: grassland is topsoil with turf, conifer forest floors have leaf litter, river and lake beds are rounded pebbles, mountains have angular scree, swamps are mud, snowy peaks are snow; the Altamesa badlands are no longer terracotta but beds of red sandstone, sandstone and shale. Worlds created earlier keep vanilla dirt and sand, in newly explored areas too
+
+- Ground textures are drawn from real photos like the rock, one block to a metre, with no visible repeat between neighbouring blocks
+- There is no grass block. Topsoil is soil on its sides and bottom, and its top shows what grows on it: turf, leaf litter, moss or bare soil. Turf takes the biome's grass colour. A wall or a pit dug in topsoil shows no strip of grass at its sides
+- Gravel comes in two looks: rounded pebbles in river beds, angular scree in the mountains
+- This ground slopes smoothly and can be dug and poured with the shovel like vanilla dirt (except snow). Dug topsoil turns bare on top; dug and poured earth stays the ground it came from, and red sand stays red
+- Mud sinks a little underfoot, as vanilla mud does
+- Sand and gravel do not fall as in vanilla: loose ground slumps into a slope at its angle of repose
 
 ## Ores
 

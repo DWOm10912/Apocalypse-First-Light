@@ -243,6 +243,10 @@
       "unit_mass_kg": 0.15,
       "estimated": true
     },
+    "apocalypse_firstlight:asphalt_chunk": {
+      "unit_mass_kg": 4.6,
+      "estimated": true
+    },
     "apocalypse_firstlight:flint": {
       "unit_mass_kg": 0.2,
       "estimated": true

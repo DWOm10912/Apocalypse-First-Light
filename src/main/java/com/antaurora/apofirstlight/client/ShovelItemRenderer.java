@@ -39,11 +39,12 @@ public final class ShovelItemRenderer extends BlockEntityWithoutLevelRenderer {
     public static final double HANG_Y = 1.2613 - VERTICAL_OFFSET, HANDLE_Z = 0.3191 - 0.5;
     /**
      * The heap's tint by material (multiplies the neutral soil texel, 188 182 172): topsoil dark brown, sand pale, gravel
-     * grey, clay red-brown, mud near black, backfill a mixed brown. An unknown id draws as backfill.
+     * grey, clay red-brown, mud near black, red sand orange, backfill a mixed brown. An unknown id draws as backfill.
      */
     private static final Map<String, float[]> TINT = Map.of(
             "topsoil", new float[]{0.42F, 0.33F, 0.24F},
             "sand", new float[]{0.98F, 0.88F, 0.66F},
+            "red_sand", new float[]{0.86F, 0.56F, 0.40F},
             "gravel", new float[]{0.62F, 0.61F, 0.58F},
             "clay", new float[]{0.72F, 0.48F, 0.36F},
             "mud", new float[]{0.30F, 0.25F, 0.19F},

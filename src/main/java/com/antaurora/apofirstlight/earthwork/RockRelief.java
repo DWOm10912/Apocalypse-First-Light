@@ -52,7 +52,7 @@ public final class RockRelief {
         return com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth.ground(b) && !Earthwork.rock(b);
     }
 
-    /** The level's blocks as Terrain Smooth's cells, for SmoothRules#soilWall (the same answer the slopes take). */
+    /** The level's blocks as Terrain Smooth's cells, for GroundClass (the same answer the slopes take). */
     private static final class GetterCells implements com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells {
         BlockGetter getter;
         final BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
@@ -91,12 +91,12 @@ public final class RockRelief {
         }
         int open = openSides(getter, pos);
         if (open == 0 || managed(level, pos)) return null;
-        if (look == SOIL) {   // soil Terrain Smooth slopes stays its own; only a soil wall is worn
+        if (look == SOIL) {   // worn only where GroundClass makes it V (a soil wall); the soil Terrain Smooth slopes stays its own
             GetterCells c = CELLS.get();
             c.getter = getter;
-            boolean wall = com.antaurora.apofirstlight.terrainsmooth.SmoothRules.soilWall(c, pos.getX(), pos.getY(), pos.getZ());
+            int cls = com.antaurora.apofirstlight.ground.GroundClass.of(c, pos.getX(), pos.getY(), pos.getZ());
             c.getter = null;
-            if (!wall) return null;
+            if (cls != com.antaurora.apofirstlight.ground.GroundClass.V) return null;
         }
         Long2ObjectOpenHashMap<Entry> cache = CACHE.get();
         long key = pos.asLong();

@@ -433,6 +433,13 @@ public final class BridgeMesh {
      */
     public static List<Triangle> finish(List<Triangle> pavement, List<RoadDesign> rs, RoadWorks works, int cx, int cz,
                                         Map<Integer, RoadCells.Cell> cells, BitSet dug, Map<Integer, Expect> expect, Map<Integer, Found> found) {
+        return finish(pavement, rs, works, cx, cz, cells, dug, expect, found, null);
+    }
+
+    /** #finish; broken: the paved cells whose asphalt is broken (RoadCells#walls), null: none. */
+    public static List<Triangle> finish(List<Triangle> pavement, List<RoadDesign> rs, RoadWorks works, int cx, int cz,
+                                        Map<Integer, RoadCells.Cell> cells, BitSet dug, Map<Integer, Expect> expect, Map<Integer, Found> found,
+                                        java.util.function.IntPredicate broken) {
         List<Triangle> tris = new ArrayList<>(pavement);
         tris.addAll(chunk(works, cx, cz, expect, found));
         // the removed cells, each over a height range: a broken structure cell from its mesh's underside up (the road under
@@ -460,7 +467,7 @@ public final class BridgeMesh {
         boolean any = false;
         for (boolean b : removed) any |= b;
         if (any) tris = RoadMesh.without(tris, removed, lo, hi);
-        if (!dug.isEmpty()) tris.addAll(RoadCells.walls(works, rs, cells, dug, cx, cz));
+        if (!dug.isEmpty()) tris.addAll(RoadCells.walls(works, rs, cells, dug, cx, cz, broken));
         tris.addAll(repairs(expect, found, cells));
         // the tunnels (Tunnel V1): drawn whole, never cut by broken cells (no damage scan for their cells yet)
         tris.addAll(TunnelMesh.chunk(works, cx, cz));

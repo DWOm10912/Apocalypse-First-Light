@@ -94,6 +94,15 @@ public final class AflCreativeTabs {
             AflItems.SHALE_ROCK,
             AflItems.MARL_ROCK,
             AflItems.ROCK_SALT_ROCK,
+            AflItems.RED_SANDSTONE_ROCK,
+            // natural ground N1
+            AflItems.TOPSOIL,
+            AflItems.MUD,
+            AflItems.SAND,
+            AflItems.RED_SAND,
+            AflItems.GRAVEL,
+            AflItems.CLAY,
+            AflItems.SNOW,
             // U3b: the ore rocks (the 16 px ore blocks are retired: registered for old saves, off the tab, never generated)
             AflItems.COAL_SEAM,
             AflItems.BANDED_IRON_FORMATION,
@@ -291,6 +300,7 @@ public final class AflCreativeTabs {
             AflItems.RAW_SPHALERITE,
             AflItems.PEBBLE,
             AflItems.FLINT,
+            AflItems.ASPHALT_CHUNK,
             AflItems.FELLING_AXE,
             AflItems.CLAW_HAMMER,
             AflItems.BUILDING_HAMMER,

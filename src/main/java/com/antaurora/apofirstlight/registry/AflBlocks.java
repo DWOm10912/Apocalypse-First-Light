@@ -181,6 +181,31 @@ public final class AflBlocks {
     /** The natural rocks in RockTypes.BLOCKS order (GeologyPass#block reads them by RockType). */
     public static final java.util.List<RegistryObject<Block>> NATURAL_ROCKS = java.util.List.of(GRANITE_ROCK, GNEISS_ROCK,
             SCHIST_ROCK, SANDSTONE_ROCK, LIMESTONE_ROCK, DOLOMITE_ROCK, SHALE_ROCK, MARL_ROCK, ROCK_SALT_ROCK);
+    // Natural ground N1 (docs/worldgen/natural_ground_n1_design.md 3, 6): the badlands' red beds, sandstone as rock (its
+    // stones, density, the pick's cut: rock_types sandstone) in its own red look; not in NATURAL_ROCKS (GeologyPass reads
+    // those by RockType)
+    public static final RegistryObject<Block> RED_SANDSTONE_ROCK = BLOCKS.register("red_sandstone",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SANDSTONE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.2F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_RED).requiresCorrectToolForDrops()));
+    // Natural ground N1: AFL's own soils in place of vanilla's (ground/NaturalGroundBlock): terrain only, no loot (the shovel
+    // gives bulk material), the item in the creative tab only; sand and gravel do not fall (loose ground moves by the earthwork)
+    public static final RegistryObject<Block> TOPSOIL = BLOCKS.register("topsoil",
+            () -> new com.antaurora.apofirstlight.ground.TopsoilBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).mapColor(net.minecraft.world.level.material.MapColor.DIRT).noLootTable()));
+    public static final RegistryObject<Block> MUD = BLOCKS.register("mud",
+            () -> new com.antaurora.apofirstlight.ground.MudGroundBlock(BlockBehaviour.Properties.copy(Blocks.MUD).mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_CYAN).noLootTable()));
+    public static final RegistryObject<Block> SAND = BLOCKS.register("sand",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock("sand", BlockBehaviour.Properties.copy(Blocks.SAND).mapColor(net.minecraft.world.level.material.MapColor.SAND).noLootTable()));
+    public static final RegistryObject<Block> RED_SAND = BLOCKS.register("red_sand",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock("red_sand", BlockBehaviour.Properties.copy(Blocks.RED_SAND).mapColor(net.minecraft.world.level.material.MapColor.COLOR_ORANGE).noLootTable()));
+    public static final RegistryObject<Block> GRAVEL = BLOCKS.register("gravel",
+            () -> new com.antaurora.apofirstlight.ground.GravelGroundBlock(BlockBehaviour.Properties.copy(Blocks.GRAVEL).mapColor(net.minecraft.world.level.material.MapColor.STONE).noLootTable()));
+    public static final RegistryObject<Block> CLAY = BLOCKS.register("clay",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock("clay", BlockBehaviour.Properties.copy(Blocks.CLAY).mapColor(net.minecraft.world.level.material.MapColor.CLAY).noLootTable()));
+    public static final RegistryObject<Block> SNOW = BLOCKS.register("snow",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock(null, BlockBehaviour.Properties.copy(Blocks.SNOW_BLOCK).mapColor(net.minecraft.world.level.material.MapColor.SNOW).noLootTable()));
+    /** Natural ground N1's soils (Terrain Smooth wraps their models: TerrainSmooth#groundBlocks). */
+    public static final java.util.List<RegistryObject<Block>> NATURAL_GROUND = java.util.List.of(TOPSOIL, MUD, SAND, RED_SAND, GRAVEL, CLAY, SNOW);
     // U3b ore rocks, batch 1 (docs/worldgen/underground_u3_rocks_ores_design.md 14): the rock with its ore, grade a state;
     // OreRockBlock(host, density kg/m3, strike L, face look, stone, gives stones, litres a raw piece {lean, rich}, raw ores, shares)
     public static final RegistryObject<Block> COAL_SEAM = BLOCKS.register("coal_seam",
@@ -689,10 +714,11 @@ public final class AflBlocks {
             () -> new com.antaurora.apofirstlight.block.FlattenedPlantBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).noLootTable()
                     .offsetType(BlockBehaviour.OffsetType.NONE)));
     // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
-    // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
+    // under the generated road mesh. Broken by pick mattock strikes (road Mesh-ification P0/P1): a dynamic shape, a broken
+    // column's asphalt left (RoadDamage); no item.
     public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",
             () -> new com.antaurora.apofirstlight.block.RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
-                    .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion()
+                    .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion().dynamicShape().forceSolidOn()
                     .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
     public static final RegistryObject<Block> ROAD_STRUCTURE = BLOCKS.register("road_structure",
             () -> new com.antaurora.apofirstlight.block.RoadStructureBlock(BlockBehaviour.Properties.copy(Blocks.STONE)

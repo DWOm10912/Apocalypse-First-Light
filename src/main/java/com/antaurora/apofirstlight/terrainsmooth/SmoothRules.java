@@ -1,9 +1,12 @@
 package com.antaurora.apofirstlight.terrainsmooth;
 
+import com.antaurora.apofirstlight.ground.GroundClass;
+
 /**
  * The terrain smoothing rules (docs/worldgen/terrain_smooth_v1.md), pure Java over a cell lookup, so the chunk renderer
  * (a render region), the client and the server (their levels) and the offline checks all compute the same answer from
- * the same blocks.
+ * the same blocks. Which cells take part, and which count as rock the soil slopes onto, is GroundClass's (terrain rework
+ * R1): H is a top that slopes here, V rock or a soil wall.
  * <p>
  * A block B at (x, y, z) takes part when it is natural ground with air or a plant above and it is its column's
  * <b>natural surface</b> ({@link Cells#surface}: the first block met going down from the highest block through sky,
@@ -42,6 +45,13 @@ public final class SmoothRules {
      */
     public static final int GRID = 8;
 
+    /**
+     * How many columns away a block change can re-shape a top: 2 (rework R0 10.5, 2026-10-24). A top reads its neighbour
+     * columns (#column), and a neighbour's kind reads that neighbour's own neighbours: GroundClass#soilWall (U6 V3) asks whether the
+     * soil beside it is open. So a dig two columns away can turn a neighbour into a soil wall and pin this top.
+     */
+    public static final int REACH = 2;
+
     public interface Cells {
         int cell(int x, int y, int z);
 
@@ -57,23 +67,6 @@ public final class SmoothRules {
     static boolean solid(int c) { return c == NATURAL || c == OTHER || c == TREE || c == ROCK; }
 
     public static boolean open(int c) { return c == AIR || c == COVER; }
-
-    /**
-     * A soil wall (U6 V3, user 2026-10-24: soil cubes did not join the worn rock): natural ground with an open face this
-     * class cannot slope: open below (an overhang's underside), open beside while buried (a cut or a cave mouth's wall),
-     * or open beside with the column there open a level lower too (the rim of a drop of two or more). RockRelief wears
-     * it like rock, so here it is as bare rock: never sloped, the soil around pinned to it or sloping down onto it.
-     */
-    public static boolean soilWall(Cells c, int x, int y, int z) {
-        if (c.cell(x, y, z) != NATURAL) return false;
-        if (open(c.cell(x, y - 1, z))) return true;
-        boolean buried = !open(c.cell(x, y + 1, z));
-        for (int d = 0; d < 4; d++) {
-            int nx = x + (d == 0 ? -1 : d == 1 ? 1 : 0), nz = z + (d == 2 ? -1 : d == 3 ? 1 : 0);
-            if (open(c.cell(nx, y, nz)) && (buried || open(c.cell(nx, y - 1, nz)))) return true;
-        }
-        return false;
-    }
 
     /** Passed over by the natural-surface scan: sky, plants and snow, tree crowns and trunks. */
     public static boolean skyward(int c) { return c == AIR || c == COVER || c == LEAF || c == TREE; }
@@ -122,16 +115,14 @@ public final class SmoothRules {
         return pack(K_LOW, y - 1);
     }
 
-    /** A solid column top's kind: natural (#natural), bare rock open above (K_ROCK: soil slopes onto it), else fixed. */
+    /** A solid column top's kind, open above: GroundClass H natural (K_NAT), V rock or a soil wall (K_ROCK: soil slopes onto it), else fixed. */
     private static int kindAt(Cells c, int cell, int above, int x, int top, int z) {
         if (!open(above)) return K_FIXED;
-        if (cell == ROCK || cell == NATURAL && soilWall(c, x, top, z)) return K_ROCK;
-        return natural(c, cell, above, x, top, z) ? K_NAT : K_FIXED;
-    }
-
-    /** A column top that takes part: natural ground, open above, and the column's natural surface. */
-    private static boolean natural(Cells c, int cell, int above, int x, int top, int z) {
-        return cell == NATURAL && open(above) && c.surface(x, z) == top;
+        return switch (GroundClass.of(c, cell, above, x, top, z)) {
+            case GroundClass.V -> K_ROCK;
+            case GroundClass.H -> K_NAT;
+            default -> K_FIXED;
+        };
     }
 
     /**
@@ -193,8 +184,7 @@ public final class SmoothRules {
 
     /** The geometry key of block (x, y, z), or -1 when it keeps its vanilla shape. */
     public static long geometry(Cells c, int mode, int x, int y, int z) {
-        if (mode == MODE_OFF || c.surface(x, z) != y) return -1;
-        if (c.cell(x, y, z) != NATURAL || !open(c.cell(x, y + 1, z)) || soilWall(c, x, y, z)) return -1;
+        if (mode == MODE_OFF || !GroundClass.surface(c, x, y, z)) return -1;
         long[] col = new long[9];
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++)
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, x + i - 1, y, z + j - 1);
@@ -323,12 +313,14 @@ public final class SmoothRules {
     }
 
     /**
-     * What a block change at (x, y, z) re-shapes: the blocks of columns x - 1 .. x + 1, z - 1 .. z + 1 from y - 2 to
-     * y + 1 (they read it), and around the changed column's natural surface before and after (its neighbours' corners
-     * read whether it takes part): {min y, max y} of the affected blocks, the surfaces counted 2 below to 1 above.
+     * What a block change at (x, y, z) re-shapes: the blocks of columns within #REACH from y - 2 to y + 2 (the
+     * neighbours read it from y - 2 to y + 1; the columns two away through a neighbour's GroundClass#soilWall, which reads the changed
+     * cell from one level below the neighbour's top: tops from y - 1 to y + 2), and around the changed column's natural
+     * surface before and after (its neighbours' corners read whether it takes part): {min y, max y} of the affected blocks,
+     * the surfaces counted 2 below to 1 above.
      */
     public static int[] affected(int y, int oldSurface, int newSurface) {
-        int lo = y - 2, hi = y + 1;
+        int lo = y - 2, hi = y + 2;
         for (int s : new int[]{oldSurface, newSurface}) {
             if (s == NO_SURFACE) continue;
             lo = Math.min(lo, s - 2);

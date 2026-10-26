@@ -137,6 +137,8 @@ public final class TerrainSmooth {
         java.util.List<Block> out = new java.util.ArrayList<>(java.util.List.of(GROUND));
         for (var r : com.antaurora.apofirstlight.registry.AflBlocks.NATURAL_ROCKS) out.add(r.get());
         for (var r : com.antaurora.apofirstlight.registry.AflBlocks.ORE_ROCKS) out.add(r.get());   // U3b
+        for (var r : com.antaurora.apofirstlight.registry.AflBlocks.NATURAL_GROUND) out.add(r.get());   // natural ground N1
+        out.add(com.antaurora.apofirstlight.registry.AflBlocks.RED_SANDSTONE_ROCK.get());
         return out;
     }
 
@@ -147,6 +149,7 @@ public final class TerrainSmooth {
     public static boolean ground(Block b) {
         return b == Blocks.GRASS_BLOCK || b == Blocks.DIRT || b == Blocks.COARSE_DIRT || b == Blocks.SAND || b == Blocks.GRAVEL || b == Blocks.STONE
                 || b instanceof com.antaurora.apofirstlight.block.NaturalRockBlock
+                || b instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock   // natural ground N1
                 || b == Blocks.PODZOL || b == Blocks.MUD || b == Blocks.CLAY
                 || b == Blocks.SNOW_BLOCK || b == Blocks.RED_SAND || b == Blocks.TERRACOTTA || b == Blocks.WHITE_TERRACOTTA || b == Blocks.ORANGE_TERRACOTTA
                 || b == Blocks.YELLOW_TERRACOTTA || b == Blocks.BROWN_TERRACOTTA || b == Blocks.RED_TERRACOTTA || b == Blocks.LIGHT_GRAY_TERRACOTTA;
@@ -154,7 +157,7 @@ public final class TerrainSmooth {
 
     /** A smoothed top's collision: the slope boxes; mud's sit SmoothShapes.MUD_SINK lower, as vanilla mud's (feet sink in a little). */
     static VoxelShape collision(Block block, long g) {
-        return block == Blocks.MUD ? SmoothShapes.sunk(g) : SmoothShapes.shape(g, true);
+        return block == Blocks.MUD || block instanceof com.antaurora.apofirstlight.ground.MudGroundBlock ? SmoothShapes.sunk(g) : SmoothShapes.shape(g, true);
     }
 
     /** SmoothRules cell code of a block state. */
@@ -471,6 +474,7 @@ public final class TerrainSmooth {
     public static void changed(Level level, BlockPos pos) {
         Earthwork.blockChanged(level, pos);
         com.antaurora.apofirstlight.earthwork.RockCarve.blockChanged(level, pos);
+        com.antaurora.apofirstlight.ground.GroundEvents.blockChanged(level, pos);
         Side side = side(level);
         if (!side.enabled() || !applies(level)) return;
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
@@ -485,7 +489,8 @@ public final class TerrainSmooth {
                 after = d.surface[i] = columnSurface(chunk, new BlockPos.MutableBlockPos(), x, z);
             }
         }
-        for (int cx = (x - 1) >> 4; cx <= (x + 1) >> 4; cx++) for (int cz = (z - 1) >> 4; cz <= (z + 1) >> 4; cz++) clearGeometry(level, side, cx, cz);
+        int reach = SmoothRules.REACH;
+        for (int cx = (x - reach) >> 4; cx <= (x + reach) >> 4; cx++) for (int cz = (z - reach) >> 4; cz <= (z + reach) >> 4; cz++) clearGeometry(level, side, cx, cz);
         ClientHooks hooks = clientHooks;
         if (hooks != null && level.isClientSide()) hooks.blockChanged(x, y, z, before, after);
     }

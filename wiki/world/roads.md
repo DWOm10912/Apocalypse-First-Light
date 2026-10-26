@@ -25,6 +25,20 @@
 - 边坡外面的天然山坡照旧，有洞口和泉水
 - 很深的挖方做成岩石边坡：陡的石面，每升 <V j="CrossSection.ROCK_LIFT" u="m" /> 留一道 <V j="CrossSection.ROCK_BENCH" u="m" /> 宽的平台；浅的挖方还是草坡
 - 州际旁边特别深的挖方，边坡最外面还可能剩一段较矮的直壁
+- <StatusTag s="verified" d="2026-10-25" /> 路边的草坡在边沟和坡面上按设计断面走，只在和天然地面接头的 <V j="RoadWorks.JOIN" u="m" /> 内过渡到天然地表，边沟里不会冒出整格高的小土包，相邻草皮之间基本不会露出错开的小面（陡挖方的岩面边上偶尔还有）
+- <StatusTag s="verified" d="2026-10-25" /> 两个方向相反的弯道之间，双向路面整体从一边倾斜转到另一边，中线不积水
+
+## 挖开路面
+
+<StatusTag s="verified" d="2026-10-25" /> 新建的世界里都有
+
+- 拿着 <ItemIcon id="pick_mattock" /> 鹤嘴锄对着柏油路面按使用键凿，每下敲掉约 <V j="RoadDamage.STRIKE_LITRES" u="L" /> 沥青，掉下 <ItemIcon id="asphalt_chunk" /> 碎沥青，每块约 <V j="RoadSurfaceBlock.ASPHALT_CHUNK_LITRES" u="L" />、<V d="item_mass/core_v1#items.apocalypse_firstlight:asphalt_chunk.unit_mass_kg" u="kg" />。徒手或用别的工具挖不动路面
+- 沥青按 12.5 cm 一小块地碎：每下从落点敲掉形状不规则的一块，坑从坑边往外扩，坑边参差不齐，坑壁是沥青的断面，坑底露出碎石基层；车轮压进坑里会往下沉，人也能站进坑里
+- 整格挖开的坑（用命令或爆炸）坑壁能看到分层：上面一层沥青面层，下面是碎石基层；高速和匝道的沥青最厚，县道最薄，路边停车坪按 <V j="CrossSection.PAD_ASPHALT" x="100" u="cm" /> 算
+- 沥青下面是 AFL 碎石和回填土，不再是原版的砾石、圆石和泥土；老宅车道是一层圆碎石
+- 路面方块不在创造模式物品栏里，只能用命令拿到
+- 一整格（1 m × 1 m）的沥青全部敲掉以后，这一格就成了普通地面，露出棱角碎石，可以用 <ItemIcon id="round_point_shovel" /> 圆头铲往下挖（碎石下面是圆碎石垫层，再往下是回填土），也能往回倒土。格子四边贴着还有沥青的路面，那一圈挖不动，所以路边的沥青不会被掏空、悬在半空。只敲掉一部分沥青的格子，坑底的碎石铲不动，要先把这一格的沥青敲完
+- <StatusTag s="planned" /> 坑里积水：坑底的地面高度已经按沥青底面算，要等物理水并进来
 
 ## 隧道
 
@@ -40,6 +54,7 @@
 - 县道是双向两车道的乡村沥青路，经过溪谷老宅附近，两端接 Linden 的街道或州道
 - 县道接州道处是 T 字路口，县道一侧设有停车让行标志（STOP）
 - 老宅有一条碎石车道，沿溪延伸 <V j="RoadCounty.DRIVE_MIN" />–<V j="RoadCounty.DRIVE_MAX" u="m" />，从侧面接入县道路边，路口没有停车让行标志
+- <StatusTag s="verified" d="2026-10-25" /> 车道只从老宅这一侧接到县道，不会先穿过县道、再从对面绕回路口
 - 车道最大坡度 <V j="RoadCounty.DRIVE_GRADE" pct />；接近县道的一段坡度很缓，路口两侧视野开阔
 - 县道一端接不上其他道路时，过车道口后再延伸约 <V j="RoadCounty.DEAD_END_RUN" u="m" /> 就到尽头
 

@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.world.bunker;
 
+import com.antaurora.apofirstlight.ground.NaturalGroundPass;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
@@ -133,10 +134,10 @@ public final class BunkerSurfaceIntegration {
             for (int y = groundY; y < floor.getY(); y++) {
                 BlockPos pos = new BlockPos(floor.getX(), y, floor.getZ());
                 if (level.getBlockState(pos).isAir()) {
-                    level.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
+                    level.setBlock(pos, NaturalGroundPass.natural(level, Blocks.DIRT.defaultBlockState()), 3);
                     filled++;
                 } else if (isVegetation(level.getBlockState(pos)) && clearBlock(level, pos)) {
-                    level.setBlock(pos, Blocks.DIRT.defaultBlockState(), 3);
+                    level.setBlock(pos, NaturalGroundPass.natural(level, Blocks.DIRT.defaultBlockState()), 3);
                     filled++;
                 }
             }
@@ -161,8 +162,9 @@ public final class BunkerSurfaceIntegration {
                     if (!level.getBlockState(cover).canBeReplaced()) break;
                     if (isVegetation(level.getBlockState(cover))) clearBlock(level, cover);
                     boolean top = depth == thickness || !level.getBlockState(cover.above()).canBeReplaced();
-                    level.setBlock(cover, top && random.nextInt(10) > 1
-                            ? Blocks.GRASS_BLOCK.defaultBlockState() : Blocks.DIRT.defaultBlockState(), 3);
+                    // N1c: AFL topsoil in a world with the natural ground gate
+                    level.setBlock(cover, NaturalGroundPass.natural(level, top && random.nextInt(10) > 1
+                            ? Blocks.GRASS_BLOCK.defaultBlockState() : Blocks.DIRT.defaultBlockState()), 3);
                     placed++;
                 }
             }

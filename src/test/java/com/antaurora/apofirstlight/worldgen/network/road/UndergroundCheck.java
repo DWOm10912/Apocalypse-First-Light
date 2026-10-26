@@ -834,13 +834,13 @@ public final class UndergroundCheck {
             for (int z = 1; z < W - 1; z++) for (int x = 1; x < W - 1; x++) {
                 int y = h[x + W * z];
                 // a soil wall (a rim over a drop of two or more) is worn like rock: it is checked as the rock beside, not as soil
-                if (rock[x + W * z] || com.antaurora.apofirstlight.terrainsmooth.SmoothRules.soilWall(cells, x, y, z)) continue;
+                if (rock[x + W * z] || com.antaurora.apofirstlight.ground.GroundClass.soilWall(cells, x, y, z)) continue;
                 long g = com.antaurora.apofirstlight.terrainsmooth.SmoothRules.geometry(cells, com.antaurora.apofirstlight.terrainsmooth.SmoothRules.MODE_B, x, y, z);
                 if (g >= 0) sloped++;
                 float[] c = g < 0 ? new float[]{1, 1, 1, 1} : com.antaurora.apofirstlight.terrainsmooth.SmoothRules.corners(g);
                 for (int[] sd : side) {
                     int n = x + sd[0] + W * (z + sd[1]);
-                    if (!rock[n] && !com.antaurora.apofirstlight.terrainsmooth.SmoothRules.soilWall(cells, x + sd[0], h[n], z + sd[1])) continue;
+                    if (!rock[n] && !com.antaurora.apofirstlight.ground.GroundClass.soilWall(cells, x + sd[0], h[n], z + sd[1])) continue;
                     besideRock++;
                     int hr = h[n];
                     for (int k = 2; k < 4; k++) {
@@ -893,6 +893,11 @@ public final class UndergroundCheck {
         out("  times: geology %d ms, protection %d ms, plan %d ms %s", geoMs, protMs, planMs, u.times);
         out("  planner notes: %s", u.notes);
         if (geoMs + planMs > 3000) out("  NOTE planning over the 3 s target (geology + plan %d ms)", geoMs + planMs);
+        {   // terrain rework R1: GroundClass answers as the frozen rules on this seed's planned ground
+            double span = s.gridN * TerrainPlanSurface.CELL;
+            out("  %s", com.antaurora.apofirstlight.ground.GroundClassCheck.seedPatches(bad, seed, g, u, (x, z) -> s.waterAt(x, z),
+                    new double[]{s.gridOrigin + span * 0.1, s.gridOrigin + span * 0.9}));
+        }
 
         // ---- geology by state (10, 4): bedrock shares on a 256 m grid
         Map<FederalStateId, EnumMap<RockType, Integer>> byState = new TreeMap<>();

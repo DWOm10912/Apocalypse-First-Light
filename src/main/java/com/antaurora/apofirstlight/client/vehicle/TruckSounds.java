@@ -362,11 +362,12 @@ public final class TruckSounds {
             event.setSound(null);
     }
 
-    /** Asphalt (roads, stone, anything hard), gravel (and sand), dirt (and paths, mud, snow), grass. */
+    /** Asphalt (roads, stone, anything hard), gravel (and sand), dirt (and paths, mud, snow, the other AFL ground: N1c), grass. */
     static int surface(BlockState s) {
         if (s.is(Blocks.GRASS_BLOCK) || s.is(Blocks.MYCELIUM) || s.is(Blocks.PODZOL) || s.is(Blocks.MOSS_BLOCK) || s.getSoundType() == SoundType.GRASS) return GRASS;
-        if (s.is(Blocks.GRAVEL) || s.is(BlockTags.SAND)) return GRAVEL;
-        if (s.is(BlockTags.DIRT) || s.is(Blocks.DIRT_PATH) || s.is(Blocks.FARMLAND) || s.is(BlockTags.SNOW) || s.getSoundType() == SoundType.MUD) return DIRT;
+        if (s.is(Blocks.GRAVEL) || s.is(BlockTags.SAND) || s.getBlock() instanceof com.antaurora.apofirstlight.ground.GravelGroundBlock) return GRAVEL;
+        if (s.is(BlockTags.DIRT) || s.is(Blocks.DIRT_PATH) || s.is(Blocks.FARMLAND) || s.is(BlockTags.SNOW) || s.getSoundType() == SoundType.MUD
+                || s.getBlock() instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock) return DIRT;
         return ASPHALT;
     }
 

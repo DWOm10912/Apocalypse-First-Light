@@ -69,6 +69,11 @@ const ITEMS = {
     body: '../ore/quartz_vein_lead_rich', tp: [[20, 35, -10], 2.4, 0.7], fp: [[-8, 40, 6], 1.9]},
   raw_sphalerite: {ore: true, spec: {L: 0.14, r: [1, 0.66, 0.8], planes: 5, pre: 1, round: 1, amp: 0.08, cut: [0.55, 0.8]}, seed: 4149, level: 3,
     body: '../ore/lead_zinc_dolomite_rich', tp: [[20, 35, -10], 2.3, 0.8], fp: [[-8, 40, 6], 1.8]},
+  // road Mesh-ification P0 (docs/worldgen/road_mesh_damage_v1_design.md 6): a chunk of broken asphalt, about 2 L (21 x 10
+  // x 15 cm), a slab of the wearing course broken on sharp planes; on the road's own asphalt (textures/block/road/asphalt,
+  // 240 texels per metre, resampled to the stones' 128: src)
+  asphalt_chunk: {spec: {L: 0.24, r: [1, 0.5, 0.7], planes: 6, pre: 0, round: 0, amp: 0.04, top: true}, seed: 4151, level: 3,
+    body: '../road/asphalt', src: 240, tp: [[20, 35, -10], 2.2, 0.8], fp: [[-8, 40, 6], 1.7]},
 };
 const PX = 16;                      // px per metre
 const ATLAS = 64, DENSITY = 128;    // the sprite's texels per metre (2 m over 256 texels)
@@ -141,12 +146,30 @@ function oreCuts(it) {
   return out;
 }
 
+/**
+ * A texture at density texels per metre as a 256-texel sprite at the stones' DENSITY: its first 2 m, each sprite texel the
+ * mean of a 4 x 4 grid of samples over its square (RGB sources opaque, the source tiling).
+ */
+function resample(src, density) {
+  const px = Buffer.alloc(256 * 256 * 4), k = density / DENSITY, n = src.bpp;
+  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+    const sum = [0, 0, 0, 0];
+    for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+      const sx = Math.floor((x + (i + 0.5) / 4) * k) % src.w, sy = Math.floor((y + (j + 0.5) / 4) * k) % src.h;
+      for (let c = 0; c < 4; c++) sum[c] += c < n ? src.px[(sy * src.w + sx) * n + c] : 255;
+    }
+    for (let c = 0; c < 4; c++) px[(y * 256 + x) * 4 + c] = Math.round(sum[c] / 16);
+  }
+  return {w: 256, h: 256, bpp: 4, px};
+}
+
 /** The atlas: the four regions cut from the body's sprite (the fourth from the cap's, if any), its _s and _n alike. */
 function atlas(it) {
   const cuts = it.ore ? oreCuts(it) : CUT;
   return ['', '_s', '_n'].map(x => {
     const read = name => {
       const src = readPng(fs.readFileSync(path.join(SPRITES, name + x + '.png')));
+      if (it.src && name === it.body) return resample(src, it.src);
       if (src.w !== 256 || src.bpp !== 4) throw new Error('sprite format ' + name + x);
       return src;
     };

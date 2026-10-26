@@ -2,10 +2,9 @@
   "density_kg_m3": 1600,
   "repose_deg": 34,
   "excavation_deg": 34,
-  "block": "minecraft:sand",
+  "block": "apocalypse_firstlight:sand",
   "grip": 0.45,
   "sources": [
-    "minecraft:sand",
-    "minecraft:red_sand"
+    "minecraft:sand"
   ]
 }

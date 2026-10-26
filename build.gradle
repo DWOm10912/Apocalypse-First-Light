@@ -416,6 +416,34 @@ tasks.register('earthworkCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.earthwork.EarthworkCheck'
 }
 
+// Terrain rework R0 (docs/worldgen/terrain_rework_v1_design.md 5, 6): GroundView's geometry over a synthetic world.
+tasks.register('groundCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.GroundCheck'
+}
+
+// Terrain rework R1 (docs/worldgen/terrain_rework_v1_design.md 11): GroundClass against the frozen SmoothRules, cell by cell.
+tasks.register('groundClassCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.GroundClassCheck'
+}
+
+// Natural ground N1c (docs/worldgen/natural_ground_n1_design.md 12): no vanilla natural ground left in a new world's generation.
+tasks.register('naturalGroundCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.NaturalGroundCheck'
+}
+
+// World Time V1 (docs/gameplay/world_time_v1_design.md 5): the world clock's fixed-point step never drifts.
+tasks.register('worldClockCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.time.WorldClockCheck'
+}
+
 // Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 7): fixed scenes, a body falls and must end still, out of blocks, in limits.
 tasks.register('ragdollCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
@@ -480,6 +508,15 @@ tasks.register('roadSurfaceCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadSurfaceCheck'
+    if (project.hasProperty('roadNetwork')) args project.property('roadNetwork')
+}
+
+// Road drainage D1 (docs/worldgen/road_drainage_v1_design.md 8): no low vertex on the design pavement water runs on, and
+// the road cells' cost, over cached networks (-ProadNetwork=<file>, or the first 6 under run/afl_cache/road_network).
+tasks.register('roadDrainageCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadDrainageCheck'
     if (project.hasProperty('roadNetwork')) args project.property('roadNetwork')
 }
 
@@ -607,6 +644,23 @@ tasks.register('roadsideStartCheck', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadsideStartCheck'
     maxHeapSize = '6g'
+    if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
+}
+
+// Road Mesh-ification P1 (docs/worldgen/road_mesh_damage_v1_design.md 4, 5, 7): broken asphalt's mesh, lattice, collision
+// and strike pieces. Offline only, no world.
+tasks.register('roadDamageCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadDamageCheck'
+}
+
+tasks.register('roadTurfCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RoadTurfCheck'
+    maxHeapSize = '6g'
+    if (project.findProperty('aflProbe')) systemProperty 'afl.probe', project.findProperty('aflProbe').toString()
     if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
 }
 

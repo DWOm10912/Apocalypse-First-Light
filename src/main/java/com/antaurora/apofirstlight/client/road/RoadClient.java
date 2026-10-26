@@ -65,7 +65,9 @@ import java.util.concurrent.CompletableFuture;
  * <p>
  * Where the collision blocks of a paved cell are gone (dug out, blown up), the mesh leaves that cell open and lines the
  * hole with asphalt walls (RoadCells): each finished mesh is compared with the world once, the chunks around the player
- * every tick and the others a few per tick.
+ * every tick and the others a few per tick. Where strikes broke the asphalt (road Mesh-ification P1, RoadDamage), the
+ * gone 12.5 cm sub-cells are cut out, faced and floored (RoadDamageMesh); a new copy of a chunk's damage rebuilds it and
+ * its four neighbours.
  * <p>
  * Bridges (docs 10.11) are concrete meshes too (BridgeMesh, drawn with the asphalt): the world holds only their
  * invisible collision (road_structure). A chunk near a span is built twice: first the decks and parapets, then, once its
@@ -273,6 +275,20 @@ public final class RoadClient {
                 recheck(level, k, MESHES.get(k));
             }
         }
+        // broken asphalt changed (RoadDamage): the chunk and its neighbours (their faces read its sub-cells), once no build
+        // that may have read the old copy is still running
+        if (com.antaurora.apofirstlight.road.RoadDamage.clientChanged == null) com.antaurora.apofirstlight.road.RoadDamage.clientChanged = RoadClient::damaged;
+        for (var it = DAMAGED.iterator(); it.hasNext(); ) {
+            long k = it.next();
+            if (PENDING.containsKey(k)) continue;
+            it.remove();
+            ChunkMesh m = MESHES.get(k);
+            if (m == null) continue;
+            Map<String, float[]> atlas = atlas();
+            List<RoadDesign> rs = roads;
+            RoadWorks works = index;
+            PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, m.cx(), m.cz(), atlas, m.dug(), m.bridge(), m.found())));
+        }
         // new chunks, nearest first is not needed: a bounded number per tick in scan order
         int started = 0;
         Map<String, float[]> uv = null;
@@ -287,6 +303,17 @@ public final class RoadClient {
             PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, cx, cz, atlas, new BitSet(), null, null)));
             started++;
         }
+    }
+
+    /** Chunks whose broken asphalt or a neighbour's changed (client main thread). */
+    private static final Set<Long> DAMAGED = new HashSet<>();
+
+    private static void damaged(int cx, int cz) {
+        DAMAGED.add(key(cx, cz));
+        DAMAGED.add(key(cx + 1, cz));
+        DAMAGED.add(key(cx - 1, cz));
+        DAMAGED.add(key(cx, cz + 1));
+        DAMAGED.add(key(cx, cz - 1));
     }
 
     private static Map<String, float[]> atlas() {
@@ -319,19 +346,22 @@ public final class RoadClient {
      * The paved cells (chunk and ring) whose collision blocks are not the ones the chunk pass put there, and at
      * RoadCells.OPEN + index the cell-less neighbours of the chunk's standing cells that lie open at the cell's collision
      * block (the turf beside it gone: through the invisible block the sky showed under the mesh, 2026-10-18); empty when
-     * no cell of the chunk itself is dug and none of its cells has an open side (the ring only shapes the walls).
+     * no cell of the chunk itself is dug and none of its cells has an open side (the ring only shapes the walls), unless
+     * there is broken asphalt (RoadDamage): then a dug ring cell in a loaded chunk counts too, its broken neighbours in this
+     * chunk draw no face toward it (road Mesh-ification P2, RoadDamageMesh#intact).
      */
     static BitSet dug(ClientLevel level, ChunkMesh m) {
         BitSet out = new BitSet();
         if (m.cells() == null || m.cells().isEmpty()) return out;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        boolean inner = false;
+        boolean inner = false, ring = false, damaged = !com.antaurora.apofirstlight.road.RoadDamage.CLIENT.isEmpty();
         for (RoadCells.Cell c : m.cells().values()) {
             int x = m.cx() * 16 + RoadCells.lx(c.index()), z = m.cz() * 16 + RoadCells.lz(c.index());
             if (!surface(level.getBlockState(p.set(x, c.y(), z)), c.layers())
                     || (c.upper() > 0 && !surface(level.getBlockState(p.set(x, c.y() + 1, z)), c.upper()))) {
                 out.set(c.index());
-                inner |= RoadCells.inner(c.index());
+                if (RoadCells.inner(c.index())) inner = true;
+                else ring |= damaged && level.getChunkSource().hasChunk(x >> 4, z >> 4);
             }
         }
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
@@ -350,7 +380,7 @@ public final class RoadClient {
                 }
             }
         }
-        return inner ? out : new BitSet();
+        return inner || ring ? out : new BitSet();
     }
 
     /** A neighbour block that leaves a collision block's side open: air, a plant, a fluid. */
@@ -374,7 +404,19 @@ public final class RoadClient {
         if (expect == null) expect = BridgeMesh.expected(works, cx, cz);
         // no structure cells: nothing to scan (an empty scan then equals it, so the mesh is not rebuilt for it)
         if (expect.isEmpty()) found = Map.of();
-        tris = BridgeMesh.finish(tris, rs, works, cx, cz, cells, dug, expect, found);
+        // broken asphalt (road Mesh-ification P1): the client's copies, replaced whole, never written (any thread); a dug cell's
+        // walls toward a broken one leave its asphalt's faces to RoadDamageMesh (P2)
+        boolean damaged = !com.antaurora.apofirstlight.road.RoadDamage.CLIENT.isEmpty();
+        java.util.function.BiFunction<Integer, Integer, com.antaurora.apofirstlight.road.RoadDamageChunk> copies =
+                (x, z) -> com.antaurora.apofirstlight.road.RoadDamage.CLIENT.get(net.minecraft.world.level.ChunkPos.asLong(x, z));
+        java.util.function.IntPredicate broken = !damaged ? null : n -> {
+            var c = copies.apply(Math.floorDiv(cx * 16 + RoadCells.lx(n), 16), Math.floorDiv(cz * 16 + RoadCells.lz(n), 16));
+            return c != null && c.get(cx * 16 + RoadCells.lx(n), cz * 16 + RoadCells.lz(n)) != null;
+        };
+        tris = BridgeMesh.finish(tris, rs, works, cx, cz, cells, dug, expect, found, broken);
+        if (damaged)
+            tris = com.antaurora.apofirstlight.worldgen.network.road.RoadDamageMesh.apply(tris,
+                    com.antaurora.apofirstlight.worldgen.network.road.RoadDamageMesh.of(works, copies, dug, cx, cz), cx, cz);
         int na = 0, nm = 0;
         for (RoadMesh.Triangle t : tris) if (t.material().solid()) na++; else nm++;
         float[] a = new float[na * 4 * STRIDE], m = new float[nm * 4 * STRIDE];
@@ -647,6 +689,7 @@ public final class RoadClient {
         for (ChunkMesh m : MESHES.values()) m.light().close();
         MESHES.clear();
         PENDING.clear();
+        DAMAGED.clear();
     }
 
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event) { clear(); roads = List.of(); index = null; }

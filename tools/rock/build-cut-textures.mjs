@@ -1,12 +1,17 @@
 // U3a-3 round 2 (docs/worldgen/underground_u3_rocks_ores_design.md 13): the freshly broken sprite of every natural rock
 // block's texture, textures/block/rock/cut/<name>.png: a face the pick made shows unweathered rock, lighter and duller
 // than the face around it (fine dust, no patina). Each pixel from the block's own sprite, so it tiles the same way; its
-// _n / _s companions are copied (LabPBR: the relief and the gloss stay the rock's).
+// _n / _s companions are copied (LabPBR: the relief and the gloss stay the rock's), except that a fresh break of a crystalline
+// rock shows its mineral grains (Rock PBR R1, docs/worldgen/rock_pbr_v1.md 5): cleavage faces of feldspar, quartz and mica in
+// the granites, calcite spar in the limestones, quartz grains in the sandstone, mica along the schist's foliation; each a
+// texel or 2 x 2, smooth (LabPBR 0.75-0.96), dielectric (F0 11-14), its normal leaned at random (rock-pbr.mjs glints), so
+// they flash one by one as the light or the eye moves. The ores' companions stay copies (their minerals are in their own).
 // node tools/rock/build-cut-textures.mjs [--check]
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {readPng, png} from '../cube-slab-mesh-lib.mjs';
+import {glints} from './rock-pbr.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -16,6 +21,40 @@ const OUT = path.join(ASSETS, 'textures/block/rock/cut');
 const check = process.argv.includes('--check');
 /** how far toward grey (saturation kept), toward the mean (contrast kept), toward white (lift) */
 const SAT = 0.75, CONTRAST = 0.82, LIFT = 0.15;
+
+/**
+ * The grains of a fresh break by sprite name (rock-pbr.mjs glints: share of texels, smoothness bytes, F0 byte, lean in
+ * degrees, share of 2 x 2 grains). Granite (stone_0..3, granite_fresh: gneiss): feldspar cleavage, glassy quartz, mica
+ * flakes, about 9% of the face; limestone (also the dolomite's and the rock salt's sprite): calcite spar 3%; sandstone:
+ * quartz grains 2%; schist (shale_worn): mica 8%, its flakes leaning one way (the foliation).
+ */
+const GRANITE = [
+  {share: 0.05, smooth: [205, 225], f0: 11, tilt: 30, big: 0.4},
+  {share: 0.025, smooth: [215, 235], f0: 11, tilt: 35, big: 0},
+  {share: 0.015, smooth: [232, 245], f0: 14, tilt: 20, big: 0.3},
+];
+const SPAR = [{share: 0.03, smooth: [200, 225], f0: 11, tilt: 30, big: 0.3}];
+const GLINTS = {
+  stone_0: [GRANITE], stone_1: [GRANITE], stone_2: [GRANITE], stone_3: [GRANITE], granite_fresh: [GRANITE],
+  limestone_fresh: [SPAR], limestone: [SPAR],
+  sandstone_fresh: [[{share: 0.02, smooth: [190, 215], f0: 11, tilt: 35, big: 0}]],
+  red_sandstone_fresh: [[{share: 0.02, smooth: [190, 215], f0: 11, tilt: 35, big: 0}]],   // natural ground N1: the badlands' red beds
+  shale_worn: [[{share: 0.08, smooth: [225, 242], f0: 13, tilt: 15, big: 0.5}], 0.6],
+};
+
+/** The _s and _n of a fresh break with its grains (both PNG buffers), or null where the rock has none. */
+function grained(name, sFile, nFile) {
+  const g = GLINTS[name];
+  if (!g || !fs.existsSync(sFile) || !fs.existsSync(nFile)) return null;
+  const si = readPng(fs.readFileSync(sFile)), ni = readPng(fs.readFileSync(nFile)), res = si.w;
+  const rgba = im => { const bpp = im.px.length / (im.w * im.h), b = Buffer.alloc(im.w * im.h * 4, 255); for (let i = 0; i < im.w * im.h; i++) for (let c = 0; c < bpp; c++) b[i * 4 + c] = im.px[i * bpp + c]; return b; };
+  const s = rgba(si), n = rgba(ni);
+  // the seed by name: the four stone tiles and the granite each their own grains
+  let seed = 0;
+  for (const ch of name) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
+  glints(s, n, res, g[0], seed, g[1] ?? null);
+  return {s: png(s, res, res), n: png(n, res, res)};
+}
 
 const sprites = new Set();
 for (const dir of MODELS) for (const f of fs.readdirSync(dir)) {
@@ -53,9 +92,9 @@ for (const s of [...sprites].sort()) {
   const name = path.basename(rel);
   if (!fs.existsSync(src)) { console.error('missing ' + src); bad++; continue; }
   const files = [[path.join(OUT, name + '.png'), () => cut(src)]];
+  const comp = sfx => path.join(ASSETS, 'textures', rel + sfx + '.png'), gr = grained(name, comp('_s'), comp('_n'));
   for (const sfx of ['_n', '_s']) {
-    const comp = path.join(ASSETS, 'textures', rel + sfx + '.png');
-    if (fs.existsSync(comp)) files.push([path.join(OUT, name + sfx + '.png'), () => fs.readFileSync(comp)]);
+    if (fs.existsSync(comp(sfx))) files.push([path.join(OUT, name + sfx + '.png'), () => (gr ? gr[sfx.slice(1)] : fs.readFileSync(comp(sfx)))]);
   }
   for (const [dst, make] of files) {
     const data = make();

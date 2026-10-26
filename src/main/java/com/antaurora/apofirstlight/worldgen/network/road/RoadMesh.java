@@ -484,7 +484,7 @@ public final class RoadMesh {
     }
 
     /** Adds the triangle wound so its normal points up, with that normal; degenerate ones (in plan) are dropped. */
-    private static void tri(List<Triangle> out, Material m, Vertex a, Vertex b, Vertex c) {
+    static void tri(List<Triangle> out, Material m, Vertex a, Vertex b, Vertex c) {
         double ux = b.x() - a.x(), uy = b.y() - a.y(), uz = b.z() - a.z(), vx = c.x() - a.x(), vy = c.y() - a.y(), vz = c.z() - a.z();
         if (Math.abs(ux * vz - uz * vx) < 1e-10) return;
         double nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
