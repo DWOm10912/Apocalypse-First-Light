@@ -1,0 +1,4 @@
+# AFL Lightning V2 barn lightning rod (upper half)
+newmtl barn
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/barn_lightning_rod

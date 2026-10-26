@@ -1,0 +1,15 @@
+{
+  "about": "The claw hammer at the workbench: y along the handle to the head, the face to -x, the claw to +x. grip: the right hand; face: the striking face's middle; claw: the claw's tip (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs). Points, bounds: item block units of the claw_hammer mesh as client/AflStaticMeshItemClient draws it (+ (0.5, 0.17375, 0.5)). Scale 0.508: real size.",
+  "items": ["claw_hammer"],
+  "scale": 0.508,
+  "bounds": [
+    [0.362, 0.1737, 0.471],
+    [0.638, 0.8258, 0.529]
+  ],
+  "symmetry": "z",
+  "points": {
+    "grip": [0.486, 0.3238, 0.5],
+    "face": [0.362, 0.7958, 0.5],
+    "claw": [0.638, 0.7427, 0.5]
+  }
+}

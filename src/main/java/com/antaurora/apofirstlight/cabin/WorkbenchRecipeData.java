@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Material;
 import com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Recipe;
 import com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Unlock;
+import com.antaurora.apofirstlight.item.MeteredSupplyItem;
+import com.antaurora.apofirstlight.skeleton.action.PlayerActions;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -42,11 +44,11 @@ public final class WorkbenchRecipeData {
     /** How a recipe is learned (WorkbenchKnowledge; V1 reads everyone and background, the others wait for their systems). */
     public static final Set<String> UNLOCKS = Set.of("everyone", "background", "materials", "after", "book", "blueprint");
 
-    /** A material line as written: items and tags, read into items at publish. */
-    private record Line(List<ResourceLocation> items, List<ResourceLocation> tags, int count) {}
+    /** A material line as written: items and tags, read into items at publish; its unit (count, litres as mL, pieces). */
+    private record Line(List<ResourceLocation> items, List<ResourceLocation> tags, int count, WorkbenchCrafting.Unit unit) {}
 
     private record Raw(ResourceLocation id, String category, ResourceLocation result, int count, List<Line> materials,
-                       @Nullable ResourceLocation tool, int ticks, @Nullable String work, List<Unlock> unlock) {}
+                       List<ResourceLocation> tools, int ticks, @Nullable String work, List<Unlock> unlock, List<FurnitureWork.Step> steps) {}
 
     private static volatile List<Raw> pending = List.of();
     private static volatile List<Recipe> server = List.of();
@@ -110,15 +112,57 @@ public final class WorkbenchRecipeData {
             if (m.has("items")) for (JsonElement i : m.getAsJsonArray("items")) items.add(known(i.getAsString()));
             if (m.has("tag")) tags.add(new ResourceLocation(m.get("tag").getAsString()));
             if (items.isEmpty() && tags.isEmpty()) throw new IllegalArgumentException("a material line needs item, items or tag");
-            int n = m.has("count") ? m.get("count").getAsInt() : 1;
+            // one of count, litres (a can's mL), pieces (a box's nails or screws): the unit is in the field's name
+            int fields = (m.has("count") ? 1 : 0) + (m.has("litres") ? 1 : 0) + (m.has("pieces") ? 1 : 0);
+            if (fields > 1) throw new IllegalArgumentException("a material line takes one of count, litres, pieces");
+            WorkbenchCrafting.Unit unit = m.has("litres") ? WorkbenchCrafting.Unit.ML : m.has("pieces") ? WorkbenchCrafting.Unit.PIECES : WorkbenchCrafting.Unit.COUNT;
+            int n;
+            if (unit == WorkbenchCrafting.Unit.COUNT) n = m.has("count") ? m.get("count").getAsInt() : 1;
+            else {
+                if (!m.has("item") || m.has("items") || m.has("tag")) throw new IllegalArgumentException("litres and pieces lines take one item only");
+                if (!(ForgeRegistries.ITEMS.getValue(items.get(0)) instanceof MeteredSupplyItem metered))
+                    throw new IllegalArgumentException(unit.name().toLowerCase(Locale.ROOT) + " on " + items.get(0) + ", which is not a metered supply");
+                if (metered.litres() != (unit == WorkbenchCrafting.Unit.ML))
+                    throw new IllegalArgumentException(unit == WorkbenchCrafting.Unit.ML ? "litres on a pieces item " + items.get(0) : "pieces on a litres item " + items.get(0));
+                n = unit == WorkbenchCrafting.Unit.ML ? (int) Math.max(1, Math.round(m.get("litres").getAsDouble() * 1000)) : m.get("pieces").getAsInt();
+            }
             if (n < 1) throw new IllegalArgumentException("material count must be at least 1");
-            lines.add(new Line(List.copyOf(items), List.copyOf(tags), n));
+            lines.add(new Line(List.copyOf(items), List.copyOf(tags), n, unit));
         }
         if (lines.isEmpty()) throw new IllegalArgumentException("no materials");
-        ResourceLocation tool = root.has("tool") ? known(root.get("tool").getAsString()) : null;
-        double seconds = root.get("seconds").getAsDouble();
-        if (!(seconds > 0) || seconds > 3600) throw new IllegalArgumentException("seconds must be over 0 and at most 3600");
-        String work = root.has("work") ? root.get("work").getAsString() : null;
+        List<ResourceLocation> tools = new ArrayList<>();   // "tool": one, "tools": several, all carried
+        if (root.has("tool")) tools.add(known(root.get("tool").getAsString()));
+        if (root.has("tools")) for (JsonElement t : root.getAsJsonArray("tools")) tools.add(known(t.getAsString()));
+        String work = null;
+        int ticks;
+        List<FurnitureWork.Step> steps = new ArrayList<>();
+        if (root.has("work") && root.get("work").isJsonArray()) {
+            // a furniture piece's steps (FurnitureWork): the time is the actions' (with the nails and screws at the novice's)
+            if (root.has("seconds")) throw new IllegalArgumentException("work as steps takes no seconds: the time is the steps' actions");
+            String piece = null;
+            for (JsonElement e : root.getAsJsonArray("work")) {
+                JsonObject s = e.getAsJsonObject();
+                String step = s.get("step").getAsString();
+                if (FurnitureWork.kind(step) == null) throw new IllegalArgumentException("unknown work step " + step);
+                if (PlayerActions.get(step) == null) throw new IllegalArgumentException("no player action " + step);
+                int times = s.has("times") ? s.get("times").getAsInt() : 1;
+                if (times < 1 || times > 64) throw new IllegalArgumentException("step times must be 1..64");
+                String p = s.has("piece") ? s.get("piece").getAsString() : null;
+                if (p != null && !FurnitureWork.PIECES.contains(p)) throw new IllegalArgumentException("unknown piece " + p + ", one of " + new TreeSet<>(FurnitureWork.PIECES));
+                if (p != null) piece = p;
+                if (FurnitureWork.kind(step) != FurnitureWork.Kind.TIMED && piece == null && !FurnitureWork.CROSSCUT.equals(step))
+                    throw new IllegalArgumentException(step + " before any piece");
+                steps.add(new FurnitureWork.Step(step, times, p));
+            }
+            if (steps.isEmpty()) throw new IllegalArgumentException("work as steps needs at least one step");
+            work = steps.get(0).step();
+            ticks = FurnitureWork.estimate(steps, 0);
+        } else {
+            double seconds = root.get("seconds").getAsDouble();
+            if (!(seconds > 0) || seconds > 3600) throw new IllegalArgumentException("seconds must be over 0 and at most 3600");
+            ticks = (int) Math.round(seconds * 20);
+            work = root.has("work") ? root.get("work").getAsString() : null;
+        }
         List<Unlock> unlock = new ArrayList<>();
         for (JsonElement e : root.getAsJsonArray("unlock")) {
             JsonObject u = e.getAsJsonObject();
@@ -133,7 +177,7 @@ public final class WorkbenchRecipeData {
             unlock.add(new Unlock(type, value));
         }
         if (unlock.isEmpty()) throw new IllegalArgumentException("no unlock: nobody could ever make it");
-        return new Raw(id, category.toUpperCase(Locale.ROOT), item, count, List.copyOf(lines), tool, (int) Math.round(seconds * 20), work, List.copyOf(unlock));
+        return new Raw(id, category.toUpperCase(Locale.ROOT), item, count, List.copyOf(lines), List.copyOf(tools), ticks, work, List.copyOf(unlock), List.copyOf(steps));
     }
 
     /** A survivor background id as the survivor records keep it ("afl:forest_resident"); a bare name gets "afl:". */
@@ -167,14 +211,14 @@ public final class WorkbenchRecipeData {
                     ok = false;
                     break;
                 }
-                materials.add(new Material(List.copyOf(items), line.count()));
+                materials.add(new Material(List.copyOf(items), line.count(), line.unit()));
             }
             if (!ok) continue;
             for (Unlock u : raw.unlock())
                 if (u.type().equals("after") && !ids.contains(new ResourceLocation(u.value())))
                     ApocalypseFirstLight.LOGGER.warn("[AFL WORKBENCH] Recipe {}: unlock after {}, which is not a recipe", raw.id(), u.value());
-            out.add(new Recipe(raw.id(), raw.category(), raw.result(), raw.count(), List.copyOf(materials), raw.tool(), raw.ticks(),
-                    raw.work(), raw.unlock()));
+            out.add(new Recipe(raw.id(), raw.category(), raw.result(), raw.count(), List.copyOf(materials), raw.tools(), raw.ticks(),
+                    raw.work(), raw.unlock(), raw.steps()));
         }
         server = List.copyOf(out);
         generation++;

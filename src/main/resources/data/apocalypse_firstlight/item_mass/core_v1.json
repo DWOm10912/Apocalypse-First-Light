@@ -207,8 +207,72 @@
       "unit_mass_kg": 0.86,
       "estimated": true
     },
+    "apocalypse_firstlight:screwdriver": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:folding_knife": {
+      "unit_mass_kg": 0.14,
+      "estimated": true
+    },
     "apocalypse_firstlight:field_survival_guide": {
       "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_board": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_board": {
+      "unit_mass_kg": 2.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_board": {
+      "unit_mass_kg": 4.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_board": {
+      "unit_mass_kg": 4.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_board": {
+      "unit_mass_kg": 3.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_board": {
+      "unit_mass_kg": 2.7,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wood_finish_can": {
+      "unit_mass_kg": 1.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:nail_box": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:screw_box": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cabinet_hinge": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:iron_knob": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wooden_knob": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "apocalypse_firstlight:keyhole_escutcheon": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "apocalypse_firstlight:furniture_hardware_box": {
+      "unit_mass_kg": 0.8,
       "estimated": true
     },
     "apocalypse_firstlight:energy_battery": {

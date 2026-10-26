@@ -1,0 +1,939 @@
+{
+  "format_version": 1,
+  "about": "The wooden knob at the workbench (client/workbench/WorkbenchWork, the recipe woodwork/wooden_knob's work; written by tools/author-wooden-knob-actions.mjs): one 10 s loop per knob, the recipe's time. A bench hook at the bench's right end, a strip on it (client/WorkbenchRenderer). 0-0.7 s the saw comes up from the right hip, the left hand presses the strip; 0.7-2.7 three strokes across it, the kerf going down, the saw flatter each stroke; the end falls off at 2.7; the saw back to the hip (3.0-3.35); the right hand brings the off-cut up, the left takes it by the foot (3.35-4.1); the right takes the open knife from the hip (4.1-4.9); whittling, push cuts away from the left hand, the blank turned between cuts: the corners (4.9-6.0, octagon), rounding (6.0-7.4), the neck (7.4-8.1), turned end for end, the tenon (8.35-8.95); the knife back (8.95-9.3, the saw at the hip again), the knob turned before the eyes, the chips blown off (9.3), set down on its side (9.45-9.75), the left hand back on the strip. events: the times WorkbenchWork plays sounds and chips at (positions: model px from the carve anchor). docs/gameplay/furniture_recipes_v1.md 4.1",
+  "clip": "tool.wooden_knob_carve",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 55,
+  "first_person": "body",
+  "held_item": "hidden",
+  "loop": "time",
+  "length": 10,
+  "blend": {
+    "in": 0.3,
+    "out": 0.25
+  },
+  "approach": {
+    "anchor": "stand",
+    "distance": 0,
+    "side": 0,
+    "max": 2,
+    "face": "face",
+    "pitch": 40,
+    "in": 0.6
+  },
+  "first_person_view": [
+    [0, 56],
+    [0.7, 63],
+    [2.7, 63],
+    [3.1, 58],
+    [3.6, 64],
+    [4.3, 70],
+    [8.95, 70],
+    [9.3, 62],
+    [9.6, 60],
+    [10, 56]
+  ],
+  "props": [
+    {
+      "id": "wooden_knob_blank",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:offcut",
+          "point": "center",
+          "pos": [0, -0.341, 0],
+          "rot": [-90, 0, -105],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 2.7,
+          "frame": "anchor:offcut",
+          "point": "center",
+          "pos": [0, -0.341, 0],
+          "rot": [-90, 0, -105],
+          "blend": 0
+        },
+        {
+          "at": 2.72,
+          "frame": "anchor:offcut",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-90, 0, -105],
+          "blend": 0.1,
+          "ease": "in"
+        },
+        {
+          "at": 3.7,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, -0.6, 0.8],
+          "rot": [-94.961, -27.296, -141.478],
+          "blend": 0.4
+        },
+        {
+          "at": 4.9,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-113.129, -2.838, -146.348],
+          "blend": 0.1925
+        },
+        {
+          "at": 5.45,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [161.125, 56.242, -95.113],
+          "blend": 0.1925
+        },
+        {
+          "at": 6,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-141.179, 33.564, -138.378],
+          "blend": 0.16449999999999998,
+          "hidden": true
+        },
+        {
+          "at": 6.47,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [78.458, 19.323, -35.91],
+          "blend": 0.16449999999999998,
+          "hidden": true
+        },
+        {
+          "at": 6.94,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-1.714, -54.112, -70.763],
+          "blend": 0.161,
+          "hidden": true
+        },
+        {
+          "at": 7.4,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-87.383, -34.914, -137.549],
+          "blend": 0.12249999999999998,
+          "hidden": true
+        },
+        {
+          "at": 7.75,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-145.349, 37.233, -135.961],
+          "blend": 0.12249999999999998,
+          "hidden": true
+        },
+        {
+          "at": 8.1,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-113.129, -2.838, 33.652],
+          "blend": 0.25,
+          "hidden": true
+        },
+        {
+          "at": 8.35,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-113.129, -2.838, 33.652],
+          "blend": 0.105,
+          "hidden": true
+        },
+        {
+          "at": 8.65,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [24.983, -44.047, 129.644],
+          "blend": 0.105,
+          "hidden": true
+        },
+        {
+          "at": 8.95,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, -2.4, 2.2],
+          "rot": [-123.802, -4.56, -171.189],
+          "blend": 0.3,
+          "hidden": true
+        },
+        {
+          "at": 9.25,
+          "frame": "anchor:carve",
+          "point": "center",
+          "pos": [0, -2.6, 2.4],
+          "rot": [84.518, 72.337, -30.215],
+          "blend": 0.2,
+          "hidden": true
+        },
+        {
+          "at": 9.45,
+          "frame": "anchor:set",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-93.692, -13.514, -105.438],
+          "blend": 0.3,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "wooden_knob_octagon",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 6,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 7.4,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "wooden_knob_rough",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 7.4,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 8.1,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "wooden_knob_necked",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 8.1,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 8.95,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "wooden_knob_finished",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 8.95,
+          "frame": "prop:wooden_knob_blank",
+          "point": "center",
+          "pos": [10.8, -10.8, -10.8],
+          "rot": [0, 0, 0],
+          "blend": 0
+        }
+      ]
+    },
+    {
+      "id": "hand_saw",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "shoulder_r",
+          "point": "grip",
+          "pos": [0.5, 8.3, -3],
+          "rot": [-180, -84.29, 51.48],
+          "blend": 0
+        },
+        {
+          "at": 0.15,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [-0.43, -0.32, 1.62],
+          "rot": [-180, -75, 79.288],
+          "blend": 0.55
+        },
+        {
+          "at": 0.7,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [0.44, 0.26, -1.63],
+          "rot": [180, -75, 81.198],
+          "blend": 0.4
+        },
+        {
+          "at": 1.1,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [-0.44, -0.21, 1.64],
+          "rot": [-180, -75, 83.099],
+          "blend": 0.4
+        },
+        {
+          "at": 1.5,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [0.44, 0.15, -1.64],
+          "rot": [-180, -75, 84.992],
+          "blend": 0.4
+        },
+        {
+          "at": 1.9000000000000001,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [-0.44, -0.09, 1.65],
+          "rot": [180, -75, 86.879],
+          "blend": 0.4
+        },
+        {
+          "at": 2.3,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [0.44, 0.04, -1.65],
+          "rot": [-180, -75, 88.763],
+          "blend": 0.4
+        },
+        {
+          "at": 2.7,
+          "frame": "anchor:kerf",
+          "point": "kerf",
+          "pos": [-0.26, -1.39, 0.99],
+          "rot": [-180, -75, 88.763],
+          "blend": 0.3
+        },
+        {
+          "at": 3,
+          "frame": "shoulder_r",
+          "point": "grip",
+          "pos": [0.5, 8.3, -3],
+          "rot": [-180, -84.29, 51.48],
+          "blend": 0.35
+        },
+        {
+          "at": 3.35,
+          "frame": "shoulder_r",
+          "point": "grip",
+          "pos": [0.5, 8.3, -3],
+          "rot": [-180, -84.29, 51.48],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 9.3,
+          "frame": "shoulder_r",
+          "point": "grip",
+          "pos": [0.5, 8.3, -3],
+          "rot": [-180, -84.29, 51.48],
+          "blend": 0
+        }
+      ]
+    },
+    {
+      "id": "folding_knife",
+      "open_from": 0,
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [-180, -84.289, 131.846],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 4.1,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [-180, -84.289, 131.846],
+          "blend": 0
+        },
+        {
+          "at": 4.4,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.797, -0.604, 3.885],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.45
+        },
+        {
+          "at": 4.9,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.857, -0.548, 3.77],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.1925
+        },
+        {
+          "at": 5.093,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.002, 0.025, 3.345],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.05500000000000001
+        },
+        {
+          "at": 5.148,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.45, -0.204, 2.715],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.24750000000000003
+        },
+        {
+          "at": 5.395,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.556, -0.897, 2.785],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.05500000000000001
+        },
+        {
+          "at": 5.45,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.857, -0.548, 3.77],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.1925
+        },
+        {
+          "at": 5.643,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.002, 0.025, 3.345],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.05500000000000001
+        },
+        {
+          "at": 5.698,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.45, -0.204, 2.715],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.24750000000000003
+        },
+        {
+          "at": 5.945,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.556, -0.897, 2.785],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.05500000000000001
+        },
+        {
+          "at": 6,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.563, -0.304, 4.151],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.16449999999999998
+        },
+        {
+          "at": 6.165,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.709, 0.269, 3.726],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.047
+        },
+        {
+          "at": 6.212,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.453, -0.153, 2.693],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.2115
+        },
+        {
+          "at": 6.423,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.559, -0.842, 2.762],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.047
+        },
+        {
+          "at": 6.47,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.564, -0.286, 4.143],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.16449999999999998
+        },
+        {
+          "at": 6.635,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.71, 0.287, 3.718],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.047
+        },
+        {
+          "at": 6.682,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.454, -0.136, 2.686],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.2115
+        },
+        {
+          "at": 6.893,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.56, -0.824, 2.754],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.047
+        },
+        {
+          "at": 6.94,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.564, -0.286, 4.143],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.161
+        },
+        {
+          "at": 7.101,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.71, 0.287, 3.718],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.046000000000000006
+        },
+        {
+          "at": 7.147,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.454, -0.136, 2.686],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.20700000000000002
+        },
+        {
+          "at": 7.354,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.56, -0.824, 2.754],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.046000000000000006
+        },
+        {
+          "at": 7.4,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.896, -0.306, 3.627],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.12249999999999998
+        },
+        {
+          "at": 7.523,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.041, 0.266, 3.201],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.034999999999999996
+        },
+        {
+          "at": 7.558,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.24, 0.174, 2.917],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.1575
+        },
+        {
+          "at": 7.715,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.347, -0.499, 2.978],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.034999999999999996
+        },
+        {
+          "at": 7.75,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.897, -0.288, 3.619],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.12249999999999998
+        },
+        {
+          "at": 7.873,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.042, 0.285, 3.193],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.034999999999999996
+        },
+        {
+          "at": 7.908,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.241, 0.191, 2.91],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.1575
+        },
+        {
+          "at": 8.065,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.348, -0.48, 2.971],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.034999999999999996
+        },
+        {
+          "at": 8.35,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.952, -0.209, 3.505],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.105
+        },
+        {
+          "at": 8.455,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.097, 0.363, 3.079],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.03
+        },
+        {
+          "at": 8.485,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.494, 0.135, 2.53],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.135
+        },
+        {
+          "at": 8.62,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.601, -0.527, 2.587],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.03
+        },
+        {
+          "at": 8.65,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-1.953, -0.191, 3.497],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.105
+        },
+        {
+          "at": 8.755,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.098, 0.382, 3.071],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.03
+        },
+        {
+          "at": 8.785,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.495, 0.152, 2.523],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.135
+        },
+        {
+          "at": 8.92,
+          "frame": "anchor:carve",
+          "point": "grip",
+          "pos": [-2.602, -0.509, 2.579],
+          "rot": [116.582, -44.401, 57.397],
+          "blend": 0.03
+        },
+        {
+          "at": 8.95,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [-180, -84.289, 131.846],
+          "blend": 0.35
+        },
+        {
+          "at": 9.3,
+          "frame": "chest",
+          "point": "grip",
+          "pos": [-4.4, 8.8, -2.8],
+          "rot": [-180, -84.289, 131.846],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:hand_saw:grip",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 3.35,
+        "target": "prop:wooden_knob_blank:pinch",
+        "blend": 0.35,
+        "roll": 0
+      },
+      {
+        "at": 4.1,
+        "target": "prop:folding_knife:grip",
+        "blend": 0.3,
+        "roll": 0
+      },
+      {
+        "at": 9.3,
+        "target": "prop:hand_saw:grip",
+        "blend": 0.15,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "block:hold",
+        "blend": 0,
+        "pole": [0.8, 1, 0.2],
+        "roll": 0
+      },
+      {
+        "at": 3,
+        "target": "pose",
+        "blend": 0.4
+      },
+      {
+        "at": 3.8,
+        "target": "prop:wooden_knob_blank:hold_foot",
+        "blend": 0.3,
+        "roll": 0
+      },
+      {
+        "at": 8.1,
+        "target": "prop:wooden_knob_blank:hold_head",
+        "blend": 0.25,
+        "roll": 0
+      },
+      {
+        "at": 8.95,
+        "target": "prop:wooden_knob_blank:hold_foot",
+        "blend": 0.3,
+        "roll": 0
+      },
+      {
+        "at": 9.75,
+        "target": "block:hold",
+        "blend": 0.25,
+        "pole": [0.8, 1, 0.2],
+        "roll": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "at": 0.7,
+      "type": "saw_push",
+      "until": 1.1
+    },
+    {
+      "at": 1.1,
+      "type": "saw_pull"
+    },
+    {
+      "at": 1.5,
+      "type": "saw_push",
+      "until": 1.9
+    },
+    {
+      "at": 1.9,
+      "type": "saw_pull"
+    },
+    {
+      "at": 2.3,
+      "type": "saw_push",
+      "until": 2.7
+    },
+    {
+      "at": 2.7,
+      "type": "cut_through"
+    },
+    {
+      "at": 2.82,
+      "type": "drop",
+      "pos": [-5.3, 1.88, -2.31]
+    },
+    {
+      "at": 5.148,
+      "type": "whittle",
+      "until": 5.395,
+      "from": [0.04, -0.68, 0.29],
+      "to": [-0.41, -0.91, -0.34],
+      "dir": [-0.556, -0.284, -0.782],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "corners"
+    },
+    {
+      "at": 5.698,
+      "type": "whittle",
+      "until": 5.945,
+      "from": [0.04, -0.68, 0.29],
+      "to": [-0.41, -0.91, -0.34],
+      "dir": [-0.556, -0.284, -0.782],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "corners"
+    },
+    {
+      "at": 6.212,
+      "type": "whittle",
+      "until": 6.423,
+      "from": [0.33, -0.44, 0.67],
+      "to": [-0.41, -0.86, -0.36],
+      "dir": [-0.555, -0.315, -0.77],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "rounding"
+    },
+    {
+      "at": 6.682,
+      "type": "whittle",
+      "until": 6.893,
+      "from": [0.33, -0.42, 0.66],
+      "to": [-0.41, -0.84, -0.37],
+      "dir": [-0.555, -0.316, -0.77],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "rounding"
+    },
+    {
+      "at": 7.147,
+      "type": "whittle",
+      "until": 7.354,
+      "from": [0.33, -0.42, 0.66],
+      "to": [-0.41, -0.84, -0.37],
+      "dir": [-0.555, -0.316, -0.77],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "rounding"
+    },
+    {
+      "at": 7.558,
+      "type": "whittle",
+      "until": 7.715,
+      "from": [0, -0.44, 0.15],
+      "to": [-0.2, -0.53, -0.14],
+      "dir": [-0.556, -0.256, -0.791],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "neck"
+    },
+    {
+      "at": 7.908,
+      "type": "whittle",
+      "until": 8.065,
+      "from": [0, -0.42, 0.14],
+      "to": [-0.2, -0.51, -0.14],
+      "dir": [-0.556, -0.26, -0.79],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "neck"
+    },
+    {
+      "at": 8.485,
+      "type": "whittle",
+      "until": 8.62,
+      "from": [-0.06, -0.34, 0.02],
+      "to": [-0.45, -0.57, -0.52],
+      "dir": [-0.555, -0.319, -0.768],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "tenon"
+    },
+    {
+      "at": 8.785,
+      "type": "whittle",
+      "until": 8.92,
+      "from": [-0.06, -0.32, 0.02],
+      "to": [-0.46, -0.55, -0.53],
+      "dir": [-0.555, -0.321, -0.767],
+      "out": [0.05, -0.918, 0.392],
+      "phase": "tenon"
+    },
+    {
+      "at": 9.3,
+      "type": "blow",
+      "pos": [-0.14, -3.1, 1.67]
+    },
+    {
+      "at": 9.72,
+      "type": "set",
+      "pos": [2.84, 1.92, 1.11]
+    }
+  ]
+}

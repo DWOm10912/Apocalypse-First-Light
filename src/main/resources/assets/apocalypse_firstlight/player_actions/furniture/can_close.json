@@ -1,0 +1,171 @@
+{
+  "format_version": 1,
+  "about": "Close the can at a batch's end (no sound, user 2026-10-22): the stick out and laid down (0-0.65), the lid from its rest turned over onto the can (0.6-1.3), the right palm presses it shut (1.3-1.6) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "clip": "tool.furniture_lean",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 55,
+  "first_person": "body",
+  "held_item": "hidden",
+  "length": 2,
+  "blend": {
+    "in": 0.3,
+    "out": 0.25
+  },
+  "approach": {
+    "anchor": "stand",
+    "distance": 0,
+    "side": 0,
+    "max": 2,
+    "face": "face",
+    "pitch": 40,
+    "in": 0.6
+  },
+  "first_person_view": [
+    [0, 58],
+    [2, 58]
+  ],
+  "props": [
+    {
+      "id": "furniture_stick",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:stick_rest",
+          "point": "end",
+          "pos": [0, 0, 0],
+          "rot": [-90, 61.189, 95.008],
+          "blend": 0
+        },
+        {
+          "at": 0.05,
+          "frame": "anchor:can",
+          "point": "end",
+          "pos": [0, -2.05, 0],
+          "rot": [-14.036, 0, 5.541],
+          "blend": 0.3
+        },
+        {
+          "at": 0.35,
+          "frame": "anchor:stick_bench",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, -90, 0],
+          "blend": 0.3
+        },
+        {
+          "at": 0.65,
+          "frame": "anchor:stick_bench",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, -90, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "furniture_lid",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "anchor:lid",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-180, 0, 0],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.6,
+          "frame": "anchor:lid",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [-180, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 0.75,
+          "frame": "anchor:lid",
+          "point": "center",
+          "pos": [0, -1.02, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.25
+        },
+        {
+          "at": 1,
+          "frame": "anchor:can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.3
+        },
+        {
+          "at": 1.3,
+          "frame": "anchor:can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:furniture_stick:grip",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.65,
+        "target": "block:cantop",
+        "blend": 0.4,
+        "roll": 0
+      },
+      {
+        "at": 1.3,
+        "target": "block:cantop",
+        "blend": 0.15,
+        "roll": 0
+      },
+      {
+        "at": 1.6,
+        "target": "pose",
+        "blend": 0.4
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "block:canhold",
+        "blend": 0,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 0.5,
+        "target": "prop:furniture_lid:hold",
+        "blend": 0.2,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 1.3,
+        "target": "block:canhold",
+        "blend": 0.2,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 1.6,
+        "target": "pose",
+        "blend": 0.4
+      }
+    ]
+  },
+  "events": []
+}

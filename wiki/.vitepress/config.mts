@@ -80,6 +80,7 @@ function sidebar(loc: 'zh' | 'en') {
         { text: t('生物群系', 'Biomes'), link: `${p}/world/biomes` },
         { text: t('道路与城镇', 'Roads & Towns'), link: `${p}/world/roads` },
         { text: t('建筑与地点', 'Buildings & Places'), link: `${p}/world/places` },
+        { text: t('植物', 'Plants'), link: `${p}/world/plants` },
         { text: t('森林与伐木', 'Forests & Felling'), link: `${p}/world/forests` },
         { text: t('天气', 'Weather'), link: `${p}/world/weather` }
       ] }

@@ -221,7 +221,7 @@ function steelScrap() {
 
 const DUMMY = 'data:image/png;base64,' + png(Buffer.from([0, 0, 0, 255]), 1, 1).toString('base64');
 const r12 = v => +v.toFixed(12) || 0, r3 = v => +v.toFixed(3) || 0, r6 = v => +v.toFixed(6) || 0;
-const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXYZ, applied to a vector as Rx * Ry * Rz
+export const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXYZ, applied to a vector as Rx * Ry * Rz
   const rx = rotX(ax), ry = rotY(ay), rz = deg => { const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return p => [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]]; };
   const z = rz(az); return p => rx(ry(z(p)));
 };
@@ -236,7 +236,7 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
  * The old pixel-art options (mat, coverage, xray, seamless, depthSeam) no longer change the picture.
  */
 const ICON_SIZE = 64, ICON_SS = 4, ICON_LIGHT = norm([-0.35, 0.85, 0.4]);
-function drawIcon(PARTS, UV, atlasPng, view, centreY) {
+export function drawIcon(PARTS, UV, atlasPng, view, centreY) {
   const N = ICON_SIZE * ICON_SS, k = N / 16, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation;
   const atlas = readPng(atlasPng);
   const opaque = [], glass = [];
@@ -383,14 +383,16 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
     ...displayOverrides,
   };
   const iconView = {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)};
-  // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
+  // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity).
+  // The base also carries the icon's view as its gui transform: the workbench's large result preview draws the mesh in it
+  // (AflWorkbenchScreen.model; the inventory never reaches the base's gui, the perspective wins)
   const icon = `apocalypse_firstlight:item/${id}`;
   // icon.live: the mesh in the inventory too, in the icon's view (its renderer draws moving parts there, like a vanilla
   // compass); the 2D icon is still written (particles, wiki)
   const itemModel = iconOpts.live
     ? {parent: 'builtin/entity', gui_light: 'front', textures: {particle: icon}, display: {...display, gui: iconView}}
     : {loader: 'forge:separate_transforms', gui_light: 'front', textures: {particle: icon},
-      base: {parent: 'builtin/entity', textures: {particle: icon}, display},
+      base: {parent: 'builtin/entity', textures: {particle: icon}, display: {...display, gui: iconView}},
       perspectives: {gui: {parent: 'minecraft:item/generated', textures: {layer0: icon}}}};
   const offset = r6(0.5 - size[1] / 32);
 

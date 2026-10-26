@@ -221,6 +221,38 @@ public final class AflSounds {
     // Sawing at the workbench (client/workbench/WorkbenchWork): a push and a pull per stroke, cut from one Firefly take
     public static final RegistryObject<SoundEvent> HAND_SAW_PUSH = simple("hand_saw_push");
     public static final RegistryObject<SoundEvent> HAND_SAW_PULL = simple("hand_saw_pull");
+    // Folding knife V1 (docs/gameplay/folding_knife_v1.md 4.2, design/items/folding_knife_v1/fk_cut_sounds.py): the user's
+    // Firefly takes cut into pieces; item/FoldingKnifeItem plays them (the swing in the air: client/FoldingKnifeClient)
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_OPEN = simple("folding_knife_open");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_CLOSE = simple("folding_knife_close");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_SWING = simple("folding_knife_swing");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_STAB = simple("folding_knife_stab");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_METAL = simple("folding_knife_hit_metal");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_STONE = simple("folding_knife_hit_stone");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_HIT_WOOD = simple("folding_knife_hit_wood");
+    public static final RegistryObject<SoundEvent> FOLDING_KNIFE_WHITTLE = simple("folding_knife_whittle");
+    public static final RegistryObject<SoundEvent> WORKBENCH_TOOL_DOWN = simple("workbench_tool_down");
+    // AFL vegetation P2c (docs/gameplay/vegetation_v1_design.md 19.3): a foot in the mesh plants (vegetation/VegetationFootfalls),
+    // one Firefly take per kind (the user's, 2026-10-24): short turf and rosettes, tall grass and stems, the bramble
+    public static final RegistryObject<SoundEvent> VEGETATION_RUSTLE_LOW = simple("vegetation_rustle_low");
+    public static final RegistryObject<SoundEvent> VEGETATION_RUSTLE_TALL = simple("vegetation_rustle_tall");
+    public static final RegistryObject<SoundEvent> VEGETATION_RUSTLE_BRAMBLE = simple("vegetation_rustle_bramble");
+    // Furniture bench work (docs/gameplay/furniture_bench_work_v1.md 7): the user's Firefly takes cut by
+    // design/items/furniture_bench_work_v1/fb_cut_sounds.py; client/workbench/WorkbenchWork plays them at the actions' events
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_TAP = simple("furniture_nail_tap");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_STRIKE = simple("furniture_nail_strike");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_SEAT = simple("furniture_nail_seat");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_GLANCE = simple("furniture_nail_glance");
+    public static final RegistryObject<SoundEvent> FURNITURE_BOX_OPEN = simple("furniture_box_open");
+    public static final RegistryObject<SoundEvent> FURNITURE_NAIL_PICK = simple("furniture_nail_pick");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_PICK = simple("furniture_screw_pick");
+    public static final RegistryObject<SoundEvent> FURNITURE_CAN_OPEN = simple("furniture_can_open");
+    public static final RegistryObject<SoundEvent> FURNITURE_STAIN_STIR = simple("furniture_stain_stir");
+    public static final RegistryObject<SoundEvent> FURNITURE_RAG_DIP = simple("furniture_rag_dip");
+    public static final RegistryObject<SoundEvent> FURNITURE_RAG_WIPE = simple("furniture_rag_wipe");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_TURN = simple("furniture_screw_turn");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_SEAT = simple("furniture_screw_seat");
+    public static final RegistryObject<SoundEvent> FURNITURE_SCREW_SLIP = simple("furniture_screw_slip");
     // Flip lighter V1: placeholders on vanilla events in sounds.json until the user records them (Firefly)
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_OPEN = simple("flip_lighter_open");
     public static final RegistryObject<SoundEvent> FLIP_LIGHTER_STRIKE = simple("flip_lighter_strike");

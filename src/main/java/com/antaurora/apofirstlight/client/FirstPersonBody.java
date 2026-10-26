@@ -121,6 +121,8 @@ public final class FirstPersonBody {
         // lying on the front out of water (the skeleton's prone clips): on the lying body's own eye
         if (PlayerSkeleton.enabled() && (com.antaurora.apofirstlight.client.skeleton.ProneClient.cameraOnBody(camera)
                 || com.antaurora.apofirstlight.client.skeleton.ProneClient.ownLying(player))) return true;
+        // thrown (a living ragdoll): on its head, then on the get-up's posed eye
+        if (PlayerSkeleton.enabled() && com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.cameraOnBody(camera)) return true;
         Pose pose = player.getPose();
         if (pose != Pose.STANDING && pose != Pose.CROUCHING) return false;
         if (player.isVisuallySwimming() || player.isFallFlying() || player.isAutoSpinAttack()) return false;

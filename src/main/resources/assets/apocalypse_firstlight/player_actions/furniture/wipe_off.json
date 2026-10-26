@@ -1,0 +1,137 @@
+{
+  "format_version": 1,
+  "about": "Wipe the stain off, once a piece: the rag folded, two passes along the piece (0.3, 1.2; anchors o0a..o1b), laid down on its rest (1.9-2.25), the hands off (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "clip": "tool.furniture_lean",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 55,
+  "first_person": "body",
+  "held_item": "hidden",
+  "length": 2.5,
+  "blend": {
+    "in": 0.3,
+    "out": 0.25
+  },
+  "approach": {
+    "anchor": "stand",
+    "distance": 0,
+    "side": 0,
+    "max": 2,
+    "face": "face",
+    "pitch": 40,
+    "in": 0.6
+  },
+  "first_person_view": [
+    [0, 58],
+    [2.5, 58]
+  ],
+  "props": [
+    {
+      "id": "furniture_rag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "center",
+          "pos": [-4.5, 7.5, -7],
+          "rot": [0, 0, 0],
+          "blend": 0
+        },
+        {
+          "at": 0.05,
+          "frame": "anchor:o0a",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.25
+        },
+        {
+          "at": 0.3,
+          "frame": "anchor:o0b",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.7
+        },
+        {
+          "at": 1,
+          "frame": "anchor:o1a",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.2
+        },
+        {
+          "at": 1.2,
+          "frame": "anchor:o1b",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.7
+        },
+        {
+          "at": 1.9,
+          "frame": "anchor:rag_rest",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0.35
+        },
+        {
+          "at": 2.25,
+          "frame": "anchor:rag_rest",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [0, 0, 0],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:furniture_rag:hold",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 2.25,
+        "target": "pose",
+        "blend": 0.25
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "block:press",
+        "blend": 0,
+        "roll": 0,
+        "pole": [0.8, 1, 0.2]
+      },
+      {
+        "at": 2,
+        "target": "pose",
+        "blend": 0.4
+      }
+    ]
+  },
+  "events": [
+    {
+      "at": 0.3,
+      "sound": "furniture_rag_wipe",
+      "radius": 2,
+      "volume": 0.6,
+      "noise": 2
+    },
+    {
+      "at": 1.2,
+      "sound": "furniture_rag_wipe",
+      "radius": 2,
+      "volume": 0.6,
+      "noise": 2
+    }
+  ]
+}

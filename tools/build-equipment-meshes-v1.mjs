@@ -1027,13 +1027,13 @@ function flipLighter() {
 
 // low-frequency value noise for wood grain (the material-mesh lib keeps its own private copy)
 const hash3 = (a, b, c) => { let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 2147483647); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
-const vn3 = (x, y, z) => {
+export const vn3 = (x, y, z) => {
   const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), s = t => t * t * (3 - 2 * t), l = (a, b, t) => a + (b - a) * t;
   const sx = s(x - xi), sy = s(y - yi), sz = s(z - zi), h = (a, b, c) => hash3(a, b, c * 7919 + 17);
   return l(l(l(h(xi, yi, zi), h(xi + 1, yi, zi), sx), l(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), sx), sy),
     l(l(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), sx), l(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), sx), sy), sz);
 };
-const fbm3 = (x, y, z) => 0.6 * vn3(x, y, z) + 0.3 * vn3(x * 2.03 + 7.1, y * 2.03 + 3.3, z * 2.03 + 1.7) + 0.1 * vn3(x * 4.1 + 2.9, y * 4.1 + 8.1, z * 4.1 + 5.3);
+export const fbm3 = (x, y, z) => 0.6 * vn3(x, y, z) + 0.3 * vn3(x * 2.03 + 7.1, y * 2.03 + 3.3, z * 2.03 + 1.7) + 0.1 * vn3(x * 4.1 + 2.9, y * 4.1 + 8.1, z * 4.1 + 5.3);
 
 /**
  * Felling axe (2026-10-20): an American Michigan-pattern felling axe, a 3.5 lb forged head on a 32 inch curved hickory
@@ -1300,7 +1300,7 @@ export function rotXYZ([a, b, c], [x, y, z]) {
 }
 export const meshCentre = PARTS => { const all = PARTS.flatMap(p => p.v);
   return [0, 1, 2].map(k => (Math.min(...all.map(q => q[k])) + Math.max(...all.map(q => q[k]))) / 2); };
-function fitHeld(PARTS, grip, view, rotation, scale) {
+export function fitHeld(PARTS, grip, view, rotation, scale) {
   const ref = HELD_REF[view], g = sub3(grip, meshCentre(PARTS));
   const at = add3(ref.t, mul3(rotXYZ(ref.r, HAMMER_GRIP), ref.s));
   const t = sub3(at, mul3(rotXYZ(rotation, g), scale)).map(v => +v.toFixed(3));
@@ -1390,6 +1390,139 @@ function handSaw() {
 }
 
 /**
+ * Folding knife (2026-10-22, docs/gameplay/folding_knife_v1.md, version A): a traditional American lockback, 12.6 cm
+ * closed and 21.1 cm open, a 9.5 cm clip-point blade of satin stainless (flat ground from the spine's lower third, a
+ * bright secondary bevel at the edge, the ricasso's lower edge eased, the nail nick on the mark side +z), walnut scales
+ * over brass liners, brass front and rear bolsters, brass pins (the pivot, the rear pin, two rivets), the steel backspring
+ * along the back between the liners with the lock release standing 0.2 mm proud of the handle at the middle, a steel spacer
+ * filling the butt. Authored in cm (1 px = 1 cm) from the concept (design/items/folding_knife_v1/fk_build.py: x along the
+ * knife from the pivot, z up the spine) turned into the tools' frame: the handle along +Y from the butt (y = 0), the blade
+ * out of the front bolster toward +Y, the spine and the backspring toward +X, the edge toward -X, z across. The blade
+ * (the part `blade`) is drawn open; the item renderer (client/FoldingKnifeRenderer) turns it about the pivot pin (the z
+ * axis through KNIFE.pivot, printed as stats.points.pivot) up to 180 deg, closed into the channel between the liners with
+ * its spine at the belly.
+ */
+export const KNIFE = {butt: 11.6, pivot: [-0.15, 11.6, 0], grip: [0, 5.6, 0], tip: [-0.05, 21.1, 0], nick: [0.5, 13.1, 0.15], half: 0.15};
+function foldingKnife() {
+  const B = 'folding_knife', PY = KNIFE.butt, HALF = KNIFE.half, parts = [], add = p => { parts.push(p); return p; };
+  // the concept's (x, z) to the mesh's (x, y): x = z (up the spine), y = x + the butt's distance behind the pivot
+  const uv = ([x, z]) => [z, x + PY];
+  const catmull = (P, closed, k = 5) => {
+    const out = [], n = P.length;
+    for (let i = 0; i < (closed ? n : n - 1); i++) {
+      const p0 = P[closed || i > 0 ? (i - 1 + n) % n : 0], p1 = P[i], p2 = P[(i + 1) % n], p3 = P[closed || i + 2 < n ? (i + 2) % n : n - 1];
+      for (let s = 0; s < k; s++) { const t = s / k;
+        out.push([0, 1].map(j => 0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t * t + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t ** 3))); }
+    }
+    if (!closed) out.push(P[n - 1]);
+    return out;
+  };
+  const interp = (pl, x) => { if (x <= pl[0][0]) return pl[0][1];
+    for (let i = 0; i + 1 < pl.length; i++) { const [x0, z0] = pl[i], [x1, z1] = pl[i + 1]; if (x <= x1) return x1 === x0 ? z0 : z0 + (z1 - z0) * (x - x0) / (x1 - x0); }
+    return pl[pl.length - 1][1]; };
+  // a closed loop clipped to lo <= concept x <= hi
+  const clipx = (P, lo, hi) => {
+    const clip = (P, keep, v) => { const out = [];
+      for (let i = 0; i < P.length; i++) { const a = P[(i - 1 + P.length) % P.length], b = P[i], cut = () => [v, a[1] + (b[1] - a[1]) * (v - a[0]) / (b[0] - a[0])];
+        if (keep(b)) { if (!keep(a)) out.push(cut()); out.push(b); } else if (keep(a)) out.push(cut()); }
+      return out; };
+    return clip(clip(P, p => p[0] >= lo, lo), p => p[0] <= hi, hi);
+  };
+  // a closed loop moved d inward (mitred; d small against the loop's curvature)
+  const inset = (L, d) => { const s = area2(L) > 0 ? 1 : -1, n = L.length;
+    const en = (a, b) => { const ex = b[0] - a[0], ey = b[1] - a[1], l = Math.hypot(ex, ey) || 1; return [-s * ey / l, s * ex / l]; };
+    return L.map((p, i) => { const n1 = en(L[(i - 1 + n) % n], p), n2 = en(p, L[(i + 1) % n]), m = [n1[0] + n2[0], n1[1] + n2[1]], ml = Math.hypot(...m) || 1;
+      const k = d / Math.max(0.3, (m[0] * n1[0] + m[1] * n1[1]) / ml); return [p[0] + m[0] / ml * k, p[1] + m[1] / ml * k]; }); };
+  const slab = (part, loop, z0, z1, c) => { for (const sg of [-1, 1]) extrude(part, 'z', {outer: orient(loop.map(uv), true), holes: []}, sg > 0 ? z0 : -z1, sg > 0 ? z1 : -z0, c); };
+
+  // the handle's side outline (the concept's), the top line the backspring follows
+  const OUTLINE = catmull([[0.9, -0.6], [0.95, 0.3], [0.6, 0.95], [-0.5, 1.2], [-3, 1.28], [-6, 1.22], [-9, 1.15], [-10.9, 1.05], [-11.5, 0.6],
+    [-11.6, -0.1], [-11.4, -0.8], [-10.8, -1.15], [-9, -1.22], [-6, -1.1], [-3.5, -1.2], [-1.5, -1.32], [0.2, -1.15]], true);
+  const TOP = [[-10.9, 1.05], [-9, 1.15], [-6, 1.22], [-3, 1.28], [-0.5, 1.2], [0.6, 0.95]];
+  // brass liners the full outline (z 1.55-2.05 mm); bolsters over them at the ends, the walnut scales between, a little
+  // inside the outline (the liners' edge shows as a thin brass line) and running 0.5 mm under the bolsters
+  slab(add(new Part('liners', B, 'brass')), OUTLINE, 0.155, 0.205, 0);
+  slab(add(new Part('bolster_front', B, 'brass')), clipx(OUTLINE, -1.6, 2), 0.21, 0.82, 0.12);
+  slab(add(new Part('bolster_rear', B, 'brass')), clipx(OUTLINE, -12, -10.1), 0.21, 0.82, 0.12);
+  slab(add(new Part('scales', B, 'walnut')), clipx(inset(OUTLINE, 0.012), -10.15, -1.55), 0.21, 0.76, 0.14);
+  // backspring: 4.5 mm deep under the top line, 0.4 mm below the liners' edge; the lock release a bar on it, proud of the
+  // handle; the spacer fills the butt between the liners
+  const XS = Array.from({length: 23}, (_, i) => 0.2 - 0.5 * i), top = x => interp(TOP, x);
+  const spring = [...XS.map(x => [x, top(x) - 0.04]), ...XS.slice().reverse().map(x => [x, top(x) - 0.49])];
+  extrude(add(new Part('backspring', B, 'spring')), 'z', {outer: orient(spring.map(uv), true), holes: []}, -HALF, HALF, 0);
+  const rel = Math.max(top(-6.9), top(-5.5));
+  extrude(add(new Part('lock_release', B, 'spring')), 'z', {outer: orient([[-6.9, rel - 0.05], [-5.5, rel - 0.05], [-5.5, rel + 0.02], [-6.9, rel + 0.02]].map(uv), true), holes: []}, -HALF + 0.002, HALF - 0.002, 0);
+  extrude(add(new Part('spacer', B, 'spring')), 'z', {outer: orient(clipx(inset(OUTLINE, 0.02), -12, -10.3).map(uv), true), holes: []}, -HALF + 0.002, HALF - 0.002, 0);
+  // brass pins, domed 0.25 mm proud: the pivot, the rear pin (both through the bolsters), two rivets through the scales
+  for (const [name, x, z, r, z1] of [['pivot_pin', 0, KNIFE.pivot[0], 0.32, 0.845], ['rear_pin', -10.75, 0, 0.26, 0.845], ['rivet_front', -4.2, 0.15, 0.17, 0.785], ['rivet_rear', -8.2, 0.1, 0.17, 0.785]]) {
+    const [cx, cy] = uv([x, z]);
+    revolve(add(new Part(name, B, 'brass')), cx, cy, [[z1, 0], [z1, r * 0.55], [z1 - 0.015, r * 0.85], [z1 - 0.035, r], [-(z1 - 0.035), r], [-(z1 - 0.015), r * 0.85], [-z1, r * 0.55], [-z1, 0]], 12);
+  }
+
+  // blade: an 8-point section every 1.5 mm along the concept's spine (top) and edge (bottom) lines, from the tang's end to
+  // the tip: [spine, grind line, secondary bevel, edge] down the +z face and back up the -z face; the grind comes in over
+  // 5 mm from 9 mm ahead of the pivot (the ricasso before that, only its lower edge eased); a distal taper to
+  // 55 % of the spine's thickness at the tip
+  const BT = catmull([[-0.75, 0.7], [-0.2, 0.95], [5.4, 0.95], [6.4, 0.84], [7.4, 0.58], [8.5, 0.22], [9.5, -0.05]], false, 4);
+  const BB = catmull([[-0.75, -0.9], [0.55, -0.92], [0.75, -1.33], [3.0, -1.35], [5.0, -1.27], [7.0, -1.0], [8.3, -0.6], [9.1, -0.26], [9.5, -0.05]], false, 4);
+  const X0 = -0.75, TIP = 9.5, GRIND = 0.9, blade = add(new Part('blade', B, 'steel'));
+  const lerp = (a, b, f) => a + (b - a) * f;
+  const stations = Array.from({length: 69}, (_, i) => X0 + (TIP - X0) * i / 69);
+  const rings = stations.map(x => {
+    const t = interp(BT, x), b = interp(BB, x), f = Math.max(0, Math.min(1, (x - GRIND) / 0.5));
+    const h = HALF * (1 - 0.45 * (x - X0) / (TIP - X0));
+    const g = lerp(b + 0.1, b + (t - b) * 0.72, f), s = b + Math.min(lerp(0.04, 0.1, f), 0.35 * (g - b));
+    const e2 = lerp(h * 0.8, Math.min(0.045, h * 0.6), f), e = lerp(h * 0.55, 0.012, f);
+    const sec = [[t, h], [g, h], [s, e2], [b, e], [b, -e], [s, -e2], [g, -h], [t, -h]];
+    return {c: [(t + b) / 2, x + PY, 0], ids: sec.map(([X, Z]) => blade.vtx([X, x + PY, Z]))};
+  });
+  const SEC_MAT = ['steel', 'steel', 'edge', 'edge', 'edge', 'steel', 'steel', 'steel'];
+  const centroid = ids => mul3(ids.reduce((q, i) => add3(q, blade.v[i]), [0, 0, 0]), 1 / ids.length);
+  for (let i = 0; i + 1 < rings.length; i++) { const A = rings[i], C = rings[i + 1], mid = mul3(add3(A.c, C.c), 0.5);
+    for (let j = 0; j < 8; j++) { const k = (j + 1) % 8, ids = [A.ids[j], A.ids[k], C.ids[k], C.ids[j]]; blade.face(ids, sub3(centroid(ids), mid), 'side', SEC_MAT[j]); } }
+  const tipId = blade.vtx([interp(BT, TIP), TIP + PY, 0]), last = rings[rings.length - 1];
+  for (let j = 0; j < 8; j++) { const ids = [last.ids[j], last.ids[(j + 1) % 8], tipId]; blade.face(ids, sub3(centroid(ids), last.c), 'side', SEC_MAT[j]); }
+  const first = rings[0], fc = blade.vtx(first.c);
+  for (let j = 0; j < 8; j++) blade.face([fc, first.ids[j], first.ids[(j + 1) % 8]], [0, -1, 0], 'cap', 'steel');
+
+  // satin stainless: a faint grain along the blade (+-3 %); the nail nick a dark crescent groove on the mark side
+  const [NX, NY] = KNIFE.nick;
+  const steel = pos => { const k = 1 + 0.06 * (vn3(pos[1] * 0.6, pos[0] * 14, 3.3) - 0.5);
+    const u = (pos[1] - NY) / 0.55, w = (pos[0] - NX) / 0.1, d = u * u + w * w;
+    return pos[2] > HALF * 0.5 && d < 1 ? tone3([152, 154, 158], k * (0.42 + 0.4 * d)) : tone3([152, 154, 158], k); };
+  // walnut: long streaks along the handle (+-11 %), a finer figure (+-4 %); oiled
+  const walnut = pos => tone3([98, 64, 42], 1 + 0.22 * (fbm3(pos[1] * 0.35 + 2.1, pos[0] * 3.2, pos[2] * 3.2) - 0.5) + 0.08 * (vn3(pos[1] * 1.4 + 6.3, pos[0] * 9, pos[2] * 9) - 0.5));
+  // brass: aged, a soft low-frequency mottle (+-5 %)
+  const brass = pos => tone3([178, 140, 76], 1 + 0.1 * (vn3(pos[0] * 1.3 + 4.4, pos[1] * 0.9, pos[2] * 1.3) - 0.5));
+  const PARTS = parts, grip = KNIFE.grip;
+  return {PARTS, bg: 'plain', MATS: {
+    plain: {c: [152, 154, 158], hl: 10, sm: 158, se: 172, f0: 230},   // the atlas background: the blade's tone, flat
+    steel: {c: steel, hl: 10, sm: 158, se: 172, f0: 230},             // satin stainless (LabPBR iron)
+    edge: {c: [188, 190, 194], hl: 14, sm: 196, se: 205, f0: 230},    // the honed secondary bevel, polished
+    spring: {c: [132, 134, 138], hl: 10, sm: 140, se: 156, f0: 230},  // the backspring, release and spacer
+    brass: {c: brass, hl: 14, sm: 150, se: 168, f0: 255},             // brass: the albedo is its F0
+    walnut: {c: walnut, hl: 6, sm: 132, se: 142, f0: 20},
+  },
+  // held by the middle of the handle in a hammer grip, the blade forward, the edge down; the grip lands on the claw
+  // hammer's (fitHeld). First person: Rz(85) the blade forward and 5 deg up, 15 deg toward the screen's middle. Third
+  // person: Ry(-90) the spine up, Rz(10) the blade 8 deg above level against the arm's lift. Real size to the fist (a hand
+  // about 9.5 cm across, the model's 4 px): 0.42 model px a cm, a little more in first person as the hammer.
+  display: {
+    ...fitHeld(PARTS, grip, 'firstperson', [0, -75, 85], 0.5),
+    ...fitHeld(PARTS, grip, 'thirdperson', [0, -90, 10], 0.42),
+    ground: {rotation: [90, 0, 0], translation: [0, 1, 0], scale: [0.36, 0.36, 0.36]},
+    fixed: {rotation: [0, 0, -45], translation: [0, 0, 0], scale: [0.62, 0.62, 0.62]},
+  },
+  // the inventory draws the mesh (open or closed, client/FoldingKnifeRenderer re-centres it closed)
+  atlas: 512, texelsPerPx: 24, icon: {view: [0, 0, -45], coverage: 0.3, live: true, mat: {plain: [190, 192, 196], steel: [190, 192, 196], edge: [220, 222, 226], spring: [170, 172, 176], brass: [214, 172, 96], walnut: [140, 92, 60]}},
+  // HUD weapon list: side view, the blade to the left, the spine up; drawn about as long as the P9-01's (36 x 22, aspect
+  // 1.64): a 21 cm knife beside a 19 cm pistol
+  hud: {screen: p => [-p[1], p[0]], toward: [0, 0, 1], scale: 48, aspect: 1.8},
+  // the turning blade's pivot; skeleton prop points (player_props/folding_knife.json, tools/author-folding-knife-actions.mjs)
+  points: {pivot: KNIFE.pivot, grip, tip: KNIFE.tip, nick: KNIFE.nick, butt: uv([-11.6, -0.1]).concat(0), release: [rel, -6.2 + PY, 0]}};
+}
+
+/**
  * Field Survival Guide (2026-10-22, docs/gameplay/field_survival_guide_v1_design.md): a perfect-bound pocket paperback,
  * 11.5 x 18 cm and 6 mm thick (48 pages and a card cover), trimmed flush on three sides like any paperback, so it is
  * one block: the cover (front, spine, back) printed from the English cover wrap, the three trimmed edges showing the
@@ -1467,9 +1600,11 @@ function fieldSurvivalGuide() {
 /**
  * HUD weapon-list silhouette (plan 10, docs/ui/afl_inventory_grid_v0_plan.md): the baked mesh drawn orthographically in
  * the grey of the gun HUD silhouettes (textures/gui/gun/*_hud.png): flat grey lit from the top left, a darker rim on the
- * outline; 2x supersampled. spec.hud: screen(p) -> [x right, y up], toward = the direction to the viewer, scale px / unit.
+ * outline; 2x supersampled. spec.hud: screen(p) -> [x right, y up], toward = the direction to the viewer, scale px / unit;
+ * aspect (optional): the image's widest width / height, empty rows added above and below a long thin weapon so the weapon
+ * list (client/inventory/LoadoutHud, drawn to its row's height) draws it no longer than a pistol's silhouette.
  */
-function drawHud(PARTS, {screen, toward, scale}) {
+function drawHud(PARTS, {screen, toward, scale, aspect}) {
   const tris = [];
   for (const part of PARTS) for (const f of part.f) {
     const P = f.ids.map(i => part.v[i]), n = unit(newell(P));
@@ -1477,9 +1612,10 @@ function drawHud(PARTS, {screen, toward, scale}) {
   }
   const S = scale * 2, all = tris.flatMap(t => t.P.map(screen));
   const lo = [0, 1].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1].map(k => Math.max(...all.map(q => q[k])));
-  const pad = 2, W = Math.ceil((hi[0] - lo[0]) * scale) + 2 * pad, H = Math.ceil((hi[1] - lo[1]) * scale) + 2 * pad;
+  const pad = 2, W = Math.ceil((hi[0] - lo[0]) * scale) + 2 * pad, H0 = Math.ceil((hi[1] - lo[1]) * scale) + 2 * pad;
+  const H = aspect ? Math.max(H0, Math.ceil(W / aspect)) : H0, padY = pad + Math.floor((H - H0) / 2);
   const W2 = W * 2, H2 = H * 2, depth = new Float64Array(W2 * H2).fill(-Infinity), shade = new Float64Array(W2 * H2);
-  const toPx = p => { const [x, y] = screen(p); return [(x - lo[0]) * S + pad * 2, (hi[1] - y) * S + pad * 2, dot3(p, toward)]; };
+  const toPx = p => { const [x, y] = screen(p); return [(x - lo[0]) * S + pad * 2, (hi[1] - y) * S + padY * 2, dot3(p, toward)]; };
   // light from the top left, toward the viewer
   const sx = screen([1, 0, 0]), sy = screen([0, 1, 0]), sz = screen([0, 0, 1]);
   const fromScreen = (x, y) => [0, 1, 2].map(k => x * [sx, sy, sz][k][0] + y * [sx, sy, sz][k][1]);
@@ -1657,6 +1793,57 @@ function pickupT15Key() {
   icon: {view: [35, -50, 0]}};
 }
 
+/**
+ * Screwdriver (2026-10-22, docs/gameplay/furniture_bench_work_v1.md 3.5.1: the workbench's third tool, for the cabinet
+ * hardware's screws): an old 6 inch flat-blade cabinet screwdriver, 26 cm overall. Authored in cm along +Y from the
+ * handle's butt and scaled to the felling axe's px (1 px = 1.25 inch), so it hangs and is held at the claw hammer's scale:
+ * a fluted beech handle (3 cm across, eight shallow flutes, a domed butt) worn to amber varnish, a brass ferrule, a round
+ * 6 mm shaft of satin tool steel flaring into a ground flat tip 6.5 mm wide, 1.2 mm thick.
+ */
+export const DRIVER = {handle: 10, ferrule: 11.3, length: 26, grip: 5};
+function screwdriver() {
+  const B = 'screwdriver', S = 1 / 3.175, X = [1, 0, 0], Z = [0, 0, 1];
+  const ring = (r, n, flutes = 0, depth = 0) => Array.from({length: n}, (_, k) => { const a = 2 * Math.PI * k / n, f = flutes ? 1 - depth * (0.5 + 0.5 * Math.cos(flutes * a)) : 1;
+    return [r * f * Math.cos(a) * S, r * f * Math.sin(a) * S]; });
+  const blade = (w, t, n) => Array.from({length: n}, (_, k) => { const a = 2 * Math.PI * k / n, c = Math.cos(a), s = Math.sin(a);
+    return [w * Math.sign(c) * Math.abs(c) ** 0.4 * S, t * Math.sign(s) * Math.abs(s) ** 0.4 * S]; });
+  // handle: [y cm, radius cm], fluted between the butt's dome and the neck
+  const handle = new Part('handle', B, 'beech');
+  const HY = [[0, 0.55], [0.12, 1.05], [0.4, 1.38], [0.9, 1.5], [3.5, 1.52], [6.5, 1.46], [8.4, 1.3], [9.4, 1.0], [DRIVER.handle, 0.86]];
+  const hc = HY.map(([y]) => [0, y * S, 0]);
+  loft(handle, HY.map(([, r], i) => ringAt(handle, hc[i], X, Z, ring(r, 24, i > 1 && i < HY.length - 2 ? 8 : 0, 0.07))), hc);
+  const ferrule = new Part('ferrule', B, 'brass');
+  const FY = [[DRIVER.handle - 0.1, 0.84], [DRIVER.handle + 0.05, 0.86], [DRIVER.ferrule - 0.15, 0.86], [DRIVER.ferrule, 0.7]];
+  const fc = FY.map(([y]) => [0, y * S, 0]);
+  loft(ferrule, FY.map(([, r], i) => ringAt(ferrule, fc[i], X, Z, ring(r, 16))), fc);
+  // shaft: round, then flared and ground flat at the tip (the flats facing +-z)
+  const shaft = new Part('shaft', B, 'steel');
+  const L = DRIVER.length, SY = [[DRIVER.ferrule - 0.1, 0.3, 0.3], [L - 2.6, 0.3, 0.3], [L - 1.2, 0.34, 0.22], [L - 0.35, 0.33, 0.08], [L, 0.32, 0.06]];
+  const sc = SY.map(([y]) => [0, y * S, 0]);
+  loft(shaft, SY.map(([, w, t], i) => ringAt(shaft, sc[i], X, Z, i < 2 ? ring(w, 12) : blade(w, t, 12))), sc, {mat: i => i >= 2 ? 'tip' : 'steel', capMat: 'tip'});
+  // beech worn to amber under old varnish: long grain streaks, the grip a little darker where hands held it
+  const beech = pos => tone3([178, 120, 64], (1 - 0.1 * Math.exp(-((pos[1] / S - 5) ** 2) / 6)) * (1 + 0.14 * (fbm3(pos[1] * 0.25, pos[0] * 6, pos[2] * 6) - 0.5) + 0.05 * (vn3(pos[1] * 1.3 + 2.2, pos[0] * 12, pos[2] * 12) - 0.5)));
+  const PARTS = [handle, ferrule, shaft];
+  const grip = [0, DRIVER.grip * S, 0];
+  return {PARTS, bg: 'plate', MATS: {
+    plate: {c: [178, 120, 64], hl: 6, sm: 150, se: 160, f0: 20},
+    beech: {c: beech, hl: 6, sm: 150, se: 160, f0: 20},              // varnished beech, worn satin
+    brass: {c: [176, 140, 74], hl: 10, sm: 150, se: 170, f0: 230},   // the ferrule, dulled brass
+    steel: {c: [150, 152, 156], hl: 12, sm: 150, se: 166, f0: 230},  // satin tool steel
+    tip: {c: [120, 122, 126], hl: 10, sm: 128, se: 140, f0: 230},    // the ground tip, darker
+  },
+  // held as the claw hammer (the handle in the fist, the tip where the hammer's head is: forward in first person, ahead
+  // in third), its grip on the hammer's
+  display: {
+    ...fitHeld(PARTS, grip, 'firstperson', [0, -75, 50], 1.4),
+    ...fitHeld(PARTS, grip, 'thirdperson', [0, -90, 15], 1.05),
+    ground: {rotation: [0, 0, 90], translation: [0, -1, 0], scale: [0.8, 0.8, 0.8]},
+    fixed: {rotation: [0, 0, -45], translation: [0, 0, 0], scale: [1.1, 1.1, 1.1]},
+  },
+  atlas: 512, icon: {view: [0, 0, -45], coverage: 0.3, mat: {beech: [178, 120, 64], brass: [176, 140, 74], steel: [150, 152, 156], tip: [120, 122, 126]}},
+  points: {axis: [0, 0, 0], grip, tip: [0, L * S, 0], butt: [0, 0, 0]}};
+}
+
 export const ITEMS = {
   pickup_t15_key: pickupT15Key,
   clinical_thermometer: clinicalThermometer,
@@ -1685,7 +1872,9 @@ export const ITEMS = {
   claw_hammer: clawHammer,
   building_hammer: buildingHammer,
   hand_saw: handSaw,
+  screwdriver,
   field_survival_guide: fieldSurvivalGuide,
+  folding_knife: foldingKnife,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

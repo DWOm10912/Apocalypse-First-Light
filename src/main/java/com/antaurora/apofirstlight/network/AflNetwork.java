@@ -23,7 +23,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "72";
+    // 73: master's 72 (item inspect, chair sitting) and B's physical water (71 on its branch), merged 2026-10-25
+    private static final String PROTOCOL = "73";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -174,6 +175,8 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.book.GuideBookPackets.register(channel, nextId);
         // Item inspect V1: a hotspot click and its answer (new packets: Main bumps the protocol at the merge)
         nextId = com.antaurora.apofirstlight.inspect.InspectPackets.register(channel, nextId);
+        // Physical water V1 package 2: a chunk's liquid surfaces (B's branch; protocol 73 with the 2026-10-25 merge)
+        nextId = com.antaurora.apofirstlight.liquid.world.LiquidPackets.register(channel, nextId);
     }
 
     /** Item inspect V1: a hotspot click's answer, to its player. */
@@ -184,6 +187,16 @@ public final class AflNetwork {
     /** Item inspect V1 (client): a hotspot click. */
     public static void inspectToServer(Object packet) {
         if (channel != null) channel.sendToServer(packet);
+    }
+
+    /** Physical water V1: a chunk's liquid surfaces, to one player (it starts tracking the chunk). */
+    public static void sendLiquid(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Physical water V1 package F: a player pouring, to them and every client tracking them. */
+    public static void sendTrackingAndSelf(net.minecraft.world.entity.Entity entity, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), packet);
     }
 
     /** AFL Map V1: a map's record, to the player carrying it. */

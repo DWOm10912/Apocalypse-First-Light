@@ -1,6 +1,13 @@
 {
-  "tallest_first": true,
-  "target_radius": 3,
+  "strike": {
+    "enabled": true,
+    "distance": [20, 45, 80],
+    "rod_reach": 6,
+    "fell": 0.15,
+    "fire_wet": 0.05,
+    "fire_dry": 0.3,
+    "fire_seconds": [60, 150]
+  },
   "direct": {
     "death": 0.5,
     "health": [40, 60],

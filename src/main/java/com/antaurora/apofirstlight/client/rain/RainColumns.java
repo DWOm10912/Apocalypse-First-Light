@@ -16,7 +16,8 @@ import java.nio.ByteBuffer;
 /**
  * The rain's column map around the camera (docs/rendering/rain_v1.md): 128 x 128 columns in an RGBA8 texture, wrapped
  * (a column's texel is its world x & 127, z & 127). Per column: the height the rain stops at (the drawn surface at the
- * column's centre under its MOTION_BLOCKING top, RainGround; or the top of a mesh tree's highest crown cell above that,
+ * column's centre under its MOTION_BLOCKING top, RainGround, or AFL water's surface over it; or the top of a mesh tree's
+ * highest crown cell above that,
  * which MOTION_BLOCKING passes through; in 1/64 blocks
  * + 512 * 64, low byte R, high byte G), the light just above it (B = block light * 16 + sky light) and whether it rains there
  * (A 255; 0 where the biome snows or stays dry, or the chunk is not loaded). The drop program reads it to keep rain out
@@ -137,6 +138,9 @@ final class RainColumns {
         // the drawn surface at the column's centre (road pavement, a smoothed slope, a slab's top), else the block top
         double s = rain ? RainGround.surface(level, x + 0.5, z + 0.5, h) : Double.NaN;
         if (Double.isNaN(s) || s > h + 2 || s < h - 3) s = h;
+        // AFL water standing over that ground: the rain ends on its surface (falling water 20, "雨滴都能直接穿过去")
+        double water = com.antaurora.apofirstlight.client.liquid.ClientLiquid.surfaceBelow(x + 0.5, s + 0.01, z + 0.5);
+        if (!Double.isNaN(water) && water > s) s = water;
         // a mesh tree's crown above it (its cells have no collision, so MOTION_BLOCKING passes through them): the top cell
         int lit = h;
         for (int y = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1; y >= h; y--) {

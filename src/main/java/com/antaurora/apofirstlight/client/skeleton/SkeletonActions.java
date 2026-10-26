@@ -54,6 +54,8 @@ import java.util.Map;
  * <li>a magazine being loaded (weapon/NativeMagazineLoading's clock on the stack): {@code gun/<gun>_mag_load};</li>
  * <li>a flip lighter in the main hand: item/flip_lighter_<act> on the item's own clock (item/FlipLighterItem's Act and
  * ActAt, synced with the stack);</li>
+ * <li>a folding knife in the main hand: item/folding_knife_<act> on the item's clock (open, close), the open or closed
+ * hold, and item/folding_knife_stab from the vanilla attack swing's start while it is open and locked;</li>
  * <li>first of all, a landing that hurt (health/FallLanding sends it; client/FallLandingClient): body/land_hard or
  * body/fall_over, mirrored when the right hand goes down;</li>
  * <li>then work at the workbench (client/workbench/WorkbenchWork: the own session, the others' from the server's word):
@@ -76,11 +78,17 @@ import java.util.Map;
 public final class SkeletonActions {
     /**
      * What a player does now, as its source sees it: the anchors in the world, the parameter, the side, its time's speed;
-     * {@code gun}: the held gun's own (SkeletonGunStance#action), played only with the gun stance.
+     * {@code gun}: the held gun's own (SkeletonGunStance#action), played only with the gun stance; {@code chain}: straight
+     * on from the action before (a furniture step's next action, WorkbenchWork: no blend in from the base pose).
      */
-    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun) {
+    private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun,
+                        boolean chain) {
         Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror) {
-            this(id, started, param, anchors, mirror, 1F, false);
+            this(id, started, param, anchors, mirror, 1F, false, false);
+        }
+
+        Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun) {
+            this(id, started, param, anchors, mirror, speed, gun, false);
         }
     }
 
@@ -121,6 +129,11 @@ public final class SkeletonActions {
     /** Entity id -> the start (s, the action clock) of the felling axe's melee swing playing. */
     private static final Map<Integer, Double> AXE_MELEE = new HashMap<>();
     private static final String LIGHTER = "item/flip_lighter";
+    /** The folding knife (docs/gameplay/folding_knife_v1.md 5): its acts' prefix, and the stab (s long, from the swing's start). */
+    private static final String KNIFE = "item/folding_knife", KNIFE_STAB = "item/folding_knife_stab";
+    private static final double KNIFE_STAB_LENGTH = 0.5;
+    /** Entity id -> the start (s, the action clock) of the folding knife's stab playing. */
+    private static final Map<Integer, Double> KNIFE_STABS = new HashMap<>();
     /** The crowbar hold's swing (s of its time): the melee attack swing's progress (0..1) times this. */
     private static final double CROWBAR_SWING = 0.3;
     /** The pour's time stops here (s), just past the tip's last key, so a stop tips back at once (the stream runs on). */
@@ -238,10 +251,11 @@ public final class SkeletonActions {
                     return null;
                 }
                 boolean resumed = live.id().equals(t.id) && t.stoppedAt >= 0;
+                boolean chained = live.chain() && t.id != null && t.stoppedAt < 0;
                 t.id = live.id();
                 t.action = a;
                 t.start = resumed ? t.start : now;
-                t.shown = resumed ? t.shown : now;
+                t.shown = resumed || chained ? t.shown : now;
                 t.stoppedAt = -1;
             }
             if (!Double.isNaN(live.started())) t.start = live.started();   // a source with its own clock
@@ -364,7 +378,7 @@ public final class SkeletonActions {
         FallLandingClient.Playing landing = FallLandingClient.playing(p, now);
         if (landing != null) return new Live(landing.id(), landing.started(), 0F, Map.of(), landing.mirror());
         var work = com.antaurora.apofirstlight.client.workbench.WorkbenchWork.at(p, partial);
-        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false);
+        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false, work.speed(), false, work.chain());
         SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
         if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed(), true);
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);
@@ -399,6 +413,8 @@ public final class SkeletonActions {
         }
         ItemStack main = p.getMainHandItem();
         if (main.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return lighter(p, main, now);
+        if (main.getItem() instanceof com.antaurora.apofirstlight.item.FoldingKnifeItem) return knife(p, main, partial, now);
+        KNIFE_STABS.remove(p.getId());
         if (main.is(AflItems.ROUND_POINT_SHOVEL.get())) return new Live(SHOVEL_HOLD, now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         if (main.is(AflItems.PICK_MATTOCK.get())) return new Live(PICK_HOLD, now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         if (main.is(AflItems.CROWBAR.get()))   // held; the melee swing's progress runs the hold's swing
@@ -487,6 +503,31 @@ public final class SkeletonActions {
         if (com.antaurora.apofirstlight.item.FlipLighterItem.isLit(stack)) return new Live(LIGHTER + "_strike", now - 100, 0F, Map.of(), mirror);
         if (com.antaurora.apofirstlight.item.FlipLighterItem.isOpen(stack)) return new Live(LIGHTER + "_open", now - 100, 0F, Map.of(), mirror);
         return new Live(LIGHTER, Double.NaN, 0F, Map.of(), mirror);
+    }
+
+    /**
+     * A folding knife in the main hand (docs/gameplay/folding_knife_v1.md 5): open and locked, a stab from the vanilla attack
+     * swing's start to its end; else item/folding_knife_<act> on the item's clock (its tag's Act and ActAt, the server's);
+     * without an act, the open hold as an open long finished, or the closed hold eased in. The stab starts and ends in the
+     * open hold.
+     */
+    private static Live knife(AbstractClientPlayer p, ItemStack stack, float partial, double now) {
+        boolean mirror = p.getMainArm() == HumanoidArm.LEFT;
+        boolean open = com.antaurora.apofirstlight.item.FoldingKnifeItem.isOpen(stack);
+        if (com.antaurora.apofirstlight.item.FoldingKnifeItem.armed(stack, p.level())) {
+            Double stab = KNIFE_STABS.get(p.getId());
+            if (stab != null && (now - stab >= KNIFE_STAB_LENGTH || now < stab)) KNIFE_STABS.remove(p.getId());
+            if (!KNIFE_STABS.containsKey(p.getId()) && p.swinging && p.swingTime <= 1)
+                KNIFE_STABS.put(p.getId(), now - (Math.max(0, p.swingTime) + partial) / 20.0);
+            stab = KNIFE_STABS.get(p.getId());
+            if (stab != null) return new Live(KNIFE_STAB, stab, 0F, Map.of(), mirror);
+        } else {
+            KNIFE_STABS.remove(p.getId());
+        }
+        String act = com.antaurora.apofirstlight.item.FoldingKnifeItem.act(stack);
+        if (act != null) return new Live(KNIFE + "_" + act, com.antaurora.apofirstlight.item.FoldingKnifeItem.actAt(stack) / 20.0, 0F, Map.of(), mirror);
+        if (open) return new Live(KNIFE + "_open", now - 100, 0F, Map.of(), mirror);
+        return new Live(KNIFE, Double.NaN, 0F, Map.of(), mirror);
     }
 
     /**
@@ -605,6 +646,7 @@ public final class SkeletonActions {
         POURS.clear();
         OPENINGS.clear();
         AXE_MELEE.clear();
+        KNIFE_STABS.clear();
         PROP_POINTS.clear();
         PROP_FRAMES.clear();
         STEPS.clear();

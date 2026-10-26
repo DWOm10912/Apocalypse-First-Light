@@ -1,0 +1,15 @@
+{
+  "about": "The screwdriver at the workbench: y from the handle's butt to the blade's tip, the blade's width along x. grip: the right hand; tip; butt (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs). Points, bounds: item block units of the screwdriver mesh as client/AflStaticMeshItemClient draws it (+ (0.5, 0.244094, 0.5)). Scale 0.508: real size.",
+  "items": ["screwdriver"],
+  "scale": 0.508,
+  "bounds": [
+    [0.472, 0.2441, 0.472],
+    [0.528, 0.7561, 0.528]
+  ],
+  "symmetry": "z",
+  "points": {
+    "grip": [0.5, 0.3441, 0.5],
+    "tip": [0.5, 0.7561, 0.5],
+    "butt": [0.5, 0.2441, 0.5]
+  }
+}

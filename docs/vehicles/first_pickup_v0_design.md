@@ -1572,6 +1572,10 @@ dark    = max(0.8 × start, lug)；white = max(0.8 × cold, vapour)
 
 之后又加了点钥匙孔插拔钥匙的动作（8.22.1）。用户 2026-10-21 确认整轮 PASS（"先这样，PASS"），提交进 master。
 
+### 8.23 撞人伤害（D 做，2026-10-22，未实机验证）
+
+用户 2026-10-22：「现在车，没有撞击伤害，需要我们这边先做」。逻辑在 D 的新类 `vehicle/VehicleImpact`，`PickupTruckEntity.tick` 只加了一行调用（服务端，在 `carry()` 推开实体之前）。按车上撞击点朝对方的闭合速度算伤害、撞飞、倒地和腿骨折，伤害类型 `apocalypse_firstlight:vehicle`，数值在 `health_v1.json` 的 `vehicle` 段。车本身不减速、没有凹痕。详见 [injury_knockdown_v1_plan.md](../gameplay/injury_knockdown_v1_plan.md) 第 5 节。
+
 ## 8.1 声音清单（P1，用户 2026-10-15 问）
 
 **2026-10-16：已按这张表做成声音 V1（第 8.11 节）。** 下面是当时的计划和提示词，留作记录。

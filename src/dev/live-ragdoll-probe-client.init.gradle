@@ -1,0 +1,13 @@
+// Live ragdoll probe client (dev only; src/dev/java/.../dev/LiveRagdollProbe.java, docs/gameplay/injury_knockdown_v1_plan.md section 9).
+// gradlew runClient --offline -I src/dev/live-ragdoll-probe-client.init.gradle
+// Runs in build/live-ragdoll-probe (its own copy of a save as saves/live_ragdoll_probe), never the main run/.
+// On a dedicated server instead: src/dev/live-ragdoll-probe-server.init.gradle.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/live-ragdoll-probe')
+            property 'afl.liveragdollprobe', 'sp'
+            args '--quickPlaySingleplayer', 'live_ragdoll_probe', '--width', '1280', '--height', '720'
+        }
+    }
+}

@@ -40,7 +40,15 @@ public final class CorpsePoses {
     static boolean pose(SurvivorCorpse corpse, float partial, SkeletonPose out) {
         float[] now = corpse.pose(), before = corpse.posePrevious();
         if (now == null || before == null) return false;
-        Vec3 o = corpse.poseOrigin(), po = corpse.poseOriginPrevious();
+        pose(now, corpse.poseOrigin(), before, corpse.poseOriginPrevious(), partial, out);
+        return true;
+    }
+
+    /**
+     * Two snapshots one tick apart (RagdollSnapshot about their origins) drawn {@code partial} of the way, as a pose for a
+     * model at {@code o} facing yaw 0 (a living ragdoll's too, LiveRagdollClient).
+     */
+    static void pose(float[] now, Vec3 o, float[] before, Vec3 po, float partial, SkeletonPose out) {
         Vector3d origin = new Vector3d(o.x, o.y, o.z);
         RagdollSnapshot.read(now, origin, POS, ROT);
         RagdollSnapshot.read(before, new Vector3d(po.x, po.y, po.z), PREV, PREV_ROT);
@@ -50,7 +58,6 @@ public final class CorpsePoses {
         }
         if (converter == null) converter = new RagdollBody(DEF);
         converter.pose(out, origin, POS, ROT);
-        return true;
     }
 
     /** Where the eye socket of a posed corpse is (world) and which way the head faces (world forward and up). */

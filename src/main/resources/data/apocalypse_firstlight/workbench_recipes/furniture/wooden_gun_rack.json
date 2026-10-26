@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "result": {
+    "item": "apocalypse_firstlight:wooden_gun_rack"
+  },
+  "materials": [
+    {
+      "tag": "apocalypse_firstlight:boards",
+      "count": 1
+    },
+    {
+      "item": "apocalypse_firstlight:nail_box",
+      "pieces": 16
+    },
+    {
+      "item": "apocalypse_firstlight:wood_finish_can",
+      "litres": 0.1
+    }
+  ],
+  "tools": [
+    "apocalypse_firstlight:hand_saw",
+    "apocalypse_firstlight:claw_hammer"
+  ],
+  "work": [
+    {
+      "step": "furniture/crosscut",
+      "times": 2
+    },
+    {
+      "step": "furniture/nail",
+      "times": 5,
+      "piece": "rack"
+    },
+    {
+      "step": "furniture/wipe"
+    },
+    {
+      "step": "furniture/wipe_off"
+    }
+  ],
+  "unlock": [
+    {
+      "type": "background",
+      "background": "forest_resident"
+    }
+  ]
+}

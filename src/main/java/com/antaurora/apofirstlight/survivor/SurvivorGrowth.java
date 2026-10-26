@@ -117,6 +117,18 @@ public final class SurvivorGrowth {
         return def == null ? 0 : SurvivorSetup.growthLevel(record, catalog, def);
     }
 
+    /**
+     * A growth item's level for the player on the server (the furniture work's carpentry): the survivor's level, 0 without
+     * a set-up living survivor. No Creative override: the client's own reading (SurvivorSheetClient) is the same number.
+     */
+    public static int level(ServerPlayer player, String id) {
+        SurvivorRecord record = trainee(player);
+        if (record == null) return 0;
+        SurvivorCatalog.Snapshot catalog = SurvivorCatalog.get();
+        SurvivorCatalog.GrowthDef def = catalog.growth().get(id);
+        return def == null ? 0 : SurvivorSetup.growthLevel(record, catalog, def);
+    }
+
     /** The gun class's growth item (gun proficiency plan section 3). */
     public static String gunItem(WeaponClass weaponClass) {
         return switch (weaponClass) {

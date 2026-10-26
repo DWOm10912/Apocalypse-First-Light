@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "result": {
+    "item": "apocalypse_firstlight:white_oak_board",
+    "count": 4
+  },
+  "materials": [
+    {
+      "item": "apocalypse_firstlight:white_oak_log",
+      "count": 1
+    }
+  ],
+  "tool": "apocalypse_firstlight:hand_saw",
+  "seconds": 8,
+  "work": "tool/hand_saw_rip",
+  "unlock": [
+    {
+      "type": "background",
+      "background": "forest_resident"
+    }
+  ]
+}

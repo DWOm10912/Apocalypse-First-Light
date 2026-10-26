@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:gift",
+  "pools": [
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 6,
+        "max": 10
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:cabinet_hinge",
+          "weight": 4
+        },
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:iron_knob",
+          "weight": 4
+        },
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:keyhole_escutcheon",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

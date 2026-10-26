@@ -30,6 +30,7 @@
 | geo / Mesh | `geo/<id>.geo.json`、`meshes/<id>.aflmesh.json` |
 | 贴图 | `textures/item/<id>_mesh{,_s,_n}.png`（256，LabPBR） |
 | 物品栏图标 | `textures/item/<id>.png`：64×64，由生成器把带贴图的 Mesh 渲染成平面图（见下文"物品栏图标"） |
+| 基础模型的 `gui` | 2026-10-22 起 `bake()` 把图标视角（旋转、平移、缩放）也写进 `base.display.gui`。物品栏用不到它（`perspectives.gui` 的平面图优先），工作台制作页的大图用它直接画 3D 网格（`AflWorkbenchScreen.model`），不再放大 64 px 图标。只有重新跑过生成器的物品才带这一项，没有的照旧画图标；现在带的是家具材料 13 件 |
 | 物品模型 | `models/item/<id>.json`：`forge:separate_transforms`。`perspectives.gui` 是 `item/generated` 加图标；`base` 是 `builtin/entity` 加世界视角的 `display`（第三人称、第一人称、掉落物、展示框），交给 Mesh 渲染器。外层 `gui_light: front`，图标用平光。粒子用同一张图标 |
 
 - 单 bone，名字与 ID 相同，pivot [0,0,0]。Mesh 在 X/Z 上居中，底面在 y = 0。

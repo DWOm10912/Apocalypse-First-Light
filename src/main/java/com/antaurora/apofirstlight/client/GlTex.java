@@ -3,6 +3,9 @@ package com.antaurora.apofirstlight.client;
 import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.opengl.GL45C;
 
 import com.mojang.logging.LogUtils;
@@ -18,6 +21,9 @@ import java.util.Map;
  * ARB_direct_state_access). A glGet to save and put back a binding makes the game thread wait for the driver thread
  * (NVIDIA threaded optimisation), which with a shader pack cost whole milliseconds a frame (Aureveil A, 2026-10-17).
  * Without DSA: bound, written and put back the old way. The texture must have been bound once (its storage made).
+ * <p>Every upload first puts the pixel unpack state back to the defaults (set, never read): vanilla's NativeImage leaves
+ * its row length and skips behind, and the driver then reads a small buffer as rows of someone else's image, past its
+ * end (a crash in nvoglv64.dll inside glTextureSubImage2D, vegetation 13.9, 2026-10-24).
  */
 public final class GlTex {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -55,7 +61,19 @@ public final class GlTex {
                 "rgba".charAt(first % 4), d.get(first));
     }
 
+    /** The pixel unpack state at its defaults (no unpack buffer, tight rows, no skips), set without reading it. */
+    public static void unpackDefaults() {
+        GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+        GL11.glPixelStorei(GL12.GL_UNPACK_IMAGE_HEIGHT, 0);
+        GL11.glPixelStorei(GL12.GL_UNPACK_SKIP_IMAGES, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 4);
+    }
+
     public static void subImage(int id, int x, int y, int w, int h, int format, int type, ByteBuffer data) {
+        unpackDefaults();
         switch (dsa()) {
             case 1 -> GL45C.glTextureSubImage2D(id, 0, x, y, w, h, format, type, data);
             case 2 -> ARBDirectStateAccess.glTextureSubImage2D(id, 0, x, y, w, h, format, type, data);
@@ -69,6 +87,7 @@ public final class GlTex {
     }
 
     public static void subImage(int id, int x, int y, int w, int h, int format, int type, FloatBuffer data) {
+        unpackDefaults();
         switch (dsa()) {
             case 1 -> GL45C.glTextureSubImage2D(id, 0, x, y, w, h, format, type, data);
             case 2 -> ARBDirectStateAccess.glTextureSubImage2D(id, 0, x, y, w, h, format, type, data);

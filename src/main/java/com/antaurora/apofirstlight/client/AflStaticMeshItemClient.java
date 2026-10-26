@@ -75,8 +75,25 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.BUILDING_HAMMER.get(), "building_hammer", "building_hammer_mesh", 0.169062);
             // Hand saw (equipment meshes, 2026-10-21): 0.5 - 24.76 / 32
             bind(AflItems.HAND_SAW.get(), "hand_saw", "hand_saw_mesh", -0.27375);
+            // Screwdriver (equipment meshes, 2026-10-22): 0.5 - 8.189 / 32
+            bind(AflItems.SCREWDRIVER.get(), "screwdriver", "screwdriver_mesh", 0.244094);
             // Field Survival Guide (equipment meshes, 2026-10-22): 0.5 - 5.669 / 32
             bind(AflItems.FIELD_SURVIVAL_GUIDE.get(), "field_survival_guide", "field_survival_guide_mesh", 0.322835);
+            // Furniture materials (tools/build-furniture-materials-v1.mjs, 2026-10-22): 0.5 - height / 32
+            bind(AflItems.WHITE_OAK_BOARD.get(), "white_oak_board", "white_oak_board_mesh", -0.681102);
+            bind(AflItems.WHITE_PINE_BOARD.get(), "white_pine_board", "white_pine_board_mesh", -0.681102);
+            bind(AflItems.RED_OAK_BOARD.get(), "red_oak_board", "red_oak_board_mesh", -0.681102);
+            bind(AflItems.SHAGBARK_HICKORY_BOARD.get(), "shagbark_hickory_board", "shagbark_hickory_board_mesh", -0.681102);
+            bind(AflItems.RED_MAPLE_BOARD.get(), "red_maple_board", "red_maple_board_mesh", -0.681102);
+            bind(AflItems.EASTERN_HEMLOCK_BOARD.get(), "eastern_hemlock_board", "eastern_hemlock_board_mesh", -0.681102);
+            bind(AflItems.WOOD_FINISH_CAN.get(), "wood_finish_can", "wood_finish_can_mesh", 0.342224);
+            bind(AflItems.NAIL_BOX.get(), "nail_box", "nail_box_mesh", 0.391732);
+            bind(AflItems.SCREW_BOX.get(), "screw_box", "screw_box_mesh", 0.42126);
+            bind(AflItems.CABINET_HINGE.get(), "cabinet_hinge", "cabinet_hinge_mesh", 0.420276);
+            bind(AflItems.IRON_KNOB.get(), "iron_knob", "iron_knob_mesh", 0.447835);
+            bind(AflItems.WOODEN_KNOB.get(), "wooden_knob", "wooden_knob_mesh", 0.459646);
+            bind(AflItems.KEYHOLE_ESCUTCHEON.get(), "keyhole_escutcheon", "keyhole_escutcheon_mesh", 0.455709);
+            bind(AflItems.FURNITURE_HARDWARE_BOX.get(), "furniture_hardware_box", "furniture_hardware_box_mesh", 0.420866);
             // Grid inventory gear (2026-10-14, equipment meshes, worn by ClientEquipmentSlots): 0.5 - height / 32
             bind(AflItems.FIELD_CHEST_RIG.get(), "field_chest_rig", "field_chest_rig_mesh", 0.157344);
             bind(AflItems.CANVAS_BACKPACK.get(), "canvas_backpack", "canvas_backpack_mesh", 0.18375);
@@ -95,6 +112,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.BATTERY_9V_NIMH.get(), "battery_9v_nimh", "battery_9v_nimh_mesh", 0.445313);
             // Flip lighter V1 (equipment meshes, 2026-10-20): the lid, wheel and flame from the stack's tag (0.5 - 11.4 / 32)
             bind(AflItems.FLIP_LIGHTER.get(), FlipLighterRenderer::new, "flip_lighter");
+            // Folding knife V1 (equipment meshes, 2026-10-22): the blade turned about the pivot from the stack's tag (0.5 - 21.107 / 32)
+            bind(AflItems.FOLDING_KNIFE.get(), FoldingKnifeRenderer::new, "folding_knife");
             // Health V1a medical items (equipment meshes, 2026-10-19): 0.5 - height / 32 (4.149 / 9.25 px); in use, the player skeleton
             // draws them as action props (player_props/bandage, medical_alcohol: the bottle's parts, its cap a second prop)
             bind(AflItems.BANDAGE.get(), "bandage", "bandage_mesh", 0.370357);

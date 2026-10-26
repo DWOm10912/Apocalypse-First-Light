@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:pickaxes",
+    "#minecraft:axes",
+    "#minecraft:shovels",
+    "#minecraft:hoes",
+    "minecraft:shears",
+    "apocalypse_firstlight:crowbar",
+    "apocalypse_firstlight:round_point_shovel",
+    "apocalypse_firstlight:pick_mattock",
+    "apocalypse_firstlight:felling_axe",
+    "apocalypse_firstlight:claw_hammer",
+    "apocalypse_firstlight:building_hammer",
+    "apocalypse_firstlight:hand_saw",
+    "apocalypse_firstlight:folding_knife",
+    "apocalypse_firstlight:screwdriver",
+    "apocalypse_firstlight:wiring_wrench"
+  ]
+}

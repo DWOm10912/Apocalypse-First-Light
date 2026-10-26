@@ -35,7 +35,9 @@ import net.minecraft.world.level.block.state.BlockState;
  * ({@link #clawHammer}); the hand saw through its hand hole on both pegs ({@link #handSaw}); anything else as the tool rack's (the item sprite's diagonal plumb, the handle's top between the
  * pegs). The resting tools are drawn by the chunk ({@link WoodGunRackChunking}, a recording of {@link #slot}): a tool is
  * drawn here only until the chunk shows it, plus whatever the chunk cannot take. While a player works at the bench
- * (client/workbench/WorkbenchWork), the log on the top and its kerf ({@link #workpiece}).
+ * (client/workbench/WorkbenchWork), the log on the top and its kerf ({@link #workpiece}); at the wooden knob the bench hook,
+ * the strip on it and its kerf instead ({@link #knobWork}). The furniture's board, piece, nails, hardware and the can's
+ * things: client/FurnitureWorkRenderer (also the half-built piece left on the bench).
  */
 public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlockEntity> {
     /** A sprite tool's model square (smaller than the tool rack's 0.58: the board is lower) and its middle under the pegs. */
@@ -62,9 +64,16 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
         float work = WorkbenchWork.workpiece(entity.getBlockPos(), partialTick);
         if (work >= 0) {
             pose.pushPose();
-            workpiece(work, state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
+            workpiece(work, WorkbenchWork.workLog(entity.getBlockPos(), partialTick), state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
             pose.popPose();
         }
+        double knob = WorkbenchWork.knobCycle(entity.getBlockPos(), partialTick);
+        if (knob >= 0) {
+            pose.pushPose();
+            knobWork(knob, state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
+            pose.popPose();
+        }
+        FurnitureWorkRenderer.render(entity.getBlockPos(), state, partialTick, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
         if (entity.noTools()) return;
         int boardLight = LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above());
         for (int k = 0; k < Workbench.PEGS; k++) {
@@ -81,12 +90,11 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
     }
 
     /**
-     * The work on the top (WorkbenchWork, the bench's north frame): a white oak log along the bench's depth over the drawers,
+     * The work on the top (WorkbenchWork, the bench's north frame): the recipe's log (WorkbenchWork#workLog) along the bench's depth over the drawers,
      * its front end over the edge, and the kerf sawn into it so far, a dark line down its top from the front end and down
      * the end grain as deep as the saw's slope has gone (the toe 20 deg down).
      */
-    private static void workpiece(float progress, BlockState bench, PoseStack pose, MultiBufferSource buffers, int light) {
-        BlockState log = WorkbenchWork.logState();
+    private static void workpiece(float progress, @org.jetbrains.annotations.Nullable BlockState log, BlockState bench, PoseStack pose, MultiBufferSource buffers, int light) {
         if (log == null) return;
         log = log.setValue(RotatedPillarBlock.AXIS, Direction.Axis.Z);
         pose.translate(0.5, 0, 0.5);
@@ -108,6 +116,65 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
         float deep = (float) Math.min(2 * r - 0.01, (kerf - end) * Math.tan(Math.toRadians(20)) + 0.03);
         kerfQuad(out, pose, x0, y, zEnd, x1, y, (float) kerf, 0, 1, 0, u, v, light);   // down the top
         kerfQuad(out, pose, x0, (float) top - deep, zEnd, x1, (float) top, zEnd, 0, 0, -1, u, v, light);   // down the end grain
+    }
+
+    private static final ResourceLocation PLANKS = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "white_oak_planks"),
+            KNOB_GEO = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/wooden_knob_work.geo.json"),
+            KNOB_TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/wooden_knob_work_mesh.png");
+    /** The work mesh's cut between the strip and its end (mesh blocks: tools/build-furniture-materials-v1.mjs KNOB_WORK cut 2.8 cm). */
+    private static final double KNOB_MESH_CUT = 2.8 * 0.0196850394;
+    /**
+     * The bench hook (white oak, 2 cm thick) at the top's right end (x 0.11..0.42): the board on the top, a back cleat the
+     * strip is pushed against, a front cleat under the board hooked over the top's front edge (z 0.04).
+     */
+    private static final double[][] HOOK = {
+            {0.11, 0.90, 0.015, 0.42, WorkbenchWork.KNOB_HOOK_TOP, 0.24},
+            {0.11, WorkbenchWork.KNOB_HOOK_TOP, 0.21, 0.42, 0.945, 0.24},
+            {0.11, 0.86, 0.015, 0.42, 0.90, 0.04}};
+
+    /**
+     * The wooden knob's work on the top (WorkbenchWork, the bench's north frame) at the loop's second {@code t}: the bench
+     * hook, the strip on it against the back cleat (the work mesh's {@code stick}, its end {@code blank_end} on until it is
+     * sawn off; drawn as large as the action's blank), its end over the saw's plane; while the saw is in it, the kerf down
+     * its top and its front face as deep as the stroke has gone.
+     */
+    private static void knobWork(double t, BlockState bench, PoseStack pose, MultiBufferSource buffers, int light) {
+        pose.translate(0.5, 0, 0.5);
+        pose.mulPose(Axis.YP.rotationDegrees(AflBlockMeshProfile.facingDegrees(bench.getValue(Workbench.FACING))));
+        pose.translate(-0.5, 0, -0.5);
+        var block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(PLANKS);
+        BlockState planks = block == null ? null : block.defaultBlockState();
+        if (planks != null) for (double[] b : HOOK) {
+            pose.pushPose();
+            pose.translate(b[0], b[1], b[2]);
+            pose.scale((float) (b[3] - b[0]), (float) (b[4] - b[1]), (float) (b[5] - b[2]));
+            Minecraft.getInstance().getBlockRenderer().renderSingleBlock(planks, pose, buffers, light, OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
+            pose.popPose();
+        }
+        com.antaurora.vextris.mesh.MeshModel mesh = com.antaurora.vextris.client.VextrisMeshes.byGeometry(KNOB_GEO);
+        if (mesh != null) {
+            java.util.List<com.antaurora.vextris.mesh.MeshPart> parts = new java.util.ArrayList<>();
+            for (com.antaurora.vextris.mesh.MeshPart part : mesh.allParts())
+                if (part.name().equals("stick") || part.name().equals("blank_end") && t < WorkbenchWork.KNOB_CUT_THROUGH) parts.add(part);
+            float w = (float) WorkbenchWork.KNOB_MESH_SCALE;
+            pose.pushPose();
+            // turned end for end: the end (+x in the mesh) to the bench's right end, the cut on the saw's plane
+            pose.translate(WorkbenchWork.KNOB_CUT_X + KNOB_MESH_CUT * w, WorkbenchWork.KNOB_HOOK_TOP, WorkbenchWork.KNOB_Z);
+            pose.mulPose(Axis.YP.rotationDegrees(180));
+            pose.scale(w, w, w);
+            com.antaurora.vextris.client.MeshRenderer.renderParts(parts, pose, buffers.getBuffer(RenderType.entityCutoutNoCull(KNOB_TEXTURE)),
+                    light, OverlayTexture.NO_OVERLAY, 1F, 1F, 1F, 1F);
+            pose.popPose();
+        }
+        if (t < WorkbenchWork.KNOB_SAW_FROM || t >= WorkbenchWork.KNOB_CUT_THROUGH || planks == null) return;
+        TextureAtlasSprite grain = Minecraft.getInstance().getBlockRenderer().getBlockModelShaper().getParticleIcon(planks);
+        float u = (grain.getU0() + grain.getU1()) / 2, v = (grain.getV0() + grain.getV1()) / 2;
+        VertexConsumer out = buffers.getBuffer(RenderType.entitySolid(InventoryMenu.BLOCK_ATLAS));
+        float x0 = (float) (WorkbenchWork.KNOB_CUT_X - 0.0035), x1 = (float) (WorkbenchWork.KNOB_CUT_X + 0.0035);
+        float top = (float) WorkbenchWork.KNOB_TOP, y = (float) WorkbenchWork.knobKerfY(t);
+        float front = (float) (WorkbenchWork.KNOB_Z - WorkbenchWork.KNOB_HALF), back = (float) (WorkbenchWork.KNOB_Z + WorkbenchWork.KNOB_HALF);
+        kerfQuad(out, pose, x0, top + 0.0015F, front - 0.0015F, x1, top + 0.0015F, back, 0, 1, 0, u, v, light);   // across the top
+        if (y < top - 0.001F) kerfQuad(out, pose, x0, y, front - 0.0015F, x1, top + 0.0015F, front - 0.0015F, 0, 0, -1, u, v, light);   // down the front face
     }
 
     /** A dark kerf strip from corner a to corner b (flat on one axis), both sides, the given normal. */

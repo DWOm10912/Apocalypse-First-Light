@@ -1,0 +1,89 @@
+{
+  "format_version": 1,
+  "about": "Injury knockdown V1 (docs/gameplay/injury_knockdown_v1_plan.md): hit from the right: a step out, onto the LEFT side, the left hand first, down at 0.55 s (the thump; mirrored when hit from the left), a breath, rolled onto all fours, half kneel, push on the knee, up. 3.7 s (health/FallLanding). The whole body (mask full), held (hold_body: arms keyed by FK); the own first person draws the body, the camera on the posed eye, the view following first_person_view. No moving or using items meanwhile (client/skeleton/FallLandingClient). Written by tools/medical-actions-v1a/author_knockdown_v1.cjs.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "knock.side"
+  },
+  "clip": "knock.side",
+  "layer": "action",
+  "mask": "full",
+  "priority": 70,
+  "first_person": "body",
+  "blend": {
+    "in": 0.06,
+    "out": 0.3
+  },
+  "first_person_eye": true,
+  "hold_body": true,
+  "first_person_view": [
+    [
+      0,
+      0
+    ],
+    [
+      0.15,
+      5
+    ],
+    [
+      0.38,
+      20
+    ],
+    [
+      0.47,
+      20
+    ],
+    [
+      0.55,
+      20
+    ],
+    [
+      0.75,
+      15
+    ],
+    [
+      1.7,
+      15
+    ],
+    [
+      1.88,
+      30
+    ],
+    [
+      2.05,
+      50
+    ],
+    [
+      2.4,
+      55
+    ],
+    [
+      2.75,
+      35
+    ],
+    [
+      3.05,
+      25
+    ],
+    [
+      3.35,
+      10
+    ],
+    [
+      3.7,
+      0
+    ]
+  ],
+  "hands": {
+    "right": [],
+    "left": []
+  },
+  "events": [
+    {
+      "at": 0.55,
+      "kind": "sound",
+      "id": "apocalypse_firstlight:body_fall",
+      "about": "played by the server (health/FallLanding)"
+    }
+  ]
+}

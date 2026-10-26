@@ -186,10 +186,15 @@ public final class ActionPose {
         return true;
     }
 
-    /** The view pitch (deg, + = down) a stepping action gives the head and the first-person view, or NaN for the player's own. */
+    /**
+     * The view pitch (deg, + = down) a stepping action gives the head and the first-person view, or NaN for the player's own:
+     * its {@code first_person_view} at the action's second when it has one (the wooden knob: down on the kerf, then on the
+     * blank in the hands), else the approach's pitch.
+     */
     public static float pitch(Moment m) {
         PlayerAction.Approach a = m.action.approach;
         if (a == null || Float.isNaN(a.pitch())) return Float.NaN;
+        if (m.action.firstPersonView != null) return m.action.viewAt(m.seconds);
         return a.pitch() + (a.pitchHigh() - a.pitch()) * Math.max(0F, Math.min(1F, m.param));
     }
 

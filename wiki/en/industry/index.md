@@ -28,10 +28,48 @@ AFL measures power in FE (Forge Energy). Generators turn diesel, coal or lava in
 - <StatusTag s="test" /> There is one test recipe for now: 1 white oak log, with a <ItemIcon id="hand_saw" /> hand saw on you, makes <ItemIcon id="white_oak_beam" /> 1 white oak beam, under Building. To test the book, you now learn it by reading the bow drill section of the <ItemIcon id="field_survival_guide" /> [Field Survival Guide](../arms/equipment#field-survival-guide) (in survival)
 - <StatusTag s="test" /> The beam is made on the top of the bench: stand at the front of the workbench and click Craft once; the screen closes, you step up to the bench and rip the log on its top along the grain with the hand saw, the kerf creeping in and sawdust falling. Above the hotbar: the item, which one of how many, and the progress. Each one goes straight onto you, and a larger quantity is sawn one after another. Moving, jumping, a left click or opening any screen stops it. Too far away or behind the bench, you are told to stand at its front
 - <StatusTag s="test" /> The saw sounds on each push and pull, in step with your hands, and fades out at <V j="WorkbenchCrafting.SAW_RADIUS" /> blocks. The infected within that range hear it too
+- <StatusTag s="test" /> What the saw takes out comes off as little pieces of wood: dust drifting down from the kerf, chips and shavings flying off in arcs, settling flat on the top or the floor and fading after a while. They take the colour of the inside of that species' wood
+- <StatusTag s="test" /> The <ItemIcon id="wooden_knob" /> wooden knob needs both the hand saw and the <ItemIcon id="folding_knife" /> folding knife on you. A bench hook with a strip on it goes on the right end of the bench: you saw off the end, then whittle off the corners, round it and cut the neck and the tenon with the knife, turn it before your eyes, blow the chips off and set it down; one round of 10 seconds makes 6. The infected within <V j="WorkbenchCrafting.WHITTLE_RADIUS" /> blocks hear the whittling
 - Materials are taken only from what you carry for now, not from the drawers; too far from the bench, no tool or too few materials and it will not craft, with the reason at the bottom of the screen
 - Put the beams on a house with the [building hammer](../arms/equipment#building-hammer)
 - The other categories are still greyed out; recipes not yet learned are never shown
 - <StatusTag s="planned" /> Recipes: learned from life experience, trial and error, books and blueprints; books will turn up in towns. Crafting will take materials from the bench's drawers, from what you carry and from nearby chests
+
+### Wooden furniture materials
+
+<StatusTag s="test" /> The materials for the first wooden furniture are in, all in the creative Materials tab for now. Furniture is made at the workbench step by step, see Making furniture below.
+
+| Item | Where it comes from | Mass |
+|---|---|---|
+| <ItemIcon id="white_oak_board" /> Boards (6 species: white oak, white pine, red oak, shagbark hickory, red maple, eastern hemlock) | Sawn from logs at the workbench | White oak <V d="item_mass/core_v1#items.apocalypse_firstlight:white_oak_board.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wood_finish_can" /> Walnut Wood Finish | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:wood_finish_can.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="nail_box" /> Box of Nails | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
+| Box of Wood Screws (100) | Found in towns, not in hardware boxes | <V d="item_mass/core_v1#items.apocalypse_firstlight:screw_box.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="cabinet_hinge" /> Hinge | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="iron_knob" /> Iron Knob | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wooden_knob" /> Wooden Knob | Made from a board at the workbench, with the hand saw and the folding knife | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="keyhole_escutcheon" /> Keyhole Escutcheon | Found in towns; hardware box | <V d="item_mass/core_v1#items.apocalypse_firstlight:keyhole_escutcheon.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="furniture_hardware_box" /> Furniture Hardware Box | Found in towns | <V d="item_mass/core_v1#items.apocalypse_firstlight:furniture_hardware_box.unit_mass_kg" u="kg" /> |
+
+- <StatusTag s="test" /> A board is a long 1.2 m plank, not the planks block. Rip logs into boards with the hand saw at the workbench: <V d="workbench_recipes/woodwork/white_oak_boards#materials.0.count" /> log of a species gives <V d="workbench_recipes/woodwork/white_oak_boards#result.count" /> boards of it, <V d="workbench_recipes/woodwork/white_oak_boards#seconds" u="s" /> each, sawn on the bench top like the beam, with the log you are sawing lying on the bench. Forest residents know it from the start
+- <StatusTag s="test" /> Wooden knob: <V d="workbench_recipes/woodwork/wooden_knob#materials.0.count" /> board of any species and the hand saw make <V d="workbench_recipes/woodwork/wooden_knob#result.count" />, in <V d="workbench_recipes/woodwork/wooden_knob#seconds" u="s" />, with only the progress bar for now. Furniture takes an iron or a wooden knob alike, and looks the same either way
+- Hinges and keyhole escutcheons cannot be made, only found; later they will also come from taking old furniture apart
+- A can of finish holds 1 litre and a box of nails 180; what is used comes off, the rest shows in the tooltip, with a bar under the slot once some is gone. Neither stacks
+- <StatusTag s="test" /> Furniture hardware box: hold it and press use to open it; it gives <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.min" /> to <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.max" /> hinges, iron knobs and keyhole escutcheons at random, and the box is gone. It opens with a vanilla sound for now
+- <StatusTag s="planned" /> Taking old furniture apart
+
+### Making furniture
+
+<StatusTag s="test" /> The 7 wooden pieces (chair, table, tool rack, gun rack, nightstand, storage chest, wardrobe) are made at the workbench with the hand saw and the claw hammer on you; the nightstand, the storage chest and the wardrobe also need a flat screwdriver (<V d="item_mass/core_v1#items.apocalypse_firstlight:screwdriver.unit_mass_kg" u="kg" />). Press Make and you step up to the bench; a piece is made in steps:
+
+- **Crosscut:** slide the board over the end of the bench, saw a length off and lay it at the back right, 6.5 s a cut
+- **Nailing:** set the nail with a light tap, then a timing bar comes up under the crosshair: press use when the marker is in the green to strike. A miss only costs time, nothing breaks. You drive as many nails as you can see on the bench; the box gives up the real count
+- **Staining, wiping off:** before the first coat the can is pried open and stirred; the rag wipes the stain on along the grain, and the piece turns walnut band by band
+- **Hardware:** set the hinge, knob or escutcheon in place, then drive its screws one by one on the same timing bar; a slip only costs time
+
+- A novice strikes a nail 4 times and turns a screw 4 times; carpentry level 4 makes it 3, level 7 makes it 2, and each level widens the green and quickens the work. Each nail, each screw and each finished piece give carpentry experience
+- Stopping halfway (Shift, left click, walking off, opening a screen) takes no materials; what is done stays on the bench, saved with the world. Anyone who knows the recipe can go on, from the start of that nail or screw. With another recipe's piece on the bench, the page needs a second click to throw it away
+- The materials come off when a piece is done. At the end of a batch the can is closed before you stop
 
 ## Machines
 

@@ -10,6 +10,7 @@ AFL's keys are under Options → Controls → "Apocalypse First Light" and can b
 | Use (right click) | Pick up the item you look at (no auto pickup) |
 | Sneak + Use | Put the item you look at straight into your grid |
 | Sneak + Use on water, empty hand | Take a sip of raw water |
+| Attack (left click) | <StatusTag s="test" /> Dig a block. Only a tool digs: with bare hands or anything else, a left click on a block does nothing at all, not even a swing, grass and flowers included (creative aside). The tools are the crowbar, round point shovel, pick mattock, felling axe, claw hammer, building hammer, hand saw, folding knife, screwdriver and wiring wrench |
 | 1 / 2 / 3 | Long gun / pistol / melee |
 | 4–9 | Quick binds: in the inventory, hover an item in a pocket or the rig and press 4–9 |
 | R (inventory) | Rotate the item you drag |

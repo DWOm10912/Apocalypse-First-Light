@@ -1,0 +1,14 @@
+{
+  "about": "A keyhole escutcheon carried to its place: y along the plate from its foot, the plate's face +z. base: the foot (the anchor hw); hold: the left palm on its face (the fingertips on it) (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs). Points, bounds: item block units of the keyhole_escutcheon mesh as client/AflStaticMeshItemClient draws it (+ (0.5, 0.455709, 0.5)). Scale 0.508: real size.",
+  "items": ["keyhole_escutcheon"],
+  "scale": 0.508,
+  "bounds": [
+    [0.472, 0.4557, 0.499],
+    [0.528, 0.5447, 0.501]
+  ],
+  "symmetry": "z",
+  "points": {
+    "base": [0.5, 0.4557, 0.5],
+    "hold": [0.5, 0.1316, 0.6845]
+  }
+}

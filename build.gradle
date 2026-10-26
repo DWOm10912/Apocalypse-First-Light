@@ -423,6 +423,13 @@ tasks.register('earthworkCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.earthwork.EarthworkCheck'
 }
 
+// Liquid package 1 (docs/gameplay/water_v1_design.md 10, 15): volumetric liquid on a synthetic GroundView, no game bootstrap.
+tasks.register('liquidCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.liquid.LiquidCheck'
+}
+
 // Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 7): fixed scenes, a body falls and must end still, out of blocks, in limits.
 tasks.register('ragdollCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
@@ -453,6 +460,21 @@ tasks.register('vehicleCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.vehicle.physics.VehiclePhysicsCheck'
+}
+
+// Mesh trees on a dedicated server (docs/rendering/mesh_trees_p4_formal.md Y): a layout with its quads dropped says which
+// cells carry leaves as one with them.
+tasks.register('treeStripCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.tree.TreeStripCheck'
+}
+
+// Lightning V2 (docs/gameplay/lightning_v2_plan.md 6): the rolling sphere on a made-up scene (a person, a tree, a barn with a rod).
+tasks.register('lightningStrikeCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.world.LightningStrikeCheck'
 }
 
 // T15 headlamp beams (docs/vehicles/first_pickup_v0_design.md 8.10): light along and across, reach, walls, layers.

@@ -19,7 +19,8 @@ import java.util.function.Supplier;
  * Survival and health V1a: the own regeneration state, the wounds, the fractures and the screen effect's strength to the
  * client; and what everyone drawing a player needs of its body (BodyMarkSync): which parts wear a dressing or a splint, which
  * limbs are broken, which part the next bandage goes on (the gauze and splints on the body, the splint action's limb;
- * client/BandageWrapRenderer, client/skeleton/SkeletonActions); and a hurting landing, to play it (FallLanding).
+ * client/BandageWrapRenderer, client/skeleton/SkeletonActions); a hurting landing or knockdown, to play it (FallLanding,
+ * Knockdown); and a hit with a direction, for the body's flinch (Knockdown, client/skeleton/HitReactClient).
  */
 public final class HealthPackets {
     private HealthPackets() {
@@ -161,7 +162,8 @@ public final class HealthPackets {
 
     /**
      * A landing that hurt (FallLanding): the player (entity id), {@link FallLanding#HARD} or {@link FallLanding#FALL_OVER},
-     * and whether it falls on the right hand (the action mirrored). To the player and its trackers.
+     * and whether it falls on the right hand (the action mirrored); or a knockdown (Knockdown: {@link FallLanding#KNOCK_FRONT}
+     * .. {@link FallLanding#COLLAPSE}, mirrored = onto the right side), or getting up. To the player and its trackers.
      */
     public record Landing(int entity, byte kind, boolean mirror) {
         static void encode(Landing p, FriendlyByteBuf b) {
@@ -175,6 +177,51 @@ public final class HealthPackets {
         }
     }
 
+    /**
+     * A hit that came from somewhere (Knockdown): the player (entity id), the world yaw (degrees, Minecraft's) from it to
+     * where the hit came from, and its strength (health lost / max health, 0..1). To the player and its trackers.
+     */
+    public record Hit(int entity, float yaw, float strength) {
+        static void encode(Hit p, FriendlyByteBuf b) {
+            b.writeVarInt(p.entity);
+            b.writeFloat(p.yaw);
+            b.writeFloat(p.strength);
+        }
+
+        static Hit decode(FriendlyByteBuf b) {
+            return new Hit(b.readVarInt(), b.readFloat(), Mth.clamp(b.readFloat(), 0, 1));
+        }
+    }
+
+    /**
+     * A living player's ragdoll (survivor/LiveRagdolls, docs/gameplay/injury_knockdown_v1_plan.md 9): its boxes
+     * (RagdollSnapshot relative to {@code origin}) every tick while it falls ({@code state} FALLING, {@code root} where the
+     * player's own box follows it); once still, its last pose with how it gets up ({@code state} FallLanding.KNOCK_FRONT or
+     * KNOCK_BACK, the get-up played from LiveRagdolls#from; COLLAPSE: it stays down) and the place and yaw the get-up stands
+     * at; ENDED: dropped with no get-up. To the player and its trackers.
+     */
+    public record Ragdoll(int entity, net.minecraft.world.phys.Vec3 origin, float[] pose, byte state, net.minecraft.world.phys.Vec3 root,
+                          float yaw) {
+        static void encode(Ragdoll p, FriendlyByteBuf b) {
+            b.writeVarInt(p.entity);
+            b.writeDouble(p.origin.x);
+            b.writeDouble(p.origin.y);
+            b.writeDouble(p.origin.z);
+            com.antaurora.apofirstlight.survivor.SurvivorPackets.writePose(b, p.pose);
+            b.writeByte(p.state);
+            b.writeDouble(p.root.x);
+            b.writeDouble(p.root.y);
+            b.writeDouble(p.root.z);
+            b.writeFloat(p.yaw);
+        }
+
+        static Ragdoll decode(FriendlyByteBuf b) {
+            return new Ragdoll(b.readVarInt(), new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),
+                    com.antaurora.apofirstlight.survivor.SurvivorPackets.readPose(b), b.readByte(),
+                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()), b.readFloat());
+        }
+    }
+
     public static int register(SimpleChannel channel, int id) {
         channel.registerMessage(id++, State.class, State::encode, State::decode, HealthPackets::handleState,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -182,7 +229,18 @@ public final class HealthPackets {
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Landing.class, Landing::encode, Landing::decode, HealthPackets::handleLanding,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Hit.class, Hit::encode, Hit::decode, HealthPackets::handleHit,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Ragdoll.class, Ragdoll::encode, Ragdoll::decode, HealthPackets::handleRagdoll,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
+    }
+
+    private static void handleRagdoll(Ragdoll packet, Supplier<NetworkEvent.Context> supplier) {
+        var c = supplier.get();
+        c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.accept(packet)));
+        c.setPacketHandled(true);
     }
 
     private static void handleState(State packet, Supplier<NetworkEvent.Context> supplier) {
@@ -195,6 +253,13 @@ public final class HealthPackets {
         var c = supplier.get();
         c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                 com.antaurora.apofirstlight.client.skeleton.FallLandingClient.accept(packet)));
+        c.setPacketHandled(true);
+    }
+
+    private static void handleHit(Hit packet, Supplier<NetworkEvent.Context> supplier) {
+        var c = supplier.get();
+        c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                com.antaurora.apofirstlight.client.skeleton.HitReactClient.accept(packet)));
         c.setPacketHandled(true);
     }
 

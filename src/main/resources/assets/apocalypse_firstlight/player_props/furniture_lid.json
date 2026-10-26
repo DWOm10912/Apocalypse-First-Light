@@ -1,0 +1,20 @@
+{
+  "about": "The can's lid: y up from its seat. center: the seat's middle; hold: the left palm on its top (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs): parts of the furniture_work mesh (code only, no item). Points, bounds: item block units of the mesh as drawn (meshes/furniture_work.aflmesh.json + (0.5, 0, 0.5)). Scale 0.508.",
+  "items": [],
+  "scale": 0.508,
+  "bounds": [
+    [0.399, 0, 0.399],
+    [0.601, 0.014, 0.601]
+  ],
+  "symmetry": "x",
+  "mesh": {
+    "model": "furniture_work",
+    "atlas": "furniture_work_mesh",
+    "offset": 0,
+    "parts": ["lid"]
+  },
+  "points": {
+    "center": [0.5, 0, 0.5],
+    "hold": [0.5, 0.1985, 0.5]
+  }
+}

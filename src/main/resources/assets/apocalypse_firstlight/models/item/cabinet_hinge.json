@@ -1,0 +1,108 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/cabinet_hinge"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/cabinet_hinge"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          0,
+          2.1478,
+          1.4
+        ],
+        "scale": [
+          2,
+          2,
+          2
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          30,
+          6
+        ],
+        "translation": [
+          1.13,
+          1.818,
+          2.46
+        ],
+        "scale": [
+          1.8,
+          1.8,
+          1.8
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          1.881,
+          1.881,
+          1.881
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          3.293,
+          3.293,
+          3.293
+        ]
+      },
+      "gui": {
+        "rotation": [
+          35,
+          20,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          5.957,
+          5.957,
+          5.957
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/cabinet_hinge"
+      }
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "format_version": 1,
+  "about": "Folding knife: folded with both hands (Act close). From the ready hold before the chest (0-0.35 s); the left thumb presses the lock bar at 0.40 s, then pushes the blade round 0.45-1.08 s to 150 deg and lets go: the backspring snaps it shut at 1.18 s; the closed knife down before the belly 1.2-1.65 s. The own first-person camera dips to it (client/FoldingKnifeClient).",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "folding_knife",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3.4,
+          4.5,
+          -6.4
+        ],
+        "rot": [
+          180,
+          -81.47,
+          118.54
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0.001,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.2,
+          2.6,
+          -7.2
+        ],
+        "rot": [
+          -180,
+          -21.8,
+          83.64
+        ],
+        "blend": 0.35
+      },
+      {
+        "at": 1.17,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.2,
+          2.6,
+          -7.2
+        ],
+        "rot": [
+          -180,
+          -21.8,
+          87.64
+        ],
+        "blend": 0.02
+      },
+      {
+        "at": 1.2,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -1.2,
+          2.6,
+          -7.2
+        ],
+        "rot": [
+          -180,
+          -21.8,
+          83.64
+        ],
+        "blend": 0.05
+      },
+      {
+        "at": 1.25,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3,
+          6.6,
+          -4.6
+        ],
+        "rot": [
+          -180,
+          -70.71,
+          113.01
+        ],
+        "blend": 0.4
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.12,
+        "target": "prop:release",
+        "blend": 0.28,
+        "roll": 0
+      },
+      {
+        "at": 0.4,
+        "target": "prop:pull_0",
+        "blend": 0.05,
+        "roll": 0
+      },
+      {
+        "at": 0.45,
+        "target": "prop:pull_30",
+        "blend": 0.181,
+        "roll": 0
+      },
+      {
+        "at": 0.631,
+        "target": "prop:pull_60",
+        "blend": 0.09199999999999997,
+        "roll": 0
+      },
+      {
+        "at": 0.723,
+        "target": "prop:pull_90",
+        "blend": 0.08400000000000007,
+        "roll": 0
+      },
+      {
+        "at": 0.807,
+        "target": "prop:pull_120",
+        "blend": 0.09199999999999997,
+        "roll": 0
+      },
+      {
+        "at": 0.899,
+        "target": "prop:pull_150",
+        "blend": 0.18100000000000005,
+        "roll": 0
+      },
+      {
+        "at": 1.1,
+        "target": "pose",
+        "blend": 0.3,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

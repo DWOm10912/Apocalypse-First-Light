@@ -1,0 +1,13 @@
+{
+    "vertex": "apocalypse_firstlight:afl_post",
+    "fragment": "apocalypse_firstlight:afl_ssao",
+    "attributes": [ "Position" ],
+    "samplers": [ { "name": "Depth" } ],
+    "uniforms": [
+        { "name": "WorldProj", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "InvProj", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ViewSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+        { "name": "Radius", "type": "float", "count": 1, "values": [ 0.6 ] },
+        { "name": "FadeFrom", "type": "float", "count": 2, "values": [ 32.0, 64.0 ] }
+    ]
+}

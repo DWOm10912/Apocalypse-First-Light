@@ -110,11 +110,42 @@ public final class AflItems {
     // test beam (ripped at the bench, its own animation); hangs on the pegs; a plain tool otherwise; Creative only, no recipe
     public static final RegistryObject<Item> HAND_SAW = ITEMS.register("hand_saw",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    // Screwdriver (2026-10-22, docs/gameplay/furniture_bench_work_v1.md 3.5): a 6 inch flat-blade driver, beech handle;
+    // the bench's third furniture tool (the screws of the hinges, knobs and escutcheons); hangs on the pegs; Creative only
+    public static final RegistryObject<Item> SCREWDRIVER = ITEMS.register("screwdriver",
+            () -> new Item(new Item.Properties().stacksTo(1)));
     // Field Survival Guide (2026-10-22, docs/gameplay/field_survival_guide_v1_design.md): a pocket paperback; use opens it
     // in the reader, its pages from data/apocalypse_firstlight/books/field_survival_guide.json; staying on a page that
     // teaches a recipe learns it; Creative only, no recipe
     public static final RegistryObject<Item> FIELD_SURVIVAL_GUIDE = ITEMS.register("field_survival_guide",
             com.antaurora.apofirstlight.book.GuideBookItem::new);
+    // Wooden furniture's first materials (2026-10-22, docs/gameplay/furniture_recipes_v1.md): a long rip-sawn board of each
+    // species (a log saws into 4 at the bench; not the planks block), the walnut finish (mL) and the nails (pieces) used by
+    // the amount, the cabinet hardware (found or salvaged; the wooden knob also made at the bench from a board) and the
+    // hardware store's mixed box. Creative tab too; the furniture recipes that use them come later.
+    public static final RegistryObject<Item> WHITE_OAK_BOARD = board("white_oak");
+    public static final RegistryObject<Item> WHITE_PINE_BOARD = board("white_pine");
+    public static final RegistryObject<Item> RED_OAK_BOARD = board("red_oak");
+    public static final RegistryObject<Item> SHAGBARK_HICKORY_BOARD = board("shagbark_hickory");
+    public static final RegistryObject<Item> RED_MAPLE_BOARD = board("red_maple");
+    public static final RegistryObject<Item> EASTERN_HEMLOCK_BOARD = board("eastern_hemlock");
+    public static final RegistryObject<Item> WOOD_FINISH_CAN = ITEMS.register("wood_finish_can",
+            () -> new com.antaurora.apofirstlight.item.MeteredSupplyItem(1000, true));
+    public static final RegistryObject<Item> NAIL_BOX = ITEMS.register("nail_box",
+            () -> new com.antaurora.apofirstlight.item.MeteredSupplyItem(180, false));
+    // a box of 100 #8 x 1 1/4 inch wood screws, used by the piece like the nails (docs/gameplay/furniture_bench_work_v1.md 3.5)
+    public static final RegistryObject<Item> SCREW_BOX = ITEMS.register("screw_box",
+            () -> new com.antaurora.apofirstlight.item.MeteredSupplyItem(100, false));
+    public static final RegistryObject<Item> CABINET_HINGE = ITEMS.register("cabinet_hinge",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> IRON_KNOB = ITEMS.register("iron_knob",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> WOODEN_KNOB = ITEMS.register("wooden_knob",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> KEYHOLE_ESCUTCHEON = ITEMS.register("keyhole_escutcheon",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> FURNITURE_HARDWARE_BOX = ITEMS.register("furniture_hardware_box",
+            com.antaurora.apofirstlight.item.FurnitureHardwareBoxItem::new);
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",
@@ -271,6 +302,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.PORCELAIN_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> KEYLESS_LAMPHOLDER = ITEMS.register("keyless_lampholder",
             () -> new BlockItem(AflBlocks.KEYLESS_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> COPPER_AIR_TERMINAL = ITEMS.register("copper_air_terminal",
+            () -> new BlockItem(AflBlocks.COPPER_AIR_TERMINAL.get(), new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> BARN_LIGHTNING_ROD = ITEMS.register("barn_lightning_rod",
+            () -> new net.minecraft.world.item.DoubleHighBlockItem(AflBlocks.BARN_LIGHTNING_ROD.get(), new Item.Properties().stacksTo(4)));
     /** Fuel Stop A1 details V1 (docs/models/fuel_stop_a1_details_v1.md): one channel-letter item, the letter in its BlockStateTag. */
     public static final RegistryObject<Item> CHANNEL_LETTER = ITEMS.register("channel_letter",
             () -> new com.antaurora.apofirstlight.item.ChannelLetterBlockItem(AflBlocks.CHANNEL_LETTER.get(), new Item.Properties().stacksTo(16)));
@@ -575,6 +610,10 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PLASTIC_PELLETS = ITEMS.register("plastic_pellets",
             () -> new Item(new Item.Properties()));
+    // Folding knife V1 (2026-10-22, docs/gameplay/folding_knife_v1.md): a traditional lockback; opened with both hands, a
+    // light melee weapon only while open and locked (weapons/melee tag); Creative only, no recipe
+    public static final RegistryObject<Item> FOLDING_KNIFE = ITEMS.register("folding_knife",
+            com.antaurora.apofirstlight.item.FoldingKnifeItem::new);
     // Item inspect V1 (docs/gameplay/item_inspect_v1_design.md 5): a 9 V battery in its bay, switched on with a right click
     public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
             () -> new com.antaurora.apofirstlight.item.GeigerCounterItem(new Item.Properties().stacksTo(1)));
@@ -648,6 +687,11 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.vehicle.VehicleSpawnerItem(new Item.Properties().stacksTo(1)));
 
     private AflItems() {
+    }
+
+    /** A species' board: a plain material, 8 to a stack. */
+    private static RegistryObject<Item> board(String species) {
+        return ITEMS.register(species + "_board", () -> new Item(new Item.Properties().stacksTo(8)));
     }
 
     /**

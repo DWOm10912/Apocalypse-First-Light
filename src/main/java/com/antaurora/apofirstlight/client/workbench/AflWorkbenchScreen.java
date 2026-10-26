@@ -10,9 +10,14 @@ import com.antaurora.apofirstlight.inventory.grid.ItemSizes;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.weight.StackMassCalculator;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.block.model.ItemTransform;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
@@ -20,9 +25,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -56,6 +63,9 @@ public final class AflWorkbenchScreen extends Screen {
     private static final long STATUS_NANOS = 3_000_000_000L;
     /** Key cap scales: the header's (beside 6-7 high text) and the key bar's (beside 5.4). */
     private static final float HEADER_CAP = 0.62F, BAR_CAP = 0.56F;
+    /** What is short under the materials: its size and at most this many lines, wrapped to the panel. */
+    private static final float MISSING_SIZE = 5;
+    private static final int MISSING_LINES = 3;
 
     private enum Kind { TAB_INVENTORY, CLOSE, SEARCH, CATEGORY, RECIPE, MINUS, PLUS, CRAFT, MATERIAL, TOOL, PREVIEW, LIST }
     private record Hit(Kind kind, float x, float y, float w, float h, int index, @Nullable Object data) {}
@@ -178,8 +188,8 @@ public final class AflWorkbenchScreen extends Screen {
 
         Hit hover = hitAt(mx, my);
         if (hover != null && recipe != null && optionsOf < 0) {
-            if (hover.kind == Kind.MATERIAL) g.renderTooltip(font, recipe.materials().get(hover.index).shown(), mouseX, mouseY);
-            else if (hover.kind == Kind.TOOL && recipe.tool() != null) g.renderTooltip(font, recipe.tool(), mouseX, mouseY);
+            if (hover.kind == Kind.MATERIAL) g.renderTooltip(font, recipe.materials().get(hover.index).shown(net.minecraft.Util.getMillis()), mouseX, mouseY);
+            else if (hover.kind == Kind.TOOL && hover.index < recipe.tools().size()) g.renderTooltip(font, recipe.tools().get(hover.index), mouseX, mouseY);
         }
     }
 
@@ -303,6 +313,14 @@ public final class AflWorkbenchScreen extends Screen {
         boolean fresh = WorkbenchRecipes.isFresh(r);
         Component source = Component.translatable("screen.apocalypse_firstlight.workbench.source" + (fresh ? ".fresh" : ""), r.source());
         text(g, source, C_X + 2, 60, 4.8F, fresh ? AflUiStyle.ACCENT : AflUiStyle.TEXT_DIM, 1);
+        // a furniture piece left half done on this bench (WorkbenchBlockEntity's job): which, and how far
+        var half = WorkbenchWork.benchJob(bench);
+        if (half != null) {
+            Component line = Component.translatable("screen.apocalypse_firstlight.workbench.half_built", WorkbenchWork.jobName(half),
+                    WorkbenchWork.stepLine(half, WorkbenchWork.carpentry()));
+            boolean other = r.furniture() && !half.recipe().equals(r.id());
+            text(g, fit(line, 4.8F, C_W - 4), C_X + 2, 67, 4.8F, other ? AflUiStyle.WARN : AflUiStyle.ACCENT, 1);
+        }
 
         // the model, turned by dragging
         hits.add(new Hit(Kind.PREVIEW, C_X, 68, C_W, 90, 0, null));
@@ -314,7 +332,8 @@ public final class AflWorkbenchScreen extends Screen {
         String[][] props = {
                 {"weight", String.format(Locale.ROOT, "%.2f kg", grams / 1000.0)},
                 {"size", I18n.get("screen.apocalypse_firstlight.workbench.prop.size_value", size.w(), size.h())},
-                {"time", I18n.get("screen.apocalypse_firstlight.workbench.prop.time_value", seconds(r.ticks()))},
+                {"time", I18n.get("screen.apocalypse_firstlight.workbench.prop.time_value", seconds(r.furniture()
+                        ? com.antaurora.apofirstlight.cabin.FurnitureWork.estimate(r.steps(), WorkbenchWork.carpentry()) : r.ticks()))},
                 {"owned", Integer.toString(WorkbenchRecipes.carried(minecraft.player, r.result().getItem()))}};
         for (int i = 0; i < props.length; i++) {
             float x = C_X + 2 + i * 44;
@@ -341,10 +360,17 @@ public final class AflWorkbenchScreen extends Screen {
 
     /**
      * The result as a large 3D item: its GUI pose, turned about the model's own upright axis by {@code yaw} (the GUI
-     * pose's x tilt is undone around the turn, so a block spins like on a turntable instead of wobbling).
+     * pose's x tilt is undone around the turn, so a block spins like on a turntable instead of wobbling). A Mesh item's
+     * inventory picture is its 64 px icon (forge:separate_transforms, gui = item/generated), which blown up to this size
+     * reads as pixels: its base model is the mesh, carrying the icon's view as its gui transform
+     * (tools/build-material-meshes-v1.mjs), so that one is drawn instead, front-lit like the icon.
      */
     private void model(GuiGraphics g, ItemStack stack) {
-        var model = minecraft.getItemRenderer().getModel(stack, minecraft.level, minecraft.player, 0);
+        var renderer = minecraft.getItemRenderer();
+        BakedModel model = renderer.getModel(stack, minecraft.level, minecraft.player, 0);
+        BakedModel base = model.applyTransform(ItemDisplayContext.NONE, new PoseStack(), false);
+        boolean mesh = base != model && base.isCustomRenderer() && base.getTransforms().gui != ItemTransform.NO_TRANSFORM;
+        if (mesh) model = base;
         float tilt = model.getTransforms().gui.rotation.x();
         float k = PREVIEW_SIZE / 16;
         var pose = g.pose();
@@ -355,7 +381,18 @@ public final class AflWorkbenchScreen extends Screen {
         pose.mulPose(Axis.XP.rotationDegrees(tilt));
         pose.scale(k, k, k);
         pose.translate(0, 0, -150);   // renderItem pushes 150 forward: keep the turn about the centre
-        g.renderItem(stack, -8, -8);
+        if (mesh) {
+            // GuiGraphics.renderItem(stack, -8, -8) with the base model in place of the icon
+            pose.translate(0, 0, 150);
+            pose.mulPoseMatrix(new Matrix4f().scaling(1, -1, 1));
+            pose.scale(16, 16, 16);
+            Lighting.setupForFlatItems();
+            renderer.render(stack, ItemDisplayContext.GUI, false, pose, g.bufferSource(), 0xF000F0, OverlayTexture.NO_OVERLAY, model);
+            g.flush();
+            Lighting.setupFor3DItems();
+        } else {
+            g.renderItem(stack, -8, -8);
+        }
         pose.popPose();
     }
 
@@ -364,54 +401,68 @@ public final class AflWorkbenchScreen extends Screen {
         float x = R_X + 6, right = R_X + R_W - 6;
         int lines = r.materials().size();
         float matsH = Math.max(1, lines) * 19;
-        boolean anyShort = false;
-        for (var m : r.materials()) if (WorkbenchRecipes.carried(player, m) < m.count()) anyShort = true;
-        float h = 16 + matsH + (anyShort ? 10 : 2) + 4 + 26 + 4 + 18 + 20 + 4;
-        panel(g, R_X, R_Y, R_W, h);
-        text(g, Component.translatable("screen.apocalypse_firstlight.workbench.materials"), x, R_Y + 6, 7, AflUiStyle.TEXT, 1);
-        Component haveNeed = Component.translatable("screen.apocalypse_firstlight.workbench.have_need");
-        text(g, haveNeed, right - width(haveNeed, 4.8F), R_Y + 7.5F, 4.8F, AflUiStyle.TEXT_DIM, 1);
-        float y = R_Y + 18;
+        // the panel as tall as what it holds: the materials, what is short (wrapped), a row per tool, the quantity, the button
         List<Component> missing = new ArrayList<>();
-        for (int i = 0; i < lines; i++) {
-            var m = r.materials().get(i);
+        for (var m : r.materials()) {
             int have = WorkbenchRecipes.carried(player, m);
-            boolean ok = have >= m.count();
-            if (!ok) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench.missing_item", m.shown().getHoverName(), m.count() - have));
-            boolean hover = in(mx, my, x - 2, y - 1, R_W - 8, 18);
-            if (hover) AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 18, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.5F);
-            slot(g, x, y, 16);
-            icon(g, m.shown(), x + 2, y + 2, 12);
-            text(g, m.shown().getHoverName(), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
-            if (m.options().size() > 1)
-                text(g, Component.translatable("screen.apocalypse_firstlight.workbench.options_count", m.options().size()), x + 21, y + 10.5F, 4.2F, AflUiStyle.TEXT_DISABLED, 1);
-            Component count = Component.literal(have + " / " + m.count());
-            text(g, count, right - width(count, 6.4F), y + 4.5F, 6.4F, ok ? AflUiStyle.TEXT : AflUiStyle.WARN, 1);
-            hits.add(new Hit(Kind.MATERIAL, x - 2, y - 1, R_W - 8, 18, i, null));
-            y += 19;
+            if (have < m.count()) missing.add(Component.translatable("screen.apocalypse_firstlight.workbench."
+                    + (m.unit() == com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Unit.COUNT ? "missing_item" : "missing_amount"), m.name(), m.amount(m.count() - have)));
         }
-        if (anyShort) {
+        Component short_ = null;
+        int shortLines = 0;
+        if (!missing.isEmpty()) {
             Component joined = Component.empty();
             for (int i = 0; i < missing.size(); i++) {
                 if (i > 0) joined = joined.copy().append(Component.translatable("screen.apocalypse_firstlight.workbench.list_sep"));
                 joined = joined.copy().append(missing.get(i));
             }
-            text(g, Component.translatable("screen.apocalypse_firstlight.workbench.missing", joined), x, y + 1, 5, AflUiStyle.WARN, 1);
-            y += 10;
-        } else y += 2;
+            short_ = Component.translatable("screen.apocalypse_firstlight.workbench.missing", joined);
+            shortLines = Math.min(MISSING_LINES, font.split(short_, (int) ((R_W - 12) / (MISSING_SIZE / font.lineHeight))).size());
+        }
+        float shortH = short_ == null ? 2 : 3 + shortLines * MISSING_SIZE * 1.45F;
+        float toolsH = 13 + 13 * Math.max(1, r.tools().size());
+        float h = 18 + matsH + shortH + 5 + toolsH + 4 + 18 + 15 + 6;
+        panel(g, R_X, R_Y, R_W, h);
+        text(g, Component.translatable("screen.apocalypse_firstlight.workbench.materials"), x, R_Y + 6, 7, AflUiStyle.TEXT, 1);
+        Component haveNeed = Component.translatable("screen.apocalypse_firstlight.workbench.have_need");
+        text(g, haveNeed, right - width(haveNeed, 4.8F), R_Y + 7.5F, 4.8F, AflUiStyle.TEXT_DIM, 1);
+        float y = R_Y + 18;
+        for (int i = 0; i < lines; i++) {
+            var m = r.materials().get(i);
+            int have = WorkbenchRecipes.carried(player, m), need = m.count() * Math.max(1, quantity);
+            boolean ok = have >= need;
+            boolean hover = in(mx, my, x - 2, y - 1, R_W - 8, 18);
+            if (hover) AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 18, AflUiStyle.RADIUS_TILE, AflUiStyle.BACK_HOVER, 0.5F);
+            slot(g, x, y, 16);
+            icon(g, m.shown(net.minecraft.Util.getMillis()), x + 2, y + 2, 12);
+            // a metered line in its unit, the need times the quantity: "0.65 / 0.3 L", "172 / 48" (furniture bench work 8)
+            String needText = m.amount(need);
+            Component count = Component.literal(m.amount(have).replace(" L", "") + " / " + needText);
+            float countW = width(count, 6.4F);
+            text(g, fit(m.name(), 5.6F, right - countW - 3 - (x + 21)), x + 21, y + 4, 5.6F, AflUiStyle.TEXT, 1);
+            if (m.options().size() > 1)
+                text(g, Component.translatable("screen.apocalypse_firstlight.workbench.options_count", m.options().size()), x + 21, y + 10.5F, 4.2F, AflUiStyle.TEXT_DISABLED, 1);
+            text(g, count, right - countW, y + 4.5F, 6.4F, ok ? AflUiStyle.TEXT : AflUiStyle.WARN, 1);
+            hits.add(new Hit(Kind.MATERIAL, x - 2, y - 1, R_W - 8, 18, i, null));
+            y += 19;
+        }
+        if (short_ != null) wrap(g, short_, x, y + 1, R_W - 12, MISSING_SIZE, AflUiStyle.WARN, MISSING_LINES);
+        y += shortH;
         AflUiShapes.fill(g, x - 2, y + 1, R_W - 8, 0.4F, 0, AflUiStyle.LINE, 0.2F);
         y += 5;
         // tool
         text(g, Component.translatable("screen.apocalypse_firstlight.workbench.tool"), x, y, 6.4F, AflUiStyle.TEXT, 1);
-        if (r.tool() == null) {
+        if (r.tools().isEmpty())
             text(g, Component.translatable("screen.apocalypse_firstlight.workbench.tool.none"), x, y + 10, 5.2F, AflUiStyle.TEXT_DIM, 1);
-        } else {
-            boolean have = WorkbenchRecipes.toolPresent(player, r);
-            icon(g, r.tool(), x, y + 8.5F, 10);
-            text(g, r.tool().getHoverName(), x + 13, y + 11, 5.2F, have ? AflUiStyle.TEXT_DIM : AflUiStyle.WARN, 1);
-            hits.add(new Hit(Kind.TOOL, x - 2, y + 7, R_W - 8, 13, 0, null));
+        for (int i = 0; i < r.tools().size(); i++) {   // a row each, every one needed
+            ItemStack tool = r.tools().get(i);
+            boolean have = WorkbenchRecipes.carried(player, tool.getItem()) > 0;
+            float ty = y + 13 * i;
+            icon(g, tool, x, ty + 8.5F, 10);
+            text(g, fit(tool.getHoverName(), 5.2F, right - (x + 13)), x + 13, ty + 11, 5.2F, have ? AflUiStyle.TEXT_DIM : AflUiStyle.WARN, 1);
+            hits.add(new Hit(Kind.TOOL, x - 2, ty + 7, R_W - 8, 13, i, null));
         }
-        y += 26;
+        y += toolsH;
         AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 0.4F, 0, AflUiStyle.LINE, 0.2F);
         y += 4;
         // quantity
@@ -437,8 +488,8 @@ public final class AflWorkbenchScreen extends Screen {
         AflUiDraw.button(g, x - 1, y, R_W - 10, 15, craftHover && able, craftStart != 0, able, 1);
         float progress = craftProgress(r);
         ring(g, x + 8, y + 7.5F, 4.2F, progress, able);
-        Component label = Component.translatable("screen.apocalypse_firstlight.workbench." + (craftStart != 0 ? "crafting" : "craft"),
-                craftDone + 1, quantity);
+        Component label = Component.translatable("screen.apocalypse_firstlight.workbench." + (craftStart != 0 ? "crafting"
+                        : discardArmed(r) ? "craft_discard" : "craft"), craftDone + 1, quantity);
         text(g, label, x + 17, y + 4.8F, 5.6F, able ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         hits.add(new Hit(Kind.CRAFT, x - 1, y, R_W - 10, 15, 0, null));
 
@@ -511,7 +562,9 @@ public final class AflWorkbenchScreen extends Screen {
         for (ItemStack option : m.options()) {
             icon(g, option, x + 6, yy + 1, 10);
             text(g, option.getHoverName(), x + 19, yy + 3.6F, 5.2F, AflUiStyle.TEXT, 1);
-            Component have = Component.literal(Integer.toString(WorkbenchRecipes.carried(minecraft.player, option.getItem())));
+            Component have = Component.literal(m.unit() == com.antaurora.apofirstlight.cabin.WorkbenchCrafting.Unit.COUNT
+                    ? Integer.toString(WorkbenchRecipes.carried(minecraft.player, option.getItem()))
+                    : m.amount(com.antaurora.apofirstlight.inventory.CarriedItems.amount(minecraft.player, option.getItem())));
             text(g, have, x + w - 6 - width(have, 5.2F), yy + 3.6F, 5.2F, AflUiStyle.TEXT_DIM, 1);
             yy += rowH;
         }
@@ -544,6 +597,14 @@ public final class AflWorkbenchScreen extends Screen {
         craftDone++;
         craftStart = craftDone < quantity ? System.nanoTime() : 0;
         if (craftStart == 0) craftDone = 0;
+    }
+
+    /** The craft button asked once to throw away another recipe's half-built piece: a second click in 5 s does. */
+    @Nullable private ResourceLocation discardFor;
+    private long discardAt;
+
+    private boolean discardArmed(WorkbenchRecipeView r) {
+        return r.id().equals(discardFor) && System.nanoTime() - discardAt < 5_000_000_000L;
     }
 
     private void stopCrafting() {
@@ -596,9 +657,19 @@ public final class AflWorkbenchScreen extends Screen {
                     stopCrafting();
                     click();
                 } else if (canCraft(recipe) && recipe.work() != null && !recipe.sample()) {
-                    // made at the bench: the page closes and the player works on the top (WorkbenchWork)
+                    // made at the bench: the page closes and the player works on the top (WorkbenchWork). Another
+                    // recipe's half-built piece on the bench is thrown away only on a second click (the button says so)
                     click();
-                    WorkbenchWork.start(bench, recipe, Math.min(quantity, WorkbenchRecipes.craftable(minecraft.player, recipe)));
+                    var half = WorkbenchWork.benchJob(bench);
+                    boolean other = recipe.furniture() && half != null && !half.recipe().equals(recipe.id());
+                    if (other && !discardArmed(recipe)) {
+                        discardFor = recipe.id();
+                        discardAt = System.nanoTime();
+                        setStatus(Component.translatable("screen.apocalypse_firstlight.workbench.discard_ask", WorkbenchWork.jobName(half)));
+                    } else {
+                        discardFor = null;
+                        WorkbenchWork.start(bench, recipe, Math.min(quantity, WorkbenchRecipes.craftable(minecraft.player, recipe)), other);
+                    }
                 } else if (canCraft(recipe)) {
                     craftStart = System.nanoTime();
                     craftDone = 0;
@@ -779,6 +850,13 @@ public final class AflWorkbenchScreen extends Screen {
             g.drawString(font, lines.get(i), 0, 0, AflUiStyle.argb(rgb, 1), false);
             pose.popPose();
         }
+    }
+
+    /** The text, cut to {@code w} wide with an ellipsis when it is wider (a long name beside a count). */
+    private Component fit(Component text, float size, float w) {
+        if (width(text, size) <= w) return text;
+        int px = (int) (w / (size / font.lineHeight)) - font.width("…");
+        return Component.literal(font.plainSubstrByWidth(text.getString(), Math.max(0, px)) + "…").withStyle(text.getStyle());
     }
 
     private float width(Component text, float size) {

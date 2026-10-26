@@ -1,10 +1,15 @@
 package com.antaurora.apofirstlight.inventory;
 
 import com.antaurora.apofirstlight.inventory.grid.PlayerGrids;
+import com.antaurora.apofirstlight.item.MeteredSupplyItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * What a player carries on the body: the hands and weapon positions (the vanilla inventory) and the grids (pockets, rig,
@@ -47,6 +52,44 @@ public final class CarriedItems {
             }
             if (changed) view.commit();
         }
+        return n - left;
+    }
+
+    /** How much is left in all the metered supplies of the item carried (mL or pieces, MeteredSupplyItem; client or server). */
+    public static int amount(Player player, Item item) {
+        int n = 0;
+        for (ItemStack stack : player.getInventory().items) if (stack.is(item)) n += MeteredSupplyItem.left(stack) * stack.getCount();
+        for (ItemStack stack : PlayerGrids.stacks(player)) if (stack.is(item)) n += MeteredSupplyItem.left(stack) * stack.getCount();
+        return n;
+    }
+
+    /**
+     * Server: takes up to n mL or pieces out of the metered supplies of the item carried, the one with least left first
+     * (an opened can is used up before a new one; one used up is gone); returns how much was taken.
+     */
+    public static int takeAmount(ServerPlayer player, Item item, int n) {
+        var view = PlayerGrids.view(player);
+        List<ItemStack> stacks = new ArrayList<>();
+        for (ItemStack stack : player.getInventory().items) if (stack.is(item) && !stack.isEmpty()) stacks.add(stack);
+        List<ItemStack> grid = new ArrayList<>();
+        for (ItemStack stack : view.stacks()) if (stack.is(item) && !stack.isEmpty()) grid.add(stack);
+        stacks.addAll(grid);
+        stacks.sort(Comparator.comparingInt(MeteredSupplyItem::left));
+        int left = n;
+        boolean gridChanged = false;
+        for (ItemStack stack : stacks) {
+            // a stack of several (a command may stack them): one at a time from the top
+            while (left > 0 && !stack.isEmpty()) {
+                int has = MeteredSupplyItem.left(stack);
+                int k = Math.min(left, has);
+                left -= k;
+                if (stack.getCount() > 1 && k == has) stack.shrink(1);
+                else MeteredSupplyItem.setLeft(stack, has - k);
+                if (grid.contains(stack)) gridChanged = true;
+            }
+        }
+        player.getInventory().setChanged();
+        if (gridChanged) view.commit();
         return n - left;
     }
 

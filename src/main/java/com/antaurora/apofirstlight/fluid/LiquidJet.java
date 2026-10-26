@@ -71,14 +71,42 @@ public final class LiquidJet {
         return nextId;
     }
 
+    /**
+     * A liquid's surface the parcels can land on besides blocks (physical water, docs/gameplay/water_falling_v1_design.md):
+     * the surface at (x, z) a parcel at height y has just come down to or through, or NaN.
+     */
+    public interface Surface {
+        double below(double x, double y, double z);
+    }
+
+    /** A parcel meeting such a surface, at {@code at}. */
+    public interface SurfaceLanding {
+        void land(Parcel parcel, Vec3 at);
+    }
+
     /** One game tick: every parcel flies two sub-steps; one that meets a block lands there and is gone. */
     public void tick(Level level, @org.jetbrains.annotations.Nullable Entity source, Landing landing) {
+        tick(level, source, landing, null, null);
+    }
+
+    /** As above; a parcel coming down to {@code surface} lands on it ({@code onSurface}) and is gone. */
+    public void tick(Level level, @org.jetbrains.annotations.Nullable Entity source, Landing landing,
+                     @org.jetbrains.annotations.Nullable Surface surface, @org.jetbrains.annotations.Nullable SurfaceLanding onSurface) {
         for (Iterator<Parcel> it = parcels.iterator(); it.hasNext(); ) {
             Parcel p = it.next();
             p.prev = p.pos;
             boolean landed = false;
             for (int s = 0; s < 2 && !landed; s++) {
                 Vec3 next = p.pos.add(p.vel.scale(STEP));
+                if (surface != null && p.vel.y < 0) {
+                    double top = surface.below(next.x, next.y, next.z);
+                    if (!Double.isNaN(top)) {
+                        p.pos = new Vec3(next.x, top, next.z);
+                        if (onSurface != null) onSurface.land(p, p.pos);
+                        landed = true;
+                        continue;
+                    }
+                }
                 BlockHitResult hit = level.clip(new ClipContext(p.pos, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, source));
                 if (hit.getType() == HitResult.Type.BLOCK) {
                     p.pos = hit.getLocation();

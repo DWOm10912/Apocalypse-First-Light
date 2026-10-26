@@ -1,0 +1,60 @@
+{
+  "format_version": 1,
+  "result": {
+    "item": "apocalypse_firstlight:wooden_nightstand"
+  },
+  "materials": [
+    {
+      "tag": "apocalypse_firstlight:boards",
+      "count": 1
+    },
+    {
+      "item": "apocalypse_firstlight:nail_box",
+      "pieces": 30
+    },
+    {
+      "item": "apocalypse_firstlight:wood_finish_can",
+      "litres": 0.2
+    },
+    {
+      "tag": "apocalypse_firstlight:cabinet_knobs",
+      "count": 1
+    },
+    {
+      "item": "apocalypse_firstlight:screw_box",
+      "pieces": 1
+    }
+  ],
+  "tools": [
+    "apocalypse_firstlight:hand_saw",
+    "apocalypse_firstlight:claw_hammer",
+    "apocalypse_firstlight:screwdriver"
+  ],
+  "work": [
+    {
+      "step": "furniture/crosscut",
+      "times": 2
+    },
+    {
+      "step": "furniture/nail",
+      "times": 8,
+      "piece": "box"
+    },
+    {
+      "step": "furniture/wipe",
+      "times": 2
+    },
+    {
+      "step": "furniture/wipe_off"
+    },
+    {
+      "step": "furniture/fit_knob"
+    }
+  ],
+  "unlock": [
+    {
+      "type": "after",
+      "recipe": "apocalypse_firstlight:wooden_table"
+    }
+  ]
+}

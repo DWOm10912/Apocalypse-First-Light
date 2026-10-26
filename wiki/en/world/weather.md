@@ -18,9 +18,18 @@
 - Thunderstorm lightning is drawn by AFL: one main channel with branches, and each flash strikes 2–5 times, the later strokes lighting only the main channel
 - The ground around the strike lights up (without a shader pack) and the sky flashes
 - Thunder is delayed by distance at <V j="AflLightning.SOUND_SPEED" u="m/s" />: count the seconds after the flash to tell how far away it struck
-- A direct hit kills
+- Being struck does not always kill, see [Lightning injuries](../guide/survival#lightning-injuries)
 
-<StatusTag s="planned" /> High places and metal drawing strikes, lightning splitting trees, sheltering from lightning in a car
+### Where it strikes and lightning rods
+
+- <StatusTag s="test" /> Lightning V2: on a branch only, checked in game 2026-10-22
+
+- Where lightning lands follows the rolling sphere: each strike's striking distance is <V d="lightning/lightning_injury_v1#strike.distance.0" />–<V d="lightning/lightning_injury_v1#strike.distance.2" u="m" /> (most often <V d="lightning/lightning_injury_v1#strike.distance.1" u="m" />). The leader comes down from the cloud, and the first thing within that distance of it is struck. The taller and more alone something stands, the likelier it is struck; metal itself does not draw lightning
+- A person alone on open ground is struck by leaders coming down within about 12.6 m of them at a striking distance of 45 m; a lone 20 m tree within about 37 m. Under a lone tree, the current comes down its trunk after the strike, and people beneath it are hurt by side flash or ground current
+- There is no warning before a strike
+- **Lightning rods**: two kinds, the copper air terminal (modern roofs: a solid copper rod about 1 m tall, braced by a tripod halfway up, its conductor laid along the roof) and the barn lightning rod (the twisted copper rod on a cast-iron tripod with a blue glass ball and an arrow vane, found on old barns and farmhouse ridges, 1.8 m and two blocks tall). The tip counts <V d="lightning/lightning_injury_v1#strike.rod_reach" u="m" /> higher than it is, so it draws the strikes that would have landed on the roof or on people near it. A strike on a rod lights no fire and goes to earth down its conductor, hurting nobody through the ground. For now they are in the Creative inventory only
+- **Trees**: a struck tree always throws out splinters and its trunk cracks; with a chance of <V d="lightning/lightning_injury_v1#strike.fell" pct="true" /> the trunk bursts and the whole tree falls. Otherwise its crown may catch fire (<V d="lightning/lightning_injury_v1#strike.fire_wet" pct="true" /> in the rain, <V d="lightning/lightning_injury_v1#strike.fire_dry" pct="true" /> in a dry storm). The fire burns <V d="lightning/lightning_injury_v1#strike.fire_seconds.0" />–<V d="lightning/lightning_injury_v1#strike.fire_seconds.1" u="秒" ue="s" /> at most and the rain puts it out; it does not burn the crown away or spread through the crowns to other trees
+- **T15**: the truck can be struck too (on its roof). It is not damaged and does not catch fire. With both doors shut, the people inside are unhurt; people outside it can still be hurt by side flash or ground current
 
 ### Thunder
 
@@ -48,6 +57,28 @@
 
 <StatusTag s="planned" /> Wind reaching more things: wind sounds, particles, being pushed on windy days, wind turbines
 
+## Standing and running water
+
+- <StatusTag s="test" /> On a branch only; first look in game 2026-10-24 (flow right). Without shaders the water now has depth colour, refraction, sky reflection and ripples, not checked in game yet
+
+- Water is stored by real volume: how much a pit holds and where its surface stands follow from the pit's shape (smoothed terrain as its slopes are drawn) and the amount of water; water runs downhill and spills only at the lowest point of a pit's rim
+- For now water comes only from dev commands: `/afl dev water fill <litres>` pours where you look, `drain <litres>` takes it out, `here` reads the column at your feet, `rain <mm/h> [radius]` makes test rain around you, `ledger` checks the totals, `clear [radius]` removes the water around you
+- Vanilla water is unchanged; natural rain filling pits, trenches drawing in river water, swimming and wading are not connected yet
+- <StatusTag s="test" /> Water in the air, not checked in game yet:
+  - Water spilling over a pit's rim or a step falls only where the drop is half a metre or more: the water on top gathers to one place first: a little runs down the wall or drips, more leaves as one stream that thins as it falls and breaks into drops low down, a large flow as a sheet that comes apart at the bottom; on smooth hillsides it runs down the slope instead; without shaders water in the air is not drawn, only its rings where it lands in water; it joins the water below only when it lands
+  - Landing on water it splashes and sends out rings; on dry ground it throws up small drops and leaves a wet patch that dries after a while
+  - In the rain, open water shows raindrop rings; water under a roof or in a cave does not
+  - Dev command `/afl dev water pour <litres> [litres/s]` pours where you look, `pour stop` stops
+- <StatusTag s="test" /> The ground holds a thin film of water (about 4 mm on soil) that no longer runs; it soaks in and dries. Without shaders neither that film nor thin water running downhill is drawn, only standing water from 2 cm deep; rain water stands muddy: the ground shows through where it is shallow, a deep pit is a pool of grey-brown water, and rain splashes on its surface; water deeper than that in pits and ponds does not soak away yet
+- <StatusTag s="test" /> `/afl dev water fill <litres>` raises the whole pool you look at at once
+- <StatusTag s="test" /> Rain from the sky now reaches the world, not checked in game yet:
+  - The game keeps how much rain each patch of open ground got and how wet it is: indoors and under roofs no rain lands, under trees the leaves catch some first. Without shaders the ground is not drawn darker; the wet look is left to the shader pack
+  - Rain soaks into the soil first: dry ground takes it fast, soaked ground slower; what it cannot take stays where it fell for now and will run downhill later
+  - Rain falling on existing water goes into it, so a pit that already holds water rises in the rain
+  - Dev command `/afl dev water surface` reads the rain water on the column at your feet
+
+<StatusTag s="planned" /> Rain collecting in pits (by catchment and soil infiltration); trenches that let river water in; swimming and wading in it
+
 ## Rain and body temperature
 
 - Rain lowers air temperature by <V d="temperature/temperature_v1#weather.rain" x="-1" u="°C" />, thunderstorms by <V d="temperature/temperature_v1#weather.thunder" x="-1" u="°C" />
@@ -56,3 +87,14 @@
 ## Dynamic lights
 
 <StatusTag s="verified" d="2026-10-17" /> Without shaders the T15's lamps really light their surroundings (needs Embeddium). Flashlights and torches don't cast dynamic light yet
+
+## Picture upgrade without shaders
+
+<StatusTag s="test" /> On a branch only, not checked in game yet
+
+- Without a shader pack AFL adds a layer to the vanilla picture: corners, the foot of walls, under eaves and under trucks darken naturally (ambient occlusion), edges are less jagged, and colours are a little richer
+- With a shader pack it is off: the pack draws everything
+- Full darkness at night and in caves is unchanged
+- Dev command: `/afl_render post status` to read it; `/afl_render post ao / smooth / grade on|off` for each part
+
+<StatusTag s="planned" /> Bloom, cleaner anti-aliasing (no shimmer on distant thin lines), entries in the graphics settings

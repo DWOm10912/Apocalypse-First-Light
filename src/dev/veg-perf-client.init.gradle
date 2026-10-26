@@ -1,0 +1,24 @@
+// Vegetation frame time probe client (dev only; src/dev/java/.../dev/VegetationPerfProbe.java, docs/gameplay/vegetation_v1_design.md 13.10).
+// gradlew runClient --offline -I src/dev/veg-perf-client.init.gradle -Pvegperf=WORLD [-Pvegperfshaders=true] [-Pvegperfjfr=true] [-Pvegperfmobs=true] [-Pvegperfdense=true] [-Pvegperffirst=true]
+// Its own run directory build/veg-perf (a copy of the player's save in its saves/, config/ and shaderpacks/ copied from
+// run/); never the main run/ folder. Embeddium and Oculus loaded as in the player's set-up; the pack on with -Pvegperfshaders.
+allprojects {
+    afterEvaluate {
+        def oculus = project.file('build/veg-perf/config/oculus.properties')
+        if (oculus.exists())
+            oculus.text = oculus.text.replaceAll(/enableShaders=\w+/, 'enableShaders=' + ((project.findProperty('vegperfshaders') ?: 'false') == 'true'))
+        minecraft.runs.client {
+            workingDirectory project.file('build/veg-perf')
+            property 'afl.vegperf', (project.findProperty('vegperf') ?: '')
+            property 'afl.vegperf.shaders', (project.findProperty('vegperfshaders') ?: 'false')
+            property 'afl.vegperf.mobs', (project.findProperty('vegperfmobs') ?: 'false')
+            property 'afl.vegperf.dense', (project.findProperty('vegperfdense') ?: 'false')
+            property 'afl.vegperf.first', (project.findProperty('vegperffirst') ?: 'false')
+            // -Pvegperfjfr=true: a JFR CPU profile of the whole run (build/veg-perf/afl_veg_perf.jfr; the report has each phase's wall ms)
+            if (project.findProperty('vegperfjfr') == 'true')
+                jvmArgs '-XX:FlightRecorderOptions=stackdepth=256', '-XX:StartFlightRecording=filename=afl_veg_perf.jfr,settings=profile'
+            def size = ((project.findProperty('vegperfsize') ?: '2560x1440') as String).split('x')
+            args '--width', size[0], '--height', size[1]
+        }
+    }
+}

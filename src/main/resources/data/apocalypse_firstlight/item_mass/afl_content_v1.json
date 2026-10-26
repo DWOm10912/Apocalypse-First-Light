@@ -213,6 +213,14 @@
       "unit_mass_kg": 0.22,
       "estimated": true
     },
+    "apocalypse_firstlight:copper_air_terminal": {
+      "unit_mass_kg": 3.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:barn_lightning_rod": {
+      "unit_mass_kg": 8.0,
+      "estimated": true
+    },
     "apocalypse_firstlight:light_pole_base": {
       "unit_mass_kg": 6.0,
       "estimated": true

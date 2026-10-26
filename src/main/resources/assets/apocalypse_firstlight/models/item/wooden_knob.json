@@ -1,0 +1,108 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/wooden_knob"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/wooden_knob"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          -0.1378,
+          1.1538,
+          1.1678
+        ],
+        "scale": [
+          2.2,
+          2.2,
+          2.2
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          30,
+          6
+        ],
+        "translation": [
+          1.2167,
+          0.8614,
+          2.5463
+        ],
+        "scale": [
+          2,
+          2,
+          2
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          3.717,
+          3.717,
+          3.717
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          6.505,
+          6.505,
+          6.505
+        ]
+      },
+      "gui": {
+        "rotation": [
+          20,
+          35,
+          0
+        ],
+        "translation": [
+          0.025,
+          -0.043,
+          0
+        ],
+        "scale": [
+          10.57,
+          10.57,
+          10.57
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/wooden_knob"
+      }
+    }
+  }
+}

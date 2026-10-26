@@ -1,0 +1,21 @@
+{
+  "about": "A wood screw in the left fingers: y from the tip to the head, the slot along x. tip, head; pinch: the left palm, the fingertips holding it by its middle from the body side (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs): parts of the furniture_work mesh (code only, no item). Points, bounds: item block units of the mesh as drawn (meshes/furniture_work.aflmesh.json + (0.5, 0, 0.5)). Scale 0.508.",
+  "items": [],
+  "scale": 0.508,
+  "bounds": [
+    [0.492, 0, 0.492],
+    [0.508, 0.063, 0.508]
+  ],
+  "symmetry": "x",
+  "mesh": {
+    "model": "furniture_work",
+    "atlas": "furniture_work_mesh",
+    "offset": 0,
+    "parts": ["screw", "screw_slot"]
+  },
+  "points": {
+    "tip": [0.5, 0, 0.5],
+    "head": [0.5, 0.063, 0.5],
+    "pinch": [0.5, 0.04, 0.1309]
+  }
+}

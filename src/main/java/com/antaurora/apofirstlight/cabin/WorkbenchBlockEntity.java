@@ -32,6 +32,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Function;
 
@@ -44,6 +45,8 @@ import java.util.function.Function;
  * workbench's own later), at the drawer, with its noise (3 blocks, as every furniture door).
  * <p>The hung tools are drawn by the chunk with the bench (client WoodGunRackChunking, the tool rack's path, through
  * {@link CabinMeshModel#EXTRA} in the model data): recorded once when they change, never re-drawn every frame.
+ * <p>A furniture piece being made (FurnitureWork.Job, docs/gameplay/furniture_bench_work_v1.md 3.4) stays on the top
+ * when the work stops: saved and sent to the clients, drawn by the chunk with the tools while nobody works on it.
  */
 public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
     public static final int DRAWER_SLOTS = 9;
@@ -53,6 +56,9 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private ResourceLocation meshProfile;
     private boolean dropped;
+    /** The furniture piece on the top, or null; {@code canOpen}: its stain can stands opened (pried open this batch). */
+    @Nullable private FurnitureWork.Job job;
+    private boolean canOpen;
     /** The chunk's share of the tools, installed by the client (WoodGunRackChunking); none on a server. */
     public static volatile Function<WorkbenchBlockEntity, ModelData> toolsData = bench -> ModelData.EMPTY;
 
@@ -162,6 +168,22 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
         Containers.dropContents(level, worldPosition.above(), tools);
     }
 
+    // ------------------------------------------------------------------------------------- the furniture piece
+
+    @Nullable
+    public FurnitureWork.Job job() { return job; }
+
+    public boolean canOpen() { return canOpen; }
+
+    /** Server: the piece's new state (null: none on the top) and the can's; sent to the clients when either changed. */
+    public void setJob(@Nullable FurnitureWork.Job job, boolean canOpen) {
+        boolean seen = !java.util.Objects.equals(this.job, job) || this.canOpen != canOpen;
+        this.job = job;
+        this.canOpen = canOpen;
+        setChanged();
+        if (seen && level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
     // ------------------------------------------------------------------------------------- the animated mesh
 
     @Override
@@ -222,6 +244,17 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
         super.saveAdditional(tag);
         tag.put("Drawers", ContainerHelper.saveAllItems(new CompoundTag(), drawers, true));
         tag.put("Tools", ContainerHelper.saveAllItems(new CompoundTag(), tools, true));
+        saveJob(tag);
+    }
+
+    private void saveJob(CompoundTag tag) {
+        if (job != null) tag.put("Furniture", job.save());
+        if (canOpen) tag.putBoolean("CanOpen", true);
+    }
+
+    private void loadJob(CompoundTag tag) {
+        job = tag.contains("Furniture") ? FurnitureWork.Job.load(tag.getCompound("Furniture")) : null;
+        canOpen = tag.getBoolean("CanOpen");
     }
 
     @Override
@@ -231,13 +264,15 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
         tools.clear();
         ContainerHelper.loadAllItems(tag.getCompound("Drawers"), drawers);
         ContainerHelper.loadAllItems(tag.getCompound("Tools"), tools);
+        loadJob(tag);
     }
 
-    /** Clients get the tools only (they draw them), never the drawers' things. */
+    /** Clients get the tools and the furniture piece (they draw them), never the drawers' things. */
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         tag.put("Tools", ContainerHelper.saveAllItems(new CompoundTag(), tools, true));
+        saveJob(tag);
         return tag;
     }
 
@@ -248,6 +283,7 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
     public void handleUpdateTag(CompoundTag tag) {
         tools.clear();
         ContainerHelper.loadAllItems(tag.getCompound("Tools"), tools);
+        loadJob(tag);
         // the chunk draws the new tools (non-urgent rebuild, off the main thread), as the tool rack's
         if (level != null && level.isClientSide) {
             requestModelDataUpdate();

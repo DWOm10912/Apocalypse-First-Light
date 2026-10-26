@@ -1,0 +1,48 @@
+{
+  "format_version": 1,
+  "about": "Folding knife in the main hand, closed, no act yet (just taken out): held before the belly, eased in. docs/gameplay/folding_knife_v1.md 5; written by tools/author-folding-knife-actions.mjs.",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0.25,
+    "out": 0.25
+  },
+  "view_pitch": [
+    -40,
+    35
+  ],
+  "prop": {
+    "id": "folding_knife",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip",
+        "pos": [
+          -3,
+          6.6,
+          -4.6
+        ],
+        "rot": [
+          -180,
+          -70.71,
+          113.01
+        ],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

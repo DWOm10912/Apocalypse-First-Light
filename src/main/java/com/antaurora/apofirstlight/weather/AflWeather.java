@@ -37,8 +37,8 @@ import java.util.UUID;
  * out (mixin FireBlockRainMixin), mobs, the T15;</li>
  * <li>the client sets its rain and thunder level to the camera's place each tick (client/weather/ClientWeather): the sky,
  * rain V1, the shader pack's rain, the T15's glass and sounds follow it;</li>
- * <li>thunderstorms strike (here): real bolts where the world is loaded (lightning V1, the injury, the tallest-first
- * target), farther only seen and heard (LightningPackets.FarStrike).</li>
+ * <li>thunderstorms strike (here): real bolts where the world is loaded (lightning V1, the injury, lightning V2's
+ * rolling-sphere target), farther only seen and heard (LightningPackets.FarStrike).</li>
  * </ul>
  * Lookups by place go through a cache of 32 m tiles, sampled afresh every second.
  */

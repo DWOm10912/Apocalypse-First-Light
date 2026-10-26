@@ -28,10 +28,48 @@ AFL 的电能以 FE（Forge Energy）计量。发电机把柴油、煤或岩浆�
 - <StatusTag s="test" /> 现在只有一条测试配方：白栎原木 × 1 加身上的 <ItemIcon id="hand_saw" /> 手锯，做成 <ItemIcon id="white_oak_beam" /> 白栎横梁 × 1，在"建造"分类里。为了测试书，现在要先读 <ItemIcon id="field_survival_guide" /> [野外求生指南](../arms/equipment#野外求生指南)的弓钻那一节才会（生存模式）
 - <StatusTag s="test" /> 横梁在桌面上做：站在工作台正面点一下"制作"，界面关掉，人走到桌前，用手锯把桌面上的原木顺着纹理锯开，锯缝一点点往里走，锯末往下掉。快捷栏上方显示正在做的物品、第几件和进度。做好的直接放进身上；数量调多了会一件接一件锯完。走动、跳、左键或打开任何界面就停下。站得太远或在工作台后面时，会提示站到工作台前面
 - <StatusTag s="test" /> 锯木头的声音一推一拉，跟着手上的动作走，<V j="WorkbenchCrafting.SAW_RADIUS" /> 格外就听不见了。这个范围内的感染者也听得到
+- <StatusTag s="test" /> 锯下来的木屑是一粒粒小木块：木粉从锯口往下飘，木片和刨花划着弧线飞出去，落到台面或地上躺平，过一会儿消失。颜色取这个树种木头里面的颜色
+- <StatusTag s="test" /> <ItemIcon id="wooden_knob" /> 木拉手要身上同时带着手锯和 <ItemIcon id="folding_knife" /> 折刀。工作台右端放上台钩和一根料：先锯下一截料头，再用折刀削角、削圆、削出颈和榫头，最后拿到眼前看一圈，吹掉木屑放到台面上，一轮 10 秒出 6 个。削木头的声音在 <V j="WorkbenchCrafting.WHITTLE_RADIUS" /> 格内能被感染者听到
 - 材料现在只从身上扣，抽屉里的不算；离工作台太远、没带工具、材料不够时做不了，屏幕下方会写原因
 - 做好的横梁用 [建筑锤](../arms/equipment#建筑锤) 装到房子上
 - 其他分类还是灰的；未学会的配方不会显示
 - <StatusTag s="planned" /> 配方：从生活经验、动手摸索、书籍和图纸学会，书籍以后在城市里能搜到；制作时从工作台抽屉、身上和附近的箱子里扣材料
+
+### 木家具材料
+
+<StatusTag s="test" /> 第一批木家具要用的材料已经有了，都只在创造模式"材料"栏里。家具在工作台上一段一段做出来，见下面的"做家具"。
+
+| 物品 | 怎么来 | 质量 |
+|---|---|---|
+| <ItemIcon id="white_oak_board" /> 板材（6 个树种：白栎、白松、北方红栎、裂皮山核桃、红枫、加拿大铁杉） | 工作台上锯原木 | 白栎 <V d="item_mass/core_v1#items.apocalypse_firstlight:white_oak_board.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wood_finish_can" /> 胡桃木色木器漆 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wood_finish_can.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="nail_box" /> 圆钉 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:nail_box.unit_mass_kg" u="kg" /> |
+| 木螺丝（一盒 100 颗） | 城镇里找，不在配件盒里 | <V d="item_mass/core_v1#items.apocalypse_firstlight:screw_box.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="cabinet_hinge" /> 合页 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:cabinet_hinge.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="iron_knob" /> 铁拉手 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:iron_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="wooden_knob" /> 木拉手 | 工作台上用板材做，要带手锯和折刀 | <V d="item_mass/core_v1#items.apocalypse_firstlight:wooden_knob.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="keyhole_escutcheon" /> 锁眼盖 | 城镇里找；家具配件盒 | <V d="item_mass/core_v1#items.apocalypse_firstlight:keyhole_escutcheon.unit_mass_kg" u="kg" /> |
+| <ItemIcon id="furniture_hardware_box" /> 家具配件盒 | 城镇里找 | <V d="item_mass/core_v1#items.apocalypse_firstlight:furniture_hardware_box.unit_mass_kg" u="kg" /> |
+
+- <StatusTag s="test" /> 板材是 1.2 米长的长条板，不是木板方块。在工作台上用手锯锯原木：同树种原木 × <V d="workbench_recipes/woodwork/white_oak_boards#materials.0.count" /> 出 <V d="workbench_recipes/woodwork/white_oak_boards#result.count" /> 块，每次 <V d="workbench_recipes/woodwork/white_oak_boards#seconds" u="秒" />，和横梁一样在桌面上锯，桌上摆的是你锯的那种原木。林区住户一开始就会
+- <StatusTag s="test" /> 木拉手：任意树种的板材 × <V d="workbench_recipes/woodwork/wooden_knob#materials.0.count" /> 加手锯，做出 <V d="workbench_recipes/woodwork/wooden_knob#result.count" /> 个，<V d="workbench_recipes/woodwork/wooden_knob#seconds" u="秒" />，现在只有进度条。家具上的拉手用铁拉手、木拉手都行，做出来的家具看起来一样
+- 合页和锁眼盖做不出来，只能找到，以后拆旧家具也能拆出来
+- 木器漆一罐 1 升，圆钉一盒 180 根，用多少扣多少，剩下的写在物品提示里，不满时物品格下面有一条进度条。这两样不叠放
+- <StatusTag s="test" /> 家具配件盒：拿在手里按使用键打开，随机出 <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.min" /> 到 <V d="loot_tables/gameplay/furniture_hardware_box#pools.0.rolls.max" /> 件合页、铁拉手和锁眼盖，盒子用掉。开盒声暂时用原版的
+- <StatusTag s="planned" /> 拆旧家具
+
+### 做家具
+
+<StatusTag s="test" /> 7 种木家具（木椅、木桌、木质工具架、木质枪架、木床头柜、木制储物箱、木衣柜）在工作台上做，身上要带手锯和羊角锤；床头柜、储物箱、衣柜还要一把一字螺丝刀（<V d="item_mass/core_v1#items.apocalypse_firstlight:screwdriver.unit_mass_kg" u="kg" />）。点"制作"后人走到台前，一件家具分几段做完：
+
+- **下料：** 把板材推出台端，用手锯截下一段，短料放到台面右后方，一段 6.5 秒
+- **钉钉子：** 先把钉子扶正轻敲一下，然后准星下方出现时机条，指针走到绿区时按使用键钉一锤。敲偏只多花时间，不会坏。台上看得见几根钉就钉几根，扣的圆钉按真实用量
+- **上漆、擦余漆：** 第一次上漆前撬开漆罐、搅匀，抹布蘸漆顺着木纹一道一道擦，台上的木件一条一条变成胡桃木色
+- **装五金：** 把合页、拉手、锁眼盖放到位，再一颗一颗拧螺丝，同样看时机条，按准拧一下，打滑只多花时间
+
+- 新手一根钉要敲 4 锤、一颗螺丝拧 4 下；木工成长到 4 级是 3 下，7 级是 2 下，每升一级绿区变宽、动作变快。钉一根、拧一颗、做完一件都给木工经验
+- 中途停下（Shift、左键、走开、打开界面）不扣材料，做到的部分留在工作台上，存档也在。谁会这条配方都能接着做，从这根钉、这颗螺丝重新开始。台上有别的家具的半成品时，制作页要点两次才会丢掉它
+- 材料在一件做完时一次扣齐。一批做完，漆罐盖好再停
 
 ## 机器一览
 

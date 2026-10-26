@@ -1,0 +1,76 @@
+{
+  "format_version": 1,
+  "result": {
+    "item": "apocalypse_firstlight:wooden_storage_chest"
+  },
+  "materials": [
+    {
+      "tag": "apocalypse_firstlight:boards",
+      "count": 2
+    },
+    {
+      "item": "apocalypse_firstlight:nail_box",
+      "pieces": 48
+    },
+    {
+      "item": "apocalypse_firstlight:wood_finish_can",
+      "litres": 0.4
+    },
+    {
+      "item": "apocalypse_firstlight:cabinet_hinge",
+      "count": 2
+    },
+    {
+      "tag": "apocalypse_firstlight:cabinet_knobs",
+      "count": 2
+    },
+    {
+      "item": "apocalypse_firstlight:keyhole_escutcheon",
+      "count": 1
+    },
+    {
+      "item": "apocalypse_firstlight:screw_box",
+      "pieces": 16
+    }
+  ],
+  "tools": [
+    "apocalypse_firstlight:hand_saw",
+    "apocalypse_firstlight:claw_hammer",
+    "apocalypse_firstlight:screwdriver"
+  ],
+  "work": [
+    {
+      "step": "furniture/crosscut",
+      "times": 3
+    },
+    {
+      "step": "furniture/nail",
+      "times": 10,
+      "piece": "frame"
+    },
+    {
+      "step": "furniture/wipe",
+      "times": 3
+    },
+    {
+      "step": "furniture/wipe_off"
+    },
+    {
+      "step": "furniture/fit_hinge",
+      "times": 2
+    },
+    {
+      "step": "furniture/fit_knob",
+      "times": 2
+    },
+    {
+      "step": "furniture/fit_escutcheon"
+    }
+  ],
+  "unlock": [
+    {
+      "type": "after",
+      "recipe": "apocalypse_firstlight:wooden_nightstand"
+    }
+  ]
+}

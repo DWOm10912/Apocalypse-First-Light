@@ -1,0 +1,20 @@
+{
+  "about": "The staining rag, a folded pad: y up from its face. center: the face's middle (on the wood); hold: the right palm on its back (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs): parts of the furniture_work mesh (code only, no item). Points, bounds: item block units of the mesh as drawn (meshes/furniture_work.aflmesh.json + (0.5, 0, 0.5)). Scale 0.7.",
+  "items": [],
+  "scale": 0.7,
+  "bounds": [
+    [0.393, 0, 0.421],
+    [0.607, 0.029, 0.579]
+  ],
+  "symmetry": "x",
+  "mesh": {
+    "model": "furniture_work",
+    "atlas": "furniture_work_mesh",
+    "offset": 0,
+    "parts": ["rag"]
+  },
+  "points": {
+    "center": [0.5, 0, 0.5],
+    "hold": [0.5, 0.1629, 0.5]
+  }
+}

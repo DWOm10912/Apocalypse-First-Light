@@ -38,7 +38,9 @@ public final class SmoothModels {
         int surface = 0, plants = 0;
         for (Block block : TerrainSmooth.GROUND) surface += wrap(models, block, SmoothSurfaceModel::new);
         for (Block block : ForgeRegistries.BLOCKS) {
-            if (block instanceof BushBlock && !(block instanceof WaterlilyBlock)) plants += wrap(models, block, SinkPlantModel::new);
+            // AFL mesh plants follow the slope in their own model (client/vegetation/PlantModel): their quads differ per position
+            if (block instanceof BushBlock && !(block instanceof WaterlilyBlock) && !(block instanceof com.antaurora.apofirstlight.vegetation.MeshPlantBlock))
+                plants += wrap(models, block, SinkPlantModel::new);
         }
         int snow = wrap(models, Blocks.SNOW, SnowSkinModel::new);
         LOGGER.info("[AFL terrain smooth] wrapped {} ground block states, {} plant states and {} snow layer states", surface, plants, snow);

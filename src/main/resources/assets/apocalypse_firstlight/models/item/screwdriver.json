@@ -1,0 +1,142 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/screwdriver"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/screwdriver"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          15
+        ],
+        "translation": [
+          0,
+          3.25,
+          0.057
+        ],
+        "scale": [
+          1.05,
+          1.05,
+          1.05
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -75,
+          50
+        ],
+        "translation": [
+          0.226,
+          2.88,
+          -3.322
+        ],
+        "scale": [
+          1.4,
+          1.4,
+          1.4
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "translation": [
+          0,
+          -1,
+          0
+        ],
+        "scale": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          -45
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          75,
+          -50
+        ],
+        "translation": [
+          0.226,
+          2.88,
+          -3.322
+        ],
+        "scale": [
+          1.4,
+          1.4,
+          1.4
+        ]
+      },
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          90,
+          -15
+        ],
+        "translation": [
+          0,
+          3.25,
+          0.057
+        ],
+        "scale": [
+          1.05,
+          1.05,
+          1.05
+        ]
+      },
+      "gui": {
+        "rotation": [
+          0,
+          0,
+          -45
+        ],
+        "translation": [
+          0.157,
+          0.157,
+          0
+        ],
+        "scale": [
+          2.307,
+          2.307,
+          2.307
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/screwdriver"
+      }
+    }
+  }
+}
