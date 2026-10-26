@@ -20,7 +20,9 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Function;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.BiFunction;
 
 /**
  * AFL Block-Mesh V2 (docs/dev/block_mesh_v2_b_ingame.md 8.1): the HD body skin's texture and render type. A 256 x 256 skin has 4
@@ -39,7 +41,8 @@ import java.util.function.Function;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class BlockMeshSkin extends RenderType {
     static final int MIP_LEVELS = 2;
-    private static final Function<ResourceLocation, RenderType> TYPES = Util.memoize(BlockMeshSkin::create);
+    private static final BiFunction<ResourceLocation, Boolean, RenderType> TYPES = Util.memoize(BlockMeshSkin::create);
+    private static final Set<ResourceLocation> REGISTERED = new HashSet<>();
 
     private BlockMeshSkin(String name, VertexFormat format, VertexFormat.Mode mode, int size, boolean crumbling, boolean sort,
                           Runnable setup, Runnable clear) {
@@ -47,19 +50,25 @@ public final class BlockMeshSkin extends RenderType {
         throw new UnsupportedOperationException("holder of render types");
     }
 
-    /** The body's render type for its skin (the texture registered with its mip levels on first use). */
-    static RenderType body(ResourceLocation texture) {
-        return TYPES.apply(texture);
+    /**
+     * The body's render type for its skin (the texture registered with its mip levels on first use). {@code cull}: back
+     * faces culled, for the world's draws: B5's limbs bend through rings (user 2026-10-26 "关节部位用弯曲的mesh连接"), and
+     * a sharp bend folds the inside of the joint over itself, faces that then face away and would fight the side faces.
+     * Every B5 part is a closed box with its quads wound outward (b5_export checks each normal). Not culled under a
+     * mirrored pose (the appearance page's preview), where the winding turns over.
+     */
+    static RenderType body(ResourceLocation texture, boolean cull) {
+        return TYPES.apply(texture, cull);
     }
 
-    private static RenderType create(ResourceLocation texture) {
-        Minecraft.getInstance().getTextureManager().register(texture, new Texture(texture));
-        return RenderType.create("apocalypse_firstlight_block_mesh_body", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256,
-                true, false, CompositeState.builder()
+    private static RenderType create(ResourceLocation texture, boolean cull) {
+        if (REGISTERED.add(texture)) Minecraft.getInstance().getTextureManager().register(texture, new Texture(texture));
+        return RenderType.create(cull ? "apocalypse_firstlight_block_mesh_body_cull" : "apocalypse_firstlight_block_mesh_body",
+                DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, true, false, CompositeState.builder()
                         .setShaderState(RENDERTYPE_ENTITY_CUTOUT_NO_CULL_SHADER)
                         .setTextureState(new TextureStateShard(texture, false, true))
                         .setTransparencyState(NO_TRANSPARENCY)
-                        .setCullState(NO_CULL)
+                        .setCullState(cull ? CULL : NO_CULL)
                         .setLightmapState(LIGHTMAP)
                         .setOverlayState(OVERLAY)
                         .createCompositeState(true));
