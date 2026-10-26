@@ -57,6 +57,28 @@
 
 <StatusTag s="planned" /> Wind reaching more things: wind sounds, particles, being pushed on windy days, wind turbines
 
+## Standing and running water
+
+- <StatusTag s="test" /> On a branch only; first look in game 2026-10-24 (flow right). Without shaders the water now has depth colour, refraction, sky reflection and ripples, not checked in game yet
+
+- Water is stored by real volume: how much a pit holds and where its surface stands follow from the pit's shape (smoothed terrain as its slopes are drawn) and the amount of water; water runs downhill and spills only at the lowest point of a pit's rim
+- For now water comes only from dev commands: `/afl dev water fill <litres>` pours where you look, `drain <litres>` takes it out, `here` reads the column at your feet, `rain <mm/h> [radius]` makes test rain around you, `ledger` checks the totals, `clear [radius]` removes the water around you
+- Vanilla water is unchanged; natural rain filling pits, trenches drawing in river water, swimming and wading are not connected yet
+- <StatusTag s="test" /> Water in the air, not checked in game yet:
+  - Water spilling over a pit's rim or a step falls only where the drop is half a metre or more: the water on top gathers to one place first: a little runs down the wall or drips, more leaves as one stream that thins as it falls and breaks into drops low down, a large flow as a sheet that comes apart at the bottom; on smooth hillsides it runs down the slope instead; without shaders water in the air is not drawn, only its rings where it lands in water; it joins the water below only when it lands
+  - Landing on water it splashes and sends out rings; on dry ground it throws up small drops and leaves a wet patch that dries after a while
+  - In the rain, open water shows raindrop rings; water under a roof or in a cave does not
+  - Dev command `/afl dev water pour <litres> [litres/s]` pours where you look, `pour stop` stops
+- <StatusTag s="test" /> The ground holds a thin film of water (about 4 mm on soil) that no longer runs; it soaks in and dries. Without shaders neither that film nor thin water running downhill is drawn, only standing water from 2 cm deep; rain water stands muddy: the ground shows through where it is shallow, a deep pit is a pool of grey-brown water, and rain splashes on its surface; water deeper than that in pits and ponds does not soak away yet
+- <StatusTag s="test" /> `/afl dev water fill <litres>` raises the whole pool you look at at once
+- <StatusTag s="test" /> Rain from the sky now reaches the world, not checked in game yet:
+  - The game keeps how much rain each patch of open ground got and how wet it is: indoors and under roofs no rain lands, under trees the leaves catch some first. Without shaders the ground is not drawn darker; the wet look is left to the shader pack
+  - Rain soaks into the soil first: dry ground takes it fast, soaked ground slower; what it cannot take stays where it fell for now and will run downhill later
+  - Rain falling on existing water goes into it, so a pit that already holds water rises in the rain
+  - Dev command `/afl dev water surface` reads the rain water on the column at your feet
+
+<StatusTag s="planned" /> Rain collecting in pits (by catchment and soil infiltration); trenches that let river water in; swimming and wading in it
+
 ## Rain and body temperature
 
 - Rain lowers air temperature by <V d="temperature/temperature_v1#weather.rain" x="-1" u="°C" />, thunderstorms by <V d="temperature/temperature_v1#weather.thunder" x="-1" u="°C" />
@@ -65,3 +87,14 @@
 ## Dynamic lights
 
 <StatusTag s="verified" d="2026-10-17" /> Without shaders the T15's lamps really light their surroundings (needs Embeddium). Flashlights and torches don't cast dynamic light yet
+
+## Picture upgrade without shaders
+
+<StatusTag s="test" /> On a branch only, not checked in game yet
+
+- Without a shader pack AFL adds a layer to the vanilla picture: corners, the foot of walls, under eaves and under trucks darken naturally (ambient occlusion), edges are less jagged, and colours are a little richer
+- With a shader pack it is off: the pack draws everything
+- Full darkness at night and in caves is unchanged
+- Dev command: `/afl_render post status` to read it; `/afl_render post ao / smooth / grade on|off` for each part
+
+<StatusTag s="planned" /> Bloom, cleaner anti-aliasing (no shimmer on distant thin lines), entries in the graphics settings

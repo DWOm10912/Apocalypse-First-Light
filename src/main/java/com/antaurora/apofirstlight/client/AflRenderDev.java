@@ -129,6 +129,30 @@ public final class AflRenderDev {
                     c.getSource().sendSuccess(() -> Component.literal("dynamic_lights " + com.antaurora.apofirstlight.client.light.DynamicLights.status()), false);
                     return 1;
                 })))
+                // Physical water V1 package 2 (docs/gameplay/water_v1_design.md 16.6): the AFL water surface on or off
+                .then(Commands.literal("water").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.liquid.ClientLiquid.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("water " + com.antaurora.apofirstlight.client.liquid.ClientLiquid.status()), false);
+                    return 1;
+                })))
+                // Package 3a (docs/gameplay/water_rain_v1_design.md 4.1): ground wet from natural rain on or off
+                .then(Commands.literal("wet").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.liquid.ClientRainWet.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("wet " + com.antaurora.apofirstlight.client.liquid.ClientRainWet.status()), false);
+                    return 1;
+                })))
+                // Package F (docs/gameplay/water_falling_v1_design.md): falling water, drops, splashes on or off
+                .then(Commands.literal("falls").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
+                    if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.liquid.ClientFalls.enabled = value.equals("on");
+                    else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("falls " + com.antaurora.apofirstlight.client.liquid.ClientFalls.status()), false);
+                    return 1;
+                })))
                 // AFL picture upgrade V1a (docs/rendering/vanilla_visual_upgrade_v1.md): post all|ao|smooth|grade on|off,
                 // post strength|radius|contrast|saturation <number>, post status
                 .then(Commands.literal("post")

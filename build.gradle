@@ -416,6 +416,13 @@ tasks.register('earthworkCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.earthwork.EarthworkCheck'
 }
 
+// Liquid package 1 (docs/gameplay/water_v1_design.md 10, 15): volumetric liquid on a synthetic GroundView, no game bootstrap.
+tasks.register('liquidCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.liquid.LiquidCheck'
+}
+
 // Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 7): fixed scenes, a body falls and must end still, out of blocks, in limits.
 tasks.register('ragdollCheck', JavaExec) {
     dependsOn tasks.named('testClasses')

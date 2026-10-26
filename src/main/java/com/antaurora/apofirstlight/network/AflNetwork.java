@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "70";
+    private static final String PROTOCOL = "71";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -170,6 +170,19 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.building.BuildingPackets.register(channel, nextId);
         // Field Survival Guide: the book files, "read this section", the recipe it taught (the same merge)
         nextId = com.antaurora.apofirstlight.book.GuideBookPackets.register(channel, nextId);
+        // Physical water V1 package 2: a chunk's liquid surfaces (protocol 71 on B's branch; master is at 71 too, so it takes
+        // the next free number when it merges)
+        nextId = com.antaurora.apofirstlight.liquid.world.LiquidPackets.register(channel, nextId);
+    }
+
+    /** Physical water V1: a chunk's liquid surfaces, to one player (it starts tracking the chunk). */
+    public static void sendLiquid(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Physical water V1 package F: a player pouring, to them and every client tracking them. */
+    public static void sendTrackingAndSelf(net.minecraft.world.entity.Entity entity, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), packet);
     }
 
     /** AFL Map V1: a map's record, to the player carrying it. */

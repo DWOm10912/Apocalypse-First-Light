@@ -183,6 +183,17 @@ final class RainSplashes {
                 return;
             }
         }
+        // AFL water over the ground here: it lands on the water as on vanilla water (falling water 20). Far off the column
+        // map's top is already the water's surface (RainColumns), to 1/64 block: looked for just under it
+        double probe = (Double.isNaN(ground) ? h : ground) - 0.01;
+        double water = com.antaurora.apofirstlight.client.liquid.ClientLiquid.surfaceBelow(x, near ? probe + 0.02 : probe, z);
+        if (!Double.isNaN(water) && (Double.isNaN(ground) || water >= ground - 0.01)) {
+            landed[3]++;
+            Splash s = add(1, x, water + 0.012, z, 14 + r.nextInt(6));
+            s.size = 0.16F + r.nextFloat() * 0.1F;
+            if (near && r.nextFloat() < 0.5F) droplet(r, x, water, z, 0.5);
+            return;
+        }
         if (Double.isNaN(ground)) return;   // nothing to land on (no collision, no fluid)
         landed[kind]++;
         crown(r, x, ground, z, near);
