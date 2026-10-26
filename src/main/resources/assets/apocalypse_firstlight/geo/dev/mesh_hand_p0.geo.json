@@ -1,0 +1,171 @@
+{
+ "format_version": "1.12.0",
+ "minecraft:geometry": [
+  {
+   "description": {
+    "identifier": "geometry.mesh_hand_p0",
+    "texture_width": 16,
+    "texture_height": 16,
+    "visible_bounds_width": 4,
+    "visible_bounds_height": 4,
+    "visible_bounds_offset": [
+     0,
+     1,
+     0
+    ]
+   },
+   "bones": [
+    {
+     "name": "hand",
+     "pivot": [
+      -1.4856,
+      3.2083,
+      6.4709
+     ],
+     "locators": {
+      "forearm_socket": [
+       -1.4526,
+       3.3157,
+       6.766
+      ]
+     }
+    },
+    {
+     "name": "thumb_01",
+     "pivot": [
+      -0.9338,
+      3.6317,
+      5.1287
+     ],
+     "parent": "hand"
+    },
+    {
+     "name": "thumb_02",
+     "pivot": [
+      -0.1277,
+      4.3603,
+      2.9652
+     ],
+     "parent": "thumb_01"
+    },
+    {
+     "name": "thumb_03",
+     "pivot": [
+      0.5363,
+      4.6566,
+      1.446
+     ],
+     "parent": "thumb_02"
+    },
+    {
+     "name": "index_01",
+     "pivot": [
+      -1.4608,
+      2.8414,
+      1.4204
+     ],
+     "parent": "hand"
+    },
+    {
+     "name": "index_02",
+     "pivot": [
+      -1.4213,
+      2.2719,
+      -0.9324
+     ],
+     "parent": "index_01"
+    },
+    {
+     "name": "index_03",
+     "pivot": [
+      -1.1932,
+      1.8988,
+      -2.229
+     ],
+     "parent": "index_02"
+    },
+    {
+     "name": "middle_01",
+     "pivot": [
+      -1.9109,
+      1.85,
+      1.55
+     ],
+     "parent": "hand"
+    },
+    {
+     "name": "middle_02",
+     "pivot": [
+      -1.9646,
+      0.8946,
+      -0.9014
+     ],
+     "parent": "middle_01"
+    },
+    {
+     "name": "middle_03",
+     "pivot": [
+      -1.7578,
+      0.2674,
+      -2.3356
+     ],
+     "parent": "middle_02"
+    },
+    {
+     "name": "ring_01",
+     "pivot": [
+      -2.0587,
+      0.9467,
+      2.1206
+     ],
+     "parent": "hand"
+    },
+    {
+     "name": "ring_02",
+     "pivot": [
+      -2.1427,
+      -0.2251,
+      -0.0563
+     ],
+     "parent": "ring_01"
+    },
+    {
+     "name": "ring_03",
+     "pivot": [
+      -1.9368,
+      -0.9979,
+      -1.3563
+     ],
+     "parent": "ring_02"
+    },
+    {
+     "name": "pinky_01",
+     "pivot": [
+      -2.0398,
+      0.234,
+      2.9974
+     ],
+     "parent": "hand"
+    },
+    {
+     "name": "pinky_02",
+     "pivot": [
+      -2.1358,
+      -0.9164,
+      1.4291
+     ],
+     "parent": "pinky_01"
+    },
+    {
+     "name": "pinky_03",
+     "pivot": [
+      -1.9838,
+      -1.6011,
+      0.5748
+     ],
+     "parent": "pinky_02"
+    }
+   ]
+  }
+ ]
+}

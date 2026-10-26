@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "P9 empty unload (gun/p9_01_unload_empty; docs/native_guns/magazine_system_v1.md 3.1): no fuller spare magazine, so the reload key takes the fitted one out: the gun comes up as for the magazine check, the thumb releases the magazine into the support hand, which keeps it and brings it down to the front of the belt; the gun goes back to the chest ready. Ends at the swap (the magazine becomes the held item, the gun is put away). Same beats as the first-person clip. Written by tools/author-p9-01-reload-actions.mjs.",
+  "about": "P9 empty unload (gun/p9_01_unload_empty; docs/native_guns/magazine_system_v1.md 3.1): a tap of the reload key takes the fitted magazine out: the gun comes up as for the magazine check, the thumb releases the magazine into the support hand, which takes it down to the belt pouch at the left front and stows it; the gun goes back to the chest ready and the support hand back onto the grip. Same beats and length as the first-person clip. Written by tools/author-p9-01-reload-actions.mjs.",
   "layer": "action",
   "mask": "upper",
   "priority": 60,
@@ -9,7 +9,7 @@
     "in": 0.12,
     "out": 0.2
   },
-  "length": 1.05,
+  "length": 1.45,
   "props": [
     {
       "id": "p9_01",
@@ -121,16 +121,33 @@
           "frame": "bone:pelvis",
           "point": "base",
           "pos": [
-            3.4,
-            7.6,
-            -6.2
+            5.2,
+            10.4,
+            -4.6
           ],
           "rot": [
-            149.619,
-            8.649,
-            -164.962
+            158,
+            0,
+            -180
           ],
-          "blend": 0.3
+          "blend": 0.31
+        },
+        {
+          "at": 0.9,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5.2,
+            10.4,
+            -4.6
+          ],
+          "rot": [
+            158,
+            0,
+            -180
+          ],
+          "blend": 0,
+          "hidden": true
         }
       ]
     }
@@ -170,6 +187,17 @@
           0.6,
           0.6,
           -0.3
+        ]
+      },
+      {
+        "at": 0.9400000000000001,
+        "target": "prop:p9_01:grip_l",
+        "blend": 0.36000000000000004,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
         ]
       }
     ]

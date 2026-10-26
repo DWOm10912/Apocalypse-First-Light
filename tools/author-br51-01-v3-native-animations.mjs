@@ -438,27 +438,29 @@ clips.push(clip('inspect_no_mag', INSPECT_LENGTH.noMag, 'once', () => inspect(fa
 clips.push(clip('inspect_empty_no_mag', INSPECT_LENGTH.emptyNoMag, 'once', () => inspect(true, true)));
 
 // ---------- unload (docs/native_guns/magazine_system_v1.md 3.1) ----------
-// The reload key with no fuller magazine: the magazine check up to the catch, the magazine rocked out and taken down off
-// the lower left while the gun drops out low right. The server hands the magazine over at NativeGunActions.UNLOAD_SWAP_TICK
-// (21 = 1.05 s); the clip holds LOW to its end. unload_empty: the action held open.
-export const UNLOAD = {up: 0.3, grab: 0.28, release: 0.34, out0: 0.38, out1: 0.54, unhook: 0.6, carried: 0.9, down: 0.62, downEnd: 1.0, swap: 1.05, end: 1.3};
+// A tap of the reload key with a magazine fitted: the magazine check up to the catch, the magazine rocked out and taken
+// down off the lower left to the rig while the gun comes back to the ready one-handed. The server stows it at
+// NativeGunActions.UNLOAD_STOW_TICK (18 = 0.9 s: rig, pockets, backpack, else the ground; user 2026-10-24: the gun stays in
+// the hand), the hand comes back onto the handguard and the clip ends at the ready. unload_empty: the action held open.
+export const UNLOAD = {up: 0.3, grab: 0.28, release: 0.34, out0: 0.38, out1: 0.54, unhook: 0.6, carried: 0.9, home: 0.62, homeEnd: 1.0,
+    stow: 0.9, back: 0.95, regrip: 1.3, end: 1.45};
 function unload(empty) {
     const T = UNLOAD;
-    const path = legs([[0.02, T.up, MAG_CHECK, {antic: 0.03, over: 0.04, per: 0.22, tau: 0.08}], [T.down, T.downEnd, LOW, {antic: 0.04, over: 0}]]);
+    const path = legs([[0.02, T.up, MAG_CHECK, {antic: 0.03, over: 0.04, per: 0.22, tau: 0.08}], [T.home, T.homeEnd, IDLE, {antic: 0, over: 0}]]);
     const hits = t => sum(jolt(t, T.release, [-0.5, 0, 0.35]), jolt(t, T.out1, [-0.8, 0.2, 0.6], {rise: 0.03, per: 0.16, tau: 0.05}));
     const H = t => { const p = path(t), rot = sum(p.rot, hits(t)); return {rot, pos: sum(p.pos, mul([0, 0.08, 0], hits(t)[0]))}; };
     const held = t => {
         if (t < T.unhook) { const r = rockOut(t, T); return magInGun(H(t), r.a, r.o); }
         const r = rockOut(T.unhook, T); return mixM(magInGun(H(T.unhook), r.a, r.o), OFFSCREEN_MAG, go(t, T.unhook, T.carried, {antic: 0.02, over: 0}));
     };
-    const LH = t => t < T.grab ? mixT(leftOnGun(H(t)), onMag(held(t), 0.6), go(t, 0.02, T.grab, {antic: 0, over: 0})) : onMag(held(t));
-    const camera = t => sum(mul([-0.8, 1.0, 1.2], ease(t, 0.02, T.up) - ease(t, T.down, T.downEnd)), mul(hits(t), 0.35),
-        mul([-1.0, 0.4, 0.9], ease(t, T.down, T.downEnd)));
+    const LH = t => t < T.grab ? mixT(leftOnGun(H(t)), onMag(held(t), 0.6), go(t, 0.02, T.grab, {antic: 0, over: 0}))
+        : t < T.back ? onMag(held(t)) : mixT(onMag(held(T.back)), leftOnGun(H(t)), go(t, T.back, T.regrip, {antic: 0, over: 0}));
+    const camera = t => sum(mul([-0.8, 1.0, 1.2], ease(t, 0.02, T.up) - ease(t, T.home, T.homeEnd)), mul(hits(t), 0.35));
     const tracks = {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
         magazine: hiddenFrom(T.out0, 99),
         mag_out: {position: t => held(t).pos, rotation: t => held(t).rot},
-        reload_magazine: shown(T.out0, T.carried + 0.05),
+        reload_magazine: shown(T.out0, T.stow),
         empty_old_mag: {scale: () => [0, 0, 0], step: true},
         mag_latch: {rotation: t => latch(t, {...T, seat: 99})},
         righthand: {position: () => RIGHT_REST.pos, rotation: () => RIGHT_REST.rot},
@@ -466,7 +468,7 @@ function unload(empty) {
         ...mech(empty ? OP_HELD : 0), bolt_lock: {rotation: () => empty ? [BOLT_LOCK_UP, 0, 0] : Z},
         camera: {rotation: camera},
     };
-    const sounds = [[T.release - 0.02, 'magazine_release'], [T.out0, 'magazine_out'], [T.down, 'put_away']];
+    const sounds = [[T.release - 0.02, 'magazine_release'], [T.out0, 'magazine_out']];
     return {tracks, sounds, timing: T};
 }
 clips.push(clip('unload', UNLOAD.end, 'once', () => unload(false)));

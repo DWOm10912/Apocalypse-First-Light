@@ -4,6 +4,7 @@
 - **0.1.1-alpha.2**：已合进 master（`fd620b8e`，2026-10-15），用户实机回归 PASS（开光影和无光影，第 3 节）。
 - **0.1.1-alpha.3 + T15 平滑法线**：分支 `feature/t15-smooth-normals`（2026-10-16），已做离线检查、编译和 GameTest；T15 平滑法线用户 2026-10-16 实机 PASS（第 4 节）。
 - **0.1.1-alpha.4 + T15 显卡缓存**：同一分支（2026-10-16），已做编译和离线 Mesh 加载检查（95 个全部通过）；GameTest 没有重跑；用户 2026-10-16 实机 PASS（帧率、外观、多辆车）。需求和发版信息见 [Vextris 显卡缓存需求](vextris_gpu_cache_request.md)。
+- **0.1.1-alpha.5 + 蒙皮部件**：用户 2026-10-25 批准，用于 Mesh 幸存者（format 4 `skins`、`SkinPose`、`MeshRendering.renderSkins`）；在 master 工作区改了 `gradle.properties` 和 `mods.toml`（`[0.1.1-alpha.5,0.2.0-alpha)`），未提交。JAR SHA-256 `68e4a14b3df5bb21d477b89cc875a9a3af275dd62d508c9b67fe979b36017670`。公开签名对比只有新增（删除或改变 0 行）；AFL 全部 142 个 Mesh 用 alpha.4 / alpha.5 的加载器各加载一遍，原有 141 个结果逐行一致；`compileJava` 通过；**游戏内未运行**。见 [M2.5](mesh_survivor_v1_m25_ingame.md) 第 2 节。
 
 用户 2026-10-15 批准 Vextris 0.1.1-alpha.2（P0 平滑法线 + P1 折角平滑、定位器）作为 AFL 的内部 Mesh 库开发基线，由 Main 接入。只在内部使用：不上传 Maven Central，不发公开 Release，不覆盖已发布的 0.1.0。Vextris 本身冻结，除真实集成 Bug 外不加功能；P2 CPU 蒙皮暂缓，等 D 提出实际需求。0.1.1-alpha.3 是 Vextris 按 AFL 的集成需求（第 4 节）加的面积加权，只做新增。
 

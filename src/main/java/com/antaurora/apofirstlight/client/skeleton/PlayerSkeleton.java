@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.client.skeleton;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.FirstPersonBody;
 import com.antaurora.apofirstlight.client.FirstPersonBodyConfig;
+import com.antaurora.apofirstlight.skeleton.GunStance;
 import com.antaurora.apofirstlight.skeleton.HumanoidPoser;
 import com.antaurora.apofirstlight.skeleton.SkeletonClips;
 import com.antaurora.apofirstlight.skeleton.SkeletonPose;
@@ -11,6 +12,9 @@ import com.antaurora.apofirstlight.skeleton.SkinMesh;
 import com.antaurora.apofirstlight.skeleton.action.ActionPose;
 import com.antaurora.apofirstlight.skeleton.action.PlayerAction;
 import com.antaurora.apofirstlight.skeleton.action.PlayerProps;
+import com.antaurora.apofirstlight.cabin.ChairSit;
+import com.antaurora.apofirstlight.skeleton.seat.ChairLegs;
+import com.antaurora.apofirstlight.skeleton.seat.ChairPose;
 import com.antaurora.apofirstlight.skeleton.seat.RiderSeat;
 import com.antaurora.apofirstlight.skeleton.seat.SeatPose;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
@@ -85,6 +89,8 @@ public final class PlayerSkeleton {
 
     private static final ModelPart HAND = new ModelPart(List.of(), Map.of());
     private static HumanoidPoser poser;
+    /** The poser is on the Block-Mesh V2 rig (BlockMeshBody#active when it was built). */
+    private static boolean poserBlockMesh;
     private static boolean failed;
     private static long frame;
 
@@ -92,15 +98,36 @@ public final class PlayerSkeleton {
     }
 
     static HumanoidPoser poser() {
+        // the Block-Mesh V2 dev test (BlockMeshBody) switches the rig: a new poser, no cached frames of the other
+        if (poser != null && poserBlockMesh != BlockMeshBody.active()) reset();
         if (poser == null && !failed) {
+            SkeletonRig rig = null;
+            if (BlockMeshBody.active()) {
+                try {
+                    rig = SkeletonRig.blockMeshV2();
+                    poser = new HumanoidPoser(rig, SkeletonClips.locomotion());
+                } catch (RuntimeException e) {
+                    BlockMeshBody.fail(e);
+                }
+            }
             try {
-                poser = new HumanoidPoser(SkeletonRig.get(), SkeletonClips.locomotion());
+                if (poser == null) poser = new HumanoidPoser(rig = SkeletonRig.get(), SkeletonClips.locomotion());
+                poserBlockMesh = rig.profile != null;
+                GunStance.useRig(rig);
+                SeatPose.useRig(rig);
             } catch (RuntimeException e) {
                 failed = true;
+                poser = null;
                 ApocalypseFirstLight.LOGGER.error("[AFL skeleton] rig or clips failed to load, the skeleton stays off", e);
             }
         }
         return poser;
+    }
+
+    /** The poser rebuilt on its next use and the cached frames dropped (the Block-Mesh V2 test switched). */
+    static void reset() {
+        poser = null;
+        CACHE.clear();
     }
 
     public static boolean enabled() {
@@ -151,6 +178,17 @@ public final class PlayerSkeleton {
                 chest += Mth.wrapDegrees(target - chest) * 0.35F;
                 float lag = Mth.wrapDegrees(target - chest);
                 if (Math.abs(lag) > CHEST_LAG) chest = target - Math.signum(lag) * CHEST_LAG;
+            }
+            ChairSit.Sit sat = ChairSit.get(p);
+            if (sat != null || BlockMeshBody.active() && p.isPassenger() && BlockMeshBody.chair(p)) {
+                // on a chair (a wooden one: cabin/ChairSit, any rig; the office chair: Block-Mesh V2's ChairLegs): the hips keep
+                // the seat's way (the wooden chair's facing, the office chair the look), no turn steps swinging the legs; the
+                // chest within the waist's twist after the look (in the orbit camera the sitter's own look, which settles
+                // ahead: only the drawn head turns to the camera, client/camera/OrbitCamera#head)
+                pelvis = sat != null ? sat.yaw() : p.yBodyRot;
+                chest = pelvis + Mth.clamp(Mth.wrapDegrees(chest - pelvis), -WAIST, WAIST);
+                turnTicks = -1;
+                return;
             }
             double dx = p.getX() - p.xo, dz = p.getZ() - p.zo;
             if (dx * dx + dz * dz > 1e-4 && !p.isPassenger()) {
@@ -225,6 +263,9 @@ public final class PlayerSkeleton {
 
         record Extra(PlayerProps.Prop prop, Matrix4f pose, boolean open) {}
 
+        /** The ground's model y (px), NaN off it (riding): the Block-Mesh V2 toes. */
+        float ground = Float.NaN;
+
         Solved(SkeletonRig rig) {
             pose = new SkeletonPose(rig);
         }
@@ -293,7 +334,7 @@ public final class PlayerSkeleton {
         save(playerModel, d.saved);   // before the solve, which writes the parts for the gun's mounts
         Solved s = d.world ? CACHE.get(d.player) : null;
         if (s == null || s.frame != frame || !d.world) {
-            if (s == null) s = new Solved(poser().rig());
+            if (s == null || s.pose.rig != poser().rig()) s = new Solved(poser().rig());
             try {
                 solve(d, playerModel, toModel, s);
             } catch (RuntimeException e) {
@@ -366,6 +407,11 @@ public final class PlayerSkeleton {
         SkeletonRig rig = d.solved.pose.rig;
         // the own first person's arms thinner with a pistol held out (GunStance#firstPersonArm)
         float arms = d.solved.hold != null ? d.solved.hold.arms() : 1F;
+        // AFL Block-Mesh V2 dev test: the B body in its own skin in place of the skin mesh, the head and the wound marks
+        if (rig.profile != null && BlockMeshBody.draw(d.solved.pose, m, pose, d.buffers, light, overlay, r, g, b, a, d.solved.ground)) {
+            drawGear(d, pose, light, overlay, 1F);
+            return true;
+        }
         for (SkeletonRig.SkinPart part : rig.skin) {
             float thick = part.part().endsWith("_arm") ? arms : 1F;
             if (base(m, part.part()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, thick, sink);
@@ -386,6 +432,13 @@ public final class PlayerSkeleton {
                     SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, part.part().endsWith("_arm") ? arms : 1F, marks);
             m.head.render(pose, wounds, light, overlay, r, g, b, a);
         }
+        drawGear(d, pose, light, overlay, arms);
+        return true;
+    }
+
+    /** Gauze, the gun the skeleton holds and the action's other props: on the posed body, whichever skin drew it. */
+    private static void drawGear(Draw d, PoseStack pose, int light, int overlay, float arms) {
+        PlayerModel<?> m = d.model;
         // health V1a: the gauze on the forearm, and the cloth off the roll the bandage action carries (the splint actions'
         // second prop, fractures V1)
         Vector3f roll = d.solved.prop != null && !d.solved.propHidden && "bandage".equals(d.solved.prop.id())
@@ -403,7 +456,6 @@ public final class PlayerSkeleton {
             ItemStack stack = extraStack(e.prop());
             if (!stack.isEmpty() || e.prop().mesh() != null) drawPlaced(d, e.prop(), e.pose(), e.open(), stack, pose, d.buffers, light);
         }
-        return true;
     }
 
     private static final Map<String, ItemStack> EXTRA_STACKS = new java.util.HashMap<>();
@@ -519,7 +571,8 @@ public final class PlayerSkeleton {
         Draw d = DRAWS.peek();
         if (d == null || d.player != entity || d.solved == null || d.model == null) return false;
         boolean right = arm == HumanoidArm.RIGHT;
-        set(HAND, d.solved.pose.world[right ? d.solved.pose.rig.handR : d.solved.pose.rig.handL], right ? RIGHT_ARM : LEFT_ARM);
+        SkeletonRig rig = d.solved.pose.rig;
+        set(HAND, d.solved.pose.world[right ? rig.handR : rig.handL], armPivot(rig, right));
         if (d.solved.slim) HAND.x += right ? 0.5F : -0.5F;
         HAND.translateAndRotate(pose);
         return true;
@@ -530,7 +583,9 @@ public final class PlayerSkeleton {
         float partial = d.partial;
         State s = d.world ? STATES.get(p) : null;
         HumanoidPoser.Input in = new HumanoidPoser.Input();
-        in.slim = "slim".equals(p.getModelName());
+        // the Block-Mesh V2 body has one arm width (no Steve / Alex, user 2026-10-25)
+        boolean blockMesh = poser().rig().profile != null;
+        in.slim = !blockMesh && "slim".equals(p.getModelName());
         out.slim = in.slim;
         float body = bodyYaw(p, partial);
         float head = Mth.rotLerp(partial, p.yHeadRotO, p.yHeadRot);
@@ -574,10 +629,22 @@ public final class PlayerSkeleton {
         // arms
         in.vanillaRight.rotationZYX(model.rightArm.zRot, model.rightArm.yRot, model.rightArm.xRot);
         in.vanillaLeft.rotationZYX(model.leftArm.zRot, model.leftArm.yRot, model.leftArm.xRot);
+        // the ground for the Block-Mesh V2 toes: the entity's feet (the render origin is off them by the render offset)
+        out.ground = blockMesh && !p.isPassenger() ? toModel.transformPosition(new Vector3f(0, (float) -offset.y, 0)).mul(16F).y : Float.NaN;
+        // on a wooden chair (cabin/ChairSit: no vehicle, the player stands on the chair's floor) or Block-Mesh V2 on the office chair
+        boolean aflChair = ChairSit.sitting(p);
+        boolean chair = blockMesh && BlockMeshBody.chair(p);
         if (p.isPassenger() && p.getVehicle() != null && p.getVehicle().shouldRiderSit()) {
             in.legsVanilla = true;
             in.vanillaRightLeg.rotationZYX(model.rightLeg.zRot, model.rightLeg.yRot, model.rightLeg.xRot);
             in.vanillaLeftLeg.rotationZYX(model.leftLeg.zRot, model.leftLeg.yRot, model.leftLeg.xRot);
+        } else if (aflChair && !blockMesh) {
+            // the vanilla rig on a wooden chair: vanilla's riding legs (HumanoidModel#setupAnim riding), the body as low as
+            // vanilla's rider was (its feet ChairLegs.WOOD.drop() under the floor)
+            in.legsVanilla = true;
+            in.vanillaRightLeg.rotationZYX(0.07853982F, Mth.PI / 10F, -1.4137167F);
+            in.vanillaLeftLeg.rotationZYX(-0.07853982F, -Mth.PI / 10F, -1.4137167F);
+            in.rootOffset.add(0, ChairLegs.WOOD.drop() * toModel.transformDirection(new Vector3f(0, 1, 0)).length() * 16F, 0);
         }
         // seated riders (docs/dev/seated_rider_v1_plan.md): on a seat or getting on or off one, the seat poses the body
         SeatedRiders.Seated seated = SeatedRiders.frame(p, partial);
@@ -594,6 +661,7 @@ public final class PlayerSkeleton {
             }
             SeatPose.body(in, seat, stand, moment, seated.torso(), eyeModel.y);
         }
+        float chairRootYaw = in.rootYaw;
         // sat on the ground (docs/gameplay/splint_animation_v2_plan.md 3): the sitting clips on the stance layer; the eye is
         // the posed one (the own first-person camera follows it), the look does not bend the chest
         GroundSitClient.Sit sit = d.world && seated == null ? GroundSitClient.stance(p, in, poser().rig(), partial) : null;
@@ -618,6 +686,20 @@ public final class PlayerSkeleton {
         // the gun's stance as others see it, the own first-person body too: there a held gun is its old view model's
         // (#firstPersonHands) but for looking down at its ready (FirstPersonBody#gunOnBody), and back to its mount
         if (gun && seated == null) SkeletonGunStance.stanceClips(p, in, poser().rig(), partial);
+        // on a chair the legs and hips are the chair's under any action or stance (their legs give way to the IK, the hips
+        // keep the seat's place and way); a foot's fidgets (ChairPose, the wooden chair)
+        ChairLegs.Result chairLegs = null;
+        ChairSitClient.Frame chairIdle = ChairSitClient.Frame.NONE;
+        if (chair && seated == null) {
+            in.rootYaw = chairRootYaw;
+            in.rootTurn = null;
+            chairLegs = BlockMeshBody.chairLegs(in, poser().rig(), p, origin, toModel, partial);
+            if (aflChair) {
+                boolean busy = gun || action != null || p.isUsingItem() || !p.getMainHandItem().isEmpty() || !p.getOffhandItem().isEmpty();
+                chairIdle = ChairSitClient.frame(p, partial, busy);
+                ChairPose.body(in, ChairLegs.WOOD, chairLegs, chairIdle.idle(), chairIdle.weight(), chairIdle.time(), chairIdle.right());
+            }
+        }
         HumanoidPoser.Report report = poser().solveBody(in, out.pose);
         if (seated != null && d.world && seated.move() == SeatPose.Move.NONE) SeatedRiders.solvedTorso(p, report.torso);
         out.hold = null;
@@ -660,6 +742,9 @@ public final class PlayerSkeleton {
                 else in.vanillaLeftWeight = w;
             }
             if (seat != null) SeatPose.hands(in, out.pose, poser(), seat, moment);
+            else if (chairLegs != null) {
+                ChairPose.hands(in, out.pose, poser());
+            }
             if (action != null) {
                 ActionPose.hands(in, out.pose, poser(), action);
                 if (action.action.heldHidden) {
@@ -681,6 +766,7 @@ public final class PlayerSkeleton {
         poser().solveArms(in, out.pose, report);
         if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
         if (sit != null) GroundSitClient.solved(p, out.pose, origin, toModel);
+        if (chair && seated == null && d.world) BlockMeshBody.chairSolved(p, out.pose, origin, toModel);
         if (lie != null && d.world) ProneClient.solved(p, out.pose, origin, toModel);
         if (d.world && out.prop != null) {
             Matrix4f fromModel = new Matrix4f(toModel).invert();
@@ -848,16 +934,22 @@ public final class PlayerSkeleton {
         SkeletonRig rig = pose.rig;
         set(m.head, pose.world[rig.head], HEAD);
         set(m.body, pose.world[rig.chest], BODY);
-        set(m.rightArm, pose.world[rig.upperArmR], RIGHT_ARM);
-        set(m.leftArm, pose.world[rig.upperArmL], LEFT_ARM);
-        set(m.rightLeg, pose.world[rig.thighR], RIGHT_LEG);
-        set(m.leftLeg, pose.world[rig.thighL], LEFT_LEG);
+        set(m.rightArm, pose.world[rig.upperArmR], armPivot(rig, true));
+        set(m.leftArm, pose.world[rig.upperArmL], armPivot(rig, false));
+        set(m.rightLeg, pose.world[rig.thighR], rig.profile != null ? BlockMeshBody.legPivot(rig, true) : RIGHT_LEG);
+        set(m.leftLeg, pose.world[rig.thighL], rig.profile != null ? BlockMeshBody.legPivot(rig, false) : LEFT_LEG);
         m.hat.copyFrom(m.head);
         m.jacket.copyFrom(m.body);
         m.rightSleeve.copyFrom(m.rightArm);
         m.leftSleeve.copyFrom(m.leftArm);
         m.rightPants.copyFrom(m.rightLeg);
         m.leftPants.copyFrom(m.leftLeg);
+    }
+
+    /** The vanilla arm part's rest pivot on the rig (the Block-Mesh V2 rig's narrower, longer arms: BlockMeshBody#armPivot). */
+    static Vector3f armPivot(SkeletonRig rig, boolean right) {
+        if (rig.profile == null) return right ? RIGHT_ARM : LEFT_ARM;
+        return BlockMeshBody.armPivot(rig, right);
     }
 
     /** The part's frame: the bone's skinning matrix at the part's rest pivot, as translation and Z-Y-X angles. */

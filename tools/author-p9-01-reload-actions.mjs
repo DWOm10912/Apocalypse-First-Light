@@ -225,29 +225,30 @@ function inspectNoMag(empty) {
     return [id, json];
 }
 
-// unload (docs/native_guns/magazine_system_v1.md 3.1): no fuller spare, the R key takes the fitted magazine out into the hand. Same
-// beats as the first-person clip (tools/author-p9-01-v3-native-animations.mjs UNLOAD): the gun comes up as for the magazine check,
-// the thumb releases the magazine into the support hand, which keeps it and goes low; the gun goes back to the chest ready. The
-// action ends at the swap (1.05 s: the magazine becomes the held item); the gun's put-away (gun/p9_01_holster) follows.
-const UNLOAD = {release: 0.36, drop: 0.38, out: 0.52, carried: 0.85, swap: 1.05};
+// unload (docs/native_guns/magazine_system_v1.md 3.1): a tap of the R key takes the fitted magazine out and stows it (user
+// 2026-10-24: the gun stays in the hand). Same beats as the first-person clip (tools/author-p9-01-v3-native-animations.mjs
+// UNLOAD): the gun comes up as for the magazine check, the thumb releases the magazine into the support hand, which takes it
+// down to the belt pouch at the left front (the reload's) and lets go of it there (the server stows it at `stow`: rig,
+// pockets, backpack, else the ground); the gun goes back to the chest ready and the hand back onto it.
+const UNLOAD = {release: 0.36, drop: 0.38, out: 0.52, stow: 0.9, regrip: 1.3, end: 1.45};
 function unload(empty) {
     const id = empty ? 'p9_01_unload_empty' : 'p9_01_unload';
-    const json = base(id, `P9 ${empty ? 'empty ' : ''}unload (gun/${id}; docs/native_guns/magazine_system_v1.md 3.1): no fuller spare magazine,`
-        + ' so the reload key takes the fitted one out: the gun comes up as for the magazine check, the thumb releases the magazine into'
-        + ' the support hand, which keeps it and brings it down to the front of the belt; the gun goes back to the chest ready. Ends at'
-        + ' the swap (the magazine becomes the held item, the gun is put away). Same beats as the first-person clip. Written by'
-        + ' tools/author-p9-01-reload-actions.mjs.', UNLOAD.swap);
-    const CHECK = gun([-0.5, 1.6, -9.6], 30, 10, -22);
-    const LOW = keyAt(MAG, 'bone:pelvis', 'base', [3.4, 7.6, -6.2], 30, 10, -10);
+    const json = base(id, `P9 ${empty ? 'empty ' : ''}unload (gun/${id}; docs/native_guns/magazine_system_v1.md 3.1): a tap of the reload key`
+        + ' takes the fitted magazine out: the gun comes up as for the magazine check, the thumb releases the magazine into the support'
+        + ' hand, which takes it down to the belt pouch at the left front and stows it; the gun goes back to the chest ready and the'
+        + ' support hand back onto the grip. Same beats and length as the first-person clip. Written by'
+        + ' tools/author-p9-01-reload-actions.mjs.', UNLOAD.end);
+    const T = UNLOAD, CHECK = gun([-0.5, 1.6, -9.6], 30, 10, -22);
     json.props = [
         {id: 'p9_01', keys: [k(0, CHEST_READY, 0), k(0.02, CHECK, 0.28), k(0.6, CHEST_READY, 0.4)]},
-        {id: 'p9_01_mag', keys: [k(0, inGun(0), 0, {hidden: true}), k(UNLOAD.drop, inGun(0), 0), k(UNLOAD.drop, inGun(MAG_CLEAR), UNLOAD.out - UNLOAD.drop),
-            k(UNLOAD.out + 0.03, LOW, UNLOAD.carried - UNLOAD.out - 0.03)]},
+        {id: 'p9_01_mag', keys: [k(0, inGun(0), 0, {hidden: true}), k(T.drop, inGun(0), 0), k(T.drop, inGun(MAG_CLEAR), T.out - T.drop),
+            k(T.out + 0.03, POUCH, T.stow - 0.04 - T.out - 0.03), k(T.stow, POUCH, 0, {hidden: true})]},
     ];
     json.hands = {
         right: [{at: 0, target: 'prop:p9_01:grip_r', blend: 0, roll: 0, pole: POLE_R}],
         left: [{at: 0, target: 'prop:p9_01:grip_l', blend: 0, roll: 0, pole: POLE_L},
-            {at: 0.04, target: 'prop:p9_01_mag:base', blend: 0.26, roll: 0, pole: POLE_L_LOW}],
+            {at: 0.04, target: 'prop:p9_01_mag:base', blend: 0.26, roll: 0, pole: POLE_L_LOW},
+            {at: T.stow + 0.04, target: 'prop:p9_01:grip_l', blend: T.regrip - T.stow - 0.04, roll: 0, pole: POLE_L}],
     };
     json.events = [];
     return [id, json];

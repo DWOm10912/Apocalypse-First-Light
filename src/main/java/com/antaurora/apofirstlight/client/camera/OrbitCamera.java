@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client.camera;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.MaintenanceModeClientState;
+import com.antaurora.apofirstlight.entity.OfficeChairEntity;
 import com.antaurora.apofirstlight.vehicle.PickupTruckEntity;
 import com.antaurora.apofirstlight.vehicle.PickupTruckLayout;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
@@ -38,7 +39,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>The mouse turns the camera, not the player (mixin client.MouseHandlerLookLockMixin, {@link #takeMouse}).</li>
  *   <li>On foot: the camera turns about the eyes; the movement keys walk relative to the camera, the body turns toward
  *   where it walks ({@link #TURN} a tick) and the head looks where the centre dot is, within a neck's reach ({@link #head},
- *   drawn only). While attack / use is held the body turns to the camera's view ({@link #AIM_TURN} a tick) and the keys
+ *   drawn only). Sat on a wooden chair the camera still goes all the way round, the body stays and only the head turns:
+ *   toward the camera when it is in front ({@link #SEAT_FACE}), else ahead; clicks act only with the view in the
+ *   sitter's reach (cabin/ChairSit#LOOK). While attack / use is held the body turns to the camera's view ({@link #AIM_TURN} a tick) and the keys
  *   strafe. A click (attack, use) acts only once the body faces the view: until then it is held back and played again
  *   when it does, so nothing is struck, used or shot behind the body's back (user 2026-10-19: no flick shots). Aiming a
  *   gun (use held) and the perspective key wait the same way, then drop to first person.</li>
@@ -68,6 +71,14 @@ public final class OrbitCamera {
      * head looks ahead again (deg), its pitch range (deg, + down), its easing (s).
      */
     private static final float HEAD_YAW = 70, HEAD_BACK = 120, HEAD_PITCH_MIN = -50, HEAD_PITCH_MAX = 60;
+    /**
+     * Sat on a wooden chair (cabin/ChairSit; user 2026-10-25: "能不能改成自由视角，但是只能头转"): the camera goes all the way
+     * round, the body stays; the head looks at the camera while it is within this far (deg) of straight ahead (in front,
+     * on the face), turned at most {@link #HEAD_YAW}; further round (beside, behind the head) it looks ahead.
+     */
+    private static final float SEAT_FACE = 100;
+    /** Sat, not acting: the body's own look back to the chair's way (deg a tick). */
+    private static final float SEAT_SETTLE = 10;
     private static final double HEAD_EASE = 0.12;
     /** Driving: how far past the seat's look range the view may go before the head looks ahead again (deg); its pitch range. */
     private static final float RIDER_BACK = 20, RIDER_PITCH_MIN = -30, RIDER_PITCH_MAX = 25;
@@ -105,6 +116,23 @@ public final class OrbitCamera {
         Minecraft mc = Minecraft.getInstance();
         return mc.player != null && mc.options.getCameraType() == CameraType.THIRD_PERSON_BACK && mc.getCameraEntity() == mc.player
                 && !MaintenanceModeClientState.INSTANCE.active();
+    }
+
+    /** The camera's view yaw (deg). */
+    public static float viewYaw() {
+        return yaw;
+    }
+
+    /** Sat on a wooden chair with the view further round than the sitter can look (cabin/ChairSit#LOOK): nothing to aim at. */
+    private static boolean behindSeat(LocalPlayer player) {
+        com.antaurora.apofirstlight.cabin.ChairSit.Sit s = com.antaurora.apofirstlight.cabin.ChairSit.get(player);
+        return s != null && Math.abs(Mth.wrapDegrees(yaw - s.yaw())) > com.antaurora.apofirstlight.cabin.ChairSit.LOOK;
+    }
+
+    /** Where the body turns to face the view: the view's yaw; sat with the view behind the seat, the chair's way. */
+    private static float aimYaw(LocalPlayer player) {
+        com.antaurora.apofirstlight.cabin.ChairSit.Sit s = com.antaurora.apofirstlight.cabin.ChairSit.get(player);
+        return s != null && behindSeat(player) ? s.yaw() : yaw;
     }
 
     /** The orbit on foot (the centre dot, turning to the view on clicks). */
@@ -145,7 +173,7 @@ public final class OrbitCamera {
             }
         }
         // aiming a gun: first person while use is held, once the body faces the view
-        if (foot && mc.options.keyUse.isDown() && player.getMainHandItem().getItem() instanceof NativeGunItem) {
+        if (foot && mc.options.keyUse.isDown() && player.getMainHandItem().getItem() instanceof NativeGunItem && !behindSeat(player)) {
             if (facingView(player)) {
                 faceView(player);
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
@@ -191,16 +219,17 @@ public final class OrbitCamera {
 
     /** On foot: the body within {@link #AIM_ALIGNED} of the camera's yaw. */
     private static boolean facingView(LocalPlayer player) {
-        return Math.abs(Mth.wrapDegrees(yaw - player.getYRot())) <= AIM_ALIGNED;
+        return Math.abs(Mth.wrapDegrees(aimYaw(player) - player.getYRot())) <= AIM_ALIGNED;
     }
 
     /** Sets the player exactly to the camera's view (the centre ray runs through the eyes) and picks again; only a small
      *  correction once {@link #facingView} (the turn itself is {@link #AIM_TURN} a tick, in {@link #movement}). */
     private static void faceView(LocalPlayer player) {
         if (truck() != null) return;
-        player.setYRot(yaw);
-        player.setYHeadRot(yaw);
-        player.setXRot(Mth.clamp(pitch, -90, 90));
+        float to = aimYaw(player);
+        player.setYRot(to);
+        player.setYHeadRot(to);
+        player.setXRot(to == yaw ? Mth.clamp(pitch, -90, 90) : 0F);
         Minecraft.getInstance().gameRenderer.pick(1.0F);
     }
 
@@ -308,7 +337,13 @@ public final class OrbitCamera {
         LocalPlayer p = mc.player;
         float body = Mth.rotLerp(event.getPartialTick(), p.yBodyRotO, p.yBodyRot);
         float rel = Mth.wrapDegrees(yaw - body), want = Mth.clamp(pitch, HEAD_PITCH_MIN, HEAD_PITCH_MAX);
-        if (Math.abs(rel) > HEAD_BACK) {
+        if (com.antaurora.apofirstlight.cabin.ChairSit.sitting(p)) {
+            // sat on a wooden chair: the head looks at the camera when it is in front, else ahead (SEAT_FACE)
+            float toCamera = Mth.wrapDegrees(yaw + 180 - body);
+            boolean face = Math.abs(toCamera) <= SEAT_FACE;
+            rel = face ? Mth.clamp(toCamera, -HEAD_YAW, HEAD_YAW) : 0F;
+            want = face ? Mth.clamp(-pitch, HEAD_PITCH_MIN, HEAD_PITCH_MAX) : 0F;
+        } else if (Math.abs(rel) > HEAD_BACK) {
             rel = 0;
             want = 0;
         } else rel = Mth.clamp(rel, -HEAD_YAW, HEAD_YAW);
@@ -368,12 +403,22 @@ public final class OrbitCamera {
         if (!(event.getEntity() instanceof LocalPlayer player) || player != mc.player || !onFoot()) return;
         boolean acting = mc.screen == null && (mc.options.keyAttack.isDown() || mc.options.keyUse.isDown())
                 || heldClick != null || firstPersonWaiting;
+        com.antaurora.apofirstlight.cabin.ChairSit.Sit sat = com.antaurora.apofirstlight.cabin.ChairSit.get(player);
         if (acting) {
-            float body = Mth.approachDegrees(player.getYRot(), yaw, AIM_TURN);
+            float to = aimYaw(player), body = Mth.approachDegrees(player.getYRot(), to, AIM_TURN);
             player.setYRot(body);
             player.setYHeadRot(body);
-            player.setXRot(Mth.approach(player.getXRot(), Mth.clamp(pitch, -90, 90), AIM_TURN));
+            player.setXRot(Mth.approach(player.getXRot(), to == yaw ? Mth.clamp(pitch, -90, 90) : 0F, AIM_TURN));
+        } else if (sat != null) {
+            // sat, the camera free: the sitter's own look (the chest follows it) settles back to the chair's way
+            float body = Mth.approachDegrees(player.getYRot(), sat.yaw(), SEAT_SETTLE);
+            player.setYRot(body);
+            player.setYHeadRot(body);
+            player.setXRot(Mth.approach(player.getXRot(), 0F, SEAT_SETTLE));
         }
+        // on a seat that keeps the body its way (a wood chair, the ground): the keys neither turn nor walk the body (user
+        // 2026-10-25: on a wood chair A / D swung the chest and arms); the office chair rolls and turns by them, as on foot
+        if (player.isPassenger() && !(player.getVehicle() instanceof OfficeChairEntity)) return;
         Input in = event.getInput();
         double l = in.leftImpulse, f = in.forwardImpulse;
         if (l * l + f * f < 1e-6) return;
@@ -399,6 +444,12 @@ public final class OrbitCamera {
     public static boolean holdClick(InputEvent.InteractionKeyMappingTriggered event) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || !onFoot() || !(event.isAttack() || event.isUseItem())) return false;
+        if (behindSeat(player)) {
+            // sat with the camera round behind the seat: the sitter cannot face the dot, so nothing happens
+            event.setCanceled(true);
+            event.setSwingHand(false);
+            return true;
+        }
         if (facingView(player)) {
             faceView(player);
             return false;

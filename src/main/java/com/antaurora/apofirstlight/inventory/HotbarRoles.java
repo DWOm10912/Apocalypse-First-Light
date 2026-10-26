@@ -88,6 +88,30 @@ public final class HotbarRoles {
         };
     }
 
+    /**
+     * Whether a weapon position can be used now (user 2026-10-25: without a holster or sling the box goes red, the wheel
+     * passes it by): one holding something always (to take it out); the empty pistol position only with a holster worn;
+     * the empty primary only with a primary gun with a sling on the player (in hand, in the grids, or {@code carried}: on
+     * the inventory page's cursor). The melee position and the hand always.
+     */
+    public static boolean open(Player player, int index, ItemStack carried) {
+        if (index != PRIMARY_SLOT && index != PISTOL_SLOT) return true;
+        if (!player.getInventory().items.get(index).isEmpty()) return true;
+        if (index == PISTOL_SLOT) return holsterWorn(player);
+        if (slungPrimary(carried) || slungPrimary(player.getInventory().items.get(HAND_SLOT))) return true;
+        for (ItemStack stack : com.antaurora.apofirstlight.inventory.grid.PlayerGrids.stacks(player)) if (slungPrimary(stack)) return true;
+        return false;
+    }
+
+    /** The hint key (hint.apocalypse_firstlight.loadout.*) for why a position is not {@link #open}. */
+    public static String closedHint(int index) {
+        return index == PRIMARY_SLOT ? "no_sling" : "no_holster";
+    }
+
+    private static boolean slungPrimary(ItemStack stack) {
+        return weaponRole(stack) == Role.PRIMARY && GunSling.has(stack);
+    }
+
     /** The weapon position a role is carried in (HAND: the hand). */
     public static int slotOf(Role role) {
         return switch (role) {

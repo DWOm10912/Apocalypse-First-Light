@@ -111,7 +111,7 @@ final class SeatCheck {
         failures = 0;
         File dir = snap == null ? null : new File(snap);
         if (dir != null) dir.mkdirs();
-        System.out.println("\nseated riders (scale " + SeatPose.SCALE + ", eye " + SeatPose.EYE_OVER_SEAT + " m over the cushion; T15 roof " + ROOF + ")");
+        System.out.println("\nseated riders (scale " + SeatPose.scale(1F) + ", eye " + SeatPose.EYE_OVER_SEAT + " m over the cushion; T15 roof " + ROOF + ")");
         float torso = seated(rig, poser, DRIVER, dir);
         seated(rig, poser, PASSENGER, dir);
         seated(rig, poser, BENCH, dir);
@@ -142,7 +142,7 @@ final class SeatCheck {
     }
 
     private static float seated(SkeletonRig rig, HumanoidPoser poser, T15 t, File dir) throws Exception {
-        Frame f = new Frame(riderOrigin(t), t.yaw, SeatPose.SCALE);
+        Frame f = new Frame(riderOrigin(t), t.yaw, SeatPose.scale(1F));
         SeatPose.Seat seat = seat(t, f, 0F);
         float eyeLevel = f.toModel().transformPosition(new Vector3f(0, 1.62F, 0)).y * 16F;
         float worst = 0;
@@ -160,13 +160,14 @@ final class SeatCheck {
             poser.solveArms(in, pose, r);
             Vector3f eye = f.rig(pose.point(rig.head, rig.sockets.get("eye").pos(), new Vector3f()));
             Vector3f top = f.rig(pose.point(rig.head, new Vector3f(0, -8, 0), new Vector3f()));
-            // the hat layer's top over the head's top corners (looking around tips them up)
-            float headTop = -1;
-            for (float[] c : new float[][]{{-4.5F, -8.5F, -4.5F}, {4.5F, -8.5F, -4.5F}, {-4.5F, -8.5F, 4.5F}, {4.5F, -8.5F, 4.5F}})
+            // the hat layer's top over the head's top corners (looking around tips them up); the Block-Mesh V2 head has no
+            // second layer
+            float headTop = -1, hat = rig.profile != null ? 4F : 4.5F;
+            for (float[] c : new float[][]{{-hat, -4F - hat, -hat}, {hat, -4F - hat, -hat}, {-hat, -4F - hat, hat}, {hat, -4F - hat, hat}})
                 headTop = Math.max(headTop, f.rig(pose.point(rig.head, new Vector3f(c[0], c[1], c[2]), new Vector3f())).y);
             float wristR = wristError(rig, pose, in, true), wristL = wristError(rig, pose, in, false);
-            float soleR = f.rig(pose.point(rig.footR, new Vector3f(rig.pivot[rig.footR]).add(0, 2, 0), new Vector3f())).y - t.floor;
-            float soleL = f.rig(pose.point(rig.footL, new Vector3f(rig.pivot[rig.footL]).add(0, 2, 0), new Vector3f())).y - t.floor;
+            float soleR = f.rig(pose.point(rig.footR, new Vector3f(rig.pivot[rig.footR]).add(0, 24F - rig.pivot[rig.footR].y, 0), new Vector3f())).y - t.floor;
+            float soleL = f.rig(pose.point(rig.footL, new Vector3f(rig.pivot[rig.footL]).add(0, 24F - rig.pivot[rig.footL].y, 0), new Vector3f())).y - t.floor;
             float[] thigh = thighOnCushion(rig, pose, f, t);
             if (look[0] == 0 && look[1] == 0) {
                 System.out.printf(Locale.ROOT, "  %-9s torso %.2f  eye y %.3f (camera %.3f) z %+.3f from the hips  head top %.3f (hat %.3f)  hands reach R %.2f L %.2f, wrist off R %.2f L %.2f px%n",
@@ -195,7 +196,7 @@ final class SeatCheck {
             float level = (float) Math.hypot(eye.x + camera.x, eye.z + camera.z);   // rig x/z are world -x/-z
             if (look[0] == 0 && look[1] == 0) System.out.printf(Locale.ROOT, "            drawn eye off the camera: %.3f m level%n", level);
             // 3 cm at the first 0.72 size, with the size
-            if (look[0] == 0 && look[1] == 0 && level > 0.042F * SeatPose.SCALE) fail(t.name + ": the drawn eye is " + level + " m off the camera");
+            if (look[0] == 0 && look[1] == 0 && level > 0.042F * SeatPose.scale(1F)) fail(t.name + ": the drawn eye is " + level + " m off the camera");
             if (Math.abs(eye.y - (t.cushion + SeatPose.EYE_OVER_SEAT)) > 0.01F && look[1] == 0)
                 fail(t.name + ": the drawn eye is off the camera height (" + eye.y + ")");
             if (dir != null && look[0] == 0 && (look[1] == 0 || look[1] == 40)) {

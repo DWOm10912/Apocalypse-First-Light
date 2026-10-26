@@ -158,6 +158,7 @@
   "hud.apocalypse_firstlight.gun.swap_magazine": "Hold to swap magazine",
   "hud.apocalypse_firstlight.gun.insert_magazine": "Insert magazine",
   "hud.apocalypse_firstlight.gun.no_spare_magazine": "No spare magazine",
+  "hud.apocalypse_firstlight.gun.magazine_dropped": "No room for the magazine, dropped it",
   "hud.apocalypse_firstlight.gun_keys.fire_mode": "Fire mode",
   "hud.apocalypse_firstlight.gun_keys.inspect": "Inspect",
   "hud.apocalypse_firstlight.gun_keys.attachments": "Attachments",
@@ -1664,6 +1665,7 @@
   "message.apocalypse_firstlight.lightning.aftermath_gone": "The after-effects of the strike have faded",
   "message.apocalypse_firstlight.sit.cannot": "You can't sit here",
   "hint.apocalypse_firstlight.sit.stand": "%s to get up",
+  "hint.apocalypse_firstlight.chair.stand": "Move or %s to get up",
 
   "survivor.apocalypse_firstlight.cause.unknown": "Cause unknown",
   "survivor.apocalypse_firstlight.death.cause": "Cause: %s",

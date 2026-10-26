@@ -19,6 +19,8 @@ AFL replaces the vanilla inventory with a grid: every item takes up a block of c
 | 3 | Melee weapon | — |
 | 4–9 | Quick binds for items in pockets or the rig | — |
 
+<StatusTag s="integrated" d="2026-10-25" /> Without a pistol holster on, the empty pistol slot shows red and takes nothing; with no slung long gun on you, the empty long gun slot does too. Hover over it to see what is missing. The mouse wheel skips red slots. When your hands hold something that does not fit anywhere on you, the wheel does not switch and the screen says "No room"
+
 AFL has no off hand; guns are always held right-handed
 
 ## Body map

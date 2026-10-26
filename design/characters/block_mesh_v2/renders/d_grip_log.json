@@ -1,0 +1,162 @@
+{
+ "gun_p9_r": {
+  "curl": {
+   "thumb": 0.35,
+   "index": 0.6,
+   "middle": 0.55,
+   "ring": 1.0,
+   "pinky": 1.0
+  },
+  "gap_px": {
+   "thumb": 0.43,
+   "index": 0.38,
+   "middle": 0.39,
+   "ring": 0.59,
+   "pinky": 1.05
+  }
+ },
+ "gun_p9_l": {
+  "curl": {
+   "thumb": 1.0,
+   "index": 0.0,
+   "middle": 0.0,
+   "ring": 0.3,
+   "pinky": 1.0
+  },
+  "gap_px": {
+   "thumb": 0.79,
+   "index": 0.07,
+   "middle": 0.33,
+   "ring": 0.38,
+   "pinky": 0.78
+  }
+ },
+ "gun_br51_r": {
+  "curl": {
+   "thumb": 0.0,
+   "index": 0.0,
+   "middle": 0.0,
+   "ring": 0.0,
+   "pinky": 0.0
+  },
+  "gap_px": {
+   "thumb": 0.15,
+   "index": 0.1,
+   "middle": 0.03,
+   "ring": 0.03,
+   "pinky": 0.1
+  }
+ },
+ "gun_br51_l": {
+  "curl": {
+   "thumb": 1.0,
+   "index": 1.0,
+   "middle": 0.0,
+   "ring": 0.0,
+   "pinky": 0.0
+  },
+  "gap_px": {
+   "thumb": 1.05,
+   "index": 0.76,
+   "middle": 0.28,
+   "ring": 0.03,
+   "pinky": 0.08
+  }
+ },
+ "p9_reload_20_r": {
+  "curl": {
+   "thumb": 0.22,
+   "index": 0.6,
+   "middle": 0.52,
+   "ring": 0.52,
+   "pinky": 1.0
+  },
+  "gap_px": {
+   "thumb": 0.43,
+   "index": 0.37,
+   "middle": 0.33,
+   "ring": 0.33,
+   "pinky": 0.8
+  }
+ },
+ "p9_reload_40_r": {
+  "curl": {
+   "thumb": 0.22,
+   "index": 0.6,
+   "middle": 0.52,
+   "ring": 0.5,
+   "pinky": 0.88
+  },
+  "gap_px": {
+   "thumb": 0.41,
+   "index": 0.38,
+   "middle": 0.34,
+   "ring": 0.37,
+   "pinky": 0.33
+  }
+ },
+ "p9_reload_40_l": {
+  "curl": {
+   "thumb": 0.0,
+   "index": 1.0,
+   "middle": 0.52,
+   "ring": 0.6,
+   "pinky": 1.0
+  },
+  "gap_px": {
+   "thumb": 0.29,
+   "index": 0.51,
+   "middle": 0.36,
+   "ring": 0.37,
+   "pinky": 0.63
+  }
+ },
+ "p9_reload_60_r": {
+  "curl": {
+   "thumb": 0.22,
+   "index": 0.6,
+   "middle": 0.52,
+   "ring": 0.52,
+   "pinky": 0.58
+  },
+  "gap_px": {
+   "thumb": 0.43,
+   "index": 0.37,
+   "middle": 0.35,
+   "ring": 0.34,
+   "pinky": 0.35
+  }
+ },
+ "p9_reload_60_l": {
+  "curl": {
+   "thumb": 0.0,
+   "index": 0.62,
+   "middle": 0.68,
+   "ring": 0.68,
+   "pinky": 1.0
+  },
+  "gap_px": {
+   "thumb": 0.11,
+   "index": 0.36,
+   "middle": 0.35,
+   "ring": 0.38,
+   "pinky": 0.8
+  }
+ },
+ "p9_draw_out_r": {
+  "curl": {
+   "thumb": 0.35,
+   "index": 0.6,
+   "middle": 0.55,
+   "ring": 1.0,
+   "pinky": 1.0
+  },
+  "gap_px": {
+   "thumb": 0.43,
+   "index": 0.38,
+   "middle": 0.39,
+   "ring": 0.59,
+   "pinky": 1.05
+  }
+ }
+}

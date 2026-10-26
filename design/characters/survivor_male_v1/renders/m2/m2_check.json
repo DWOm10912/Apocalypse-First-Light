@@ -1,0 +1,1838 @@
+{
+ "rig": {
+  "ref_bones": 58,
+  "differences": [],
+  "extra": []
+ },
+ "0_rest": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hand_r",
+    "max_at": "middle_01_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_head": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_hair": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_tee": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "upper_arm_r",
+    "max_at": "upper_arm_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_jacket": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "forearm_twist_r",
+    "max_at": "forearm_twist_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_jeans": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thigh_r",
+    "max_at": "thigh_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_belt": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_boots": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 1.0,
+    "p99": 1.0
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 1.0,
+    "p5": 1.0
+   }
+  },
+  "layers": {},
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 0.0,
+   "gap_change_max_mm": 0.0,
+   "into_head": 0
+  }
+ },
+ "A_stand": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.572,
+    "max": 1.874,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thumb_01_l",
+    "max_at": "middle_01_r",
+    "p1": 0.847,
+    "p99": 1.229
+   },
+   "male_v1_head": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_hair": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_tee": {
+    "min": 0.126,
+    "max": 1.193,
+    "collapse": 4,
+    "stretched": 0,
+    "min_at": "upper_arm_r",
+    "max_at": "clavicle_r",
+    "p1": 0.466,
+    "p99": 1.158
+   },
+   "male_v1_jacket": {
+    "min": 0.336,
+    "max": 2.055,
+    "collapse": 1,
+    "stretched": 2,
+    "min_at": "upper_arm_l",
+    "max_at": "chest",
+    "p1": 0.449,
+    "p99": 1.177
+   },
+   "male_v1_jeans": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thigh_r",
+    "max_at": "thigh_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_belt": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_boots": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 1.0,
+    "p99": 1.0
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.993,
+    "p5": 0.99
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 1.0,
+    "p5": 1.0
+   }
+  },
+  "layers": {
+   "tee>jacket": {
+    "through": {
+     "n": 1,
+     "of": 99,
+     "worst_mm": 1.4,
+     "at": {
+      "chest": 1
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 0.0,
+   "gap_change_max_mm": 0.0,
+   "into_head": 0
+  }
+ },
+ "B_arms_forward": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.344,
+    "max": 1.874,
+    "collapse": 1,
+    "stretched": 0,
+    "min_at": "chest",
+    "max_at": "middle_01_r",
+    "p1": 0.83,
+    "p99": 1.267
+   },
+   "male_v1_head": {
+    "min": 0.963,
+    "max": 1.054,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 0.992,
+    "p99": 1.039
+   },
+   "male_v1_hair": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_tee": {
+    "min": 0.324,
+    "max": 1.807,
+    "collapse": 2,
+    "stretched": 0,
+    "min_at": "chest",
+    "max_at": "clavicle_l",
+    "p1": 0.424,
+    "p99": 1.568
+   },
+   "male_v1_jacket": {
+    "min": 0.187,
+    "max": 5.385,
+    "collapse": 14,
+    "stretched": 18,
+    "min_at": "chest",
+    "max_at": "upper_arm_l",
+    "p1": 0.415,
+    "p99": 2.071
+   },
+   "male_v1_jeans": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thigh_r",
+    "max_at": "thigh_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_belt": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_boots": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 1.0,
+    "p99": 1.0
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.814,
+    "p5": 0.748
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 0.999
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 0.999
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 1.0,
+    "p5": 0.998
+   }
+  },
+  "layers": {},
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 0.0,
+   "gap_change_max_mm": 0.0,
+   "into_head": 0
+  }
+ },
+ "C_arms_up": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.475,
+    "max": 1.504,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "upper_arm_l",
+    "max_at": "upper_arm_r",
+    "p1": 0.79,
+    "p99": 1.065
+   },
+   "male_v1_head": {
+    "min": 0.833,
+    "max": 1.13,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 0.909,
+    "p99": 1.037
+   },
+   "male_v1_hair": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_tee": {
+    "min": 0.338,
+    "max": 6.259,
+    "collapse": 5,
+    "stretched": 26,
+    "min_at": "upper_arm_r",
+    "max_at": "chest",
+    "p1": 0.362,
+    "p99": 3.824
+   },
+   "male_v1_jacket": {
+    "min": 0.291,
+    "max": 6.548,
+    "collapse": 18,
+    "stretched": 58,
+    "min_at": "clavicle_r",
+    "max_at": "upper_arm_l",
+    "p1": 0.35,
+    "p99": 4.118
+   },
+   "male_v1_jeans": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thigh_r",
+    "max_at": "thigh_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_belt": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_boots": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 1.0,
+    "p99": 1.0
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 1.063,
+    "p5": 1.051
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 0.998,
+    "p5": 0.997
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 0.998,
+    "p5": 0.997
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 0.975,
+    "p5": 0.966
+   }
+  },
+  "layers": {
+   "body>tee": {
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "chest": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "tee>jacket": {
+    "in_fabric": {
+     "n": 2,
+     "at": {
+      "upper_arm_r": 1,
+      "upper_arm_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 0.0,
+   "gap_change_max_mm": 0.0,
+   "into_head": 0
+  }
+ },
+ "D_elbows": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.043,
+    "max": 4.574,
+    "collapse": 28,
+    "stretched": 8,
+    "min_at": "hand_r",
+    "max_at": "middle_01_r",
+    "p1": 0.305,
+    "p99": 1.608
+   },
+   "male_v1_head": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_hair": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_tee": {
+    "min": 0.205,
+    "max": 1.213,
+    "collapse": 5,
+    "stretched": 0,
+    "min_at": "upper_arm_r",
+    "max_at": "clavicle_r",
+    "p1": 0.402,
+    "p99": 1.18
+   },
+   "male_v1_jacket": {
+    "min": 0.092,
+    "max": 2.332,
+    "collapse": 44,
+    "stretched": 2,
+    "min_at": "forearm_l",
+    "max_at": "chest",
+    "p1": 0.217,
+    "p99": 1.384
+   },
+   "male_v1_jeans": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thigh_r",
+    "max_at": "thigh_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_belt": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_boots": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 1.0,
+    "p99": 1.0
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.991,
+    "p5": 0.982
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 0.801,
+    "p5": 0.582
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.973,
+    "p5": 0.885
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 0.801,
+    "p5": 0.582
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.97,
+    "p5": 0.9
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 1.0,
+    "p5": 1.0
+   }
+  },
+  "layers": {
+   "tee>jacket": {
+    "through": {
+     "n": 2,
+     "of": 99,
+     "worst_mm": 0.1,
+     "at": {
+      "chest": 2
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 0.0,
+   "gap_change_max_mm": 0.0,
+   "into_head": 0
+  }
+ },
+ "E_squat": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.242,
+    "max": 4.219,
+    "collapse": 3,
+    "stretched": 2,
+    "min_at": "hips",
+    "max_at": "thigh_l",
+    "p1": 0.817,
+    "p99": 1.283
+   },
+   "male_v1_head": {
+    "min": 0.849,
+    "max": 1.122,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 0.887,
+    "p99": 1.078
+   },
+   "male_v1_hair": {
+    "min": 0.967,
+    "max": 1.027,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 0.979,
+    "p99": 1.02
+   },
+   "male_v1_tee": {
+    "min": 0.169,
+    "max": 1.587,
+    "collapse": 11,
+    "stretched": 0,
+    "min_at": "upper_arm_r",
+    "max_at": "spine",
+    "p1": 0.293,
+    "p99": 1.464
+   },
+   "male_v1_jacket": {
+    "min": 0.033,
+    "max": 4.395,
+    "collapse": 26,
+    "stretched": 9,
+    "min_at": "upper_arm_l",
+    "max_at": "upper_arm_l",
+    "p1": 0.301,
+    "p99": 1.804
+   },
+   "male_v1_jeans": {
+    "min": 0.049,
+    "max": 24.943,
+    "collapse": 63,
+    "stretched": 38,
+    "min_at": "shin_r",
+    "max_at": "thigh_r",
+    "p1": 0.188,
+    "p99": 2.308
+   },
+   "male_v1_belt": {
+    "min": 0.348,
+    "max": 1.307,
+    "collapse": 2,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 0.348,
+    "p99": 1.3
+   },
+   "male_v1_boots": {
+    "min": 0.459,
+    "max": 1.588,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "shin_l",
+    "max_at": "foot_l",
+    "p1": 0.507,
+    "p99": 1.475
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.737,
+    "p5": 0.698
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 0.999
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 0.999
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 0.791,
+    "p5": 0.53
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 0.987,
+    "p5": 0.97
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 0.791,
+    "p5": 0.53
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 1.016,
+    "p5": 0.972
+   }
+  },
+  "layers": {
+   "body>tee": {
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "chest": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "body>jeans": {
+    "through": {
+     "n": 2,
+     "of": 18,
+     "worst_mm": 3.2,
+     "at": {
+      "thigh_r": 2
+     }
+    },
+    "in_fabric": {
+     "n": 2,
+     "at": {
+      "thigh_r": 2
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "jeans>jacket": {
+    "through": {
+     "n": 3,
+     "of": 31,
+     "worst_mm": 10.5,
+     "at": {
+      "thigh_l": 2,
+      "thigh_r": 1
+     }
+    },
+    "in_fabric": {
+     "n": 2,
+     "at": {
+      "thigh_r": 1,
+      "thigh_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "belt>jacket": {
+    "through": {
+     "n": 4,
+     "of": 18,
+     "worst_mm": 4.1,
+     "at": {
+      "thigh_l": 2,
+      "thigh_r": 2
+     }
+    },
+    "in_fabric": {
+     "n": 2,
+     "at": {
+      "thigh_l": 1,
+      "thigh_r": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "jeans>boots": {
+    "through": {
+     "n": 1,
+     "of": 54,
+     "worst_mm": 14.7,
+     "at": {
+      "shin_r": 1
+     }
+    },
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "shin_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "boots>jeans": {
+    "through": {
+     "n": 3,
+     "of": 48,
+     "worst_mm": 11.5,
+     "at": {
+      "shin_l": 2,
+      "shin_r": 1
+     }
+    },
+    "in_fabric": {
+     "n": 2,
+     "at": {
+      "shin_r": 1,
+      "shin_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 3.99,
+   "gap_change_max_mm": 0.05,
+   "into_head": 0
+  }
+ },
+ "F_leg_raise": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.244,
+    "max": 9.069,
+    "collapse": 2,
+    "stretched": 2,
+    "min_at": "thigh_l",
+    "max_at": "thigh_l",
+    "p1": 0.839,
+    "p99": 1.286
+   },
+   "male_v1_head": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_hair": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_tee": {
+    "min": 0.126,
+    "max": 1.21,
+    "collapse": 4,
+    "stretched": 0,
+    "min_at": "upper_arm_r",
+    "max_at": "spine",
+    "p1": 0.466,
+    "p99": 1.182
+   },
+   "male_v1_jacket": {
+    "min": 0.336,
+    "max": 2.055,
+    "collapse": 1,
+    "stretched": 2,
+    "min_at": "upper_arm_l",
+    "max_at": "chest",
+    "p1": 0.438,
+    "p99": 1.177
+   },
+   "male_v1_jeans": {
+    "min": 0.288,
+    "max": 44.259,
+    "collapse": 14,
+    "stretched": 31,
+    "min_at": "shin_r",
+    "max_at": "thigh_r",
+    "p1": 0.341,
+    "p99": 2.801
+   },
+   "male_v1_belt": {
+    "min": 0.46,
+    "max": 1.085,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 0.465,
+    "p99": 1.082
+   },
+   "male_v1_boots": {
+    "min": 0.64,
+    "max": 1.382,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 0.796,
+    "p99": 1.276
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.993,
+    "p5": 0.99
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 0.885,
+    "p5": 0.754
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 0.994,
+    "p5": 0.986
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 1.0,
+    "p5": 1.0
+   }
+  },
+  "layers": {
+   "body>jeans": {
+    "through": {
+     "n": 1,
+     "of": 18,
+     "worst_mm": 0.0,
+     "at": {
+      "thigh_r": 1
+     }
+    },
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "thigh_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "tee>jacket": {
+    "through": {
+     "n": 1,
+     "of": 99,
+     "worst_mm": 1.4,
+     "at": {
+      "chest": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "jeans>jacket": {
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "thigh_r": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "belt>jacket": {
+    "through": {
+     "n": 1,
+     "of": 18,
+     "worst_mm": 1.6,
+     "at": {
+      "thigh_r": 1
+     }
+    },
+    "in_fabric": {
+     "n": 3,
+     "at": {
+      "thigh_r": 3
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 0.0,
+   "gap_change_max_mm": 0.0,
+   "into_head": 0
+  }
+ },
+ "G_head_turn": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.572,
+    "max": 1.874,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thumb_01_l",
+    "max_at": "middle_01_r",
+    "p1": 0.843,
+    "p99": 1.249
+   },
+   "male_v1_head": {
+    "min": 0.484,
+    "max": 1.365,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 0.638,
+    "p99": 1.224
+   },
+   "male_v1_hair": {
+    "min": 0.88,
+    "max": 1.109,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 0.925,
+    "p99": 1.066
+   },
+   "male_v1_tee": {
+    "min": 0.126,
+    "max": 1.369,
+    "collapse": 4,
+    "stretched": 0,
+    "min_at": "upper_arm_r",
+    "max_at": "clavicle_r",
+    "p1": 0.466,
+    "p99": 1.221
+   },
+   "male_v1_jacket": {
+    "min": 0.336,
+    "max": 2.055,
+    "collapse": 1,
+    "stretched": 2,
+    "min_at": "upper_arm_l",
+    "max_at": "chest",
+    "p1": 0.449,
+    "p99": 1.194
+   },
+   "male_v1_jeans": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "thigh_r",
+    "max_at": "thigh_r",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_belt": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 1.0,
+    "p99": 1.0
+   },
+   "male_v1_boots": {
+    "min": 1.0,
+    "max": 1.0,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 1.0,
+    "p99": 1.0
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.993,
+    "p5": 0.99
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.996,
+    "p5": 0.967
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 1.0,
+    "p5": 1.0
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 0.931,
+    "p5": 0.913
+   }
+  },
+  "layers": {
+   "tee>jacket": {
+    "through": {
+     "n": 1,
+     "of": 99,
+     "worst_mm": 1.4,
+     "at": {
+      "chest": 1
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 16.33,
+   "gap_change_max_mm": 0.6,
+   "into_head": 0
+  }
+ },
+ "H_p9_two_hand": {
+  "stretch": {
+   "male_v1_body": {
+    "min": 0.196,
+    "max": 3.879,
+    "collapse": 6,
+    "stretched": 14,
+    "min_at": "middle_01_l",
+    "max_at": "middle_01_r",
+    "p1": 0.424,
+    "p99": 1.832
+   },
+   "male_v1_head": {
+    "min": 0.871,
+    "max": 1.386,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "neck",
+    "max_at": "neck",
+    "p1": 0.934,
+    "p99": 1.084
+   },
+   "male_v1_hair": {
+    "min": 0.983,
+    "max": 1.032,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "head",
+    "max_at": "head",
+    "p1": 0.99,
+    "p99": 1.021
+   },
+   "male_v1_tee": {
+    "min": 0.104,
+    "max": 2.628,
+    "collapse": 21,
+    "stretched": 2,
+    "min_at": "upper_arm_r",
+    "max_at": "chest",
+    "p1": 0.204,
+    "p99": 1.518
+   },
+   "male_v1_jacket": {
+    "min": 0.022,
+    "max": 5.332,
+    "collapse": 28,
+    "stretched": 14,
+    "min_at": "upper_arm_r",
+    "max_at": "upper_arm_l",
+    "p1": 0.285,
+    "p99": 1.8
+   },
+   "male_v1_jeans": {
+    "min": 0.653,
+    "max": 2.073,
+    "collapse": 0,
+    "stretched": 1,
+    "min_at": "thigh_r",
+    "max_at": "hips",
+    "p1": 0.8,
+    "p99": 1.221
+   },
+   "male_v1_belt": {
+    "min": 0.867,
+    "max": 1.079,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "hips",
+    "max_at": "hips",
+    "p1": 0.869,
+    "p99": 1.078
+   },
+   "male_v1_boots": {
+    "min": 0.733,
+    "max": 1.269,
+    "collapse": 0,
+    "stretched": 0,
+    "min_at": "foot_r",
+    "max_at": "foot_r",
+    "p1": 0.803,
+    "p99": 1.152
+   }
+  },
+  "joints": {
+   "shoulder_r": {
+    "mesh": "jacket",
+    "verts": 4,
+    "mean": 0.68,
+    "p5": 0.476
+   },
+   "elbow_r": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 0.998,
+    "p5": 0.996
+   },
+   "wrist_r": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.962,
+    "p5": 0.863
+   },
+   "elbow_l": {
+    "mesh": "jacket",
+    "verts": 48,
+    "mean": 0.999,
+    "p5": 0.999
+   },
+   "wrist_l": {
+    "mesh": "body",
+    "verts": 93,
+    "mean": 0.977,
+    "p5": 0.934
+   },
+   "knee_r": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 0.991,
+    "p5": 0.981
+   },
+   "ankle_r": {
+    "mesh": "boots",
+    "verts": 49,
+    "mean": 0.997,
+    "p5": 0.993
+   },
+   "knee_l": {
+    "mesh": "jeans",
+    "verts": 7,
+    "mean": 0.992,
+    "p5": 0.984
+   },
+   "neck": {
+    "mesh": "head",
+    "verts": 6,
+    "mean": 0.972,
+    "p5": 0.945
+   }
+  },
+  "layers": {
+   "body>tee": {
+    "through": {
+     "n": 2,
+     "of": 38,
+     "worst_mm": 3.5,
+     "at": {
+      "upper_arm_l": 1,
+      "chest": 1
+     }
+    },
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "upper_arm_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "body>jacket": {
+    "through": {
+     "n": 1,
+     "of": 110,
+     "worst_mm": 1.3,
+     "at": {
+      "upper_arm_l": 1
+     }
+    },
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "upper_arm_r": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "tee>jacket": {
+    "through": {
+     "n": 5,
+     "of": 99,
+     "worst_mm": 1.2,
+     "at": {
+      "upper_arm_l": 3,
+      "upper_arm_r": 1,
+      "chest": 1
+     }
+    },
+    "in_fabric": {
+     "n": 12,
+     "at": {
+      "upper_arm_r": 5,
+      "upper_arm_l": 5,
+      "chest": 2
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "jeans>jacket": {
+    "in_fabric": {
+     "n": 1,
+     "at": {
+      "thigh_l": 1
+     }
+    },
+    "rest_in_fabric": 0
+   },
+   "belt>jacket": {
+    "in_fabric": {
+     "n": 3,
+     "at": {
+      "thigh_l": 2,
+      "hips": 1
+     }
+    },
+    "rest_in_fabric": 0
+   }
+  },
+  "holes": {
+   "body": {
+    "n": 0,
+    "of": 749,
+    "at": {}
+   },
+   "tee": {
+    "n": 0,
+    "of": 79,
+    "at": {}
+   }
+  },
+  "hair": {
+   "rigid_dev_mm": 2.85,
+   "gap_change_max_mm": 0.04,
+   "into_head": 0
+  },
+  "gun": {
+   "hand_r": {
+    "verts": 408,
+    "contact": 66,
+    "inside": 4,
+    "deepest_mm": 4.9
+   },
+   "hand_l": {
+    "verts": 407,
+    "contact": 34,
+    "inside": 0,
+    "deepest_mm": 0.6
+   }
+  },
+  "ik": {
+   "r": {
+    "pos_err_mm": 0.0,
+    "rot_err_deg": 0.0,
+    "reach_mm": 547.6,
+    "elbow_flex": 18.8,
+    "scale": 1.0
+   },
+   "l": {
+    "pos_err_mm": 0.0,
+    "rot_err_deg": 0.0,
+    "reach_mm": 551.0,
+    "elbow_flex": 13.8,
+    "scale": 1.0
+   }
+  }
+ },
+ "sheets": [
+  "D:\\Minecraft Modding\\Apocalypse First Light\\design\\characters\\survivor_male_v1\\renders\\m2\\m2_poses_sheet.png",
+  "D:\\Minecraft Modding\\Apocalypse First Light\\design\\characters\\survivor_male_v1\\renders\\m2\\m2_joints_sheet.png"
+ ],
+ "fingerprint": {
+  "unchanged": true,
+  "bones": 58,
+  "deform": 54,
+  "actions": 8
+ },
+ "counts": {
+  "male_v1_body": {
+   "tris": 3594,
+   "visible_tris": 2022,
+   "verts": 1805,
+   "slots": 3566,
+   "max_influences": 4,
+   "mean_influences": 2.19,
+   "material": "m1_skin"
+  },
+  "male_v1_head": {
+   "tris": 716,
+   "visible_tris": 716,
+   "verts": 379,
+   "slots": 403,
+   "max_influences": 4,
+   "mean_influences": 2.67,
+   "material": "m1_head_v1"
+  },
+  "male_v1_hair": {
+   "tris": 440,
+   "visible_tris": 440,
+   "verts": 310,
+   "slots": 310,
+   "max_influences": 3,
+   "mean_influences": 1.45,
+   "material": "m1_hair"
+  },
+  "male_v1_tee": {
+   "tris": 792,
+   "visible_tris": 571,
+   "verts": 392,
+   "slots": 807,
+   "max_influences": 4,
+   "mean_influences": 3.06,
+   "material": "m1_tee"
+  },
+  "male_v1_jacket": {
+   "tris": 1724,
+   "visible_tris": 1724,
+   "verts": 860,
+   "slots": 1557,
+   "max_influences": 4,
+   "mean_influences": 2.67,
+   "material": "m1_jacket"
+  },
+  "male_v1_jeans": {
+   "tris": 1216,
+   "visible_tris": 1216,
+   "verts": 606,
+   "slots": 986,
+   "max_influences": 4,
+   "mean_influences": 1.74,
+   "material": "m1_jeans"
+  },
+  "male_v1_belt": {
+   "tris": 84,
+   "visible_tris": 84,
+   "verts": 42,
+   "slots": 104,
+   "max_influences": 4,
+   "mean_influences": 3.43,
+   "material": "m1_belt"
+  },
+  "male_v1_boots": {
+   "tris": 1040,
+   "visible_tris": 1040,
+   "verts": 524,
+   "slots": 934,
+   "max_influences": 2,
+   "mean_influences": 1.7,
+   "material": "m1_boots"
+  },
+  "total": {
+   "tris": 9606,
+   "verts": 4918,
+   "slots": 8667,
+   "visible_tris": 7813
+  },
+  "materials": 8
+ }
+}

@@ -39,6 +39,27 @@ public final class SkeletonRig {
     /** Degrees, Java model axes: the bone's local Z-Y-X angles. NaN where the axis is free. */
     public record Limit(float minX, float maxX, float minY, float maxY, float minZ, float maxZ) {}
 
+    /**
+     * AFL Block-Mesh V2 (docs/dev/block_mesh_v2_b_ingame.md): a rig at other proportions than vanilla's, solved by the same
+     * poser on the same action data, and what that changes. Java model px unless named otherwise.
+     * <ul>
+     * <li>{@code handCapX / handCapY}: the hand's end (its middle) off the shoulder pivot, right arm (the left mirrors x):
+     * the hand targets' arm frame (GunStance#centreX, #distalY); {@code handHalf} the hand's half width;</li>
+     * <li>{@code hipHeight}, {@code footX}, {@code ankle}: Bedrock px, the seat's standing hips, feet apart, ankle over the
+     * sole (SeatPose); {@code seatScale} a seated rider's draw size, {@code seatLegStretch} whether the seat lengthens the
+     * legs;</li>
+     * <li>{@code refHip, refThigh, refShin, refAnkle}: vanilla's right leg (Bedrock px) the locomotion clips were made for:
+     * the feet go where that leg would put them (HumanoidPoser#plantFeet);</li>
+     * <li>{@code keyWarp}: per leg / pelvis bone, a vanilla rest box and this rig's (6 + 6 floats): an action's prop key on
+     * that bone keeps its place in the part ({@link #warpKey});</li>
+     * <li>{@code legPivot}: the vanilla leg parts' frame (worn leg gear) at the rig's own hips;</li>
+     * <li>{@code mesh}, {@code texture}: the body's skinned mesh and its skin (client/skeleton/BlockMeshBody).</li>
+     * </ul>
+     */
+    public record Profile(float handCapX, float handCapY, float handHalf, float hipHeight, float footX, float ankle, float seatScale,
+                          boolean seatLegStretch, Vector3f refHip, float refThigh, float refShin, float refAnkle,
+                          Map<Integer, float[]> keyWarp, Vector3f legPivot, String mesh, String texture) {}
+
     public final String[] names;
     public final int[] parent;
     /** Java model px. */
@@ -49,6 +70,8 @@ public final class SkeletonRig {
     public final Map<String, Integer> vanillaParts;
     public final Map<String, Socket> sockets;
     public final Limit[] limits;
+    /** Null for vanilla's proportions. */
+    public final Profile profile;
     private final Map<String, Integer> index = new HashMap<>();
 
     public final int root, pelvis, chest, head, upperArmR, forearmR, handR, upperArmL, forearmL, handL,
@@ -103,6 +126,7 @@ public final class SkeletonRig {
             float[] x = range(l, "x"), y = range(l, "y"), z = range(l, "z");
             limits[bone(e.getKey())] = new Limit(x[0], x[1], y[0], y[1], z[0], z[1]);
         }
+        profile = json.has("block_mesh") ? profile(json.getAsJsonObject("block_mesh")) : null;
         root = bone("root"); pelvis = bone("pelvis"); chest = bone("chest"); head = bone("head");
         upperArmR = bone("upper_arm_r"); forearmR = bone("forearm_r"); handR = bone("hand_r");
         upperArmL = bone("upper_arm_l"); forearmL = bone("forearm_l"); handL = bone("hand_l");
@@ -110,10 +134,59 @@ public final class SkeletonRig {
         thighL = bone("thigh_l"); shinL = bone("shin_l"); footL = bone("foot_l");
     }
 
+    private Profile profile(JsonObject b) {
+        JsonArray cap = b.getAsJsonArray("hand_cap");
+        JsonObject leg = b.getAsJsonObject("reference_leg");
+        Map<Integer, float[]> warp = new HashMap<>();
+        for (var e : b.getAsJsonObject("key_warp").entrySet()) {
+            JsonObject w = e.getValue().getAsJsonObject();
+            float[] f = new float[12];
+            int i = 0;
+            for (String k : new String[]{"block", "mesh"})
+                for (JsonElement corner : w.getAsJsonArray(k)) for (JsonElement v : corner.getAsJsonArray()) f[i++] = v.getAsFloat();
+            warp.put(bone(e.getKey()), f);
+        }
+        JsonArray hip = leg.getAsJsonArray("hip"), legPivot = b.getAsJsonArray("leg_part_pivot");
+        return new Profile(cap.get(0).getAsFloat(), cap.get(1).getAsFloat(), b.get("hand_half").getAsFloat(), b.get("hip_height").getAsFloat(),
+                b.get("foot_x").getAsFloat(), b.get("ankle").getAsFloat(), b.get("seat_scale").getAsFloat(), b.get("seat_leg_stretch").getAsBoolean(),
+                new Vector3f(hip.get(0).getAsFloat(), hip.get(1).getAsFloat(), 0), leg.get("thigh").getAsFloat(), leg.get("shin").getAsFloat(),
+                leg.get("ankle").getAsFloat(), Map.copyOf(warp), java(new Vector3f(legPivot.get(0).getAsFloat(), legPivot.get(1).getAsFloat(), 0)),
+                b.get("mesh").getAsString(), b.get("texture").getAsString());
+    }
+
+    /**
+     * A prop key's rest point (Java model px) on {@code bone}: as it is, or for a {@link Profile} rig moved per axis from the
+     * bone's vanilla box to its own (the holster's draw stays at the holster on longer legs).
+     */
+    public Vector3f warpKey(int bone, Vector3f rest) {
+        float[] w = profile == null ? null : profile.keyWarp().get(bone);
+        if (w == null) return rest;
+        float[] p = {rest.x, rest.y, rest.z};
+        for (int i = 0; i < 3; i++) p[i] = w[6 + i] + (p[i] - w[i]) / (w[3 + i] - w[i]) * (w[9 + i] - w[6 + i]);
+        return rest.set(p[0], p[1], p[2]);
+    }
+
     public static SkeletonRig load(InputStream in) throws IOException {
         try (var reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             return new SkeletonRig(JsonParser.parseReader(reader).getAsJsonObject());
         }
+    }
+
+    /** AFL Block-Mesh V2, prototype B (user 2026-10-25): the poser's 16 bones at the B body's proportions. */
+    public static final String BLOCK_MESH_V2 = "assets/apocalypse_firstlight/rigs/afl_block_mesh_v2.json";
+    private static SkeletonRig blockMesh;
+
+    /** The Block-Mesh V2 rig from the classpath (the dev test, client/skeleton/BlockMeshBody). */
+    public static synchronized SkeletonRig blockMeshV2() {
+        if (blockMesh == null) {
+            try (InputStream in = SkeletonRig.class.getClassLoader().getResourceAsStream(BLOCK_MESH_V2)) {
+                if (in == null) throw new IOException("missing " + BLOCK_MESH_V2);
+                blockMesh = load(in);
+            } catch (IOException e) {
+                throw new IllegalStateException("block mesh v2 rig", e);
+            }
+        }
+        return blockMesh;
     }
 
     private static SkeletonRig loaded;

@@ -158,6 +158,7 @@
   "hud.apocalypse_firstlight.gun.swap_magazine": "长按换弹匣",
   "hud.apocalypse_firstlight.gun.insert_magazine": "装上弹匣",
   "hud.apocalypse_firstlight.gun.no_spare_magazine": "没有备用弹匣",
+  "hud.apocalypse_firstlight.gun.magazine_dropped": "没有地方放弹匣，掉在地上了",
   "hud.apocalypse_firstlight.gun_keys.fire_mode": "开火模式",
   "hud.apocalypse_firstlight.gun_keys.inspect": "检视",
   "hud.apocalypse_firstlight.gun_keys.attachments": "配件",
@@ -1664,6 +1665,7 @@
   "message.apocalypse_firstlight.lightning.aftermath_gone": "雷击后的不适消退了",
   "message.apocalypse_firstlight.sit.cannot": "这里不能坐下",
   "hint.apocalypse_firstlight.sit.stand": "按 %s 站起",
+  "hint.apocalypse_firstlight.chair.stand": "移动或按 %s 站起",
 
   "survivor.apocalypse_firstlight.cause.unknown": "死因不明",
   "survivor.apocalypse_firstlight.death.cause": "死因：%s",

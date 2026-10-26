@@ -302,6 +302,8 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> P9_01_INSPECT = pistolSound("inspect");
     public static final RegistryObject<SoundEvent> P9_01_DRAW = pistolSound("draw");
     public static final RegistryObject<SoundEvent> P9_01_PUT_AWAY = pistolSound("put_away");
+    /** The unload clips' stow cue (animations/p9_01_v3_native unload / unload_empty): NativeGunActions needs it registered. */
+    public static final RegistryObject<SoundEvent> P9_01_FOLEY_LOWER = pistolSound("foley_lower");
     public static final RegistryObject<SoundEvent> CASING_LANDING = SOUND_EVENTS.register("shell_casings_dropping",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "shell_casings_dropping")));
     public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_OUT = pistolSound("magazine_out");

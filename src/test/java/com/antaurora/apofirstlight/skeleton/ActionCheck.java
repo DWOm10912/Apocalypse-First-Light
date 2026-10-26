@@ -29,6 +29,11 @@ final class ActionCheck {
     private static final float PX = 1F / 16F;
     /** The thickest arm's half width (px): a centre line closer than this to the chest box puts skin into it. */
     private static final float ARM_HALF = 2F;
+
+    /** The arm's half thickness: vanilla's box, or the Block-Mesh V2 arm at the shoulder (1.5 px). */
+    private static float armHalf(SkeletonRig rig) {
+        return rig.profile != null ? 1.5F : ARM_HALF;
+    }
     private static final float HAND_ERR = 0.6F, WRIST_MAX = 50F, SOLE_ERR = 0.6F, COVER_MAX = 0.4F;
     /** Forearm twist (deg): the box forearm shows any twist as a rope (in-game round 1, 2026-10-16: the thermometer's 90). */
     private static final float TWIST_MAX = 30F;
@@ -270,20 +275,24 @@ final class ActionCheck {
             if (twist > TWIST_MAX) fail(sc.name() + (right ? " right" : " left") + " forearm twisted " + twist + " deg");
             if (wrist > WRIST_MAX) fail(sc.name() + (right ? " right" : " left") + " wrist bent " + wrist + " deg");
         }
-        // arm centre lines against the chest box (rest model px: x -4..4, y 0..12, z -2..2)
+        // arm centre lines against the chest box (rest model px: x -4..4, y 0..12, z -2..2; the rig's body box: Block-Mesh V2's
+        // torso is 9 px)
         Matrix4f chestInv = new Matrix4f(pose.world[rig.chest]).invert();
+        SkeletonRig.Box body = rig.skin.stream().filter(s -> s.part().equals("body")).findFirst().orElseThrow().classic();
         float worst = Float.MAX_VALUE;
         String where = "";
         for (int k = 0; k < 2; k++) {
             boolean right = k == 0;
             int upper = right ? rig.upperArmR : rig.upperArmL, fore = right ? rig.forearmR : rig.forearmL, hand = right ? rig.handR : rig.handL;
             float cx = rig.pivot[upper].x + GunStance.centreX(right, false);
-            // forearm and hand only: the upper arm hangs off the shoulder beside the chest by construction
-            for (float y = 6F; y <= GunStance.DISTAL_Y; y += 0.5F) {
-                int bone = y < 8F ? fore : hand;
+            // forearm and hand only: the upper arm hangs off the shoulder beside the chest by construction (from the
+            // forearm's middle: vanilla 6 px down the arm, the wrist at 8)
+            float elbow = rig.pivot[fore].y - rig.pivot[upper].y, wrist = rig.pivot[hand].y - rig.pivot[upper].y;
+            for (float y = (elbow + wrist) / 2F; y <= GunStance.distalY(); y += 0.5F) {
+                int bone = y < wrist ? fore : hand;
                 Vector3f p = pose.point(bone, new Vector3f(cx, rig.pivot[upper].y + y, 0), new Vector3f());
                 chestInv.transformPosition(p);
-                float out = outside(p, -4, 4, 0, 12, -2, 2);
+                float out = outside(p, body.x(), body.x() + body.w(), body.y(), body.y() + body.h(), body.z(), body.z() + body.d());
                 if (out < worst) {
                     worst = out;
                     where = (right ? "R " : "L ") + (bone == hand ? "hand" : "forearm");
@@ -291,7 +300,7 @@ final class ActionCheck {
             }
         }
         line.append(String.format(" | chest clearance %.1f px (%s)", worst, where));
-        if (worst < ARM_HALF) fail(sc.name() + " " + where + " " + worst + " px from the chest box (skin into the body)");
+        if (worst < armHalf(rig)) fail(sc.name() + " " + where + " " + worst + " px from the chest box (skin into the body)");
         java.util.List<Vector3f> propBox = new java.util.ArrayList<>();
         if (m.prop != null) {
             // the prop's box against the body's boxes (rest px, each in its bone's frame): chest, pelvis, legs, head
@@ -304,11 +313,7 @@ final class ActionCheck {
                         (prop.max().x - prop.min().x) * i / 6F, (prop.max().y - prop.min().y) * j / 6F, (prop.max().z - prop.min().z) * k / 6F);
                 Vector3f p = m.prop.transformPosition(prop.local(item));
                 if (i % 6 == 0 && j % 6 == 0 && k % 6 == 0) propBox.add(p);
-                Object[][] boxes = {{"chest", rig.chest, new float[]{-4, 4, 0, 12, -2, 2}}, {"pelvis", rig.pelvis, new float[]{-4, 4, 12, 14, -2, 2}},
-                        {"thigh_r", rig.thighR, new float[]{-3.9F, 0.1F, 12, 18, -2, 2}}, {"thigh_l", rig.thighL, new float[]{-0.1F, 3.9F, 12, 18, -2, 2}},
-                        {"shin_r", rig.shinR, new float[]{-3.9F, 0.1F, 18, 24, -2, 2}}, {"shin_l", rig.shinL, new float[]{-0.1F, 3.9F, 18, 24, -2, 2}},
-                        {"head", rig.head, new float[]{-4, 4, -8, 0, -4, 4}}};
-                for (Object[] b : boxes) {
+                for (Object[] b : bodyBoxes(rig)) {
                     float[] x = (float[]) b[2];
                     Vector3f q = new Matrix4f(pose.world[(int) b[1]]).invert().transformPosition(new Vector3f(p));
                     float o = outside(q, x[0], x[1], x[2], x[3], x[4], x[5]);
@@ -485,6 +490,34 @@ final class ActionCheck {
     }
 
     /** Signed distance (px) from a point to an axis box: positive outside, negative inside. */
+    /**
+     * The body's boxes for the prop check (rest model px, each in its bone's frame: x min/max, y min/max (down), z min/max).
+     * Vanilla's: as they were set by hand. Block-Mesh V2's (a rig with a profile) from its own skin boxes, cut at the bones
+     * (its legs 15 px from y 9, the hips at 6..9: vanilla's thigh box 12..18 on it was half its shin), the shin with the
+     * foot, its head 7.5 x 7.5 x 7.25 (b3_body.json: legs x 0..4, y 9..22.5).
+     */
+    private static Object[][] bodyBoxes(SkeletonRig rig) {
+        if (rig.profile == null) return new Object[][]{{"chest", rig.chest, new float[]{-4, 4, 0, 12, -2, 2}}, {"pelvis", rig.pelvis, new float[]{-4, 4, 12, 14, -2, 2}},
+                {"thigh_r", rig.thighR, new float[]{-3.9F, 0.1F, 12, 18, -2, 2}}, {"thigh_l", rig.thighL, new float[]{-0.1F, 3.9F, 12, 18, -2, 2}},
+                {"shin_r", rig.shinR, new float[]{-3.9F, 0.1F, 18, 24, -2, 2}}, {"shin_l", rig.shinL, new float[]{-0.1F, 3.9F, 18, 24, -2, 2}},
+                {"head", rig.head, new float[]{-4, 4, -8, 0, -4, 4}}};
+        java.util.List<Object[]> out = new java.util.ArrayList<>();
+        for (SkeletonRig.SkinPart part : rig.skin) {
+            if (!part.part().equals("body") && !part.part().endsWith("_leg")) continue;
+            SkeletonRig.Box box = part.classic();
+            String[] names = part.part().equals("body") ? new String[]{"chest", "pelvis"}
+                    : part.part().startsWith("right") ? new String[]{"thigh_r", "shin_r"} : new String[]{"thigh_l", "shin_l"};
+            // the first cut ends the first bone; the rest of the box (shin and foot) goes with the second
+            float cut = box.y() + part.cuts()[0];
+            // B3's straight jacket is half a px deeper than the skin box (ChairPose#TORSO_HALF_D)
+            float z = part.part().equals("body") ? com.antaurora.apofirstlight.skeleton.seat.ChairPose.TORSO_HALF_D : box.d() / 2F;
+            out.add(new Object[]{names[0], part.bones()[0], new float[]{box.x(), box.x() + box.w(), box.y(), cut, -z, z}});
+            out.add(new Object[]{names[1], part.bones()[1], new float[]{box.x(), box.x() + box.w(), cut, box.y() + box.h(), -z, z}});
+        }
+        out.add(new Object[]{"head", rig.head, new float[]{-3.75F, 3.75F, -7.5F, 0, -3.625F, 3.625F}});
+        return out.toArray(new Object[0][]);
+    }
+
     private static float outside(Vector3f p, float x0, float x1, float y0, float y1, float z0, float z1) {
         float dx = Math.max(x0 - p.x, p.x - x1), dy = Math.max(y0 - p.y, p.y - y1), dz = Math.max(z0 - p.z, p.z - z1);
         float ox = Math.max(dx, 0), oy = Math.max(dy, 0), oz = Math.max(dz, 0);

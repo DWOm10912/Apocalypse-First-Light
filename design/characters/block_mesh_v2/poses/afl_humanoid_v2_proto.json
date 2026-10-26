@@ -1,0 +1,447 @@
+{
+ "format_version": 1,
+ "about": "SCRATCH 2026-10-25: afl_humanoid_v1 at the AFL Block-Mesh V2 prototype proportions (offline checks only).",
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "pivot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "pivot": [
+    0,
+    15,
+    0
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "pelvis",
+   "pivot": [
+    0,
+    18,
+    0
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "pivot": [
+    0,
+    24,
+    0
+   ]
+  },
+  {
+   "name": "upper_arm_r",
+   "parent": "chest",
+   "pivot": [
+    -5.5,
+    22.5,
+    0
+   ]
+  },
+  {
+   "name": "forearm_r",
+   "parent": "upper_arm_r",
+   "pivot": [
+    -5.5,
+    18,
+    0
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": "forearm_r",
+   "pivot": [
+    -5.5,
+    14.5,
+    0
+   ]
+  },
+  {
+   "name": "upper_arm_l",
+   "parent": "chest",
+   "pivot": [
+    5.5,
+    22.5,
+    0
+   ]
+  },
+  {
+   "name": "forearm_l",
+   "parent": "upper_arm_l",
+   "pivot": [
+    5.5,
+    18,
+    0
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": "forearm_l",
+   "pivot": [
+    5.5,
+    14.5,
+    0
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": "pelvis",
+   "pivot": [
+    -2,
+    15,
+    0
+   ]
+  },
+  {
+   "name": "shin_r",
+   "parent": "thigh_r",
+   "pivot": [
+    -2,
+    9,
+    0
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": "shin_r",
+   "pivot": [
+    -2,
+    1.5,
+    0
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": "pelvis",
+   "pivot": [
+    2,
+    15,
+    0
+   ]
+  },
+  {
+   "name": "shin_l",
+   "parent": "thigh_l",
+   "pivot": [
+    2,
+    9,
+    0
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": "shin_l",
+   "pivot": [
+    2,
+    1.5,
+    0
+   ]
+  }
+ ],
+ "skin": [
+  {
+   "part": "body",
+   "overlay": "jacket",
+   "bones": [
+    "chest",
+    "pelvis"
+   ],
+   "cuts": [
+    6
+   ],
+   "from": [
+    -4,
+    15,
+    -2
+   ],
+   "size": [
+    8,
+    9,
+    4
+   ],
+   "uv": [
+    16,
+    16
+   ],
+   "overlay_uv": [
+    16,
+    32
+   ]
+  },
+  {
+   "part": "right_arm",
+   "overlay": "right_sleeve",
+   "bones": [
+    "upper_arm_r",
+    "forearm_r",
+    "hand_r"
+   ],
+   "cuts": [
+    6,
+    10
+   ],
+   "from": [
+    -8,
+    12,
+    -2
+   ],
+   "size": [
+    4,
+    12,
+    4
+   ],
+   "uv": [
+    40,
+    16
+   ],
+   "overlay_uv": [
+    40,
+    32
+   ]
+  },
+  {
+   "part": "left_arm",
+   "overlay": "left_sleeve",
+   "bones": [
+    "upper_arm_l",
+    "forearm_l",
+    "hand_l"
+   ],
+   "cuts": [
+    6,
+    10
+   ],
+   "from": [
+    4,
+    12,
+    -2
+   ],
+   "size": [
+    4,
+    12,
+    4
+   ],
+   "uv": [
+    32,
+    48
+   ],
+   "overlay_uv": [
+    48,
+    48
+   ]
+  },
+  {
+   "part": "right_leg",
+   "overlay": "right_pants",
+   "bones": [
+    "thigh_r",
+    "shin_r",
+    "foot_r"
+   ],
+   "cuts": [
+    6,
+    14
+   ],
+   "from": [
+    -4,
+    0,
+    -2
+   ],
+   "size": [
+    4,
+    15,
+    4
+   ],
+   "uv": [
+    0,
+    16
+   ],
+   "overlay_uv": [
+    0,
+    32
+   ]
+  },
+  {
+   "part": "left_leg",
+   "overlay": "left_pants",
+   "bones": [
+    "thigh_l",
+    "shin_l",
+    "foot_l"
+   ],
+   "cuts": [
+    6,
+    14
+   ],
+   "from": [
+    0,
+    0,
+    -2
+   ],
+   "size": [
+    4,
+    15,
+    4
+   ],
+   "uv": [
+    16,
+    48
+   ],
+   "overlay_uv": [
+    0,
+    48
+   ]
+  }
+ ],
+ "overlay_inflate": 0.25,
+ "vanilla_parts": {
+  "head": "head",
+  "body": "chest",
+  "right_arm": "upper_arm_r",
+  "left_arm": "upper_arm_l",
+  "right_leg": "thigh_r",
+  "left_leg": "thigh_l"
+ },
+ "sockets": {
+  "eye": {
+   "bone": "head",
+   "pos": [
+    0,
+    27.63,
+    -2.5
+   ]
+  },
+  "armpit_l": {
+   "bone": "chest",
+   "pos": [
+    3.0,
+    19.5,
+    -4.8
+   ]
+  },
+  "armpit_r": {
+   "bone": "chest",
+   "pos": [
+    -3.0,
+    19.5,
+    -4.8
+   ]
+  },
+  "holster": {
+   "bone": "thigh_r",
+   "pos": [
+    -5.15,
+    12.4,
+    0
+   ],
+   "about": "the pistol holster's mouth, centre of its opening on the outside of the right thigh (tools/build-equipment-meshes-v1.mjs HOLSTER, leg frame (3.25, -2.6, 0))"
+  }
+ },
+ "limits_deg": {
+  "forearm_r": {
+   "x": [
+    -145,
+    0
+   ],
+   "y": [
+    -90,
+    90
+   ]
+  },
+  "forearm_l": {
+   "x": [
+    -145,
+    0
+   ],
+   "y": [
+    -90,
+    90
+   ]
+  },
+  "hand_r": {
+   "x": [
+    -60,
+    60
+   ],
+   "y": [
+    -30,
+    30
+   ],
+   "z": [
+    -30,
+    30
+   ]
+  },
+  "hand_l": {
+   "x": [
+    -60,
+    60
+   ],
+   "y": [
+    -30,
+    30
+   ],
+   "z": [
+    -30,
+    30
+   ]
+  },
+  "chest": {
+   "x": [
+    -25,
+    30
+   ],
+   "y": [
+    -45,
+    45
+   ],
+   "z": [
+    -15,
+    15
+   ]
+  },
+  "head": {
+   "x": [
+    -70,
+    60
+   ],
+   "y": [
+    -70,
+    70
+   ]
+  },
+  "shin_r": {
+   "x": [
+    0,
+    150
+   ]
+  },
+  "shin_l": {
+   "x": [
+    0,
+    150
+   ]
+  },
+  "foot_r": {
+   "x": [
+    -30,
+    45
+   ]
+  },
+  "foot_l": {
+   "x": [
+    -30,
+    45
+   ]
+  }
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "A": {
+  "proto": "A",
+  "bones": 22,
+  "vertices": 504,
+  "triangles": 252,
+  "atlas": 128,
+  "tubes": 8
+ },
+ "B": {
+  "proto": "B",
+  "bones": 22,
+  "vertices": 568,
+  "triangles": 284,
+  "atlas": 128,
+  "tubes": 8
+ },
+ "C": {
+  "proto": "C",
+  "bones": 22,
+  "vertices": 600,
+  "triangles": 300,
+  "atlas": 128,
+  "tubes": 8
+ },
+ "D": {
+  "proto": "D",
+  "bones": 52,
+  "vertices": 1128,
+  "triangles": 564,
+  "atlas": 128,
+  "tubes": 18
+ }
+}

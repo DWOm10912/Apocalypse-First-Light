@@ -185,7 +185,7 @@ public final class PlayerHealth {
 
     /** Whether the player rests: asleep, or sitting on something it does not drive (not a ridden animal). */
     static boolean resting(ServerPlayer player) {
-        if (player.isSleeping()) return true;
+        if (player.isSleeping() || com.antaurora.apofirstlight.cabin.ChairSit.sitting(player)) return true;
         Entity vehicle = player.getVehicle();
         return vehicle != null && !(vehicle instanceof LivingEntity) && vehicle.getControllingPassenger() != player;
     }

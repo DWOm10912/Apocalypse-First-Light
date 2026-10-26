@@ -435,7 +435,7 @@ public final class ActionPose {
             String name = key.frame().startsWith("bone:") ? key.frame().substring(5) : key.frame();   // chest, root, bone:<name>
             int bone = pose.rig.find(mirror ? otherSide(name) : name);
             if (bone < 0 || arm(pose.rig, bone)) return null;
-            at = pose.point(bone, rest, new Vector3f());
+            at = pose.point(bone, pose.rig.warpKey(bone, rest), new Vector3f());
             r = pose.rotation(bone, new Quaternionf()).mul(turn);
         }
         return new Matrix4f().translation(at).rotate(r).translate(-local.x, -local.y, -local.z);
@@ -534,7 +534,7 @@ public final class ActionPose {
         Quaternionf r = new Quaternionf(forearm);
         if (roll != 0) r.rotateY((float) Math.toRadians(roll));
         Vector3f cap = r.transform(new Vector3f(0, 1, 0)).mul(GunStance.PALM_Y).add(grip);
-        return new Matrix4f().translation(cap).rotate(r).translate(-GunStance.centreX(right, slim), -GunStance.DISTAL_Y, 0);
+        return new Matrix4f().translation(cap).rotate(r).translate(-GunStance.centreX(right, slim), -GunStance.distalY(), 0);
     }
 
     /**
@@ -556,14 +556,14 @@ public final class ActionPose {
         Quaternionf r = new Quaternionf().rotationTo(new Vector3f(0, 1, 0), d);
         if (roll != 0) r.premul(new Quaternionf().rotationAxis((float) Math.toRadians(roll), d.x, d.y, d.z));
         Vector3f cap = new Vector3f(d).mul(GunStance.PALM_Y).add(grip);
-        return new Matrix4f().translation(cap).rotate(r).translate(-GunStance.centreX(right, slim), -GunStance.DISTAL_Y, 0);
+        return new Matrix4f().translation(cap).rotate(r).translate(-GunStance.centreX(right, slim), -GunStance.distalY(), 0);
     }
 
     /** Between two IK targets: the palm's place straight, the hand's turn the short way, both by {@code t}. */
     public static Matrix4f blend(Matrix4f a, Matrix4f b, float t, boolean right, boolean slim) {
         if (t <= 0) return new Matrix4f(a);
         if (t >= 1) return new Matrix4f(b);
-        Vector3f palm = new Vector3f(GunStance.centreX(right, slim), GunStance.DISTAL_Y - GunStance.PALM_Y, 0);
+        Vector3f palm = new Vector3f(GunStance.centreX(right, slim), GunStance.distalY() - GunStance.PALM_Y, 0);
         Vector3f pa = a.transformPosition(new Vector3f(palm)), pb = b.transformPosition(new Vector3f(palm));
         Quaternionf qa = a.getUnnormalizedRotation(new Quaternionf()), qb = b.getUnnormalizedRotation(new Quaternionf());
         if (qa.dot(qb) < 0) qb.set(-qb.x, -qb.y, -qb.z, -qb.w);

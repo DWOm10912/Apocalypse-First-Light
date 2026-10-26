@@ -15,6 +15,8 @@
 - V1 由 AFL 自己实现，不改 Vextris 公共 API；
 - 第一人称身体分支（`feature/first-person-body`）暂不合并。
 
+**2026-10-24 用户决定：** AFL 完整人物将采用原创 Mesh 外观与服装系统，Steve / Alex 不再作为主要人体美术标准。本文的原版皮肤方案（第 2 节）只管现在的骨骼玩家；完整人物换成 Mesh 人体时被取代，见 [mesh_survivor_base_body_h1p1.md](mesh_survivor_base_body_h1p1.md)。
+
 **取代**：
 - [player_animation_rework_plan_v1.md](player_animation_rework_plan_v1.md) 的 A–D 方案（PlayerAnimator、GeckoLib 替换、Epic Fight、YSM）。
 - 2026-10-15 早些时候人物系统审计里"第一人称保留独立视图模型"那条建议。用户改成了一个身体。

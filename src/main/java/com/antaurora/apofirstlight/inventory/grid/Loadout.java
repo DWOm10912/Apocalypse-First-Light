@@ -212,7 +212,8 @@ public final class Loadout implements INBTSerializable<CompoundTag> {
     }
 
     /**
-     * Server: a stack into the hand, held from now on (a magazine taken out of the gun, weapon/NativeMagazines#eject).
+     * Server: a stack into the hand, held from now on (written for the unload's magazine; since 2026-10-24 that is stowed
+     * instead, weapon/NativeMagazines#stow, and this has no caller).
      * The selected position is left as when switching away (a weapon position keeps its weapon), the hand's stack put
      * back. Creative / Spectator: the first empty hotbar slot, selected. False when there is no room (nothing changed
      * but what leaving put away; the caller puts the stack elsewhere).

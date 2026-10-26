@@ -167,7 +167,7 @@ public final class MagazineSystemGameTests {
     }
 
     @GameTest(template = "network_empty")
-    public static void ejectToHand(GameTestHelper h) {
+    public static void unloadStows(GameTestHelper h) {
         var d = NativeGunDefinition.P9_01;
         var player = survivor(h, "mag_eject");
         var standard = AflItems.P9_01_MAGAZINE.get();
@@ -180,12 +180,13 @@ public final class MagazineSystemGameTests {
         put(player, PlayerGrids.Target.RIG, magazine(standard, 0));
         h.assertTrue(!NativeMagazines.canReload(player, d) && NativeMagazines.ejectable(gun, d),
                 "an empty spare is no reload; a tap takes the magazine out");
-        h.assertTrue(NativeMagazines.eject(player, gun, d), "eject");
-        int hand = com.antaurora.apofirstlight.inventory.HotbarRoles.HAND_SLOT;
-        h.assertTrue(inventory.selected == hand && inventory.getItem(hand).is(standard) && NativeMagazines.rounds(inventory.getItem(hand)) == 0,
-                "the magazine is held, in the hand");
-        h.assertTrue(inventory.getItem(com.antaurora.apofirstlight.inventory.HotbarRoles.PISTOL_SLOT) == gun
-                && NativeMagazines.fitted(gun, d).isEmpty() && NativeGunAmmo.read(gun, d) == 1, "the gun stays holstered, the chambered round in it");
+        // user 2026-10-24: stowed (rig, pockets, backpack, else the ground), the gun stays in the hand
+        h.assertTrue(NativeMagazines.stow(player, gun, d) == NativeMagazines.Stowed.STOWED, "stowed");
+        var rig = PlayerGrids.view(player).get(PlayerGrids.Target.RIG);
+        h.assertTrue(rig != null && rig.entries().stream().filter(e -> e.stack().is(standard)).count() == 2, "the magazine is in the rig with the spare");
+        h.assertTrue(inventory.selected == com.antaurora.apofirstlight.inventory.HotbarRoles.PISTOL_SLOT
+                && inventory.getItem(com.antaurora.apofirstlight.inventory.HotbarRoles.PISTOL_SLOT) == gun
+                && NativeMagazines.fitted(gun, d).isEmpty() && NativeGunAmmo.read(gun, d) == 1, "the gun stays in the hand, the chambered round in it");
         h.assertTrue(!NativeMagazines.ejectable(gun, d), "nothing left to take out");
         // a loaded spare: a tap with none fitted puts it in; a tap takes even a full fitted magazine out (user 2026-10-22)
         put(player, PlayerGrids.Target.RIG, magazine(standard, 9));

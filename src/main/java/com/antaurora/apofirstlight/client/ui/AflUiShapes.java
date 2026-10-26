@@ -52,7 +52,8 @@ public final class AflUiShapes {
 
     /**
      * A rounded box at GUI coordinates. Alphas of 0 skip a layer. fadeTo &gt; 0 fades every layer in from the left edge
-     * (alpha 0) to full at that fraction of the width (the key hint panel's open left side).
+     * (alpha 0) to full at that fraction of the width (the key hint panel's open left side); fadeTo &lt; 0 the same from
+     * the right edge (the panel mirrored to the left, AflKeyHintPanel#onLeft).
      */
     public static void box(GuiGraphics g, float x, float y, float w, float h, float radius,
                            int fillRgb, float fillAlpha, int lineRgb, float lineAlpha, float shadowAlpha, float fadeTo) {
@@ -95,7 +96,7 @@ public final class AflUiShapes {
         int k = tile.k, c = tile.c, t = tile.t;
         float texW = 3f * t, texH = t, u0 = layer * t;
         // columns: screen x and texture u; the middle column (one stretched texel) is split at the fade's knee
-        int knee = fadeTo > 0 ? x0 + Math.round(fadeTo * w) : Integer.MIN_VALUE;
+        int knee = fadeTo > 0 ? x0 + Math.round(fadeTo * w) : fadeTo < 0 ? x0 + w - Math.round(-fadeTo * w) : Integer.MIN_VALUE;
         int[] xs;
         if (knee > x0 + k && knee < x0 + w - k) xs = new int[]{x0 - tile.m, x0 + k, knee, x0 + w - k, x0 + w + tile.m};
         else xs = new int[]{x0 - tile.m, x0 + k, x0 + w - k, x0 + w + tile.m};
@@ -119,7 +120,8 @@ public final class AflUiShapes {
     }
 
     private static float fade(int x, int x0, int w, float fadeTo) {
-        return fadeTo <= 0 ? 1 : AflUiTween.clamp01((x - x0) / (fadeTo * w));
+        if (fadeTo < 0) return AflUiTween.clamp01((x0 + w - x) / (-fadeTo * w));
+        return fadeTo == 0 ? 1 : AflUiTween.clamp01((x - x0) / (fadeTo * w));
     }
 
     private static Tile tile(int scale, int radius, int line, int spread) {

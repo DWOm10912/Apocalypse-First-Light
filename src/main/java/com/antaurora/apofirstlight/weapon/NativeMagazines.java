@@ -24,8 +24,9 @@ import net.minecraftforge.registries.ForgeRegistries;
  * backpack, the hotbar or the main inventory), at the reload's magazine-in moment. The magazine that comes out keeps its
  * rounds and goes where the new one was (the same item), else by the pickup order, else on the ground. Creative plays by
  * the same rules (2026-10-20: it used to fill the fitted magazine, so no magazine ever came out).</li>
- * <li>With no fuller magazine to swap in, the reload key takes the fitted magazine out into the hand ({@link #eject}),
- * to be loaded there (NativeMagazineLoading); the chambered round stays in the gun. Not while a fuller one is in the
+ * <li>A tap of the reload key takes the fitted magazine out and stows it in the rig, the pockets or the backpack, else
+ * drops it ({@link #stow}; user 2026-10-24, the gun stays in the hand), to be loaded later (NativeMagazineLoading); the
+ * chambered round stays in the gun. With none fitted, the tap puts one in. Not while a fuller one is in the
  * backpack ({@link #inBackpack}): the key then only says so (user 2026-10-20, two layers: quick actions take from the rig
  * and the pockets, the backpack only through the inventory screen).</li>
  * </ul>
@@ -229,24 +230,39 @@ public final class NativeMagazines {
         return best(PlayerGrids.view(player), definition) != null;
     }
 
-    /** A tap of the reload key takes the fitted magazine out into the hand (user 2026-10-22): one is fitted, full or not. */
+    /** A tap of the reload key takes the fitted magazine out (user 2026-10-22; stowed, {@link #stow}): one is fitted, full or not. */
     public static boolean ejectable(ItemStack gun, NativeGunDefinition definition) {
         return !fitted(gun, definition).isEmpty();
     }
 
+    /** Where an unloaded magazine is stowed (user 2026-10-24): the rig, the pockets, the backpack, else the ground. */
+    private static final PlayerGrids.Target[] STOWED = {PlayerGrids.Target.RIG, PlayerGrids.Target.POCKETS, PlayerGrids.Target.BACKPACK};
+
+    public enum Stowed { NONE, STOWED, DROPPED }
+
     /**
-     * Server: the fitted magazine out of the gun into the hand (inventory/grid/Loadout#toHand: the hands box, the gun
-     * staying in its weapon position), with its rounds; the chambered round stays. Where the hand cannot be freed: by the
-     * pickup order, else on the ground. Silent: the unload clip's own cues are the sound (NativeGunActions#unload).
+     * Server: the fitted magazine out of the gun, with its rounds, stowed (user 2026-10-24: the gun stays in the hand, no
+     * switch to the magazine): into the first of the rig, the pockets and the backpack with room, else on the ground. The
+     * chambered round stays. Creative, with no grids: the vanilla inventory. Silent: the unload clip's own cues are the
+     * sound (NativeGunActions#unload).
      */
-    public static boolean eject(ServerPlayer player, ItemStack gun, NativeGunDefinition definition) {
+    public static Stowed stow(ServerPlayer player, ItemStack gun, NativeGunDefinition definition) {
         ItemStack out = takenOut(gun, definition);
-        if (out.isEmpty()) return false;
+        if (out.isEmpty()) return Stowed.NONE;
         fit(gun, definition, ItemStack.EMPTY, 0);
-        if (com.antaurora.apofirstlight.inventory.grid.Loadout.toHand(player, out)) return true;
-        player.getInventory().add(out);
-        if (!out.isEmpty()) player.drop(out, false);
-        return true;
+        if (com.antaurora.apofirstlight.inventory.PlayerStorageCapacity.unrestricted(player)) {
+            player.getInventory().add(out);
+        } else if (PlayerGrids.allowedInGrid(out)) {
+            var view = PlayerGrids.view(player);
+            for (PlayerGrids.Target target : STOWED) {
+                GridStorage storage = view.get(target);
+                if (storage != null && storage.insert(out)) break;
+            }
+            view.commit();
+        }
+        if (out.isEmpty()) return Stowed.STOWED;
+        player.drop(out, false);
+        return Stowed.DROPPED;
     }
 
     /** A magazine item loaded to capacity (the creative tab's full magazines). */

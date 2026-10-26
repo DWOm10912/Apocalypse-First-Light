@@ -29,13 +29,12 @@ public final class NativeGunActions {
     private static final Map<ServerPlayer, ItemStack> EQUIPPED = new WeakHashMap<>();
     public static final int DRY_FIRE_COOLDOWN = 6;
     /**
-     * The unload's swap (docs/native_guns/magazine_system_v1.md 3.1): this many ticks into the unload clip the magazine,
-     * caught in the support hand, becomes the held item (tools/author-p9-01-v3-native-animations.mjs UNLOAD.swap, 1.05 s;
-     * the gun is off screen by then). Cut short before it, the magazine stays in the gun.
+     * The unload's stow (docs/native_guns/magazine_system_v1.md 3.1): this many ticks into the unload clip the support hand
+     * has the magazine at the rig's pouch and it leaves the gun ({@link NativeMagazines#stow}; tools/author-p9-01-v3-native-
+     * animations.mjs UNLOAD.stow, 0.9 s). The clip goes on to the hand back on the grip. Cut short before it, the magazine
+     * stays in the gun.
      */
-    public static final int UNLOAD_SWAP_TICK = 21;
-    /** Guns just unloaded into the hand: their clip already put them away, the switch plays no put_away of its own. */
-    private static final java.util.Set<ItemStack> UNLOADED = java.util.Collections.newSetFromMap(new WeakHashMap<>());
+    public static final int UNLOAD_STOW_TICK = 18;
 
     private static final class Session {
         ItemStack stack;
@@ -54,6 +53,7 @@ public final class NativeGunActions {
         boolean lastShot;
         boolean lockHandoffPlayed;
         boolean unload;
+        boolean stowed;
         int magInTick;
         int slot;
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
@@ -158,8 +158,8 @@ public final class NativeGunActions {
         int interval = definition.fireIntervalTicks();
         if (reload) {
             // a gun that loads from magazine items (user 2026-10-22, docs/native_guns/magazine_system_v1.md 3): a tap takes
-            // the fitted magazine out into the hand, to be loaded there; held, or a tap with none fitted, puts in the
-            // fullest loaded one from the rig or the pockets (NativeMagazines)
+            // the fitted magazine out and stows it (user 2026-10-24); held, or a tap with none fitted, puts in the fullest
+            // loaded one from the rig or the pockets (NativeMagazines)
             if (NativeMagazines.system(definition)) {
                 boolean tap = shotId == RELOAD_TAP;
                 if (tap && NativeMagazines.ejectable(held, definition)) {
@@ -270,7 +270,7 @@ public final class NativeGunActions {
                 interrupted.item.stopTriggeredAnim(player, interrupted.id, NativeGunItem.ACTION_CONTROLLER, interrupted.clip);
             }
             if (old != null && old.getItem() instanceof NativeGunItem outgoing
-                    && outgoing.animationAsset() != null && !UNLOADED.remove(old)) {
+                    && outgoing.animationAsset() != null) {
                 // Vanilla may stop rendering the old stack before the complete clip is visible.
                 long id = GeoItem.getOrAssignId(old, player.serverLevel());
                 outgoing.triggerAnim(player, id, NativeGunItem.ACTION_CONTROLLER, "put_away");
@@ -335,14 +335,14 @@ public final class NativeGunActions {
                 state.rackPlayed = true;
             }
         }
+        if (state.unload && !state.stowed && now >= state.start + UNLOAD_STOW_TICK) {
+            // the hand is at the rig's pouch: the magazine leaves the gun for the grids, else the ground
+            stowUnloaded(player, state.stack, state.item.definition());
+            syncInventory(player);
+            state.stowed = true;
+        }
         if (now >= state.end) {
             SESSIONS.remove(player);
-            if (state.unload) {
-                // the swap: the magazine leaves the gun for the hand (the gun to its weapon position, Loadout#toHand)
-                NativeMagazines.eject(player, state.stack, state.item.definition());
-                if (player.getMainHandItem() != state.stack) UNLOADED.add(state.stack);
-                return;
-            }
             if (state.reload) NativeMagazines.endSwap(state.stack);
             // completed only: a first draw or an empty reload cut short leaves the slide where it was, unchambered
             if (state.clip.equals(FIRST_DRAW) || state.reload && state.reloadStartedEmpty
@@ -355,15 +355,16 @@ public final class NativeGunActions {
     }
 
     /**
-     * The reload key with no fuller magazine (docs/native_guns/magazine_system_v1.md 3.1): the gun's unload clip (unload_empty
-     * with the slide locked back), its own sounds, the magazine into the hand at {@link #UNLOAD_SWAP_TICK}. A gun without the
-     * clip hands it over at once, with its magazine-out sound.
+     * A tap of the reload key with a magazine fitted (docs/native_guns/magazine_system_v1.md 3.1): the gun's unload clip
+     * (unload_empty with the slide locked back), its own sounds, the magazine stowed at {@link #UNLOAD_STOW_TICK} and the
+     * gun back at the ready at the clip's end. A gun without the clip stows it at once, with its magazine-out sound.
      */
     private static void unload(ServerPlayer player, ItemStack held, NativeGunItem item, int slot) {
         NativeGunDefinition definition = item.definition();
         String clip = NativeGunAmmo.read(held, definition) == 0 ? "unload_empty" : "unload";
         if (item.animationAsset() == null || !item.supportsClip(clip) || !NativeGunAnimations.hasClip(item.animationAsset(), clip)) {
-            if (!NativeMagazines.eject(player, held, definition)) return;
+            if (!stowUnloaded(player, held, definition)) return;
+            syncInventory(player);
             var out = net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(new net.minecraft.resources.ResourceLocation(
                     ApocalypseFirstLight.MOD_ID, definition.id().getPath() + "_magazine_out"));
             if (out != null) sound(player, out);
@@ -374,13 +375,21 @@ public final class NativeGunActions {
         state.stack = held; state.item = item;
         state.id = GeoItem.getOrAssignId(held, player.serverLevel());
         state.start = player.server.getTickCount();
-        state.end = state.start + UNLOAD_SWAP_TICK;
+        state.end = state.start + NativeGunAnimations.ticks(item.animationAsset(), clip);
         state.clip = clip;
         state.operation = true; state.unload = true; state.slot = slot;
         state.dimension = player.level().dimension();
         state.cues.addAll(magazineCues(NativeGunAnimations.cues(item.animationAsset(), clip), held, item, clip));
         SESSIONS.put(player, state); syncInventory(player);
         item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, clip);
+    }
+
+    /** The unload's stow (NativeMagazines#stow); with no room it says the magazine went on the ground. Whether one came out. */
+    private static boolean stowUnloaded(ServerPlayer player, ItemStack gun, NativeGunDefinition definition) {
+        var where = NativeMagazines.stow(player, gun, definition);
+        if (where == NativeMagazines.Stowed.DROPPED)
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("hud.apocalypse_firstlight.gun.magazine_dropped"), true);
+        return where != NativeMagazines.Stowed.NONE;
     }
 
     /** The reload's magazine-in: a magazine swap (NativeMagazines) or loose rounds; whether anything went in. */

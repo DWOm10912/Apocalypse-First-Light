@@ -80,19 +80,20 @@ function table(mask, axis) {
 }
 
 // =============================================================================================== chair
-// The sitter looks north (-z); the back posts at the south. Seat 0.43..0.465, 42 x 42 cm; 4 cm legs, the back legs on up
-// as posts to 0.98, two ladder slats and a top rail; stretchers low between the legs.
+// The sitter looks north (-z); the back posts at the south. Seat 0.43..0.465, 58 x 45 cm (user 2026-10-25: sized to the
+// Block-Mesh body, whose 47 cm hips hid the old 42 cm seat); 4 cm legs, the back legs on up as posts to 0.98, two ladder
+// slats and a top rail; stretchers low between the legs. The front edge stays 21 cm ahead of the block's middle.
 export const SEAT_Y = 0.465;
 function chair() {
-  const fx = [0.31, 0.65], lz = [[0.32, 0.36], [0.66, 0.70]], B = [];
-  B.push([{u: TRIM, d: TRIM, all: TRIM}, [0.29, 0.43, 0.30], [0.71, SEAT_Y, 0.72]]);
+  const fx = [0.23, 0.73], lz = [[0.31, 0.35], [0.69, 0.73]], B = [];
+  B.push([{u: TRIM, d: TRIM, all: TRIM}, [0.21, 0.43, 0.29], [0.79, SEAT_Y, 0.74]]);
   for (const x of fx) {
     B.push([TRIM_V, [x, 0, lz[0][0]], [x + 0.04, 0.43, lz[0][1]]]);   // front legs
     B.push([TRIM_V, [x, 0, lz[1][0]], [x + 0.04, 0.98, lz[1][1]]]);   // back legs and posts
     B.push([TRIM, [x + 0.01, 0.14, lz[0][1]], [x + 0.03, 0.16, lz[1][0]]]);   // side stretchers
   }
-  B.push([TRIM, [0.35, 0.2, 0.33], [0.65, 0.22, 0.35]], [TRIM, [0.35, 0.2, 0.67], [0.65, 0.22, 0.69]]);
-  for (const [y0, y1, t] of [[0.6, 0.67, 0.02], [0.74, 0.81, 0.02], [0.88, 0.96, 0.028]]) B.push([TRIM, [0.35, y0, 0.682 - t / 2], [0.65, y1, 0.682 + t / 2]]);
+  B.push([TRIM, [0.27, 0.2, 0.32], [0.73, 0.22, 0.34]], [TRIM, [0.27, 0.2, 0.70], [0.73, 0.22, 0.72]]);
+  for (const [y0, y1, t] of [[0.6, 0.67, 0.02], [0.74, 0.81, 0.02], [0.88, 0.96, 0.028]]) B.push([TRIM, [0.27, y0, 0.712 - t / 2], [0.73, y1, 0.712 + t / 2]]);
   return solid(new Piece('furniture/chair'), B);
 }
 

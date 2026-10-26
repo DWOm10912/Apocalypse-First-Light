@@ -1,0 +1,213 @@
+{
+ "_doc": "P9-01 two-hand grip, H1-P1. V1 hand-posed 2026-10-23 (USMC Pistol Marksmanship thumbs-forward, MWII X12 / 50 GS idle), backup grip_pose_h1p1_v1.json. Round 3 (2026-10-24, real bare-hand photo comparison): only the support hand changed - its palm closed onto the left panel and the firing fingertips, heel in behind the grip, knuckles over the firing fingertips, thumb along the frame under the firing thumb, fingers together over the firing fingers; the firing hand is V1. root = 4x4 hand bone frame (H1-P0 hand space, mm) -> P9-01 geo px (1 px = 19 mm, +x gun right, +y muzzle, +z up), includes Scale(1/19). Left hand: a right hand posed on the gun mirrored in x; real left = S4 @ root @ S4 with S4 = diag(-1,1,1,1), eulers (x, -y, -z). Eulers: degrees, XYZ, per H1-P0 bone. See docs/dev/mesh_survivor_base_body_h1p1.md.",
+ "firing_right": {
+  "root": [
+   [
+    -0.011356,
+    0.013172,
+    -0.049675,
+    0.654032
+   ],
+   [
+    0.009947,
+    0.050475,
+    0.01111,
+    -6.686718
+   ],
+   [
+    0.05042,
+    -0.006991,
+    -0.013381,
+    2.74498
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "e": {
+   "index_01": [
+    7.19,
+    0.0,
+    -6.0
+   ],
+   "index_02": [
+    8.99,
+    0.0,
+    0.0
+   ],
+   "index_03": [
+    5.39,
+    0.0,
+    0.0
+   ],
+   "middle_01": [
+    53.98,
+    0.0,
+    0.0
+   ],
+   "middle_02": [
+    76.47,
+    0.0,
+    0.0
+   ],
+   "middle_03": [
+    35.98,
+    0.0,
+    0.0
+   ],
+   "ring_01": [
+    56.42,
+    0.0,
+    -5.0
+   ],
+   "ring_02": [
+    76.12,
+    0.0,
+    0.0
+   ],
+   "ring_03": [
+    35.82,
+    0.0,
+    0.0
+   ],
+   "pinky_01": [
+    46.24,
+    0.0,
+    -10.0
+   ],
+   "pinky_02": [
+    56.04,
+    0.0,
+    0.0
+   ],
+   "pinky_03": [
+    26.62,
+    0.0,
+    0.0
+   ],
+   "thumb_01": [
+    8.0,
+    -34.0,
+    -30.0
+   ],
+   "thumb_02": [
+    18.0,
+    0.0,
+    0.0
+   ],
+   "thumb_03": [
+    13.0,
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "support_left_mirrored": {
+  "root": [
+   [
+    0.004221,
+    0.000968,
+    -0.052453,
+    2.090832
+   ],
+   [
+    0.026572,
+    0.045334,
+    0.002975,
+    -5.539412
+   ],
+   [
+    0.045235,
+    -0.02672,
+    0.003148,
+    2.980602
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "e": {
+   "index_01": [
+    39.8,
+    0.0,
+    0.0
+   ],
+   "index_02": [
+    60.9,
+    0.0,
+    0.0
+   ],
+   "index_03": [
+    29.45,
+    0.0,
+    0.0
+   ],
+   "middle_01": [
+    55.19,
+    0.0,
+    5.25
+   ],
+   "middle_02": [
+    57.08,
+    0.0,
+    0.0
+   ],
+   "middle_03": [
+    15.17,
+    0.0,
+    0.0
+   ],
+   "pinky_01": [
+    53.0,
+    0.0,
+    -8.25
+   ],
+   "pinky_02": [
+    43.51,
+    0.0,
+    0.0
+   ],
+   "pinky_03": [
+    37.79,
+    0.0,
+    0.0
+   ],
+   "ring_01": [
+    52.55,
+    0.0,
+    -4.0
+   ],
+   "ring_02": [
+    52.18,
+    0.0,
+    0.0
+   ],
+   "ring_03": [
+    29.44,
+    0.0,
+    0.0
+   ],
+   "thumb_01": [
+    -2.75,
+    -9.0,
+    6.5
+   ],
+   "thumb_02": [
+    -1.75,
+    0.0,
+    0.0
+   ],
+   "thumb_03": [
+    -6.0,
+    0.0,
+    0.0
+   ]
+  }
+ }
+}

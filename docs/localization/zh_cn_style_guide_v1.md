@@ -627,6 +627,71 @@ AFL 照这个规律写：
 | S5 | Marais | 马雷州 | MR | 湿地海岸 |
 | S6 | Altamesa | 阿尔塔梅萨州 | AT | 干旱高原 |
 
+### 5.11 植物（B 植被 P2b，2026-10-24 补入）
+
+中文用正式名（《中国植物志》/ Flora of China 名，没有中文正式名的按地名音译加属名），不用俗名或好听的名字（2.11 节）。英文名用北美通用名，学名供核对，不进游戏文本。
+
+| 英文 | 中文 | 学名 | 注册 ID |
+|---|---|---|---|
+| Kentucky Bluegrass | 草地早熟禾 | *Poa pratensis* | `kentucky_bluegrass` |
+| Broadleaf Cattail | 宽叶香蒲 | *Typha latifolia* | `broadleaf_cattail` |
+| Common Yarrow | 蓍 | *Achillea millefolium* | `common_yarrow` |
+| Big Bluestem | 大须芒草 | *Andropogon gerardii* | `big_bluestem` |
+| Little Bluestem | 小须芒草 | *Schizachyrium scoparium* | `little_bluestem` |
+| Pennsylvania Sedge | 宾州薹草 | *Carex pensylvanica* | `pennsylvania_sedge` |
+| Bracken Fern | 蕨 | *Pteridium aquilinum* | `bracken_fern` |
+| Broadleaf Plantain | 大车前 | *Plantago major* | `broadleaf_plantain` |
+| Common Dandelion | 药用蒲公英 | *Taraxacum officinale* | `dandelion` |
+| Purple Coneflower | 紫松果菊 | *Echinacea purpurea* | `purple_coneflower` |
+| Black-eyed Susan | 黑心金光菊 | *Rudbeckia hirta* | `black_eyed_susan` |
+| Canada Goldenrod | 加拿大一枝黄花 | *Solidago canadensis* | `canada_goldenrod` |
+| Common Reed | 芦苇 | *Phragmites australis* | `common_reed` |
+| Allegheny Blackberry | 阿勒格尼黑莓 | *Rubus allegheniensis* | `allegheny_blackberry` |
+
+- 「蕨」指蕨属（*Pteridium*，欧洲蕨属）的这一种：北美东部的是 var. *latiusculum*，《中国植物志》就叫「蕨」。不要用来泛指所有蕨类；以后加别的蕨类植物，用各自的正式名（如「欧洲鳞毛蕨」）。
+- 「蓍」是正式名，不写「千叶蓍」「欧蓍草」。
+- 阿勒格尼黑莓没有中文正式名，地名 Allegheny 按通行译法写「阿勒格尼」。
+
+**植被 P4（B，用户 2026-10-24 批准；Main 2026-10-24 收入）**：注册 ID 由 B 实装时补进本表。
+
+| 英文 | 中文 | 学名 | 注册 ID |
+|---|---|---|---|
+| Switchgrass | 柳枝稷 | *Panicum virgatum* | `switchgrass` |
+| Smooth Cordgrass | 互花米草 | *Spartina alterniflora* | `smooth_cordgrass` |
+| Christmas Fern | 圣诞耳蕨 | *Polystichum acrostichoides* | `christmas_fern` |
+| Cinnamon Fern | 桂皮紫萁 | *Osmundastrum cinnamomeum* | `cinnamon_fern` |
+| Common Mullein | 毛蕊花 | *Verbascum thapsus* | `common_mullein` |
+| Wild Mint | 野薄荷 | *Mentha arvensis* | `wild_mint` |
+| Common Milkweed | 叙利亚马利筋 | *Asclepias syriaca* | `common_milkweed` |
+| Lowbush Blueberry | 狭叶越桔 | *Vaccinium angustifolium* | `lowbush_blueberry` |
+| American Elderberry | 加拿大接骨木 | *Sambucus canadensis* | `american_elderberry` |
+| Big Sagebrush | 三齿蒿 | *Artemisia tridentata* | `big_sagebrush` |
+| Poison Ivy | 毒葛 | *Toxicodendron radicans* | `poison_ivy` |
+| American Beachgrass | 美洲海滨草 | *Ammophila breviligulata* | `american_beachgrass` |
+| Fragrant Water Lily | 香睡莲 | *Nymphaea odorata* | （B 补） |
+| Wild Celery | 美洲苦草 | *Vallisneria americana* | （B 补） |
+| Eelgrass | 大叶藻 | *Zostera marina* | （B 补） |
+| Prickly Russian Thistle | 刺沙蓬 | *Salsola tragus* | （B 补） |
+| American Morel | 美洲羊肚菌 | *Morchella americana* | （B 补） |
+| False Morel | 鹿花菌 | *Gyromitra esculenta* | （B 补） |
+| Cinnabar Chanterelle | 朱红鸡油菌 | *Cantharellus cinnabarinus* | （B 补） |
+| Jack-o'-lantern Mushroom | 美洲类脐菇 | *Omphalotus illudens* | （B 补） |
+| Giant Puffball | 大秃马勃 | *Calvatia gigantea* | （B 补） |
+| Eastern Destroying Angel | 双孢鹅膏 | *Amanita bisporigera* | （B 补） |
+| Shaggy Mane | 毛头鬼伞 | *Coprinus comatus* | （B 补） |
+| Green-spored Parasol | 大青褶伞 | *Chlorophyllum molybdites* | （B 补） |
+
+| 英文 | 中文 | 说明 |
+|---|---|---|
+| Tumbleweed | 风滚草 | 刺沙蓬枯死后断开、被风吹着滚的那团，不是物种名 |
+| Fairy Ring | 蘑菇圈 | 不写「仙女环」「精灵圈」 |
+| Plant Knowledge | 植物知识 | 知识系统里的分类名 |
+
+- 「美洲类脐菇」：中文资料里「发光类脐菇」指欧洲的 *O. olearius*，*O. illudens* 是北美东部的另一种，没有中文正式名，按本节规则写地名 + 属名（同「美洲羊肚菌」）。会发光这一点写进说明，不放进名字。B 原拟的「发光类脐菇」不用。
+- 「野薄荷」：北美的 wild mint 有的文献归 *M. canadensis*，它的中文正式名就是「薄荷」，会和泛指的薄荷混淆，所以统一写「野薄荷」。
+- 「毒葛」不写「野葛」（野葛是另一种豆科植物）。
+- 「美洲海滨草」待核：没有找到中文正式名的出处，先按 B 的写法；Main 查到正式名后再改，改了通知 B。
+
 ---
 
 ## 6. 增量维护规范

@@ -1,0 +1,435 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "AFL bm2_build.py"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    23
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "root",
+   "translation": [
+    -0.0,
+    0.0,
+    -0.0
+   ],
+   "children": [
+    1
+   ]
+  },
+  {
+   "name": "pelvis",
+   "translation": [
+    0.0,
+    0.87890625,
+    0.0
+   ],
+   "children": [
+    2,
+    14,
+    18
+   ]
+  },
+  {
+   "name": "spine",
+   "translation": [
+    0.0,
+    0.17578125,
+    0.0
+   ],
+   "children": [
+    3
+   ]
+  },
+  {
+   "name": "chest",
+   "translation": [
+    0.0,
+    0.146484375,
+    0.0
+   ],
+   "children": [
+    4,
+    6,
+    10
+   ]
+  },
+  {
+   "name": "neck",
+   "translation": [
+    0.0,
+    0.17578125,
+    0.0
+   ],
+   "children": [
+    5
+   ]
+  },
+  {
+   "name": "head",
+   "translation": [
+    0.0,
+    0.029296875,
+    0.0
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "translation": [
+    0.05859375,
+    0.146484375,
+    0.0
+   ],
+   "children": [
+    7
+   ]
+  },
+  {
+   "name": "upper_arm_r",
+   "translation": [
+    0.263671875,
+    -0.029296875,
+    0.0
+   ],
+   "children": [
+    8
+   ]
+  },
+  {
+   "name": "forearm_r",
+   "translation": [
+    0.0,
+    -0.263671875,
+    0.0
+   ],
+   "children": [
+    9
+   ]
+  },
+  {
+   "name": "hand_r",
+   "translation": [
+    0.0,
+    -0.205078125,
+    0.0
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "translation": [
+    -0.05859375,
+    0.146484375,
+    0.0
+   ],
+   "children": [
+    11
+   ]
+  },
+  {
+   "name": "upper_arm_l",
+   "translation": [
+    -0.263671875,
+    -0.029296875,
+    0.0
+   ],
+   "children": [
+    12
+   ]
+  },
+  {
+   "name": "forearm_l",
+   "translation": [
+    0.0,
+    -0.263671875,
+    0.0
+   ],
+   "children": [
+    13
+   ]
+  },
+  {
+   "name": "hand_l",
+   "translation": [
+    0.0,
+    -0.205078125,
+    0.0
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "translation": [
+    0.1171875,
+    0.0,
+    0.0
+   ],
+   "children": [
+    15
+   ]
+  },
+  {
+   "name": "shin_r",
+   "translation": [
+    0.0,
+    -0.3515625,
+    0.0
+   ],
+   "children": [
+    16
+   ]
+  },
+  {
+   "name": "foot_r",
+   "translation": [
+    0.0,
+    -0.439453125,
+    0.0
+   ],
+   "children": [
+    17
+   ]
+  },
+  {
+   "name": "toes_r",
+   "translation": [
+    0.0,
+    -0.052734375,
+    0.087890625
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "translation": [
+    -0.1171875,
+    0.0,
+    0.0
+   ],
+   "children": [
+    19
+   ]
+  },
+  {
+   "name": "shin_l",
+   "translation": [
+    0.0,
+    -0.3515625,
+    0.0
+   ],
+   "children": [
+    20
+   ]
+  },
+  {
+   "name": "foot_l",
+   "translation": [
+    0.0,
+    -0.439453125,
+    0.0
+   ],
+   "children": [
+    21
+   ]
+  },
+  {
+   "name": "toes_l",
+   "translation": [
+    0.0,
+    -0.052734375,
+    0.087890625
+   ]
+  },
+  {
+   "name": "AFL_BlockMesh_V2_B",
+   "mesh": 0,
+   "skin": 0
+  },
+  {
+   "name": "AFL_BlockMesh_V2_B_rig",
+   "children": [
+    0,
+    22
+   ]
+  }
+ ],
+ "meshes": [
+  {
+   "name": "body_B",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "JOINTS_0": 3,
+      "WEIGHTS_0": 4
+     },
+     "indices": 5,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "skins": [
+  {
+   "joints": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21
+   ],
+   "inverseBindMatrices": 6,
+   "skeleton": 0
+  }
+ ],
+ "materials": [
+  {
+   "name": "skin_B",
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicFactor": 0,
+    "roughnessFactor": 1
+   }
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9728,
+   "minFilter": 9728
+  }
+ ],
+ "images": [
+  {
+   "uri": "block_mesh_v2_B_skin.png"
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "block_mesh_v2_B.bin",
+   "byteLength": 36624
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 6816
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 6816,
+   "byteLength": 6816
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 13632,
+   "byteLength": 4544
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 18176,
+   "byteLength": 4544,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 22720,
+   "byteLength": 9088,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 31808,
+   "byteLength": 3408
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 35216,
+   "byteLength": 1408
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 568,
+   "type": "VEC3",
+   "min": [
+    -0.41015625,
+    0.0,
+    -0.234375
+   ],
+   "max": [
+    0.41015625,
+    1.875,
+    0.234375
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 568,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 568,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 568,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 568,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5125,
+   "count": 852,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 22,
+   "type": "MAT4"
+  }
+ ]
+}

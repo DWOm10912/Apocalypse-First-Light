@@ -46,6 +46,8 @@ public final class HumanoidPoser {
         /** Where the eye socket should be (model px; only x and z are used), or null. */
         public Vector3f eyeTarget;
         public float maxRootShift = 4.27F;
+        /** How much of the chest's twist the hips take ({@link #HIP_SHARE} standing; 0 on a chair: ChairLegs, the hips on the seat). */
+        public float hipShare = HIP_SHARE;
         public ArmMode right = ArmMode.CLIP, left = ArmMode.CLIP;
         /** How much of an IK arm the IK takes (the rest is the clip's arm): a hand on its way to or off a target. */
         public float ikRightWeight = 1F, ikLeftWeight = 1F;
@@ -118,6 +120,8 @@ public final class HumanoidPoser {
         public final Vector3f kneePoleRight = new Vector3f(0, -0.6F, -1F), kneePoleLeft = new Vector3f(0, -0.6F, -1F);
         /** The feet's model rotation for IK legs (soles flat on the floor); null: the root's. */
         public Quaternionf footRest;
+        /** One foot's own rotation over {@link #footRest} (a seated heel bouncing: ChairPose); null: footRest. */
+        public Quaternionf footRestRight, footRestLeft;
         /**
          * Thigh and shin lengthened by these factors (1: rest): a seated rider drawn smaller keeps legs long enough for the
          * knees to reach the cushion's edge and the soles the floor.
@@ -144,6 +148,27 @@ public final class HumanoidPoser {
             CROUCH_IDLE = "locomotion.crouch_idle", CROUCH_WALK = "locomotion.crouch_walk", TURN = "locomotion.turn_step";
     private static final float ELBOW_MAX = (float) Math.toRadians(145), TWIST_MAX = (float) Math.toRadians(90),
             WRIST_MAX = (float) Math.toRadians(60);
+    /**
+     * Block-Mesh V2 (a rig with a profile) only: its shoulders sit 0.5 px further out and up than vanilla's, where the clips
+     * were keyed, so a hand held in front of the chest (the P9 reloads) leaves its elbow straighter and the wrist bent past
+     * what a wrist does (54-60 deg against vanilla's 45-47). Where the wrist would bend past {@link #REACH_WRIST}, the
+     * shoulder comes forward toward the hand by up to {@link #REACH_IN} px (the shoulder blade's protraction, about 6 cm),
+     * the elbow bending more, each px costing {@link #REACH_COST}; a hand out of the arm's reach takes the same px first.
+     * A wrist still past WRIST_MAX after that and the elbow's swing ({@link #SWING_MAX}) keeps the hand's end on its target
+     * (the wrist moved, the hand turned less)
+     * (the recoil-start pull, the P9 draw and holster: 0.6-1.0 px short; docs/dev/block_mesh_v2_b_ingame.md 14.1).
+     */
+    private static final float REACH_WRIST = (float) Math.toRadians(40), REACH_TWIST = (float) Math.toRadians(25),
+            REACH_IN = 1F, REACH_COST = 0.01F;
+    /**
+     * With it the elbow swings about the shoulder-wrist line, at most {@link #SWING_MAX} off the pole's place, each degree
+     * squared costing {@link #SWING_COST}: a hand held close (the P9 support hand aimed up or crouched: the elbow folded,
+     * the wrist at its 60 deg limit) turns more by the elbow's swing than by the shoulder.
+     */
+    private static final float SWING_MAX = (float) Math.toRadians(60), SWING_COST = 3e-5F;
+    /** The hand's end kept on its target past the wrist's limit: at most this many rounds, each stepping this much over. */
+    private static final int PALM_ROUNDS = 12;
+    private static final float PALM_RELAX = 1.8F;
     /** Share of the chest's turn (against the root) taken at the hips, and the thighs' share of that. */
     static final float HIP_SHARE = 1.0F, LEG_SHARE = 0.5F;
 
@@ -204,7 +229,7 @@ public final class HumanoidPoser {
         // and would cut into a lower torso twisted against it. Standing, the thighs turn LEG_SHARE of it about the vertical;
         // walking they keep to the root (the way the stride goes).
         // About the pelvis' own up axis (through the waist pivot), so the chest ends where a waist twist put it.
-        float hip = twist * HIP_SHARE, legShare = LEG_SHARE * (1 - clamp01(in.move));
+        float hip = twist * in.hipShare, legShare = LEG_SHARE * (1 - clamp01(in.move));
         pose.local[rig.pelvis].rotateY(rad(hip));
         Quaternionf legBack = new Quaternionf().rotationY(rad(-hip * (1 - legShare)));
         pose.local[rig.thighR].premul(legBack);
@@ -247,6 +272,7 @@ public final class HumanoidPoser {
             }
             pose.update();
         }
+        if (rig.profile != null && in.legIkWeight < 1F && !in.legsVanilla) plantFeet(pose, 1F - clamp01(in.legIkWeight));
         if (in.legIkWeight > 0) {
             report.rightLegReach = leg(in, pose, true);
             report.leftLegReach = leg(in, pose, false);
@@ -289,11 +315,45 @@ public final class HumanoidPoser {
      * target over the leg's length.
      */
     private float leg(Input in, SkeletonPose pose, boolean right) {
+        Quaternionf own = right ? in.footRestRight : in.footRestLeft;
+        Quaternionf rest = own != null ? new Quaternionf(own) : in.footRest != null ? new Quaternionf(in.footRest) : pose.rotation(rig.root, new Quaternionf());
+        return legTo(pose, right, right ? in.ankleRight : in.ankleLeft, right ? in.kneePoleRight : in.kneePoleLeft, rest,
+                clamp01(in.legIkWeight), in.thighStretch, in.shinStretch);
+    }
+
+    /**
+     * AFL Block-Mesh V2 (a rig with a {@link SkeletonRig.Profile}): the locomotion and action clips turn the legs for
+     * vanilla's shorter ones, so on longer legs the same turns lift the feet. Each foot goes where vanilla's leg, turned
+     * as the clips turn this one, puts its sole (its hip lower by the longer waist), by IK with the knee in the plane it
+     * has; the foot keeps its turn. {@code w}: how much (the seat's leg IK takes the rest).
+     */
+    private void plantFeet(SkeletonPose pose, float w) {
+        SkeletonRig.Profile p = rig.profile;
+        Quaternionf rootRot = pose.rotation(rig.root, new Quaternionf()), pelvisRot = pose.rotation(rig.pelvis, new Quaternionf());
+        for (boolean right : new boolean[]{true, false}) {
+            int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL, foot = right ? rig.footR : rig.footL;
+            float sx = right ? -1F : 1F;
+            Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f());
+            // vanilla's hip (Java y down): below this one by the waist's difference (the root's frame), apart by the feet's (the pelvis')
+            Vector3f vanillaHip = new Vector3f(hip).add(rootRot.transform(new Vector3f(0, (24F - p.refHip().y) - rig.pivot[thigh].y, 0)))
+                    .add(pelvisRot.transform(new Vector3f(sx * p.refHip().x - rig.pivot[thigh].x, 0, 0)));
+            Quaternionf thighRot = pose.rotation(thigh, new Quaternionf()), shinRot = pose.rotation(shin, new Quaternionf());
+            Quaternionf footRot = pose.rotation(foot, new Quaternionf());
+            Vector3f ankle = new Vector3f(vanillaHip).add(thighRot.transform(new Vector3f(0, p.refThigh(), 0)))
+                    .add(shinRot.transform(new Vector3f(0, p.refShin(), 0)));
+            // the sole where vanilla's is: this ankle nearer the sole, the feet apart as this rig's
+            ankle.add(footRot.transform(new Vector3f(sx * (p.footX() - p.refHip().x), p.refAnkle() - p.ankle(), 0)));
+            Vector3f pole = thighRot.transform(new Vector3f(0, 0, -1));
+            legTo(pose, right, ankle, pole, footRot, w, 1F, 1F);
+        }
+    }
+
+    private float legTo(SkeletonPose pose, boolean right, Vector3f target, Vector3f kneePole, Quaternionf footWorld, float w,
+                        float thighStretch, float shinStretch) {
         int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL, foot = right ? rig.footR : rig.footL;
-        float w = clamp01(in.legIkWeight);
         Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f());
-        Vector3f toTarget = new Vector3f(right ? in.ankleRight : in.ankleLeft).sub(hip);
-        float thighLength = this.thighLength * in.thighStretch, shinLength = this.shinLength * in.shinStretch;
+        Vector3f toTarget = new Vector3f(target).sub(hip);
+        float thighLength = this.thighLength * thighStretch, shinLength = this.shinLength * shinStretch;
         float reach = thighLength + shinLength, distance = toTarget.length();
         float d = Math.max(0.15F * reach, Math.min(distance, 0.999F * reach));
         Vector3f dir = distance > 1e-4F ? new Vector3f(toTarget).div(distance) : new Vector3f(0, 1, 0);
@@ -302,7 +362,7 @@ public final class HumanoidPoser {
         float reachD = (float) Math.sqrt(thighLength * thighLength + shinLength * shinLength + 2 * thighLength * shinLength * Math.cos(flex));
         float cosHip = (thighLength * thighLength + reachD * reachD - shinLength * shinLength) / (2 * thighLength * reachD);
         float hipAngle = (float) Math.acos(Math.max(-1, Math.min(1, cosHip)));
-        Vector3f pole = new Vector3f(right ? in.kneePoleRight : in.kneePoleLeft);
+        Vector3f pole = new Vector3f(kneePole);
         Vector3f side = new Vector3f(pole).sub(new Vector3f(dir).mul(pole.dot(dir)));
         if (side.lengthSquared() < 1e-8F) side.set(0, 0, -1).sub(new Vector3f(dir).mul(-dir.z));
         side.normalize();
@@ -314,8 +374,7 @@ public final class HumanoidPoser {
         Quaternionf pelvisWorld = pose.rotation(rig.parent[thigh], new Quaternionf());
         Quaternionf thighLocal = new Quaternionf(pelvisWorld).conjugate().mul(thighWorld).normalize();
         Quaternionf shinLocal = new Quaternionf().rotationX(flex);
-        Quaternionf rest = in.footRest != null ? new Quaternionf(in.footRest) : pose.rotation(rig.root, new Quaternionf());
-        Quaternionf footLocal = new Quaternionf(thighWorld).mul(shinLocal).conjugate().mul(rest).normalize();
+        Quaternionf footLocal = new Quaternionf(thighWorld).mul(shinLocal).conjugate().mul(footWorld).normalize();
         clampEuler(footLocal, rig.limits[foot]);
         pose.local[thigh].slerp(thighLocal, w).normalize();
         pose.local[shin].slerp(shinLocal, w).normalize();
@@ -572,12 +631,89 @@ public final class HumanoidPoser {
         else report.leftSlide = slid;
         // shoulder reach: the shoulder moves toward the target before the arm gives up (never a longer arm)
         float protract = Math.min(in.protraction, Math.max(0, distance - 0.98F * reach));
+        // Block-Mesh V2: a hand still out of reach (the clips' targets were set for vanilla's shoulders) takes up to
+        // REACH_IN more of the shoulder blade's reach, shared with the wrist's below
+        float extra = rig.profile != null ? Math.min(REACH_IN, Math.max(0, distance - 0.98F * reach - protract)) : 0F;
+        protract += extra;
         Vector3f shift = new Vector3f();
         if (protract > 0 && distance > 1e-4F) shift.set(toTarget).mul(protract / distance);
         pose.offset[upper].set(new Quaternionf(chestWorld).conjugate().transform(new Vector3f(shift))).add(set);
         shoulder.add(shift);
         toTarget.set(wrist).sub(shoulder);
         distance = toTarget.length();
+        Vector3f poleWorld = chestWorld.transform(new Vector3f(right ? in.poleRight : in.poleLeft));
+        Quaternionf[] arm = new Quaternionf[3];
+        float flex = armAt(shoulder, wrist, poleWorld, 0F, handWorld, chestWorld, arm), used = 0F;
+        if (rig.profile != null && angleOf(arm[2]) > REACH_WRIST && distance > 1e-4F) {
+            // one axis at a time (about 30 arm solves): the swing by a 20 deg scan and a golden-section search about the
+            // best; the shoulder forward over [0, what REACH_IN leaves] with that swing; the swing again, finer. Each
+            // search on a cost smooth in its axis, so the arm moves smoothly frame to frame; kept only where it beats the
+            // pole's arm
+            Vector3f along = new Vector3f(toTarget).div(distance);
+            Quaternionf[] tried = new Quaternionf[3];
+            float room = Math.max(0F, Math.min(REACH_IN - extra, 0.5F * distance)), step = (float) Math.toRadians(20);
+            float swing = 0F, bestSwing = cost(shoulder, along, 0F, 0F, wrist, poleWorld, handWorld, chestWorld, tried);
+            for (int k = -3; k <= 3; k++) {
+                if (k == 0) continue;
+                float c = cost(shoulder, along, 0F, k * step, wrist, poleWorld, handWorld, chestWorld, tried);
+                if (c < bestSwing) { bestSwing = c; swing = k * step; }
+            }
+            swing = golden(shoulder, along, 0F, swing, false, Math.max(-SWING_MAX, swing - step), Math.min(SWING_MAX, swing + step), 8,
+                    wrist, poleWorld, handWorld, chestWorld, tried);
+            float forward = room > 1e-4F ? golden(shoulder, along, 0F, swing, true, 0F, room, 8, wrist, poleWorld, handWorld, chestWorld, tried) : 0F;
+            float fine = step / 2F;
+            swing = golden(shoulder, along, forward, swing, false, Math.max(-SWING_MAX, swing - fine), Math.min(SWING_MAX, swing + fine), 6,
+                    wrist, poleWorld, handWorld, chestWorld, tried);
+            if (cost(shoulder, along, forward, swing, wrist, poleWorld, handWorld, chestWorld, tried) < wristCost(arm)) {
+                Vector3f more = new Vector3f(along).mul(forward);
+                shoulder.add(more);
+                pose.offset[upper].add(new Quaternionf(chestWorld).conjugate().transform(more));
+                used = swing;
+                flex = armAt(shoulder, wrist, poleWorld, used, handWorld, chestWorld, arm);
+            }
+            // the wrist still past its limit: the hand turns less than asked, so the wrist moves to keep the hand's end where
+            // the target puts it (the palm stays on the grip, the hand a little off its angle); PALM_ROUNDS over-relaxed
+            // rounds of the fixed point, back to plain steps where one would miss by more
+            if (angleOf(arm[2]) > WRIST_MAX) {
+                Vector3f capArm = new Vector3f((right ? 1F : -1F) * rig.profile.handCapX(), rig.profile.handCapY(), 0F);
+                Vector3f capHand = new Vector3f(capArm).add(restPivot).sub(rig.pivot[hand]);
+                Vector3f capWant = target.transformPosition(new Vector3f(capArm));
+                Quaternionf[] next = new Quaternionf[3];
+                float miss = capMiss(arm, chestWorld, wrist, capHand, capWant), relax = PALM_RELAX;
+                for (int k = 0; k < PALM_ROUNDS && miss > 1e-3F; k++) {
+                    Vector3f err = capPoint(arm, chestWorld, wrist, capHand).sub(capWant);
+                    Vector3f moved = new Vector3f(wrist).sub(new Vector3f(err).mul(relax));
+                    float f2 = armAt(shoulder, moved, poleWorld, used, handWorld, chestWorld, next);
+                    float m2 = capMiss(next, chestWorld, moved, capHand, capWant);
+                    if (m2 >= miss && relax > 1F) { relax = 1F; continue; }
+                    if (m2 >= miss) break;
+                    wrist.set(moved);
+                    System.arraycopy(next, 0, arm, 0, 3);
+                    flex = f2;
+                    miss = m2;
+                }
+            }
+        }
+        pose.local[upper].set(arm[0]);
+        pose.local[fore].set(arm[1]);
+        limitAngle(arm[2], WRIST_MAX);
+        pose.local[hand].set(arm[2]);
+        float ratio = new Vector3f(wrist).sub(shoulder).length() / reach;
+        if (right) { report.rightReach = ratio; report.rightElbowDeg = (float) Math.toDegrees(flex); }
+        else { report.leftReach = ratio; report.leftElbowDeg = (float) Math.toDegrees(flex); }
+    }
+
+    /**
+     * Two-bone IK from {@code shoulder} to {@code wrist} (model px), the elbow toward {@code poleWorld} swung {@code swing}
+     * (rad) about the shoulder-wrist line: the arm's locals
+     * into {@code out} (upper arm in the chest, the forearm flexed and twisted toward the hand within TWIST_MAX, the rest at
+     * the wrist, not yet limited); the elbow's flex (rad).
+     */
+    private float armAt(Vector3f shoulder, Vector3f wrist, Vector3f poleWorld, float swing, Quaternionf handWorld, Quaternionf chestWorld,
+                        Quaternionf[] out) {
+        float reach = upperLength + foreLength;
+        Vector3f toTarget = new Vector3f(wrist).sub(shoulder);
+        float distance = toTarget.length();
         float d = Math.max(0.15F * reach, Math.min(distance, 0.999F * reach));
         Vector3f dir = distance > 1e-4F ? new Vector3f(toTarget).div(distance) : new Vector3f(0, 1, 0);
         float cosElbow = (upperLength * upperLength + foreLength * foreLength - d * d) / (2 * upperLength * foreLength);
@@ -586,29 +722,76 @@ public final class HumanoidPoser {
         float reachD = (float) Math.sqrt(upperLength * upperLength + foreLength * foreLength + 2 * upperLength * foreLength * Math.cos(flex));
         float cosShoulder = (upperLength * upperLength + reachD * reachD - foreLength * foreLength) / (2 * upperLength * reachD);
         float shoulderAngle = (float) Math.acos(Math.max(-1, Math.min(1, cosShoulder)));
-        Vector3f pole = chestWorld.transform(new Vector3f(right ? in.poleRight : in.poleLeft));
-        Vector3f side = new Vector3f(pole).sub(new Vector3f(dir).mul(pole.dot(dir)));
+        Vector3f side = new Vector3f(poleWorld).sub(new Vector3f(dir).mul(poleWorld.dot(dir)));
         if (side.lengthSquared() < 1e-8F) side.set(0, 0, 1).sub(new Vector3f(dir).mul(dir.z));
         side.normalize();
+        if (swing != 0F) side.rotateAxis(swing, dir.x, dir.y, dir.z);
         // upper arm: +y toward the elbow, +z toward the pole (the elbow's point), the forearm folding toward -z
         Vector3f y = new Vector3f(dir).mul((float) Math.cos(shoulderAngle)).add(new Vector3f(side).mul((float) Math.sin(shoulderAngle))).normalize();
         Vector3f z = new Vector3f(side).sub(new Vector3f(y).mul(side.dot(y))).normalize();
         Vector3f x = new Vector3f(y).cross(z).normalize();
         Quaternionf upperWorld = new Quaternionf().setFromNormalized(new Matrix4f().set3x3(new org.joml.Matrix3f(x, y, z)));
-        pose.local[upper].set(new Quaternionf(chestWorld).conjugate().mul(upperWorld)).normalize();
+        out[0] = new Quaternionf(chestWorld).conjugate().mul(upperWorld).normalize();
         Quaternionf foreFlex = new Quaternionf().rotationX(-flex);
         Quaternionf rel = new Quaternionf(upperWorld).mul(foreFlex).conjugate().mul(handWorld);
         Quaternionf twist = new Quaternionf(0, rel.y, 0, rel.w);
         if (twist.lengthSquared() < 1e-8F) twist.identity();
         else twist.normalize();
         limitAngle(twist, TWIST_MAX);
-        pose.local[fore].set(foreFlex).mul(twist);
-        Quaternionf wristQ = new Quaternionf(twist).conjugate().mul(rel).normalize();
-        limitAngle(wristQ, WRIST_MAX);
-        pose.local[hand].set(wristQ);
-        float ratio = new Vector3f(wrist).sub(shoulder).length() / reach;
-        if (right) { report.rightReach = ratio; report.rightElbowDeg = (float) Math.toDegrees(flex); }
-        else { report.leftReach = ratio; report.leftElbowDeg = (float) Math.toDegrees(flex); }
+        out[1] = new Quaternionf(foreFlex).mul(twist);
+        out[2] = new Quaternionf(twist).conjugate().mul(rel).normalize();
+        return flex;
+    }
+
+    /**
+     * The arm with the shoulder {@code in} px along {@code along} and the elbow swung {@code swing} (rad): its
+     * {@link #wristCost}, {@link #REACH_COST} a px squared and {@link #SWING_COST} a degree squared.
+     */
+    private float cost(Vector3f shoulder, Vector3f along, float in, float swing, Vector3f wrist, Vector3f poleWorld, Quaternionf handWorld,
+                       Quaternionf chestWorld, Quaternionf[] tried) {
+        armAt(new Vector3f(along).mul(in).add(shoulder), wrist, poleWorld, swing, handWorld, chestWorld, tried);
+        float d = (float) Math.toDegrees(swing);
+        return wristCost(tried) + REACH_COST * in * in + SWING_COST * d * d;
+    }
+
+    /** A golden-section search over [lo, hi] of the shoulder's reach ({@code reach}) or the swing, the other held. */
+    private float golden(Vector3f shoulder, Vector3f along, float in, float swing, boolean reach, float lo, float hi, int rounds,
+                         Vector3f wrist, Vector3f poleWorld, Quaternionf handWorld, Quaternionf chestWorld, Quaternionf[] tried) {
+        float g = 0.618034F, a = hi - g * (hi - lo), b = lo + g * (hi - lo);
+        float ca = cost(shoulder, along, reach ? a : in, reach ? swing : a, wrist, poleWorld, handWorld, chestWorld, tried);
+        float cb = cost(shoulder, along, reach ? b : in, reach ? swing : b, wrist, poleWorld, handWorld, chestWorld, tried);
+        for (int k = 0; k < rounds; k++) {
+            if (ca < cb) {
+                hi = b; b = a; cb = ca; a = hi - g * (hi - lo);
+                ca = cost(shoulder, along, reach ? a : in, reach ? swing : a, wrist, poleWorld, handWorld, chestWorld, tried);
+            } else {
+                lo = a; a = b; ca = cb; b = lo + g * (hi - lo);
+                cb = cost(shoulder, along, reach ? b : in, reach ? swing : b, wrist, poleWorld, handWorld, chestWorld, tried);
+            }
+        }
+        return (lo + hi) / 2F;
+    }
+
+    /** The hand's end (model px) as the arm draws it: the wrist bent at most WRIST_MAX. */
+    private static Vector3f capPoint(Quaternionf[] arm, Quaternionf chestWorld, Vector3f wrist, Vector3f capHand) {
+        Quaternionf bent = new Quaternionf(arm[2]);
+        limitAngle(bent, WRIST_MAX);
+        return new Quaternionf(chestWorld).mul(arm[0]).mul(arm[1]).mul(bent).transform(new Vector3f(capHand)).add(wrist);
+    }
+
+    private static float capMiss(Quaternionf[] arm, Quaternionf chestWorld, Vector3f wrist, Vector3f capHand, Vector3f want) {
+        return capPoint(arm, chestWorld, wrist, capHand).distance(want);
+    }
+
+    /** The wrist bend past {@link #REACH_WRIST} and the forearm twist past {@link #REACH_TWIST}, rad squared. */
+    private static float wristCost(Quaternionf[] arm) {
+        float wrist = Math.max(0F, angleOf(arm[2]) - REACH_WRIST);
+        float twist = Math.max(0F, angleOf(new Quaternionf(0, arm[1].y, 0, arm[1].w).normalize()) - REACH_TWIST);
+        return wrist * wrist + twist * twist;
+    }
+
+    private static float angleOf(Quaternionf q) {
+        return 2F * (float) Math.acos(Math.min(1F, Math.abs(q.w)));
     }
 
     /** An arm's shoulder set in the chest frame, with the compressed torso's shoulder drop. */

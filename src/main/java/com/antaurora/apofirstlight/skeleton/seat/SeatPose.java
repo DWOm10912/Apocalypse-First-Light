@@ -55,6 +55,11 @@ public final class SeatPose {
      * stay on the wheel; the view turns on past what the head shows (the eyes).
      */
     public static final float NECK_TURN = 64F, DRIVER_LOOK_BACK = 8F;
+    /**
+     * Block-Mesh V2 (a rig with a profile) on a bench: the hips this far back on the seat (px), so the drawn eye is over the
+     * camera (its eye sat 4.1 cm ahead of it, upright with the bench's 4 deg lean; docs/dev/block_mesh_v2_b_ingame.md 14.4).
+     */
+    public static final float BENCH_BACK = 0.76F;
     /** The pelvis pivot over the cushion's top (px): the thighs' half thickness, a little sunk in. */
     public static final float HIP_LIFT = 2.2F;
     /**
@@ -64,6 +69,20 @@ public final class SeatPose {
     public static final float THIGH = 1F / SCALE, SHIN = 1.6F;
     /** The ankle over the sole (px). */
     public static final float ANKLE = 2F;
+    /**
+     * The rig the player skeleton solves on (PlayerSkeleton#poser), when not vanilla's (AFL Block-Mesh V2): its own draw
+     * size, hip height, feet and ankle, and legs long enough without {@link #THIGH} / {@link #SHIN}. The camera's
+     * {@link #EYE_OVER_SEAT} stays: the torso still comes down to it.
+     */
+    private static SkeletonRig.Profile body;
+
+    public static void useRig(SkeletonRig rig) {
+        body = rig.profile;
+    }
+
+    private static float ankle() {
+        return body != null ? body.ankle() : ANKLE;
+    }
     /** The share of the rim's turn (about the forearm) a hand on the steering wheel turns with. */
     public static final float WHEEL_ROLL = 0.8F;
     /** A grip this share of the rim's radius off the rim no longer turns with it. */
@@ -185,9 +204,10 @@ public final class SeatPose {
      */
     public static void body(HumanoidPoser.Input in, Seat seat, Stand stand, Moment m, float torso, float eyeLevel) {
         Vector3f up = seat.up();
-        Vector3f seatHip = seat.local(0, HIP_LIFT, 0);
+        // Block-Mesh V2 on a bench (no camera ahead of the seat point): the hips back BENCH_BACK, the drawn eye over the camera
+        Vector3f seatHip = seat.local(0, HIP_LIFT, body != null && seat.kind == RiderSeat.Kind.BENCH ? -BENCH_BACK : 0F);
         Vector3f standUp = stand.turn.transform(new Vector3f(0, -1, 0));
-        Vector3f standHip = new Vector3f(stand.feet).add(new Vector3f(standUp).mul(12F));
+        Vector3f standHip = new Vector3f(stand.feet).add(new Vector3f(standUp).mul(body != null ? body.hipHeight() : 12F));
         in.hipTarget = new Vector3f(standHip).lerp(seatHip, m.seated).add(new Vector3f(up).mul(1.5F * (float) Math.sin(Math.PI * m.seated)));
         in.rootTurn = new Quaternionf(stand.turn).slerp(seat.turn, m.turned);
         in.rootYaw = 0F;
@@ -217,16 +237,17 @@ public final class SeatPose {
         in.chestYaw = in.chestYaw + (twist - in.chestYaw) * m.seated;
         // legs: from under the standing hips to the floor rests, the inner leg (away from the door) first, lifted between
         in.legIkWeight = 1F;
-        in.thighStretch = 1F + (THIGH - 1F) * m.seated;
-        in.shinStretch = 1F + (SHIN - 1F) * m.seated;
+        boolean stretch = body == null || body.seatLegStretch();
+        in.thighStretch = stretch ? 1F + (THIGH - 1F) * m.seated : 1F;
+        in.shinStretch = stretch ? 1F + (SHIN - 1F) * m.seated : 1F;
         boolean rightInner = seat.doorSide <= 0;
         for (boolean right : new boolean[]{true, false}) {
             float e = right == rightInner ? m.innerLeg : m.outerLeg;
-            float side = right ? -1.9F : 1.9F;
-            Vector3f standAnkle = new Vector3f(stand.feet).add(stand.turn.transform(new Vector3f(side, -ANKLE, 0)));
+            float side = (right ? -1F : 1F) * (body != null ? body.footX() : 1.9F);
+            Vector3f standAnkle = new Vector3f(stand.feet).add(stand.turn.transform(new Vector3f(side, -ankle(), 0)));
             Vector3f floor = seat.anchors.get(right ? "floor_r" : "floor_l");
             if (floor == null) floor = seat.local(right ? 2F : -2F, -8.5F, 7F);
-            Vector3f seatAnkle = new Vector3f(floor).add(new Vector3f(up).mul(ANKLE));
+            Vector3f seatAnkle = new Vector3f(floor).add(new Vector3f(up).mul(ankle()));
             Vector3f ankle = new Vector3f(standAnkle).lerp(seatAnkle, e).add(new Vector3f(up).mul(3F * (float) Math.sin(Math.PI * e)));
             (right ? in.ankleRight : in.ankleLeft).set(ankle);
             Quaternionf poleTurn = new Quaternionf(stand.turn).slerp(seat.turn, e);
@@ -285,14 +306,61 @@ public final class SeatPose {
         }
     }
 
+    /**
+     * AFL Block-Mesh V2 on a chair (ChairLegs; docs/dev/block_mesh_v2_b_ingame.md 11): an empty hand in the lap, as a seated
+     * rider's (the office chair's armrests are where a hanging arm would go). A hand that holds or uses something, or
+     * swings, is left as it is; an action's hands come after.
+     */
+    public static void lapHands(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser) {
+        lapHands(in, pose, poser, CHAIR_LAP_ALONG, CHAIR_LAP_OUT, CHAIR_POLE_OUT, CHAIR_POLE_BACK);
+    }
+
+    /**
+     * {@link #lapHands}, the hands {@code along} of the way from the hip to the knee, {@code out} px outside the thighs'
+     * middle lines, the elbows toward a pole this far out and back (chest frame, down 1).
+     */
+    public static void lapHands(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, float along, float out,
+                                float poleOut, float poleBack) {
+        for (boolean right : new boolean[]{true, false}) {
+            if ((right ? in.right : in.left) == HumanoidPoser.ArmMode.VANILLA) continue;
+            if ((right ? in.vanillaRightWeight : in.vanillaLeftWeight) > 0F) continue;
+            (right ? in.poleRight : in.poleLeft).set(right ? -poleOut : poleOut, 1F, poleBack);
+            (right ? in.targetRight : in.targetLeft).set(lap(in, pose, poser, right, along, out));
+            if (right) { in.right = HumanoidPoser.ArmMode.IK; in.ikRightWeight = 1F; }
+            else { in.left = HumanoidPoser.ArmMode.IK; in.ikLeftWeight = 1F; }
+        }
+    }
+
     /** A hand's place in the lap: on the thigh, a little short of the knee. */
     private static Matrix4f lap(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, boolean right) {
+        return lap(in, pose, poser, right, LAP_ALONG, 0F);
+    }
+
+    /** The seated riders' hands, from the hip to the knee. */
+    private static final float LAP_ALONG = 0.6F;
+
+    /**
+     * On a chair (user 2026-10-25: the hands at the knees, the elbows spread, "像蹲在小板凳上"): the upper arms hang at the
+     * sides (the elbows toward a pole straight down, a little out), the forearms lie along the thighs, the hands on the
+     * thighs' outer halves CHAIR_LAP_ALONG of the way to the knees. Nearer the hips B's long arms fold and the elbows wing
+     * out behind (bm2 chair_hands).
+     */
+    static final float CHAIR_LAP_ALONG = 0.85F, CHAIR_LAP_OUT = 1.5F, CHAIR_POLE_OUT = 0.12F, CHAIR_POLE_BACK = 0F;
+
+    /** A hand {@code along} of the way from the hip to the knee, {@code out} px to the thigh's outside. */
+    static Matrix4f lap(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, boolean right, float along, float out) {
+        return contact(in, pose, poser, right, lapPoint(pose, right, along, out, 2.6F));
+    }
+
+    /** The point {@code along} of the way from the hip to the knee, {@code out} px to its outside, {@code up} px over the thigh's line. */
+    static Vector3f lapPoint(SkeletonPose pose, boolean right, float along, float out, float up) {
         SkeletonRig rig = pose.rig;
         int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL;
         Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f()), knee = pose.point(shin, rig.pivot[shin], new Vector3f());
-        Vector3f up = pose.rotation(rig.pelvis, new Quaternionf()).transform(new Vector3f(0, -1, 0));
-        Vector3f lap = new Vector3f(hip).lerp(knee, 0.6F).add(up.mul(2.6F));
-        return contact(in, pose, poser, right, lap);
+        Quaternionf pelvis = pose.rotation(rig.pelvis, new Quaternionf());
+        Vector3f lap = new Vector3f(hip).lerp(knee, along).add(pelvis.transform(new Vector3f(0, -up, 0)));
+        if (out != 0F) lap.add(pelvis.transform(new Vector3f(right ? -out : out, 0, 0)));   // the body's right is -x
+        return lap;
     }
 
     /**
@@ -378,7 +446,7 @@ public final class SeatPose {
     }
 
     /** Two hand targets blended: the wrists along a line, the turns by slerp. */
-    private static Matrix4f blend(Matrix4f a, Matrix4f b, float w, SkeletonRig rig) {
+    static Matrix4f blend(Matrix4f a, Matrix4f b, float w, SkeletonRig rig) {
         Vector3f o = new Vector3f(rig.pivot[rig.handR]).sub(rig.pivot[rig.upperArmR]);
         Vector3f wa = a.transformPosition(new Vector3f(o)), wb = b.transformPosition(new Vector3f(o));
         Quaternionf qa = a.getUnnormalizedRotation(new Quaternionf()), qb = b.getUnnormalizedRotation(new Quaternionf());
@@ -387,7 +455,8 @@ public final class SeatPose {
 
     /** The draw scale for a size share ({@link Moment#size}). */
     public static float scale(float size) {
-        return 1F + (SCALE - 1F) * Math.max(0F, Math.min(1F, size));
+        float scale = body != null ? body.seatScale() : SCALE;
+        return 1F + (scale - 1F) * Math.max(0F, Math.min(1F, size));
     }
 
     /** A move's size share from its seated share: all of it within SIZE_FROM-SIZE_TO. */

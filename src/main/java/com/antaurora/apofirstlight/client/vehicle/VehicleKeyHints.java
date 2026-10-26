@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The driving keys in the key hint panel, top right (user 2026-10-17; design doc 8.12): in the driver's seat, one row
+ * The driving keys in the key hint panel, mirrored to the left (user 2026-10-17, moved left 2026-10-25; design doc 8.12): in the driver's seat, one row
  * per vehicle key as bound now (AflKeyHint shows the player's own binding and lights up on a press). The start key only
  * while the key is off (the same key "switch off" while the engine runs, user 2026-10-21), get out only while slow enough
  * (PickupTruckEntity#GET_OUT_SPEED) and with the own door open (PickupTruckEntity#mayGetOut), 2H / 4H only on a vehicle with a
@@ -30,7 +30,8 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VehicleKeyHints {
     private static final String LANG = "hud.apocalypse_firstlight.drive.";
-    private static final AflKeyHintPanel PANEL = new AflKeyHintPanel();
+    /** On the left (user 2026-10-25): on the right it covered the T15's right door mirror. */
+    private static final AflKeyHintPanel PANEL = new AflKeyHintPanel().onLeft();
 
     private VehicleKeyHints() {
     }

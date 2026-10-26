@@ -330,6 +330,9 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
 
     private void weaponBox(GuiGraphics g, int menuIndex, float x, float y, float w, float h, String key) {
         slotBox(g, x, y, w, h);
+        // a position that cannot be used now (no holster worn, no slung gun): red, and nothing goes in (HotbarRoles#open)
+        if (!HotbarRoles.open(player, menuIndex - PRIMARY_MENU, menu.getCarried()))
+            AflUiShapes.box(g, x, y, w, h, AflUiStyle.RADIUS_TILE, AflUiStyle.WARN, 0.12F, AflUiStyle.WARN, 0.7F, 0, 0);
         text(g, Component.literal(key), x + 2, y + 1.5F, 5, AflUiStyle.TEXT_DIM, 0.8F);
         hits.add(new SlotHit(menu.getSlot(menuIndex), x, y, w, h));
     }
@@ -631,7 +634,11 @@ public final class AflInventoryScreen extends AbstractContainerScreen<InventoryM
         if (hover instanceof SlotHit s && s.slot().hasItem()) {
             g.renderTooltip(font, s.slot().getItem(), mouseX, mouseY);
         } else if (hover instanceof SlotHit s) {
-            List<Component> lines = emptyHint(s.slot().index);
+            int index = s.slot().index;
+            List<Component> lines = (index == PRIMARY_MENU || index == PISTOL_MENU) && !HotbarRoles.open(player, index - PRIMARY_MENU, menu.getCarried())
+                    ? List.of(Component.translatable("screen.apocalypse_firstlight.inventory." + (index == PRIMARY_MENU ? "primary" : "pistol")),
+                    Component.translatable("hint.apocalypse_firstlight.loadout." + HotbarRoles.closedHint(index - PRIMARY_MENU)))
+                    : emptyHint(index);
             if (lines != null) hint(g, lines, mouseX, mouseY);
         } else if (hover instanceof OverflowHit o) {
             g.renderTooltip(font, o.stack(), mouseX, mouseY);

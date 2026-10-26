@@ -66,7 +66,7 @@
 | `reload_empty_no_mag` | 2.25 | 同上，加 1.39 拉机柄、1.64 放机柄 |
 | `inspect` / `inspect_empty` | 7.2 | 3.60 按卡榫、3.66 弹匣出、5.84 弹匣入 |
 | `inspect_no_mag` / `inspect_empty_no_mag` | 5.0 | |
-| `unload` / `unload_empty` | 1.3 | 0.32 按卡榫、0.38 弹匣出、0.62 收手 |
+| `unload` / `unload_empty` | 1.45 | 0.32 按卡榫、0.38 弹匣出，左手带到胸挂、0.9 收纳、0.95–1.3 回护木，枪 0.62–1.0 回待机（2026-10-24 第二版，[magazine_system_v1.md](magazine_system_v1.md) 第 3.1 节；旧版 1.3 s 0.62 收手） |
 
 - 换弹按 M14：左手拇指往前推卡榫，弹匣前端一翻取下；新弹匣先把前钩挂进去，再往后一扳卡住。空仓换弹最后右手拉一下拉机柄，枪机从挂机位置放回去推弹上膛。
 - 弹匣在 34 tick 换（数据 `presentation.mag_in_tick` / `empty_mag_in_tick`），空仓换弹在片段结束时上膛。

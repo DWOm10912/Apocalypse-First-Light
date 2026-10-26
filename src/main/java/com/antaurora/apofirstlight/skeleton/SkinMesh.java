@@ -92,7 +92,8 @@ public final class SkinMesh {
         quad(sink, a[ca], ua, va, a[cb], ub, va, c[cb], ub, vb, c[ca], ua, vb);
     }
 
-    private static void quad(Sink sink, Vector3f p0, float u0, float v0, Vector3f p1, float u1, float v1,
+    /** One quad to the sink, split so a bent one does not fold (also the Block-Mesh V2 body, client/skeleton/BlockMeshBody). */
+    public static void quad(Sink sink, Vector3f p0, float u0, float v0, Vector3f p1, float u1, float v1,
                              Vector3f p2, float u2, float v2, Vector3f p3, float u3, float v3) {
         // A bent joint makes a side quad non-planar or concave; quads draw as triangles 0-1-2 and 2-3-0, so start at
         // the corner whose diagonal keeps both triangles facing the same way (no fold). Flat quads keep vanilla's order.

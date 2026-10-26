@@ -169,18 +169,22 @@
 - 第三人称：枪留在眼睛下方约 4 px、前方 7 px（view 坐标系，跟着视线；向上最多跟 32°、向下最多 25°，再往下枪会碰到脸），往下沉一点、侧倾着换；弹匣还是从左前腰的弹匣包拿。动作在第一人称回到准星的时刻结束（战术 1.16 s、空仓 1.3 s），淡出 0.2 s 回到瞄准姿势。
 - 限制：第三人称的起止位只是接近瞄准姿势（瞄准姿势是程序算的，`GunStance#inReach`，手臂几乎伸直），靠动作的淡入 0.12 s / 淡出 0.2 s 过渡；双手在 view 坐标系里只有贴近脸、几乎不侧倾的位置在各个视线角度下都够得到。
 
-### 2.8 取下弹匣 `unload` / `unload_empty`（2026-10-20）
+### 2.8 取下弹匣 `unload` / `unload_empty`（2026-10-20；2026-10-24 第二版）
 
-- 触发：弹匣系统里没有更满的弹匣、枪里的弹匣没装满时按换弹键（`docs/native_guns/magazine_system_v1.md` 3.1）。枪里一发都没有（空仓挂机）时放 `unload_empty`，滑套保持在后；否则放 `unload`。
-- 1.3 s，节拍（`tools/author-p9-01-v3-native-animations.mjs` 的 `UNLOAD`）：
+- 触发：点按换弹键、枪里装着弹匣（`docs/native_guns/magazine_system_v1.md` 3.1）。枪里一发都没有（空仓挂机）时放 `unload_empty`，滑套保持在后；否则放 `unload`。
+- 2026-10-24 用户："退单之后不自动切枪，而是把弹匣放入有空间的地方……"、"也就是说退弹之后，过渡到待机动画"，选了「收进胸挂再握回」。
+- 1.45 s，节拍（`tools/author-p9-01-v3-native-animations.mjs` 的 `UNLOAD`）：
   - 0–0.3 s 枪抬起、像检视弹匣那样转向左手（`MAG_CHECK` 姿势），左手从下方进来托到弹匣底；
   - 0.35 s 拇指按卡笋（`p9_01_magazine_release`），0.38 s 弹匣顺着弹匣井往下滑，0.39 s `p9_01_magazine_out`，0.52 s 离开枪；
-  - 0.55–0.85 s 左手拿着弹匣往左下出画面；
-  - 0.62–1.0 s 枪收到下方出画面（`p9_01_put_away` 在 0.62 s）；1.05 s 服务器把弹匣交到手上，之后换成手里的弹匣。
-- 骨骼：`magazine` 从 0.38 s 缩到 0；拔出来的弹匣用 `reload_magazine` 骨骼画，没有换弹交换时它显示枪里装着的那个弹匣和它的真实弹数（`NativeMagazineRoundRendering` 认 `unload`）。
-- `camera` 骨骼：抬枪时轻微跟着、按卡笋和弹匣拔出时一顿、收枪时往下沉，经导演镜头的抖动层加到视角上（`NativeCameraBoneConsumer#supportedAction`）。
-- 第三人称：`gun/p9_01_unload`、`gun/p9_01_unload_empty`（1.05 s，第 3 节同一个脚本）。
-- 离线看过：`tools/preview-fp-arms.mjs p9_01_v3_native unload 0.3,0.38,0.46,0.55` 等，左手在弹匣下方接住、弹匣往左下出画面、枪 1.0 s 出画面。没进游戏看过。
+  - 0.55–0.85 s 左手拿着弹匣往左下带到胸挂弹匣袋（出画面，`OFFSCREEN_MAG`）；0.86 s `p9_01_foley_lower`；0.9 s 服务器收纳，`reload_magazine` 隐藏；
+  - 0.62–1.0 s 枪单手回到腰射待机位（`IDLE`，不过冲，"calm ≠ soft"）；
+  - 0.95–1.3 s 左手从下方回到握把（`leftOnGun`），1.3–1.45 s 静止，结尾就是待机姿势。
+- 骨骼：`magazine` 从 0.38 s 缩到 0；拔出来的弹匣用 `reload_magazine` 骨骼画（0.38–0.9 s），没有换弹交换时它显示枪里装着的那个弹匣和它的真实弹数（`NativeMagazineRoundRendering` 认 `unload`）。
+- `camera` 骨骼：抬枪时轻微跟着、按卡笋和弹匣拔出时一顿，回待机时归零，经导演镜头的抖动层加到视角上（`NativeCameraBoneConsumer#supportedAction`）。
+- 第三人称：`gun/p9_01_unload`、`gun/p9_01_unload_empty`（1.45 s，第 3 节同一个脚本）：弹匣带到 `POUCH`，0.9 s 隐藏，左手 0.94–1.3 s 回握把。
+- BR-51 同样改成 1.45 s（`tools/author-br51-01-v3-native-animations.mjs` 的 `UNLOAD`，没有收纳声）。
+- 重新生成后对过：P9 其他 34 段、BR-51 其他 14 段第一人称片段逐字节不变（源文件动画也一样）。没进游戏看过。
+- 第一版（2026-10-20，1.3 s，已取代）：0.62–1.0 s 枪收到下方出画面（`p9_01_put_away`），1.05 s 服务器把弹匣交到手上；第三人称 1.05 s。
 
 ### 2.11 手调关键帧的战术换弹（2026-10-22）
 
@@ -278,7 +282,7 @@
 
 - 每个片段一个玩家动作（插件做，[afl_rig_blockbench_plugin_v1.md](afl_rig_blockbench_plugin_v1.md) 第 10–11 节）：
   - `gun/p9_01_reload_tactical`（1.7 s）、`gun/p9_01_reload_empty`（2.0 s）、`gun/p9_01_inspect`、`gun/p9_01_inspect_empty`（2026-10-22 起都是 11.1 s，旧版 5.4 / 5.3 s）；
-  - 取下弹匣 `gun/p9_01_unload`、`gun/p9_01_unload_empty`（1.05 s，2026-10-20，第 2.8 节）：枪抬到检视位，弹匣落进左手，左手带到腰前，枪回胸前预备位；逐帧检查通过（手离目标最多 0.29 px，腕弯 34°，扭转 26°，道具离躯干最少 1.23 px），`ActionCheck` / `AflRigParity` 还没加这两个；
+  - 取下弹匣 `gun/p9_01_unload`、`gun/p9_01_unload_empty`（1.45 s，2026-10-24 第二版，第 2.8 节）：枪抬到检视位，弹匣落进左手，左手带到腰前弹匣袋收好再回握把，枪回胸前预备位；逐帧检查通过（手离目标最多 0.29 px，腕弯 34°，扭转 26°，道具离躯干最少 0.89 px，bad 0），`ActionCheck` / `AflRigParity` 还没加这两个；
   - 长度和枪的片段相同，从枪的片段开始那一刻起播，速度 1。
 - 道具：
   - `p9_01`（枪）：举到胸前下巴高度，枪口朝上偏左、向右滚，弹匣井朝左手；

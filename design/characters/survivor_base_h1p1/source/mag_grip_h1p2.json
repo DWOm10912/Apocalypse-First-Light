@@ -1,0 +1,457 @@
+{
+ "_doc": "H1-P2 support-hand magazine grips and the firing thumb on the release (fp_reload_h1p1.py), solved on the H1-P1 body in the hip stance (scratch R2, 2026-10-24) against the magazine as two boxes, every hand vertex by its dominant deform bone. K: hand_l local (m) -> metres in the magazine placement frame (the gun px frame of the rest magazine, scaled to m): hand = rigid(W) @ K. e: finger eulers (deg, grip-file convention, set_fingers mirrors y / z for the left). carry: base plate in the palm, the magazine 45 deg from the palm normal toward the fingers and 22 deg across the palm, front face on the index finger (index along the front), middle and ring on the ulnar side, pinky curled, thumb on the radial side; palm gap 0, index 0.9 mm, middle / ring touching, whole hand at most 0.66 mm into the boxes. push: palm flat under the base plate (6 deg toward the fingers), fingers straight forward under the grip, thumb out; palm touching, at most 0.04 mm in. press_r: right thumb_01..03 with the pad on the left magazine release (nearest skin 5.6 mm from the button centre, the distal thumb at most 1 mm into the frame). slide (R4, 2026-10-24): the overhand grip on the locked-back slide for the empty reload - palm over the top 35 mm ahead of the slide's rear face, fingers turned 15 deg toward the muzzle and curled onto the right side (middle / ring 0.4-0.5 mm off, pinky 0.5 mm in, index 3 mm off), heel and thumb on the left side; K maps hand_l local (m) into the slide's rigid frame (scratch r4_slide.py search: palm lowered onto the slide, fingers and thumb closed to contact, reach and wrist checked at the formal rack frames). stop_r: the firing thumb on the slide stop for the ADS empty reload (scratch stop_thumb_bg.py, 2026-10-24: the pad on the rear of the lever's top, the distal thumb 1 mm into it). pinch (inspect, user 2026-10-24 \u63e1\u5708\u634f\u7740\u5f39\u5323, round 2 after \u201c\u624b\u6307\u5b8c\u5168\u6ca1\u63e1\u7d27\u201d; refs MW2 X12 / Tarkov P226R magazine checks): a closed fist round the magazine's lower half, its axis square across the hand (no lean; top about 35 mm out past the index, the base plate at the pinky), each finger closed joint by joint (_01 until any of its segments touches, then _02, then _03), every segment within 0.6 mm and none in; the pinky curled under the base plate (scratch wrap_bg.py). Round 3 (2026-10-24, user: twisted joints, not a human move): K turned 180 deg round the magazine's axis, so the palm is on the left broad side and the fingers wrap over the front - the left hand holds it with the forearm near neutral instead of turned past its range (scratch view_search_bg.py); the thumb from a search held to joint ranges (CMC twist at most 35, MCP -10..60, IP -15..80; it was twisted 40): along the side toward the top, about 2 mm off the magazine (scratch thumb_fist2_bg.py).",
+ "carry": {
+  "K": [
+   [
+    0.9271839,
+    0.3746065,
+    -0.0,
+    -0.0217645
+   ],
+   [
+    -0.3448271,
+    0.8534772,
+    -0.3907312,
+    -0.1133524
+   ],
+   [
+    -0.1463705,
+    0.3622796,
+    0.9205047,
+    -0.0628909
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "e": {
+   "index_01": [
+    39.2,
+    1.2,
+    0.0
+   ],
+   "index_02": [
+    11.8,
+    0.0,
+    0.0
+   ],
+   "index_03": [
+    5.9,
+    0.0,
+    0.0
+   ],
+   "middle_01": [
+    39.0,
+    0.0,
+    0.0
+   ],
+   "middle_02": [
+    41.17,
+    0.0,
+    0.0
+   ],
+   "middle_03": [
+    23.83,
+    0.0,
+    0.0
+   ],
+   "ring_01": [
+    59.5,
+    0.0,
+    0.0
+   ],
+   "ring_02": [
+    66.5,
+    0.0,
+    0.0
+   ],
+   "ring_03": [
+    38.5,
+    0.0,
+    0.0
+   ],
+   "pinky_01": [
+    85.0,
+    0.0,
+    0.0
+   ],
+   "pinky_02": [
+    95.0,
+    0.0,
+    0.0
+   ],
+   "pinky_03": [
+    55.0,
+    0.0,
+    0.0
+   ],
+   "thumb_01": [
+    10,
+    -40,
+    20
+   ],
+   "thumb_02": [
+    40,
+    0,
+    0
+   ],
+   "thumb_03": [
+    32.0,
+    0,
+    0
+   ]
+  }
+ },
+ "push": {
+  "K": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    0.002
+   ],
+   [
+    0.0,
+    0.9612616,
+    0.2756373,
+    -0.119292
+   ],
+   [
+    0.0,
+    -0.2756373,
+    0.9612616,
+    -0.0145577
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "e": {
+   "index_01": [
+    12,
+    0.0,
+    0.0
+   ],
+   "index_02": [
+    8,
+    0.0,
+    0.0
+   ],
+   "index_03": [
+    4,
+    0.0,
+    0.0
+   ],
+   "middle_01": [
+    14,
+    0.0,
+    0.0
+   ],
+   "middle_02": [
+    10,
+    0.0,
+    0.0
+   ],
+   "middle_03": [
+    5,
+    0.0,
+    0.0
+   ],
+   "ring_01": [
+    16,
+    0.0,
+    0.0
+   ],
+   "ring_02": [
+    12,
+    0.0,
+    0.0
+   ],
+   "ring_03": [
+    6,
+    0.0,
+    0.0
+   ],
+   "pinky_01": [
+    18,
+    0.0,
+    0.0
+   ],
+   "pinky_02": [
+    14,
+    0.0,
+    0.0
+   ],
+   "pinky_03": [
+    8,
+    0.0,
+    0.0
+   ],
+   "thumb_01": [
+    -9.5,
+    -34.5,
+    8.0
+   ],
+   "thumb_02": [
+    6.0,
+    0,
+    0
+   ],
+   "thumb_03": [
+    4.0,
+    0,
+    0
+   ]
+  }
+ },
+ "press_r": {
+  "thumb_01": [
+   1.0,
+   -51.0,
+   -27.25
+  ],
+  "thumb_02": [
+   35.25,
+   0,
+   0
+  ],
+  "thumb_03": [
+   36.25,
+   0,
+   0
+  ]
+ },
+ "slide": {
+  "K": [
+   [
+    -0.257834,
+    0.965926,
+    -0.022558,
+    -0.042801
+   ],
+   [
+    0.96225,
+    0.258819,
+    0.084186,
+    -0.049131
+   ],
+   [
+    0.087156,
+    0.0,
+    -0.996195,
+    0.142488
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "e": {
+   "index_01": [
+    75.0,
+    0.0,
+    7.0
+   ],
+   "index_02": [
+    70.0,
+    0.0,
+    0.0
+   ],
+   "index_03": [
+    35.0,
+    0.0,
+    0.0
+   ],
+   "middle_01": [
+    76.7,
+    0.0,
+    0.0
+   ],
+   "middle_02": [
+    67.1,
+    0.0,
+    0.0
+   ],
+   "middle_03": [
+    33.5,
+    0.0,
+    0.0
+   ],
+   "ring_01": [
+    73.3,
+    0.0,
+    -6.0
+   ],
+   "ring_02": [
+    64.2,
+    0.0,
+    0.0
+   ],
+   "ring_03": [
+    32.1,
+    0.0,
+    0.0
+   ],
+   "pinky_01": [
+    63.3,
+    0.0,
+    -18.0
+   ],
+   "pinky_02": [
+    55.4,
+    0.0,
+    0.0
+   ],
+   "pinky_03": [
+    27.7,
+    0.0,
+    0.0
+   ],
+   "thumb_01": [
+    -15,
+    -35,
+    5
+   ],
+   "thumb_02": [
+    0,
+    0,
+    0
+   ],
+   "thumb_03": [
+    0.0,
+    0,
+    0
+   ]
+  }
+ },
+ "stop_r": {
+  "thumb_01": [
+   1.0,
+   -59.0,
+   -27.25
+  ],
+  "thumb_02": [
+   35.25,
+   0,
+   0
+  ],
+  "thumb_03": [
+   -0.25,
+   0,
+   0
+  ]
+ },
+ "pinch": {
+  "K": [
+   [
+    -9.999999406318238e-08,
+    -1.25772388059886e-08,
+    1.0,
+    -0.03380000591278076
+   ],
+   [
+    -0.37460651993751526,
+    0.9271838068962097,
+    -9.123006350364449e-09,
+    -0.12409920990467072
+   ],
+   [
+    -0.9271838665008545,
+    -0.3746064007282257,
+    -3.67166883563641e-08,
+    0.03550827130675316
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "e": {
+   "thumb_01": [
+    -10,
+    -20,
+    20
+   ],
+   "thumb_02": [
+    30,
+    0,
+    0
+   ],
+   "thumb_03": [
+    20,
+    0,
+    0
+   ],
+   "index_01": [
+    72.5,
+    0.0,
+    2.0
+   ],
+   "index_02": [
+    83.75,
+    0.0,
+    0.0
+   ],
+   "index_03": [
+    13.75,
+    0.0,
+    0.0
+   ],
+   "middle_01": [
+    83.75,
+    0.0,
+    0.0
+   ],
+   "middle_02": [
+    77.5,
+    0.0,
+    0.0
+   ],
+   "middle_03": [
+    8.75,
+    0.0,
+    0.0
+   ],
+   "ring_01": [
+    63.75,
+    0.0,
+    -2.0
+   ],
+   "ring_02": [
+    83.75,
+    0.0,
+    0.0
+   ],
+   "ring_03": [
+    28.75,
+    0.0,
+    0.0
+   ],
+   "pinky_01": [
+    90.0,
+    0.0,
+    -5.0
+   ],
+   "pinky_02": [
+    47.5,
+    0.0,
+    0.0
+   ],
+   "pinky_03": [
+    11.25,
+    0.0,
+    0.0
+   ]
+  }
+ }
+}

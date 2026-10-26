@@ -51,7 +51,8 @@ import org.jetbrains.annotations.Nullable;
  * Mesh V1, 2026-10-15, tools/furniture/furniture-mesh.mjs: the doors swing smoothly, the resting piece chunk-drawn):
  * <ul>
  * <li>{@link Table}: 76 cm, joins the tables beside it (north / east / south / west, like a fence) into one top.</li>
- * <li>{@link Chair}: right-click sits (an invisible {@link FurnitureSeat}), sneak stands up; facing = where the sitter looks.</li>
+ * <li>{@link Chair}: right-click sits ({@link ChairSit}, AFL's own sitting, no seat entity since 2026-10-25), the movement keys or
+ * sneak stand up; facing = where the sitter looks.</li>
  * <li>{@link Counter}: the kitchen counter (18 slots) and the sink counter (9; the enamel sink and pitcher pump are looks
  * only in V1), a vanilla chest screen; {@code open} while someone has it open (the doors swing out).</li>
  * <li>{@link GunRack}: on a wall (facing = away from it); three notches for long guns, a shelf for two small items;
@@ -208,13 +209,13 @@ public final class WoodFurniture {
 
     // ---------------------------------------------------------------------------------------------------- chair
 
-    /** A ladder-back wooden chair (seat 46 cm); right-click sits, sneak stands up. Facing = where the sitter looks. */
+    /** A ladder-back wooden chair (seat 46.5 cm high, 58 x 45 cm); right-click sits (ChairSit). Facing = where the sitter looks. */
     public static final class Chair extends HorizontalDirectionalBlock implements CabinPieces {
         private static final VoxelShape[] SHAPES = new VoxelShape[4];
 
         static {
             for (int r = 0; r < 4; r++)
-                SHAPES[r] = CabinBlocks.turned(r, new double[]{4.64, 0, 4.8, 11.36, 7.44, 11.52}, new double[]{4.96, 7.44, 10.56, 11.04, 15.68, 11.2});
+                SHAPES[r] = CabinBlocks.turned(r, new double[]{3.36, 0, 4.64, 12.64, 7.44, 11.84}, new double[]{3.68, 7.44, 11.04, 12.32, 15.68, 11.68});
         }
 
         Chair(Properties p) {
@@ -243,9 +244,11 @@ public final class WoodFurniture {
         @Override
         @SuppressWarnings("deprecation")
         public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-            if (player.isSecondaryUseActive() || player.isPassenger() || FurnitureSeat.occupied(level, pos)) return InteractionResult.PASS;
+            if (player.isSecondaryUseActive() || player.isPassenger() || ChairSit.sitting(player) || (!level.isClientSide && ChairSit.occupied(level, pos)))
+                return InteractionResult.PASS;
             if (level.isClientSide) return InteractionResult.SUCCESS;
-            return FurnitureSeat.sit(level, pos, state.getValue(FACING), player) ? InteractionResult.CONSUME : InteractionResult.PASS;
+            return player instanceof net.minecraft.server.level.ServerPlayer sp && ChairSit.sit(sp, pos, state.getValue(FACING))
+                    ? InteractionResult.CONSUME : InteractionResult.PASS;
         }
 
         @Override

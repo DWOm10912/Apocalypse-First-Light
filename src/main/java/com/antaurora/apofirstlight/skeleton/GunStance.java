@@ -234,8 +234,13 @@ public final class GunStance {
     public static final float POCKET_GIVE = 3F;
     /** The support hand's highest corner this far (model px) above the handguard's underside. */
     public static final float SUPPORT_OVERLAP = 0.3F;
-    /** NativeHandBinding: the hand cap's distance below the arm pivot (px). */
+    /** NativeHandBinding: the hand cap's distance below the arm pivot (px), vanilla's arm. */
     public static final float DISTAL_Y = 10F;
+    /**
+     * The rig the player skeleton solves on (PlayerSkeleton#poser): its hand cap ({@link SkeletonRig.Profile}) sets the
+     * hand targets' arm frame; vanilla's for the vanilla rig.
+     */
+    private static SkeletonRig.Profile arm;
     /** A {@link Grip} turns the hand about this point, px up the arm from the hand cap (the hand bone is the last 2 px). */
     public static final float PALM_Y = 1.5F;
 
@@ -255,7 +260,23 @@ public final class GunStance {
 
     /** NativeHandBinding#centreX: the arm box's centre off the pivot (px), right arm negative. */
     public static float centreX(boolean right, boolean slim) {
+        if (arm != null) return (right ? 1F : -1F) * arm.handCapX();
         return (right ? -1F : 1F) * (slim ? 0.5F : 1F);
+    }
+
+    /** The hand cap's distance below the arm pivot (px) on the active rig ({@link #DISTAL_Y} for vanilla's). */
+    public static float distalY() {
+        return arm != null ? arm.handCapY() : DISTAL_Y;
+    }
+
+    /** The hand's half width (px) on the active rig. */
+    static float handHalf(boolean slim) {
+        return arm != null ? arm.handHalf() : slim ? 1.5F : 2F;
+    }
+
+    /** PlayerSkeleton#poser: the rig the hand targets are made for (its profile; null: vanilla's). */
+    public static void useRig(SkeletonRig rig) {
+        arm = rig.profile;
     }
 
     /** The ADS calibration numbers of a gun (data native_guns ads.profile; the sight mount's aim point when fitted). */
@@ -344,11 +365,11 @@ public final class GunStance {
         Vector3f up = gunRot.transform(new Vector3f(0, 1, 0));
         Quaternionf r = new Quaternionf().rotationTo(new Vector3f(0, 1, 0), finger);
         r.premul(new Quaternionf().rotationAxis(rad(s.roll()), finger.x, finger.y, finger.z));
-        float w = slim ? 1.5F : 2F, high = -1e9F;
+        float w = handHalf(slim), high = -1e9F;
         for (float x : new float[]{-w, w}) for (float y : new float[]{-2F, 0F}) for (float z : new float[]{-2F, 2F})
             high = Math.max(high, r.transform(new Vector3f(x, y, z)).dot(up));
         cap.sub(up.mul(high - SUPPORT_OVERLAP));
-        return out.translation(cap).rotate(r).translate(-centreX(false, slim), -DISTAL_Y, 0);
+        return out.translation(cap).rotate(r).translate(-centreX(false, slim), -distalY(), 0);
     }
 
     /** The chest view frame from the chest bone's skinning matrix (model px) and its rest pivot (model px). */
@@ -400,7 +421,7 @@ public final class GunStance {
         out.translation(m.getTranslation(new Vector3f())).rotate(m.getUnnormalizedRotation(new Quaternionf()));
         if (grip != null && (grip.pitch() != 0 || grip.yaw() != 0 || grip.roll() != 0))
             out.translate(0, -PALM_Y, 0).rotateXYZ(rad(grip.pitch()), rad(grip.yaw()), rad(grip.roll())).translate(0, PALM_Y, 0);
-        return out.translate(-centreX(right, slim), -DISTAL_Y, 0);
+        return out.translate(-centreX(right, slim), -distalY(), 0);
     }
 
     /**

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "71";
+    private static final String PROTOCOL = "72";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -134,6 +134,8 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.health.LightningPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.weather.WeatherPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
+        // AFL chair sitting (cabin/ChairSit, protocol 72): who sits on which wooden chair, getting up
+        nextId = com.antaurora.apofirstlight.cabin.ChairSit.register(channel, nextId);
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
@@ -212,6 +214,21 @@ public final class AflNetwork {
     /** Sitting on the ground (client): sit down or get up (sit/GroundSit). */
     public static void sitToServer(Object packet) {
         if (channel != null) channel.sendToServer(packet);
+    }
+
+    /** Chair sitting (client): get up (cabin/ChairSit). */
+    public static void chairToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
+    }
+
+    /** Chair sitting: a player sits or is up, to the player and the clients tracking it. */
+    public static void chairToTracking(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), packet);
+    }
+
+    /** Chair sitting: a sitter, to one client that starts tracking it. */
+    public static void chairTo(ServerPlayer viewer, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> viewer), packet);
     }
 
     /** Player skeleton V1 (client): the own aim changed. */
