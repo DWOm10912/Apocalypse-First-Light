@@ -44,7 +44,7 @@
 | `tags/items/retired/wood_products.json` | 通用木制品 44 个：木棍、碗、工作台、箱子、陷阱箱、木桶、书架、雕纹书架、讲台、梯子、堆肥桶、制图台、制箭台、织布机、音符盒、唱片机、蜂箱、16 色床、木镐 / 斧 / 锹 / 锄、火把、灵魂火把、物品展示框、荧光物品展示框、画、盔甲架、脚手架（V1.1） | 4.6 节 |
 | `tags/items/retired/nether.json`、`end.json`、`shulker_boxes.json`、`prismarine.json`、`lapis.json`、`redstone.json`、`sculk.json`、`functional.json`、`ranged.json`、`spawn_eggs.json` | V1.2 的 10 份清单，共 333 个物品（4.7 节） | 4.7 节 |
 | `tags/items/retired/unobtainable.json` | `#gear`、附魔书、附魔之瓶、`#wood`、`#wood_products`、V1.2 的 10 份、V1.3 的 4 份、V1.4 的 3 份和 V1.5 的 5 份清单 | 配方（按输出）、战利品、交易、出生装备 |
-| `tags/items/retired/creative_hidden.json` | `#gear`、`#wood`、`#wood_products`、V1.2 的 10 份、V1.3 的 4 份、V1.4 的 3 份和 V1.5 的 5 份清单 | 创造栏隐藏（只是外观） |
+| `tags/items/retired/creative_hidden.json` | `#gear`、`#wood`、`#wood_products`、V1.2 的 10 份、V1.3 的 4 份、V1.4 的 3 份和 V1.5 的 5 份清单，V1.9 的 `vegetation`，V1.10 的 `hidden_only`（只隐藏不退役） | 创造栏隐藏（只是外观） |
 | `tags/items/retired/misc_blocks.json`、`amethyst.json`、`tools.json`、`food.json` | V1.3 的 4 份清单，共 131 个物品（4.8 节） | 4.8 节 |
 | `tags/items/retired/masonry.json`、`copper_blocks.json`、`gems.json` | V1.4 的 3 份清单，共 91 个物品（4.9 节） | 4.9 节 |
 | `tags/items/retired/mob_drops.json`、`archaeology.json`、`nature.json`、`storage_blocks.json`、`decor_blocks.json` | V1.5 的 5 份清单，共 121 个物品（4.10 节） | 4.10 节 |
@@ -328,6 +328,25 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - **空窗期**：P1 / P2 之前新世界地面只有草皮，没有地上植物（植被设计问题 1，用户同意先单独做 P0）。
 - **GameTest**：没改。`VanillaRetirementGameTests` 的配方清单只列被移除的配方，这批没有被移除的配方。
 
+### 4.14 只在创造栏隐藏：原版煤、铁、铜、金矿和草方块（V1.10，2026-10-24）
+
+用户 2026-10-24 原话（C 转来）："原版的矿石如果退役了，隐藏就行"，"我们的AFL不应该加草方块这个东西，只有泥土，因为草方块如果这样搭墙的话会很丑"。
+
+- **清单**：`retired/hidden_only.json`，9 个明确 ID，**只接进 `creative_hidden`，不进 `unobtainable`**：
+  - 煤矿石、铁矿石、铜矿石、金矿石，各带深板岩变种（8 个）；
+  - 草方块。
+- **效果**：创造栏和搜索里看不到。下面这些照旧：
+  - 世界生成（普通联邦世界还生成原版矿和草方块）；
+  - 挖掉的掉落、配方；
+  - `/give` 能拿。
+  
+  所以不算"拿不到"，和 4.6–4.13 节不同。
+- **没动的**：
+  - 粗铁、粗金、粗铜和它们的锭：在原料页，没退役；
+  - 铜接线用的铜锭留着，退不退由用户定。
+- **草方块的替代**：世界里用什么代替草方块和原版土类，C 在写自然地面重做方案，定了以后再决定草方块要不要进 `unobtainable`、世界生成要不要换掉。
+- 钻石、绿宝石、青金石、红石、下界的矿已经在 V1.2 / V1.4 退役（拿不到 + 隐藏 + 不生成）。
+
 ## 5. 获取途径覆盖
 
 | 途径 | 处理 | 说明 |
@@ -475,4 +494,5 @@ AFL 有自己的六个树种（白栎、白松、红栎、粗皮山核桃、红�
 - V1.4：`tags/items/retired/masonry.json`、`copper_blocks.json`、`gems.json`（一次性生成）；`remove_retired_ores.json` 加钻石、绿宝石矿。
 - V1.5：`tags/items/retired/mob_drops.json`、`archaeology.json`、`nature.json`、`storage_blocks.json`、`decor_blocks.json`（一次性生成）；`forge/biome_modifier/remove_fantasy_features.json`。
 - V1.6：`retired/misc_blocks.json` 加铁栏杆，`creative_hidden.json` 加附魔书、附魔之瓶；`client/VanillaRetirementClient.CreativeTabs` 拿掉战斗页、红石页的原版物品；`client/CreativeTabLayout`、`mixin/client/CreativeTabLayoutMixin`（标签页排布）；`compat/jei/AflJeiPlugin` 加左侧标签列的额外区域。
+- V1.10：`tags/items/retired/hidden_only.json`（手写，9 个，只接 `creative_hidden`）。
 - V1.9：`tags/items/retired/vegetation.json`（手写，30 个）；`forge/biome_modifier/remove_vanilla_vegetation.json`（54 个地物）；`structures/bunker.nbt` 调色板 5 项改名。
