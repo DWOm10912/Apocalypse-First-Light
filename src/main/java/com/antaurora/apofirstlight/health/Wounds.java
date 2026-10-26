@@ -245,7 +245,7 @@ public final class Wounds {
     /** Dev: every wound this many days older, stepped a second at a time (each check rolls as it would online). */
     static void advance(ServerPlayer player, double days) {
         WoundConfig c = WoundConfig.get();
-        long steps = Math.max(1, Math.round(days * c.dayTicks / 20.0));
+        long steps = Math.max(1, Math.round(days * c.dayTicks() / 20.0));
         for (long i = 0; i < steps && !state(player).wounds.isEmpty(); i++) step(player, 20);
     }
 

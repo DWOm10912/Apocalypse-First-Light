@@ -305,7 +305,7 @@ public final class LightningInjury {
         if (faint) s.faintTotal = s.faint = Math.max(s.faint, ticks(roll(r, hit.unconscious)));
         if (paralysed) s.paralysisTotal = s.paralysis = Math.max(s.paralysis, ticks(roll(r, hit.paralysis)));
         s.weakTotal = s.weak = Math.max(s.weak, ticks(roll(r, c.weakLegs)));
-        long day = WoundConfig.get().dayTicks;
+        long day = WoundConfig.get().dayTicks();
         if (r.nextDouble() < hit.eardrum) {
             s.eardrumTotal = s.eardrum = c.eardrumDays * day;
             s.eardrumSide = (byte) (r.nextBoolean() ? 1 : -1);

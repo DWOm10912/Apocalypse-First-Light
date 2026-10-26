@@ -1,6 +1,6 @@
 {
   "max": 100,
-  "base_per_hour": 100,
+  "base_per_game_hour": 1.3889,
   "exertion_per_100_stamina": 3,
   "bottle": 20,
   "sip": 5,

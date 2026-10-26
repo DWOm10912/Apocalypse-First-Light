@@ -96,6 +96,8 @@ public final class ClientLiquid {
         final int sides;
         boolean still;
         float target, shown, before;
+        /** The water's velocity east and south, m/s (WaterQuery). */
+        float vx, vz;
 
         Cell(int x, int z, int floor, float level, boolean boundary, boolean still, int sides) {
             this.x = x;
@@ -126,6 +128,27 @@ public final class ClientLiquid {
 
     private ClientLiquid() {}
 
+    static {
+        com.antaurora.apofirstlight.liquid.WaterQuery.setClientSource(ClientLiquid::layers);
+    }
+
+    /** WaterQuery's client side: the column's water as drawn (the level shown), held levels left to vanilla's water. */
+    private static int layers(int x, int z, double[] out) {
+        Cell[] at = COLUMNS.get(column(x, z));
+        if (at == null) return 0;
+        int n = 0;
+        for (Cell c : at) {
+            if (n == com.antaurora.apofirstlight.liquid.WaterQuery.MAX_LAYERS) break;
+            if (c.boundary || c.shown - c.floorM() < com.antaurora.apofirstlight.liquid.WaterQuery.MIN_DEPTH) continue;
+            int o = n++ * com.antaurora.apofirstlight.liquid.WaterQuery.STRIDE;
+            out[o] = c.floorM();
+            out[o + 1] = c.shown;
+            out[o + 2] = c.vx;
+            out[o + 3] = c.vz;
+        }
+        return n;
+    }
+
     private static long column(int x, int z) {
         return ((long) x << 32) | (z & 0xffffffffL);
     }
@@ -149,6 +172,8 @@ public final class ClientLiquid {
             int x = (p.chunkX() << 4) + ((p.column()[i] >> 4) & 15), z = (p.chunkZ() << 4) + (p.column()[i] & 15);
             boolean still = (p.flags()[i] & LiquidPackets.STILL) != 0, boundary = (p.flags()[i] & LiquidPackets.BOUNDARY) != 0;
             Cell c = new Cell(x, z, p.floor()[i], p.level()[i] / 4096F, boundary, still, p.flags()[i] >> LiquidPackets.SIDES_SHIFT & 15);
+            c.vx = (float) (p.vx()[i] / LiquidPackets.Surface.VELOCITY);
+            c.vz = (float) (p.vz()[i] / LiquidPackets.Surface.VELOCITY);
             // the same cell as before eases on from where it is shown
             if (old != null && !still) {
                 for (Cell o : old) {

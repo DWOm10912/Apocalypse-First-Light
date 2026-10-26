@@ -68,6 +68,15 @@ public final class HealthConfig {
     }
 
     /**
+     * The basal hunger (World Time V1, docs/gameplay/world_time_b_units_v1.md 6): food points a game hour standing still, on
+     * top of vanilla's exhaustion from acting; given as exhaustion (4 a point), so saturation goes first and the survivor
+     * attribute hunger_rate applies. 20 / 72: a full bar in three game days, as thirst.
+     */
+    public static final class Hunger {
+        public double basePerGameHour = 20 / 72.0;
+    }
+
+    /**
      * Fractures (docs/gameplay/fracture_splint_v1_plan.md). Pairs are [not splinted, splinted]; every penalty fades out
      * linearly over the last part of the healing (from fade_from).
      */
@@ -195,6 +204,7 @@ public final class HealthConfig {
     public double legacyScale = 5;
     public Damage damage = new Damage();
     public Regen regen = new Regen();
+    public Hunger hunger = new Hunger();
     public Fracture fracture = new Fracture();
     public Knockdown knockdown = new Knockdown();
     public Collapse collapse = new Collapse();
@@ -223,6 +233,8 @@ public final class HealthConfig {
         }
         if (regen.delaySeconds < 0 || regen.awakePerMinute < 0 || regen.restPerMinute < 0 || regen.sleepPerMinute < 0 || regen.sleepMax < 0)
             throw new IllegalArgumentException("invalid regen numbers");
+        if (hunger == null) hunger = new Hunger();
+        if (!(hunger.basePerGameHour >= 0)) throw new IllegalArgumentException("invalid hunger numbers");
         if (fracture == null) fracture = new Fracture();
         var f = fracture;
         if (f.leg == null || f.mainArm == null || f.supportArm == null || !pair(f.legFall, 3) || !pair(f.armFall, 3)

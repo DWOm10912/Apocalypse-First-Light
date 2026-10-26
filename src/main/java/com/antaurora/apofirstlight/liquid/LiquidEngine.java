@@ -57,9 +57,12 @@ public final class LiquidEngine {
      * than U_QUIET m/s. Moving whole millilitres leaves still water rocking by some tens of mL a cell, for ever: up to
      * 6e-5 m3/s through a shallow face, 1.7e-4 m3/s (0.1 mm/s) through a 1.5 m deep one (offline check); below these it is
      * still. What still drains slower than this is left to the wake check (WAKE), so a pool stops about 2 mm above its
-     * outlet.
+     * outlet. Or the cell gained or lost no more than ROCK_ML in the tick: in a sliver of a column (a pond's edge over a
+     * smoothed slope, 1-2 % of a metre open) one millilitre moves the level more than LEVEL_QUIET, so that rocking alone
+     * kept a whole pond awake for ever (offline perf, river plan step 1, 2026-10-26).
      */
     static final double LEVEL_QUIET = 5e-5, FLOW_QUIET = 1e-4, U_QUIET = 1e-3;
+    static final long ROCK_ML = 5;
     static final int QUIET_STEPS = 40, SLEEP_EVERY = 20, LEVEL_EVERY = 40;
     /** 2: the account's fromSurface (package 3a); version 1 saves still read. */
     private static final int SAVE_VERSION = 2;
@@ -80,7 +83,11 @@ public final class LiquidEngine {
     private final byte[] edgeBuf;
     /** Columns in key order (every walk over them is deterministic), and the same by key for lookups. */
     private final TreeMap<Long, LiquidColumn> columns = new TreeMap<>();
-    private final HashMap<Long, LiquidColumn> index = new HashMap<>();
+    /**
+     * Columns by position. Not a HashMap of Long: Long's hash of x << 32 | z is x ^ z, so a 96 x 96 m area falls into 128
+     * buckets and every lookup walks a tree (offline perf, river plan step 1); fastutil mixes the bits.
+     */
+    private final it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<LiquidColumn> index = new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
     private final TreeMap<Long, LiquidLedger> ledgers = new TreeMap<>();
     private final List<LiquidCell> cells = new ArrayList<>();
     private final List<LiquidFace> faces = new ArrayList<>();
@@ -161,6 +168,7 @@ public final class LiquidEngine {
                         c.sleeping = sleeping && volume > 0;
                         c.refreshLevel();
                         c.lastLevel = c.level;
+                        c.lastVolume = c.volume;
                         if (volume > 0) wetted.add(c);
                     } else if (volume > 0) {
                         lost.add(new long[]{volume, Double.doubleToLongBits(level)});
@@ -379,6 +387,7 @@ public final class LiquidEngine {
                 ca.faces.add(f);
                 cb.faces.add(f);
                 faces.add(f);
+                if (f.q != 0 || f.carry != 0) freshFlow.add(f);
             }
         }
         dirty = true;
@@ -400,6 +409,8 @@ public final class LiquidEngine {
         cells.clear();
         for (LiquidColumn col : columns.values()) cells.addAll(col.cells);
         faces.sort(FACE_ORDER);
+        for (LiquidCell c : cells) c.owned.clear();
+        for (LiquidFace f : faces) f.a.owned.add(f);
         dirty = false;
     }
 
@@ -579,9 +590,14 @@ public final class LiquidEngine {
             if (c.volume == 0) {
                 c.liquid = null;
                 c.soakCarry = 0;
+                // a dry cell is not part of a basin (a basin of one dry cell per film cost the wake check its perimeter)
+                c.sleeping = false;
                 basinsDirty = true;
             }
             c.refreshLevel();
+            // soaking in is not the water moving: a film fed by a trickle and soaking every 20 ticks never got quiet
+            c.lastLevel = c.level;
+            c.lastVolume = c.volume;
         }
     }
 
@@ -645,16 +661,18 @@ public final class LiquidEngine {
     }
 
     private void tickQuiet() {
-        for (LiquidCell c : cells) {
-            if (!c.awake()) continue;
+        // only what the flow looked at: dry cells away from all water have nothing to settle
+        for (LiquidCell c : liveCells) {
             c.refreshLevel();
             boolean flowing = false;
             for (LiquidFace f : c.faces) {
                 double q = Math.abs(f.q);
                 if (q > FLOW_QUIET) flowing |= q > U_QUIET * f.crossSection(Math.max(f.a.level, f.b.level));
             }
-            c.quiet = Math.abs(c.level - c.lastLevel) < LEVEL_QUIET && !flowing ? c.quiet + 1 : 0;
+            boolean still = Math.abs(c.level - c.lastLevel) < LEVEL_QUIET || Math.abs(c.volume - c.lastVolume) <= ROCK_ML;
+            c.quiet = still && !flowing ? c.quiet + 1 : 0;
             c.lastLevel = c.level;
+            c.lastVolume = c.volume;
         }
         activateWetted();
         if (tick % SLEEP_EVERY == 0) sleepCheck();
@@ -744,27 +762,54 @@ public final class LiquidEngine {
     /** This tick's faces that can carry liquid and its awake cells: sleeping water costs nothing in the step. */
     private final List<LiquidFace> live = new ArrayList<>();
     private final List<LiquidCell> liveCells = new ArrayList<>();
+    /** Last tick's live faces, and faces built since with a saved flow: cleared if the flow does not look at them. */
+    private final List<LiquidFace> lastLive = new ArrayList<>(), freshFlow = new ArrayList<>();
 
     private void flow() {
         live.clear();
         liveCells.clear();
-        for (LiquidFace f : faces) {
-            LiquidCell a = f.a, b = f.b;
-            boolean active = takesPart(a) && takesPart(b) && !(a.boundary && b.boundary)
-                    && (a.volume > 0 || b.volume > 0 || a.boundary || b.boundary)
-                    && (a.liquid == null || b.liquid == null || a.liquid == b.liquid);
-            if (active) live.add(f);
-            else {
-                f.q = 0;
-                f.carry = 0;
-            }
+        // only cells with water (or a boundary) taking part and their neighbours: a face between two dry cells carries
+        // nothing, and a film that wetted a hillside once leaves thousands of dry columns loaded (offline perf, river plan
+        // step 1). The faces in the engine's order still: each cell's own faces, cell by cell.
+        for (LiquidCell c : cells) {
+            if (!(c.volume > 0 || c.boundary) || !takesPart(c)) continue;
+            c.near = tick;
+            for (LiquidFace f : c.faces) f.other(c).near = tick;
         }
         double maxDepth = 0;
         for (LiquidCell c : cells) {
-            if (!c.awake()) continue;
-            liveCells.add(c);
-            if (c.volume > 0) maxDepth = Math.max(maxDepth, c.level - c.floor());
+            if (c.near != tick) continue;
+            if (c.awake()) {
+                liveCells.add(c);
+                if (c.volume > 0) maxDepth = Math.max(maxDepth, c.level - c.floor());
+            }
+            for (LiquidFace f : c.owned) {
+                f.seen = tick;
+                LiquidCell a = f.a, b = f.b;
+                boolean active = takesPart(a) && takesPart(b) && !(a.boundary && b.boundary)
+                        && (a.volume > 0 || b.volume > 0 || a.boundary || b.boundary)
+                        && (a.liquid == null || b.liquid == null || a.liquid == b.liquid);
+                if (active) live.add(f);
+                else {
+                    f.q = 0;
+                    f.carry = 0;
+                }
+            }
         }
+        // a face not looked at carries nothing: last tick's live ones that went dry, and new ones given a saved flow
+        for (LiquidFace f : lastLive) {
+            if (f.seen == tick) continue;
+            f.q = 0;
+            f.carry = 0;
+        }
+        for (LiquidFace f : freshFlow) {
+            if (f.seen == tick) continue;
+            f.q = 0;
+            f.carry = 0;
+        }
+        freshFlow.clear();
+        lastLive.clear();
+        lastLive.addAll(live);
         substeps = Math.max(1, (int) Math.ceil(DT * Math.sqrt(G * maxDepth) / 0.5));
         if (live.isEmpty()) return;
         double dt = DT / substeps;
@@ -1093,6 +1138,7 @@ public final class LiquidEngine {
             c.sleeping = false;
             c.quiet = 0;
             c.lastLevel = c.level;
+            c.lastVolume = c.volume;
         }
         basinsDirty = true;
     }
@@ -1307,6 +1353,7 @@ public final class LiquidEngine {
             n.liquid = Liquids.WATER;
             n.refreshLevel();
             n.lastLevel = n.level;
+            n.lastVolume = n.volume;
             wetted.add(n);
         }
     }
@@ -1357,6 +1404,11 @@ public final class LiquidEngine {
 
     public boolean loaded(int chunkX, int chunkZ) {
         return ledgers.containsKey(LiquidColumn.chunkKey(chunkX, chunkZ));
+    }
+
+    /** The column at (x, z) when there is one (asking makes none: WaterQuery). */
+    public LiquidColumn existingColumn(int x, int z) {
+        return index.get(LiquidColumn.key(x, z));
     }
 
     /** Is there a column at (x, z) yet (the ground there matters to the liquid)? */
@@ -1459,6 +1511,11 @@ public final class LiquidEngine {
         long v = 0;
         for (LiquidLedger l : ledgers.values()) v += l.inFlight;
         return v;
+    }
+
+    /** The time spent so far by phase, ns: rain and levelling, wake check, flow, quiet and sleep (/afl dev water perf). */
+    public long[] spentNanos() {
+        return spent.clone();
     }
 
     public int awakeWetCells() {

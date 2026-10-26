@@ -26,7 +26,7 @@ public final class ClientLightningInjury {
         aftermath = Mth.clamp(p.aftermath(), 0, 1);
         eardrumSide = p.eardrumSide();
         var c = LightningInjuryConfig.get();
-        long day = WoundConfig.get().dayTicks;
+        long day = WoundConfig.get().dayTicks();
         eardrumStep = (float) (1 / (c.eardrumDays * day));
         aftermathStep = (float) (1 / (c.aftermathDays * day));
     }

@@ -223,7 +223,7 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 ## 口渴
 
-满值 <V d="thirst/thirst_v1#max" />，每小时（现实时间）下降 <V d="thirst/thirst_v1#base_per_hour" />，每消耗 100 耐力额外下降 <V d="thirst/thirst_v1#exertion_per_100_stamina" />
+满值 <V d="thirst/thirst_v1#max" />，站着不动每游戏小时下降 <V d="thirst/thirst_v1#base_per_game_hour" />（约 3 个游戏日喝空），每消耗 100 耐力额外下降 <V d="thirst/thirst_v1#exertion_per_100_stamina" />
 
 | 口渴值 | 影响 |
 |---|---|
@@ -261,6 +261,6 @@ AFL 的生存界面取代了原版的心形生命值、饥饿条和经验条：�
 
 ## 饥饿
 
-饥饿沿用原版系统，AFL 目前还没有自己的食物；原版食物也已无法获得（<StatusTag s="test" />），新世界里暂时没有吃的。饥饿值 ≤ <V d="stamina/stamina_v1#low_food_level" /> 时耐力恢复 ×<V d="stamina/stamina_v1#regen_low_food" />；低于 <V d="health/health_v1#regen.min_food" /> 时无法自然恢复生命值；肠胃感染和冷 2 及以上会额外消耗饥饿值
+饥饿沿用原版系统，AFL 目前还没有自己的食物；原版食物也已无法获得（<StatusTag s="test" />），新世界里暂时没有吃的。<StatusTag s="test" /> 站着不动也会慢慢饿：每游戏小时下降 <V d="health/health_v1#hunger.base_per_game_hour" />（先扣饱和度），约 3 个游戏日饿空，和口渴一样；跑、跳、挖、打会饿得更快。饥饿值 ≤ <V d="stamina/stamina_v1#low_food_level" /> 时耐力恢复 ×<V d="stamina/stamina_v1#regen_low_food" />；低于 <V d="health/health_v1#regen.min_food" /> 时无法自然恢复生命值；肠胃感染和冷 2 及以上会额外消耗饥饿值
 
 <StatusTag s="planned" /> 食物腐败和储存

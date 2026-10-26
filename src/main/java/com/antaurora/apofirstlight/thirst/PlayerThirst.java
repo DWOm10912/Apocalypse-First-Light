@@ -195,7 +195,7 @@ public final class PlayerThirst {
             boolean peaceful = player.level().getDifficulty() == Difficulty.PEACEFUL;
             boolean sick = sick(player);
             if (!peaceful) {
-                double drain = c.basePerHour / 72000.0 + spent * c.exertionPer100Stamina / 100.0;
+                double drain = com.antaurora.apofirstlight.time.AflTime.perTick(c.basePerGameHour) + spent * c.exertionPer100Stamina / 100.0;
                 if (sick) drain *= c.sickness.thirstMultiplier;
                 drain *= com.antaurora.apofirstlight.temperature.PlayerTemperature.thirstMultiplier(player); // heat stages
                 drain *= com.antaurora.apofirstlight.survivor.SurvivorStats.multiplier(player, com.antaurora.apofirstlight.registry.AflAttributes.THIRST_RATE, 0); // survivor attribute

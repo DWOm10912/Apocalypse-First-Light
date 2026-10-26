@@ -35,9 +35,15 @@ public final class LiquidCell {
     boolean sleeping;
     LiquidBasin basin, lastBasin;
     final List<LiquidFace> faces = new ArrayList<>(4);
+    /** The faces this cell owns (it is their west / north side), in the engine's face order (rebuilt with it). */
+    final List<LiquidFace> owned = new ArrayList<>(2);
+    /** The last tick water (or a boundary) taking part in the flow was in this cell or next to it. */
+    long near = -1;
     /** Step scratch, mL: what flows out and in this step, and the room at its start. */
     double out, in, space;
     double lastLevel;
+    /** The volume at the last quiet check, mL (a sliver's level jumps with every millilitre: ROCK_ML). */
+    long lastVolume;
     /**
      * The film the floor holds (LiquidSoak): mL that do not run off, and what a film soaks in and dries a tick (mL, the
      * floor's open area times the rates; infiltration first). Set when the column is built.
@@ -118,6 +124,31 @@ public final class LiquidCell {
             else hi = mid - 1;
         }
         return (floorSlab + lo + (t - prefix[lo]) / area[lo]) / SLABS;
+    }
+
+    /**
+     * The water's mean velocity through this cell, m/s, into out: [0] east, [1] south (water_v1_design.md 5.8, package 4).
+     * Each face's flow over the wet area it passes through, averaged over the faces on each axis, so water coming in from
+     * the west and leaving east reads as one current. A sleeping cell's faces carry nothing: still water reads 0.
+     */
+    public void velocity(double[] out) {
+        double x = 0, z = 0;
+        int nx = 0, nz = 0;
+        for (LiquidFace f : faces) {
+            if (f.removed) continue;
+            double area = f.crossSection(Math.max(f.a.level, f.b.level));
+            if (area <= 1e-4) continue;
+            double u = f.q / area;
+            if (f.south) {
+                z += u;
+                nz++;
+            } else {
+                x += u;
+                nx++;
+            }
+        }
+        out[0] = nx == 0 ? 0 : x / nx;
+        out[1] = nz == 0 ? 0 : z / nz;
     }
 
     /** Is height m inside this layer (floor inclusive, ceiling exclusive; open to the sky: anything above the floor)? */

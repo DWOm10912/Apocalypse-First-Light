@@ -28,6 +28,8 @@ import java.util.Random;
  *   <li>G (ground changes under liquid): soil into a pond, a hole dug in it, a column filled solid, a plate through the
  *   water, a change mid-flow: the liquid exact every time, levels as computed;</li>
  *   <li>V (layers): liquid off a ledge falls into the cave layer of the next columns, not onto the roof above;</li>
+ *   <li>E (query, package 4): WaterQuery over a pond on a cave's roof: the surface and depth a body stands in, the cave
+ *   under it dry, still water still; in a running channel the velocity points downstream;</li>
  *   <li>limit: two pockets of one column that meet only across a slab boundary are one layer (the accepted 1 m limit, C 6.3
  *   b): reproduced and measured;</li>
  *   <li>perf: a 62 x 62 m pond sloshing, then asleep under rain.</li>
@@ -56,6 +58,7 @@ public final class LiquidCheck {
         chunks();
         groundChanges();
         layers();
+        query();
         falls();
         slope();
         crest();
@@ -551,6 +554,51 @@ public final class LiquidCheck {
         check(roof == 0 && cave > 2_000_000, "water off the ledge falls into the cave layer, none onto the roof (cave " + cave + ", roof " + roof + ")");
         check(t > 0, "layers: settles");
         System.out.printf("V layers: %.0f L fell from the ledge into the cave, %d mL on the roof, settled in %d ticks%n", cave / 1000.0, roof, t);
+    }
+
+    // ---- E: asking about the water (package 4, WaterQuery) -----------------------------------------------------------------
+
+    private static void query() {
+        // a 7 x 7 m pond 1.2 m deep on a roof at 22..23, a cave from 18 under it, walls to 25 round it
+        SyntheticGround g = new SyntheticGround(0, 0, 11, 11, (x, z) -> x < 1 || x > 9 || z < 1 || z > 9 ? 25 : 18);
+        g.box(2, 22, 2, 9, 23, 9);
+        g.set(1, 1, 10, 2, 25);
+        g.set(1, 9, 10, 10, 25);
+        g.set(1, 1, 2, 10, 25);
+        g.set(9, 1, 10, 10, 25);
+        LiquidEngine e = engine(g, 10, 32);
+        e.add(5, 23.1, 5, 58_800_000);
+        int t = settle(e, "query pond", 40000);
+        WaterQuery.Source s = WaterQuery.server(e);
+        double[] buf = new double[WaterQuery.MAX_LAYERS * WaterQuery.STRIDE];
+        WaterQuery.Immersion im = new WaterQuery.Immersion();
+        double top = WaterQuery.surfaceAt(s, buf, 5.5, 23.5, 5.5), cave = WaterQuery.surfaceAt(s, buf, 5.5, 20, 5.5);
+        check(t > 0, "query: the pond settles");
+        check(Math.abs(top - 24.2) < 0.01, "query: the pond's surface over its floor is 24.2 (" + top + ")");
+        check(Double.isNaN(cave), "query: the cave under the pond is not in its water (" + cave + ")");
+        check(Double.isNaN(WaterQuery.surfaceAt(s, buf, 5.5, 24.3, 5.5)), "query: above the surface is not in the water");
+        boolean standing = WaterQuery.immersion(s, buf, 5.2, 23.0, 5.2, 5.8, 24.8, 5.8, im);
+        check(standing && Math.abs(im.height - 1.2) < 0.01, "query: a body standing on the pond's floor is 1.2 m in (" + im.height + ")");
+        check(Math.hypot(im.vx, im.vz) < 0.01, "query: the settled pond is still (" + im.vx + ", " + im.vz + " m/s)");
+        double standingIn = im.height;
+        check(!WaterQuery.immersion(s, buf, 5.2, 18.0, 5.2, 5.8, 19.8, 5.8, im), "query: a body in the cave is in no water");
+        check(!WaterQuery.immersion(s, buf, 5.2, 24.3, 5.2, 5.8, 26.1, 5.8, im), "query: a body over the surface is in no water");
+        boolean edge = WaterQuery.immersion(s, buf, 1.7, 25.0, 4.2, 2.3, 26.8, 4.8, im);
+        check(!edge, "query: a body on the wall beside the pond is in no water");
+
+        // a channel 4 m wide falling 1 m in 100 m, fed 1 m deep at the top, open at the bottom
+        SyntheticGround c = new SyntheticGround(0, 0, 64, 8, (x, z) -> z >= 2 && z < 6 ? 30 - 0.01 * x : 32);
+        LiquidEngine r = engine(c, 15, 40);
+        for (int z = 2; z < 6; z++) {
+            r.setBoundary(0, 30.5, z, 31.0);
+            r.setBoundary(63, 29.5, z, 29.8);
+        }
+        for (int i = 0; i < 1200; i++) tick(r, "query channel");
+        WaterQuery.Source rs = WaterQuery.server(r);
+        boolean in = WaterQuery.immersion(rs, buf, 32.2, 29.6, 3.2, 32.8, 31.4, 3.8, im);
+        check(in && im.vx > 0.1 && Math.abs(im.vz) < 0.2 * im.vx, "query: the channel runs downstream, east (" + im.vx + ", " + im.vz + " m/s)");
+        System.out.printf("E query: pond surface %.4f, a body on its floor %.3f m in, the cave dry; channel %.2f m in, %.2f m/s east (%.3f south)%n",
+                top, standingIn, im.height, im.vx, im.vz);
     }
 
     // ---- F: falling water (docs/gameplay/water_falling_v1_design.md) -----------------------------------------------------------

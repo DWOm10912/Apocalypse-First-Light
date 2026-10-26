@@ -1,6 +1,6 @@
 {
-  "about": "Survival and health V1a wounds (docs/gameplay/survival_health_v1a.md 5): scratch -> local infection -> suppuration, cleaned with medical alcohol and covered with a bandage. Times in game days (24000 ticks, 20 real minutes), counted only while the player is online. All numbers are game balance parameters, not medical figures.",
-  "day_ticks": 24000,
+  "about": "Survival and health V1a wounds (docs/gameplay/survival_health_v1a.md 5): scratch -> local infection -> suppuration, cleaned with medical alcohol and covered with a bandage. Times in game days (day_ticks 0: the world's day, 72000 ticks at the default 60 real minutes; docs/gameplay/world_time_b_units_v1.md 5), counted only while the player is online. All numbers are game balance parameters, not medical figures.",
+  "day_ticks": 0,
   "scratch_chance": 0.35,
   "max_wounds": 3,
   "max_severity": 3,

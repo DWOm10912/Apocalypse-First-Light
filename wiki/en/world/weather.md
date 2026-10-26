@@ -62,8 +62,9 @@
 - <StatusTag s="test" /> On a branch only; first look in game 2026-10-24 (flow right). Without shaders the water now has depth colour, refraction, sky reflection and ripples, not checked in game yet
 
 - Water is stored by real volume: how much a pit holds and where its surface stands follow from the pit's shape (smoothed terrain as its slopes are drawn) and the amount of water; water runs downhill and spills only at the lowest point of a pit's rim
-- For now water comes only from dev commands: `/afl dev water fill <litres>` pours where you look, `drain <litres>` takes it out, `here` reads the column at your feet, `rain <mm/h> [radius]` makes test rain around you, `ledger` checks the totals, `clear [radius]` removes the water around you
-- Vanilla water is unchanged; natural rain filling pits, trenches drawing in river water, swimming and wading are not connected yet
+- For now water comes only from dev commands: `/afl dev water fill <litres>` pours where you look, `drain <litres>` takes it out, `here` reads the column at your feet, `rain <mm/h> [radius]` makes test rain around you, `ledger` checks the totals, `perf` shows what the water costs a tick, `clear [radius]` removes the water around you
+- Vanilla water is unchanged; natural rain filling pits and trenches drawing in river water are not connected yet
+- <StatusTag s="test" /> You can swim and dive in AFL water: chest-deep water floats you, under it you hold your breath, and the camera gets the underwater fog; shallow water slows you down; running water pushes you, and dropped items drift with it. Boats do not float on AFL water yet
 - <StatusTag s="test" /> Water in the air, not checked in game yet:
   - Water spilling over a pit's rim or a step falls only where the drop is half a metre or more: the water on top gathers to one place first: a little runs down the wall or drips, more leaves as one stream that thins as it falls and breaks into drops low down, a large flow as a sheet that comes apart at the bottom; on smooth hillsides it runs down the slope instead; without shaders water in the air is not drawn, only its rings where it lands in water; it joins the water below only when it lands
   - Landing on water it splashes and sends out rings; on dry ground it throws up small drops and leaves a wet patch that dries after a while
@@ -77,7 +78,7 @@
   - Rain falling on existing water goes into it, so a pit that already holds water rises in the rain
   - Dev command `/afl dev water surface` reads the rain water on the column at your feet
 
-<StatusTag s="planned" /> Rain collecting in pits (by catchment and soil infiltration); trenches that let river water in; swimming and wading in it
+<StatusTag s="planned" /> Rain collecting in pits (by catchment and soil infiltration); trenches that let river water in
 
 ## Rain and body temperature
 

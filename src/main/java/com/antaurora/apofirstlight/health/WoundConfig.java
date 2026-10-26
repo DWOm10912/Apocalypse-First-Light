@@ -50,7 +50,11 @@ public final class WoundConfig {
         public double staminaRegen = 1, healthRegen = 1, visual;
     }
 
-    public int dayTicks = 24000;
+    /**
+     * Ticks in a "day" of these numbers: 0 (the default) is the world's day, AflTime#ticksPerDay (World Time V1, 60 real
+     * minutes: 72 000; docs/gameplay/world_time_b_units_v1.md 3); a positive number overrides it (a test).
+     */
+    public int dayTicks = 0;
     /** Chance that an infected's melee hit that took health leaves a scratch. */
     public double scratchChance = 0.35;
     public int maxWounds = 3, maxSeverity = 3;
@@ -67,12 +71,17 @@ public final class WoundConfig {
         return current;
     }
 
+    /** Ticks in one day of wound and fracture time (see {@link #dayTicks}). */
+    public long dayTicks() {
+        return dayTicks > 0 ? dayTicks : com.antaurora.apofirstlight.time.AflTime.ticksPerDay();
+    }
+
     long ticks(double days) {
-        return Math.max(1, Math.round(days * dayTicks));
+        return Math.max(1, Math.round(days * dayTicks()));
     }
 
     private void validate() {
-        if (dayTicks < 20 || scratchChance < 0 || scratchChance > 1 || maxWounds < 1 || maxSeverity < 1 || severityStep < 0
+        if (dayTicks < 0 || dayTicks > 0 && dayTicks < 20 || scratchChance < 0 || scratchChance > 1 || maxWounds < 1 || maxSeverity < 1 || severityStep < 0
                 || scratch == null || infection == null || suppuration == null)
             throw new IllegalArgumentException("invalid wound numbers");
         for (Stage s : new Stage[]{infection, suppuration})

@@ -430,6 +430,16 @@ tasks.register('liquidCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.liquid.LiquidCheck'
 }
 
+// River plan step 1 (docs/gameplay/water_river_v1_design.md 9): the liquid engine's cost by phase, offline; not a check.
+// -Pjfr=<file> records a JFR profile; -Pscene=hill|pond|channel runs one scene.
+tasks.register('liquidPerf', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.liquid.LiquidPerf'
+    if (project.hasProperty('scene')) args project.property('scene')
+    if (project.hasProperty('jfr')) jvmArgs "-XX:StartFlightRecording=filename=${project.property('jfr')},settings=profile"
+}
+
 // Terrain rework R0 (docs/worldgen/terrain_rework_v1_design.md 5, 6): GroundView's geometry over a synthetic world.
 tasks.register('groundCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
