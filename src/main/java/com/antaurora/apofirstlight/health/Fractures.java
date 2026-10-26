@@ -214,7 +214,7 @@ public final class Fractures {
 
     private static double healTicks(BodyPart part) {
         var c = HealthConfig.get().fracture;
-        return (part.leg() ? c.legHealDays : c.armHealDays) * WoundConfig.get().dayTicks;
+        return (part.leg() ? c.legHealDays : c.armHealDays) * (double) WoundConfig.get().dayTicks();
     }
 
     /** {@code ticks} of healing for every fracture (PlayerHealth once a second; a skipped night; the dev advance). */
@@ -236,7 +236,7 @@ public final class Fractures {
 
     /** Dev: this many game days, a second at a time, awake. */
     static void advance(ServerPlayer player, double days) {
-        long steps = Math.max(1, Math.round(days * WoundConfig.get().dayTicks / 20.0));
+        long steps = Math.max(1, Math.round(days * WoundConfig.get().dayTicks() / 20.0));
         for (long i = 0; i < steps && !state(player).limbs.isEmpty(); i++) step(player, 20, false);
     }
 

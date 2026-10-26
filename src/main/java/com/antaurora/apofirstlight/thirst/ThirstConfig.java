@@ -29,7 +29,11 @@ public final class ThirstConfig {
         public int symptomFood = 2;
     }
 
-    public double max = 100, basePerHour = 100, bottle = 20, sip = 5;
+    /**
+     * basePerGameHour: lost a game hour standing still (World Time V1, docs/gameplay/world_time_b_units_v1.md 3; was 100 a
+     * real hour, three of vanilla's 20-minute days to empty: 100 / 72 keeps the three game days at any day length).
+     */
+    public double max = 100, basePerGameHour = 100 / 72.0, bottle = 20, sip = 5;
     /** thirst lost per 100 stamina spent (the naming policy would not split the digits) */
     @SerializedName("exertion_per_100_stamina") public double exertionPer100Stamina = 3;
     public int sipCooldownTicks = 10;
@@ -59,7 +63,7 @@ public final class ThirstConfig {
     }
 
     private void validate() {
-        if (!(max > 0) || basePerHour < 0 || exertionPer100Stamina < 0 || bottle < 0 || sip < 0 || sipCooldownTicks < 0
+        if (!(max > 0) || basePerGameHour < 0 || exertionPer100Stamina < 0 || bottle < 0 || sip < 0 || sipCooldownTicks < 0
                 || dehydratedBelow < 0 || thirstyBelow < dehydratedBelow || damageIntervalSeconds <= 0 || sickness == null
                 || sickness.symptomMinSeconds <= 0 || sickness.symptomMaxSeconds < sickness.symptomMinSeconds
                 || dosePerBottle == null || dosePerSip == null)

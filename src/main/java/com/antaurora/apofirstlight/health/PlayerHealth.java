@@ -221,6 +221,7 @@ public final class PlayerHealth {
         Fractures.step(player, 20, resting(player));
         Fractures.apply(player);
         HealthConfig c = HealthConfig.get();
+        basalHunger(player, c);
         Regen regen;
         if (!player.isAlive() || player.isSpectator()) regen = Regen.NONE;
         else if (player.getHealth() >= Math.min(player.getMaxHealth(), HealthCap.cap(player)) - 1e-4) regen = Regen.NONE;
@@ -233,6 +234,13 @@ public final class PlayerHealth {
         }
         s.regen = regen;
         sync(player, s);
+    }
+
+    /** A second of the basal hunger, by game hours (vanilla's only comes from acting); none in Peaceful, Creative, Spectator. */
+    private static void basalHunger(ServerPlayer player, HealthConfig c) {
+        if (!player.isAlive() || player.isCreative() || player.isSpectator()
+                || player.level().getDifficulty() == net.minecraft.world.Difficulty.PEACEFUL) return;
+        player.causeFoodExhaustion((float) (com.antaurora.apofirstlight.time.AflTime.perTick(c.hunger.basePerGameHour * 4) * 20));
     }
 
     private static void sync(ServerPlayer player, State s) {
@@ -291,16 +299,20 @@ public final class PlayerHealth {
         long target = event.getNewTime();
         long skipped = Math.max(0, target - level.getDayTime());
         if (skipped <= 0) return;
+        // world time units to the real ticks of as many game hours awake (World Time V1: 60 minutes a day, a unit is 3 ticks;
+        // docs/gameplay/world_time_b_units_v1.md 3), so a night asleep heals like the same game hours awake, with the rest bonus
+        long ticks = Math.round(com.antaurora.apofirstlight.time.AflTime.gameHoursToTicks(
+                skipped / (double) com.antaurora.apofirstlight.time.AflTime.UNITS_PER_HOUR));
         for (ServerPlayer player : level.players()) {
             if (!player.isSleeping() || !player.isAlive()) continue;
             CompoundTag tag = player.getPersistentData().getCompound(KEY);
             if (tag.contains("last_sleep") && tag.getLong("last_sleep") == target) continue;
             tag.putLong("last_sleep", target);
             player.getPersistentData().put(KEY, tag);
-            Fractures.step(player, skipped, true);   // bones heal over the skipped night, asleep
+            Fractures.step(player, ticks, true);   // bones heal over the skipped night, asleep
             state(player).forceSync = true;
             if (!canRegenerate(player)) continue;
-            double amount = Math.min(c.regen.sleepMax, skipped / 1200.0 * c.regen.sleepPerMinute * regenMultiplier(player));
+            double amount = Math.min(c.regen.sleepMax, ticks / 1200.0 * c.regen.sleepPerMinute * regenMultiplier(player));
             heal(player, amount);
             state(player).forceSync = true;
         }

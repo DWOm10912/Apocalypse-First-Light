@@ -363,7 +363,7 @@ C 对两个场景的答复（2026-10-15）：
 | | 最大生命 | 原版 `generic.max_health` | 100（V1a 起基础值由 `health/PlayerHealth` 设定，幸存者修饰项不再改它） | 原版 |
 | | `fall_damage` | 乘（…10） | ×1 | `SurvivorStatEvents`（`LivingFallEvent` 的伤害系数） |
 | | `natural_regen` | 乘（…10） | 自然回血（V1a 起是 AFL 自己的回血） | `health/PlayerHealth` |
-| 代谢 | `thirst_rate` | 乘（…10） | `thirst_v1.base_per_hour` + 出力 | `PlayerThirst` |
+| 代谢 | `thirst_rate` | 乘（…10） | `thirst_v1.base_per_game_hour` + 出力 | `PlayerThirst` |
 | | `hunger_rate` | 乘（…10） | 原版消耗度 | `PlayerHungerRateMixin`（`causeFoodExhaustion`） |
 | | `raw_water_sickness` | 乘（…10） | `chance_bottle` 0.2 / `chance_sip` 0.05 | `PlayerThirst` |
 | | `radiation_sensitivity` | 乘（…10） | 分期看的剂量 = 累计剂量 | `RadiationSicknessManager.getStage(player, dose)`；剂量和读数不变 |

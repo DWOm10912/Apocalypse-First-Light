@@ -21,6 +21,10 @@
     "sleep_per_minute": 8,
     "sleep_max": 30
   },
+  "hunger": {
+    "about": "Basal hunger (docs/gameplay/world_time_b_units_v1.md 6): food points a game hour standing still, on top of the exhaustion from acting; applied as exhaustion, saturation first. 20 / 72: a full bar in three game days, as thirst.",
+    "base_per_game_hour": 0.2778
+  },
   "fracture": {
     "about": "Fractures and splints V1 (docs/gameplay/fracture_splint_v1_plan.md). Pairs are [not splinted, splinted]; every penalty fades out linearly from fade_from of the healing. A fall breaks a leg with chance clamp((health lost - [0]) / [1], 0, [2]), the side at random; an arm only when the player falls over (fall_over), the arm it lands on (docs/gameplay/fall_landing_v1_plan.md).",
     "leg_fall": [10, 40, 0.85],

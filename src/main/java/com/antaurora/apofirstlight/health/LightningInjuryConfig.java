@@ -19,7 +19,7 @@ import java.util.TreeSet;
 /**
  * Lightning injury V1 numbers (docs/gameplay/lightning_injury_v1_plan.md 3), {@code data/apocalypse_firstlight/lightning/
  * lightning_injury_v1.json}; the defaults here are the same. Balance numbers, not medical statistics. Times in seconds unless
- * named days (WoundConfig#dayTicks). The client reads its numbers from the same object (the defaults, or the integrated
+ * named days (WoundConfig#dayTicks(), the world's day). The client reads its numbers from the same object (the defaults, or the integrated
  * server's).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)

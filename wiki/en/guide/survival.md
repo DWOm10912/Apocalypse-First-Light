@@ -223,7 +223,7 @@ Maximum <V d="stamina/stamina_v1#max" />. After <V d="stamina/stamina_v1#delay_s
 
 ## Thirst
 
-Full is <V d="thirst/thirst_v1#max" />. It drops <V d="thirst/thirst_v1#base_per_hour" /> per real-time hour, plus <V d="thirst/thirst_v1#exertion_per_100_stamina" /> for every 100 stamina you spend
+Full is <V d="thirst/thirst_v1#max" />. Standing still, it drops <V d="thirst/thirst_v1#base_per_game_hour" /> per game hour (empty in about 3 game days), plus <V d="thirst/thirst_v1#exertion_per_100_stamina" /> for every 100 stamina you spend
 
 | Thirst | Effect |
 |---|---|
@@ -261,6 +261,6 @@ Core temperature starts at <V d="temperature/temperature_v1#normal" u="°C" /> a
 
 ## Food
 
-Food uses the vanilla system; AFL has no foods of its own yet, and vanilla food can no longer be obtained (<StatusTag s="test" />), so new worlds have nothing to eat for now. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is ×<V d="stamina/stamina_v1#regen_low_food" />; below <V d="health/health_v1#regen.min_food" /> there is no natural healing; stomach sickness and Cold 2 or worse burn extra food
+Food uses the vanilla system; AFL has no foods of its own yet, and vanilla food can no longer be obtained (<StatusTag s="test" />), so new worlds have nothing to eat for now. <StatusTag s="test" /> You grow hungry even standing still: food drops <V d="health/health_v1#hunger.base_per_game_hour" /> per game hour (saturation first), empty in about 3 game days, as thirst; running, jumping, digging and fighting burn more. At food ≤ <V d="stamina/stamina_v1#low_food_level" /> stamina regeneration is ×<V d="stamina/stamina_v1#regen_low_food" />; below <V d="health/health_v1#regen.min_food" /> there is no natural healing; stomach sickness and Cold 2 or worse burn extra food
 
 <StatusTag s="planned" /> Food spoilage and storage
