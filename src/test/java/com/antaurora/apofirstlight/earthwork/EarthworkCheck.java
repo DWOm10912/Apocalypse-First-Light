@@ -21,6 +21,14 @@ import static com.antaurora.apofirstlight.earthwork.EarthGrid.*;
  *   what went down leaves the blade; a full blade takes nothing, ground that holds nothing more takes nothing; two
  *   materials laid together are backfill; no vertex next to a wall ends below the wall's excavation step, none next to
  *   locked ground steeper than 1:1;</li>
+ *   <li>rock (R2 round 3): pick strikes cut bare rock down (old rubble on it first) and leave no rubble, never below the
+ *   rock limit, never where natural ground lies over the rock; scoops take only the loose earth over rock; ground plus
+ *   blade plus what was carried away plus what the pick cut stays to the quantum;</li>
+ *   <li>sides (R2 round 4): EarthGrid#sideGaps closes a segment of a skin cell's side exactly, between the skin's edge and
+ *   the neighbour's ground clipped to the cell, inward where the neighbour is higher, outward where the skin is, nothing
+ *   twice;</li>
+ *   <li>steps (R2 round 4): SmoothRules#notFree with walls frees the foot of a step and the rim of a two-cell step, not
+ *   the rim of a three-cell cliff, not a rim without walls;</li>
  *   <li>vehicle ground (A3): EarthGrid#ground's height is the skin's, its normal is a unit vector up and agrees with the
  *   skin's slope measured a step away inside the same triangle.</li>
  * </ul>
@@ -43,10 +51,93 @@ public final class EarthworkCheck {
         distribution(r);
         volume(r);
         shovel(r);
+        rock(r);
+        sides(r);
+        steps();
         vehicleGround(r);
         System.out.printf("Earthwork check: %d checks, %d failures (grid %d per block, %d quanta per block, %.4f L per quantum)%n",
                 checks, failures, PER_BLOCK, Q, LITRES_PER_QUANTUM);
         if (failures > 0) System.exit(1);
+    }
+
+    /**
+     * EarthGrid#sideGaps over random segments (ends from below the cell to above it, a quarter of them meeting the
+     * neighbour at one end): at every sample point between the pieces' ends exactly one piece covers it when the skin and
+     * the neighbour part there, from the lower to the higher clipped to the cell, facing the right way; none otherwise.
+     */
+    private static void sides(Random r) {
+        int segments = 20000, pieces = 0;
+        double worst = 0;
+        for (int n = 0; n < segments; n++) {
+            float e0 = r.nextFloat() * 4 - 1.5F, e1 = r.nextFloat() * 4 - 1.5F;
+            float t0 = r.nextInt(4) == 0 ? e0 : r.nextFloat() * 4 - 1.5F, t1 = r.nextInt(4) == 0 ? e1 : r.nextFloat() * 4 - 1.5F;
+            var out = EarthGrid.sideGaps(e0, e1, t0, t1);
+            pieces += out.size();
+            double length = 0;
+            for (float[] p : out) {
+                length += p[1] - p[0];
+                check(p[0] >= 0 && p[1] <= 1 && p[0] < p[1], "sides: piece within the segment");
+                for (int k = 2; k < 6; k++) check(p[k] >= 0 && p[k] <= 1, "sides: piece within the cell");
+            }
+            check(length <= 1 + 1e-5, "sides: pieces overlap along the segment");
+            for (int s = 0; s <= 64; s++) {
+                float u = (s + 0.37F) / 65.37F;
+                float e = Math.max(0, Math.min(1, e0 + (e1 - e0) * u)), t = Math.max(0, Math.min(1, t0 + (t1 - t0) * u));
+                float[] hit = null;
+                int hits = 0;
+                for (float[] p : out) if (u > p[0] && u < p[1]) { hit = p; hits++; }
+                if (Math.abs(e - t) < 1e-4F) {
+                    if (hit != null) {
+                        float w = (u - hit[0]) / (hit[1] - hit[0]);
+                        check(hit[4] + (hit[5] - hit[4]) * w - hit[2] - (hit[3] - hit[2]) * w < 1e-3F, "sides: a face where skin and neighbour meet");
+                    }
+                    continue;
+                }
+                check(hits == 1, "sides: " + hits + " pieces at u " + u + " of " + e0 + " " + e1 + " / " + t0 + " " + t1);
+                if (hit == null) continue;
+                float w = (u - hit[0]) / (hit[1] - hit[0]);
+                float bottom = hit[2] + (hit[3] - hit[2]) * w, top = hit[4] + (hit[5] - hit[4]) * w;
+                worst = Math.max(worst, Math.max(Math.abs(bottom - Math.min(e, t)), Math.abs(top - Math.max(e, t))));
+                check(Math.abs(bottom - Math.min(e, t)) < 1e-4F && Math.abs(top - Math.max(e, t)) < 1e-4F, "sides: piece spans skin to neighbour at u " + u);
+                check((hit[6] == 1) == (t > e), "sides: piece faces the wrong way");
+            }
+        }
+        System.out.printf("Sides: %d segments, %d pieces, worst span error %.6f%n", segments, pieces, worst);
+    }
+
+    /**
+     * SmoothRules#notFree on a small height map (natural ground up to each column's top, air above): a rim two above its
+     * west neighbours, the same three above, the foot of a two-cell step, a rim beside water.
+     */
+    private static void steps() {
+        String rim2 = notFree(10, 8, -1, true), rim2plain = notFree(10, 8, -1, false), rim3 = notFree(10, 7, -1, true);
+        String foot = notFree(8, 10, -1, true), wet = notFree(10, 8, 9, true);
+        check(rim2 == null, "steps: rim of a two-cell step locked: " + rim2);
+        check(rim2plain != null, "steps: rim free without walls");
+        check(rim3 != null && rim3.contains("cliff"), "steps: rim of a three-cell cliff not locked as a cliff: " + rim3);
+        check(foot == null, "steps: foot of a two-cell step locked: " + foot);
+        check(wet != null, "steps: rim beside water free");
+        System.out.printf("Steps: rim of 2 %s, rim of 3 %s, foot %s, rim beside water %s%n", rim2 == null ? "free" : rim2,
+                rim3 == null ? "free" : rim3, foot == null ? "free" : foot, wet == null ? "free" : wet);
+    }
+
+    /** notFree of column (0, 0) with top cell top, the three columns west of it at west (water standing to y water, -1 none). */
+    private static String notFree(int top, int west, int water, boolean walls) {
+        var cells = new com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells() {
+            int top(int x, int z) { return x < 0 ? west : top; }
+
+            @Override
+            public int cell(int x, int y, int z) {
+                if (y <= top(x, z)) return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NATURAL;
+                return x < 0 && y <= water ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.FLUID : com.antaurora.apofirstlight.terrainsmooth.SmoothRules.AIR;
+            }
+
+            @Override
+            public int surface(int x, int z) {
+                return x < 0 && water > west ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NO_SURFACE : top(x, z);
+            }
+        };
+        return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.notFree(cells, com.antaurora.apofirstlight.terrainsmooth.SmoothRules.MODE_B, 0, top, 0, walls);
     }
 
     /** EarthGrid#ground against #skin: height, and the normal against the slope a small step away in the same triangle. */
@@ -208,14 +299,14 @@ public final class EarthworkCheck {
     }
 
     /** Materials as data/apocalypse_firstlight/bulk_materials: topsoil, sand, gravel, clay, mud, backfill (repose, cut). */
-    private static final int TOPSOIL = 0, SAND = 1, BACKFILL = 5;
+    private static final int TOPSOIL = 0, SAND = 1, RUBBLE = 4, BACKFILL = 5;
     private static final int[] PILE = {step(35), step(34), step(38), step(40), step(20), step(36)};
     private static final int[] CUT = {step(63), step(34), step(45), step(70), step(30), step(36)};
 
     /**
      * Shovel strokes on a field of topsoil (west) and sand (east), its border walls, the north border locked ground, as
-     * Earthwork scoop / pour do them: a brush r 0.30 m 0.15 m deep into the room left, a cone r 0.35 m of the load shared
-     * out, then slumping at each material's repose. The blade holds ShovelItem.CAPACITY (11.72 L, docs/worldgen/earthwork_a2.md 4.1).
+     * Earthwork scoop / pour do them: a brush Earthwork.DIG_RADIUS, DIG_DEPTH (0.8 m, 0.5 m) into the room left, a cone POUR_RADIUS (0.9 m) of the load shared
+     * out, then slumping at each material's repose. The blade holds ShovelItem.CAPACITY (296.88 L since 2026-10-22, the big shovel; docs/worldgen/earthwork_a2.md 4.1).
      */
     private static void shovel(Random r) {
         int size = 40, room = com.antaurora.apofirstlight.item.ShovelItem.CAPACITY;   // a constant: no game class loads
@@ -314,6 +405,105 @@ public final class EarthworkCheck {
     private static int natural(int x, int size) { return x < size / 2 ? TOPSOIL : SAND; }
 
     /** One stroke's field: interior vertices movable, the border walls, the north border locked; full: nothing rises. */
+    /**
+     * Rock R2 (docs/gameplay/rock_r2_rock_face_mining_design.md 3, 7, 12): a field of bare rock (west half, its north
+     * part under 0.1 m of rubble left from round 2) and topsoil over rock (east half), hard floor at the rock's top, the
+     * pick reaching two blocks under it. Random pick strikes (Field#apply, lo EarthGrid#pickFloor, no slumping) and
+     * shovel scoops (lo EarthGrid#shovelFloor), the field rebuilt each stroke as the game does, the blade emptied when
+     * full.
+     */
+    private static void rock(Random r) {
+        int size = 24, room = com.antaurora.apofirstlight.item.ShovelItem.CAPACITY, floor = 64 * Q, limit = 62 * Q;
+        int[] pile = PILE.clone();
+        pile[RUBBLE] = step(40);
+        int[][] h = new int[size][size], loose = new int[size][size], mat = new int[size][size];
+        for (int z = 0; z < size; z++) for (int x = 0; x < size; x++) {
+            h[z][x] = x < size / 2 ? floor : floor + Q / 2;
+            if (x < size / 2 && z < size / 2) {
+                h[z][x] += Q / 10;
+                loose[z][x] = Q / 10;
+                mat[z][x] = RUBBLE;
+            }
+        }
+        long start = sum(h), cutAway = 0, carried = 0, rockCut = 0;
+        int load = 0, strikes = 0, scoops = 0;
+        boolean rubbleMade = false, rockTaken = false, belowLimit = false, soilCut = false, takenWrong = false, oldLeft = false;
+        for (int t = 0; t < 1500; t++) {
+            double cx = 1 + r.nextDouble() * (size / (double) PER_BLOCK - 2), cz = 1 + r.nextDouble() * (size / (double) PER_BLOCK - 2);
+            boolean strike = r.nextInt(3) > 0;
+            Field f = new Field();
+            f.pile = pile;
+            f.backfill = BACKFILL;
+            for (int z = 0; z < size; z++) for (int x = 0; x < size; x++) {
+                long v = key(x, z);
+                f.h.put(v, h[z][x]);
+                f.base.put(v, x < size / 2 ? floor : floor + Q / 2);
+                if (!interior(v, size)) continue;
+                f.lo.put(v, strike ? pickFloor(floor, limit, h[z][x], loose[z][x], x < size / 2) : shovelFloor(floor, limit, h[z][x], loose[z][x]));
+                f.hi.put(v, 68 * Q);
+                boolean bare = x < size / 2;
+                f.nat.put(v, bare ? RUBBLE : TOPSOIL);
+                f.step.put(v, bare ? step(85) : CUT[TOPSOIL]);
+                if (loose[z][x] > 0) {
+                    f.loose.put(v, loose[z][x]);
+                    f.mat.put(v, mat[z][x]);
+                }
+            }
+            f.bound();
+            int[][] solidBefore = new int[size][size];
+            for (int z = 0; z < size; z++) for (int x = 0; x < size; x++) solidBefore[z][x] = h[z][x] - loose[z][x];
+            if (strike) {
+                Long2IntOpenHashMap w = brush(cx, cz, Earthwork.STRIKE_RADIUS, Earthwork.STRIKE_DEPTH, -1);
+                long a = f.apply(w, -1, Long.MAX_VALUE);
+                cutAway -= a;
+                rockCut += f.taken.get(RUBBLE);
+                strikes++;
+                long taken = 0;
+                for (long q : f.taken.values()) taken += q;
+                takenWrong |= taken != -a;
+                for (int z = 0; z < size; z++) for (int x = 0; x < size; x++) {
+                    long v = key(x, z);
+                    rubbleMade |= f.loose.get(v) > loose[z][x];
+                    soilCut |= solidBefore[z][x] > floor && f.h.get(v) != h[z][x];
+                    // the old rubble comes off first: no rock cut under rubble still lying there
+                    oldLeft |= f.loose.get(v) > 0 && f.h.get(v) - f.loose.get(v) < solidBefore[z][x];
+                }
+            } else {
+                int left = room - load;
+                long moved = f.apply(brush(cx, cz, Earthwork.DIG_RADIUS, Earthwork.DIG_DEPTH, -1), -1, left);
+                f.slump();
+                load -= (int) moved;
+                scoops++;
+                for (int z = 0; z < size; z++) for (int x = 0; x < size; x++) {
+                    long v = key(x, z);
+                    // the shovel never cuts rock: where the solid surface was at or under the hard floor, it stays
+                    if (interior(v, size) && solidBefore[z][x] <= floor && f.h.get(v) - f.loose.get(v) < solidBefore[z][x]) rockTaken = true;
+                }
+                if (load >= room) {
+                    carried += load;
+                    load = 0;
+                }
+            }
+            for (int z = 0; z < size; z++) for (int x = 0; x < size; x++) {
+                long v = key(x, z);
+                h[z][x] = f.h.get(v);
+                loose[z][x] = f.loose.get(v);
+                mat[z][x] = loose[z][x] > 0 ? f.mat.get(v) : 0;
+                if (interior(v, size) && h[z][x] - loose[z][x] < limit) belowLimit = true;
+            }
+            check(sum(h) + load + carried + cutAway == start, "rock: ground + blade + carried away + cut = start (stroke " + t + ")");
+        }
+        check(!rubbleMade, "a strike leaves no rubble: no vertex gains loose earth");
+        check(!takenWrong, "what a strike takes, by material, is what it cut, to the quantum");
+        check(!oldLeft, "a strike takes the old rubble off before it cuts the rock under it");
+        check(!soilCut, "a strike never cuts where natural ground lies over the rock");
+        check(!rockTaken, "a scoop never cuts rock: only the loose earth over it");
+        check(!belowLimit, "no solid surface below the pick's rock limit");
+        check(rockCut > 0 && carried > 0, "the pick cut rock and the shovel carried earth away");
+        System.out.printf("Rock: %d strikes cut %.0f L (%.0f L of it rock or old rubble), %d scoops carried %.0f L away%n",
+                strikes, cutAway * LITRES_PER_QUANTUM, rockCut * LITRES_PER_QUANTUM, scoops, carried * LITRES_PER_QUANTUM);
+    }
+
     private static Field shovelField(int[][] h, int[][] base, int[][] loose, int[][] mat, int size, boolean full) {
         Field f = new Field();
         f.pile = PILE;

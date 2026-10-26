@@ -33,22 +33,25 @@ import java.util.Map;
 public final class ShovelItemRenderer extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation GEOMETRY = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/round_point_shovel.geo.json");
     private static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/round_point_shovel_mesh.png");
-    /** 0.5 - mesh height 24.042 / 32 (the build's verticalOffset). */
-    public static final double VERTICAL_OFFSET = -0.251321;
+    /** 0.5 - mesh height 25.402 / 32 (the build's verticalOffset; 25.402 since the big shovel, 2026-10-22). */
+    public static final double VERTICAL_OFFSET = -0.29382;
+    /** In the mesh (blocks, before the item's (0.5, VERTICAL_OFFSET, 0.5)): the D grip crossbar's underside (point hang), the handle's axis. */
+    public static final double HANG_Y = 1.2613 - VERTICAL_OFFSET, HANDLE_Z = 0.3191 - 0.5;
     /**
      * The heap's tint by material (multiplies the neutral soil texel, 188 182 172): topsoil dark brown, sand pale, gravel
-     * grey, clay red-brown, mud near black, backfill a mixed brown. An unknown id draws as backfill.
+     * grey, clay red-brown, mud near black, red sand orange, backfill a mixed brown. An unknown id draws as backfill.
      */
     private static final Map<String, float[]> TINT = Map.of(
             "topsoil", new float[]{0.42F, 0.33F, 0.24F},
             "sand", new float[]{0.98F, 0.88F, 0.66F},
+            "red_sand", new float[]{0.86F, 0.56F, 0.40F},
             "gravel", new float[]{0.62F, 0.61F, 0.58F},
             "clay", new float[]{0.72F, 0.48F, 0.36F},
             "mud", new float[]{0.30F, 0.25F, 0.19F},
             "backfill", new float[]{0.48F, 0.40F, 0.30F});
 
     private record Parts(MeshModel mesh, List<MeshPart> fixed, MeshPart[] heaps) {}
-    private Parts parts;
+    private static Parts parts;
 
     public ShovelItemRenderer() {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
@@ -78,13 +81,20 @@ public final class ShovelItemRenderer extends BlockEntityWithoutLevelRenderer {
         }
     }
 
+    /** The empty shovel at the mesh's own origin, no heap (the wooden tool rack's, client/WoodGunRackRenderer). */
+    public static void drawEmpty(PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+        MeshModel mesh = VextrisMeshes.byGeometry(GEOMETRY);
+        if (mesh == null) return;
+        MeshRenderer.renderParts(parts(mesh).fixed, pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), light, overlay, 1, 1, 1, 1, null);
+    }
+
     /** The heap drawn for a load (quanta): 0 none, 1 .. 4 by quarters of the capacity, rounded up. */
     static int heap(long stored) {
         if (stored <= 0) return 0;
         return (int) Math.min(4, (stored * 4 + ShovelItem.CAPACITY - 1) / ShovelItem.CAPACITY);
     }
 
-    private Parts parts(MeshModel mesh) {
+    private static Parts parts(MeshModel mesh) {
         if (parts != null && parts.mesh == mesh) return parts;
         List<MeshPart> fixed = new ArrayList<>();
         MeshPart[] heaps = new MeshPart[4];

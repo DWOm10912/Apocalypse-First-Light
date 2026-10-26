@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/rock/shale"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/shale_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

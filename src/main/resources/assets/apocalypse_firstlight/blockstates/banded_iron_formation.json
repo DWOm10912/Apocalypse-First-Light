@@ -1,0 +1,68 @@
+{
+  "variants": {
+    "grade=lean": [
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_lean_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=rich": [
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/banded_iron_formation_rich_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

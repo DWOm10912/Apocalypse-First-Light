@@ -2,7 +2,9 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.boulder.BoulderBlocks;
 import com.antaurora.apofirstlight.boulder.BoulderStrike;
+import com.antaurora.apofirstlight.boulder.PavementMining;
 import com.antaurora.apofirstlight.boulder.PickPacket;
+import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -25,7 +27,8 @@ import java.util.UUID;
  * as the shovel's (client/ShovelClient): aiming the pick at a boulder within reach, one press of the use key is one whole
  * strike; switching slots, a screen or dying cancels it before the pick lands. The server (boulder/BoulderStrike) runs
  * it and sends its phases to everyone tracking the player; this keeps them for the skeleton's poses
- * (client/skeleton/SkeletonActions: {@link #elapsed}, {@link #target}).
+ * (client/skeleton/SkeletonActions: {@link #elapsed}, {@link #target}). Rock R2: bare rock ground in reach takes a strike
+ * the same way (BoulderStrike#aim); so does a road's pavement (road Mesh-ification P0, PavementMining).
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT)
 public final class PickClient {
@@ -92,9 +95,27 @@ public final class PickClient {
                 && BoulderBlocks.isBoulder(mc.level.getBlockState(hit.getBlockPos()));
     }
 
-    /** The prompt (WorldInteractionHint): strike with the pick at a boulder in reach; any other hand: it needs a pick. */
+    /** Whether the crosshair is on bare rock ground (Rock R2) or a natural rock face (U3a-3) within a strike's reach, with the pick in hand. */
+    private static boolean onRock(Minecraft mc) {
+        if (mc.level == null || !holding(mc) || !(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK
+                || !Earthwork.rock(mc.level.getBlockState(hit.getBlockPos()).getBlock())) return false;
+        var aim = BoulderStrike.aim(mc.player);
+        return aim != null && (aim.root() == null || aim.node() == com.antaurora.apofirstlight.boulder.RockMining.NODE);
+    }
+
+    /** Whether the crosshair is on a road's pavement within a strike's reach, with the pick in hand (road Mesh-ification P0). */
+    private static boolean onPavement(Minecraft mc) {
+        if (mc.level == null || !holding(mc) || !(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK
+                || !PavementMining.pavement(mc.level.getBlockState(hit.getBlockPos()))) return false;
+        var aim = BoulderStrike.aim(mc.player);
+        return aim != null && aim.node() == PavementMining.NODE;
+    }
+
+    /** The prompt (WorldInteractionHint): strike with the pick at a boulder, bare rock or a road in reach; any other hand at a boulder: it needs a pick. */
     static Component hint(Minecraft mc) {
-        if (active() || mc.player == null || mc.player.isSpectator() || !onBoulder(mc)) return null;
+        if (active() || mc.player == null || mc.player.isSpectator()) return null;
+        if (onRock(mc) || onPavement(mc)) return Component.translatable("hint.apocalypse_firstlight.pick.strike");
+        if (!onBoulder(mc)) return null;
         if (!holding(mc)) return Component.translatable("hint.apocalypse_firstlight.pick.needed");
         return BoulderStrike.aim(mc.player) == null ? null : Component.translatable("hint.apocalypse_firstlight.pick.strike");
     }
@@ -136,7 +157,7 @@ public final class PickClient {
     @SubscribeEvent
     public static void input(InputEvent.InteractionKeyMappingTriggered e) {
         var mc = Minecraft.getInstance();
-        if (e.isUseItem() && (active() || holding(mc) && onBoulder(mc))) {
+        if (e.isUseItem() && (active() || holding(mc) && (onBoulder(mc) || onRock(mc) || onPavement(mc)))) {
             e.setCanceled(true);
             e.setSwingHand(false);
         } else if (e.isAttack() && active()) {

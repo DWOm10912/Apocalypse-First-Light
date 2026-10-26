@@ -141,6 +141,94 @@
       "unit_mass_kg": 1,
       "estimated": true
     },
+    "apocalypse_firstlight:granite": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:gneiss": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:schist": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sandstone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_sandstone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:topsoil": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:mud": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sand": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_sand": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:gravel": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:clay": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:snow": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:limestone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:dolomite": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shale": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:marl": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rock_salt": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:coal_seam": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:banded_iron_formation": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:quartz_vein": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lead_zinc_dolomite": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:copper_breccia": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:edge_lane_white": {
       "unit_mass_kg": 0.05,
       "estimated": true
@@ -663,6 +751,18 @@
     },
     "apocalypse_firstlight:road_speed_limit_sign": {
       "unit_mass_kg": 11,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_trail_sign": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_trail_marker": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:road_cave_sign": {
+      "unit_mass_kg": 18,
       "estimated": true
     },
     "apocalypse_firstlight:road_guide_sign": {

@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:shale",
+  "density_kg_m3": 2500,
+  "strike_litres": 80,
+  "boulder_look": "shale",
+  "anchor": false,
+  "stone": "apocalypse_firstlight:shale_shard"
+}

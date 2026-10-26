@@ -1,0 +1,252 @@
+{
+  "variants": {
+    "cover=grass": [
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_0",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_0",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_1",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_1",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_2",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_2",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_3",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_grass_3",
+        "y": 270
+      }
+    ],
+    "cover=litter": [
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_0",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_0",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_1",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_1",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_2",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_2",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_3",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_litter_3",
+        "y": 270
+      }
+    ],
+    "cover=moss": [
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_0",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_0",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_1",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_1",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_2",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_2",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_3",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_moss_3",
+        "y": 270
+      }
+    ],
+    "cover=bare": [
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_0",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_0",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_1",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_1",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_2",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_2",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_3",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/topsoil_bare_3",
+        "y": 270
+      }
+    ]
+  }
+}

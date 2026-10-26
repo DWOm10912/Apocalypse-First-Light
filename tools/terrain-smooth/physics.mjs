@@ -32,7 +32,7 @@ function newestJar(group) {
 if (!fs.existsSync(FORGE)) throw new Error('missing ' + FORGE);
 const classpath = [FORGE, ...LIBS.map(newestJar)];
 const src = 'src/main/java/com/antaurora/apofirstlight/terrainsmooth/';
-const sources = [src + 'SmoothRules.java', src + 'SmoothShapes.java', 'tools/terrain-smooth/SmoothCheck.java', 'tools/terrain-smooth/PhysicsCheck.java'].map(p => path.join(ROOT, p));
+const sources = [src + 'SmoothRules.java', src + 'SmoothShapes.java', 'src/main/java/com/antaurora/apofirstlight/ground/GroundClass.java', 'tools/terrain-smooth/SmoothCheck.java', 'tools/terrain-smooth/PhysicsCheck.java'].map(p => path.join(ROOT, p));
 const exe = n => (process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', n) : n) + (process.platform === 'win32' && process.env.JAVA_HOME ? '.exe' : '');
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'afl-smoothphysics-'));
 const run = (cmd, a) => { const r = spawnSync(cmd, a, {stdio: 'inherit'}); if (r.error) throw r.error; return r.status; };

@@ -6,7 +6,13 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "apocalypse_firstlight:asphalt"
+          "name": "apocalypse_firstlight:asphalt_chunk",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": 500
+            }
+          ]
         }
       ],
       "conditions": [

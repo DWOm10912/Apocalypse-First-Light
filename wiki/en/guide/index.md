@@ -4,7 +4,7 @@ AFL is a grounded post-apocalyptic survival mod: no enchanting, no vanilla exper
 
 ## Creating a world
 
-- New worlds default to the **AFL Federal Six States** map. The old terrain is still available as "AFL r1" in the world type list
+- New worlds default to the **AFL Federal Six States** map. <StatusTag s="integrated" d="2026-10-25" /> The default federal world is the deep one: the ground goes down to Y −256 and the caves are planned, with no vanilla random caves. The older, shallower version is "AFL Federation (Standard Depth)" in the world type list, and the old terrain is still available as "AFL r1"
 - The vanilla difficulty button is replaced by **Survivor mode: Normal / Hard**, which is locked once chosen. Vanilla Hardcore counts as Hard
 - Vanilla difficulty is fixed at Normal and `/difficulty` is disabled
 - You also pick a start scene: creek valley farmhouse (default, up to 3 players), wilderness or roadside

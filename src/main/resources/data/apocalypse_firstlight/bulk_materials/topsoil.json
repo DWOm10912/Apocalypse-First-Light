@@ -2,7 +2,7 @@
   "density_kg_m3": 1300,
   "repose_deg": 35,
   "excavation_deg": 63,
-  "block": "minecraft:dirt",
+  "block": "apocalypse_firstlight:topsoil[cover=bare]",
   "grip": 0.6,
   "sources": [
     "minecraft:grass_block",

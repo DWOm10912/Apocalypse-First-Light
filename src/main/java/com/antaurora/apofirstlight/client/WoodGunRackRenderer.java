@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.cabin.WoodFurnitureV2;
 import com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity;
 import com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity;
+import com.antaurora.apofirstlight.item.ShovelItem;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
@@ -43,7 +44,8 @@ import java.util.Map;
  * ({@link WoodToolRackBlockEntity}), drawn here too in its own frame (tools/build-wood-furniture-v2.mjs, moved out onto its
  * pad on round logs): pegs (0..2) hang a tool by its handle, head up, the item sprite's diagonal plumb (its model at
  * {@link WoodFurnitureV2.ToolRack#TOOL_SCALE}); the shelf (3, 4) as the gun rack's.
- * The felling axe hangs as itself instead: its mesh, head on the pegs (2026-10-20); so does the claw hammer (2026-10-21).
+ * The felling axe hangs as itself instead: its mesh, head on the pegs (2026-10-20); so does the claw hammer (2026-10-21); the
+ * round point shovel by its D grip from one peg, blade down (2026-10-22).
  * <p>Resting items are drawn by the chunk ({@link WoodGunRackChunking}, a recording of this drawing): a slot is drawn here
  * only until the chunk shows it, plus whatever the chunk cannot take.
  */
@@ -184,12 +186,38 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
             WorkbenchRenderer.crowbar(x, WoodFurnitureV2.ToolRack.PEG_Y, WoodFurnitureV2.ToolRack.TOOL_Z, true, pose, buffers, light);
             return;
         }
+        if (s.getItem() instanceof ShovelItem) {
+            shovel(x, pose, buffers, light);
+            return;
+        }
         pose.translate(x, WoodFurnitureV2.ToolRack.TOOL_MID_Y, WoodFurnitureV2.ToolRack.TOOL_Z);
         pose.mulPose(Axis.YP.rotationDegrees(180));   // the sprite's face to the room (north, -z)
         pose.mulPose(Axis.ZP.rotationDegrees(-45));
         float scale = (float) WoodFurnitureV2.ToolRack.TOOL_SCALE;
         pose.scale(scale, scale, scale);
         Minecraft.getInstance().getItemRenderer().renderStatic(s, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, pose, buffers, null, seed);
+    }
+
+    /** The shovel's peg: the inner one of the pair; its D's plane per slot (the middle one further out). */
+    private static final double SHOVEL_PEG_DX = 0.05, SHOVEL_Z_OUTER = 0.95, SHOVEL_Z_MIDDLE = 0.878;
+
+    /**
+     * Round point shovel on the rack (docs/worldgen/earthwork_a2.md 4.2, user 2026-10-22): hung by the middle of its D grip's
+     * crossbar from one peg, plumb, blade down with its load face to the room; 1.6 m (the big shovel, 2026-10-22), so the
+     * blade hangs 80 cm into the cell below. The inner peg of the pair: the D is 16.5 cm across, on an outer peg it would go through the end bracket, on
+     * the inner one it clears a neighbour axe's bit by 1.2 cm. The blade is 38 cm wide (34 cm before 2026-10-22) and
+     * neighbouring handles are 20 or 30 cm apart, so the middle shovel hangs 7.2 cm further out on its peg (the crossbar
+     * 2 mm inside the peg's end; the outer ones 1 cm off the board): measured on the mesh, 6.8 cm kept two 34 cm blades
+     * 20 cm apart from meeting, and the 38 cm blade's dish needs 0.1 mm more than the 34 cm one's. Drawn empty
+     * (a loaded shovel is not taken).
+     */
+    private static void shovel(double x, PoseStack pose, MultiBufferSource buffers, int light) {
+        boolean middle = Math.abs(x - 0.5) < 0.01;
+        double peg = x < 0.5 ? x + SHOVEL_PEG_DX : x - SHOVEL_PEG_DX;
+        pose.translate(peg, WoodFurnitureV2.ToolRack.PEG_Y + WoodFurnitureV2.ToolRack.PEG_RADIUS, middle ? SHOVEL_Z_MIDDLE : SHOVEL_Z_OUTER);
+        pose.mulPose(Axis.YP.rotationDegrees(180));   // the blade (mesh +z) to the room, -z
+        pose.translate(0, -ShovelItemRenderer.HANG_Y, -ShovelItemRenderer.HANDLE_Z);
+        ShovelItemRenderer.drawEmpty(pose, buffers, light, OverlayTexture.NO_OVERLAY);
     }
 
     /** Felling axe on the rack (docs/gameplay/felling_axe_v1.md 6): its mesh, about 0.96 m overall (a full 36-inch axe). */

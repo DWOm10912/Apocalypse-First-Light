@@ -5,9 +5,12 @@ import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import com.antaurora.apofirstlight.worldgen.underground.GeologyModel.Column;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Anchor;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Background;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Bowl;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Box;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Capsule;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Cave;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Destination;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.DestinationKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.CaveKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.CaveLink;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.District;
@@ -24,9 +27,11 @@ import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Fixture;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Kit;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Mine;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Need;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Notch;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.OreBody;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.OreKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Pillar;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Pit;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Pitch;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Place;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.PlaceKind;
@@ -34,8 +39,10 @@ import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Platform
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Shape;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.StepKind;
 import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Succession;
+import com.antaurora.apofirstlight.worldgen.underground.UndergroundPlan.Talus;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -70,6 +77,16 @@ public final class UndergroundPlanner {
     final Map<Integer, Set<Integer>> linked = new HashMap<>();
     final List<Integer> systems = new ArrayList<>(), giants = new ArrayList<>(), canyons = new ArrayList<>();
     int campPlace = -1;
+    /** The system being laid out: its base level (NaN: a deep, phreatic one) and its section mix (1 ridge, 2 plain; 21.2–21.5). */
+    double vb = Double.NaN;
+    int vmix;
+    /** The plan form of the system being laid out (21.4): 0 plain, then strike, branchwork, maze, small, conduit. */
+    int form;
+    static final int F_PLAIN = 0, F_STRIKE = 1, F_BRANCH = 2, F_MAZE = 3, F_SMALL = 4, F_CONDUIT = 5;
+    static final String[] FORM = {"", " strike", " branchwork", " maze", " small", " conduit"};
+    /** Each system's plan form, and a branchwork's tributary heads (places; sinkholes open over them). */
+    final Map<Integer, Integer> forms = new HashMap<>();
+    final Map<Integer, List<Integer>> heads = new HashMap<>();
 
     record Survey(int key, double x, double z, Column c, double[] bands, double kL2, double kL3, int dom, double faultD) {}
 
@@ -89,7 +106,11 @@ public final class UndergroundPlanner {
             this.chamber = chamber;
         }
 
-        Ellipsoid shape(int owner) { return new Ellipsoid(owner, x, floor + 0.6 * ry, z, rx, ry, rz, floor); }
+        /** A big chamber is a breakdown room; every one gets the wall relief (21.3). */
+        Ellipsoid shape(int owner) {
+            return new Ellipsoid(owner, x, floor + 0.6 * ry, z, rx, ry, rz, floor,
+                    chamber && r() >= 8 ? UndergroundPlan.BREAKDOWN : UndergroundPlan.DOME, r() >= 2.5 ? 0.2 : 0.1);
+        }
 
         double r() { return Math.min(rx, rz); }
 
@@ -117,12 +138,14 @@ public final class UndergroundPlanner {
         systems();
         connectors();
         systemLinks();
+        startCave();
         t = time("systems", t);
         giants();
         t = time("giant", t);
         smallCaves();
         t = time("small", t);
         systemEntrances();
+        stateEntrances();
         greatSinkholes();
         bulkEntrances();
         giantRoutes();
@@ -133,9 +156,14 @@ public final class UndergroundPlanner {
         plan.index();
         rig();
         t = time("index_rig", t);
+        EntranceRocks.lay(this);
+        t = time("rocks", t);
         documents();
         successions();
-        time("docs_succession", t);
+        destinations();
+        t = time("docs_succession", t);
+        CaveTrail.lay(this);
+        time("trails", t);
         return plan;
     }
 
@@ -197,6 +225,12 @@ public final class UndergroundPlanner {
         return a[0] - gap < c[3] && a[3] + gap > c[0] && a[1] - gap < c[4] && a[4] + gap > c[1] && a[2] - gap < c[5] && a[5] + gap > c[2];
     }
 
+    /** The rock a rig needs kept: its floor down to 5 m, and a ring 3 m out at floor and bolt height. */
+    static final double[][] RIG_KEEP = {
+            {0, -0.6, 0}, {0, -2, 0}, {0, -3.5, 0}, {0, -5, 0},
+            {3, -0.6, 0}, {-3, -0.6, 0}, {0, -0.6, 3}, {0, -0.6, -3},
+            {3, -3, 0}, {-3, -3, 0}, {0, -3, 3}, {0, -3, -3}};
+
     /**
      * Whether a new passage or shaft would hollow out the floor of a rigging place laid earlier (19.2), whatever cave
      * owns it: an entrance throat cut down through a pitch series would leave its platforms and anchors in the air.
@@ -208,10 +242,11 @@ public final class UndergroundPlanner {
                     List<double[]> l = rigFloors.get(UndergroundPlan.cellKey(cx, cz));
                     if (l == null) continue;
                     for (double[] q : l)
-                        if (sh.inside(q[0], q[1] - 0.6, q[2]) || sh.inside(q[0], q[1] - 2, q[2])) {
-                            plan.note("passage would cut a rig");
-                            return true;
-                        }
+                        for (double[] o : RIG_KEEP)
+                            if (sh.inside(q[0] + o[0], q[1] + o[1], q[2] + o[2])) {
+                                plan.note("passage would cut a rig");
+                                return true;
+                            }
                 }
         return false;
     }
@@ -222,11 +257,19 @@ public final class UndergroundPlanner {
         if (l == null) return false;
         for (int i : l) {
             Shape o = plan.shapes.get(i);
-            if (o instanceof Pillar) continue;
+            if (o.solid()) continue;
             double[] b = o.bounds();
             if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) continue;
             if (o.inside(x, y, z)) return true;
         }
+        return false;
+    }
+
+    /** Whether a point is inside an entrance throat or built work laid so far. */
+    boolean hollowThroat(double x, double y, double z) {
+        List<Integer> l = occ.get(UndergroundPlan.cellKey((int) Math.floor(x / OCC), (int) Math.floor(z / OCC)));
+        if (l == null) return false;
+        for (int i : l) if (plan.throats.get(i) && plan.shapes.get(i).inside(x, y, z)) return true;
         return false;
     }
 
@@ -268,11 +311,12 @@ public final class UndergroundPlanner {
             // corners, capsules along their centreline
             List<double[]> pts = new ArrayList<>();
             if (sh instanceof Capsule c) {
-                int k = Math.max(1, (int) Math.ceil(Math.hypot(c.bx() - c.ax(), c.bz() - c.az()) / 48));
+                int k = Math.max(1, (int) Math.ceil(Math.hypot(c.bx() - c.ax(), c.bz() - c.az()) / 16));
                 for (int i = 0; i <= k; i++) {
                     double f = (double) i / k;
                     pts.add(new double[]{c.ax() + (c.bx() - c.ax()) * f, c.az() + (c.bz() - c.az()) * f, c.ay() + (c.by() - c.ay()) * f + c.rv()});
                 }
+                pts.add(new double[]{(b[0] + b[3]) / 2, (b[2] + b[5]) / 2, b[4]});
             } else {
                 for (double[] q : new double[][]{{(b[0] + b[3]) / 2, (b[2] + b[5]) / 2}, {b[0], b[2]}, {b[3], b[2]}, {b[0], b[5]}, {b[3], b[5]}}) {
                     double top = b[4];
@@ -302,8 +346,13 @@ public final class UndergroundPlanner {
         return n.place;
     }
 
-    /** A walking step between two cave places by their floors: walk, slope, crawl, wade or sump against the water. */
-    int walk(int a, int b, double rh, double rv, double waterY, boolean dark) {
+    int walk(int a, int b, double rh, double rv, double waterY, boolean dark) { return walk(a, b, rh, rv, 2 * rv, waterY, dark); }
+
+    /**
+     * A walking step between two cave places by their floors: walk, slope, crawl, wade or sump against the water.
+     * head: the passage's clear height over the floor (a shaped section's {@link Capsule#headroom()}).
+     */
+    int walk(int a, int b, double rh, double rv, double head, double waterY, boolean dark) {
         Place pa = plan.places.get(a), pb = plan.places.get(b);
         double dy = Math.abs(pb.y() - pa.y());
         Need n = dark ? Need.LIGHT : Need.NONE;
@@ -314,7 +363,7 @@ public final class UndergroundPlanner {
             n = new Need(dark, 0, 0, false, true, false);
             haul = 3;
         }
-        double roof = Math.min(pa.y(), pb.y()) + 2 * rv;
+        double roof = Math.min(pa.y(), pb.y()) + head;
         if (waterY >= roof - 0.3) {
             k = StepKind.SUMP;
             n = new Need(dark, 0, 0, false, false, true);
@@ -384,6 +433,8 @@ public final class UndergroundPlanner {
      */
     int connect(int upper, double upperR, int lower, int owner, int layer, boolean throat, boolean dark, Set<Integer> ok, double rh, long salt, Fixture fx) {
         Place u = plan.places.get(upper), l = plan.places.get(lower);
+        // a vadose system lies in layer 2 (21.2): its passages keep its rules
+        if (plan.caves.get(owner).system()) layer = Math.min(layer, plan.caves.get(owner).layer);
         double hx = l.x() - u.x(), hz = l.z() - u.z(), horiz = Math.hypot(hx, hz), dy = u.y() - l.y();
         double dx = horiz < 1e-6 ? 1 : hx / horiz, dz = horiz < 1e-6 ? 0 : hz / horiz;
         double rv = rh;
@@ -418,7 +469,8 @@ public final class UndergroundPlanner {
         // system's chamber would leave its platforms and anchors hanging in that chamber's air
         for (int i = 0; i < n; i++) {
             double ddx = i == 0 ? dx : hop[i][0], ddz = i == 0 ? dz : hop[i][1];
-            if ((i > 0 || upperR < 5) && hollow(x[i] - ddx * (rh + 1.0), top[i] - 0.6, z[i] - ddz * (rh + 1.0))) {
+            double rx = x[i] - ddx * (rh + 1.0), rz = z[i] - ddz * (rh + 1.0);
+            if ((i > 0 || upperR < 5) ? hollow(rx, top[i] - 0.6, rz) : hollowThroat(rx, top[i] - 0.6, rz)) {
                 plan.note("series over a void");
                 return -1;
             }
@@ -678,7 +730,8 @@ public final class UndergroundPlanner {
         for (Survey v : karst) {
             double spacing = (700 + 600 * h(k(4, v.key))) * (1 + Math.max(0, v.c.soil - 4) * 0.45);
             if (crowded(accepted, v.x, v.z, spacing)) continue;
-            if (system(v, true)) accepted.add(new double[]{v.x, v.z, spacing});
+            Survey lv = v.c.w[GeologyModel.HILLS] + v.c.w[GeologyModel.PLAINS] + v.c.w[GeologyModel.MOUNTAIN] >= 0.5 ? lift(v) : v;
+            if (system(lv, true)) accepted.add(new double[]{lv.x, lv.z, spacing});
         }
         List<Survey> frac = new ArrayList<>();
         for (Survey v : survey) {
@@ -700,37 +753,118 @@ public final class UndergroundPlanner {
         }
     }
 
+    /**
+     * Round 2 (21.10): a cell whose centre lies in a valley has no dry range over the base level, so its system moves
+     * to the highest ground within 450 m that has a karst run over the base level (the same cell key, so the same salts).
+     */
+    Survey lift(Survey v) {
+        double base = baseLevel(v.x, v.z), best = -1e9;
+        double[] at = null;
+        for (int i = -3; i <= 3; i++)
+            for (int j = -3; j <= 3; j++) {
+                if (i * i + j * j > 9) continue;
+                double x = v.x + i * 150, z = v.z + j * 150;
+                if (!land(x, z)) continue;
+                Column c = g.column(x, z);
+                double[] b = g.bands(c);
+                double lo = base + 7, hi = Math.min(base + 44, b[1] - 12);
+                if (hi - lo < 6 || Double.isNaN(bestKarstY(c, lo, hi, lo))) continue;
+                double score = c.hs - base - 0.01 * Math.hypot(i, j) * 150;
+                if (score > best) { best = score; at = new double[]{x, z}; }
+            }
+        if (at == null) { plan.note("lift none"); return v; }
+        if (at[0] == v.x && at[1] == v.z) return v;
+        plan.note("lifted");
+        Column c = g.column(at[0], at[1]);
+        double[] b = g.bands(c), fd = new double[1];
+        g.nearestFault(at[0], at[1], 1e9, fd);
+        return new Survey(v.key, at[0], at[1], c, b, g.karstShare(c, b[2], b[1]), g.karstShare(c, b[3], b[2]), g.dominantProvince(at[0], at[1]), fd[0]);
+    }
+
     static boolean crowded(List<double[]> acc, double x, double z, double spacing) {
         for (double[] a : acc) if (Math.hypot(a[0] - x, a[1] - z) < Math.max(Math.min(spacing, a[2]), 600)) return true;
         return false;
     }
 
     /** Lays out one system (7.3): a trunk both ways along the strike, branches, a drop to a lower level; commits if long enough. */
-    boolean system(Survey v, boolean karst) {
+    boolean system(Survey v, boolean karst) { return system(v, karst, false); }
+
+    /**
+     * A karst system in the ridges, the plains or the mountains is vadose (21.2): its upper level lies dry 7–44 m over
+     * the local base level, a drop reaches the river level at the base level, and its water stands at that level. Where
+     * the ground has no room for that, or elsewhere, it is the deep phreatic system of 7.3 under the water table.
+     * forceVadose: above the base level wherever it is (the start cave, 21.6), karst or not.
+     */
+    boolean system(Survey v, boolean karst, boolean forceVadose) {
+        vb = Double.NaN;
+        form = F_PLAIN;
+        try {
+            return layOut(v, karst, forceVadose);
+        } finally {
+            vb = Double.NaN;
+            form = F_PLAIN;
+        }
+    }
+
+    boolean layOut(Survey v, boolean karst, boolean forceVadose) {
         Column c = v.c;
         double[] b = v.bands;
-        double y0 = karst ? bestKarstY(c, b[3] + 14, b[2] - 14, (b[2] + b[3]) / 2) : (b[2] + b[3]) / 2 + (h(k(7, v.key)) - 0.5) * 30;
+        double y0 = Double.NaN;
+        // the lakes' small caves (21.5 S4) sit just over the base level, their lower half under the high water
+        boolean lake = karst && !forceVadose && v.dom == GeologyModel.LAKE;
+        if (forceVadose || lake || karst && c.w[GeologyModel.HILLS] + c.w[GeologyModel.PLAINS] + c.w[GeologyModel.MOUNTAIN] >= 0.5) {
+            double base = baseLevel(v.x, v.z);
+            double lo = base + (lake ? 1 : 7), hi = Math.min(base + (lake ? 10 : 44), b[1] - 12), need = lake ? 4 : 6;
+            if (hi - lo >= need) y0 = karst ? bestKarstY(c, lo, hi, lo + 0.35 * (hi - lo)) : lo + (hi - lo) * (0.3 + 0.4 * h(k(7, v.key)));
+            if (!Double.isNaN(y0)) {
+                vb = base;
+                vmix = v.dom == GeologyModel.PLAINS ? 2 : 1;
+            } else plan.note(hi - lo < need ? "vadose no relief" : "vadose no karst over base");
+            if (Double.isNaN(y0) && forceVadose) return false;
+        }
+        if (Double.isNaN(y0)) y0 = karst ? bestKarstY(c, b[3] + 14, b[2] - 14, (b[2] + b[3]) / 2) : (b[2] + b[3]) / 2 + (h(k(7, v.key)) - 0.5) * 30;
         if (Double.isNaN(y0)) { plan.note((karst ? "karst" : "fracture") + " no level"); return false; }
+        boolean vad = !Double.isNaN(vb);
+        // the plan form (21.4, 21.5): ridges' strike-parallel passages, the sinkhole plain's branchwork river, the
+        // range's joint maze, the lakes' small caves, the coast's long straight conduits
+        form = !karst || forceVadose ? F_PLAIN
+                : vad && v.dom == GeologyModel.HILLS ? F_STRIKE
+                : vad && v.dom == GeologyModel.PLAINS ? F_BRANCH
+                : v.dom == GeologyModel.MOUNTAIN ? F_MAZE
+                : vad && v.dom == GeologyModel.LAKE ? F_SMALL
+                : !vad && v.dom == GeologyModel.COAST ? F_CONDUIT : F_PLAIN;
         int id = plan.caves.size();
         double[] fd = new double[1];
         GeologyModel.Fault f = g.nearestFault(v.x, v.z, 1200, fd);
         double ang = karst ? g.strikeAt(v.x, v.z) + (h(k(8, v.key)) - 0.5) * 0.5 : f != null ? f.strike() : h(k(8, v.key)) * Math.PI;
         List<Node> nodes = new ArrayList<>();
         List<double[]> edges = new ArrayList<>();
-        Node c0 = node(v.x, v.z, y0 - 4, karst, k(9, v.key), true);
+        // a branchwork's trunk is the underground river itself, at the river level from its centre on
+        double cf = form == F_BRANCH ? vb - 0.6 + 0.8 * h(k(25, v.key)) : y0 - 4;
+        Node c0 = node(v.x, v.z, cf, karst, k(9, v.key), true);
         if (!nodeOk(c0, id)) { plan.note((karst ? "karst" : "fracture") + " centre blocked"); return false; }
         nodes.add(c0);
-        double trunk = karst ? 350 + 1150 * h(k(10, v.key)) : 180 + 420 * h(k(10, v.key));
-        double trh = karst ? 2.2 + 2.3 * h(k(11, v.key)) : 1.0 + 0.5 * h(k(11, v.key));
-        double trv = karst ? trh * (0.8 + 0.4 * h(k(12, v.key))) : 3 + 3 * h(k(12, v.key));
-        grow(nodes, edges, 0, ang, trunk / 2, trh, trv, karst, id, k(13, v.key));
-        grow(nodes, edges, 0, ang + Math.PI, trunk / 2, trh, trv, karst, id, k(14, v.key));
-        int nb = karst ? 2 + (int) (4 * h(k(15, v.key))) : 1 + (int) (3 * h(k(15, v.key)));
+        double trunk = form == F_BRANCH ? 600 + 1400 * h(k(10, v.key)) : form == F_SMALL ? 150 + 300 * h(k(10, v.key))
+                : form == F_CONDUIT ? 900 + 1300 * h(k(10, v.key)) : karst ? 350 + 1150 * h(k(10, v.key)) : 180 + 420 * h(k(10, v.key));
+        double trh = form == F_CONDUIT ? 2.5 + 1.5 * h(k(11, v.key)) : karst ? 2.2 + 2.3 * h(k(11, v.key)) : 1.0 + 0.5 * h(k(11, v.key));
+        double trv = form == F_CONDUIT ? trh * 0.9 : karst ? trh * (0.8 + 0.4 * h(k(12, v.key))) : 3 + 3 * h(k(12, v.key));
+        List<Integer> trib = new ArrayList<>();
+        if (form == F_MAZE) maze(nodes, edges, v, ang, id, vad);
+        else {
+            grow(nodes, edges, 0, ang, trunk / 2, trh, trv, karst, id, k(13, v.key));
+            grow(nodes, edges, 0, ang + Math.PI, trunk / 2, trh, trv, karst, id, k(14, v.key));
+        }
+        if (form == F_STRIKE) strikeTwin(nodes, edges, v, ang, trunk, trh, trv, id);
+        if (form == F_BRANCH) tributaries(nodes, edges, v, ang, id, trib);
+        int nb = form == F_MAZE || form == F_BRANCH ? 0 : form == F_SMALL ? (int) (2 * h(k(15, v.key)))
+                : form == F_CONDUIT ? 2 + (int) (3 * h(k(15, v.key))) : karst ? 2 + (int) (4 * h(k(15, v.key))) : 1 + (int) (3 * h(k(15, v.key)));
         for (int i = 0; i < nb && nodes.size() > 1; i++) {
             int from = (int) (h(k(16, v.key * 8 + i)) * nodes.size());
-            double ba = ang + (h(k(17, v.key * 8 + i)) < 0.5 ? 1 : -1) * (0.7 + 0.9 * h(k(18, v.key * 8 + i)));
-            double bl = 80 + 320 * h(k(19, v.key * 8 + i));
-            double brh = karst ? 1.5 + 1.5 * h(k(20, v.key * 8 + i)) : 0.8 + 0.4 * h(k(20, v.key * 8 + i));
+            double sd = h(k(17, v.key * 8 + i)) < 0.5 ? 1 : -1, q = h(k(18, v.key * 8 + i));
+            // the ridges' cross links run along the joints, near square to the strike; the conduits join at a slant
+            double ba = ang + sd * (form == F_STRIKE ? 1.3 + 0.5 * q : form == F_CONDUIT ? 0.5 + 0.5 * q : 0.7 + 0.9 * q);
+            double bl = form == F_STRIKE ? 40 + 80 * h(k(19, v.key * 8 + i)) : form == F_CONDUIT ? 200 + 400 * h(k(19, v.key * 8 + i)) : 80 + 320 * h(k(19, v.key * 8 + i));
+            double brh = form == F_CONDUIT ? trh * 0.7 : karst ? 1.5 + 1.5 * h(k(20, v.key * 8 + i)) : 0.8 + 0.4 * h(k(20, v.key * 8 + i));
             double brv = karst ? brh : 2.5 + 2 * h(k(21, v.key * 8 + i));
             grow(nodes, edges, from, ba, bl, brh, brv, karst, id, k(22, v.key * 8 + i));
         }
@@ -740,9 +874,17 @@ public final class UndergroundPlanner {
             total += Math.hypot(a.x - bn.x, a.z - bn.z);
         }
         if (total < (karst ? 150 : 100)) { plan.note((karst ? "karst" : "fracture") + " too short"); return false; }
-        Cave cv = cave(karst ? CaveKind.KARST_SYSTEM : CaveKind.FRACTURE_SYSTEM, 3, v.x, y0, v.z, g.waterTable(c), g.rockAt(c, y0));
-        cv.label = karst ? GeologyModel.UNIT_NAME[Math.max(0, Math.min(GeologyModel.UNIT.length - 1, g.unitAt(c, y0)))] : f != null ? "fault " + f.id() : "joints";
+        Cave cv = cave(karst ? CaveKind.KARST_SYSTEM : CaveKind.FRACTURE_SYSTEM, vad ? 2 : 3, v.x, y0, v.z, vad ? vb : g.waterTable(c), g.rockAt(c, y0));
+        cv.label = (karst ? GeologyModel.UNIT_NAME[Math.max(0, Math.min(GeologyModel.UNIT.length - 1, g.unitAt(c, y0)))] : f != null ? "fault " + f.id() : "joints") + (vad ? " vadose" : "") + FORM[form];
+        if (vad) plan.note("vadose systems");
+        if (form != F_PLAIN) plan.note("form" + FORM[form]);
+        forms.put(id, form);
         for (Node n : nodes) { add(n.shape(id)); nodePlace(n, id); }
+        if (!trib.isEmpty()) {
+            List<Integer> hp = new ArrayList<>();
+            for (int ti : trib) hp.add(nodes.get(ti).place);
+            heads.put(id, hp);
+        }
         for (double[] e : edges) {
             Node a = nodes.get((int) e[0]), bn = nodes.get((int) e[1]);
             if (e[4] > 0) {
@@ -757,10 +899,10 @@ public final class UndergroundPlanner {
                 walk(a.place, top, 2, 2, cv.waterY, true);
                 pitch(top, bn.place, sx, sz, e[2], id, true, naturalFixture(k(23, v.key * 64 + (long) e[0])), k(24, v.key * 64 + (long) e[0]), -1);
             } else {
-                Capsule cp = new Capsule(id, a.x, a.floor + 0.7 * e[3], a.z, bn.x, bn.floor + 0.7 * e[3], bn.z, e[2], e[3]);
+                Capsule cp = passage(id, a, bn, e);
                 add(cp);
                 cv.passageLength += cp.length();
-                walk(a.place, bn.place, e[2], e[3], cv.waterY, true);
+                walk(a.place, bn.place, e[2], e[3], cp.headroom(), cv.waterY, true);
             }
         }
         systems.add(id);
@@ -768,7 +910,7 @@ public final class UndergroundPlanner {
     }
 
     Node node(double x, double z, double floor, boolean karst, long salt, boolean chamberForced) {
-        boolean ch = chamberForced || h(salt) < 0.45;
+        boolean ch = chamberForced || h(salt) < (form == F_CONDUIT ? 0.12 : 0.45);
         if (!ch) {
             double r = 2.5 + 1.5 * h(salt + 1);
             return new Node(x, z, floor, r, karst ? r * 0.8 : 3.5, r, false);
@@ -781,11 +923,61 @@ public final class UndergroundPlanner {
         if (!land(n.x, n.z)) return false;
         Column c = g.column(n.x, n.z);
         double[] b = g.bands(c);
+        // a vadose node stays over the base level (less the river level's pools) under layer 2's roof rules
+        if (!Double.isNaN(vb)) return n.floor >= Math.max(b[3], vb - 3) && fits(n.shape(owner), 2, owner, null);
         if (n.floor < b[3] || n.roof() > b[2]) return false;
         return fits(n.shape(owner), 3, owner, null);
     }
 
-    /** Grows a chain from node `from` heading `ang` for `length` m (edges: {a, b, rh, rv, drop}). */
+    /**
+     * The local base level (21.2): the low ground within 1.5 km on a 125 m grid (valley floors and rivers; water at
+     * least at sea level), its 3rd percentile less 1.5 m. A vadose system's levels sit over it, its water at it.
+     */
+    double baseLevel(double x, double z) {
+        double[] hs = new double[625];
+        int n = 0;
+        for (int i = -12; i <= 12; i++)
+            for (int j = -12; j <= 12; j++) {
+                if (i * i + j * j > 144) continue;
+                double qx = x + i * 125, qz = z + j * 125, hh = s.heightAt(qx, qz);
+                if (s.waterAt(qx, qz)) hh = Math.max(hh, 63);
+                hs[n++] = hh;
+            }
+        Arrays.sort(hs, 0, n);
+        return hs[n / 30] - 1.5;
+    }
+
+    /**
+     * An edge's section (21.3–21.5): {rh, rv, profile, stream}. Deep karst passages are phreatic tubes, fracture ones
+     * keep their tall slots. In a vadose system the river level runs in canyons and keyholes with a stream trench; the
+     * upper level mixes canyons, tubes and keyholes in the ridges, bedding-plane low passages and tubes in the plains.
+     */
+    double[] section(Node a, Node n, double rh, double rv, boolean karst, long salt) {
+        if (Double.isNaN(vb)) return new double[]{rh, rv, karst ? UndergroundPlan.TUBE : UndergroundPlan.SMOOTH, 0};
+        double u = h(salt), q1 = h(salt + 1), q2 = h(salt + 2);
+        double[] canyon = {2.2 + q1, 3 + 2 * q2, UndergroundPlan.CANYON, 0};
+        double[] keyhole = {2.4 + 1.1 * q1, 2.5 + 1.5 * q2, UndergroundPlan.KEYHOLE, 0};
+        if (Math.max(a.floor, n.floor) <= vb + 1.5) {
+            double[] r = u < 0.6 ? canyon : keyhole;
+            r[3] = 0.9;
+            return r;
+        }
+        double[] tube = {rh, Math.max(1.7, rh * (0.55 + 0.2 * q2)), UndergroundPlan.TUBE, 0};
+        if (vmix == 2) return u < 0.4 ? new double[]{5 + 2 * q1, 2.4, UndergroundPlan.LOW, 0} : u < 0.8 ? tube : canyon;
+        return u < 0.5 ? canyon : u < 0.8 ? tube : keyhole;
+    }
+
+    /** The capsule of an edge {a, b, rh, rv, drop, profile, stream}: a drop's shaft, or the walking passage. */
+    Capsule passage(int owner, Node a, Node n, double[] e) {
+        if (e[4] > 0) return new Capsule(owner, n.x, a.floor + 0.5, n.z, n.x, n.floor + e[2], n.z, e[2], e[2]);
+        return new Capsule(owner, a.x, a.floor + 0.7 * e[3], a.z, n.x, n.floor + 0.7 * e[3], n.z, e[2], e[3],
+                (int) e[5], rough(e[3]), e[6], Math.max(a.r(), n.r()) + 1);
+    }
+
+    /** Wall relief for a passage of half height rv: as much as still leaves 2.1 m of headroom (21.3). */
+    static double rough(double rv) { return rv >= 2.2 ? 0.28 : rv >= 1.8 ? 0.18 : 0.1; }
+
+    /** Grows a chain from node `from` heading `ang` for `length` m (edges: {a, b, rh, rv, drop, profile, stream}). */
     void grow(List<Node> nodes, List<double[]> edges, int from, double ang, double length, double rh, double rv, boolean karst, int owner, long salt) {
         double rem = length, head = ang;
         int prev = from, i = 0, offKarst = 0;
@@ -793,28 +985,40 @@ public final class UndergroundPlanner {
         while (rem > 30) {
             Node a = nodes.get(prev);
             double seg = 60 + 90 * h(salt + 31L * i);
-            head += (h(salt + 31L * i + 1) - 0.5) * 0.6;
+            head += (h(salt + 31L * i + 1) - 0.5) * (form == F_CONDUIT ? 0.15 : 0.6);
             double nx = a.x + Math.cos(head) * seg, nz = a.z + Math.sin(head) * seg;
             Column c = g.column(nx, nz);
             double floor;
-            boolean drop = karst && !dropped && a.chamber && a.r() >= 5 && h(salt + 31L * i + 2) < 0.18;
+            // vadose (21.2): the one drop goes from the dry level to the river level at the base level, which then
+            // follows the base level; the dry level never comes down to within 3 m of it
+            boolean vad = !Double.isNaN(vb), river = vad && a.floor <= vb + 1.5;
+            double dropP = form == F_CONDUIT || form == F_SMALL ? 0 : !vad ? 0.18 : a.floor - vb >= 8 ? 0.3 : 0;
+            boolean drop = karst && !dropped && a.chamber && a.r() >= 5 && h(salt + 31L * i + 2) < dropP;
             if (drop) {
-                floor = a.floor - (12 + 23 * h(salt + 31L * i + 3));
+                floor = vad ? vb - 0.6 + 0.8 * h(salt + 31L * i + 3) : a.floor - (12 + 23 * h(salt + 31L * i + 3));
                 nx = a.x + Math.cos(head) * 0.65 * a.r();
                 nz = a.z + Math.sin(head) * 0.65 * a.r();
+            } else if (river) {
+                floor = vb - 0.6 + 0.8 * h(salt + 31L * i + 3);
             } else if (karst) {
-                double y = bestKarstY(c, a.floor - 0.35 * seg, a.floor + 0.35 * seg, a.floor + 4);
+                double lo = a.floor - 0.35 * seg;
+                if (vad) lo = Math.max(lo, vb + 7);
+                double y = bestKarstY(c, lo, a.floor + 0.35 * seg, a.floor + 4);
                 if (Double.isNaN(y)) { y = a.floor + 4; offKarst++; } else offKarst = 0;
                 if (offKarst > 1) break;
                 floor = y - 4;
-            } else floor = a.floor + (h(salt + 31L * i + 3) - 0.5) * 0.3 * seg;
+            } else {
+                floor = a.floor + (h(salt + 31L * i + 3) - 0.5) * 0.3 * seg;
+                if (vad) floor = Math.max(floor, vb + 3);
+            }
             Node n = drop ? new Node(nx, nz, floor, 2.5 + 2 * h(salt + 31L * i + 4), 2.5, 2.5 + 2 * h(salt + 31L * i + 4), false)
                     : node(nx, nz, floor, karst, salt + 31L * i + 5, false);
             if (!nodeOk(n, owner)) break;
-            double erh = drop ? 1.5 + h(salt + 31L * i + 6) : rh, erv = drop ? erh : rv;
-            Shape link = drop ? new Capsule(owner, nx, a.floor + 0.5, nz, nx, n.floor + erh, nz, erh, erh)
-                    : new Capsule(owner, a.x, a.floor + 0.7 * erv, a.z, n.x, n.floor + 0.7 * erv, n.z, erh, erv);
-            if (!fits(link, 3, owner, null)) break;
+            double[] sc = drop ? new double[]{1.5 + h(salt + 31L * i + 6), 0, UndergroundPlan.SMOOTH, 0} : section(a, n, rh, rv, karst, salt + 31L * i + 7);
+            if (drop) sc[1] = sc[0];
+            double[] e = {prev, nodes.size(), sc[0], sc[1], drop ? 1 : 0, sc[2], sc[3]};
+            Shape link = passage(owner, a, n, e);
+            if (!fits(link, vad ? 2 : 3, owner, null)) break;
             // keep the new node clear of this system's own nodes (no chamber inside another)
             boolean overlap = false;
             for (int j = 0; j < nodes.size(); j++) {
@@ -824,13 +1028,147 @@ public final class UndergroundPlanner {
             }
             if (overlap) break;
             nodes.add(n);
-            edges.add(new double[]{prev, nodes.size() - 1, erh, erv, drop ? 1 : 0});
+            edges.add(e);
             if (drop) dropped = true;
             prev = nodes.size() - 1;
             rem -= drop ? 0 : seg;
             i++;
             if (i > 40) break;
         }
+    }
+
+    /** No chamber inside another: a new node keeps its distance from the system's nodes (but `skip`). */
+    static boolean apart(List<Node> nodes, Node n, int skip) {
+        for (int j = 0; j < nodes.size(); j++) {
+            if (j == skip) continue;
+            Node o = nodes.get(j);
+            if (Math.hypot(o.x - n.x, o.z - n.z) < o.r() + n.r() + 6 && Math.abs(o.floor - n.floor) < 20) return false;
+        }
+        return true;
+    }
+
+    /** Tries an edge a → n (n not yet in the list); adds both when the passage fits. */
+    boolean tryEdge(List<Node> nodes, List<double[]> edges, int from, Node n, double[] sc, int id) {
+        Node a = nodes.get(from);
+        double[] e = {from, nodes.size(), sc[0], sc[1], 0, sc[2], sc[3]};
+        if (!fits(passage(id, a, n, e), Double.isNaN(vb) ? 3 : 2, id, null)) return false;
+        nodes.add(n);
+        edges.add(e);
+        return true;
+    }
+
+    /**
+     * S1 (21.5): the ridges' caves run along the strike in one to three parallel passages. A second trunk 45–80 m to one
+     * side on the same bed, joined to the first by a cross link along the joints, runs both ways along the strike.
+     */
+    void strikeTwin(List<Node> nodes, List<double[]> edges, Survey v, double ang, double trunk, double trh, double trv, int id) {
+        if (h(k(26, v.key)) >= 0.7) return;
+        Node c0 = nodes.get(0);
+        double side = h(k(27, v.key)) < 0.5 ? 1 : -1, off = c0.r() + 45 + 35 * h(k(28, v.key));
+        double px = v.x + Math.cos(ang + side * Math.PI / 2) * off, pz = v.z + Math.sin(ang + side * Math.PI / 2) * off;
+        if (!land(px, pz)) return;
+        double y = bestKarstY(g.column(px, pz), Math.max(c0.floor - 2, vb + 7), c0.floor + 10, c0.floor + 4);
+        if (Double.isNaN(y)) return;
+        Node p0 = node(px, pz, y - 4, true, k(29, v.key), false);
+        if (!nodeOk(p0, id) || !apart(nodes, p0, -1)) return;
+        if (!tryEdge(nodes, edges, 0, p0, section(c0, p0, trh * 0.7, trv * 0.7, true, k(30, v.key)), id)) return;
+        int pi = nodes.size() - 1;
+        double len = trunk * (0.3 + 0.3 * h(k(31, v.key)));
+        grow(nodes, edges, pi, ang, len / 2, trh * 0.85, trv * 0.85, true, id, k(32, v.key));
+        grow(nodes, edges, pi, ang + Math.PI, len / 2, trh * 0.85, trv * 0.85, true, id, k(33, v.key));
+        plan.note("strike twins");
+    }
+
+    /**
+     * S2 (21.5): branchwork on the sinkhole plain. Four to seven dry tributaries leave the underground river 5–8 m up
+     * and run off at a slant for 100–350 m; their heads get the sinkholes (stateEntrances). `trib`: the heads' indices.
+     */
+    void tributaries(List<Node> nodes, List<double[]> edges, Survey v, double ang, int id, List<Integer> trib) {
+        int nt = 4 + (int) (4 * h(k(34, v.key)));
+        int n0 = nodes.size();
+        for (int i = 0; i < nt && n0 > 1; i++) {
+            long q = k(35, v.key * 8 + i);
+            int from = (int) (h(q) * n0);
+            Node a = nodes.get(from);
+            if (a.floor > vb + 1.5) continue;
+            double ba = ang + (h(q + 1) < 0.5 ? 1 : -1) * (0.5 + 0.6 * h(q + 2)), d = a.r() + 40 + 30 * h(q + 3);
+            double tx = a.x + Math.cos(ba) * d, tz = a.z + Math.sin(ba) * d;
+            if (!land(tx, tz)) continue;
+            Node t = node(tx, tz, vb + 5 + 3 * h(q + 4), true, q + 5, false);
+            if (!nodeOk(t, id) || !apart(nodes, t, from)) continue;
+            double r = 1.6 + 0.6 * h(q + 6);
+            if (!tryEdge(nodes, edges, from, t, section(a, t, r, r, true, q + 7), id)) continue;
+            int ti = nodes.size() - 1;
+            grow(nodes, edges, ti, ba, 100 + 250 * h(q + 8), r * 0.9, r * 0.9, true, id, q + 9);
+            trib.add(nodes.size() - 1);
+        }
+        if (!trib.isEmpty()) plan.note("tributaries");
+    }
+
+    /**
+     * S3 (21.4 network maze): the range's limestone dissolves along two joint sets into a grid of narrow tall passages,
+     * 3–5 by 3–4 nodes 26–42 m apart on one bed. Every row is joined along the strike, 70 % of the cross joints too;
+     * what the centre does not reach is dropped.
+     */
+    void maze(List<Node> nodes, List<double[]> edges, Survey v, double ang, int id, boolean vad) {
+        Node c0 = nodes.get(0);
+        int na = 3 + (int) (3 * h(k(36, v.key))), nm = 3 + (int) (2 * h(k(37, v.key)));
+        double sa = c0.r() + 22 + 14 * h(k(38, v.key)), sb = c0.r() + 20 + 14 * h(k(39, v.key));
+        double a2 = ang + 1.35 + 0.4 * h(k(40, v.key));
+        int[][] at = new int[na][nm];
+        for (int[] row : at) Arrays.fill(row, -1);
+        at[0][0] = 0;
+        for (int i = 0; i < na; i++)
+            for (int j = 0; j < nm; j++) {
+                if (i == 0 && j == 0) continue;
+                long q = k(41, v.key * 64 + i * 8 + j);
+                double x = v.x + Math.cos(ang) * i * sa + Math.cos(a2) * j * sb + (h(q) - 0.5) * 8;
+                double z = v.z + Math.sin(ang) * i * sa + Math.sin(a2) * j * sb + (h(q + 1) - 0.5) * 8;
+                if (!land(x, z)) continue;
+                double lo = c0.floor - 1, hi = c0.floor + 9;
+                if (vad) lo = Math.max(lo, vb + 7);
+                double y = bestKarstY(g.column(x, z), lo, hi, c0.floor + 4);
+                if (Double.isNaN(y)) continue;
+                double r = 2 + h(q + 2);
+                Node n = new Node(x, z, y - 4, r, 2.2 + 1.2 * h(q + 3), r, false);
+                if (!nodeOk(n, id) || !apart(nodes, n, -1)) continue;
+                at[i][j] = nodes.size();
+                nodes.add(n);
+            }
+        for (int i = 0; i < na; i++)
+            for (int j = 0; j < nm; j++) {
+                if (at[i][j] < 0) continue;
+                for (int dir = 0; dir < 2; dir++) {
+                    int ni = i + (dir == 0 ? 1 : 0), nj = j + (dir == 1 ? 1 : 0);
+                    if (ni >= na || nj >= nm || at[ni][nj] < 0) continue;
+                    long q = k(42, v.key * 64 + i * 8 + j) + dir;
+                    if (dir == 1 && h(q) >= 0.7) continue;
+                    Node a = nodes.get(at[i][j]), b = nodes.get(at[ni][nj]);
+                    double[] e = {at[i][j], at[ni][nj], 1.1 + 0.5 * h(q + 2), 2.6 + 1.2 * h(q + 3), 0, h(q + 4) < 0.5 ? UndergroundPlan.CANYON : UndergroundPlan.KEYHOLE, 0};
+                    if (fits(passage(id, a, b, e), vad ? 2 : 3, id, null)) edges.add(e);
+                }
+            }
+        // keep what the centre reaches, renumbered
+        int n = nodes.size();
+        boolean[] seen = new boolean[n];
+        seen[0] = true;
+        for (boolean more = true; more; ) {
+            more = false;
+            for (double[] e : edges) {
+                int a = (int) e[0], b = (int) e[1];
+                if (seen[a] != seen[b]) { seen[a] = seen[b] = true; more = true; }
+            }
+        }
+        int[] map = new int[n];
+        List<Node> keep = new ArrayList<>();
+        for (int i = 0; i < n; i++) { map[i] = seen[i] ? keep.size() : -1; if (seen[i]) keep.add(nodes.get(i)); }
+        List<double[]> ke = new ArrayList<>();
+        for (double[] e : edges) if (seen[(int) e[0]]) { e[0] = map[(int) e[0]]; e[1] = map[(int) e[1]]; ke.add(e); }
+        nodes.clear();
+        nodes.addAll(keep);
+        edges.clear();
+        edges.addAll(ke);
+        plan.note("maze nodes " + (keep.size() >= 8 ? "8+" : "<8"));
     }
 
     /** Layer-2 connectors (7.4): 60 % of karst systems and 20 % of fracture systems reach up to a layer-2 chamber. */
@@ -962,7 +1300,7 @@ public final class UndergroundPlanner {
         double ry = (roof - floor) / 1.6;
         double rx = 40 + 85 * h(k(63, v.key)), rz = Math.min(rx, 30 + 70 * h(k(64, v.key)));
         int id = plan.caves.size();
-        Ellipsoid e = new Ellipsoid(id, v.x, floor + 0.6 * ry, v.z, rx, ry, rz, floor);
+        Ellipsoid e = new Ellipsoid(id, v.x, floor + 0.6 * ry, v.z, rx, ry, rz, floor, UndergroundPlan.BREAKDOWN, 0.15);
         if (!fits(e, 4, id, null)) return false;
         for (double[] q : new double[][]{{v.x - rx, v.z}, {v.x + rx, v.z}, {v.x, v.z - rz}, {v.x, v.z + rz}}) if (!land(q[0], q[1])) return false;
         Cave cv = cave(CaveKind.GIANT, 4, v.x, e.y(), v.z, g.waterTable(v.c), g.rockAt(v.c, e.y()));
@@ -972,6 +1310,20 @@ public final class UndergroundPlanner {
         for (int i = 0; i < pillars; i++) {
             double a = 2 * Math.PI * h(k(66, v.key * 8 + i)), d = 0.5 * h(k(67, v.key * 8 + i));
             add(new Pillar(id, v.x + Math.cos(a) * d * rx, v.z + Math.sin(a) * d * rz, 4 + 6 * h(k(68, v.key * 8 + i)), floor - 1, e.y() + ry + 1));
+        }
+        // S6 (21.4 ramiform): rising water dissolved blind chimneys up from the tableland's great rooms
+        if (v.c.w[GeologyModel.PLATEAU] > 0.4) {
+            int nc = 2 + (int) (3 * h(k(70, v.key))), made = 0;
+            for (int i = 0; i < nc; i++) {
+                long q = k(71, v.key * 8 + i);
+                double a = 2 * Math.PI * h(q), d = 0.35 + 0.35 * h(q + 1);
+                double cx = v.x + Math.cos(a) * d * rx, cz = v.z + Math.sin(a) * d * rz, top = e.roofAt(cx, cz);
+                if (Double.isNaN(top)) continue;
+                double rr = 2.5 + 2.5 * h(q + 2), rise = 15 + 25 * h(q + 3);
+                Capsule ch = new Capsule(id, cx, top - rr, cz, cx + (h(q + 4) - 0.5) * 12, top + rise, cz + (h(q + 5) - 0.5) * 12, rr, rr);
+                if (fits(ch, 4, id, null)) { add(ch); made++; }
+            }
+            if (made > 0) plan.note("ramiform giants");
         }
         // the floor place off the pillars, and a ledge on the wall
         double fx = v.x - 0.3 * rx, fz = v.z;
@@ -1037,7 +1389,7 @@ public final class UndergroundPlanner {
             double floor = cy - 0.7 * rv;
             if (floor < g.minY + GeologyModel.FLOOR_KEEP + 8) continue;
             int id = plan.caves.size();
-            Capsule c = new Capsule(id, ax, cy, az, bx, cy, bz, rh, rv);
+            Capsule c = new Capsule(id, ax, cy, az, bx, cy, bz, rh, rv, UndergroundPlan.SMOOTH, 0.12, 0, 0);
             if (!fits(c, 4, id, null)) continue;
             Column mc = g.column((ax + bx) / 2, (az + bz) / 2);
             double wt = g.waterTable(mc);
@@ -1077,7 +1429,7 @@ public final class UndergroundPlanner {
                     double ry = (2 + 4 * h(k(94, sk))) / 1.6, rx = 2.5 + 7.5 * h(k(95, sk)), rz = 2.5 + 7.5 * h(k(96, sk));
                     double floor = y;
                     if (floor + 1.6 * ry > hi) continue;
-                    sh = new Ellipsoid(id, x, floor + 0.6 * ry, z, rx, ry, rz, floor);
+                    sh = new Ellipsoid(id, x, floor + 0.6 * ry, z, rx, ry, rz, floor, UndergroundPlan.DOME, 0.18);
                     top = floor + 1.6 * ry;
                 } else {
                     double a = g.strikeAt(x, z) + (h(k(97, sk)) - 0.5) * 0.8, len = 10 + 30 * h(k(98, sk));
@@ -1110,6 +1462,89 @@ public final class UndergroundPlanner {
         return EntranceKind.FISSURE;
     }
 
+    // ------------------------------------------------------------------ the start dry cave (21.6)
+
+    /**
+     * A mostly dry system 0.8–3 km from the home that one walks into with a light (21.6): a vadose system already
+     * there, else one laid out above the base level for it (karst if the cell has any, else joints); its way in is a
+     * hillside mouth whose passage slopes down to a dry place (no pitch). Notes "no start cave" when nothing fits.
+     */
+    void startCave() {
+        if (!p.home) return;
+        List<Integer> have = new ArrayList<>();
+        for (int sid : systems) {
+            Cave cv = plan.caves.get(sid);
+            double d = p.homeDistance(cv.x, cv.z);
+            if (d >= 800 && d <= 3000 && dryShare(cv) >= 0.5) have.add(sid);
+        }
+        have.sort(Comparator.comparingDouble((Integer sid) -> (plan.caves.get(sid).layer == 2 ? 0 : 5000) + Math.abs(p.homeDistance(plan.caves.get(sid).x, plan.caves.get(sid).z) - 1500)).thenComparingInt(sid -> sid));
+        for (int sid : have) if (startMouth(sid)) return;
+        List<double[]> pts = new ArrayList<>();
+        for (double gx = -3000; gx <= 3000; gx += 250)
+            for (double gz = -3000; gz <= 3000; gz += 250) {
+                double x = p.homeX + gx, z = p.homeZ + gz, d = Math.hypot(gx, gz);
+                if (d < 800 || d > 3000 || !land(x, z)) continue;
+                pts.add(new double[]{x, z, g.column(x, z).hs - baseLevel(x, z)});
+            }
+        pts.sort(Comparator.comparingDouble((double[] q) -> -q[2]).thenComparingDouble(q -> q[0]).thenComparingDouble(q -> q[1]));
+        List<Survey> vs = new ArrayList<>();
+        double[] fd = new double[1];
+        for (double[] q : pts) {
+            if (q[2] < 40 || vs.size() >= 24) break;
+            boolean near = false;
+            for (Survey o : vs) near |= Math.hypot(o.x - q[0], o.z - q[1]) < 500;
+            if (near) continue;
+            Column col = g.column(q[0], q[1]);
+            double[] b = g.bands(col);
+            g.nearestFault(q[0], q[1], 1e9, fd);
+            vs.add(new Survey(1 << 24 | vs.size(), q[0], q[1], col, b, g.karstShare(col, b[2], b[1]), g.karstShare(col, b[3], b[2]), g.dominantProvince(q[0], q[1]), fd[0]));
+        }
+        vs.sort(Comparator.comparingDouble((Survey v) -> v.kL2 >= 0.3 ? 0 : 1).thenComparingInt(v -> v.key));
+        plan.note("start cave high points " + vs.size());
+        int laid = 0;
+        for (Survey v : vs) {
+            if (laid >= 3) break;
+            if (!system(v, v.kL2 >= 0.3, true) && !(v.kL2 >= 0.3 && system(v, false, true))) continue;
+            laid++;
+            int sid = systems.get(systems.size() - 1);
+            plan.note("start cave laid out");
+            if (dryShare(plan.caves.get(sid)) >= 0.5 && startMouth(sid)) return;
+        }
+        plan.note("no start cave");
+    }
+
+    /** A hillside mouth into a dry place of the system whose passage slopes down to it (light only); true when made. */
+    boolean startMouth(int sid) {
+        Cave cv = plan.caves.get(sid);
+        for (int pl : new ArrayList<>(cv.places)) {
+            Place q = plan.places.get(pl);
+            if ((q.kind() != PlaceKind.CHAMBER && q.kind() != PlaceKind.JUNCTION) || q.y() < cv.waterY) continue;
+            for (int ring = 40; ring <= 400; ring += 30)
+                for (int a = 0; a < 16; a++) {
+                    double ang = a * Math.PI / 8 + 2 * Math.PI * h(k(160, pl));
+                    double x = q.x() + Math.cos(ang) * ring, z = q.z() + Math.sin(ang) * ring;
+                    if (!land(x, z)) continue;
+                    Column c = g.column(x, z);
+                    double dy = c.h - 1.5 - q.y();
+                    if (dy < 3 || dy / ring > 0.6) continue;
+                    if (!p.entranceAllowed(EntranceKind.HILLSIDE_MOUTH, x, z)) continue;
+                    if (openEntrance(EntranceKind.HILLSIDE_MOUTH, c, pl, sid, k(161, pl * 4096L + ring * 16L + a)) >= 0) {
+                        plan.startCave = sid;
+                        cv.label += " start";
+                        return true;
+                    }
+                }
+        }
+        return false;
+    }
+
+    /** The share of a cave's places that are not under its water (the check's "dry places"). */
+    double dryShare(Cave cv) {
+        int dry = 0;
+        for (int pl : cv.places) if (plan.places.get(pl).y() + 1 >= cv.waterY) dry++;
+        return cv.places.isEmpty() ? 0 : (double) dry / cv.places.size();
+    }
+
     /** An entrance near a target place, searched in rings out to `reach` (9.2); returns the entrance id or -1. */
     int entranceTo(int targetPlace, int owner, double reach, long salt, EntranceKind force) {
         Place t = plan.places.get(targetPlace);
@@ -1137,39 +1572,137 @@ public final class UndergroundPlanner {
             case SHAFT -> 1.0 + 3.0 * h(salt);
             case COVER_SINKHOLE -> 2 + 1.5 * h(salt);
             case GREAT_SINKHOLE -> 20 + 55 * h(salt);
+            case KARST_WINDOW -> 4 + 3 * h(salt);
+            case CLIFF_MOUTH -> 2 + 2 * h(salt);
+            case WAVE_CUT -> 2.2 + 1.3 * h(salt);
+            case SPRING_MOUTH -> 1.6 + 1.0 * h(salt);
             default -> 1.8 + 1.2 * h(salt);
         };
+        int places0 = plan.places.size(), pitches0 = plan.pitches.size();
         int rim = plan.addPlace(PlaceKind.SURFACE, x, y, z, owner, new Platform(x, y, z, 3, 3, 50));
         int st;
         Place t = plan.places.get(targetPlace);
-        if (kind == EntranceKind.HILLSIDE_MOUTH || kind == EntranceKind.DRY_SPRING) {
+        if (kind == EntranceKind.HILLSIDE_MOUTH || kind == EntranceKind.DRY_SPRING || kind == EntranceKind.SPRING_MOUTH
+                || kind == EntranceKind.CLIFF_MOUTH || kind == EntranceKind.WAVE_CUT) {
             int mouth = plan.addPlace(PlaceKind.JUNCTION, x, y - 1.5, z, owner, new Platform(x, y - 1.5, z, 1.2, 1.2, 2.6));
             Capsule m = new Capsule(owner, x, y - 1.5 + 0.7 * rh, z, x + (t.x() - x) * 0.02, y - 1.5 + 0.7 * rh, z + (t.z() - z) * 0.02, rh, rh);
             if (!clear(m, owner, Set.of(owner)) || cutsRig(m)) { plan.places.set(rim, new Place(rim, PlaceKind.JUNCTION, x, -1e6, z, owner, null)); plan.places.set(mouth, new Place(mouth, PlaceKind.JUNCTION, x, -1e6, z, owner, null)); return -1; }
             st = connect(mouth, 0.5, targetPlace, owner, 2, true, true, Set.of(owner), rh, salt + 1, naturalFixture(salt + 2));
             if (st >= 0) {
                 throat(m);
+                // the porch (22.3): the slope cut back to the mouth's floor; the rim goes out to where it meets the ground
+                Notch n = notch(owner, x, z, y - 1.5, rh + 0.5);
+                if (n != null) {
+                    throat(n);
+                    double ex = x + n.dx() * n.len(), ez = z + n.dz() * n.len(), ey = Math.min(s.heightAt(ex, ez), n.floorAt(ex, ez));
+                    plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, ex, ey, ez, owner, new Platform(ex, ey, ez, 3, 3, 50)));
+                    plan.note("porches " + kind.name().toLowerCase(java.util.Locale.ROOT));
+                }
                 plan.addStep(rim, mouth, StepKind.WALK, Need.NONE, Need.NONE, null, 0);
             }
-        } else if (kind == EntranceKind.GREAT_SINKHOLE) {
-            double depth = Math.min(150, Math.max(40, y - (t.y() + 10)));
-            double floor = y - depth;
-            Capsule pit = new Capsule(owner, x, y + 6, z, x, floor + 12, z, rh, 12);
+        } else if (kind == EntranceKind.KARST_WINDOW) {
+            // the roof fallen in straight over the place (21.10): an open shaft rh wide, the rope from the rim beside it
+            Capsule pit = new Capsule(owner, x, y + 4, z, x, t.y() + rh, z, rh, rh);
             if (!clear(pit, owner, Set.of(owner)) || !p.allows(pit, 2) || cutsRig(pit)) { kill(rim); return -1; }
-            double fx = x + rh * 0.3, fz = z;
-            int fl = plan.addPlace(PlaceKind.CHAMBER, fx, floor, fz, owner, new Platform(fx, floor, fz, 6, 6, depth));
-            st = floor - t.y() > 1 ? connect(fl, rh, targetPlace, owner, 3, true, true, Set.of(owner), 2.5, salt + 3, naturalFixture(salt + 4)) : walk(fl, targetPlace, 3, 3, plan.caves.get(owner).waterY, true);
-            if (st < 0) { kill(rim); kill(fl); return -1; }
             throat(pit);
-            // the rim: rope with rebelays down the wall, or (60 %) the collapse talus as a slope route
-            double tx = x + rh + 2, tz = z;
-            plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, tx, s.heightAt(tx, tz), tz, owner, new Platform(tx, s.heightAt(tx, tz), tz, 3, 3, 50)));
+            // the ground round it sagged before the roof fell (22.2): a collar bowl the window opens in
+            Bowl col = dryBowl(bowl(owner, x, z, 2 + 2 * h(salt + 11), rh + 2.5, rh + 6, 0.8, rh + 25, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner)));
+            if (col != null) { throat(col); plan.note("bowls karst_window"); }
+            double tx = x + rh + 1.5, tz = z, ty = ground(tx, tz, col);
+            plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, tx, ty, tz, owner, new Platform(tx, ty, tz, 3, 3, 50)));
+            st = pitch(rim, targetPlace, x, z, rh, owner, false, Fixture.NONE, salt + 9, -1);
+        } else if (kind == EntranceKind.GREAT_SINKHOLE) {
+            // U4c (22.8): the chamber's roof fallen in. Where the rim stands at most 150 m over the chamber the pit's
+            // floor is the chamber's own, so the passages that reach it open at the foot of the cliffs; deeper, the floor
+            // stays 150 m down and the way on drops from beside a floor place as before
+            double drop = y - t.y();
+            if (drop < 25) { kill(rim); plan.note("pit too shallow"); return -1; }
+            boolean swallow = drop <= 150;
+            double floor = swallow ? t.y() : y - 150, depth = y - floor, cr = swallow ? chamberReach(t, owner) : 0;
+            // on 60 % the collapse talus is a route from the far rim (22.4): the cone falls 0.7 per m from the far wall
+            // and stops 2 m short of the chamber (or 8 m short of the floor place). Where it reaches the floor it is
+            // walked all the way; else it lies lower against the wall and the far rim has a shorter rope down onto it
+            double collarY = s.heightAt(x, z) - Math.min(6, 2 + 0.05 * rh), sx = x - (rh + 2), sz = z, apexY = collarY - 0.4;
+            double run = swallow ? rh - 2.5 - cr : 1.3 * rh - 8.5;
+            boolean talusRoute = h(salt + 5) < 0.6 && run > 8, walked = talusRoute && apexY - 0.7 * run <= floor;
+            if (talusRoute && !walked) apexY = Math.min(apexY, floor + 0.7 * run);
+            if (talusRoute && !walked && apexY - floor < 6) talusRoute = false;
+            double[] keep = {0, Math.PI, 2 * Math.PI * h(salt + 6), talusRoute && !walked ? 2 * Math.PI * h(salt + 17) : Double.NaN};
+            double[] ax = passageAxis(t, owner, cr, salt + 21);
+            Pit pit = pit(owner, x, z, floor, rh, collarY, ax[0], ax[1], keep, salt + 12);
+            if (pit == null || !clear(pit, owner, Set.of(owner)) || !p.allows(pit, 2) || cutsRig(pit) || swallows(pit, targetPlace, rim)) { kill(rim); return -1; }
+            int fl;
+            if (swallow) {
+                fl = targetPlace;
+                st = 0;
+            } else {
+                double fx = x + rh * 0.3, fz = z;
+                fl = plan.addPlace(PlaceKind.CHAMBER, fx, floor, fz, owner, new Platform(fx, floor, fz, 6, 6, depth));
+                // the way on drops from beside the floor place, clear of where the talus comes down (22.4)
+                st = connect(fl, talusRoute ? 5 : rh, targetPlace, owner, 3, true, true, Set.of(owner), 2.5, salt + 3, naturalFixture(salt + 4));
+                if (st < 0) { kill(rim); kill(fl); return -1; }
+            }
+            int pitShape = throat(pit);
+            plan.note("pits great_sinkhole" + (swallow ? " on the chamber" : " over a shaft"));
+            // the rim: rope with rebelays down the wall
+            double tx = x + rh + 2, tz = z, ty = ground(tx, tz, pit);
+            plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, tx, ty, tz, owner, new Platform(tx, ty, tz, 3, 3, 50)));
             int slope = -1;
-            if (h(salt + 5) < 0.6) slope = plan.addStep(rim, fl, StepKind.SLOPE, Need.NONE, Need.NONE, null, 2);
+            Talus tal = talusRoute ? new Talus(owner, pitShape, x - (rh - 0.5), z, apexY, 0.7, floor - 1, (int) ((salt + 13) & 0x7fffffff)) : null;
+            double side = ground(sx, sz, pit);
+            if (tal != null && side - 0.4 < apexY) tal = new Talus(owner, pitShape, tal.x(), tal.z(), side - 0.4, 0.7, tal.y0(), tal.salt());
+            if (tal != null && buries(tal, 0, 0)) tal = null;
+            if (tal != null && walked) {
+                add(tal);
+                int top2 = plan.addPlace(PlaceKind.SURFACE, sx, side, sz, owner, new Platform(sx, side, sz, 3, 3, 50));
+                slope = plan.addStep(top2, fl, StepKind.SLOPE, Need.NONE, Need.NONE, null, 2);
+                plan.note("talus slope routes");
+            } else if (tal != null) {
+                add(tal);
+                // the rope from the far rim to the head of the talus, 2 m out from the wall, then down the talus
+                double hx = x - (rh - 2.5), hy = tal.surfaceAt(hx, z);
+                int top2 = plan.addPlace(PlaceKind.SURFACE, sx, side, sz, owner, new Platform(sx, side, sz, 3, 3, 50));
+                int head = plan.addPlace(PlaceKind.LEDGE, hx, hy, z, owner, new Platform(hx, hy, z, 1.5, 1.5, 2.6));
+                pitch(top2, head, x, z, rh, owner, false, Fixture.NONE, salt + 17, -1);
+                plan.addStep(head, fl, StepKind.SLOPE, Need.NONE, Need.NONE, null, 2);
+                plan.note("talus rope-and-slope routes");
+            } else {
+                // no route: the fallen roof heaped against the far wall, up to a third of the pit's radius high, its foot
+                // 2 m short of the chamber (or 8 m short of the floor place)
+                double r0 = rh - 2, hh = Math.min(0.7 * (r0 - (swallow ? cr + 2 : 0.3 * rh + 8)), Math.min(0.35 * rh, 24));
+                Talus heap = hh < 2 ? null : new Talus(owner, pitShape, x - r0, z, floor + hh, 0.7, floor - 1, (int) ((salt + 14) & 0x7fffffff));
+                if (heap != null && !buries(heap, 0, 0)) { add(heap); plan.note("talus heaps great_sinkhole"); }
+            }
             pitch(rim, fl, x, z, rh, owner, false, Fixture.NONE, salt + 6, slope);
-            plan.caves.get(owner).places.add(fl);
+            if (!swallow) plan.caves.get(owner).places.add(fl);
         } else {
-            st = connect(rim, 0.5, targetPlace, owner, plan.caves.get(owner).layer, true, true, Set.of(owner), rh, salt + 7, naturalFixture(salt + 8));
+            // a pit's bowl (22.2): the throat drops from the middle of its floor, the rim on the floor's far side
+            Bowl b = pitBowl(kind, x, z, rh, owner, salt);
+            st = -1;
+            if (b != null) {
+                double hx = t.x() - x, hz = t.z() - z, hl = Math.hypot(hx, hz);
+                double dx = hl < 1e-6 ? 1 : hx / hl, dz = hl < 1e-6 ? 0 : hz / hl;
+                double rx = x - dx * (rh + 3), rz = z - dz * (rh + 3), ry = ground(rx, rz, b);
+                if (ry >= b.floorY() - 0.5) {
+                    plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, rx, ry, rz, owner, new Platform(rx, ry, rz, 3, 3, 50)));
+                    st = connect(rim, 0.5, targetPlace, owner, plan.caves.get(owner).layer, true, true, Set.of(owner), rh, salt + 7, naturalFixture(salt + 8));
+                }
+                if (st >= 0) {
+                    int bi = throat(b);
+                    plan.note("bowls " + kind.name().toLowerCase(java.util.Locale.ROOT));
+                    // rockfall from the wall beside the throat (22.4), clear of the throat and the rim
+                    double hgt = Math.min(0.35 * (y - b.floorY()), 0.7 * (b.rf() - rh - 1));
+                    if ((kind == EntranceKind.COLLAPSE_PIT || kind == EntranceKind.COVER_SINKHOLE) && hgt >= 0.8) {
+                        double sg = h(salt + 15) < 0.5 ? 1 : -1, ax = x - dz * sg * b.rf(), az = z + dx * sg * b.rf();
+                        Talus heap = new Talus(owner, bi, ax, az, b.floorY() + hgt, 0.7, b.floorY() - 0.5, (int) ((salt + 16) & 0x7fffffff));
+                        if (!buries(heap, places0, pitches0)) { add(heap); plan.note("talus heaps"); }
+                    }
+                } else {
+                    plan.places.set(rim, new Place(rim, PlaceKind.SURFACE, x, y, z, owner, new Platform(x, y, z, 3, 3, 50)));
+                    plan.note("bowl dropped: no throat from it");
+                }
+            }
+            if (st < 0) st = connect(rim, 0.5, targetPlace, owner, plan.caves.get(owner).layer, true, true, Set.of(owner), rh, salt + 7, naturalFixture(salt + 8));
         }
         if (st < 0) { kill(rim); return -1; }
         Place tp = plan.places.get(targetPlace);
@@ -1181,6 +1714,184 @@ public final class UndergroundPlanner {
     void kill(int place) {
         Place q = plan.places.get(place);
         plan.places.set(place, new Place(place, PlaceKind.JUNCTION, q.x(), -1e6, q.z(), q.cave(), null));
+    }
+
+    // ------------------------------------------------------------------ entrance shapes (U4, design 22)
+
+    /** The ground after a cut over (x, z): the planned ground, or the cut's floor where it is lower (cut may be null). */
+    double ground(double x, double z, UndergroundPlan.Open cut) {
+        double gy = s.heightAt(x, z);
+        return cut == null ? gy : Math.min(gy, cut.floorAt(x, z));
+    }
+
+    /** The lowest and highest planned ground over a disc (rings every 2 m, 24 directions), and 1 when all of it is land. */
+    double[] groundRange(double x, double z, double r) {
+        double lo = s.heightAt(x, z), hi = lo;
+        boolean dry = land(x, z);
+        for (double rr = 2; rr < r + 2; rr += 2) {
+            double q = Math.min(rr, r);
+            for (int a = 0; a < 24; a++) {
+                double px = x + Math.cos(a * Math.PI / 12) * q, pz = z + Math.sin(a * Math.PI / 12) * q, gy = s.heightAt(px, pz);
+                lo = Math.min(lo, gy);
+                hi = Math.max(hi, gy);
+                if (a % 3 == 0 && !land(px, pz)) dry = false;
+            }
+        }
+        return new double[]{lo, hi, dry ? 1 : 0};
+    }
+
+    /**
+     * An entrance bowl (22.2) round (x, z): its flat floor `depth` under the planned ground there out to rf, the wall no
+     * steeper than maxSlope (the outline's wobble counted) up to over the highest ground of its footprint. pond: the
+     * level its water may stand at, kept 0.5 m under the lowest ground round it (-inf dry). Null when it would grow past
+     * maxR, leave the land or break a rule (protection as layer 2, another cave's rock gap, a rig); adds nothing.
+     */
+    Bowl bowl(int owner, double x, double z, double depth, double rf, double minR, double maxSlope, double maxR, double pond, long salt, Set<Integer> ok) {
+        // the wall's slope along the ray, its wobble counted; R: where it is over the highest ground round it
+        double wob = UndergroundPlan.BOWL_WOB, k = maxSlope * (1 - wob), floor = s.heightAt(x, z) - depth, R = Math.max(minR, rf + 1);
+        double[] gr;
+        for (int it = 0; ; it++) {
+            gr = groundRange(x, z, R * (1 + wob) + 1);
+            double need = rf + Bowl.TOE / 2 + (gr[1] + 0.5 - floor) / k;
+            if (need <= R + 1e-6) break;
+            if (it == 8 || need > maxR) { plan.note("bowl too wide"); return null; }
+            R = need;
+        }
+        if (gr[2] < 0.5) { plan.note("bowl off the land"); return null; }
+        double water = Math.min(pond, gr[0] - 0.5);
+        Bowl b = new Bowl(owner, x, z, floor, rf, R, gr[1] + 0.5, k, (int) (salt & 0x7fffffff), water > floor + 0.3 ? water : Double.NEGATIVE_INFINITY);
+        if (!p.allows(b, 2)) { plan.note("bowl breaks protection"); return null; }
+        if (!clear(b, owner, ok)) { plan.note("bowl too close to a cave"); return null; }
+        if (cutsRig(b)) return null;
+        return b;
+    }
+
+    /**
+     * A great sinkhole's pit (22.8) round (x, z): its top over the highest ground of its footprint, its bedding band
+     * 5–8 m. Null off the land or over the cave's water; adds nothing.
+     */
+    Pit pit(int owner, double x, double z, double floorY, double r, double collarY, double ux, double uz, double[] k, long salt) {
+        if (plan.caves.get(owner).waterY >= floorY - 0.3) { plan.note("pit over high water"); return null; }
+        double band = 5 + 3 * h(salt + 1);
+        Pit pt = new Pit(owner, x, z, floorY, r, collarY, collarY + 1, ux, uz, band, k[0], k[1], k[2], k[3], (int) (salt & 0x7fffffff));
+        double[] gr = groundRange(x, z, pt.outer());
+        if (gr[2] < 0.5) { plan.note("pit off the land"); return null; }
+        return new Pit(owner, x, z, floorY, r, collarY, Math.max(collarY + 1, gr[1] + 0.5), ux, uz, band, k[0], k[1], k[2], k[3], pt.salt());
+    }
+
+    /** How far the chamber holding a place reaches from it (its ellipsoid's longer radius, else its platform's). */
+    double chamberReach(Place t, int owner) {
+        double cr = 0;
+        for (int i : plan.caves.get(owner).shapes)
+            if (plan.shapes.get(i) instanceof Ellipsoid e && e.inside(t.x(), t.y() + 1, t.z())) cr = Math.max(cr, Math.max(e.rx(), e.rz()));
+        return cr > 0 || t.platform() == null ? cr : t.platform().hx() / 0.3;
+    }
+
+    /** The unit direction the chamber's longest passage at its floor leaves in (a random one if it has none). */
+    double[] passageAxis(Place t, int owner, double cr, long salt) {
+        double best = -1, ux = 0, uz = 0;
+        for (int i : plan.caves.get(owner).shapes) {
+            if (!(plan.shapes.get(i) instanceof Capsule c) || c.vertical()) continue;
+            for (int e = 0; e < 2; e++) {
+                double nx = e == 0 ? c.ax() : c.bx(), nz = e == 0 ? c.az() : c.bz(), ny = e == 0 ? c.ay() : c.by();
+                double fx = e == 0 ? c.bx() : c.ax(), fz = e == 0 ? c.bz() : c.az();
+                if (Math.hypot(nx - t.x(), nz - t.z()) > cr + 4 || Math.abs(ny - t.y()) > 8) continue;
+                double l = Math.hypot(fx - t.x(), fz - t.z());
+                if (l > best && l > 1e-6) { best = l; ux = (fx - t.x()) / l; uz = (fz - t.z()) / l; }
+            }
+        }
+        if (best > 0) return new double[]{ux, uz};
+        double a = 2 * Math.PI * h(salt);
+        return new double[]{Math.cos(a), Math.sin(a)};
+    }
+
+    /** Whether the pit would leave a place laid so far (its target and its rim, still at its middle, excepted) hanging in its air. */
+    boolean swallows(Pit pit, int target, int rim) {
+        double e = pit.outer();
+        for (Place q : plan.places) {
+            if (q.id() == target || q.id() == rim || q.y() < -1e5 || Math.abs(q.x() - pit.x()) > e || Math.abs(q.z() - pit.z()) > e) continue;
+            if (q.y() > pit.floorY() + 0.5 && q.y() < pit.top() && pit.floorAt(q.x(), q.z()) < q.y() - 0.5) {
+                plan.note("pit would leave a place hanging");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A bowl that its cave's water stays under (the throat below it would otherwise stand open to it), or null. */
+    Bowl dryBowl(Bowl b) {
+        if (b == null || plan.caves.get(b.owner()).waterY < b.floorY() - 0.3) return b;
+        plan.note("bowl over high water");
+        return null;
+    }
+
+    /** The bowl round a pit's throat (22.2): a collapse pit's rock bowl, a cover sinkhole's soil funnel, a shaft's lip. */
+    Bowl pitBowl(EntranceKind kind, double x, double z, double rh, int owner, long salt) {
+        double rf = rh + 3.5, u = h(salt + 10);
+        return dryBowl(switch (kind) {
+            case COLLAPSE_PIT -> bowl(owner, x, z, 1.5 + 2.5 * u, rf, rf + 2, 1.0, rf + 20, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner));
+            case COVER_SINKHOLE -> bowl(owner, x, z, 2 + 4 * u, rf, rf + 3, 0.65, rf + 30, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner));
+            case SHAFT, FISSURE -> bowl(owner, x, z, 0.6 + 0.6 * u, rf, rf + 1.5, 0.65, rf + 12, Double.NEGATIVE_INFINITY, salt + 12, Set.of(owner));
+            default -> null;
+        });
+    }
+
+    /**
+     * A mouth's porch (22.3) out of the mouth at (x, z): downhill, as long as the floor (falling 0.1 per m from floorY)
+     * takes to come out on the ground, at most 16 m. Null on a slope too gentle for that, off the land, against a rule,
+     * where the cave's water would reach the porch, or where the ground over it rises past its cut.
+     */
+    Notch notch(int owner, double x, double z, double floorY, double w) {
+        double gx = s.heightAt(x + 4, z) - s.heightAt(x - 4, z), gz = s.heightAt(x, z + 4) - s.heightAt(x, z - 4), gl = Math.hypot(gx, gz);
+        if (gl / 8 < 0.13) { plan.note("porch: slope too gentle"); return null; }
+        double dx = -gx / gl, dz = -gz / gl, len = -1;
+        for (double a = 0.5; a <= 15; a += 0.5)
+            if (s.heightAt(x + dx * a, z + dz * a) <= floorY - 0.1 * a + 0.2) { len = a + 1; break; }
+        if (len < 0) { plan.note("porch: never meets the ground"); return null; }
+        if (plan.caves.get(owner).waterY >= floorY - 0.1 * len - 0.3 || !land(x + dx * len, z + dz * len)) return null;
+        double top = s.heightAt(x, z) + 1;
+        Notch n = null;
+        for (int it = 0; it < 4; it++) {
+            n = new Notch(owner, x, z, dx, dz, floorY, len, w, top);
+            double hi = Double.NEGATIVE_INFINITY;
+            double[] b = n.bounds();
+            for (double px = b[0]; px <= b[3] + 1e-6; px += 1.5) for (double pz = b[2]; pz <= b[5] + 1e-6; pz += 1.5)
+                if (n.floorAt(px, pz) < Double.POSITIVE_INFINITY || it == 0) hi = Math.max(hi, s.heightAt(px, pz));
+            if (hi + 0.5 <= top) break;
+            if (it == 3) { plan.note("porch: ground rises past it"); return null; }
+            top = hi + 0.5;
+        }
+        if (!p.allows(n, 2) || !clear(n, owner, Set.of(owner)) || cutsRig(n)) { plan.note("porch: against a rule"); return null; }
+        return n;
+    }
+
+    /**
+     * Whether a talus would bury a place laid since places0 (its platform's corners) or the head of a pitch laid since
+     * pitches0: a point in the cone and in its host (it fills nothing else).
+     */
+    boolean buries(Talus t, int places0, int pitches0) {
+        Shape host = plan.shapes.get(t.host());
+        double[] b = t.bounds();
+        for (int i = places0; i < plan.places.size(); i++) {
+            Place q = plan.places.get(i);
+            if (q.y() < -1e5 || q.platform() == null) continue;
+            Platform pf = q.platform();
+            if (q.x() + pf.hx() < b[0] || q.x() - pf.hx() > b[3] || q.z() + pf.hz() < b[2] || q.z() - pf.hz() > b[5] || q.y() + 0.3 < b[1] || q.y() + 0.3 > b[4]) continue;
+            for (int sx = -1; sx <= 1; sx++) for (int sz = -1; sz <= 1; sz++) {
+                double px = q.x() + sx * pf.hx(), py = q.y() + 0.3, pz = q.z() + sz * pf.hz();
+                if (t.inside(px, py, pz) && host.inside(px, py, pz)) { plan.note("talus would bury a place"); return true; }
+            }
+        }
+        for (int i = pitches0; i < plan.pitches.size(); i++) {
+            Pitch pc = plan.pitches.get(i);
+            if (pc.ax() + pc.rh() < b[0] || pc.ax() - pc.rh() > b[3] || pc.az() + pc.rh() < b[2] || pc.az() - pc.rh() > b[5]) continue;
+            double ty = plan.places.get(pc.top()).y();
+            for (int a = 0; a <= 8; a++) {
+                double r = a == 0 ? 0 : pc.rh(), an = a * Math.PI / 4, px = pc.ax() + Math.cos(an) * r, pz = pc.az() + Math.sin(an) * r;
+                if (t.inside(px, ty + 0.3, pz) && host.inside(px, ty + 0.3, pz)) { plan.note("talus would bury a shaft"); return true; }
+            }
+        }
+        return false;
     }
 
     /** Entrances into systems (7.4): 40 % of karst systems and 15 % of fracture systems, through the connector if any. */
@@ -1205,6 +1916,109 @@ public final class UndergroundPlanner {
             if (e >= 0) return e;
         }
         return -1;
+    }
+
+    /**
+     * The states' own ways in (21.5, 21.10): a spring mouth where a river level comes out on a valley side (S1, S2, S4),
+     * sinkholes over a branchwork's tributary heads and a karst window onto its river (S2), a window onto a shallow
+     * coastal conduit (S5), a mouth in a canyon wall (S6).
+     */
+    void stateEntrances() {
+        for (int sid : new ArrayList<>(systems)) {
+            Cave cv = plan.caves.get(sid);
+            int f = forms.getOrDefault(sid, F_PLAIN);
+            if (cv.layer == 2 && (f == F_STRIKE || f == F_BRANCH || f == F_SMALL) && h(k(170, sid)) < (f == F_BRANCH ? 0.8 : 0.5)
+                    && springMouth(sid)) plan.note("spring mouths");
+            if (f == F_BRANCH) {
+                for (int hp : heads.getOrDefault(sid, List.of())) {
+                    if (h(k(171, hp)) >= 0.6) continue;
+                    Place q = plan.places.get(hp);
+                    if (!land(q.x(), q.z()) || nearPitch(cv, q.x(), q.z(), q.x(), q.z(), 34)) continue;
+                    EntranceKind kd = g.column(q.x(), q.z()).soil >= 4 ? EntranceKind.COVER_SINKHOLE : EntranceKind.COLLAPSE_PIT;
+                    if (entranceTo(hp, sid, 20, k(172, hp), kd) >= 0) plan.note("tributary sinkholes");
+                }
+                if (window(sid, false)) plan.note("karst windows");
+            }
+            if (f == F_CONDUIT && h(k(173, sid)) < 0.6 && window(sid, true)) plan.note("conduit windows");
+            if (g.dominantProvince(cv.x, cv.z) == GeologyModel.PLATEAU && h(k(174, sid)) < 0.7 && cliffMouth(sid)) plan.note("cliff mouths");
+        }
+    }
+
+    /** Whether a pitch top or bottom of the cave lies within d of the segment a–b (a throat there takes the anchors' rock). */
+    boolean nearPitch(Cave cv, double ax, double az, double bx, double bz, double d) {
+        double dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
+        for (int o : cv.places) {
+            Place w = plan.places.get(o);
+            if (w.kind() != PlaceKind.PITCH_TOP && w.kind() != PlaceKind.PITCH_BOTTOM) continue;
+            double t = l2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((w.x() - ax) * dx + (w.z() - az) * dz) / l2));
+            if (Math.hypot(w.x() - ax - t * dx, w.z() - az - t * dz) < d) return true;
+        }
+        return false;
+    }
+
+    /** A river-level place's way out to a valley side 1.5–8 m over it (the passage slopes up out of the water). */
+    boolean springMouth(int sid) {
+        Cave cv = plan.caves.get(sid);
+        int tried = 0;
+        for (int pl : new ArrayList<>(cv.places)) {
+            Place q = plan.places.get(pl);
+            if ((q.kind() != PlaceKind.CHAMBER && q.kind() != PlaceKind.JUNCTION) || q.y() > cv.waterY + 1.5) continue;
+            if (tried++ >= 6) break;
+            for (int ring = 30; ring <= 600; ring += 30)
+                for (int a = 0; a < 12; a++) {
+                    double ang = a * Math.PI / 6 + 2 * Math.PI * h(k(175, pl));
+                    double x = q.x() + Math.cos(ang) * ring, z = q.z() + Math.sin(ang) * ring;
+                    if (!land(x, z) || s.slopeAt(x, z) < 0.06) continue;
+                    Column c = g.column(x, z);
+                    double dy = c.h - 1.5 - q.y();
+                    if (dy < 1.5 || dy > 8 || dy / ring > 0.3) continue;
+                    if (!p.entranceAllowed(EntranceKind.SPRING_MOUTH, x, z) || nearPitch(cv, x, z, q.x(), q.z(), 14)) continue;
+                    if (openEntrance(EntranceKind.SPRING_MOUTH, c, pl, sid, k(176, pl * 4096L + ring * 16L + a)) >= 0) return true;
+                }
+        }
+        return false;
+    }
+
+    /**
+     * A karst window: the roof fallen in over a place, open to the sky. wet: onto a flooded conduit whose water stands
+     * within 10 m of the ground (a pool at the bottom); else onto a river-level place.
+     */
+    boolean window(int sid, boolean wet) {
+        Cave cv = plan.caves.get(sid);
+        for (int pl : new ArrayList<>(cv.places)) {
+            Place q = plan.places.get(pl);
+            if (q.kind() != PlaceKind.CHAMBER && q.kind() != PlaceKind.JUNCTION) continue;
+            if (!wet && q.y() > cv.waterY + 1.5) continue;
+            if (!land(q.x(), q.z()) || !p.entranceAllowed(EntranceKind.KARST_WINDOW, q.x(), q.z())) continue;
+            if (nearPitch(cv, q.x(), q.z(), q.x(), q.z(), 14)) continue;
+            Column c = g.column(q.x(), q.z());
+            if (c.h - q.y() > 60 || wet && c.h - cv.waterY > 10) continue;
+            if (openEntrance(EntranceKind.KARST_WINDOW, c, pl, sid, k(177, pl)) >= 0) return true;
+        }
+        return false;
+    }
+
+    /** A mouth in a canyon wall (slope ≥ 0.8) 2–60 m over a dry place within 400 m. */
+    boolean cliffMouth(int sid) {
+        Cave cv = plan.caves.get(sid);
+        int tried = 0;
+        for (int pl : new ArrayList<>(cv.places)) {
+            Place q = plan.places.get(pl);
+            if ((q.kind() != PlaceKind.CHAMBER && q.kind() != PlaceKind.JUNCTION) || q.y() < cv.waterY) continue;
+            if (tried++ >= 8) break;
+            for (int ring = 40; ring <= 400; ring += 30)
+                for (int a = 0; a < 16; a++) {
+                    double ang = a * Math.PI / 8 + 2 * Math.PI * h(k(178, pl));
+                    double x = q.x() + Math.cos(ang) * ring, z = q.z() + Math.sin(ang) * ring;
+                    if (!land(x, z) || s.slopeAt(x, z) < 0.8) continue;
+                    Column c = g.column(x, z);
+                    double dy = c.h - 1.5 - q.y();
+                    if (dy < 2 || dy > 60) continue;
+                    if (!p.entranceAllowed(EntranceKind.CLIFF_MOUTH, x, z) || nearPitch(cv, x, z, q.x(), q.z(), 14)) continue;
+                    if (openEntrance(EntranceKind.CLIFF_MOUTH, c, pl, sid, k(179, pl * 4096L + ring * 16L + a)) >= 0) return true;
+                }
+        }
+        return false;
     }
 
     /** 4–8 great sinkholes over the largest dry chambers of karst systems (9.1). */
@@ -1250,7 +2064,9 @@ public final class UndergroundPlanner {
             double slope = s.slopeAt(x, z);
             boolean kar = bed != null && bed.karst >= 0.6;
             EntranceKind kind = null;
-            if (kar && c.soil <= 8 && roll < 0.05 * bed.karst * (0.4 + 0.6 * c.karstCover)) kind = EntranceKind.COLLAPSE_PIT;
+            // S4 (21.5): the old lake shores' wave-cut caves in the escarpment
+            if (c.w[GeologyModel.LAKE] > 0.4 && slope >= 0.45 && c.soil <= 2 && bed != null && (bed.karst >= 0.3 || bed.hard()) && roll < 0.04) kind = EntranceKind.WAVE_CUT;
+            else if (kar && c.soil <= 8 && roll < 0.05 * bed.karst * (0.4 + 0.6 * c.karstCover)) kind = EntranceKind.COLLAPSE_PIT;
             else if (kar && slope >= 0.35 && c.soil <= 3 && roll < 0.11) kind = EntranceKind.HILLSIDE_MOUTH;
             else if ((c.w[GeologyModel.COAST] + c.w[GeologyModel.PLAINS] > 0.5) && c.soil >= 4 && g.karst(c, c.h - c.soil - 10) >= 0.6 && roll < 0.04) kind = EntranceKind.COVER_SINKHOLE;
             else if (kar && roll < 0.012 && s.rivers != null) {
@@ -1264,6 +2080,32 @@ public final class UndergroundPlanner {
         }
     }
 
+    /**
+     * A wave-cut cave (21.5 S4): a low wide room 7–14 m into the escarpment, its floor just under the mouth, shallow by
+     * nature (its roof stays 2.5 m under the ground, not under layer 1).
+     */
+    boolean waveCut(Column c, long key) {
+        double gx = s.heightAt(c.x + 4, c.z) - s.heightAt(c.x - 4, c.z), gz = s.heightAt(c.x, c.z + 4) - s.heightAt(c.x, c.z - 4);
+        if (Math.hypot(gx, gz) < 1e-6) return false;
+        double ang = Math.atan2(gz, gx), off = 7 + 7 * h(k(144, key));
+        double x = c.x + Math.cos(ang) * off, z = c.z + Math.sin(ang) * off;
+        if (!land(x, z)) return false;
+        double floor = c.h - 2;
+        int id = plan.caves.size();
+        Node n = new Node(x, z, floor, 4 + 3 * h(k(145, key)), 1.1 + 0.5 * h(k(146, key)), 3 + 2 * h(k(147, key)), true);
+        Ellipsoid e = n.shape(id);
+        for (double[] q : new double[][]{{x, z}, {x - n.rx, z}, {x + n.rx, z}, {x, z - n.rz}, {x, z + n.rz}})
+            if (n.roof() > s.heightAt(q[0], q[1]) - 2.5) return false;
+        if (!p.allows(e, 2) || !clear(e, id, null)) return false;
+        Cave cv = cave(CaveKind.SMALL_KARST, 2, x, floor, z, g.waterTable(c), g.rockAt(c, floor + 1));
+        cv.label = "wave-cut";
+        add(e);
+        nodePlace(n, id);
+        if (openEntrance(EntranceKind.WAVE_CUT, c, n.place, id, k(148, key)) >= 0) { plan.note("wave-cut caves"); return true; }
+        unadd(cv);
+        return false;
+    }
+
     void bulkEntrance(EntranceKind kind, Column c, long key) {
         double u = h(k(133, key));
         double[] b = g.bands(c);
@@ -1273,6 +2115,10 @@ public final class UndergroundPlanner {
             case FISSURE -> u < 0.5;
             default -> true;
         };
+        if (kind == EntranceKind.WAVE_CUT) {
+            if (waveCut(c, key)) return;
+            connected = false;
+        }
         if (connected && kind == EntranceKind.COVER_SINKHOLE) {
             // to the nearest system chamber within 300 m
             int best = -1, owner = -1;
@@ -1315,9 +2161,32 @@ public final class UndergroundPlanner {
                 }
             }
         }
-        // dead: a pit or a closed crack, no cave behind it (U4 carves the bowl)
+        // dead: a pit or a closed crack, no cave behind it
         double depth = kind == EntranceKind.COLLAPSE_PIT ? 1 + 5 * h(k(142, key)) : kind == EntranceKind.COVER_SINKHOLE ? 5 + 20 * h(k(142, key)) : 2 + 6 * h(k(142, key));
         double radius = kind == EntranceKind.COLLAPSE_PIT ? 1.5 + 6 * h(k(143, key)) : kind == EntranceKind.COVER_SINKHOLE ? 5 + 15 * h(k(143, key)) : 0.5 + 1.5 * h(k(143, key));
+        if (kind == EntranceKind.COLLAPSE_PIT || kind == EntranceKind.COVER_SINKHOLE) {
+            // U4 (22.2): its bowl, a cave of its own; a cover sinkhole's funnel holds a pond where the water table is
+            // high, a collapse pit drains into the rock and has the rockfall of its steeper wall at the foot of it
+            boolean cov = kind == EntranceKind.COVER_SINKHOLE;
+            double d = cov ? Math.min(8, depth) : depth;
+            int id = plan.caves.size();
+            Bowl bw = bowl(id, c.x, c.z, d, (cov ? 0.3 : 0.35) * radius, radius, cov ? 0.65 : 1.0, cov ? 45 : 30,
+                    cov ? g.waterTable(c) : Double.NEGATIVE_INFINITY, k(149, key), null);
+            if (bw != null) {
+                Cave cv = cave(CaveKind.SINKHOLE, 2, c.x, bw.floorY(), c.z, bw.water(), g.rockAt(c, bw.floorY() - 1));
+                cv.label = cov ? "cover sinkhole" : "collapse pit";
+                int bi = throat(bw);
+                plan.note("dead bowls " + (cov ? "cover_sinkhole" : "collapse_pit") + (bw.water() > Double.NEGATIVE_INFINITY ? " pond" : ""));
+                double gx = s.heightAt(c.x + 4, c.z) - s.heightAt(c.x - 4, c.z), gz = s.heightAt(c.x, c.z + 4) - s.heightAt(c.x, c.z - 4), gl = Math.hypot(gx, gz);
+                if (!cov && d >= 2.3 && gl > 1e-6) {
+                    double ax = c.x + gx / gl * bw.rf(), az = c.z + gz / gl * bw.rf();
+                    add(new Talus(id, bi, ax, az, bw.floorY() + 0.35 * d, 0.7, bw.floorY() - 0.5, (int) (k(150, key) & 0x7fffffff)));
+                    plan.note("talus heaps dead");
+                }
+                plan.entrances.add(new Entrance(plan.entrances.size(), kind, c.x, c.z, c.h, bw.R(), d, -1, -1));
+                return;
+            }
+        }
         plan.entrances.add(new Entrance(plan.entrances.size(), kind, c.x, c.z, c.h, radius, depth, -1, -1));
     }
 
@@ -1365,7 +2234,12 @@ public final class UndergroundPlanner {
                 plan.districts.add(d);
                 acc.add(new double[]{v.x, v.z, 3000});
             }
+            if (acc.size() < r.districts) plan.notes.put("ore districts short " + r.kind.name().toLowerCase(java.util.Locale.ROOT), r.districts - acc.size());
         }
+        int shield = 0;
+        for (Survey v : survey) if (v.c.shield >= 0.5) shield++;
+        plan.notes.put("shield survey points", shield);
+        plan.indexOres();
     }
 
     double oreScore(OreKind kind, Survey v) {
@@ -1374,7 +2248,8 @@ public final class UndergroundPlanner {
             case COAL_SEAM -> w[GeologyModel.HILLS] + w[GeologyModel.PLAINS];
             case HYDROTHERMAL_VEIN -> v.faultD < 400 ? w[GeologyModel.MOUNTAIN] + w[GeologyModel.HILLS] : 0;
             case MVT_LEAD_ZINC -> (w[GeologyModel.HILLS] + w[GeologyModel.PLAINS]) * v.kL3;
-            case BANDED_IRON, NICKEL_COPPER -> v.c.hs - v.c.tops[0] < 220 ? w[GeologyModel.LAKE] : 0;
+            // the shield edge north of the lake basin (GeologyModel#shield; U3b design 14.9)
+            case BANDED_IRON, NICKEL_COPPER -> v.c.shield;
             case PEGMATITE -> w[GeologyModel.MOUNTAIN];
             case GREISEN_SKARN -> w[GeologyModel.MOUNTAIN] > 0.25 && w[GeologyModel.MOUNTAIN] < 0.75 ? 0.5 + w[GeologyModel.MOUNTAIN] * 0.2 : 0;
             case BAUXITE -> w[GeologyModel.COAST];
@@ -1414,16 +2289,19 @@ public final class UndergroundPlanner {
                 rx = 10 + 30 * h(k(183, sk)); rz = 10 + 30 * h(k(184, sk)); ry = 4 + 10 * h(k(185, sk));
             }
             case BANDED_IRON -> {
+                // in the basement's top, under at least 10 m of fresh rock (the shield: near the surface, mostly buried)
+                if (c.shield < 0.3) return false;
                 double[] tp = new double[GeologyModel.UNIT.length + 1];
                 g.tops(c, c.hs - 150, tp);
-                y = tp[0] - 15;
                 rx = 200 + 400 * h(k(183, sk)); rz = 60 + 120 * h(k(184, sk)); ry = 5 + 10 * h(k(185, sk));
+                y = Math.min(tp[0], c.h - c.t1) - 10 - ry;
             }
             case NICKEL_COPPER -> {
+                if (c.shield < 0.3) return false;
                 double[] tp = new double[GeologyModel.UNIT.length + 1];
                 g.tops(c, c.hs - 150, tp);
-                y = tp[0] - 5;
                 rx = 20 + 40 * h(k(183, sk)); rz = 20 + 40 * h(k(184, sk)); ry = 10 + 20 * h(k(185, sk));
+                y = Math.min(tp[0], c.h - c.t1) - 10 - ry;
             }
             case PEGMATITE -> {
                 y = b[1] - 10 - (b[1] - b[3]) * h(k(182, sk));
@@ -1704,7 +2582,7 @@ public final class UndergroundPlanner {
         for (Entrance e : plan.entrances) {
             if (!e.connected() || e.kind() == EntranceKind.MINE_ADIT || e.kind() == EntranceKind.MINE_SHAFT) continue;
             Cave c = plan.caves.get(e.target());
-            if (c.layer < 3 && c.kind != CaveKind.CONNECTOR) continue;
+            if (c.layer < 3 && !c.system() && c.kind != CaveKind.CONNECTOR) continue;
             if (h(k(201, e.id())) < 0.3) doc(DocKind.NOTE, c.places.get(0), "cave note");
         }
     }
@@ -1781,5 +2659,60 @@ public final class UndergroundPlanner {
             plan.successions.add(new Succession(plan.successions.size(), env, q.x(), q.y(), q.z(), c[0], cv == null ? "-" : cv.kind + " " + cv.id + " " + cv.label,
                     q.platform(), exits, kit, bg, hazard, first, succ, cps));
         }
+    }
+
+    // ------------------------------------------------------------------ destinations (U5 sample, design 24)
+
+    /**
+     * The start cave as the first destination: its room (the biggest dry chamber a light reaches, else the dry place
+     * deepest along the way in), the light's way in to it (the shortest exit walked backwards) and the entrance it
+     * starts at, and how one gets there from the home and the nearest road. Notes "start destination none" when the
+     * plan has no start cave or a light reaches no dry place of it.
+     */
+    void destinations() {
+        if (plan.startCave < 0) { plan.note("start destination none"); return; }
+        Cave cv = plan.caves.get(plan.startCave);
+        int kit = 1;
+        BitSet lit = UndergroundRoutes.reachIn(plan, UndergroundPlan.KITS.get(kit));
+        int room = -1;
+        Exit way = null;
+        double best = -1;
+        for (int pl : cv.places) {
+            Place q = plan.places.get(pl);
+            if (!lit.get(pl) || q.y() + 1 < cv.waterY || q.platform() == null) continue;
+            Exit e = UndergroundRoutes.exit(plan, pl, UndergroundPlan.KITS.get(kit));
+            if (e == null || !e.reliable()) continue;
+            // chambers by floor area first, then any dry place by how far in it lies
+            double score = q.kind() == PlaceKind.CHAMBER ? 1e6 + q.platform().area() : e.length();
+            if (score > best) { best = score; room = pl; way = e; }
+        }
+        if (way == null) { plan.note("start destination none"); return; }
+        // the exit runs room -> surface; the route is the walk in, rim first
+        List<double[]> route = new ArrayList<>();
+        int at = room;
+        List<double[]> back = new ArrayList<>();
+        for (int si : way.path()) {
+            Place a = plan.places.get(at);
+            back.add(new double[]{a.x(), a.y(), a.z()});
+            UndergroundPlan.Step st = plan.steps.get(si);
+            at = st.a() == at ? st.b() : st.a();
+        }
+        Place rim = plan.places.get(way.surface());
+        back.add(new double[]{rim.x(), rim.y(), rim.z()});
+        for (int i = back.size() - 1; i >= 0; i--) route.add(back.get(i));
+        int ent = -1;
+        for (Entrance e : plan.entrances) if (e.place() == way.surface()) { ent = e.id(); break; }
+        Place r = plan.places.get(room);
+        double hd = p.homeDistance(rim.x(), rim.z());
+        double bearing = p.home ? (Math.toDegrees(Math.atan2(rim.x() - p.homeX, -(rim.z() - p.homeZ))) + 360) % 360 : Double.NaN;
+        double rx = Double.NaN, rz = Double.NaN, rw = Double.MAX_VALUE;
+        for (double[] line : p.roadLines)
+            for (int i = 0; i + 2 < line.length; i += 3) {
+                double d = Math.hypot(line[i] - rim.x(), line[i + 1] - rim.z());
+                if (d < rw) { rw = d; rx = line[i]; rz = line[i + 1]; }
+            }
+        plan.destinations.add(new Destination(plan.destinations.size(), DestinationKind.START_CAVE, UndergroundPlan.START_CAVE_NAME,
+                cv.id, ent, room, kit, way.length(), rim.y() - r.y(), route, hd, bearing, rx, rz, rw));
+        plan.note("start destination");
     }
 }

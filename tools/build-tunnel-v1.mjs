@@ -1,6 +1,7 @@
 // Tunnel V1 (docs/worldgen/federal_tunnels_v1.md): the textures of the drawn lining (TunnelMesh: wall panels, the dark
 // arch, steel, the slot drain) and the equipment parts the client places along a tunnel (client/road/TunnelParts), with
-// the C3.3b road signs (docs/worldgen/federal_junctions_c3_3b.md: STOP, side road, curve + 30 MPH; RoadSigns), as
+// the C3.3b road signs (docs/worldgen/federal_junctions_c3_3b.md: STOP, side road, curve + 30 MPH; RoadSigns) and the
+// U5b cave trail's trailhead sign and marker post (docs/worldgen/underground_geology_caves_v0_design.md 24.5), as
 // standalone Vextris meshes (assets/apocalypse_firstlight/meshes/road/tunnel/<name>.vxmesh.json) on one shared sheet
 // (textures/block/road/tunnel/equipment). Every part is unlit: the world has no power (user, 2026-10-15), so luminaires,
 // signals, lane signals and the message sign are dark lenses and dark LED faces, and every _s map keeps alpha 255
@@ -177,7 +178,7 @@ function line(text, {gap = 110, space = 320} = {}) {
  * A sign face sampler for a w x h px region: lines of text centred, each cap `cap` px high (shrunk to fit the width
  * with `margin` px either side), text colour on the background, an optional border `border` px in from the edge.
  */
-function signFace(w, h, lines, {cap, margin, fg, bg, border = 0, bw = 0, gapLines = 0.7}) {
+function signFace(w, h, lines, {cap, margin, fg, bg, border = 0, bw = 0, gapLines = 0.7, grain = false}) {
   // cap: one height for every line, or one per line (the gaps then from the smallest)
   const caps = Array.isArray(cap) ? cap : lines.map(() => cap), gapCap = Array.isArray(cap) ? Math.min(...cap) : cap;
   const L = lines.map(t => line(t));
@@ -185,16 +186,18 @@ function signFace(w, h, lines, {cap, margin, fg, bg, border = 0, bw = 0, gapLine
   const heights = scales.map(s => s * CAP), total = heights.reduce((a, b) => a + b, 0) + gapLines * gapCap * (L.length - 1);
   const base = []; let y = (h - total) / 2;
   for (let i = 0; i < L.length; i++) { y += heights[i]; base.push(y); y += gapLines * gapCap; }
-  const t = (x, yy) => 0.012 * vn(x, yy, 51, 24) + 0.006 * vn(x, yy, 52, 6);
+  // grain (a stained board, the cave trail's sign): streaks running across, the letters routed into it
+  const t = (x, yy) => 0.012 * vn(x, yy, 51, 24) + 0.006 * vn(x, yy, 52, 6) + (grain ? 0.07 * vn(x * 0.12, yy, 73, 5) + 0.035 * vn(x * 0.3, yy, 74, 2) : 0);
+  const letter = n => grain ? {c: mul(fg, n), s: 60, f0: 14, p: 20, h: -0.8, ao: 0.85} : {c: mul(fg, n), s: 120, f0: 14, h: 0.3};
   return (x, yy) => {
     const n = 1 + t(x, yy);
     if (border && bw) { const e = Math.min(x, w - x, yy, h - yy); if (e >= border && e < border + bw) return {c: mul(fg, n), s: 120, f0: 14, h: 0.3}; }
     for (let i = 0; i < L.length; i++) {
       const s = scales[i], x0 = (w - L[i].width * s) / 2;
       if (yy < base[i] - heights[i] - 4 || yy > base[i] + 4) continue;
-      if (L[i].sdf((x - x0) / s, (base[i] - yy) / s) < 0) return {c: mul(fg, n), s: 120, f0: 14, h: 0.3};
+      if (L[i].sdf((x - x0) / s, (base[i] - yy) / s) < 0) return letter(n);
     }
-    return {c: mul(bg, n), s: 110, f0: 14, h: 0};
+    return grain ? {c: mul(bg, n), s: 55, f0: 14, p: 30, h: 0.12 * vn(x * 0.12, yy, 75, 4)} : {c: mul(bg, n), s: 110, f0: 14, h: 0};
   };
 }
 
@@ -215,6 +218,9 @@ const MATS = {
   diffuser: {c: [150, 150, 144], s: 190, f0: 10},
   glass: {c: [18, 20, 22], s: 235, f0: 10},
   concrete: {c: [150, 148, 142], s: 55, f0: 14, p: 40},
+  // U5b cave trail: the sign's brown-stained posts and board edges, the marker post's brown fibreglass
+  wood: {c: [74, 52, 34], s: 40, f0: 14, p: 30},
+  fiberglass: {c: [92, 66, 42], s: 85, f0: 14},
 };
 const NAMES = ['cedar_pass', 'hollow_ridge', 'iron_gap', 'pine_summit', 'black_canyon', 'eagle_crest', 'stone_notch', 'red_bluff'];
 const EGRESS = []; for (const side of ['l', 'r']) for (const d of [25, 50, 75, 100, 125, 150]) EGRESS.push(side + d);
@@ -242,10 +248,16 @@ R.wrong_way = [1140, 1816, 216, 144];                                           
 // Town Framework V1 (2026-10-19, TownSigns): the town speed limit and the all-way plaque under a town STOP
 R.speed_limit = [1356, 1840, 144, 180];                                                   // R2-1 0.6 x 0.75 m
 R.all_way = [1500, 1840, 108, 36];                                                        // R1-3P 0.45 x 0.15 m
+// U5b cave trail (CaveTrail): the trailhead sign's name over its distance strip, one strip per tenth of a mile (d1 .. d20)
+R.trail_name = [1776, 1196, 216, 96];                                                     // 0.9 x 0.4 m
+for (let k = 1; k <= 20; k++) R['trail:d' + k] = [1824, 64 + 48 * (k - 1), 216, 48];       // 0.9 x 0.2 m
+R.cave_sign = [1776, 1300, 216, 144];                                                     // 0.9 x 0.6 m, the warning at the mouth
 /**
  * Sign sizes as RoadSigns: STOP across the flats, the diamond corner to corner, the plaque, DO NOT ENTER, WRONG WAY wide
  * and high; the faces' bottoms, m.
  */
+/** The cave trail's sign (CaveTrail: board wide and high, its bottom, the posts either side of the middle) and the marker's height, m. */
+const TRAIL_SIGN = {w: 0.9, h: 0.6, bottom: 1.0, postX: 0.3, marker: 1.2};
 const SIGNS = {stop: 0.75, diamond: 0.9 * Math.SQRT2, plaque: 0.45, doNotEnter: 0.75, wrongWay: [0.9, 0.6], bottom: 1.5, curveBottom: 1.5 + 0.45 + 0.05,
   // Town Framework V1: a town STOP's bottom (7 ft, where people walk), the ALL WAY plaque (18 x 6 in) and its gap under the
   // STOP, the speed limit (24 x 30 in) at the roadside's 5 ft
@@ -357,6 +369,15 @@ function sheet() {
   // a white border on red)
   paint('speed_limit', signFace(144, 180, ['SPEED', 'LIMIT', '30'], {cap: [24, 24, 60], margin: 14, fg: SIGN.black, bg: SIGN.white, border: 4, bw: 4, gapLines: 0.55}));
   paint('all_way', signFace(108, 36, ['ALL WAY'], {cap: 20, margin: 7, fg: SIGN.white, bg: SIGN.red, border: 2, bw: 2}));
+  // U5b cave trail: routed letters painted cream in a brown-stained board (the national forests' trail signs), the
+  // place's name over the trail's walk in miles (trail signs give distances in miles, like the guide signs)
+  const TRAIL = {fg: [214, 200, 160], bg: [86, 58, 36]};
+  paint('trail_name', signFace(216, 96, ['BEAR HOLLOW', 'CAVE TRAIL'], {cap: 23, margin: 10, fg: TRAIL.fg, bg: TRAIL.bg, gapLines: 0.45, grain: true}));
+  for (let k = 1; k <= 20; k++)
+    paint('trail:d' + k, signFace(216, 48, [(k / 10).toFixed(1) + ' MI'], {cap: 24, margin: 14, fg: TRAIL.fg, bg: TRAIL.bg, grain: true}));
+  // the same board at the trail's end before the mouth: the usual wording of a cave entrance's caution sign
+  paint('cave_sign', signFace(216, 144, ['CAUTION', 'CAVE ENTRANCE', 'ENTER AT', 'YOUR OWN RISK'],
+    {cap: [30, 19, 17, 17], margin: 12, fg: TRAIL.fg, bg: TRAIL.bg, gapLines: 0.55, grain: true}));
   // dark LED faces: black boards with unlit LED dots (lane signal 12 x 12 at 5 cm, message sign 120 x 36 at 5 cm)
   const dots = (pitch, r) => (x, y) => {
     const cx = (Math.floor(x / pitch) + 0.5) * pitch, cy = (Math.floor(y / pitch) + 0.5) * pitch, d = Math.hypot(x - cx, y - cy);
@@ -463,6 +484,25 @@ function plate(p, outline, z0, z1, key, box, mirror = false, mat = 'galv') {
     if (nx * ((a[0] + b[0]) / 2 - cx) + ny * ((a[1] + b[1]) / 2 - cy) < 0) { nx = -nx; ny = -ny; }
     face(p, [[a[0], a[1], z0], [b[0], b[1], z0], [b[0], b[1], z1], [a[0], a[1], z1]], matUV(mat, 4), [nx, ny, 0]);
   });
+}
+/**
+ * An axis-aligned box without the faces in `skip` (any of 'front', 'back', 'top', 'bottom', 'right', 'left'): a post
+ * whose front is hidden behind a board leaves it out, so it never shows through far away (depth precision).
+ */
+function cuboidOpen(p, x0, y0, z0, x1, y1, z1, mat, skip) {
+  const F = (k, pts, out) => { if (!skip.includes(k)) face(p, pts, matUV(mat, 4), out); };
+  F('front', [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]], [0, 0, 1]);
+  F('back', [[x1, y1, z0], [x0, y1, z0], [x0, y0, z0], [x1, y0, z0]], [0, 0, -1]);
+  F('top', [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], [0, 1, 0]);
+  F('bottom', [[x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0]], [0, -1, 0]);
+  F('right', [[x1, y1, z1], [x1, y1, z0], [x1, y0, z0], [x1, y0, z1]], [1, 0, 0]);
+  F('left', [[x0, y1, z0], [x0, y1, z1], [x0, y0, z1], [x0, y0, z0]], [-1, 0, 0]);
+}
+/** A board: its back and edges in `mat`, its front split at ym, the upper region over the lower one. */
+function board(p, x0, y0, z0, x1, y1, z1, ym, upper, lower, mat) {
+  face(p, [[x0, y1, z1], [x1, y1, z1], [x1, ym, z1], [x0, ym, z1]], regionUV(upper), [0, 0, 1]);
+  face(p, [[x0, ym, z1], [x1, ym, z1], [x1, y0, z1], [x0, y0, z1]], regionUV(lower), [0, 0, 1]);
+  cuboidOpen(p, x0, y0, z0, x1, y1, z1, mat, ['front']);
 }
 /** A diamond (corner to corner d) standing on its bottom corner at y0. */
 const diamond = (y0, d) => [[0, y0], [d / 2, y0 + d / 2], [0, y0 + d], [-d / 2, y0 + d / 2]];
@@ -617,6 +657,32 @@ export function meshes() {
   { const m = mesh('speed_limit_sign'), [w, h] = SIGNS.speedLimit, y0 = SIGNS.bottom;
     post(m.part('post'), y0 + h - 0.1, [[y0, y0 + h - 0.1]]);
     plate(m.part('face'), [[-w / 2, y0], [w / 2, y0], [w / 2, y0 + h], [-w / 2, y0 + h]], FZ0, FZ1, 'speed_limit', [-w / 2, y0, w / 2, y0 + h]); }
+  // U5b cave trail (worldgen/underground/CaveTrail: SIGN_W, SIGN_H, SIGN_BOTTOM, SIGN_POST_X): the trailhead sign, a 40 mm
+  // routed board (the name over the distance strip) on two 4 x 4 posts (89 mm) sunk 0.3 m and standing 50 mm over its
+  // top, behind it; one bone per distance, d1 .. d20 tenths of a mile
+  { const m = mesh('trail_sign'), w = TRAIL_SIGN.w, y0 = TRAIL_SIGN.bottom, y1 = y0 + TRAIL_SIGN.h, ym = y0 + 0.2, bz0 = -0.02, bz1 = 0.02, q = 0.0445;
+    for (let k = 1; k <= 20; k++) {
+      const b = 'd' + k, P = n => m.part(b + '_' + n, b);
+      for (const [s, x] of [['a', -TRAIL_SIGN.postX], ['b', TRAIL_SIGN.postX]])
+        cuboidOpen(P('post_' + s), x - q, -0.3, bz0 - 2 * q, x + q, y1 + 0.05, bz0, 'wood', ['front']);
+      board(P('board'), -w / 2, y0, bz0, w / 2, y1, bz1, ym, 'trail_name', 'trail:' + b, 'wood');
+    } }
+  // U5b cave trail: the caution sign before the mouth, the trailhead sign's board and posts with one face
+  { const m = mesh('cave_sign'), w = TRAIL_SIGN.w, y0 = TRAIL_SIGN.bottom, y1 = y0 + TRAIL_SIGN.h, bz0 = -0.02, bz1 = 0.02, q = 0.0445;
+    for (const [s, x] of [['a', -TRAIL_SIGN.postX], ['b', TRAIL_SIGN.postX]])
+      cuboidOpen(m.part('post_' + s), x - q, -0.3, bz0 - 2 * q, x + q, y1 + 0.05, bz0, 'wood', ['front']);
+    const b = m.part('board');
+    face(b, [[-w / 2, y1, bz1], [w / 2, y1, bz1], [w / 2, y0, bz1], [-w / 2, y0, bz1]], regionUV('cave_sign'), [0, 0, 1]);
+    cuboidOpen(b, -w / 2, y0, bz0, w / 2, y1, bz1, 'wood', ['front']); }
+  // U5b cave trail: a marker post of brown fibreglass (3.75 in by 1/2 in, CaveTrail.MARKER_H over the ground, sunk 0.3 m),
+  // a white 2 x 6 in blaze on both faces near its top; the faces a 3 x 3 grid round the blaze (no T-junctions)
+  { const m = mesh('trail_marker'), w = 0.0475, t = 0.0065, top = TRAIL_SIGN.marker, b0 = top - 0.22, b1 = top - 0.07, bw = 0.025;
+    const post = m.part('post'), blaze = m.part('blaze'), xs = [-w, -bw, bw, w], ys = [-0.3, b0, b1, top];
+    for (const s of [1, -1]) for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const white = i === 1 && j === 1, z = s * t;
+      face(white ? blaze : post, [[xs[i], ys[j + 1], z], [xs[i + 1], ys[j + 1], z], [xs[i + 1], ys[j], z], [xs[i], ys[j], z]], matUV(white ? 'white' : 'fiberglass', 4), [0, 0, s]);
+    }
+    cuboidOpen(post, -w, -0.3, -t, w, top, t, 'fiberglass', ['front', 'back']); }
   return M;
 }
 

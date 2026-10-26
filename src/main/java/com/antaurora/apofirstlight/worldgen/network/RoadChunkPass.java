@@ -23,6 +23,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
+import com.antaurora.apofirstlight.ground.GravelGroundBlock;
+import com.antaurora.apofirstlight.ground.TopsoilBlock;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,10 +35,12 @@ import java.util.Set;
  * (ChunkGenerator.applyBiomeDecoration, before structures and features), every road column of the chunk is finished
  * exactly as RoadWorks.column says, writing into this chunk only:
  * <ul>
- *   <li>PAVED: collision (road_surface, 1/32 steps, up to two blocks), asphalt, gravel, a cobblestone sub-base (no ore
- *   rule replaces it: ores write past the guard, through BulkSectionAccess), then dirt down to the
- *   natural ground;</li>
- *   <li>TURF: one graded_turf block on the shared corners, dirt below; a rock cut's face (RoadWorks.ROCK_CUT): bare stone;</li>
+ *   <li>PAVED: collision (road_surface, 1/32 steps, up to two blocks; the asphalt in it is drawn, RoadMesh), the aggregate
+ *   base (AFL angular gravel), the subbase (AFL round gravel), then backfill (AFL topsoil, bare) down to the natural
+ *   ground (road Mesh-ification P0, 2026-10-25, docs/worldgen/road_mesh_damage_v1_design.md 3, 8: no vanilla dirt, gravel or
+ *   cobblestone, and no asphalt cube: the earthwork reads its materials from these blocks);</li>
+ *   <li>TURF: one graded_turf block on the shared corners, backfill below; a rock cut's face (RoadWorks.ROCK_CUT): bare
+ *   stone;</li>
  *   <li>DECK / ABUTMENT: collision on road_structure (the deck down to its slab's or girder's underside), the abutment
  *   wall down to the ground; structure never replaces natural ground (it only fills above it);</li>
  *   <li>BARRIER: road_structure for the parapets (the top block cut to the parapet's height), and at the span's ends the
@@ -129,8 +133,7 @@ public final class RoadChunkPass {
         int cx = chunk.getPos().x, cz = chunk.getPos().z;
         Column[] cols = columns(n, cx, cz);
         if (cols == null) return;
-        BlockState dirt = Blocks.DIRT.defaultBlockState(), base = Blocks.COBBLESTONE.defaultBlockState(),
-                gravel = Blocks.GRAVEL.defaultBlockState(), asphalt = AflBlocks.ASPHALT.get().defaultBlockState(),
+        BlockState dirt = backfill(), base = gravel(GravelGroundBlock.Kind.ANGULAR), gravel = gravel(GravelGroundBlock.Kind.ROUND),
                 structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState(), stone = Blocks.STONE.defaultBlockState();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
@@ -156,10 +159,9 @@ public final class RoadChunkPass {
             switch (c.kind()) {
                 case PAVED -> {
                     collision(chunk, p, x, z, c);
-                    set(chunk, p, x, c.y() - 1, z, asphalt);
+                    set(chunk, p, x, c.y() - 1, z, base);
                     set(chunk, p, x, c.y() - 2, z, gravel);
-                    set(chunk, p, x, c.y() - 3, z, base);
-                    fill(chunk, p, x, c.y() - 4, z, dirt, lowest);
+                    fill(chunk, p, x, c.y() - 3, z, dirt, lowest);
                     if ((c.data() & RoadWorks.TUNNEL_PAVED) != 0) tunnel(chunk, p, n.works(), x, z, c.top() + 1, c.roof(), structure);
                     else if ((c.data() & RoadWorks.TUNNEL_OVER) != 0) over(chunk, p, n.works(), x, z, c, surf, structure);
                     else clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
@@ -171,6 +173,8 @@ public final class RoadChunkPass {
                         // a rock cut's face: bare stone (the surface rules' grass and dirt replaced), nothing grows on it
                         for (int k = 0; k < ROCK_SKIN; k++) set(chunk, p, x, c.y() - k, z, stone);
                         fill(chunk, p, x, c.y() - ROCK_SKIN, z, stone, lowest);
+                        // a deep world's cut shows its own strata (U3a)
+                        com.antaurora.apofirstlight.worldgen.underground.GeologyPass.restone(level, chunk, x, z, Math.min(lowest, c.y() - ROCK_SKIN - MAX_FILL), c.y());
                         clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
                         break;
                     }
@@ -307,7 +311,7 @@ public final class RoadChunkPass {
         if (cell == null) return;
         Culvert cv = cell.culvert();
         BlockState structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState(), water = Blocks.WATER.defaultBlockState(),
-                air = Blocks.AIR.defaultBlockState(), dirt = Blocks.DIRT.defaultBlockState(), gravel = Blocks.GRAVEL.defaultBlockState();
+                air = Blocks.AIR.defaultBlockState(), dirt = backfill(), gravel = gravel(GravelGroundBlock.Kind.ROUND);
         boolean keep = cell.keepGround();
         if (!keep) {
             if (cell.channel()) {
@@ -380,8 +384,18 @@ public final class RoadChunkPass {
         chunk.setBlockState(p.set(x, y, z), s, false);
     }
 
-    /** Ground blocks that stop a fill (and grass-covered ones become dirt when buried under earth, not under structure). */
+    /** Ground blocks that stop a fill (and grass-covered ones become bare soil when buried under earth, not under structure). */
     private static final Set<Block> GRASSY = Set.of(Blocks.GRASS_BLOCK, Blocks.PODZOL, Blocks.MYCELIUM, Blocks.MOSS_BLOCK);
+
+    /** The works' earth fill and subgrade: AFL topsoil, bare (BulkMaterials "backfill"; P0). */
+    static BlockState backfill() {
+        return ((TopsoilBlock) AflBlocks.TOPSOIL.get()).bare();
+    }
+
+    /** AFL gravel of a kind: the aggregate base (angular), the subbase and the driveway (round) (P0). */
+    static BlockState gravel(GravelGroundBlock.Kind kind) {
+        return AflBlocks.GRAVEL.get().defaultBlockState().setValue(GravelGroundBlock.KIND, kind);
+    }
 
     /**
      * From y down: replace what is not solid ground (air, plants, fluids of the fill area) until the natural ground, but
@@ -394,7 +408,9 @@ public final class RoadChunkPass {
         for (int n = 0; n < MAX_FILL && y >= lowest; n++, y--) {
             BlockState s = chunk.getBlockState(p.set(x, y, z));
             if (s.getFluidState().isEmpty() && s.isSolid() && !s.is(net.minecraft.tags.BlockTags.LEAVES) && !s.is(net.minecraft.tags.BlockTags.LOGS)) {
-                if (!structure && GRASSY.contains(s.getBlock())) chunk.setBlockState(p, Blocks.DIRT.defaultBlockState(), false);
+                if (!structure && GRASSY.contains(s.getBlock())) chunk.setBlockState(p, backfill(), false);
+                else if (!structure && s.getBlock() instanceof TopsoilBlock && s.getValue(TopsoilBlock.COVER) != TopsoilBlock.Cover.BARE)
+                    chunk.setBlockState(p, ((TopsoilBlock) s.getBlock()).bare(), false);
                 return;
             }
             chunk.setBlockState(p, structure ? waterlogged(with, s) : with, false);

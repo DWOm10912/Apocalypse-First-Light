@@ -50,10 +50,15 @@ public final class WorldgenRules {
     static final int FEDERAL_PLAN_OUTPUT = 1;
     // federal chunk terrain: noise_settings/federal_experimental.json, density_function/federal/*, raised top slide
     static final int FEDERAL_DENSITY = 1;
+    // U2 deep prototype (2026-10-22): noise_settings/federal_deep_proto.json (Y -256, no vanilla caves, carvers, ore veins,
+    // aquifers or lava), the same planned surface; its planned caves are the separate system "underground"
+    static final int FEDERAL_DEEP_DENSITY = 1;
     // federal water in chunks: RiverCarver / RiverWaterFill with lakes
     static final int FEDERAL_WATER = 1;
     // federal ecology: FederalEcology zones, FederalEcologyBiomes mapping, federal biome JSONs, surface rule branch
     static final int FEDERAL_ECOLOGY = 1;
+    // N1c (2026-10-25): the AFL natural ground swap (NaturalGroundTable, NaturalGroundPass), a gated system
+    static final int NATURAL_GROUND = 1;
 
     /** The rules of this build for an r1 overworld; forestEnabled is the world's mesh forest switch. */
     public static List<WorldgenSystem> current(boolean forestEnabled) {
@@ -62,6 +67,23 @@ public final class WorldgenRules {
 
     /** The rules of this build for an overworld on a Terrain V2 plan of the given profile. */
     public static List<WorldgenSystem> current(TerrainProfile profile, boolean forestEnabled) {
+        return current(profile, forestEnabled, false);
+    }
+
+    /**
+     * The same; deep = the overworld runs the U2 deep prototype (federal_deep_proto): its own terrain density and the
+     * planned caves (UndergroundRuntime.RULES), so a deep world and a -64 world never share a baseline.
+     */
+    public static List<WorldgenSystem> current(TerrainProfile profile, boolean forestEnabled, boolean deep) {
+        if (profile == TerrainProfile.FEDERAL && deep) {
+            List<WorldgenSystem> out = new java.util.ArrayList<>();
+            for (WorldgenSystem s : current(profile, forestEnabled, false))
+                out.add(s.id().equals("terrain_density") ? new WorldgenSystem("terrain_density", "federal_deep_density#" + FEDERAL_DEEP_DENSITY,
+                        Severity.HARD, "chunk terrain shape down to Y -256, no vanilla caves, aquifers or lava") : s);
+            out.add(new WorldgenSystem("underground", "underground_plan#" + com.antaurora.apofirstlight.worldgen.underground.UndergroundRuntime.RULES,
+                    Severity.HARD, "planned caves, entrances and their water cut into chunks"));
+            return List.copyOf(out);
+        }
         if (profile == TerrainProfile.FEDERAL) return List.of(
                 new WorldgenSystem("national_template", "federal_template#" + FederalTemplate.VERSION + "#" + FEDERAL_TEMPLATE, Severity.HARD,
                         "federal coast, six states, provinces and climate"),
@@ -88,6 +110,9 @@ public final class WorldgenRules {
                         "town_buildings#" + com.antaurora.apofirstlight.worldgen.network.town.TownBuildings.VERSION + "#"
                                 + com.antaurora.apofirstlight.worldgen.building.BuildingKits.VERSION,
                         Severity.HARD, "the town buildings: which stands on each lot, where, and how it is built"),
+                // C, N1c (2026-10-25): the natural ground made of the AFL blocks (gated like the roads)
+                new WorldgenSystem(WorldgenGates.NATURAL_GROUND, "natural_ground#" + NATURAL_GROUND, Severity.HARD,
+                        "natural ground blocks: topsoil, mud, sand, gravel, clay, snow and the badlands beds"),
                 new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
                         "natural trees"));
         return List.of(

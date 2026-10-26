@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/dolomite_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

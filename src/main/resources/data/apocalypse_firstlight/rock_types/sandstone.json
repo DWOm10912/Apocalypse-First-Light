@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:sandstone",
+  "density_kg_m3": 2300,
+  "strike_litres": 60,
+  "boulder_look": "sandstone",
+  "anchor": true,
+  "stone": "apocalypse_firstlight:sandstone_stone"
+}

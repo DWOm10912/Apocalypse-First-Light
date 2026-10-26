@@ -1,7 +1,7 @@
 {
   "density_kg_m3": 1500,
   "repose_deg": 36,
-  "block": "minecraft:dirt",
+  "block": "apocalypse_firstlight:topsoil[cover=bare]",
   "grip": 0.6,
   "sources": [],
   "shade": 0.82

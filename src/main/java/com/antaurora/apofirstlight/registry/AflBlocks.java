@@ -140,6 +140,100 @@ public final class AflBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> SPODUMENE_ORE = BLOCKS.register("spodumene_ore",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
+    // U3a natural rocks (docs/worldgen/underground_u3_rocks_ores_design.md 2.1): a deep world's underground after
+    // GeologyPass; mined with the pick (any tier till the mining rules rework), no hand in survival (RockFace)
+    public static final RegistryObject<Block> GRANITE_ROCK = BLOCKS.register("granite",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.GRANITE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.8F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.STONE).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> GNEISS_ROCK = BLOCKS.register("gneiss",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.GNEISS,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.8F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.STONE).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> SCHIST_ROCK = BLOCKS.register("schist",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SCHIST,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.5F, 6.0F).sound(SoundType.DEEPSLATE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> SANDSTONE_ROCK = BLOCKS.register("sandstone",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SANDSTONE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.2F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.SAND).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> LIMESTONE_ROCK = BLOCKS.register("limestone",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.LIMESTONE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.4F, 6.0F).sound(SoundType.CALCITE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_WHITE).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> DOLOMITE_ROCK = BLOCKS.register("dolomite",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.DOLOMITE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.6F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_LIGHT_GRAY).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> SHALE_ROCK = BLOCKS.register("shale",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SHALE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.0F, 6.0F).sound(SoundType.DEEPSLATE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.DEEPSLATE).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> MARL_ROCK = BLOCKS.register("marl",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.MARL,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(0.8F, 6.0F).sound(SoundType.CALCITE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.SAND).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> ROCK_SALT_ROCK = BLOCKS.register("rock_salt",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.ROCK_SALT,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(0.9F, 6.0F).sound(SoundType.CALCITE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.SNOW).requiresCorrectToolForDrops()));
+    /** The natural rocks in RockTypes.BLOCKS order (GeologyPass#block reads them by RockType). */
+    public static final java.util.List<RegistryObject<Block>> NATURAL_ROCKS = java.util.List.of(GRANITE_ROCK, GNEISS_ROCK,
+            SCHIST_ROCK, SANDSTONE_ROCK, LIMESTONE_ROCK, DOLOMITE_ROCK, SHALE_ROCK, MARL_ROCK, ROCK_SALT_ROCK);
+    // Natural ground N1 (docs/worldgen/natural_ground_n1_design.md 3, 6): the badlands' red beds, sandstone as rock (its
+    // stones, density, the pick's cut: rock_types sandstone) in its own red look; not in NATURAL_ROCKS (GeologyPass reads
+    // those by RockType)
+    public static final RegistryObject<Block> RED_SANDSTONE_ROCK = BLOCKS.register("red_sandstone",
+            () -> new com.antaurora.apofirstlight.block.NaturalRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SANDSTONE,
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.2F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_RED).requiresCorrectToolForDrops()));
+    // Natural ground N1: AFL's own soils in place of vanilla's (ground/NaturalGroundBlock): terrain only, no loot (the shovel
+    // gives bulk material), the item in the creative tab only; sand and gravel do not fall (loose ground moves by the earthwork)
+    public static final RegistryObject<Block> TOPSOIL = BLOCKS.register("topsoil",
+            () -> new com.antaurora.apofirstlight.ground.TopsoilBlock(BlockBehaviour.Properties.copy(Blocks.DIRT).mapColor(net.minecraft.world.level.material.MapColor.DIRT).noLootTable()));
+    public static final RegistryObject<Block> MUD = BLOCKS.register("mud",
+            () -> new com.antaurora.apofirstlight.ground.MudGroundBlock(BlockBehaviour.Properties.copy(Blocks.MUD).mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_CYAN).noLootTable()));
+    public static final RegistryObject<Block> SAND = BLOCKS.register("sand",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock("sand", BlockBehaviour.Properties.copy(Blocks.SAND).mapColor(net.minecraft.world.level.material.MapColor.SAND).noLootTable()));
+    public static final RegistryObject<Block> RED_SAND = BLOCKS.register("red_sand",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock("red_sand", BlockBehaviour.Properties.copy(Blocks.RED_SAND).mapColor(net.minecraft.world.level.material.MapColor.COLOR_ORANGE).noLootTable()));
+    public static final RegistryObject<Block> GRAVEL = BLOCKS.register("gravel",
+            () -> new com.antaurora.apofirstlight.ground.GravelGroundBlock(BlockBehaviour.Properties.copy(Blocks.GRAVEL).mapColor(net.minecraft.world.level.material.MapColor.STONE).noLootTable()));
+    public static final RegistryObject<Block> CLAY = BLOCKS.register("clay",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock("clay", BlockBehaviour.Properties.copy(Blocks.CLAY).mapColor(net.minecraft.world.level.material.MapColor.CLAY).noLootTable()));
+    public static final RegistryObject<Block> SNOW = BLOCKS.register("snow",
+            () -> new com.antaurora.apofirstlight.ground.NaturalGroundBlock(null, BlockBehaviour.Properties.copy(Blocks.SNOW_BLOCK).mapColor(net.minecraft.world.level.material.MapColor.SNOW).noLootTable()));
+    /** Natural ground N1's soils (Terrain Smooth wraps their models: TerrainSmooth#groundBlocks). */
+    public static final java.util.List<RegistryObject<Block>> NATURAL_GROUND = java.util.List.of(TOPSOIL, MUD, SAND, RED_SAND, GRAVEL, CLAY, SNOW);
+    // U3b ore rocks, batch 1 (docs/worldgen/underground_u3_rocks_ores_design.md 14): the rock with its ore, grade a state;
+    // OreRockBlock(host, density kg/m3, strike L, face look, stone, gives stones, litres a raw piece {lean, rich}, raw ores, shares)
+    public static final RegistryObject<Block> COAL_SEAM = BLOCKS.register("coal_seam",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SHALE,
+                    1350, 120, "shale", "shale_shard", false, 120, 60, new String[]{"coal_lump"}, new double[]{1},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(0.9F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.COLOR_BLACK).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> BANDED_IRON_FORMATION = BLOCKS.register("banded_iron_formation",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.SHALE,
+                    3300, 40, "shale", "shale_shard", false, 500, 200, new String[]{"raw_hematite"}, new double[]{1},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.2F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_RED).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> QUARTZ_VEIN = BLOCKS.register("quartz_vein",
+            () -> new com.antaurora.apofirstlight.block.QuartzVeinBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F)
+                    .sound(SoundType.STONE).mapColor(net.minecraft.world.level.material.MapColor.QUARTZ).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> LEAD_ZINC_DOLOMITE = BLOCKS.register("lead_zinc_dolomite",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.DOLOMITE,
+                    3000, 55, "limestone", "dolomite_stone", true, 1000, 250, new String[]{"raw_galena", "raw_sphalerite"}, new double[]{0.4, 0.6},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.6F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.TERRACOTTA_LIGHT_GRAY).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> COPPER_BRECCIA = BLOCKS.register("copper_breccia",
+            () -> new com.antaurora.apofirstlight.block.OreRockBlock(com.antaurora.apofirstlight.worldgen.underground.RockType.GRANITE,
+                    2800, 55, "granite", "field_stone", false, 1000, 250, new String[]{"raw_chalcopyrite"}, new double[]{1},
+                    BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.8F, 6.0F).sound(SoundType.STONE)
+                            .mapColor(net.minecraft.world.level.material.MapColor.STONE).requiresCorrectToolForDrops()));
+    /** The ore rocks (GeologyPass places them; Terrain Smooth wraps their models). */
+    public static final java.util.List<RegistryObject<Block>> ORE_ROCKS = java.util.List.of(COAL_SEAM, BANDED_IRON_FORMATION,
+            QUARTZ_VEIN, LEAD_ZINC_DOLOMITE, COPPER_BRECCIA);
     public static final RegistryObject<Block> STEEL_BLOCK_SLAB = BLOCKS.register("steel_block_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_BLOCK.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_BLOCK_STAIRS = BLOCKS.register("steel_block_stairs",
@@ -684,10 +778,11 @@ public final class AflBlocks {
                 .offsetType(BlockBehaviour.OffsetType.NONE), species));
     }
     // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
-    // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
+    // under the generated road mesh. Broken by pick mattock strikes (road Mesh-ification P0/P1): a dynamic shape, a broken
+    // column's asphalt left (RoadDamage); no item.
     public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",
             () -> new com.antaurora.apofirstlight.block.RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
-                    .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion()
+                    .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion().dynamicShape().forceSolidOn()
                     .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
     public static final RegistryObject<Block> ROAD_STRUCTURE = BLOCKS.register("road_structure",
             () -> new com.antaurora.apofirstlight.block.RoadStructureBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
@@ -706,7 +801,11 @@ public final class AflBlocks {
         var out = new java.util.EnumMap<com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind, RegistryObject<Block>>(com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.class);
         for (var kind : com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.values())
             out.put(kind, BLOCKS.register(kind.id(), () -> new com.antaurora.apofirstlight.block.TunnelFixtureBlock(kind, BlockBehaviour.Properties.of()
-                    .mapColor(net.minecraft.world.level.material.MapColor.METAL).sound(SoundType.METAL).strength(5.0F, 15.0F)
+                    // the cave trail's wooden signs and fibreglass marker (U5b) sound like wood
+                    .mapColor(net.minecraft.world.level.material.MapColor.METAL)
+                    .sound(kind == com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.TRAIL_SIGN
+                            || kind == com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.TRAIL_MARKER
+                            || kind == com.antaurora.apofirstlight.block.TunnelFixtureBlock.Kind.CAVE_SIGN ? SoundType.WOOD : SoundType.METAL).strength(5.0F, 15.0F)
                     .noOcclusion().noLootTable().dynamicShape().pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
                     .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false).isRedstoneConductor((st, l, p) -> false))));
         return java.util.Collections.unmodifiableMap(out);

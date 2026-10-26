@@ -34,6 +34,46 @@ const ITEMS = {
     body: 'granite', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
   pebble: {...loose('pebble_field_0'), level: 2, body: 'granite', tp: [[20, 35, -10], 2.4, 0.3], fp: [[-8, 40, 6], 2.0]},
   flint: {...loose('flint_1'), level: 3, body: 'flint_cortex', cap: 'flint', tp: [[20, 35, -10], 2.4, 0.4], fp: [[-8, 40, 6], 2.0]},
+  // U3a-2 (docs/worldgen/underground_u3_rocks_ores_design.md 3.1): each rock's own stone, shaped as the rock breaks:
+  // crystalline rock in angular blocks, the bedded rocks squarer along their beds, schist and shale in slabs and flakes
+  // along their cleavage, marl and rock salt blunt. The bodies are the boulders' sprites; gneiss, schist, dolomite, marl and
+  // rock salt borrow a neighbour's until their own photos (U3a-4); every one the sprite its block has (a fresh break).
+  gneiss_stone: {spec: {L: 0.2, r: [1, 0.62, 0.78], planes: 5, pre: 1, round: 1, amp: 0.1, cut: [0.55, 0.8]}, seed: 4111, level: 3,
+    body: 'granite_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  schist_stone: {spec: {L: 0.2, r: [1, 0.4, 0.76], planes: 4, pre: 1, round: 1, amp: 0.08, top: true}, seed: 4113, level: 3,
+    body: 'shale_worn', tp: [[20, 35, -10], 2.2, 0.8], fp: [[-8, 40, 6], 1.7]},
+  sandstone_stone: {spec: {L: 0.2, r: [1, 0.6, 0.8], planes: 6, pre: 0, round: 1, amp: 0.06, cut: [0.5, 0.74]}, seed: 4117, level: 3,
+    body: 'sandstone_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  limestone_stone: {spec: {L: 0.2, r: [1, 0.62, 0.78], planes: 6, pre: 0, round: 1, amp: 0.07, cut: [0.52, 0.76]}, seed: 4119, level: 3,
+    body: 'limestone_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  dolomite_stone: {spec: {L: 0.19, r: [1, 0.68, 0.82], planes: 5, pre: 1, round: 1, amp: 0.1, cut: [0.58, 0.84]}, seed: 4123, level: 3,
+    body: 'limestone', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  shale_shard: {spec: {L: 0.16, r: [1, 0.2, 0.72], planes: 3, pre: 1, round: 0, amp: 0.06, top: true}, seed: 4127, level: 3,
+    body: 'shale_fresh', tp: [[20, 35, -10], 2.4, 0.5], fp: [[-8, 40, 6], 1.9]},
+  marl_lump: {spec: {L: 0.19, r: [1, 0.68, 0.85], planes: 2, pre: 3, round: 2, amp: 0.16}, seed: 4129, level: 3,
+    body: 'limestone_worn', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  rock_salt_lump: {spec: {L: 0.18, r: [1, 0.7, 0.85], planes: 4, pre: 2, round: 2, amp: 0.1}, seed: 4131, level: 3,
+    body: 'limestone_fresh', tp: [[20, 35, -10], 2.2, 1.0], fp: [[-8, 40, 6], 1.7]},
+  // U3b batch 1 raw ores (docs/worldgen/underground_u3_rocks_ores_design.md 14): pieces of the rich ore rock, on its sprite
+  // (textures/block/ore, tools/rock/build-ore-textures.mjs): coal in cleat blocks, banded iron in slabs along its bands, the
+  // vein and dolomite ores in angular pieces
+  coal_lump: {ore: true, spec: {L: 0.15, r: [1, 0.72, 0.82], planes: 6, pre: 0, round: 0, amp: 0.05, cut: [0.5, 0.74]}, seed: 4137, level: 3,
+    body: '../ore/coal_seam_rich', tp: [[20, 35, -10], 2.3, 0.8], fp: [[-8, 40, 6], 1.8]},
+  raw_hematite: {ore: true, spec: {L: 0.15, r: [1, 0.48, 0.76], planes: 4, pre: 1, round: 0, amp: 0.06, top: true}, seed: 4139, level: 3,
+    body: '../ore/banded_iron_formation_rich', tp: [[20, 35, -10], 2.3, 0.7], fp: [[-8, 40, 6], 1.8]},
+  raw_chalcopyrite: {ore: true, spec: {L: 0.14, r: [1, 0.66, 0.8], planes: 5, pre: 1, round: 1, amp: 0.08, cut: [0.55, 0.8]}, seed: 4141, level: 3,
+    body: '../ore/quartz_vein_copper_rich', tp: [[20, 35, -10], 2.3, 0.8], fp: [[-8, 40, 6], 1.8]},
+  gold_quartz: {ore: true, spec: {L: 0.13, r: [1, 0.68, 0.82], planes: 5, pre: 1, round: 1, amp: 0.08, cut: [0.55, 0.8]}, seed: 4143, level: 3,
+    body: '../ore/quartz_vein_gold_rich', tp: [[20, 35, -10], 2.4, 0.7], fp: [[-8, 40, 6], 1.9]},
+  raw_galena: {ore: true, spec: {L: 0.13, r: [1, 0.7, 0.82], planes: 6, pre: 0, round: 0, amp: 0.06, cut: [0.52, 0.76]}, seed: 4147, level: 3,
+    body: '../ore/quartz_vein_lead_rich', tp: [[20, 35, -10], 2.4, 0.7], fp: [[-8, 40, 6], 1.9]},
+  raw_sphalerite: {ore: true, spec: {L: 0.14, r: [1, 0.66, 0.8], planes: 5, pre: 1, round: 1, amp: 0.08, cut: [0.55, 0.8]}, seed: 4149, level: 3,
+    body: '../ore/lead_zinc_dolomite_rich', tp: [[20, 35, -10], 2.3, 0.8], fp: [[-8, 40, 6], 1.8]},
+  // road Mesh-ification P0 (docs/worldgen/road_mesh_damage_v1_design.md 6): a chunk of broken asphalt, about 2 L (21 x 10
+  // x 15 cm), a slab of the wearing course broken on sharp planes; on the road's own asphalt (textures/block/road/asphalt,
+  // 240 texels per metre, resampled to the stones' 128: src)
+  asphalt_chunk: {spec: {L: 0.24, r: [1, 0.5, 0.7], planes: 6, pre: 0, round: 0, amp: 0.04, top: true}, seed: 4151, level: 3,
+    body: '../road/asphalt', src: 240, tp: [[20, 35, -10], 2.2, 0.8], fp: [[-8, 40, 6], 1.7]},
 };
 const PX = 16;                      // px per metre
 const ATLAS = 64, DENSITY = 128;    // the sprite's texels per metre (2 m over 256 texels)
@@ -81,18 +121,62 @@ function project(p, cap) {
   return {faceUV, S: TPX, islands: [], uvOf: null, span};
 }
 
+/**
+ * Where an ore piece's four regions come from (it.ore): the 31 x 31 windows of its sprite with the most ore mineral in them
+ * (F0 in _s at least 40: the sulphides, hematite and gold; for coal, the glossiest), picked greedily apart from each other.
+ */
+function oreCuts(it) {
+  const s = readPng(fs.readFileSync(path.join(SPRITES, it.body + '_s.png')));
+  const coal = it.body.includes('coal'), score = [];
+  for (let y = 0; y < 256; y += 8) for (let x = 0; x < 256; x += 8) {
+    let n = 0;
+    for (let j = 0; j < 31; j += 2) for (let i = 0; i < 31; i += 2) {
+      const o = (((y + j) % 256) * 256 + (x + i) % 256) * 4;
+      n += coal ? s.px[o] / 255 : s.px[o + 1] >= 40 ? 1 : 0;
+    }
+    score.push([n, x, y]);
+  }
+  score.sort((a, b) => b[0] - a[0] || a[2] - b[2] || a[1] - b[1]);
+  const out = [];
+  for (const [, x, y] of score) {
+    const d = (a, b) => Math.min(Math.abs(a - b), 256 - Math.abs(a - b));
+    if (out.every(([u, v]) => d(u, x) >= 40 || d(v, y) >= 40)) out.push([x, y]);
+    if (out.length === 4) break;
+  }
+  return out;
+}
+
+/**
+ * A texture at density texels per metre as a 256-texel sprite at the stones' DENSITY: its first 2 m, each sprite texel the
+ * mean of a 4 x 4 grid of samples over its square (RGB sources opaque, the source tiling).
+ */
+function resample(src, density) {
+  const px = Buffer.alloc(256 * 256 * 4), k = density / DENSITY, n = src.bpp;
+  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+    const sum = [0, 0, 0, 0];
+    for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+      const sx = Math.floor((x + (i + 0.5) / 4) * k) % src.w, sy = Math.floor((y + (j + 0.5) / 4) * k) % src.h;
+      for (let c = 0; c < 4; c++) sum[c] += c < n ? src.px[(sy * src.w + sx) * n + c] : 255;
+    }
+    for (let c = 0; c < 4; c++) px[(y * 256 + x) * 4 + c] = Math.round(sum[c] / 16);
+  }
+  return {w: 256, h: 256, bpp: 4, px};
+}
+
 /** The atlas: the four regions cut from the body's sprite (the fourth from the cap's, if any), its _s and _n alike. */
 function atlas(it) {
+  const cuts = it.ore ? oreCuts(it) : CUT;
   return ['', '_s', '_n'].map(x => {
     const read = name => {
       const src = readPng(fs.readFileSync(path.join(SPRITES, name + x + '.png')));
+      if (it.src && name === it.body) return resample(src, it.src);
       if (src.w !== 256 || src.bpp !== 4) throw new Error('sprite format ' + name + x);
       return src;
     };
     const body = read(it.body), cap = it.cap ? read(it.cap) : body;
     const out = Buffer.alloc(ATLAS * ATLAS * 4);
     REGION.forEach(([rx, ry], i) => {
-      const src = i === 3 ? cap : body, [sx, sy] = CUT[i];
+      const src = i === 3 ? cap : body, [sx, sy] = cuts[i];
       for (let y = 0; y < 31; y++) for (let x = 0; x < 31; x++) {
         const s = ((sy + y) % 256 * 256 + (sx + x) % 256) * 4, d = ((ry - 1 + y) * ATLAS + rx - 1 + x) * 4;
         for (let c = 0; c < 4; c++) out[d + c] = src.px[s + c];

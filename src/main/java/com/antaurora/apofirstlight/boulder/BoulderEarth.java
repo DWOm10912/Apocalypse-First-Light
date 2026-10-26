@@ -59,13 +59,16 @@ public final class BoulderEarth {
     }
 
     /** Whether a rock fills part of this cell (a dig that bares it puts a rock cell there). */
-    public static boolean rock(Level level, BlockPos pos) {
-        if (!applies(level)) return false;
+    public static boolean rock(Level level, BlockPos pos) { return rockAt(level, pos) != null; }
+
+    /** The rock filling part of this cell (the first found), or null. */
+    public static BoulderRock rockAt(Level level, BlockPos pos) {
+        if (!applies(level)) return null;
         var found = FOUND.get();
         found.clear();
         BoulderIndex.SERVER.roots(pos.getX(), pos.getY(), pos.getZ(), found);
-        boolean any = false;
-        for (var r : found) if (r.cellAt(pos.getX(), pos.getY(), pos.getZ()) != null) { any = true; break; }
+        BoulderRock any = null;
+        for (var r : found) if (r.cellAt(pos.getX(), pos.getY(), pos.getZ()) != null) { any = r.rock; break; }
         found.clear();
         return any;
     }

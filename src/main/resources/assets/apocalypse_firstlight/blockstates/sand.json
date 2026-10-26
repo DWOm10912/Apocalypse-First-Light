@@ -1,0 +1,62 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_0",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_0_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_0_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_1",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_1_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_1_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_2"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_2",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_2_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_2_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_3"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_3",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_3_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sand_3_mirrored",
+        "y": 180
+      }
+    ]
+  }
+}

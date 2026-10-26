@@ -315,6 +315,64 @@ public final class EarthGrid {
         return h;
     }
 
+    /**
+     * Rock R2: the lowest a shovel may take a vertex at h with l loose earth on it: its hard floor f where natural ground
+     * still lies over that, else the rock's surface (only the loose earth comes off rock), never below r (the deepest the
+     * rock may be cut; f where none may).
+     */
+    public static int shovelFloor(int f, int r, int h, int l) { return Math.max(r, Math.min(f, h - l)); }
+
+    /**
+     * Rock R2 round 3 (docs/gameplay/rock_r2_rock_face_mining_design.md 12): the lowest a pick's strike may cut a vertex at
+     * h with l loose earth on it: down to r (the rock's depth limit) where the rock lies bare (r below the hard floor f, and
+     * the ground there rock from the top: bare, else nothing but loose earth over f), else nowhere (h: natural ground over
+     * the rock is the shovel's).
+     */
+    public static int pickFloor(int f, int r, int h, int l, boolean bare) { return r < f && (bare || h - l <= f) ? r : h; }
+
+    /**
+     * Rock R2 round 4 (docs/gameplay/rock_r2_rock_face_mining_design.md 13): how one segment of a skin cell's side closes
+     * against an unedited neighbour. e0, e1: the skin's height at the segment's ends, t0, t1: the neighbour's ground there
+     * (cell heights, unclamped, both linear along the segment). Pieces {u0, u1, bottom0, bottom1, top0, top1, inward}, u in
+     * fractions of the segment, heights within the cell (0..1), each piece linear (split where either line crosses the
+     * other or the cell's floor or top): inward (1) where the neighbour's ground stands higher (its side, facing into this
+     * cell), outward (0) where the skin does (this column's side, facing the neighbour).
+     */
+    public static List<float[]> sideGaps(float e0, float e1, float t0, float t1) {
+        float[] cuts = new float[7];
+        int n = 0;
+        cuts[n++] = 0;
+        for (float[] l : new float[][]{{e0, e1}, {t0, t1}})
+            for (float c : new float[]{0, 1}) n = cut(cuts, n, l[0] - c, l[1] - c);
+        n = cut(cuts, n, t0 - e0, t1 - e1);
+        cuts[n++] = 1;
+        Arrays.sort(cuts, 0, n);
+        List<float[]> out = new ArrayList<>(2);
+        for (int k = 0; k + 1 < n; k++) {
+            float p = cuts[k], q = cuts[k + 1];
+            if (q - p < 1e-5F) continue;
+            float m = (p + q) / 2, em = e0 + (e1 - e0) * m, tm = t0 + (t1 - t0) * m;
+            if (Math.abs(tm - em) < 1e-5F) continue;
+            boolean in = tm > em;
+            float ep = clamp01(e0 + (e1 - e0) * p), eq = clamp01(e0 + (e1 - e0) * q);
+            float tp = clamp01(t0 + (t1 - t0) * p), tq = clamp01(t0 + (t1 - t0) * q);
+            float b0 = in ? ep : tp, b1 = in ? eq : tq, u0 = in ? tp : ep, u1 = in ? tq : eq;
+            if (u0 - b0 < 1e-5F && u1 - b1 < 1e-5F) continue;
+            out.add(new float[]{p, q, b0, b1, u0, u1, in ? 1 : 0});
+        }
+        return out;
+    }
+
+    /** Adds where a line from a to b (along 0..1) crosses zero strictly inside. */
+    private static int cut(float[] cuts, int n, float a, float b) {
+        if ((a < 0) == (b < 0) || a == b) return n;
+        float u = a / (a - b);
+        if (u > 0 && u < 1) cuts[n++] = u;
+        return n;
+    }
+
+    private static float clamp01(float v) { return Math.max(0, Math.min(1, v)); }
+
     // ----------------------------------------------------------------------------------------------- slopes
 
     /** Slope a vertex next to locked ground may take against it at most: 1:1 (docs/gameplay/sandbox_v1_design.md 3.4). */

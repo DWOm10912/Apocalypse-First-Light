@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "apocalypse_firstlight:federal_deep_proto",
     "apocalypse_firstlight:federal_experimental"
   ]
 }

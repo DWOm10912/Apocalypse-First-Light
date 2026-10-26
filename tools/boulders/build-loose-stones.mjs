@@ -25,6 +25,7 @@ import zlib from 'node:zlib';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {rock, clip, volume, bounds, hash, V} from './boulder-shapes.mjs';
+import {ROCK_LOOKS} from './export.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RES_DIR = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -215,12 +216,15 @@ async function flintSprite(sharp, cortex) {
   return {albedo, s: sB, n: nB};
 }
 
-/** granite_worn from the boulders' granite sprite: grain contrast x 0.65 about its local mean, normal relief x 0.5, smoothness + 45. */
-async function wornSprite(sharp) {
+/**
+ * A rock's worn sprite (granite_worn, limestone_worn ...) from the boulders' sprite of that rock: grain contrast x 0.65 about
+ * its local mean, normal relief x 0.5, smoothness + 45.
+ */
+async function wornSprite(sharp, id) {
   const dir = path.join(RES_DIR, 'textures/block/boulder'), out = new Map();
   const raw = async f => (await sharp(path.join(dir, f)).ensureAlpha().raw().toBuffer({resolveWithObject: true}));
-  const a = await raw('granite.png'), s = await raw('granite_s.png'), n = await raw('granite_n.png');
-  if (a.info.width !== RES || s.info.width !== RES || n.info.width !== RES) throw new Error('granite sprite size');
+  const a = await raw(id + '.png'), s = await raw(id + '_s.png'), n = await raw(id + '_n.png');
+  if (a.info.width !== RES || s.info.width !== RES || n.info.width !== RES) throw new Error(id + ' sprite size');
   const L = new Float32Array(RES * RES).map((_, i) => (a.data[i * 4] + a.data[i * 4 + 1] + a.data[i * 4 + 2]) / 765);
   const low = blurWrap(L, 6), A = Buffer.from(a.data), S = Buffer.from(s.data), N = Buffer.from(n.data);
   for (let i = 0; i < RES * RES; i++) {
@@ -231,12 +235,13 @@ async function wornSprite(sharp) {
     N[i * 4] = Math.round((nx * 0.5 + 0.5) * 255); N[i * 4 + 1] = Math.round((ny * 0.5 + 0.5) * 255);
   }
   for (const [k, b] of [['', A], ['_s', S], ['_n', N]])
-    out.set(path.join(dir, 'granite_worn' + k + '.png'), await sharp(b, {raw: {width: RES, height: RES, channels: 4}}).png().toBuffer());
+    out.set(path.join(dir, id + '_worn' + k + '.png'), await sharp(b, {raw: {width: RES, height: RES, channels: 4}}).png().toBuffer());
   return out;
 }
 
 export async function flintSprites() {
-  const sharp = loadSharp(), out = await wornSprite(sharp);
+  const sharp = loadSharp(), out = new Map();
+  for (const id of ROCK_LOOKS) for (const [f, b] of await wornSprite(sharp, id)) out.set(f, b);
   for (const [name, cortex] of [['flint', false], ['flint_cortex', true]]) {
     const sp = await flintSprite(sharp, cortex);
     for (const [k, b] of Object.entries(sp))

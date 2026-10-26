@@ -18,6 +18,12 @@ import zlib from 'node:zlib';
 import {V, hash, volume, centroid, bounds, strikes, budget} from './boulder-shapes.mjs';
 
 export const SPRITES = ['granite', 'granite_lichen', 'granite_fresh'];
+/**
+ * Rock R3: the rocks a boulder or a loose stone can look like (boulder/BoulderRock). A rock's sprites are the granite ones'
+ * names with granite replaced by its id (limestone, limestone_lichen, limestone_fresh, limestone_worn ...); the quads keep
+ * their sprite numbers.
+ */
+export const ROCK_LOOKS = ['granite', 'limestone', 'sandstone', 'shale'];
 const CREASE = Math.cos(40 * Math.PI / 180), NONE = -32768;
 
 /** The vertical span [lo, hi] of mesh m through (x, z), or null. */

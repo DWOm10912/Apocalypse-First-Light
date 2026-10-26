@@ -24,6 +24,8 @@ public abstract class SpringFeatureRoadMixin {
     private void apocalypse$keepOffRoads(FeaturePlaceContext<SpringConfiguration> context, CallbackInfoReturnable<Boolean> cir) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) context.level().getLevel().getChunkSource().randomState();
         if (!access.apocalypse$hasTerrainPlan()) return;
+        // U2: no lava springs in a deep world (design section 13.9)
+        if (access.apocalypse$underground() != null && context.config().state.is(net.minecraft.tags.FluidTags.LAVA)) { cir.setReturnValue(false); return; }
         TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
         RoadWorksRef works = access.apocalypse$roadWorksRef();
         if (plan == null || works == null) return;

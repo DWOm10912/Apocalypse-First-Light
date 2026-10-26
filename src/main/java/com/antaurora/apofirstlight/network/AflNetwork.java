@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    // 73: master's 72 (item inspect, chair sitting) and B's physical water (71 on its branch), merged 2026-10-25
-    private static final String PROTOCOL = "73";
+    // 75: master + B (73: item inspect, chair sitting, physical water) and C (74: world time), merged 2026-10-25
+    private static final String PROTOCOL = "75";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -137,6 +137,11 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.sit.GroundSit.register(channel, nextId);
         // AFL chair sitting (cabin/ChairSit, protocol 72): who sits on which wooden chair, getting up
         nextId = com.antaurora.apofirstlight.cabin.ChairSit.register(channel, nextId);
+        // World Time V1 (docs/gameplay/world_time_v1_design.md 4): the server's day length
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.time.WorldTimePacket.class,
+                com.antaurora.apofirstlight.time.WorldTimePacket::encode, com.antaurora.apofirstlight.time.WorldTimePacket::decode,
+                com.antaurora.apofirstlight.time.WorldTimePacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
@@ -146,6 +151,16 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.earthwork.EarthChunkPacket.class,
                 com.antaurora.apofirstlight.earthwork.EarthChunkPacket::encode, com.antaurora.apofirstlight.earthwork.EarthChunkPacket::decode,
                 com.antaurora.apofirstlight.earthwork.EarthChunkPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        // U3a-3 round 2 (docs/worldgen/underground_u3_rocks_ores_design.md 13): one chunk's carved rock (protocol 72)
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.earthwork.CarveChunkPacket.class,
+                com.antaurora.apofirstlight.earthwork.CarveChunkPacket::encode, com.antaurora.apofirstlight.earthwork.CarveChunkPacket::decode,
+                com.antaurora.apofirstlight.earthwork.CarveChunkPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        // road Mesh-ification P1 (docs/worldgen/road_mesh_damage_v1_design.md 4): one chunk's broken asphalt (protocol 74)
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.road.RoadDamagePacket.class,
+                com.antaurora.apofirstlight.road.RoadDamagePacket::encode, com.antaurora.apofirstlight.road.RoadDamagePacket::decode,
+                com.antaurora.apofirstlight.road.RoadDamagePacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         // Rock R1a (docs/gameplay/rock_r1_stones_boulders_design.md 11.2): boulder roots and the pick mattock's strikes (protocol 66)
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.boulder.BoulderNetwork.RootPacket.class,
@@ -309,6 +324,11 @@ public final class AflNetwork {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
+    /** World Time V1: the server's day length. */
+    public static void sendWorldTime(ServerPlayer player, com.antaurora.apofirstlight.time.WorldTimePacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
     /** Rock R1a: a boulder root change to every player tracking its chunk. */
     public static void sendTrackingChunk(net.minecraft.world.level.chunk.LevelChunk chunk, Object packet) {
         if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
@@ -317,6 +337,16 @@ public final class AflNetwork {
     /** Earthwork A1: a chunk's height field to every player tracking the chunk. */
     public static void sendEarth(net.minecraft.world.level.chunk.LevelChunk chunk, com.antaurora.apofirstlight.earthwork.EarthChunkPacket packet) {
         if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
+    }
+
+    /** U3a-3 round 2: a chunk's carved rock to one player (it starts tracking the chunk). */
+    public static void carveTo(ServerPlayer player, com.antaurora.apofirstlight.earthwork.CarveChunkPacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Road Mesh-ification P1: a chunk's broken asphalt to one player (it starts tracking the chunk). */
+    public static void roadDamageTo(ServerPlayer player, com.antaurora.apofirstlight.road.RoadDamagePacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Earthwork A1: a chunk's height field to one player (it starts tracking the chunk). */

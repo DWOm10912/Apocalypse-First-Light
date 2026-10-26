@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:rock_salt",
+  "density_kg_m3": 2160,
+  "strike_litres": 85,
+  "boulder_look": "shale",
+  "anchor": false,
+  "stone": "apocalypse_firstlight:rock_salt_lump"
+}

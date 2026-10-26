@@ -22,20 +22,21 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Round point shovel (docs/gameplay/sandbox_v1_design.md 5, docs/worldgen/earthwork_a2.md 4): 1.45 m over all, a pressed
- * steel blade 0.22 x 0.30 m on an ash handle, 2.2 kg (item_mass). Its load is a {@link BulkHolder} in the stack's tag
- * (at most {@link #CAPACITY} quanta = 96.68 L); the work (dig, pour, scrape) is interaction/ShovelAction, started by
+ * Round point shovel (docs/gameplay/sandbox_v1_design.md 5, docs/worldgen/earthwork_a2.md 4): 1.6 m over all, a pressed
+ * steel blade 0.38 x 0.45 m on an ash handle with a D grip, 2.2 kg (item_mass). Its load is a {@link BulkHolder} in the
+ * stack's tag (at most {@link #CAPACITY} quanta = 296.88 L); the work (dig, pour, scrape) is interaction/ShovelAction, started by
  * client/ShovelClient. Creative only (no recipe before the recipe rework).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ShovelItem extends Item {
     /**
-     * The load a full blade carries (quanta): 396 x 0.244 L = 96.68 L, the least one scoop brush digs (Earthwork DIG_RADIUS,
-     * DIG_DEPTH). User 2026-10-21, after the first walk: about 100 L a stroke, so a canal is a few strokes a metre.
+     * The load a full blade carries (quanta): 1216 x 0.244 L = 296.88 L, the least one scoop brush digs (Earthwork
+     * DIG_RADIUS, DIG_DEPTH: 1217 to 1230 by where it lands). User 2026-10-22: the big shovel, about 300 L a stroke, thrown
+     * aside in the same stroke (it was 396, 96.68 L, poured by hand).
      */
-    public static final int CAPACITY = 396;
+    public static final int CAPACITY = 1216;
     /**
-     * The load's mass counted towards carried weight (grams) at most: a full blade is about 126 kg of topsoil (184 kg of mud), the cap
+     * The load's mass counted towards carried weight (grams) at most: a full blade is about 386 kg of topsoil (564 kg of mud), the cap
      * keeps it a heavy tool that never overloads (user 2026-10-21, docs/worldgen/earthwork_a2.md 4.1).
      */
     public static final long LOAD_MASS_CAP = 15_000;

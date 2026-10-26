@@ -95,6 +95,36 @@ public final class AflItems {
             () -> new Item(new Item.Properties().stacksTo(32)));
     public static final RegistryObject<Item> FLINT = ITEMS.register("flint",
             () -> new Item(new Item.Properties().stacksTo(16)));
+    // Road Mesh-ification P0 (docs/worldgen/road_mesh_damage_v1_design.md 6): a chunk of broken asphalt, what a dug road's
+    // wearing course drops (RoadSurfaceBlock#chunks); a material only (never a block, no recipe before the rework)
+    public static final RegistryObject<Item> ASPHALT_CHUNK = ITEMS.register("asphalt_chunk",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    // U3a-2 (docs/worldgen/underground_u3_rocks_ores_design.md 3.1): each rock's own stone, what a pick breaks off it and
+    // what its boulders and loose stones hold; materials (never made back into blocks; no recipe before the rework)
+    public static final RegistryObject<Item> GNEISS_STONE = ITEMS.register("gneiss_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> SCHIST_STONE = ITEMS.register("schist_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> SANDSTONE_STONE = ITEMS.register("sandstone_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> LIMESTONE_STONE = ITEMS.register("limestone_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> DOLOMITE_STONE = ITEMS.register("dolomite_stone",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> SHALE_SHARD = ITEMS.register("shale_shard",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> MARL_LUMP = ITEMS.register("marl_lump",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> ROCK_SALT_LUMP = ITEMS.register("rock_salt_lump",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    // U3b batch 1 raw ores (docs/worldgen/underground_u3_rocks_ores_design.md 6.4, 14): what an ore rock gives up when cut;
+    // the dressing chain (design 6.5) turns them into the concentrates; coal burns as it is
+    public static final RegistryObject<Item> COAL_LUMP = ITEMS.register("coal_lump", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> RAW_HEMATITE = ITEMS.register("raw_hematite", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> RAW_CHALCOPYRITE = ITEMS.register("raw_chalcopyrite", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> GOLD_QUARTZ = ITEMS.register("gold_quartz", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> RAW_GALENA = ITEMS.register("raw_galena", () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> RAW_SPHALERITE = ITEMS.register("raw_sphalerite", () -> new Item(new Item.Properties().stacksTo(16)));
     // Felling axe (2026-10-20, docs/gameplay/felling_axe_v1.md): fells trees and is a melee weapon; Creative only, no recipe
     public static final RegistryObject<Item> FELLING_AXE = ITEMS.register("felling_axe",
             com.antaurora.apofirstlight.item.FellingAxeItem::new);
@@ -237,6 +267,44 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.WOLFRAMITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> SPODUMENE_ORE = ITEMS.register("spodumene_ore",
             () -> new BlockItem(AflBlocks.SPODUMENE_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GRANITE_ROCK = ITEMS.register("granite",
+            () -> new BlockItem(AflBlocks.GRANITE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GNEISS_ROCK = ITEMS.register("gneiss",
+            () -> new BlockItem(AflBlocks.GNEISS_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SCHIST_ROCK = ITEMS.register("schist",
+            () -> new BlockItem(AflBlocks.SCHIST_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SANDSTONE_ROCK = ITEMS.register("sandstone",
+            () -> new BlockItem(AflBlocks.SANDSTONE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> LIMESTONE_ROCK = ITEMS.register("limestone",
+            () -> new BlockItem(AflBlocks.LIMESTONE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DOLOMITE_ROCK = ITEMS.register("dolomite",
+            () -> new BlockItem(AflBlocks.DOLOMITE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SHALE_ROCK = ITEMS.register("shale",
+            () -> new BlockItem(AflBlocks.SHALE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> MARL_ROCK = ITEMS.register("marl",
+            () -> new BlockItem(AflBlocks.MARL_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ROCK_SALT_ROCK = ITEMS.register("rock_salt",
+            () -> new BlockItem(AflBlocks.ROCK_SALT_ROCK.get(), new Item.Properties()));
+    // Natural ground N1: creative tab only (natural blocks are terrain)
+    public static final RegistryObject<Item> RED_SANDSTONE_ROCK = ITEMS.register("red_sandstone",
+            () -> new BlockItem(AflBlocks.RED_SANDSTONE_ROCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TOPSOIL = ITEMS.register("topsoil", () -> new BlockItem(AflBlocks.TOPSOIL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> MUD = ITEMS.register("mud", () -> new BlockItem(AflBlocks.MUD.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SAND = ITEMS.register("sand", () -> new BlockItem(AflBlocks.SAND.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RED_SAND = ITEMS.register("red_sand", () -> new BlockItem(AflBlocks.RED_SAND.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GRAVEL = ITEMS.register("gravel", () -> new BlockItem(AflBlocks.GRAVEL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CLAY = ITEMS.register("clay", () -> new BlockItem(AflBlocks.CLAY.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SNOW = ITEMS.register("snow", () -> new BlockItem(AflBlocks.SNOW.get(), new Item.Properties()));
+    public static final RegistryObject<Item> COAL_SEAM = ITEMS.register("coal_seam",
+            () -> new BlockItem(AflBlocks.COAL_SEAM.get(), new Item.Properties()));
+    public static final RegistryObject<Item> BANDED_IRON_FORMATION = ITEMS.register("banded_iron_formation",
+            () -> new BlockItem(AflBlocks.BANDED_IRON_FORMATION.get(), new Item.Properties()));
+    public static final RegistryObject<Item> QUARTZ_VEIN = ITEMS.register("quartz_vein",
+            () -> new BlockItem(AflBlocks.QUARTZ_VEIN.get(), new Item.Properties()));
+    public static final RegistryObject<Item> LEAD_ZINC_DOLOMITE = ITEMS.register("lead_zinc_dolomite",
+            () -> new BlockItem(AflBlocks.LEAD_ZINC_DOLOMITE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> COPPER_BRECCIA = ITEMS.register("copper_breccia",
+            () -> new BlockItem(AflBlocks.COPPER_BRECCIA.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -706,9 +774,9 @@ public final class AflItems {
             if (!kind.item()) continue;
             int stack = switch (kind) {
                 case HEADLIGHT_SIGN, NAME_PLATE, EMERGENCY_CABINET, STOP_SIGN, SIDE_ROAD_SIGN, CURVE_SIGN, DO_NOT_ENTER_SIGN, WRONG_WAY_SIGN,
-                     GUIDE_SIGN -> 1;
+                     GUIDE_SIGN, TRAIL_SIGN, CAVE_SIGN -> 1;
                 case LANE_SIGNAL -> 2;
-                case EGRESS_SIGN -> 8;
+                case EGRESS_SIGN, TRAIL_MARKER -> 8;
                 default -> 4;
             };
             out.put(kind, ITEMS.register(kind.id(), () -> new com.antaurora.apofirstlight.item.TunnelFixtureItem(

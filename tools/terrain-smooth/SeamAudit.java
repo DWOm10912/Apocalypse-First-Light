@@ -455,6 +455,63 @@ public final class SeamAudit {
         }
     }
 
+    // ---------------------------------------------------------------- odd faces (terrain rework R0, docs/worldgen/terrain_rework_v1_design.md 3.9)
+
+    /** Odd-face counts: tops seen, folds over 35 degrees, a lone corner 1/2 off the other three (beside turf of those), raised bands, slivers. */
+    static final int ODD_TOPS = 0, ODD_FOLDS = 1, ODD_LONE = 2, ODD_LONE_TURF = 3, ODD_RAISED = 4, ODD_SLIVERS = 5;
+    static final String[] ODD_NAMES = {"tops", "folds > 35 deg", "lone corner >= 1/2", "of them beside turf", "bands above the cell", "slivers < 0.002 m2"};
+    final int[] odd = new int[ODD_NAMES.length];
+
+    /**
+     * Counts the odd faces of every sloped natural top and road turf top at least margin columns inside (audit first): a top
+     * folded on its diagonal by more than 35 degrees, one corner half a block or more above or below the other three, a
+     * side band rising above its own cell (a standing triangle), a band thinner than 0.002 m2. A baseline, not a failure:
+     * the rework's merged height field (R2) must bring each to 0 or say why not. T-joints are not counted yet.
+     */
+    void oddFaces(int margin) {
+        for (int z = minZ + margin; z < minZ + d - margin; z++) for (int x = minX + margin; x < minX + w - margin; x++) {
+            Col C = col(x, z);
+            if (C.type != T_SMOOTH && C.type != T_TURF) continue;
+            float[] c = C.c;
+            odd[ODD_TOPS]++;
+            // the two triangles nw-sw-se and nw-se-ne (SmoothRules#surface; the turf model splits the same way)
+            double[] n1 = normal(0, c[0], 0, 0, c[2], 1, 1, c[3], 1), n2 = normal(0, c[0], 0, 1, c[3], 1, 1, c[1], 0);
+            double cos = (n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2]) / Math.sqrt((n1[0] * n1[0] + n1[1] * n1[1] + n1[2] * n1[2]) * (n2[0] * n2[0] + n2[1] * n2[1] + n2[2] * n2[2]));
+            if (Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, cos)))) > 35) odd[ODD_FOLDS]++;
+            float[] s = c.clone();
+            Arrays.sort(s);
+            if (s[3] - s[2] >= 0.5F - 1e-4F || s[1] - s[0] >= 0.5F - 1e-4F) {
+                odd[ODD_LONE]++;
+                boolean turfNear = false;
+                for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+                    Col n = col(x + dx, z + dz);
+                    if ((dx != 0 || dz != 0) && n != null && n.type == T_TURF) turfNear = true;
+                }
+                if (turfNear && C.type == T_SMOOTH) odd[ODD_LONE_TURF]++;
+            }
+            if (C.type != T_SMOOTH) continue;
+            for (int side = 0; side < 4; side++) {
+                int k0 = SIDE_CORNERS[side][0], k1 = SIDE_CORNERS[side][1];
+                float la0 = bandLow(C.g, side, k0), la1 = bandLow(C.g, side, k1), ua0 = c[k0], ua1 = c[k1];
+                double area = (Math.max(0, ua0 - la0) + Math.max(0, ua1 - la1)) / 2;
+                if (area <= 1e-6) continue;
+                if (ua0 > 1 + 1e-4F || ua1 > 1 + 1e-4F) odd[ODD_RAISED]++;
+                if (area < 0.002) odd[ODD_SLIVERS]++;
+            }
+        }
+    }
+
+    static double[] normal(double ax, double ay, double az, double bx, double by, double bz, double cx, double cy, double cz) {
+        double ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
+        return new double[]{uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx};
+    }
+
+    static String oddLine(int[] o) {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < o.length; i++) b.append(i == 0 ? "" : ", ").append(ODD_NAMES[i]).append(' ').append(o[i]);
+        return b.toString();
+    }
+
     void report(String label, Path outDir) throws IOException {
         Map<String, double[]> byKey = new TreeMap<>(), byMech = new TreeMap<>();
         for (Hole o : holes) {
@@ -582,11 +639,14 @@ public final class SeamAudit {
     static int suite() {
         double[] reliefs = {0.8, 3, 7}, slopes = {0.5, 1.0, 1.6}, rises = {-6, 0, 6}, angles = {0, 27}, offsets = {0, 1.2};
         int scenes = 0, bad = 0, total = 0;
+        int[] odd = new int[ODD_NAMES.length];
         long seed = 1;
         List<String> examples = new ArrayList<>();
         for (double relief : reliefs) for (double slope : slopes) for (double rise : rises) for (double angle : angles) for (double offset : offsets) {
             SeamAudit a = scene(seed++, relief, slope, rise, angle, offset);
             a.audit(3);
+            a.oddFaces(3);
+            for (int i = 0; i < odd.length; i++) odd[i] += a.odd[i];
             scenes++;
             if (a.holes.isEmpty()) continue;
             bad++;
@@ -595,6 +655,7 @@ public final class SeamAudit {
             for (Hole o : a.holes) if (examples.size() < 12)
                 examples.add(String.format(Locale.ROOT, "  %s: (%d,%d)%c gap %.3f %s | %s | %s", name, o.x, o.z, o.axis, o.maxGap, o.mech, o.key, o.detail));
         }
+        System.out.println("odd faces (rework R0 baseline, not a failure), " + scenes + " scenes: " + oddLine(odd));
         if (bad == 0) {
             System.out.println("seam audit: " + scenes + " synthetic earthworks scenes, 0 see-through holes");
             return 0;
@@ -609,6 +670,8 @@ public final class SeamAudit {
         SeamAudit a = new SeamAudit();
         a.load(Paths.get(args[0]));
         a.audit(3);
+        a.oddFaces(3);
+        System.out.println("odd faces: " + oddLine(a.odd));
         a.report(args.length > 1 ? args[1] : "area", Paths.get(args.length > 2 ? args[2] : "."));
     }
 }

@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#apocalypse_firstlight:entrance_rocks",
+  "features": "apocalypse_firstlight:entrance_rocks",
+  "step": "local_modifications"
+}

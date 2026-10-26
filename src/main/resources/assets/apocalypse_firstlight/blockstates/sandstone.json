@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/rock/sandstone_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

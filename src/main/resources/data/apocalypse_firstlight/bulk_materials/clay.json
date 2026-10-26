@@ -2,7 +2,7 @@
   "density_kg_m3": 1700,
   "repose_deg": 40,
   "excavation_deg": 70,
-  "block": "minecraft:clay",
+  "block": "apocalypse_firstlight:clay",
   "grip": 0.5,
   "sources": [
     "minecraft:clay"

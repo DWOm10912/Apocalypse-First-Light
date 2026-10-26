@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/rock_salt_lump"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/rock_salt_lump"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          20,
+          35,
+          -10
+        ],
+        "translation": [
+          0.1589,
+          0.9312,
+          1.8842
+        ],
+        "scale": [
+          2.2,
+          2.2,
+          2.2
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          -8,
+          40,
+          6
+        ],
+        "translation": [
+          1.2323,
+          1.1954,
+          2.7028
+        ],
+        "scale": [
+          1.7,
+          1.7,
+          1.7
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          1.705,
+          1.705,
+          1.705
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          2.984,
+          2.984,
+          2.984
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/rock_salt_lump"
+      }
+    }
+  }
+}

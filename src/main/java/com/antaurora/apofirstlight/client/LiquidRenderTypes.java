@@ -155,6 +155,21 @@ public final class LiquidRenderTypes extends RenderType {
                     .setWriteMaskState(COLOR_WRITE)
                     .createCompositeState(false));
 
+    /**
+     * Rock dust off a pick strike (FireFx#rockDust, 2026-10-24): as {@link #SMOKE} with the dust sheet
+     * (textures/effect/rock_dust: thin powdery haze with grit specks, tools/rock/build-rock-dust-sprites.mjs).
+     */
+    public static final RenderType DUST = RenderType.create("apocalypse_firstlight_rock_dust", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/rock_dust.png"), false, false))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
     /** Sparks off steel (FireFx): streaks along their flight (textures/effect/spark), emissive, added, no depth writes. */
     public static final RenderType SPARK = RenderType.create("apocalypse_firstlight_metal_spark", DefaultVertexFormat.NEW_ENTITY,
             VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()

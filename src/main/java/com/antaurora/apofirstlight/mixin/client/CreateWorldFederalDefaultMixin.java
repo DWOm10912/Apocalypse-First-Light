@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -21,8 +22,9 @@ import java.util.OptionalLong;
  * CreateWorldScreen#openFresh passes exactly minecraft:normal, a re-created world (createFromExisting) passes its own
  * type (flat, debug or none) and keeps its settings. setWorldType also replaces the dimensions, so the type the button
  * shows is the one the world gets. Every other type stays selectable with the button (superflat, r1, other mods' types).
- * Nothing changes when another mod already opened the screen on its own type, or when the federal preset is not in the
- * world-type list (a data pack took it out of #minecraft:normal).
+ * The preset is FederalPreset#DEFAULT (the deep prototype since 2026-10-25), else the shallow federal one. Nothing changes
+ * when another mod already opened the screen on its own type, or when neither is in the world-type list (a data pack took
+ * them out of #minecraft:normal).
  */
 @Mixin(WorldCreationUiState.class)
 public abstract class CreateWorldFederalDefaultMixin {
@@ -31,11 +33,13 @@ public abstract class CreateWorldFederalDefaultMixin {
                                            OptionalLong seed, CallbackInfo ci) {
         if (!FederalPreset.replacesDefault(preset)) return;
         WorldCreationUiState self = (WorldCreationUiState) (Object) this;
-        for (WorldCreationUiState.WorldTypeEntry entry : self.getNormalPresetList()) {
-            Holder<WorldPreset> holder = entry.preset();
-            if (holder != null && holder.is(FederalPreset.PRESET)) {
-                self.setWorldType(entry);
-                return;
+        for (ResourceKey<WorldPreset> want : List.of(FederalPreset.DEFAULT, FederalPreset.PRESET)) {
+            for (WorldCreationUiState.WorldTypeEntry entry : self.getNormalPresetList()) {
+                Holder<WorldPreset> holder = entry.preset();
+                if (holder != null && holder.is(want)) {
+                    self.setWorldType(entry);
+                    return;
+                }
             }
         }
     }

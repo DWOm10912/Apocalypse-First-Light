@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
  * <li>{@code boulder_cell}: the other cells the rock fills above the ground, and (placed by the earthwork, Earthwork#settle)
  * the buried cells a dig has bared.</li>
  * </ul>
+ * Both carry the rock it is of (R3, {@link #ROCK}): the root for the drawing, a cell for its particles.
  * Mining audit: not breakable by hand or any vanilla tool (strength -1, no drops, no mineable tag); only the pick mattock
  * strikes the rock (BoulderStrike), creative players remove it with the dev command. Pistons cannot move it. No outline
  * (terrainsmooth/client/SmoothOutline): rock is ground. Light never asks the index (the light engine's threads have no
@@ -50,6 +52,7 @@ public final class BoulderBlocks {
             CELL_ID = new ResourceLocation("apocalypse_firstlight", "boulder_cell");
     public static final IntegerProperty PIECE = IntegerProperty.create("piece", 0, BoulderData.NODES - 1);
     public static final IntegerProperty TURN = IntegerProperty.create("turn", 0, 3);
+    public static final EnumProperty<BoulderRock> ROCK = EnumProperty.create("rock", BoulderRock.class);
 
     private static Root root;
     private static Cell cell;
@@ -80,8 +83,12 @@ public final class BoulderBlocks {
         return root != null && (b == root || b == cell);
     }
 
-    public static BlockState rootState(int node, int turn) {
-        return root.defaultBlockState().setValue(PIECE, node).setValue(TURN, turn & 3);
+    public static BlockState rootState(int node, int turn, BoulderRock rock) {
+        return root.defaultBlockState().setValue(PIECE, node).setValue(TURN, turn & 3).setValue(ROCK, rock);
+    }
+
+    public static BlockState cellState(BoulderRock rock) {
+        return cell.defaultBlockState().setValue(ROCK, rock);
     }
 
     // ---------------------------------------------------------------------------------------------- collision
@@ -151,12 +158,12 @@ public final class BoulderBlocks {
     /** The anchor: the rock's identity. On the server it keeps the server's index and tells the clients. */
     public static final class Root extends Rock implements EntityBlock {
         Root() {
-            registerDefaultState(stateDefinition.any().setValue(PIECE, 0).setValue(TURN, 0));
+            registerDefaultState(stateDefinition.any().setValue(PIECE, 0).setValue(TURN, 0).setValue(ROCK, BoulderRock.GRANITE));
         }
 
         @Override
         protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-            builder.add(PIECE, TURN);
+            builder.add(PIECE, TURN, ROCK);
         }
 
         @Override
@@ -176,8 +183,17 @@ public final class BoulderBlocks {
         }
     }
 
-    /** A cell the rock fills (no state of its own). */
-    public static final class Cell extends Rock {}
+    /** A cell the rock fills (only its rock: the particles of whatever stands on it). */
+    public static final class Cell extends Rock {
+        Cell() {
+            registerDefaultState(stateDefinition.any().setValue(ROCK, BoulderRock.GRANITE));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+            builder.add(ROCK);
+        }
+    }
 
     /** The root's strikes so far (server only; saved with the chunk). */
     public static final class Hits extends BlockEntity {

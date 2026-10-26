@@ -64,8 +64,25 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.PICK_MATTOCK.get(), "pick_mattock", "pick_mattock_mesh", 0.0442);
             // Field stone (Rock R1a, tools/boulders/build-field-stone.mjs, 2026-10-21): the boulders' granite; 0.5 - height / 32
             bind(AflItems.FIELD_STONE.get(), "field_stone", "field_stone_mesh", 0.443338);
+            // Each rock's stone (U3a-2, the same generator, 2026-10-24): 0.5 - height / 32
+            bind(AflItems.GNEISS_STONE.get(), "gneiss_stone", "gneiss_stone_mesh", 0.444075);
+            bind(AflItems.SCHIST_STONE.get(), "schist_stone", "schist_stone_mesh", 0.463513);
+            bind(AflItems.SANDSTONE_STONE.get(), "sandstone_stone", "sandstone_stone_mesh", 0.444491);
+            bind(AflItems.LIMESTONE_STONE.get(), "limestone_stone", "limestone_stone_mesh", 0.440994);
+            bind(AflItems.DOLOMITE_STONE.get(), "dolomite_stone", "dolomite_stone_mesh", 0.442645);
+            bind(AflItems.SHALE_SHARD.get(), "shale_shard", "shale_shard_mesh", 0.485658);
+            bind(AflItems.MARL_LUMP.get(), "marl_lump", "marl_lump_mesh", 0.447311);
+            bind(AflItems.ROCK_SALT_LUMP.get(), "rock_salt_lump", "rock_salt_lump_mesh", 0.443647);
+            // The raw ores (U3b batch 1, the same generator on the ore rocks' sprites, 2026-10-24): 0.5 - height / 32
+            bind(AflItems.COAL_LUMP.get(), "coal_lump", "coal_lump_mesh", 0.450015);
+            bind(AflItems.RAW_HEMATITE.get(), "raw_hematite", "raw_hematite_mesh", 0.471257);
+            bind(AflItems.RAW_CHALCOPYRITE.get(), "raw_chalcopyrite", "raw_chalcopyrite_mesh", 0.457635);
+            bind(AflItems.GOLD_QUARTZ.get(), "gold_quartz", "gold_quartz_mesh", 0.459505);
+            bind(AflItems.RAW_GALENA.get(), "raw_galena", "raw_galena_mesh", 0.45841);
+            bind(AflItems.RAW_SPHALERITE.get(), "raw_sphalerite", "raw_sphalerite_mesh", 0.459492);
             // Pebble and flint (Rock R1b, the same generator, 2026-10-21): 0.5 - height / 32
             bind(AflItems.PEBBLE.get(), "pebble", "pebble_mesh", 0.481284);
+            bind(AflItems.ASPHALT_CHUNK.get(), "asphalt_chunk", "asphalt_chunk_mesh", 0.448939);
             bind(AflItems.FLINT.get(), "flint", "flint_mesh", 0.485968);
             // Felling axe (equipment meshes, 2026-10-20): 0.5 - 25.92 / 32
             bind(AflItems.FELLING_AXE.get(), "felling_axe", "felling_axe_mesh", -0.31);

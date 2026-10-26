@@ -1,0 +1,9 @@
+{
+  "parent": "apocalypse_firstlight:block/ground/topsoil_tinted",
+  "textures": {
+    "top": "apocalypse_firstlight:block/ground/grass_1",
+    "side": "apocalypse_firstlight:block/ground/soil_1",
+    "bottom": "apocalypse_firstlight:block/ground/soil_1",
+    "particle": "apocalypse_firstlight:block/ground/soil_1"
+  }
+}

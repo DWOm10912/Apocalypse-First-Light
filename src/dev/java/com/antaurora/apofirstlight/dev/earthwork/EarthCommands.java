@@ -94,6 +94,17 @@ public final class EarthCommands {
             for (boolean b : u) if (b) still++;
             s.append(String.format(Locale.ROOT, ", first top y %d (%s), skin %.3f .. %.3f, %d / 25 vertices undisturbed",
                     e.top0(col), e.topState(col), EarthGrid.min(h) / (double) EarthGrid.Q, EarthGrid.max(h) / (double) EarthGrid.Q, still));
+            // Rock R2: the hard floor, the pick's rock limit, the loose earth at the column's middle vertex
+            int mid = h.length / 2, loose = 0, m = -1;
+            EarthChunk o = Earthwork.get(level, (bx * EarthGrid.PER_BLOCK + 2) >> 6, (bz * EarthGrid.PER_BLOCK + 2) >> 6);
+            if (o != null) {
+                int vi = EarthGrid.vertex((bx * EarthGrid.PER_BLOCK + 2) & 63, (bz * EarthGrid.PER_BLOCK + 2) & 63);
+                loose = o.loose(vi);
+                m = loose > 0 ? o.mat(vi) : -1;
+            }
+            s.append(String.format(Locale.ROOT, ", floor %.3f, rock limit %s, middle %.3f with %s loose%s",
+                    e.floor(col) / (double) EarthGrid.Q, e.rock(col) == EarthGrid.NONE ? "none" : String.format(Locale.ROOT, "%.3f", e.rock(col) / (double) EarthGrid.Q),
+                    h[mid] / (double) EarthGrid.Q, litres(loose), m < 0 ? "" : " (" + com.antaurora.apofirstlight.earthwork.BulkMaterials.table().get(m).id() + ")"));
         }
         int columns = 0, vertices = 0;
         long net = 0, loose = 0;

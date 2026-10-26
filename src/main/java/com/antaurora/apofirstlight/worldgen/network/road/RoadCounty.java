@@ -68,7 +68,7 @@ public final class RoadCounty {
      * The rules' version: part of the memo's key (bump it with any change to the zones, the search, the choice or the
      * design, or a remembered site outlives the rules that chose it).
      */
-    public static final String RULES = "g3.4";
+    public static final String RULES = "g3.5";
 
     /** Where the chosen site is remembered between builds (#plan); NONE: nowhere. */
     public interface Memo {
@@ -993,7 +993,7 @@ public final class RoadCounty {
      * station s on side) and square to the road to its edge E: the path and its first 8 m of straight Chaikin-smoothed (H
      * and that point fixed), resampled about every RoadProfile.DS; its profile the ground smoothed over +- DRIVE_SMOOTH,
      * pinned to H's height and the paved edge's over DRIVE_PIN, then held to DRIVE_GRADE (DRIVE_END_GRADE over the last
-     * DRIVE_STRAIGHT) from both ends. Null (why[0]) when it runs into water, falls outside DRIVE_MIN .. DRIVE_MAX or cannot
+     * DRIVE_STRAIGHT) from both ends. Null (why[0]) when it crosses the road, runs into water, falls outside DRIVE_MIN .. DRIVE_MAX or cannot
      * keep the grades.
      */
     private static Drive drive(RoadDesign d, double s, int side, int node, double run, DriveSearch ds, RoadNode h, RouteTerrain t, String[] why) {
@@ -1036,6 +1036,15 @@ public final class RoadCounty {
         }
         xs[n] = ep[0];
         zs[n] = ep[1];
+        // never across the county road itself (the search ran before it was designed): every point before E off the paved
+        // band on the mouth's side (2026-10-25: on one seed the path crossed and came back to the far edge)
+        for (int i = 0; i < n; i++) {
+            double[] l = d.local(xs[i], zs[i], edge + DRIVE_RUNS[DRIVE_RUNS.length - 1]);
+            if (l != null && l[0] >= 0 && l[0] <= d.length && l[1] * side < edge - 0.5) {
+                why[0] = String.format(Locale.ROOT, "across the road at %.0f m", along[i]);
+                return null;
+            }
+        }
         // never into water or its bank (the search kept BANK off; the smoothing cuts corners)
         double[] ground = new double[n + 1];
         for (int i = 0; i <= n; i++) {

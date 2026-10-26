@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:asphalt",
+    "apocalypse_firstlight:concrete_sidewalk",
+    "apocalypse_firstlight:concrete_pavement",
+    "apocalypse_firstlight:curb_sidewalk",
+    "apocalypse_firstlight:curb_grass",
+    "apocalypse_firstlight:edge_lane_white",
+    "apocalypse_firstlight:edge_lane_yellow",
+    "apocalypse_firstlight:white_lane_divider",
+    "apocalypse_firstlight:edge_lane_blue",
+    "apocalypse_firstlight:pavement_hatch",
+    "apocalypse_firstlight:pavement_crosshatch",
+    "apocalypse_firstlight:pavement_bar",
+    "apocalypse_firstlight:pavement_arrow_straight",
+    "apocalypse_firstlight:pavement_arrow_left",
+    "apocalypse_firstlight:pavement_arrow_right",
+    "apocalypse_firstlight:pavement_accessible_symbol"
+  ]
+}

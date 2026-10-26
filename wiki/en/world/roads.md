@@ -25,6 +25,20 @@ The six states are linked by two road classes. Pavement, guardrails, markings an
 - The natural hillside beyond the slopes is unchanged and still has caves and springs
 - Deep cuts are rock cuts: steep rock faces with a <V j="CrossSection.ROCK_BENCH" u="m" /> bench every <V j="CrossSection.ROCK_LIFT" u="m" /> of height. Shallow cuts keep their grass slopes
 - Beside the interstates, a very deep cut can still end in a lower sheer wall at its outer edge
+- <StatusTag s="verified" d="2026-10-25" /> The grass slopes beside a road follow the designed ditch and slopes, and only blend into the natural ground within <V j="RoadWorks.JOIN" u="m" /> of where they meet it: no block-high lumps in the ditch, and stray faces between neighbouring grass slopes are rare (a few remain at the edge of steep rock cuts)
+- <StatusTag s="verified" d="2026-10-25" /> Between two curves turning opposite ways, an undivided road's whole pavement tilts from one side over to the other, so no water lies along its centre line
+
+## Digging Up a Road
+
+<StatusTag s="verified" d="2026-10-25" /> Every new world has it
+
+- With a <ItemIcon id="pick_mattock" /> pick mattock in hand, press Use on the asphalt: each strike breaks off about <V j="RoadDamage.STRIKE_LITRES" u="L" /> of asphalt as <ItemIcon id="asphalt_chunk" /> asphalt chunks of about <V j="RoadSurfaceBlock.ASPHALT_CHUNK_LITRES" u="L" /> and <V d="item_mass/core_v1#items.apocalypse_firstlight:asphalt_chunk.unit_mass_kg" u="kg" /> each. Bare hands and other tools cannot dig a road
+- Asphalt breaks in 12.5 cm pieces: each strike knocks out an irregular piece where it lands, a hole widens from its rim, its edge is ragged, its sides are the asphalt's broken edge and its floor the aggregate base. A wheel drops into the hole, and you can stand in it
+- The walls of a whole-block hole (by command or explosion) show the layers: the asphalt course on top, the aggregate base below. Interstates and ramps have the thickest asphalt and county roads the thinnest; parking pads use <V j="CrossSection.PAD_ASPHALT" x="100" u="cm" />
+- Under the asphalt lies AFL gravel and backfill instead of vanilla gravel, cobblestone and dirt. The farmhouse driveway is a layer of round gravel
+- Road blocks are not in the creative inventory; they can only be given by command
+- Once all the asphalt of a block (1 m × 1 m) is broken out, that block becomes ordinary ground: angular gravel you can dig down into with a <ItemIcon id="round_point_shovel" /> round point shovel (round gravel subbase below it, then backfill) and pour back into. Its edge along pavement that still has asphalt stays put, so roadside asphalt is never undercut and left hanging. A block with only part of its asphalt broken out keeps a gravel floor the shovel cannot move: break out the rest of that block's asphalt first
+- <StatusTag s="planned" /> Water pooling in holes: the ground in a hole already sits at the asphalt's underside; it waits for physical water to be merged
 
 ## Tunnels
 
@@ -40,6 +54,7 @@ The six states are linked by two road classes. Pavement, guardrails, markings an
 - The county road is a two-lane country blacktop that runs past the Creek Valley Farmhouse. Each end joins Linden's streets or a state highway
 - Where it meets a state highway there is a T junction with a STOP sign on the county road
 - The farmhouse has a gravel driveway that follows the creek for <V j="RoadCounty.DRIVE_MIN" />–<V j="RoadCounty.DRIVE_MAX" u="m" /> and joins the county road from the side. There is no STOP sign at the driveway
+- <StatusTag s="verified" d="2026-10-25" /> The driveway reaches the county road from the farmhouse's side only; it never crosses the road and loops back to the far edge
 - The driveway is at most <V j="RoadCounty.DRIVE_GRADE" pct /> steep. The last stretch before the road is gentle, with a clear view both ways
 - If one end of the county road can't reach another road, it stops about <V j="RoadCounty.DEAD_END_RUN" u="m" /> past the driveway
 

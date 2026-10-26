@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "apocalypse_firstlight:block/ground/soil_3",
+    "side": "apocalypse_firstlight:block/ground/soil_3",
+    "bottom": "apocalypse_firstlight:block/ground/soil_3",
+    "particle": "apocalypse_firstlight:block/ground/soil_3"
+  }
+}

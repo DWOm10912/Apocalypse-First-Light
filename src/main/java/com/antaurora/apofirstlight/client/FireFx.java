@@ -8,9 +8,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.AABB;
@@ -42,6 +44,11 @@ import java.util.List;
  *   <li>Sparks: small soft glows (textures/effect/fire_glow), full bright and added, white-yellow cooling to red as they
  *   flutter up (a blast's fly out and fall).</li>
  *   <li>A fuel blast ({@link #blast}): a burst of black smoke and sparks, then a column of smoke for a few seconds.</li>
+ *   <li>Rock dust ({@link #rockDust}, 2026-10-24, a pick strike: RockStrikeParticles): its own sheet (textures/effect/rock_dust,
+ *   thin powdery haze with grit; the smoke's billows read as smoke, user) drawn after the smoke ({@link #renderDust}), in
+ *   the rock's powder colour, not buoyant, spreading, slowly settling, never greying; lit by the open side of the block it
+ *   hangs against (inside the struck rock's cell the light is 0: it had come out black); pick sparks
+ *   ({@link #pickSparks}): the sparks off steel, fewer and slower, a small flash.</li>
  *   <li>Sparks off steel ({@link #metalSparks}, 2026-10-05: in place of vanilla's lava pops): hot streaks
  *   (textures/effect/spark, emissive) drawn along their flight, thrown out of the struck face, falling and bouncing,
  *   white cooling to orange, gone in under a second; a short flash where the bullet struck.</li>
@@ -62,6 +69,9 @@ public final class FireFx {
     private static final class Puff {
         double x, y, z, ox, oy, oz, vx, vy, vz;
         float size, shade, peak, roll, oldRoll, spin, alpha, grey;
+        /** rock dust: the colour the grey is multiplied by, and settling instead of rising */
+        float tr = 1, tg = 1, tb = 1;
+        boolean dust;
         int life, age, sprite;
     }
 
@@ -166,6 +176,44 @@ public final class FireFx {
         p.spin = (r.nextFloat() - 0.5F) * 0.008F;
         p.sprite = r.nextInt(8);
         PUFFS.add(p);
+    }
+
+    /**
+     * Rock dust out of a pick strike at x, y, z, blown at vx, vy, vz (blocks a tick): {@code rgb} its colour (ARGB), it
+     * spreads, swells and slowly settles, never rising and never greying (RockStrikeParticles).
+     */
+    public static void rockDust(ClientLevel level, double x, double y, double z, double vx, double vy, double vz, float size, int rgb, float alpha, int life) {
+        if (PUFFS.size() >= MAX_PUFFS || !allowed(level.random)) return;
+        RandomSource r = level.random;
+        puff(x, y, z, vx, vy, vz, size * (0.85F + 0.3F * r.nextFloat()), 1, alpha, life + r.nextInt(Math.max(1, life / 3)), r);
+        Puff p = PUFFS.get(PUFFS.size() - 1);
+        p.dust = true;
+        p.tr = (rgb >> 16 & 255) / 255F;
+        p.tg = (rgb >> 8 & 255) / 255F;
+        p.tb = (rgb & 255) / 255F;
+    }
+
+    /**
+     * Sparks a pick strikes off quartz-bearing rock at {@code at}, thrown out along {@code out} (RockStrikeParticles):
+     * {@code count} short streaks, slower and fewer than a bullet's off steel, a small flash.
+     */
+    public static void pickSparks(ClientLevel level, Vec3 at, Vec3 out, int count) {
+        RandomSource r = level.random;
+        for (int i = 0; i < count && STREAKS.size() < MAX_STREAKS; i++) {
+            Vec3 d = out.scale(0.6 + 0.4 * r.nextDouble()).add(r.nextGaussian() * 0.6, r.nextGaussian() * 0.6 + 0.2, r.nextGaussian() * 0.6)
+                    .normalize().scale(0.12 + r.nextDouble() * 0.18);
+            Streak s = new Streak();
+            s.x = s.ox = at.x;
+            s.y = s.oy = at.y;
+            s.z = s.oz = at.z;
+            s.vx = d.x;
+            s.vy = d.y;
+            s.vz = d.z;
+            s.width = 0.005F + 0.004F * r.nextFloat();
+            s.life = 4 + r.nextInt(6);
+            STREAKS.add(s);
+        }
+        FLASHES.add(new Flash(at, 0.05F + 0.03F * r.nextFloat(), level.getGameTime()));
     }
 
     /** A spark at x, y, z flying at vx, vy, vz (blocks a tick); {@code gravity} negative rises. */
@@ -283,8 +331,17 @@ public final class FireFx {
             p.age++;
             p.vx = p.vx * 0.96 + windX + (r.nextDouble() - 0.5) * 0.002;
             p.vz = p.vz * 0.96 + windZ + (r.nextDouble() - 0.5) * 0.002;
-            p.vy = p.vy * 0.975 + 0.0012;   // buoyant: settles at about 0.05 a tick
-            if (p.vy > 0 && solid(level, above, p.x, p.y + p.vy + 0.2, p.z)) {
+            if (p.dust) {   // rock dust: blown out, slowed by the air, slowly settling, stopped by what it meets
+                p.vx *= 0.9;
+                p.vz *= 0.9;
+                p.vy = p.vy * 0.9 - 0.0005;
+                if (solid(level, above, p.x + p.vx, p.y + p.vy, p.z + p.vz)) {
+                    p.vx *= 0.3;
+                    p.vy = 0;
+                    p.vz *= 0.3;
+                }
+            } else p.vy = p.vy * 0.975 + 0.0012;   // buoyant: settles at about 0.05 a tick
+            if (!p.dust && p.vy > 0 && solid(level, above, p.x, p.y + p.vy + 0.2, p.z)) {
                 p.vy = 0;   // under a ceiling: it spreads instead
                 p.vx += (r.nextDouble() - 0.5) * 0.01;
                 p.vz += (r.nextDouble() - 0.5) * 0.01;
@@ -295,7 +352,7 @@ public final class FireFx {
             p.roll += p.spin;
             float t = (float) p.age / p.life, out = Mth.clamp((t - 0.35F) / 0.65F, 0.0F, 1.0F);
             p.alpha = p.peak * Math.min(1.0F, t / 0.12F) * (1.0F - out * out * (3.0F - 2.0F * out));
-            p.grey = p.shade + (0.5F - p.shade) * t * 0.6F;
+            if (!p.dust) p.grey = p.shade + (0.5F - p.shade) * t * 0.6F;
         }
         PUFFS.removeIf(p -> p.age >= p.life);
         for (Spark s : SPARKS) {
@@ -344,29 +401,53 @@ public final class FireFx {
 
     /** The smoke (LiquidRenderTypes.SMOKE: sorted back to front when drawn), relative to the camera. */
     static void renderSmoke(PoseStack pose, MultiBufferSource buffers, ClientLevel level, Camera camera, float partialTick) {
+        renderPuffs(pose, buffers.getBuffer(LiquidRenderTypes.SMOKE), level, camera, partialTick, false);
+    }
+
+    /** The rock dust (LiquidRenderTypes.DUST), after the smoke. */
+    static void renderDust(PoseStack pose, MultiBufferSource buffers, ClientLevel level, Camera camera, float partialTick) {
+        renderPuffs(pose, buffers.getBuffer(LiquidRenderTypes.DUST), level, camera, partialTick, true);
+    }
+
+    /** The light at a puff; in a solid block's cell (dust against the face it came off) its brightest open side's. */
+    private static int lightAt(ClientLevel level, BlockPos.MutableBlockPos at, double x, double y, double z) {
+        at.set(x, y, z);
+        if (!level.getBlockState(at).isSolidRender(level, at)) return LevelRenderer.getLightColor(level, at);
+        int bx = at.getX(), by = at.getY(), bz = at.getZ(), block = 0, sky = 0;
+        for (Direction d : Direction.values()) {
+            at.set(bx + d.getStepX(), by + d.getStepY(), bz + d.getStepZ());
+            if (level.getBlockState(at).isSolidRender(level, at)) continue;
+            int l = LevelRenderer.getLightColor(level, at);
+            block = Math.max(block, LightTexture.block(l));
+            sky = Math.max(sky, LightTexture.sky(l));
+        }
+        return LightTexture.pack(block, sky);
+    }
+
+    private static void renderPuffs(PoseStack pose, VertexConsumer out, ClientLevel level, Camera camera, float partialTick, boolean dust) {
         if (PUFFS.isEmpty()) return;
         Vec3 cam = camera.getPosition();
         Vector3f look = camera.getLookVector();
         Quaternionf view = camera.rotation();
-        VertexConsumer out = buffers.getBuffer(LiquidRenderTypes.SMOKE);
         Matrix4f matrix = pose.last().pose();
         Matrix3f normals = pose.last().normal();
         BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
         Quaternionf turn = new Quaternionf();
         Vector3f corner = new Vector3f();
         for (Puff p : PUFFS) {
-            if (p.alpha <= 0.01F) continue;
+            if (p.alpha <= 0.01F || p.dust != dust) continue;
             double x = Mth.lerp(partialTick, p.ox, p.x) - cam.x, y = Mth.lerp(partialTick, p.oy, p.y) - cam.y, z = Mth.lerp(partialTick, p.oz, p.z) - cam.z;
             float t = Mth.clamp((p.age + partialTick) / p.life, 0.0F, 1.0F), size = p.size * (1.0F + (GROWTH - 1.0F) * (1.0F - (1.0F - t) * (1.0F - t)));
             if (x * x + y * y + z * z > RANGE * RANGE || x * look.x() + y * look.y() + z * look.z() < -size) continue;   // far, or behind the camera
-            int light = LevelRenderer.getLightColor(level, at.set(x + cam.x, y + cam.y, z + cam.z));
-            int grey = Math.round(p.grey * 255), alpha = Math.round(p.alpha * 255);
+            int light = lightAt(level, at, x + cam.x, y + cam.y, z + cam.z);
+            int alpha = Math.round(p.alpha * 255), red = Math.round(p.grey * p.tr * 255), green = Math.round(p.grey * p.tg * 255),
+                    blue = Math.round(p.grey * p.tb * (p.dust ? 1 : 0.98F) * 255);
             float u0 = (p.sprite % 4) / 4.0F, u1 = u0 + 0.25F, v0 = (p.sprite / 4) / 2.0F, v1 = v0 + 0.5F;
             turn.set(view).rotateZ(Mth.lerp(partialTick, p.oldRoll, p.roll));
-            corner(out, matrix, normals, turn, corner, -1, -1, size, x, y, z, u1, v1, grey, alpha, light);
-            corner(out, matrix, normals, turn, corner, -1, 1, size, x, y, z, u1, v0, grey, alpha, light);
-            corner(out, matrix, normals, turn, corner, 1, 1, size, x, y, z, u0, v0, grey, alpha, light);
-            corner(out, matrix, normals, turn, corner, 1, -1, size, x, y, z, u0, v1, grey, alpha, light);
+            corner(out, matrix, normals, turn, corner, -1, -1, size, x, y, z, u1, v1, red, green, blue, alpha, light);
+            corner(out, matrix, normals, turn, corner, -1, 1, size, x, y, z, u1, v0, red, green, blue, alpha, light);
+            corner(out, matrix, normals, turn, corner, 1, 1, size, x, y, z, u0, v0, red, green, blue, alpha, light);
+            corner(out, matrix, normals, turn, corner, 1, -1, size, x, y, z, u0, v1, red, green, blue, alpha, light);
         }
     }
 
@@ -435,9 +516,9 @@ public final class FireFx {
     }
 
     private static void corner(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Quaternionf turn, Vector3f v, float cx, float cy, float size,
-                               double x, double y, double z, float u, float uv, int grey, int alpha, int light) {
+                               double x, double y, double z, float u, float uv, int red, int green, int blue, int alpha, int light) {
         v.set(cx, cy, 0.0F).rotate(turn).mul(size);
-        out.vertex(matrix, (float) (x + v.x()), (float) (y + v.y()), (float) (z + v.z())).color(grey, grey, Math.round(grey * 0.98F), alpha).uv(u, uv)
+        out.vertex(matrix, (float) (x + v.x()), (float) (y + v.y()), (float) (z + v.z())).color(red, green, blue, alpha).uv(u, uv)
                 .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normals, 0, 1, 0).endVertex();
     }
 

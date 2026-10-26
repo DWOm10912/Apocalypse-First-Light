@@ -48,6 +48,8 @@ public final class TerrainSmoothClient {
     static {
         TerrainSmooth.clientHooks = TerrainSmoothClient::blockChanged;
         Earthwork.clientHooks = TerrainSmoothClient::earthChanged;
+        com.antaurora.apofirstlight.earthwork.RockCarve.clientHooks = RockCarveMesh::changed;
+        com.antaurora.apofirstlight.earthwork.RockCarve.clientChanged = RockCarveMesh::around;
     }
 
     private TerrainSmoothClient() {}
@@ -112,13 +114,14 @@ public final class TerrainSmoothClient {
     static void blockChanged(int x, int y, int z, int oldSurface, int newSurface) {
         var mc = Minecraft.getInstance();
         if (!mc.isSameThread() || mc.level == null) return;
-        if (oldSurface == newSurface && !surfaceNear(mc.level, x, z, y - 2, y + 1)) return;   // deep under or high above every top around
+        if (oldSurface == newSurface && !surfaceNear(mc.level, x, z, y - 2, y + 2)) return;   // deep under or high above every top around
         int[] r = SmoothRules.affected(y, oldSurface, newSurface);
-        markDirty(x - 1, z - 1, x + 1, z + 1, r[0], r[1] + 2);   // + plants standing on the tops, tall ones two high
+        int R = SmoothRules.REACH;
+        markDirty(x - R, z - R, x + R, z + R, r[0], r[1] + 2);   // + plants standing on the tops, tall ones two high
     }
 
     private static boolean surfaceNear(ClientLevel level, int x, int z, int lo, int hi) {
-        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = -SmoothRules.REACH; dx <= SmoothRules.REACH; dx++) for (int dz = -SmoothRules.REACH; dz <= SmoothRules.REACH; dz++) {
             LevelChunk c = level.getChunkSource().getChunk((x + dx) >> 4, (z + dz) >> 4, ChunkStatus.FULL, false);
             if (c == null) continue;
             SmoothChunkData d = TerrainSmooth.peek(c, TerrainSmooth.CLIENT);
@@ -238,7 +241,7 @@ public final class TerrainSmoothClient {
             n.setWithOffset(pos, SIDE_DIRS[s]);
             BlockState neighbour = region.getBlockState(n);
             int k = TerrainSmooth.cell(neighbour);
-            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
+            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE || k == SmoothRules.ROCK) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
             // a graded_turf column one level down: its top line may cross this block's floor along the edge, where the
             // band's straight foot and the turf's edge part; the part below the band closes that (2026-10-15, C3.3a seams)
             else if ((k == SmoothRules.AIR || k == SmoothRules.COVER) && region.getBlockState(n.move(Direction.DOWN)).getBlock() instanceof GradedTurfBlock)

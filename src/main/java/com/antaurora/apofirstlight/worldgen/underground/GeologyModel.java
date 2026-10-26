@@ -44,6 +44,12 @@ public final class GeologyModel {
             {0, 0, 0, 0, 0, 80}};
     /** Basement top below Reg by province, m (6.1: S3 core at the surface, S5 below the deep world's floor). */
     static final double[] BASEMENT_DEPTH = {0, 300, 330, 280, 230, 650};
+    /**
+     * The shield edge north of the lake basin (U1 design 10: "北侧边缘基底较浅"; U3b design 14.9): from SHIELD_FROM m
+     * north of the basin's axis the basement rises over SHIELD_RAMP m to SHIELD_DEPTH m below Reg and the cover thins
+     * out onto it (edge wobble SHIELD_WOBBLE m).
+     */
+    static final double SHIELD_FROM = 500, SHIELD_RAMP = 900, SHIELD_DEPTH = 15, SHIELD_WOBBLE = 350;
     /** Loose ground and weathered rock by province, m (T1 = their sum, 6..15). */
     static final double[] SOIL = {1.5, 1.5, 7, 6, 3, 9}, WEATHERED = {5, 4.5, 3, 3, 5, 4};
     /** Water table below Hs by province, m (13.9: S5 high, S6 dry). */
@@ -65,6 +71,8 @@ public final class GeologyModel {
     /** One column's answers (the per-y work stays in {@link #rockAt(Column, double)}). */
     public static final class Column {
         public double x, z, h, hs, reg, soil, t1, waterTable, karstCover;
+        /** The shield edge's weight (0 off it, 1 where the basement is at the surface; {@link #shield}). */
+        public double shield;
         public RockType soilType;
         public boolean loess;
         public final double[] w = new double[PROVINCES];
@@ -154,6 +162,23 @@ public final class GeologyModel {
     /** Physiography weights into out[6], bilinear on the coarse grid (sum about 1). */
     public void province(double x, double z, double[] out) {
         for (int k = 0; k < PROVINCES; k++) out[k] = bilinear(phys, PROVINCES, k, x, z);
+    }
+
+    /** The shield edge's weight at (x, z) for a lake weight (SHIELD_FROM ..). */
+    public double shield(double x, double z, double wLake) {
+        if (wLake <= 0) return 0;
+        FederalTemplate.Anchor a = FederalTemplate.ANCHORS.get(LAKE);
+        double ux = a.bx() - a.ax(), uz = a.bz() - a.az(), len = Math.hypot(ux, uz);
+        ux /= len;
+        uz /= len;
+        double t = Math.max(0, Math.min(len, (x - a.ax()) * ux + (z - a.az()) * uz));
+        double px = x - a.ax() - ux * t, pz = z - a.az() - uz * t;
+        // distance from the axis, north (-z) positive; south of it no shield
+        double side = px * uz - pz * ux;
+        if (side <= 0) return 0;
+        double off = Math.hypot(px, pz) + SHIELD_WOBBLE * PlanNoise.fbm(noiseSeed, x, z, 2500, 2, 0.5, 760);
+        double s = Math.max(0, Math.min(1, (off - SHIELD_FROM) / SHIELD_RAMP));
+        return s * s * (3 - 2 * s) * Math.min(1, wLake * 1.5);
     }
 
     public int dominantProvince(double x, double z) {
@@ -258,6 +283,8 @@ public final class GeologyModel {
             wt += c.w[k] * WATER_TABLE[k];
             depthB += c.w[k] * BASEMENT_DEPTH[k];
         }
+        c.shield = shield(x, z, c.w[LAKE]);
+        depthB += (SHIELD_DEPTH - depthB) * c.shield;
         double slope = surface.slopeAt(x, z);
         soil *= Math.max(0.25, Math.min(1, 1 - slope * 1.5)) * (1 + 0.25 * PlanNoise.fbm(noiseSeed, x, z, 900, 2, 0.5, 721));
         c.soil = Math.max(0.5, soil);
@@ -294,7 +321,8 @@ public final class GeologyModel {
         c.tops[0] = b;
         double acc = b;
         for (int u = 0; u < UNIT.length; u++) {
-            acc += t[u] * scale;
+            // the cover thins out onto the shield
+            acc += t[u] * scale * (1 - c.shield);
             double g = u == 0 ? 0.5 : 1;
             c.tops[u + 1] = Math.max(c.tops[u], acc + f * g);
         }
@@ -354,6 +382,65 @@ public final class GeologyModel {
     }
 
     public RockType rockAt(double x, double y, double z) { return rockAt(column(x, z), y); }
+
+    /**
+     * The rock of every block of the column from y0 to y1 (out[y - y0] = {@link #rockAt(Column, double)} at the block's
+     * middle, y + 0.5, exactly: the same arithmetic in the same order), for the chunk pass (U3a GeologyPass): the faults'
+     * frames and the column's noises once per column instead of once per block.
+     */
+    public void rocks(Column c, int y0, int y1, RockType[] out) {
+        int nf = faults.size(), live = 0;
+        double[] d0 = new double[nf], tap = new double[nf], tan = new double[nf];
+        for (Fault f : faults) {
+            double ux = f.bx() - f.ax(), uz = f.bz() - f.az(), len = Math.hypot(ux, uz);
+            ux /= len;
+            uz /= len;
+            double px = c.x - f.ax(), pz = c.z - f.az();
+            double t = (px * ux + pz * uz) / len, d = -px * uz + pz * ux;
+            // a fault adds its throw only where the plane is crossed (d0 > the dip's run), never with d0 <= 0
+            if (d <= 0) continue;
+            d0[live] = d;
+            tap[live] = taper(f, t);
+            tan[live] = Math.tan(f.dip());
+            live++;
+        }
+        double schist = PlanNoise.fbm(noiseSeed, c.x, c.z, 1500, 2, 0.5, 740);
+        double seam = c.coalW > 0.3 ? (0.6 + 1.9 * (0.5 + 0.5 * PlanNoise.fbm(noiseSeed, c.x, c.z, 2500, 2, 0.5, 741))) * Math.min(1, (c.coalW - 0.3) * 2) : 0;
+        double[] tp = new double[UNIT.length + 1];
+        for (int yi = y0; yi <= y1; yi++) {
+            double y = yi + 0.5;
+            RockType r;
+            if (y > c.h) r = null;
+            else if (c.h - y < c.soil) r = c.loess && c.h - y < 1.5 ? RockType.LOESS : c.soilType;
+            else {
+                double off = 0;
+                for (int k = 0; k < live; k++) if (d0[k] - Math.max(0, c.reg - y) / tan[k] > 0) off += tap[k];
+                for (int i = 0; i < tp.length; i++) tp[i] = c.tops[i] - off;
+                r = stackRock(c, y, tp, schist, seam);
+            }
+            out[yi - y0] = r;
+        }
+    }
+
+    /** rockAt below the loose ground, the tops after the faults given (the column's two noises given). */
+    private static RockType stackRock(Column c, double y, double[] tp, double schist, double seam) {
+        if (y < tp[0]) {
+            double below = tp[0] - y;
+            if (below > 250) return RockType.GNEISS;
+            return schist > 0.35 ? RockType.SCHIST : RockType.GRANITE;
+        }
+        for (int u = 0; u < UNIT.length; u++) {
+            if (y < tp[u + 1]) {
+                if (u == COAL_MEASURES && c.coalW > 0.3) {
+                    double th = tp[u + 1] - tp[u], share = (y - tp[u]) / Math.max(1e-6, th);
+                    for (double s : SEAMS) if (Math.abs(share - s) * th < seam / 2) return RockType.COAL_SEAM;
+                }
+                return UNIT[u];
+            }
+        }
+        for (int u = UNIT.length - 1; u >= 0; u--) if (tp[u + 1] - tp[u] > 2) return UNIT[u];
+        return RockType.GRANITE;
+    }
 
     /** The first rock under the loose ground (the bedrock map). */
     public RockType bedrock(Column c) { return rockAt(c, c.h - c.soil - 0.5); }

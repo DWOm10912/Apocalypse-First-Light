@@ -2,7 +2,7 @@
   "density_kg_m3": 1700,
   "repose_deg": 38,
   "excavation_deg": 45,
-  "block": "minecraft:gravel",
+  "block": "apocalypse_firstlight:gravel[kind=round]",
   "grip": 0.6,
   "sources": [
     "minecraft:gravel"

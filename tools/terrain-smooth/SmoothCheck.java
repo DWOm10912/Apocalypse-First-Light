@@ -272,9 +272,9 @@ final class SmoothCheck {
     }
 
     /**
-     * Digging or placing one block, or putting a roof block high over a column, re-shapes only blocks within one column of
-     * it and inside SmoothRules#affected (2 below to 1 above the edit, and around the column's natural surface before and
-     * after): exactly what the game re-meshes and what drops the cached slopes.
+     * Digging or placing one block, or putting a roof block high over a column, re-shapes only blocks within
+     * SmoothRules#REACH columns of it and inside SmoothRules#affected (2 below to 2 above the edit, and around the column's
+     * natural surface before and after): exactly what the game re-meshes and what drops the cached slopes.
      */
     static void edits(World t, int mode, int[] a) {
         Random r = new Random(99 + mode);
@@ -300,14 +300,17 @@ final class SmoothCheck {
                 if (before[q] == after[q]) continue;
                 changedTotal++;
                 int dx = q % 7 - 3, dz = q / 7 - 3, yb = (int) (Math.min(before[q] >>> 50, after[q] >>> 50)) - 1;   // that block's level
-                if (Math.abs(dx) > 1 || Math.abs(dz) > 1 || yb < range[0] || yb > range[1]) outside++;
+                if (Math.abs(dx) > SmoothRules.REACH || Math.abs(dz) > SmoothRules.REACH || yb < range[0] || yb > range[1]) {
+                    if (outside++ < 6) System.out.printf(Locale.ROOT, "  outside: %s at dx %d dz %d level %d (edit level %d, affected %d..%d, surface %d -> %d, ground %d -> %d)%n",
+                            kind == 2 ? "roof" : kind == 0 ? "dig" : "place", dx, dz, yb, ey, range[0], range[1], oldSurface, t.surface(x, z), old, t.h[k]);
+                }
             }
             t.h[k] = old;
             t.roof[k] = Integer.MIN_VALUE;
             edits++;
         }
-        require(outside == 0, "mode " + mode + ": an edit re-shapes only blocks within 1 column and SmoothRules.affected (" + outside + " outside)");
-        System.out.printf(Locale.ROOT, "mode %s edits: %d digs / placements / roofs (%d roofs), %d tops re-shaped in total, all within x/z +-1 and the affected levels%n",
+        require(outside == 0, "mode " + mode + ": an edit re-shapes only blocks within SmoothRules.REACH columns and SmoothRules.affected (" + outside + " outside)");
+        System.out.printf(Locale.ROOT, "mode %s edits: %d digs / placements / roofs (%d roofs), %d tops re-shaped in total, all within x/z +-REACH and the affected levels%n",
                 mode == SmoothRules.MODE_A ? "A" : "B", edits, roofs, changedTotal);
     }
 
@@ -455,14 +458,15 @@ final class SmoothCheck {
                 int a = x - g.x0, b = z - g.z0, old = surface[a][b], now = g.surface(x, z);
                 surface[a][b] = now;
                 boolean near = false;
-                for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+                int R = SmoothRules.REACH;
+                for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) {
                     int s = surface[a + dx][b + dz];
-                    if (s != SmoothRules.NO_SURFACE && s >= y - 2 && s <= y + 1) near = true;
+                    if (s != SmoothRules.NO_SURFACE && s >= y - 2 && s <= y + 2) near = true;
                 }
                 if (old == now && !near) continue;
                 int[] range = SmoothRules.affected(y, old, now);
-                for (int sx = (x - 1) >> 4; sx <= (x + 1) >> 4; sx++) for (int sy = Math.floorDiv(range[0], 16); sy <= Math.floorDiv(range[1] + 2, 16); sy++)
-                    for (int sz = (z - 1) >> 4; sz <= (z + 1) >> 4; sz++) marked.add(section(sx, sy, sz));
+                for (int sx = (x - R) >> 4; sx <= (x + R) >> 4; sx++) for (int sy = Math.floorDiv(range[0], 16); sy <= Math.floorDiv(range[1] + 2, 16); sy++)
+                    for (int sz = (z - R) >> 4; sz <= (z + R) >> 4; sz++) marked.add(section(sx, sy, sz));
             }
             long[] after = render(g);
             craters++;

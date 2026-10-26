@@ -9,14 +9,18 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -33,24 +37,66 @@ public final class BoulderWorld {
      * the number of rocks placed. Above the ground it takes any cell (a dev command and worldgen pick the site), below only
      * open cells (the rest stays the soil the rock is buried in).
      */
-    public static int place(ServerLevel level, int form, BlockPos origin, int turn) {
+    public static int place(ServerLevel level, int form, BlockPos origin, int turn, BoulderRock rock) {
         var f = BoulderData.get().forms[form];
         Earthwork.quietly(() -> {
             for (int top : f.top) {
                 var n = BoulderData.node(top);
                 BlockPos anchor = at(origin, turn, n.ax, n.ay, n.az);
-                level.setBlock(anchor, BoulderBlocks.rootState(n.index, turn), Block.UPDATE_ALL);
+                level.setBlock(anchor, BoulderBlocks.rootState(n.index, turn, rock), Block.UPDATE_ALL);
                 resetHits(level, anchor);
                 for (var c : n.cellList) {
                     BlockPos p = at(origin, turn, c.x, c.y, c.z);
                     if (p.equals(anchor)) continue;
                     BlockState s = level.getBlockState(p);
                     if (BoulderBlocks.isBoulder(s) && s.getBlock() == BoulderBlocks.root()) continue;   // another rock's root
-                    if (c.y >= 0 || Earthwork.open(s)) level.setBlock(p, BoulderBlocks.cell().defaultBlockState(), Block.UPDATE_ALL);
+                    if (c.y >= 0 || Earthwork.open(s)) level.setBlock(p, BoulderBlocks.cellState(rock), Block.UPDATE_ALL);
                 }
             }
         });
         return f.top.length;
+    }
+
+    /**
+     * Worldgen (underground design 22.7, EntranceRocksFeature): a form at an origin cell, turned, written within the 3 x 3
+     * chunks round chunk; null when it stands, else why not, before a block is written. Its cells take the open cells; a
+     * cell the ground fills stays ground (the rock sits into a slope, as the buried cells do), but no more than 2 in 5 of
+     * those over the form's ground; an open cell under it needs solid ground below (two open ones: it stands over a
+     * hollow). Never into water, a block entity or another rock. Cells first, the roots last.
+     */
+    public static String generate(WorldGenLevel level, ChunkPos chunk, int form, BlockPos origin, int turn, BoulderRock rock) {
+        var f = BoulderData.get().forms[form];
+        Map<BlockPos, BlockState> out = new LinkedHashMap<>();
+        List<BlockPos> roots = new ArrayList<>();
+        int over = 0, buried = 0;
+        for (int top : f.top) {
+            var n = BoulderData.node(top);
+            BlockPos anchor = at(origin, turn, n.ax, n.ay, n.az);
+            roots.add(anchor);
+            for (var c : n.cellList) {
+                BlockPos p = at(origin, turn, c.x, c.y, c.z);
+                if (Math.abs((p.getX() >> 4) - chunk.x) > 1 || Math.abs((p.getZ() >> 4) - chunk.z) > 1) return "past the chunks it may write";
+                if (level.isOutsideBuildHeight(p)) return "outside the build height";
+                BlockState s = level.getBlockState(p);
+                if (!s.getFluidState().isEmpty()) return "into water";
+                if (BoulderBlocks.isBoulder(s)) return "into another rock";
+                if (s.hasBlockEntity()) return "into a block entity";
+                boolean open = Earthwork.open(s) || s.canBeReplaced();
+                if (c.y >= 0) {
+                    over++;
+                    if (!open) buried++;
+                } else if (open) {
+                    BlockState under = level.getBlockState(p.below());
+                    if (Earthwork.open(under) || under.canBeReplaced() || !under.getFluidState().isEmpty()) return "over a hollow";
+                }
+                if (open) out.putIfAbsent(p, BoulderBlocks.cellState(rock));
+            }
+            out.put(anchor, BoulderBlocks.rootState(n.index, turn, rock));
+        }
+        if (buried * 5 > over * 2) return "into the ground";
+        for (var e : out.entrySet()) if (!roots.contains(e.getKey())) level.setBlock(e.getKey(), e.getValue(), Block.UPDATE_CLIENTS);
+        for (BlockPos r : roots) level.setBlock(r, out.get(r), Block.UPDATE_CLIENTS);
+        return null;
     }
 
     /** A form cell's world position for a form placed at origin, turned. */
@@ -83,7 +129,7 @@ public final class BoulderWorld {
             for (int child : r.node.children) {
                 var n = BoulderData.node(child);
                 BlockPos a = r.world(n.ax, n.ay, n.az);
-                level.setBlock(a, BoulderBlocks.rootState(n.index, r.turn), Block.UPDATE_ALL);
+                level.setBlock(a, BoulderBlocks.rootState(n.index, r.turn, r.rock), Block.UPDATE_ALL);
                 resetHits(level, a);
                 roots.add(a);
             }
@@ -94,7 +140,7 @@ public final class BoulderWorld {
                     BlockState s = level.getBlockState(p);
                     if (s.getBlock() == BoulderBlocks.cell()) continue;
                     if (had.contains(p) || c.y >= 0 && Earthwork.open(s))
-                        level.setBlock(p, BoulderBlocks.cell().defaultBlockState(), Block.UPDATE_ALL);
+                        level.setBlock(p, BoulderBlocks.cellState(r.rock), Block.UPDATE_ALL);
                 }
             for (BlockPos p : old) clearIfEmpty(level, p, roots);
         });
@@ -130,7 +176,7 @@ public final class BoulderWorld {
         int pebbles = level.random.nextInt(4);   // and 0-3 pebbles (design 3.4, Rock R1b)
         for (int i = 0; i < stones + (pebbles > 0 ? 1 : 0); i++) {
             ItemEntity e = new ItemEntity(level, drop.x, drop.y, drop.z,
-                    i < stones ? new ItemStack(AflItems.FIELD_STONE.get()) : new ItemStack(AflItems.PEBBLE.get(), pebbles));
+                    i < stones ? new ItemStack(com.antaurora.apofirstlight.earthwork.RockTypes.stone(r.rock)) : new ItemStack(AflItems.PEBBLE.get(), pebbles));
             e.setDeltaMovement((level.random.nextDouble() - 0.5) * 0.15, 0.15, (level.random.nextDouble() - 0.5) * 0.15);
             e.setDefaultPickUpDelay();
             level.addFreshEntity(e);
@@ -145,9 +191,9 @@ public final class BoulderWorld {
         BlockState s = level.getBlockState(p);
         if (!BoulderBlocks.isBoulder(s) && !s.isAir()) return;
         if (s.getBlock() == BoulderBlocks.root()) return;   // another rock's root
-        boolean filled = BoulderEarth.rock(level, p);
-        if (filled && s.getBlock() != BoulderBlocks.cell()) level.setBlock(p, BoulderBlocks.cell().defaultBlockState(), Block.UPDATE_ALL);
-        else if (!filled && !s.isAir()) level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        BoulderRock filled = BoulderEarth.rockAt(level, p);
+        if (filled != null && s.getBlock() != BoulderBlocks.cell()) level.setBlock(p, BoulderBlocks.cellState(filled), Block.UPDATE_ALL);
+        else if (filled == null && !s.isAir()) level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
     }
 
     private static void resetHits(ServerLevel level, BlockPos p) {
@@ -161,8 +207,8 @@ public final class BoulderWorld {
         int depth = 0;
         for (int p = n.parent; p >= 0; p = BoulderData.node(p).parent) depth++;
         String form = BoulderData.get().forms[n.form].id;
-        return String.format(java.util.Locale.ROOT, "%s node %d (stage %d), %.2f m3, %d / %d strikes, %s, turn %d, root %d %d %d",
-                form, n.index, depth, n.volume, hits, n.strikes, n.leaf() ? "breaks into " + n.stones + " field stones"
+        return String.format(java.util.Locale.ROOT, "%s %s node %d (stage %d), %.2f m3, %d / %d strikes, %s, turn %d, root %d %d %d",
+                r.rock.id, form, n.index, depth, n.volume, hits, n.strikes, n.leaf() ? "breaks into " + n.stones + " field stones"
                         : "splits into " + n.children.length + " pieces", r.turn, r.x, r.y, r.z);
     }
 }

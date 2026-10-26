@@ -301,6 +301,8 @@ cd "D:/Minecraft Modding/AFL-federal-worldgen-v1" && ./gradlew.bat runClient --o
 
 ### 12.2 默认世界（现在的行为）
 
+> **2026-10-25 起默认是深层世界**（用户在合并 B 和 C 时说："改为深层默认"）：新建世界和专用服务器的缺省 `level-type` 换成 `apocalypse_firstlight:federal_deep_proto`（Y −256..319，规划洞穴，见 [地下设计](underground_geology_caves_v0_design.md) 第 20 节），界面名改成 **"AFL 联邦六州" / "AFL Federation"**；原来的 `federal_experimental` 还能在按钮里选，改名 **"AFL 联邦六州（普通深度）" / "AFL Federation (Standard Depth)"**。实现：`FederalPreset.DEFAULT = DEEP_PRESET`，`CreateWorldFederalDefaultMixin` 先找 `DEFAULT`、找不到再找普通深度的；标签 `#minecraft:normal` 里深层排在前面。GameTest 服务器照旧用 r1。下表和下面几条是 2026-10-14 的记录，"联邦"现在指深层预设。已有世界不变。编译通过，**没进游戏看过新建世界界面**。
+
 | 情况 | 行为 | 实现 |
 |---|---|---|
 | 单人"创建新世界" | 界面一打开就选中 **AFL 联邦六州**（`apocalypse_firstlight:federal_experimental`），主世界维度也一起换成联邦的，直接按"创建"就是联邦世界 | `mixin/client/CreateWorldFederalDefaultMixin`：`WorldCreationUiState` 构造末尾，只当传进来的默认类型正好是 `minecraft:normal`（原版 `CreateWorldScreen.openFresh` 就是这样传的）时，用 `setWorldType` 换成联邦（会同时换维度） |

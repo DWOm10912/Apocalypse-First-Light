@@ -189,13 +189,13 @@ node tools/build-equipment-meshes-v1.mjs [id ...] --preview DIR 只把输出写�
 
 玩法、动作、材料见 [土方 A2：铲子](../worldgen/earthwork_a2.md)。这里只记生成和渲染。
 
-- **生成**：`tools/build-round-point-shovel-v1.mjs`（走 `build-material-meshes-v1.mjs` 的 `bake`），真实尺寸，1 px = 62.5 mm：全长 1.52 m（24.042 px），铲头 0.34 × 0.42 m（大号圆头铲：用户 2026-10-21 嫌原来 0.22 × 0.30 m 的像园艺铲），和把的夹角 25°，40 mm 白蜡木把。
-  - 部件：`blade`（带凹弧的冲压钢铲头）、`step_l` / `step_r`（踩脚折边）、`frog`（背面加强脊）、`socket`、`rivet`、`handle`，加上 4 档土堆 `load_1` .. `load_4`。
-  - 1813 个三角面，共面 0，每像素 18 个纹素，`verticalOffset` -0.251321（`ShovelItemRenderer.VERTICAL_OFFSET` 同步）；LabPBR 贴图集 `round_point_shovel_mesh` + `_s` + `_n`。
+- **生成**：`tools/build-round-point-shovel-v1.mjs`（走 `build-material-meshes-v1.mjs` 的 `bake`），真实尺寸，1 px = 62.5 mm：全长 1.48 m（23.402 px，到 D 形把手顶；2026-10-22 以前是 1.52 m 的直把，24.042 px），铲头 0.34 × 0.42 m（大号圆头铲：用户 2026-10-21 嫌原来 0.22 × 0.30 m 的像园艺铲），和把的夹角 25°，40 mm 白蜡木把。
+  - 部件：`blade`（带凹弧的冲压钢铲头）、`step_l` / `step_r`（踩脚折边）、`frog`（背面加强脊）、`socket`、`rivet`、`handle`、`ferrule`（把顶钢箍）、`d_grip`（D 形把手：两根 25 mm 的臂和一根 32 mm 的横杆，`sweepXY` 沿 x-y 平面的路径扫出来，里面宽 115 mm），加上 4 档土堆 `load_1` .. `load_4`。
+  - 2329 个三角面（加 D 形把手以前 1813），共面 0，每像素 18 个纹素，`verticalOffset` -0.23132（以前 -0.251321；`ShovelItemRenderer.VERTICAL_OFFSET` 同步）；新点 `hang`（横杆下沿，挂工具架用）；LabPBR 贴图集 `round_point_shovel_mesh` + `_s` + `_n`。
   - 可编辑源 `src/main/blockbench/round_point_shovel.bbmodel`。
 - **手持**：按"手持适配规则"从握点 `grip` 算 `display`：第三人称右手比例 1.0，第一人称 0.85、斜转 20°（原来 0.9 / 0.55）。脚本离线打印铲尖和把顶相对拳头握点的位置。
 - **图标**：同一个模型渲染（不带土堆），GUI 视角斜 45°。
-- **渲染**：`client/ShovelItemRenderer` 画网格，再按装的量画一档土堆，按材料上色。
+- **渲染**：`client/ShovelItemRenderer` 画网格，再按装的量画一档土堆，按材料上色。工具架上用 `drawEmpty`（只画固定部件，2026-10-22，挂法见 [土方 A2](../worldgen/earthwork_a2.md) 4.3 节）。
 - **检查**：`node tools/build-round-point-shovel-v1.mjs --check` 通过；`compileJava` 通过；用户 2026-10-21 实机 PASS（随 A2）。
 
 ## 2026-10-21 新增：鹤嘴锄 `pick_mattock`、石块 `field_stone`（Rock R1a，土方分支）

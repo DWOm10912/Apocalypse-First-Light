@@ -174,6 +174,7 @@ public final class RoadDesign {
         } else {
             laneLeft = section.runoff(tl, RoadProfile.DS);
             laneRight = section.runoff(tr, RoadProfile.DS);
+            if (!section.divided) CrossSection.noInvertedCrown(laneLeft, laneRight);
         }
         noPass = section.divided || section.oneWay ? new boolean[m] : noPassing(m);
     }

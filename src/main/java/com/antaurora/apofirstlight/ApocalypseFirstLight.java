@@ -57,6 +57,10 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.worldgen.lock.WorldgenLockConfig.SPEC, "apocalypse_firstlight-worldgen.toml");
+        // World Time V1: the day length in real minutes, per world (serverconfig), read when the server starts and on a save
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                com.antaurora.apofirstlight.time.AflTimeConfig.SPEC, "apocalypse_firstlight-time.toml");
         // Vanilla Survival Rework V1: the retirement switch (common config, loaded before data packs so recipe pruning can read it)
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON,

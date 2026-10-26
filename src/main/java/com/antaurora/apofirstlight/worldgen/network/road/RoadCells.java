@@ -75,9 +75,11 @@ public final class RoadCells {
     }
 
     /**
-     * Vertical asphalt faces (chunk-relative; gravel for the driveway) where a dug cell of this chunk meets a paved cell
-     * that is not dug, and where a cell of this chunk that is not dug meets an open cell-less neighbour (OPEN bits): from
-     * that cell's collision block bottom (its asphalt top) up to the pavement along the shared edge, facing the hole.
+     * Vertical faces (chunk-relative) where a dug cell of this chunk meets a paved cell that is not dug, and where a cell of
+     * this chunk that is not dug meets an open cell-less neighbour (OPEN bits): from that cell's collision block bottom up
+     * to the pavement along the shared edge, facing the hole. The road's layers (P0, 2026-10-25, docs
+     * road_mesh_damage_v1_design.md 3): its asphalt (CrossSection#asphaltDepth) under the pavement, the aggregate base
+     * (GRAVEL) below it; the driveway gravel all the way.
      */
     public static List<RoadMesh.Triangle> walls(List<RoadDesign> roads, Map<Integer, Cell> cells, BitSet dug, int cx, int cz) {
         return walls(null, roads, cells, dug, cx, cz);
@@ -85,6 +87,15 @@ public final class RoadCells {
 
     /** #walls with the works: the pavement's height there from a junction pad too (RoadWorks#paveTop). */
     public static List<RoadMesh.Triangle> walls(RoadWorks works, List<RoadDesign> roads, Map<Integer, Cell> cells, BitSet dug, int cx, int cz) {
+        return walls(works, roads, cells, dug, cx, cz, null);
+    }
+
+    /**
+     * #walls; broken (null: none) tells the cells (index) whose asphalt is broken (road Mesh-ification P1, RoadDamageChunk):
+     * toward a dug cell their base's band only, the asphalt's faces along the sub-cells still there are RoadDamageMesh's.
+     */
+    public static List<RoadMesh.Triangle> walls(RoadWorks works, List<RoadDesign> roads, Map<Integer, Cell> cells, BitSet dug, int cx, int cz,
+                                                java.util.function.IntPredicate broken) {
         List<RoadMesh.Triangle> out = new ArrayList<>();
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         for (int bit = dug.nextSetBit(0); bit >= 0; bit = dug.nextSetBit(bit + 1)) {
@@ -117,18 +128,38 @@ public final class RoadCells {
                 if (Double.isNaN(ta) || Double.isNaN(tb)) continue;
                 double y = nb.y();
                 if (ta <= y && tb <= y) continue;
-                double t = RoadMesh.TEXTURE;
-                RoadMesh.Vertex p0 = new RoadMesh.Vertex(ax, y, az, 0, (Math.max(ta, y) - y) / t),
-                        p1 = new RoadMesh.Vertex(bx, y, bz, 1 / t, (Math.max(tb, y) - y) / t),
-                        p2 = new RoadMesh.Vertex(bx, Math.max(tb, y), bz, 1 / t, 0),
-                        p3 = new RoadMesh.Vertex(ax, Math.max(ta, y), az, 0, 0);
                 // facing into the hole: away from the neighbour
                 double nx = -dir[0], nz = -dir[1];
-                wall(out, mat, p0, p1, p2, nx, nz);
-                wall(out, mat, p0, p2, p3, nx, nz);
+                if (mat == RoadMesh.Material.GRAVEL) {
+                    band(out, mat, ax, az, bx, bz, y, y, ta, tb, nx, nz);
+                    continue;
+                }
+                double depth = d == null ? CrossSection.PAD_ASPHALT : d.section.asphaltDepth();
+                // the base up to the asphalt's underside, the asphalt over it
+                band(out, RoadMesh.Material.GRAVEL, ax, az, bx, bz, y, y, ta - depth, tb - depth, nx, nz);
+                if (!open && broken != null && broken.test(n)) continue;
+                band(out, mat, ax, az, bx, bz, Math.max(y, ta - depth), Math.max(y, tb - depth), ta, tb, nx, nz);
             }
         }
         return out;
+    }
+
+    /**
+     * One band of a wall along the edge (ax, az) - (bx, bz): from la, lb up to ha, hb at its two ends (nothing where a
+     * band's top is under its bottom), textured from its top down at the pavement's texture period.
+     */
+    static void band(List<RoadMesh.Triangle> out, RoadMesh.Material mat, double ax, double az, double bx, double bz,
+                             double la, double lb, double ha, double hb, double nx, double nz) {
+        ha = Math.max(ha, la);
+        hb = Math.max(hb, lb);
+        if (ha - la < 1e-4 && hb - lb < 1e-4) return;
+        double t = RoadMesh.TEXTURE;
+        RoadMesh.Vertex p0 = new RoadMesh.Vertex(ax, la, az, 0, (ha - la) / t),
+                p1 = new RoadMesh.Vertex(bx, lb, bz, 1 / t, (hb - lb) / t),
+                p2 = new RoadMesh.Vertex(bx, hb, bz, 1 / t, 0),
+                p3 = new RoadMesh.Vertex(ax, ha, az, 0, 0);
+        wall(out, mat, p0, p1, p2, nx, nz);
+        wall(out, mat, p0, p2, p3, nx, nz);
     }
 
     private static double top(RoadDesign d, double x, double z) {

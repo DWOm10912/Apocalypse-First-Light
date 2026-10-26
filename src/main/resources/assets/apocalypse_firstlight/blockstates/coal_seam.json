@@ -1,0 +1,68 @@
+{
+  "variants": {
+    "grade=lean": [
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_lean_mirrored",
+        "y": 270
+      }
+    ],
+    "grade=rich": [
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich",
+        "y": 270
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich_mirrored"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich_mirrored",
+        "y": 90
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich_mirrored",
+        "y": 180
+      },
+      {
+        "model": "apocalypse_firstlight:block/ore/coal_seam_rich_mirrored",
+        "y": 270
+      }
+    ]
+  }
+}

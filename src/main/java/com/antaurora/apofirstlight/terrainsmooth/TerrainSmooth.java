@@ -132,9 +132,24 @@ public final class TerrainSmooth {
     /** The overworld only. */
     public static boolean applies(Level level) { return level.dimension() == Level.OVERWORLD; }
 
-    /** GROUND (also the tag minecraft:snow_layer_can_survive_on, so snow stays on a sloped top: its face is no longer full). */
+    /** GROUND and the natural rocks (U3a): what the block models are wrapped for, once the blocks are registered. */
+    public static java.util.List<Block> groundBlocks() {
+        java.util.List<Block> out = new java.util.ArrayList<>(java.util.List.of(GROUND));
+        for (var r : com.antaurora.apofirstlight.registry.AflBlocks.NATURAL_ROCKS) out.add(r.get());
+        for (var r : com.antaurora.apofirstlight.registry.AflBlocks.ORE_ROCKS) out.add(r.get());   // U3b
+        for (var r : com.antaurora.apofirstlight.registry.AflBlocks.NATURAL_GROUND) out.add(r.get());   // natural ground N1
+        out.add(com.antaurora.apofirstlight.registry.AflBlocks.RED_SANDSTONE_ROCK.get());
+        return out;
+    }
+
+    /**
+     * GROUND and the natural rocks (U3a) (also the tag minecraft:snow_layer_can_survive_on, so snow stays on a sloped top:
+     * its face is no longer full).
+     */
     public static boolean ground(Block b) {
         return b == Blocks.GRASS_BLOCK || b == Blocks.DIRT || b == Blocks.COARSE_DIRT || b == Blocks.SAND || b == Blocks.GRAVEL || b == Blocks.STONE
+                || b instanceof com.antaurora.apofirstlight.block.NaturalRockBlock
+                || b instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock   // natural ground N1
                 || b == Blocks.PODZOL || b == Blocks.MUD || b == Blocks.CLAY
                 || b == Blocks.SNOW_BLOCK || b == Blocks.RED_SAND || b == Blocks.TERRACOTTA || b == Blocks.WHITE_TERRACOTTA || b == Blocks.ORANGE_TERRACOTTA
                 || b == Blocks.YELLOW_TERRACOTTA || b == Blocks.BROWN_TERRACOTTA || b == Blocks.RED_TERRACOTTA || b == Blocks.LIGHT_GRAY_TERRACOTTA;
@@ -142,7 +157,7 @@ public final class TerrainSmooth {
 
     /** A smoothed top's collision: the slope boxes; mud's sit SmoothShapes.MUD_SINK lower, as vanilla mud's (feet sink in a little). */
     static VoxelShape collision(Block block, long g) {
-        return block == Blocks.MUD ? SmoothShapes.sunk(g) : SmoothShapes.shape(g, true);
+        return block == Blocks.MUD || block instanceof com.antaurora.apofirstlight.ground.MudGroundBlock ? SmoothShapes.sunk(g) : SmoothShapes.shape(g, true);
     }
 
     /** SmoothRules cell code of a block state. */
@@ -157,6 +172,8 @@ public final class TerrainSmooth {
         // stones (R1b), which lie on it as a plant stands
         if (b instanceof BushBlock || b instanceof SnowLayerBlock || b instanceof RoadStructureBlock
                 || com.antaurora.apofirstlight.boulder.BoulderBlocks.isBoulder(s) || com.antaurora.apofirstlight.boulder.LooseStones.is(s)) return COVER;
+        // natural rock (U6 V3): its faces are RockRelief's Mesh, never a slope here
+        if (Earthwork.rock(b)) return ROCK;
         if (ground(b)) return NATURAL;
         if (s.is(BlockTags.LEAVES)) return LEAF;
         if (s.is(BlockTags.LOGS) || b instanceof VineBlock || b instanceof HugeMushroomBlock || b == Blocks.COCOA || b == Blocks.BEE_NEST) return TREE;
@@ -206,7 +223,7 @@ public final class TerrainSmooth {
         for (int y = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15); y >= bottom; y--) {
             int k = cell(chunk.getBlockState(pos.set(x, y, z)));
             if (skyward(k)) continue;
-            return k == NATURAL ? y : NO_SURFACE;
+            return k == NATURAL || k == ROCK ? y : NO_SURFACE;
         }
         return NO_SURFACE;
     }
@@ -325,11 +342,16 @@ public final class TerrainSmooth {
 
     /** Why the corners are not free (SmoothRules#notFree, development output), null when they are. */
     public static String notFree(Level level, int x, int y, int z) {
+        return notFree(level, x, y, z, false);
+    }
+
+    /** The same, walls allowed (SmoothRules#notFree(Cells, int, int, int, int, boolean): the foot of a natural step). */
+    public static String notFree(Level level, int x, int y, int z, boolean walls) {
         LevelCells c = CELLS.get();
         c.level = level;
         c.owner = owner(level);
         try {
-            return SmoothRules.notFree(c, MODE, x, y, z);
+            return SmoothRules.notFree(c, MODE, x, y, z, walls);
         } finally {
             c.reset();
         }
@@ -373,7 +395,11 @@ public final class TerrainSmooth {
 
     /** Hook (BlockStateBase#getCollisionShape, collision true / #getShape): the slope boxes, or null for the vanilla shape. */
     public static VoxelShape shape(Block block, BlockGetter getter, BlockPos pos, boolean collision) {
-        if (!anyCollides || !ground(block)) return null;
+        if (!ground(block)) return null;
+        // U3a-3 round 2 / U6: carved and worn rock collides and is aimed at as its sub-cells, whether or not the slopes collide
+        VoxelShape carved = com.antaurora.apofirstlight.earthwork.RockCarve.shape(block, getter, pos);
+        if (carved != null) return carved;
+        if (!anyCollides) return null;
         VoxelShape e = earth(block, getter, pos, collision);
         if (e != null) return e;
         long g = sloped(getter, pos);
@@ -401,6 +427,7 @@ public final class TerrainSmooth {
      * buried ground included, keeps the vanilla answer.
      */
     public static boolean notSuffocating(Block block, BlockGetter getter, BlockPos pos) {
+        if (ground(block) && com.antaurora.apofirstlight.earthwork.RockCarve.carved(block, getter, pos)) return true;
         return anyCollides && ground(block) && (sloped(getter, pos) >= 0 || earth(block, getter, pos, true) != null);
     }
 
@@ -446,6 +473,8 @@ public final class TerrainSmooth {
      */
     public static void changed(Level level, BlockPos pos) {
         Earthwork.blockChanged(level, pos);
+        com.antaurora.apofirstlight.earthwork.RockCarve.blockChanged(level, pos);
+        com.antaurora.apofirstlight.ground.GroundEvents.blockChanged(level, pos);
         Side side = side(level);
         if (!side.enabled() || !applies(level)) return;
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
@@ -460,7 +489,8 @@ public final class TerrainSmooth {
                 after = d.surface[i] = columnSurface(chunk, new BlockPos.MutableBlockPos(), x, z);
             }
         }
-        for (int cx = (x - 1) >> 4; cx <= (x + 1) >> 4; cx++) for (int cz = (z - 1) >> 4; cz <= (z + 1) >> 4; cz++) clearGeometry(level, side, cx, cz);
+        int reach = SmoothRules.REACH;
+        for (int cx = (x - reach) >> 4; cx <= (x + reach) >> 4; cx++) for (int cz = (z - reach) >> 4; cz <= (z + reach) >> 4; cz++) clearGeometry(level, side, cx, cz);
         ClientHooks hooks = clientHooks;
         if (hooks != null && level.isClientSide()) hooks.blockChanged(x, y, z, before, after);
     }

@@ -278,6 +278,8 @@ public final class FellingServer {
     /** Natural ground (rests a tree, is no obstacle). */
     static boolean natural(BlockState s) {
         return s.is(BlockTags.DIRT) || s.is(BlockTags.SAND) || s.is(BlockTags.BASE_STONE_OVERWORLD) || s.is(Blocks.GRAVEL) || s.is(Blocks.CLAY)
+                || s.getBlock() instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock
+                || s.getBlock() instanceof com.antaurora.apofirstlight.block.NaturalRockBlock
                 || s.is(Blocks.SNOW_BLOCK) || s.is(Blocks.SNOW) || s.is(BlockTags.ICE) || s.is(BlockTags.TERRACOTTA) || !s.getFluidState().isEmpty();
     }
 

@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.dev.earthwork;
 import com.antaurora.apofirstlight.boulder.BoulderBlocks;
 import com.antaurora.apofirstlight.boulder.BoulderData;
 import com.antaurora.apofirstlight.boulder.BoulderIndex;
+import com.antaurora.apofirstlight.boulder.BoulderRock;
 import com.antaurora.apofirstlight.boulder.BoulderWorld;
 import com.antaurora.apofirstlight.boulder.LooseStones;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -56,8 +57,10 @@ public final class RockCommands {
                 .requires(s -> !FMLEnvironment.production && s.hasPermission(2) && s.getEntity() instanceof ServerPlayer);
         c.then(Commands.literal("boulder").then(Commands.argument("form", StringArgumentType.word())
                 .suggests((x, b) -> SharedSuggestionProvider.suggest(Arrays.stream(BoulderData.get().forms).map(f -> f.id), b))
-                .executes(x -> boulder(x, -1))
-                .then(Commands.argument("turn", IntegerArgumentType.integer(0, 3)).executes(x -> boulder(x, IntegerArgumentType.getInteger(x, "turn"))))));
+                .executes(x -> boulder(x, -1, "granite"))
+                .then(Commands.argument("turn", IntegerArgumentType.integer(0, 3)).executes(x -> boulder(x, IntegerArgumentType.getInteger(x, "turn"), "granite"))
+                        .then(Commands.argument("rock", StringArgumentType.word())
+                                .executes(x -> boulder(x, IntegerArgumentType.getInteger(x, "turn"), StringArgumentType.getString(x, "rock")))))));
         c.then(Commands.literal("info").executes(RockCommands::info));
         c.then(Commands.literal("scatter").then(Commands.argument("radius", IntegerArgumentType.integer(1, 32))
                 .executes(x -> scatter(x, LooseStones.Kind.FIELD, 1 / 8F))
@@ -79,7 +82,7 @@ public final class RockCommands {
         return true;
     }
 
-    private static int boulder(CommandContext<CommandSourceStack> x, int turn) {
+    private static int boulder(CommandContext<CommandSourceStack> x, int turn, String rockId) {
         if (!(x.getSource().getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level) || !ready(x, player)) return 0;
         String id = StringArgumentType.getString(x, "form");
         int form = BoulderData.form(id);
@@ -93,9 +96,10 @@ public final class RockCommands {
         Vec3 at = hit.getLocation();
         BlockPos origin = BlockPos.containing(at.x, at.y + 0.05, at.z);
         int t = turn >= 0 ? turn : player.getDirection().get2DDataValue();
-        int pieces = BoulderWorld.place(level, form, origin, t);
+        BoulderRock rock = BoulderRock.of(rockId);
+        int pieces = BoulderWorld.place(level, form, origin, t, rock);
         x.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
-                "Boulder %s (%d piece%s) at %d %d %d, turn %d", id, pieces, pieces == 1 ? "" : "s", origin.getX(), origin.getY(), origin.getZ(), t)), true);
+                "Boulder %s %s (%d piece%s) at %d %d %d, turn %d", rock.id, id, pieces, pieces == 1 ? "" : "s", origin.getX(), origin.getY(), origin.getZ(), t)), true);
         return pieces;
     }
 
@@ -103,7 +107,7 @@ public final class RockCommands {
         if (!(x.getSource().getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return 0;
         if (!LooseStones.ready()) { x.getSource().sendFailure(Component.literal("Loose stones are not registered")); return 0; }
         int radius = IntegerArgumentType.getInteger(x, "radius");
-        int n = LooseStones.scatter(level, player.blockPosition(), radius, kind, flint);
+        int n = LooseStones.scatter(level, player.blockPosition(), radius, kind, flint, BoulderRock.GRANITE);
         x.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
                 "%d patch%s of %s stones within %d blocks, flint %.2f", n, n == 1 ? "" : "es", kind.getSerializedName(), radius, flint)), true);
         return n;

@@ -1,0 +1,8 @@
+{
+  "block": "apocalypse_firstlight:marl",
+  "density_kg_m3": 2200,
+  "strike_litres": 100,
+  "boulder_look": "limestone",
+  "anchor": false,
+  "stone": "apocalypse_firstlight:marl_lump"
+}

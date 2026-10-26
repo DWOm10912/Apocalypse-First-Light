@@ -218,6 +218,11 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> TREE_CHOP = simple("tree_chop");
     public static final RegistryObject<SoundEvent> TREE_CRACK = simple("tree_crack");
     public static final RegistryObject<SoundEvent> TREE_CRASH = simple("tree_crash");
+    // Pick strikes on rock (boulder/RockStrikeFx#sound; docs/gameplay/rock_strike_fx_v1.md 2): a strike by the rock's
+    // hardness, and on a block or boulder that goes, the chunk falling on top of it; cut from three Firefly takes
+    public static final RegistryObject<SoundEvent> PICK_STRIKE_HARD = simple("pick_strike_hard");
+    public static final RegistryObject<SoundEvent> PICK_STRIKE_SOFT = simple("pick_strike_soft");
+    public static final RegistryObject<SoundEvent> ROCK_BREAK = simple("rock_break");
     // Sawing at the workbench (client/workbench/WorkbenchWork): a push and a pull per stroke, cut from one Firefly take
     public static final RegistryObject<SoundEvent> HAND_SAW_PUSH = simple("hand_saw_push");
     public static final RegistryObject<SoundEvent> HAND_SAW_PULL = simple("hand_saw_pull");

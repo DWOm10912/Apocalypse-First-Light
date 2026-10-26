@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.cabin;
 
+import com.antaurora.apofirstlight.item.ShovelItem;
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.registry.AflItems;
@@ -242,7 +243,9 @@ public final class Workbench extends BaseEntityBlock implements AflMeshInteracti
     }
 
     /** What a peg takes: the tool rack's long tools, less the felling axe (96 cm: it would stand on the bench top). */
-    public static boolean hangable(ItemStack s) { return WoodFurnitureV2.ToolRack.longTool(s) && !s.is(AflItems.FELLING_AXE.get()); }
+    public static boolean hangable(ItemStack s) {   // short tools: not the felling axe, not the shovel (user 2026-10-22: the tool rack's)
+        return WoodFurnitureV2.ToolRack.longTool(s) && !s.is(AflItems.FELLING_AXE.get()) && !(s.getItem() instanceof ShovelItem);
+    }
 
     /** The peg an item in hand goes to when aimed at `aimed`: that one if it is free, else the first free one; -1: none. */
     public static int target(WorkbenchBlockEntity bench, ItemStack held, int aimed) {

@@ -36,6 +36,8 @@ import javax.annotation.Nullable;
  *   material (a curb's face is no slope); the town's turf (utility strips, lots, yards) as graded turf above;</li>
  *   <li>the forest home's gravel driveway (County road G3, Driveway#height, 2026-10-18): its height, the normal by
  *   differences; kind GRAVEL (grip 0.65, Main 2026-10-19), its turf edges as above.</li>
+ *   <li>broken asphalt (road Mesh-ification P1, RoadDamage): over a sub-cell a strike took, the aggregate base at the
+ *   asphalt's underside, flat, kind GRAVEL.</li>
  * </ul>
  * Read only: no chunk is loaded (an unloaded chunk gives nothing), no state kept; the same network (RoadStructureBlock's
  * bound works) on both sides. Called per wheel point many times a tick: #sample(Level, double, double, double, Out)
@@ -65,6 +67,8 @@ public final class RoadSurfaceQuery {
     static final double STEP = 0.05;
     /** How far past a road's end a point still lies on its end (RoadCurve#local's own reach), m. */
     static final double END = 0.01;
+    /** #design: how far past a paved band's edge a vertex by the column's frame is still on that edge, m. */
+    static final double EDGE_SNAP = 0.001;
 
     /**
      * The road's surface kinds (the vehicle maps them to its grip: asphalt 1.0, concrete 0.95, gravel 0.65, turf 0.70);
@@ -82,6 +86,9 @@ public final class RoadSurfaceQuery {
         public boolean blocking;
         /** Set by #pavement: the pavement found is a town's (its blocks may stand higher over it: TOWN_COVER). */
         boolean town;
+        /** Set by #pavement: the road whose design won (null: a pad, a town or the driveway), at station rs, offset ru. */
+        RoadDesign road;
+        double rs, ru;
 
         void set(double height, double nx, double ny, double nz, Surface surface, boolean blocking) {
             this.height = height;
@@ -98,6 +105,8 @@ public final class RoadSurfaceQuery {
     /** One thread's buffers (server thread, client main thread, the offline check). */
     private static final class Buffers {
         final Out out = new Out();
+        /** #ground's and #kind's (they never run inside a #sample) */
+        final Out ground = new Out();
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final RoadCurve.Scratch curve = new RoadCurve.Scratch();
     }
@@ -119,7 +128,7 @@ public final class RoadSurfaceQuery {
         if (!works.touches(cx, cz) || !level.hasChunk(cx, cz)) return false;
         LevelChunk chunk = level.getChunk(cx, cz);
         Buffers buf = BUFFERS.get();
-        boolean paved = pavement(works, x, z, yHint, out, buf.curve);
+        boolean paved = pavement(works, x, z, yHint, out, buf.curve, true);
         double pave = out.height, cover = out.town ? TOWN_COVER : COVER;
         BlockPos.MutableBlockPos p = buf.pos;
         int top = (int) Math.floor(yHint + LAYER), bottom = (int) Math.floor(yHint - LAYER) - 1;
@@ -132,6 +141,14 @@ public final class RoadSurfaceQuery {
             if (b instanceof TunnelFixtureBlock) continue;
             double t;
             if (b == surface) {
+                // broken asphalt (road Mesh-ification P1): over a gone sub-cell the wheel stands on the base, gravel
+                var gone = com.antaurora.apofirstlight.road.RoadDamage.goneAt(level, x, z);
+                if (gone != null) {
+                    t = gone.top() - gone.depth();
+                    if (!near(t, yHint)) return false;
+                    out.set(t, 0, 1, 0, Surface.GRAVEL, false);
+                    return true;
+                }
                 t = y + s.getValue(RoadSurfaceBlock.LAYERS) / 32.0;
                 if (paved && pavement(pave, t, cover)) return true;
                 if (!near(t, yHint)) return false;
@@ -177,11 +194,129 @@ public final class RoadSurfaceQuery {
      * road designs only, no world (the offline check runs it over every road).
      */
     public static boolean pavement(RoadWorks works, double x, double z, double yHint, Out out) {
-        return pavement(works, x, z, yHint, out, BUFFERS.get().curve);
+        return pavement(works, x, z, yHint, out, BUFFERS.get().curve, true);
     }
 
-    private static boolean pavement(RoadWorks works, double x, double z, double yHint, Out out, RoadCurve.Scratch k) {
+    /**
+     * The asphalt under the pavement at (x, z) near yHint (road Mesh-ification P0, 2026-10-25): {pavement top, asphalt
+     * thickness} (CrossSection#asphaltDepth; a junction pad's CrossSection.PAD_ASPHALT, a town street's 10 cm), or null
+     * where no asphalt is there (no pavement, the driveway's gravel, a town's concrete).
+     */
+    public static double[] asphalt(RoadWorks works, double x, double z, double yHint) {
+        Out o = new Out();
+        if (!height(works, x, z, yHint, o) || o.surface != Surface.ASPHALT) return null;
+        double depth = o.road != null ? o.road.section.asphaltDepth() : o.town ? CrossSection.C2.asphaltDepth() : CrossSection.PAD_ASPHALT;
+        return new double[]{o.height, depth};
+    }
+
+    /** #pavement without the normal (out's normal straight up): its height and kind only, for the ground's geometry. */
+    public static boolean height(RoadWorks works, double x, double z, double yHint, Out out) {
+        return pavement(works, x, z, yHint, out, BUFFERS.get().curve, false);
+    }
+
+    /**
+     * The drawn top of a road column for the ground's geometry (road drainage D1, docs/worldgen/road_drainage_v1_design.md
+     * 3), where water runs on what is drawn while wheels and feet keep the collision: block s at (x, y, z) is a column's top
+     * road_surface or graded_turf (the cell above open). rel: its 25 vertex heights 0.25 m apart (EarthGrid layout, blocks
+     * above the floor y). Turf starts as its two drawn triangles (north-west to south-east), a pavement block as its
+     * collision top; every vertex where the design's pavement lies over the block as #sample takes it (#PAVE_MATCH, the
+     * cover) gets the design's height (#height). False: a pavement block with no design over it (a dug or covered road:
+     * its boxes stand). works null: turf only.
+     */
+    public static boolean ground(@Nullable RoadWorks works, BlockState s, int x, int y, int z, double[] rel) {
+        Block b = s.getBlock();
+        boolean turf = b instanceof GradedTurfBlock;
+        double top;   // the block's top at its centre (a pavement block's collision top)
+        if (turf) {
+            float[] c = GradedTurfBlock.corners(s);
+            for (int j = 0; j <= 4; j++) for (int i = 0; i <= 4; i++) {
+                double fx = i / 4.0, fz = j / 4.0;
+                // the triangle (nw, ne, se) or (nw, sw, se), as drawn
+                rel[j * 5 + i] = fx >= fz ? c[0] + (c[1] - c[0]) * fx + (c[3] - c[1]) * fz : c[0] + (c[3] - c[2]) * fx + (c[2] - c[0]) * fz;
+            }
+            top = y + (c[0] + c[1] + c[2] + c[3]) / 4;
+        } else if (b instanceof RoadSurfaceBlock) {
+            top = y + s.getValue(RoadSurfaceBlock.LAYERS) / 32.0;
+            java.util.Arrays.fill(rel, 0, 25, top - y);
+        } else return false;
+        return design(works, x, y, z, top, rel) || turf;
+    }
+
+    /**
+     * #ground's pavement step, pure (the offline check times it and holds it to the plain query): rel holds the block's own
+     * top at each vertex; every vertex where the design's pavement near top lies over it as #sample takes it gets the
+     * design's height. True: any did.
+     */
+    public static boolean design(@Nullable RoadWorks works, int x, int y, int z, double top, double[] rel) {
+        boolean any = false;
+        if (works != null && works.touches(x >> 4, z >> 4)) {
+            Buffers buf = BUFFERS.get();
+            Out o = buf.ground;
+            // one search at the centre; where a road's design wins there and no pad, town or driveway is near, the vertices
+            // are that design at their own station and offset, by the centre's frame (curvature at most 1/135 m: under
+            // 0.1 mm off in height), each one off its band asked in full; an attached ramp gives way to its interstate where
+            // their bands meet (#pavement), so its columns ask every vertex
+            RoadDesign d = null;
+            double s0 = 0, u0 = 0, tx = 0, tz = 0, along = 1;
+            boolean alone = false;   // the only road near: a vertex off its band is off every pavement
+            if (pavement(works, x + 0.5, z + 0.5, top, o, buf.curve, false) && o.road != null && o.road.attach == null && quiet(works, x, z)) {
+                d = o.road;
+                RoadDesign[] near = works.roadsNear(x + 0.5, z + 0.5);
+                alone = near != null && near.length == 1;
+                s0 = o.rs;
+                u0 = o.ru;
+                double[] f = buf.curve.f;
+                d.curve.frame(Math.max(0, Math.min(d.length, s0)), f, buf.curve.span);
+                tx = f[2];
+                tz = f[3];
+                along = Math.max(0.2, 1 - f[4] * u0);
+            }
+            for (int j = 0; j <= 4; j++) for (int i = 0; i <= 4; i++) {
+                // the block's own top under the vertex (turf: its triangle there), as #sample matches a wheel's point
+                double t = y + rel[j * 5 + i], h;
+                boolean town = false;
+                double dx = i / 4.0 - 0.5, dz = j / 4.0 - 0.5;
+                double s = s0 + (dx * tx + dz * tz) / along, u = u0 - dx * tz + dz * tx;
+                boolean on = d != null && s >= 0 && s <= d.length;
+                // a vertex on a band edge (within EDGE_SNAP of it: the frame and the plain station search differ by
+                // micrometres) is that edge
+                double v = on ? Math.abs(u) : 0, vc = on ? Math.max(d.section.halfMedian, Math.min(d.section.edge, v)) : 0;
+                if (on && Math.abs(v - vc) <= EDGE_SNAP && (!d.section.divided || (u < 0) == (u0 < 0))) {
+                    h = d.pavementYAt(s, Math.copySign(vc, u));
+                } else if (on && alone) {
+                    continue;
+                } else {
+                    if (!pavement(works, x + i / 4.0, z + j / 4.0, top, o, buf.curve, false)) continue;
+                    h = o.height;
+                    town = o.town;
+                }
+                if (!pavement(h, t, town ? TOWN_COVER : COVER)) continue;
+                rel[j * 5 + i] = h - y;
+                any = true;
+            }
+        }
+        return any;
+    }
+
+    /** Whether no junction pad, town street or driveway touches column (x, z): its roads' designs alone decide it. */
+    private static boolean quiet(RoadWorks works, int x, int z) {
+        if (works.pad(x, z) != null || works.pad(x + 1, z) != null || works.pad(x, z + 1) != null || works.pad(x + 1, z + 1) != null) return false;
+        if (works.towns().touches(x >> 4, z >> 4)) return false;
+        Driveway dw = works.drive();
+        return dw.isEmpty() || !dw.touches(x >> 4, z >> 4);
+    }
+
+    /** The kind of the pavement over a road column at its centre (#height near yHint), null: none (road drainage D1, 4). */
+    @Nullable
+    public static Surface kind(@Nullable RoadWorks works, double x, double z, double yHint) {
+        if (works == null || !works.touches(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16))) return null;
+        Buffers buf = BUFFERS.get();
+        return pavement(works, x, z, yHint, buf.ground, buf.curve, false) ? buf.ground.surface : null;
+    }
+
+    private static boolean pavement(RoadWorks works, double x, double z, double yHint, Out out, RoadCurve.Scratch k, boolean normals) {
         out.town = false;
+        out.road = null;
         RoadDesign[] near = works.roadsNear(x, z);
         if (near == null) near = NONE;
         RoadDesign best = null;
@@ -212,6 +347,10 @@ public final class RoadSurfaceQuery {
         if (pad != null) {
             double y = pad.height(x, z), dist = Math.abs(y - yHint);
             if (dist <= LAYER && dist < bd) {
+                if (!normals) {
+                    out.set(y, 0, 1, 0, Surface.ASPHALT, false);
+                    return true;
+                }
                 double[] n = pad.normal(x, z);
                 out.set(y, n[0], n[1], n[2], Surface.ASPHALT, false);
                 return true;
@@ -224,7 +363,8 @@ public final class RoadSurfaceQuery {
             if (sp != null && sp.part().paved()) {
                 double dist = Math.abs(sp.h() - yHint);
                 if (dist <= LAYER && dist < bd) {
-                    townNormal(towns, x, z, sp, out);
+                    if (normals) townNormal(towns, x, z, sp, out);
+                    else out.set(sp.h(), 0, 1, 0, sp.part() == TownWorks.Part.ASPHALT ? Surface.ASPHALT : Surface.CONCRETE, false);
                     out.town = true;
                     return true;
                 }
@@ -235,14 +375,19 @@ public final class RoadSurfaceQuery {
         if (!dw.isEmpty() && dw.touches(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16))) {
             double y = dw.height(x, z), dist = Math.abs(y - yHint);
             if (!Double.isNaN(y) && dist <= LAYER && dist < bd) {
-                driveNormal(dw, x, z, y, out);
+                if (normals) driveNormal(dw, x, z, y, out);
+                else out.set(y, 0, 1, 0, Surface.GRAVEL, false);
                 // its collision is the nine points' mean (RoadWorks#paved): a town's cover
                 out.town = true;
                 return true;
             }
         }
         if (best == null) return false;
-        normal(best, bs, bu, by, out, k);
+        if (normals) normal(best, bs, bu, by, out, k);
+        else out.set(by, 0, 1, 0, Surface.ASPHALT, false);
+        out.road = best;
+        out.rs = bs;
+        out.ru = bu;
         return true;
     }
 

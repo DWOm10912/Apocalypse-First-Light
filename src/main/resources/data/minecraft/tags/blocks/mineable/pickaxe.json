@@ -150,6 +150,21 @@
     "apocalypse_firstlight:red_brick_common",
     "apocalypse_firstlight:limestone_coping",
     "apocalypse_firstlight:smooth_concrete",
-    "apocalypse_firstlight:concrete_stoop_steps"
+    "apocalypse_firstlight:concrete_stoop_steps",
+    "apocalypse_firstlight:granite",
+    "apocalypse_firstlight:gneiss",
+    "apocalypse_firstlight:schist",
+    "apocalypse_firstlight:sandstone",
+    "apocalypse_firstlight:limestone",
+    "apocalypse_firstlight:dolomite",
+    "apocalypse_firstlight:shale",
+    "apocalypse_firstlight:marl",
+    "apocalypse_firstlight:rock_salt",
+    "apocalypse_firstlight:coal_seam",
+    "apocalypse_firstlight:banded_iron_formation",
+    "apocalypse_firstlight:quartz_vein",
+    "apocalypse_firstlight:lead_zinc_dolomite",
+    "apocalypse_firstlight:copper_breccia",
+    "apocalypse_firstlight:red_sandstone"
   ]
 }

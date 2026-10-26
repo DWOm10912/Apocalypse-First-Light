@@ -1,0 +1,9 @@
+{
+  "density_kg_m3": 1600,
+  "repose_deg": 40,
+  "excavation_deg": 85,
+  "block": "apocalypse_firstlight:gravel[kind=angular]",
+  "grip": 0.6,
+  "texture": "apocalypse_firstlight:block/rock/rubble",
+  "sources": []
+}
