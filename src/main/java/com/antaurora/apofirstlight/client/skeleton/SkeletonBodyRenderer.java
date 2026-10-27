@@ -32,6 +32,12 @@ public final class SkeletonBodyRenderer {
      */
     public static void draw(PlayerModel<?> model, SkeletonPose pose, boolean slim, boolean skinMesh, boolean head,
                             PoseStack stack, VertexConsumer consumer, int light, int overlay, float r, float g, float b, float a) {
+        draw(model, pose, slim, false, skinMesh, head, stack, consumer, light, overlay, r, g, b, a);
+    }
+
+    /** As above; {@code female}: the skin mesh's female torso and chest (SkinMesh). */
+    public static void draw(PlayerModel<?> model, SkeletonPose pose, boolean slim, boolean female, boolean skinMesh, boolean head,
+                            PoseStack stack, VertexConsumer consumer, int light, int overlay, float r, float g, float b, float a) {
         float[] saved = new float[72];
         save(model, saved);
         boolean headVisible = model.head.visible, hatVisible = model.hat.visible;
@@ -48,8 +54,8 @@ public final class SkeletonBodyRenderer {
                 };
                 SkeletonRig rig = pose.rig;
                 for (SkeletonRig.SkinPart part : rig.skin) {
-                    if (PlayerSkeleton.base(model, part.part()).visible) SkinMesh.emit(pose, part, slim, false, sink);
-                    if (PlayerSkeleton.layer(model, part.overlay()).visible) SkinMesh.emit(pose, part, slim, true, sink);
+                    if (PlayerSkeleton.base(model, part.part()).visible) SkinMesh.emit(pose, part, slim, false, 1F, female, sink);
+                    if (PlayerSkeleton.layer(model, part.overlay()).visible) SkinMesh.emit(pose, part, slim, true, 1F, female, sink);
                 }
                 if (head) {
                     PlayerSkeleton.set(model.head, pose.world[rig.head], PlayerSkeleton.HEAD);

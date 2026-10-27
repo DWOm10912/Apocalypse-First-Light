@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client.survivor;
 
+import com.antaurora.apofirstlight.client.skeleton.BlockMeshBody;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
@@ -20,9 +21,10 @@ import java.util.Random;
 
 /**
  * Character creation V1, plan A (docs/ui/character_creation_v1.md, user 2026-10-26 "用方案A，开始做吧"): the appearance page,
- * its own step before the survivor setup page. Left: sex (female greyed, its body is not made yet), the five skin tones,
- * the hair style, the hair colour (one for now). Middle: the B5 body large (BodyPreview), dragged to turn, scrolled to
- * zoom. Right: the starting clothes, one row per slot, a garment or none. "Next" opens the setup page with the look;
+ * its own step before the survivor setup page. Left: sex (female body V1, 2026-10-27: on the old body, the default, it
+ * picks the body and the starting skin, SurvivorSkins#starter, and nothing else is offered); on the B5 body (dev switch)
+ * also the five skin tones, the hair style, the hair colour (one for now). Middle: the body large (BodyPreview), dragged
+ * to turn, scrolled to zoom. Right: the starting clothes, one row per slot, a garment or none. "Next" opens the setup page with the look;
  * that page's Esc comes back here. The background is a plain dark studio backdrop, never the world or the panorama
  * (user: "背景先用其他的，不要用游戏内的画面，就算这个时候进了游戏也别用"). Two ways in, as the setup page: before the world
  * (Esc back to the New World page) and in the world (the server's prompt; Esc leaves to the title screen).
@@ -55,6 +57,7 @@ public final class AflAppearanceScreen extends Screen {
     @Nullable
     private AflSurvivorSetupScreen setup;
 
+    private boolean female;
     private int tone = SurvivorAppearance.DEFAULT_TONE;
     private String hair = SurvivorAppearance.DEFAULT_HAIR;
     private int outfit = SurvivorAppearance.FULL_OUTFIT;
@@ -80,7 +83,7 @@ public final class AflAppearanceScreen extends Screen {
     }
 
     SurvivorAppearance.Look look() {
-        return new SurvivorAppearance.Look(tone, hair, outfit);
+        return new SurvivorAppearance.Look(tone, hair, outfit, female);
     }
 
     @Override
@@ -135,9 +138,10 @@ public final class AflAppearanceScreen extends Screen {
         float x = LEFT_X + 7, w = LEFT_W - 14, y = TOP + 6;
         SetupCanvas.text(g, font, SetupCanvas.tr("appearance.sex"), x, y, AflUiStyle.TEXT_DIM, 1, 0.7F);
         float half = (w - 4) / 2;
-        chip(g, x, y + 10, half, SetupCanvas.tr("appearance.sex.male"), true, true, mx, my);
-        chip(g, x + half + 4, y + 10, half, SetupCanvas.tr("appearance.sex.female"), false, false, mx, my);
-        SetupCanvas.right(g, font, SetupCanvas.tr("appearance.wip"), x + w, y + 0.6F, AflUiStyle.TEXT_DISABLED, 1, 0.52F);
+        chip(g, x, y + 10, half, SetupCanvas.tr("appearance.sex.male"), !female, true, mx, my);
+        chip(g, x + half + 4, y + 10, half, SetupCanvas.tr("appearance.sex.female"), female, true, mx, my);
+        // the old body (the default): one starting skin per sex, so the B5 body's tone and hair are not offered
+        if (!BlockMeshBody.active()) return;
 
         y += 34;
         SetupCanvas.text(g, font, SetupCanvas.tr("appearance.tone"), x, y, AflUiStyle.TEXT_DIM, 1, 0.7F);
@@ -241,10 +245,18 @@ public final class AflAppearanceScreen extends Screen {
             dragY = mouseY;
             return true;
         }
-        // left: tone swatches and hair styles (the same layout as #left)
+        // left: sex, tone swatches and hair styles (the same layout as #left)
         float x = LEFT_X + 7, w = LEFT_W - 14, y = TOP + 6 + 34;
+        float half = (w - 4) / 2;
+        for (int i = 0; i < 2; i++) {
+            if (SetupCanvas.in(mx, my, x + i * (half + 4), TOP + 6 + 10, half, CHIP_H)) {
+                female = i == 1;
+                click();
+                return true;
+            }
+        }
         float sw = (w - 4 * 4) / 5;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5 && BlockMeshBody.active(); i++) {
             if (SetupCanvas.in(mx, my, x + i * (sw + 4), y + 10, sw, sw)) {
                 tone = i + 1;
                 click();
@@ -252,7 +264,7 @@ public final class AflAppearanceScreen extends Screen {
             }
         }
         float cy = y + 10 + sw + 12 + 10;
-        for (String style : SurvivorAppearance.HAIR) {
+        for (String style : BlockMeshBody.active() ? SurvivorAppearance.HAIR : java.util.List.<String>of()) {
             if (SetupCanvas.in(mx, my, x, cy, w, CHIP_H)) {
                 hair = style;
                 click();
@@ -312,6 +324,7 @@ public final class AflAppearanceScreen extends Screen {
     }
 
     private void randomize() {
+        female = random.nextBoolean();
         tone = 1 + random.nextInt(SurvivorAppearance.TONES);
         hair = SurvivorAppearance.HAIR.get(random.nextInt(SurvivorAppearance.HAIR.size()));
         outfit = random.nextInt(SurvivorAppearance.FULL_OUTFIT + 1);

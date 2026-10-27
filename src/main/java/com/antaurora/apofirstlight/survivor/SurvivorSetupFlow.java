@@ -268,7 +268,7 @@ public final class SurvivorSetupFlow {
             return;
         }
         List<String> problems = confirm(player, new SurvivorSetup.Choice(packet.background(), packet.body(), packet.traits()), packet.name(),
-                new SurvivorAppearance.Look(packet.tone(), packet.hair(), packet.outfit()));
+                new SurvivorAppearance.Look(packet.tone(), packet.hair(), packet.outfit(), packet.female()));
         if (!problems.isEmpty()) AflNetwork.survivor(player, new SurvivorPackets.SetupResult(problems));
     }
 
@@ -294,6 +294,9 @@ public final class SurvivorSetupFlow {
         record.scene = data.scene();
         record.tone = look.tone();
         record.hair = look.hair();
+        // female body V1: the chosen sex and its starting skin replace the account's look
+        record.sex = look.female() ? SurvivorRecord.Sex.FEMALE : SurvivorRecord.Sex.MALE;
+        record.setAppearance(SurvivorSkins.starter(record.sex));
         SurvivorAppearance.dress(player, look.outfit());
         Survivors.start(player, record);
         data.setDirty();

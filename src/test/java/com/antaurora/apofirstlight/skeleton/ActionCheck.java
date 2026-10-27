@@ -81,9 +81,19 @@ final class ActionCheck {
         System.out.println("\nplayer actions (palm off target <= " + HAND_ERR + " px, wrist <= " + WRIST_MAX + " deg, forearm twist <= " + TWIST_MAX + " deg, arm centre lines >= "
                 + ARM_HALF + " px outside the chest box, planted soles within " + SOLE_ERR + " px of the ground, first person: an arm on <= "
                 + Math.round(COVER_MAX * 100) + "% of the screen)");
+        FEMALE_CLOSER.clear();
         for (Scene sc : scenes()) check(rig, poser, sc, snapDir);
+        if (rig.profile == null) {
+            System.out.println("  female chest (SkinMesh, up to " + BUST_DEPTH + " px out at 1-5.9 px down, x +-" + BUST_HALF
+                    + "): scenes a forearm or hand comes nearer than " + ARM_HALF + " px only because of it: "
+                    + (FEMALE_CLOSER.isEmpty() ? "none" : String.join(", ", FEMALE_CLOSER)));
+        }
         return failures;
     }
+
+    /** The female chest's slab in front of the chest box (SkinMesh BUST / LOBE_HALF): reported, not failed. */
+    private static final float BUST_DEPTH = 0.7F, BUST_HALF = 3.05F, BUST_TOP = 1F, BUST_LOW = 5.9F;
+    private static final java.util.List<String> FEMALE_CLOSER = new java.util.ArrayList<>();
 
     private static Scene[] scenes() {
         // recoil starter (structure px, block/PortableDieselGeneratorBlock HANDLE_REST, PULL; client/PortableGeneratorPull
@@ -279,8 +289,8 @@ final class ActionCheck {
         // torso is 9 px)
         Matrix4f chestInv = new Matrix4f(pose.world[rig.chest]).invert();
         SkeletonRig.Box body = rig.skin.stream().filter(s -> s.part().equals("body")).findFirst().orElseThrow().classic();
-        float worst = Float.MAX_VALUE;
-        String where = "";
+        float worst = Float.MAX_VALUE, worstFemale = Float.MAX_VALUE;
+        String where = "", whereFemale = "";
         for (int k = 0; k < 2; k++) {
             boolean right = k == 0;
             int upper = right ? rig.upperArmR : rig.upperArmL, fore = right ? rig.forearmR : rig.forearmL, hand = right ? rig.handR : rig.handL;
@@ -297,9 +307,18 @@ final class ActionCheck {
                     worst = out;
                     where = (right ? "R " : "L ") + (bone == hand ? "hand" : "forearm");
                 }
+                float bust = outside(p, -BUST_HALF, BUST_HALF, BUST_TOP, BUST_LOW, body.z() - BUST_DEPTH, body.z());
+                if (Math.min(out, bust) < worstFemale) {
+                    worstFemale = Math.min(out, bust);
+                    whereFemale = (right ? "R " : "L ") + (bone == hand ? "hand" : "forearm");
+                }
             }
         }
         line.append(String.format(" | chest clearance %.1f px (%s)", worst, where));
+        if (rig.profile == null && worstFemale < worst - 0.01F) {
+            line.append(String.format(" female %.1f px (%s)", worstFemale, whereFemale));
+            if (worstFemale < ARM_HALF && worst >= ARM_HALF) FEMALE_CLOSER.add(String.format("%s (%s %.1f px)", sc.name(), whereFemale, worstFemale));
+        }
         if (worst < armHalf(rig)) fail(sc.name() + " " + where + " " + worst + " px from the chest box (skin into the body)");
         java.util.List<Vector3f> propBox = new java.util.ArrayList<>();
         if (m.prop != null) {

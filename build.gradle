@@ -421,7 +421,8 @@ tasks.register('skinJointCompare', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.skeleton.SkinJointCompare'
-    args = [project.findProperty('out') ?: 'build/skin_joints']
+    // -Pfemale: the female body V1 shots (SkinJointCompare#female)
+    args = project.hasProperty('female') ? ['--female', project.findProperty('out') ?: 'build/female_body'] : [project.findProperty('out') ?: 'build/skin_joints']
 }
 
 // Earthwork A1 (docs/worldgen/earthwork_a1.md 7): the height field's grid math, skin partition and volume conservation.

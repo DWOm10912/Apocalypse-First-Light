@@ -914,7 +914,7 @@ public final class AflSurvivorSetupScreen extends Screen {
         }
         var look = appearance.look();
         AflNetwork.survivorToServer(new SurvivorPackets.SetupChoice(background, Map.copyOf(body), List.copyOf(traits), name,
-                look.tone(), look.hair(), look.outfit()));
+                look.tone(), look.hair(), look.outfit(), look.female()));
     }
 
     @Override

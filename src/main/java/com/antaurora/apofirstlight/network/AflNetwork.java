@@ -27,7 +27,8 @@ public final class AflNetwork {
     // 76: character creation V1 (2026-10-26, master): the Identity packet carries the B5 tone and hair, SetupChoice the look
     //     and outfit; and on B (physical water package 4, 2026-10-26)
     // 77: both merged 2026-10-26
-    private static final String PROTOCOL = "77";
+    // 78: female body V1 (2026-10-27, master): Identity and SetupChoice carry the survivor's sex
+    private static final String PROTOCOL = "78";
     private static SimpleChannel channel;
     private static int nextId;
 

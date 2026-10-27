@@ -28,6 +28,10 @@ public final class SkinJointCompare {
             layers();
             return;
         }
+        if (args.length > 1 && args[0].equals("--female")) {
+            female(Path.of(args[1]));
+            return;
+        }
         Path out = Path.of(args.length > 0 ? args[0] : "build/skin_joints");
         Files.createDirectories(out);
         SkeletonRig rig = SkeletonRig.get();
@@ -73,6 +77,40 @@ public final class SkinJointCompare {
             }
         }
         System.out.println("skin joints written to " + out.toAbsolutePath());
+    }
+
+    /**
+     * Female body V1 (docs/dev/female_body_v1.md): the game's SkinMesh with the female torso and chest on slim arms, at
+     * rest, sat, mid run and in the P9's idle hold (the arms' clip pose), as OBJ like {@link #main} for a render against
+     * the offline sheet.
+     */
+    private static void female(Path out) throws Exception {
+        Files.createDirectories(out);
+        SkeletonRig rig = SkeletonRig.get();
+        HumanoidPoser poser = new HumanoidPoser(rig, SkeletonClips.locomotion());
+        String[][] shots = {{"rest", null, "0"}, {"sat", "body.sit", "0.5"}, {"run", "locomotion.run", "0.15"}, {"crouch", "locomotion.crouch_idle", "0.2"}};
+        for (String[] s : shots) {
+            SkeletonPose pose = s[1] == null ? new SkeletonPose(rig) : pose(rig, poser, s[1], Float.parseFloat(s[2]));
+            StringBuilder o = new StringBuilder();
+            int[] n = {0};
+            for (SkeletonRig.SkinPart part : rig.skin) {
+                for (boolean overlay : new boolean[]{false, true}) {
+                    List<Vector3f> p = new ArrayList<>();
+                    List<float[]> uv = new ArrayList<>();
+                    SkinMesh.emit(pose, part, true, overlay, 1F, true, (x, y, z, u, v, nx, ny, nz) -> {
+                        p.add(new Vector3f(x, y, z));
+                        uv.add(new float[]{u * TEX, v * TEX});
+                    });
+                    for (int q = 0; q < p.size(); q += 4)
+                        quad(o, n, p.get(q), uv.get(q)[0], uv.get(q)[1], p.get(q + 1), uv.get(q + 1)[0], uv.get(q + 1)[1],
+                                p.get(q + 2), uv.get(q + 2)[0], uv.get(q + 2)[1], p.get(q + 3), uv.get(q + 3)[0], uv.get(q + 3)[1]);
+                }
+            }
+            head(pose, false, o, n);
+            head(pose, true, o, n);
+            Files.writeString(out.resolve("female_" + s[0] + ".obj"), o);
+        }
+        System.out.println("female body written to " + out.toAbsolutePath());
     }
 
     /**
