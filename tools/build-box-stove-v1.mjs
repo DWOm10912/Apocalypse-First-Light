@@ -2,11 +2,12 @@
 // of the forest start home B ("溪谷老宅", docs/worldgen/forest_start_home_b_v1_plan.md, M2 F1). User 2026-10-13: stove A of
 // the concepts (design/buildings/forest_start_home_v1/m2_sheets/m2_2_stove_A.png: the old long box stove, no oven), the heat
 // shield as a block of its own, the hearth in flat stone slabs.
-//   box_stove          body 70 x 32 x 36.5 cm on four splayed 15 cm legs (top plate at 56 cm), raised cast frames and
-//                      corner beads, one cook lid, the loading door in the end (hinged on the wall side, it swings to the
-//                      wall so the room sees the fire), a spin draft in it, a coil-spring handle, an ash apron under it;
-//                      the flue collar at the cell's middle and a pipe stub with its damper up to the cell top, where the
-//                      stove pipe (cabin) takes over. Firebrick lining, an ash bed and up to three splits inside.
+//   box_stove          V2 (2026-10-26, docs/models/box_stove_v2_plan.md): body 90 x 50 cm on four splayed legs, the top
+//                      plate at 65.5 cm with two cook lids, the loading door in the end (hinged on the wall side, it
+//                      swings to the wall so the room sees the fire), a spin draft in it, a coil-spring latch, an ash
+//                      apron under it; the flue collar at the cell's middle and a pipe stub with its damper up to the cell
+//                      top, where the stove pipe (cabin) takes over. Firebrick lining, an ash bed and up to three splits
+//                      inside. Modelled and baked in Blender (tools/stove/box_stove_v2/), the pieces copied in from there.
 //   stove_heat_shield  a galvanised sheet 10 cm out from the wall on ceramic spools (3 cm off the log faces), open at the
 //                      bottom and the top so air rises behind it; joins the shields (and the stove / pipe it stands
 //                      behind) beside, above and below it into one sheet: 16 pieces by the joined sides
@@ -16,7 +17,8 @@
 // south, that is the east end toward the chairs).
 // The loading door swings as an AFL Animated Block Mesh (box_stove_door, tools/furniture/furniture-mesh.mjs, 2026-10-15:
 // the cabin pieces swapped it closed / open in one frame): only the door, drawn by the block entity renderer; the body,
-// the splits and the shield sheet behind it stay cabin pieces drawn by the chunk. stove/door_closed is the item's door.
+// the firebox, the splits and the shield sheet behind it stay cabin pieces drawn by the chunk. stove/door_closed is the
+// item's door.
 // Writes textures (block/stove/*.png + _s / _n), mesh pieces (cabin_mesh/stove/, cabin_mesh/shield/), the door's mesh
 // (geo, sidecar, profile, atlas block/stove/box_stove_door, src/main/blockbench/stove/), block / item models,
 // blockstates, loot tables. Tags, item mass, the temperature source and lang are edited by hand; --check audits them.
@@ -27,7 +29,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {renderX} from './cabin/cabin-art.mjs';
 import {STOVE_TEXTURES, flagstoneTopTiles, FL_COLS, FL_ROWS} from './stove/box-stove-art.mjs';
-import {Piece, solid, cylinder, serialise, newell, dot, sub, add, scl} from './cabin/cabin-geo.mjs';
+import {Piece, solid, cylinder, serialise} from './cabin/cabin-geo.mjs';
 import {furnitureMesh} from './furniture/furniture-mesh.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,136 +45,25 @@ export const BLOCKS = [
   {id: 'flagstone', mass: 0.25, carry: null, tier: null, noise: 'stone', en: 'Flagstone', zh: '石板'},
 ];
 
-const IRON = 'stove/cast_iron', EDGE = 'stove/cast_iron_edge', SOOT = 'stove/soot', NICKEL = 'stove/nickel', BRICK = 'stove/firebrick';
-const ASH = 'stove/ash', BARK = 'stove/firewood_bark', END = 'stove/firewood_end', SHEET = 'stove/heat_shield', CERAMIC = 'stove/ceramic';
-const PIPE = 'cabin/stove_pipe';
-
-/** A polygon whose corners are reordered so its Newell normal points along `out`. */
-function polyOut(pc, t, pts, out, opts = {}) {
-  if (dot(newell(pts), out) < 0) pts = [...pts].reverse();
-  return pc.poly(t, pts, opts);
-}
-/**
- * A box with its edges chamfered r (flat 45-degree strips, flat corner triangles): the bevels catch the light the way
- * the cast edges do (memory gun-material-tone: dark iron reads by its edge highlights). Closed, outward.
- */
-function cbox(pc, t, lo, hi, r) {
-  const c = lo.map((v, i) => (v + hi[i]) / 2), e = lo.map((v, i) => (hi[i] - v) / 2);
-  r = Math.min(r, ...e.map(v => v * 0.45));
-  const P = (s, m) => [0, 1, 2].map(a => c[a] + s[a] * (m.includes(a) ? e[a] : e[a] - r));
-  const sg = [-1, 1];
-  for (let a = 0; a < 3; a++) for (const sg1 of sg) {   // the six faces
-    const [b, d] = [0, 1, 2].filter(k => k !== a), pts = [];
-    for (const [i, j] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const s = [0, 0, 0]; s[a] = sg1; s[b] = i; s[d] = j; pts.push(P(s, [a])); }
-    const out = [0, 0, 0]; out[a] = sg1;
-    polyOut(pc, t, pts, out);
-  }
-  if (r <= 0) return pc;
-  for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) for (const sa of sg) for (const sb of sg) {   // twelve edge strips
-    const k = 3 - a - b, s = (q) => { const v = [0, 0, 0]; v[a] = sa; v[b] = sb; v[k] = q; return v; };
-    const out = [0, 0, 0]; out[a] = sa; out[b] = sb;
-    polyOut(pc, t, [P(s(-1), [a]), P(s(1), [a]), P(s(1), [b]), P(s(-1), [b])], out);
-  }
-  for (const sx of sg) for (const sy of sg) for (const sz of sg) {   // eight corners
-    const s = [sx, sy, sz];
-    polyOut(pc, t, [P(s, [0]), P(s, [1]), P(s, [2])], s);
-  }
-  return pc;
-}
-/** A flat disc of radius r round c facing `out` (an axis 'x' | 'y' | 'z' and its sign), UVs on the sprite's middle disc. */
-function disc(pc, t, axis, sign, c, r, seg) {
-  const pts = [], uv = [];
-  for (let i = 0; i < seg; i++) {
-    const a = i / seg * Math.PI * 2, u = Math.cos(a) * r, w = Math.sin(a) * r;
-    pts.push(axis === 'x' ? [c[0], c[1] + u, c[2] + w] : axis === 'y' ? [c[0] + w, c[1], c[2] + u] : [c[0] + u, c[1] + w, c[2]]);
-    uv.push([0.5 + 0.47 * Math.cos(a), 0.5 - 0.47 * Math.sin(a)]);
-  }
-  const out = axis === 'x' ? [sign, 0, 0] : axis === 'y' ? [0, sign, 0] : [0, 0, sign];
-  if (dot(newell(pts), out) < 0) { pts.reverse(); uv.reverse(); }
-  return pc.poly(t, pts, {uv});
-}
-/** A coil-spring handle (stays cool to the touch): nickel turns, each a short closed ring, over a core; along axis from a to b. */
-function coil(pc, axis, c, a, b) {
-  cylinder(pc, NICKEL, NICKEL, axis, c, a, b, 0.0068, 8, 'ab');
-  const n = Math.round((b - a) / 0.006);
-  for (let i = 0; i < n; i++) { const t0 = a + (b - a) * (i + 0.15) / n, t1 = a + (b - a) * (i + 0.85) / n; cylinder(pc, NICKEL, NICKEL, axis, c, t0, t1, 0.0092, 8, 'ab'); }
-  return pc;
-}
-/** A raised cast frame (4 strips) on a face: plane 'z' (x, y rectangle) or 'x' (z, y), out = the face's position and sign. */
-function castFrame(pc, plane, at, sign, u0, u1, v0, v1, w = 0.016, t = 0.005) {
-  const f0 = sign < 0 ? at - t : at, f1 = sign < 0 ? at : at + t;
-  const strip = (a0, a1, b0, b1) => plane === 'z' ? [EDGE, [a0, b0, f0], [a1, b1, f1]] : [EDGE, [f0, b0, a0], [f1, b1, a1]];
-  return solid(pc, [strip(u0, u1, v0, v0 + w), strip(u0, u1, v1 - w, v1), strip(u0, u0 + w, v0 + w, v1 - w), strip(u1 - w, u1, v0 + w, v1 - w)]);
-}
-/** A cast leg h high under (x, z): tapered, splayed out toward (sx, sz) along a slight curve, on a pad foot. */
-function leg(pc, x, z, h, sx, sz) {
-  const ring = (y, s, k) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => [x + i * 0.022 * s + sx * k, y, z + j * 0.022 * s + sz * k]);
-  const R = [ring(h, 1, 0), ring(h / 2, 0.85, 0.004), ring(0.012, 0.72, 0.0145)];
-  for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) {
-    const j = (i + 1) % 4, q = [R[r][i], R[r][j], R[r + 1][j], R[r + 1][i]], mid = scl(add(add(q[0], q[1]), add(q[2], q[3])), 0.25);
-    polyOut(pc, IRON, q, sub(mid, [x + sx * 0.006 * r, mid[1], z + sz * 0.006 * r]));
-  }
-  const fx = x + sx * 0.016, fz = z + sz * 0.016;
-  return cbox(pc, IRON, [fx - 0.024, 0, fz - 0.024], [fx + 0.024, 0.012, fz + 0.024], 0.003);
-}
+const IRON = 'stove/cast_iron', EDGE = 'stove/cast_iron_edge';
+const BARK = 'stove/firewood_bark', END = 'stove/firewood_end', SHEET = 'stove/heat_shield', CERAMIC = 'stove/ceramic';
 
 // =============================================================================================== the stove
-// Body x 0..0.70, z 0.30..0.62 (the back 31 cm from the logs, which bulge to z 0.93), y 0.165..0.53 between a bottom
-// plate (0.14) and a top plate (to 0.56, 1.2 cm over); 1.2 cm walls. The door end (x 0) has the loading opening
-// y 0.255..0.435 x z 0.355..0.565; the door 21 x 24 cm hangs on the wall side (hinge line x 0, z 0.58).
-export const BODY = {x0: 0, x1: 0.70, z0: 0.30, z1: 0.62, y0: 0.165, y1: 0.53, top: 0.56};
-const T = 0.012, OY0 = 0.255, OY1 = 0.435, OZ0 = 0.355, OZ1 = 0.565, HZ = 0.58;
-export const LID = [0.20, 0.46], FLUE = [0.5, 0.5], PIPE_R = 0.0755;
-function body() {
-  const {x0: X0, x1: X1, z0: Z0, z1: Z1, y0: Y0, y1: Y1} = BODY, pc = new Piece('stove/body');
-  solid(pc, [
-    [BRICK, [0.02, Y0, Z0 + T], [0.68, 0.40, Z0 + T + 0.022]], [BRICK, [0.02, Y0, Z1 - T - 0.022], [0.68, 0.40, Z1 - T]],
-    [BRICK, [0.666, Y0, Z0 + T], [X1 - T, 0.40, Z1 - T]],
-    [ASH, [X0 + T, Y0, Z0 + T + 0.022], [0.666, 0.19, Z1 - T - 0.022]],
-    [IRON, [X0, Y0, Z0], [X1, Y1, Z0 + T]], [IRON, [X0, Y0, Z1 - T], [X1, Y1, Z1]], [IRON, [X1 - T, Y0, Z0 + T], [X1, Y1, Z1 - T]],
-    [IRON, [X0, Y0, Z0 + T], [X0 + T, OY0, Z1 - T]], [IRON, [X0, OY1, Z0 + T], [X0 + T, Y1, Z1 - T]],
-    [IRON, [X0, OY0, Z0 + T], [X0 + T, OY1, OZ0]], [IRON, [X0, OY0, OZ1], [X0 + T, OY1, Z1 - T]],
-  ]);
-  cbox(pc, IRON, [X0 - 0.012, Y1, Z0 - 0.012], [X1 + 0.012, BODY.top, Z1 + 0.012], 0.006);   // top plate
-  cbox(pc, IRON, [X0 - 0.006, 0.14, Z0 - 0.006], [X1 + 0.006, Y0, Z1 + 0.006], 0.004);      // bottom plate
-  castFrame(pc, 'z', Z0, -1, X0 + 0.025, X1 - 0.025, Y0 + 0.025, Y1 - 0.025);                 // the room side
-  castFrame(pc, 'x', X1, 1, Z0 + 0.025, Z1 - 0.025, Y0 + 0.025, Y1 - 0.025);                  // the far end
-  for (const [x, z] of [[X0, Z0], [X1, Z0], [X0, Z1], [X1, Z1]]) cylinder(pc, EDGE, EDGE, 'y', [z, x], Y0, Y1, 0.009, 8);   // corner beads
-  for (const x of [0.016, 0.684]) for (const y of [0.18, 0.515]) cylinder(pc, EDGE, EDGE, 'z', [x, y], Z0 - 0.0035, Z0, 0.0055, 8, 'a');   // rivets
-  for (const [x, z, sx, sz] of [[0.65, 0.335, 1, -1], [0.05, 0.335, -1, -1], [0.65, 0.585, 1, 1], [0.05, 0.585, -1, 1]]) leg(pc, x, z, 0.15, sx, sz);
-  cbox(pc, IRON, [-0.08, 0.142, 0.33], [X0, 0.16, 0.59], 0.003);      // ash apron under the door
-  cbox(pc, EDGE, [-0.082, 0.16, 0.33], [-0.07, 0.172, 0.59], 0.003);  // and its lip
-  // the cook lid (its gap a dark ring, the lifter's notch), the flue collar on its flange, the pipe stub and its damper
-  const [lx, lz] = LID, [fx, fz] = FLUE;
-  cylinder(pc, SOOT, SOOT, 'y', [lz, lx], BODY.top, BODY.top + 0.0015, 0.0905, 24, 'b');
-  cylinder(pc, EDGE, EDGE, 'y', [lz, lx], BODY.top, BODY.top + 0.007, 0.087, 24, 'b');
-  cbox(pc, SOOT, [lx - 0.088, BODY.top + 0.007, lz - 0.005], [lx - 0.075, BODY.top + 0.0078, lz + 0.005], 0);
-  cylinder(pc, EDGE, EDGE, 'y', [fz, fx], BODY.top, BODY.top + 0.008, 0.10, 24, 'b');
-  cylinder(pc, IRON, IRON, 'y', [fz, fx], BODY.top + 0.008, 0.62, 0.08, 24, 'b');
-  cylinder(pc, PIPE, SOOT, 'y', [fz, fx], 0.62, 1, PIPE_R, 16, 'b');
-  cylinder(pc, IRON, IRON, 'x', [0.86, fz], fx - 0.1, fx + 0.1, 0.004, 6, 'b');
-  coil(pc, 'x', [0.86, fz], fx - 0.1225, fx - 0.0775);
-  return pc;
-}
-/** The loading door, closed: the plate, its raised frame, the spin draft (six holes, a knob), the latch and its coil handle, two hinge knuckles. */
-export const DRAFT = {x: -0.0235, y: 0.345, z: 0.46, ring: 0.026, hole: 0.0065};
-function door() {
-  const pc = new Piece('stove/door_closed'), y0 = 0.24, y1 = 0.45, z0 = 0.34, z1 = HZ;
-  cbox(pc, IRON, [-0.015, y0, z0], [0, y1, z1], 0.003);
-  solid(pc, [[EDGE, [-0.019, y0, z0], [-0.015, y1, z0 + 0.014]], [EDGE, [-0.019, y0, z1 - 0.014], [-0.015, y1, z1]],
-    [EDGE, [-0.019, y0, z0 + 0.014], [-0.015, y0 + 0.014, z1 - 0.014]], [EDGE, [-0.019, y1 - 0.014, z0 + 0.014], [-0.015, y1, z1 - 0.014]]]);
-  const {y: dy, z: dz} = DRAFT;
-  cylinder(pc, EDGE, EDGE, 'x', [dy, dz], -0.023, -0.015, 0.042, 24, 'a');
-  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; disc(pc, SOOT, 'x', -1, [DRAFT.x, dy + Math.sin(a) * DRAFT.ring, dz + Math.cos(a) * DRAFT.ring], DRAFT.hole, 10); }
-  cylinder(pc, EDGE, EDGE, 'x', [dy, dz], -0.035, -0.023, 0.011, 12, 'a');
-  cbox(pc, IRON, [-0.042, dy - 0.012, 0.354], [-0.015, dy + 0.012, 0.366], 0.002);   // latch arm at the free edge
-  coil(pc, 'y', [0.36, -0.046], dy - 0.03, dy + 0.03);
-  for (const [a, b] of [[0.26, 0.29], [0.40, 0.43]]) cylinder(pc, EDGE, EDGE, 'y', [HZ + 0.002, -0.008], a, b, 0.008, 10, 'ab');
-  return pc;
-}
-/** The splits on the ash bed: one, two or three (the load: the fuel left in logs' worth). */
-const SPLITS = [[0.045, 0.10, 0.54, 0.237, 0.43], [0.038, 0.17, 0.55, 0.229, 0.52], [0.035, 0.15, 0.51, 0.300, 0.474]];
-export const FLAMES = [[0.30, 0.22, 0.47, 0.24, 0.17], [0.42, 0.21, 0.45, 0.22, 0.15], [0.20, 0.21, 0.47, 0.18, 0.13]];   // x, base y, z, width, height
+// Box Stove V2 (docs/models/box_stove_v2_plan.md, user 2026-10-26: "可以，进游戏吧"): the body, the firebox lining and the
+// door are modelled and baked in Blender (tools/stove/box_stove_v2/: model.py, build.py, export.py), each with its own
+// LabPBR sprite; export.py writes them as cabin pieces to design/furniture/box_stove_v2/export/, copied here as
+// stove/body, stove/firebox and stove/door_closed (the item's door; the door's animated mesh is made from it).
+// Body x 0.06..0.96, z 0.13..0.63, y 0.19..0.62, the top plate to 0.655, the two cook lids' tops 0.661; the door end
+// (x 0.06) has the loading opening y 0.28..0.54 x z 0.24..0.52, the door hangs on the wall side (hinge x 0.050, z 0.555).
+const V2 = path.join(ROOT, 'design/furniture/box_stove_v2');
+export const HINGE = [0.050, 0.555];
+const BAKED = [['body', 'stove/body', 'box_stove_body', 'box_stove_v2_body'], ['firebox', 'stove/firebox', 'box_stove_firebox', 'box_stove_v2_inside'],
+  ['door', 'stove/door_closed', 'box_stove_door', 'box_stove_v2_door']];   // export file, piece, sprite, baked texture
+const bakedPiece = name => fs.readFileSync(path.join(V2, 'export', name + '.json'));
+const bakedMaps = tex => ['', '_s', '_n'].map(k => path.join(V2, 'textures', tex + k + '.png'));
+/** The splits on the ash bed (its top y 0.21..0.22, export.py): one, two or three (the load: the fuel left in logs' worth). */
+const SPLITS = [[0.045, 0.22, 0.64, 0.254, 0.33], [0.042, 0.26, 0.66, 0.254, 0.43], [0.040, 0.20, 0.60, 0.325, 0.38]];   // r, x0, x1, y, z
+export const FLAMES = [[0.43, 0.27, 0.33, 0.30, 0.20], [0.46, 0.26, 0.43, 0.28, 0.18], [0.40, 0.34, 0.38, 0.24, 0.16]];   // x, base y, z, width, height
 function loads() {
   return [1, 2, 3].map(n => {
     const pc = new Piece('stove/load_' + n);
@@ -180,16 +71,19 @@ function loads() {
     return pc;
   });
 }
-function stovePieces() {
-  return [body(), door(), ...loads()];
-}
 /**
- * The loading door as an animated mesh: one bone hinged on the vertical line x 0, z HZ (the wall side); 'open' swings it
- * a quarter out of the door end toward the wall, (dx, dz) -> (dz, -dx), where the old open piece stood. 10 ticks.
+ * The loading door as an animated mesh: one bone hinged on the vertical line HINGE (the wall side); 'open' swings it a
+ * quarter out of the door end toward the wall, (dx, dz) -> (dz, -dx). Its polygons are stove/door_closed's (a triangle's
+ * repeated corner dropped), its texture the baked one.
  */
 export function doorMesh() {
-  return furnitureMesh(ROOT, {id: 'box_stove_door', dir: 'stove', texPrefix: TEX, particle: TEX + IRON, part: true,
-    bones: [{name: 'door', pivot: [0, 0, HZ], pieces: [door()]}],
+  const polys = JSON.parse(bakedPiece('door')).quads.map(q => {
+    const c = [0, 1, 2, 3].map(i => q.slice(1 + i * 8, 9 + i * 8));
+    if (c[3].every((v, i) => v === c[2][i])) c.pop();
+    return {v: c.map(k => k.slice(0, 3)), uv: c.map(k => k.slice(3, 5))};
+  });
+  return furnitureMesh(ROOT, {id: 'box_stove_door', dir: 'stove', particle: TEX + IRON, part: true, atlas: bakedMaps('box_stove_v2_door'),
+    bones: [{name: 'door', pivot: [HINGE[0], 0, HINGE[1]], polys}],
     animations: {open: {duration_ticks: 10, easing: 'ease_in_out', transforms: {door: {rotation: [0, 90, 0]}}}}});
 }
 
@@ -213,8 +107,9 @@ function shield(mask) {
   return pc;
 }
 
+/** The generated pieces: the splits and the shield sheets (the stove's own come baked, BAKED). */
 export function pieces() {
-  return [...stovePieces(), ...Array.from({length: 16}, (_, m) => shield(m))];
+  return [...loads(), ...Array.from({length: 16}, (_, m) => shield(m))];
 }
 
 // =============================================================================================== models, states, loot
@@ -229,6 +124,10 @@ export function outputs() {
   for (const [name, [make, height]] of Object.entries(STOVE_TEXTURES)) texOut(name, renderX(make(), {height}));
   flagstoneTopTiles().forEach((maps, t) => texOut('flagstone_top_' + t, maps));
   for (const pc of pieces()) out.push([path.join(ASSETS, 'cabin_mesh', pc.name + '.json'), JSON.stringify(serialise(pc, TEX)) + '\n']);
+  for (const [file, piece, sprite, tex] of BAKED) {
+    out.push([path.join(ASSETS, 'cabin_mesh', piece + '.json'), bakedPiece(file)]);
+    if (file !== 'door') bakedMaps(tex).forEach((f, i) => out.push([path.join(ASSETS, 'textures/block/stove', sprite + ['', '_s', '_n'][i] + '.png'), fs.readFileSync(f)]));   // the door's: doorMesh
+  }
   out.push(...doorMesh().outputs);
   const bm = id => `${NS}block/stove/${id}`;
   for (const {id} of BLOCKS) {

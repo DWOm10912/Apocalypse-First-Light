@@ -77,9 +77,9 @@ public final class BoxStove {
             FUEL_WOOD = ItemTags.create(CabinBlocks.id("stove_fuel/wood")), FUEL_KINDLING = ItemTags.create(CabinBlocks.id("stove_fuel/kindling"));
     /** Burn ticks: a log (two in-game hours), sawn wood, kindling; the firebox holds three logs' worth. */
     public static final int LOG_TICKS = 2400, WOOD_TICKS = 600, KINDLING_TICKS = 200, CAPACITY = 3 * LOG_TICKS;
-    /** In the north frame (tools/build-box-stove-v1.mjs): the top plate's height, the two cook spots on it (x, z). */
-    public static final double TOP = 0.56;
-    public static final double[][] SPOTS = {{0.11, 0.46}, {0.31, 0.46}};
+    /** In the north frame (Box Stove V2, docs/models/box_stove_v2_plan.md): the cook lids' top, the two lids' middles (x, z). */
+    public static final double TOP = 0.661;
+    public static final double[][] SPOTS = {{0.20, 0.38}, {0.80, 0.38}};
     /**
      * Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): the loading door, a split dropped in,
      * and the loops while they run (the fire, a pot boiling, a pan frying; client BlockLoopSoundController, and
@@ -192,8 +192,8 @@ public final class BoxStove {
         private static final VoxelShape[] SHAPES = new VoxelShape[4];
 
         static {
-            for (int r = 0; r < 4; r++)   // the body and top plate, the flue collar and pipe stub
-                SHAPES[r] = CabinBlocks.turned(r, new double[]{0, 0, 4.61, 11.39, 8.96, 10.11}, new double[]{6.72, 8.96, 6.72, 9.28, 16, 9.28});
+            for (int r = 0; r < 4; r++)   // the body, door and top plate, the pipe stub (V2)
+                SHAPES[r] = CabinBlocks.turned(r, new double[]{0.7, 0, 1.82, 15.62, 10.58, 10.34}, new double[]{6.79, 10.58, 6.79, 9.21, 16, 9.21});
         }
 
         Stove(Properties p) {
@@ -243,11 +243,11 @@ public final class BoxStove {
                     : (l, p, s, be) -> ((BoxStoveBlockEntity) be).serverTick(s);
         }
 
-        /** The cook spot aimed at on the top (-1: not the top's cooking end). */
+        /** The cook spot aimed at on the top (-1: not the top; the flue collar stands higher): the lid on that half. */
         public static int spotAt(BlockState state, BlockPos pos, Vec3 hit, Direction face) {
             double[] f = frame(state.getValue(FACING), pos, hit);
-            if (face != Direction.UP || f[1] < TOP - 0.01 || f[1] > TOP + 0.02 || f[0] > 0.42) return -1;
-            return f[0] < 0.21 ? 0 : 1;
+            if (face != Direction.UP || f[1] < TOP - 0.01 || f[1] > TOP + 0.02) return -1;
+            return f[0] < 0.5 ? 0 : 1;
         }
 
         /** Where a cook spot's item lies (world). */
@@ -256,7 +256,7 @@ public final class BoxStove {
         }
 
         /** The loading door's middle (world), for the prompt. */
-        public static Vec3 doorPoint(BlockState state, BlockPos pos) { return world(state.getValue(FACING), pos, -0.03, 0.345, 0.46); }
+        public static Vec3 doorPoint(BlockState state, BlockPos pos) { return world(state.getValue(FACING), pos, 0.03, 0.41, 0.38); }
 
         /** The right-click with {@code held} at {@code hit} (the stove's fuel as this side knows it). */
         public static Action action(Level level, BlockState state, BlockPos pos, BoxStoveBlockEntity stove, ItemStack held, Vec3 hit, Direction face) {
@@ -338,7 +338,7 @@ public final class BoxStove {
         @SuppressWarnings("deprecation")
         public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
             if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BoxStoveBlockEntity stove)
-                for (int k = 0; k < SPOTS.length; k++) Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, stove.item(k));
+                for (int k = 0; k < SPOTS.length; k++) Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.7, pos.getZ() + 0.5, stove.item(k));
             super.onRemove(state, level, pos, newState, moved);
         }
 
@@ -352,6 +352,7 @@ public final class BoxStove {
         public void cabinPieces(BlockState state, int flags, Sink sink) {
             int r = CabinBlocks.turn(state.getValue(FACING)), load = state.getValue(LOAD);
             sink.add("stove/body", r);   // the door: an animated mesh (BoxStoveBlockEntity)
+            sink.add("stove/firebox", r);
             if (load > 0) sink.add("stove/load_" + load, r);
             if ((flags & 1) != 0) sink.add("shield/panel_" + (flags >> 1 & 15), r);
         }

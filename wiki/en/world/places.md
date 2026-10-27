@@ -7,6 +7,7 @@
 <Shot k="hero_building" zh="溪谷老宅（开发中）" en="Creek valley farmhouse (in development)" />
 
 - <StatusTag s="verified" d="2026-10-19" /> The farmhouse plot sits at least <V j="RoadCounty.PLOT_HARD" u="m" /> from the county road, out of sight. A gravel driveway follows the creek to the road, see [Roads](./roads#county-road-and-farmhouse-driveway)
+- <StatusTag s="verified" d="2026-10-26" /> The living room has a cast iron box stove; each of its two cook lids takes one thing to cook. Open the door to load wood and light it with a lit lighter, flint and steel or a fire charge; while it burns it heats and lights the room
 
 ## Bear Hollow Cave
 

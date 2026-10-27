@@ -82,27 +82,39 @@ function moved(q, pivot, tr, t) {
  * frame), pieces: [Piece], hidden (neverRender: not in the item icon)}], open: {ticks, easing, transforms: {bone:
  * {rotation: [x, y, z] degrees} | {translation: [x, y, z] blocks}}}}. Instead of open, animations: the profile's channels
  * as written (any name, wrap etc.). part: moving parts only (see above). lifts: {name: dy blocks}, one profile
- * <id>_<name>.json each with that origin (a block standing lower on a surface) instead of <id>.json.
+ * <id>_<name>.json each with that origin (a block standing lower on a surface) instead of <id>.json. atlas: a baked
+ * texture instead of the material tiles, the bones then carry polys ({v: [[x, y, z]], uv: [[u, v]]}) instead of pieces.
  * Returns {outputs: [[file, data]], stats}.
  */
 export function furnitureMesh(root, spec) {
   const assets = path.join(root, 'src/main/resources/assets/apocalypse_firstlight'), bb = path.join(root, 'src/main/blockbench', spec.dir);
-  const ID = spec.id, tex = t => t.includes(':') ? t : spec.texPrefix + t;
-  // the polygons per bone, baked (tile-split, explicit 0..1 UVs in their material)
-  const bones = spec.bones.map(b => ({...b, polys: b.pieces.flatMap(pc => baked(pc).polys)}));
+  const ID = spec.id, tex = t => spec.atlas ? 'atlas' : t.includes(':') ? t : spec.texPrefix + t;
+  // the polygons per bone, baked (tile-split, explicit 0..1 UVs in their material); a baked atlas (spec.atlas: [colour,
+  // _s, _n] PNG files, Box Stove V2's Blender-baked door, 2026-10-26) takes the bones' polys as given, UVs 0..1 in it
+  const bones = spec.bones.map(b => ({...b, polys: b.polys ?? b.pieces.flatMap(pc => baked(pc).polys)}));
   const mats = [...new Set(bones.flatMap(b => b.polys.map(p => tex(p.t))))].sort();
-  const cols = Math.ceil(Math.sqrt(mats.length)), rows = Math.ceil(mats.length / cols), W = cols * CELL, H = rows * CELL;
-  const cellOf = new Map(mats.map((m, i) => [m, [(i % cols) * CELL + GUT, Math.floor(i / cols) * CELL + GUT]]));
-  // the atlas: each material in its cell, wrapped into the gutter
-  const MAPS = [0, 1, 2].map(() => Buffer.alloc(W * H * 4));
-  for (const m of mats) {
-    const src = material(assets, m), [cx, cy] = cellOf.get(m);
-    for (let k = 0; k < 3; k++) for (let y = -GUT; y < TILE + GUT; y++) for (let x = -GUT; x < TILE + GUT; x++) {
-      const sx = (x + TILE) % TILE, sy = (y + TILE) % TILE, s = (sy * TILE + sx) * 4, d = ((cy + y) * W + cx + x) * 4;
-      src[k].copy(MAPS[k], d, s, s + 4);
+  let W, H, cellOf, PNGS, cell = TILE;
+  if (spec.atlas) {
+    PNGS = spec.atlas.map(f => fs.readFileSync(f));
+    ({w: W, h: H} = readPng(PNGS[0]));
+    cellOf = new Map([['atlas', [0, 0]]]);
+    if (W !== H) throw new Error('furniture mesh: baked atlas not square ' + spec.atlas[0]);
+    cell = W;
+  } else {
+    const cols = Math.ceil(Math.sqrt(mats.length)), rows = Math.ceil(mats.length / cols);
+    W = cols * CELL; H = rows * CELL;
+    cellOf = new Map(mats.map((m, i) => [m, [(i % cols) * CELL + GUT, Math.floor(i / cols) * CELL + GUT]]));
+    // the atlas: each material in its cell, wrapped into the gutter
+    const MAPS = [0, 1, 2].map(() => Buffer.alloc(W * H * 4));
+    for (const m of mats) {
+      const src = material(assets, m), [cx, cy] = cellOf.get(m);
+      for (let k = 0; k < 3; k++) for (let y = -GUT; y < TILE + GUT; y++) for (let x = -GUT; x < TILE + GUT; x++) {
+        const sx = (x + TILE) % TILE, sy = (y + TILE) % TILE, s = (sy * TILE + sx) * 4, d = ((cy + y) * W + cx + x) * 4;
+        src[k].copy(MAPS[k], d, s, s + 4);
+      }
     }
+    PNGS = MAPS.map(px => png(px, W, H));
   }
-  const PNGS = MAPS.map(px => png(px, W, H));
 
   // source (Free Model): a group per bone at its pivot, one mesh element per bone and material
   const uuid = s => { const h = createHash('sha256').update('afl-furniture-mesh-v1:' + ID + ':' + s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
@@ -122,7 +134,7 @@ export function furnitureMesh(root, spec) {
         const pts = cleaned(p.v, p.uv);
         if (pts.length < 3) continue;
         const ids = pts.map(({p: q}) => { const k = key(nv++); vertices[k] = toPx(q).map(r12); return k; });
-        faces['f' + key(nf++)] = {uv: Object.fromEntries(pts.map(({t}, j) => [ids[j], [r12(cx + t[0] * TILE), r12(cy + t[1] * TILE)]])), vertices: ids, texture: 0};
+        faces['f' + key(nf++)] = {uv: Object.fromEntries(pts.map(({t}, j) => [ids[j], [r12(cx + t[0] * cell), r12(cy + t[1] * cell)]])), vertices: ids, texture: 0};
       }
       const name = `${b.name}_${m.slice(m.lastIndexOf('/') + 1).replace(/\*.*/, '_tinted')}`, id = uuid('mesh:' + name);
       elements.push({name, color: 0, origin: [0, 0, 0], rotation: [0, 0, 0], shading: 'flat', export: true, visibility: true, locked: false,

@@ -7,6 +7,7 @@
 <Shot k="hero_building" zh="溪谷老宅（开发中）" en="Creek valley farmhouse (in development)" />
 
 - <StatusTag s="verified" d="2026-10-19" /> 老宅距县道至少 <V j="RoadCounty.PLOT_HARD" u="m" />，从路上看不到房子。一条碎石车道沿溪接入县道，见 [道路](./roads#县道和老宅车道)
+- <StatusTag s="verified" d="2026-10-26" /> 客厅里是一台铸铁箱式炉，炉顶两个炉盖各能放一样东西煮。打开炉门添柴，用点着的打火机、打火石或火焰弹点火；炉子烧着时能取暖，也能照亮屋子
 
 ## Bear Hollow Cave
 

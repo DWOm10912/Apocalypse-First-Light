@@ -40,9 +40,12 @@ import java.util.Map;
 public final class BoxStoveFire {
     private static final double RANGE = 48.0, SMOKE_RANGE = 96.0;
     /** In the north frame (tools/build-box-stove-v1.mjs FLAMES): x, base y, z, width, height. */
-    private static final double[][] FLAMES = {{0.30, 0.22, 0.47, 0.24, 0.17}, {0.42, 0.21, 0.45, 0.22, 0.15}, {0.20, 0.21, 0.47, 0.18, 0.13}};
-    /** The spin draft (tools/build-box-stove-v1.mjs DRAFT): its face, middle, the holes' ring and radius. */
-    private static final double DRAFT_X = -0.0243, DRAFT_Y = 0.345, DRAFT_Z = 0.46, DRAFT_RING = 0.026;
+    private static final double[][] FLAMES = {{0.43, 0.27, 0.33, 0.30, 0.20}, {0.46, 0.26, 0.43, 0.28, 0.18}, {0.40, 0.34, 0.38, 0.24, 0.16}};
+    /**
+     * The spin draft (Box Stove V2, tools/stove/box_stove_v2/model.py): just off the shutter's face, the door's middle, the
+     * holes' ring; the shutter stands half open (turned 18 degrees), so each hole shows a lens 9 degrees on.
+     */
+    private static final double DRAFT_X = 0.034, DRAFT_Y = 0.41, DRAFT_Z = 0.38, DRAFT_RING = 0.034, DRAFT_TURN = Math.toRadians(9);
     private static final int KINDLING_TICKS = 300;
     /** Just past the rain cap's brim (tools/build-cabin-exterior-v1.mjs pipePieces: R 0.16): smoke there rises clear of it. */
     private static final double CAP_BRIM = 0.175;
@@ -96,7 +99,7 @@ public final class BoxStoveFire {
         if (pos.distToCenterSqr(player.position()) > RANGE * RANGE) return;
         // the fire's sound is its loop now (client BlockLoopSoundController, heard 4 blocks; was a random campfire crackle)
         if (open && r.nextFloat() < 0.02F) {   // a spark spits out onto the hearth
-            Vec3 at = BoxStove.world(facing, pos, -0.01, 0.3, 0.4 + 0.12 * r.nextDouble());
+            Vec3 at = BoxStove.world(facing, pos, 0.05, 0.29, 0.28 + 0.2 * r.nextDouble());
             Vec3 v = BoxStove.world(facing, BlockPos.ZERO, -0.04 - 0.03 * r.nextDouble(), 0.03, 0.5 + (r.nextDouble() - 0.5) * 0.04)
                     .subtract(BoxStove.world(facing, BlockPos.ZERO, 0, 0, 0.5));
             FireFx.ember(level, at.x, at.y, at.z, v.x, v.y, v.z, 0.004F, 18);
@@ -180,15 +183,15 @@ public final class BoxStoveFire {
             Direction facing = state.getValue(BoxStove.Stove.FACING);
             double flicker = 0.85 + 0.1 * Math.sin(now * 0.55 + (key * 0x9E3779B97F4A7C15L >>> 52)) + 0.05 * Math.sin(now * 1.7);
             if (state.getValue(BoxStove.Stove.OPEN)) {
-                FuelFlames.glow(out, matrix, normals, camera, BoxStove.world(facing, p, 0.33, 0.193, 0.46), 0.22, 255, 120, 45, (int) Math.round(120 * flicker));
-                FuelFlames.glow(out, matrix, normals, camera, BoxStove.world(facing, p, -0.3, 0.004, 0.46), 0.42, 255, 110, 40, (int) Math.round(36 * flicker));
+                FuelFlames.glow(out, matrix, normals, camera, BoxStove.world(facing, p, 0.42, 0.226, 0.38), 0.3, 255, 120, 45, (int) Math.round(120 * flicker));
+                FuelFlames.glow(out, matrix, normals, camera, BoxStove.world(facing, p, -0.25, 0.004, 0.38), 0.42, 255, 110, 40, (int) Math.round(36 * flicker));
                 continue;
             }
             Vec3 u = BoxStove.world(facing, BlockPos.ZERO, 0, 0, 1).subtract(BoxStove.world(facing, BlockPos.ZERO, 0, 0, 0));
             for (int i = 0; i < 6; i++) {
-                double a = i / 6.0 * Math.PI * 2;
+                double a = i / 6.0 * Math.PI * 2 + DRAFT_TURN;
                 Vec3 c = BoxStove.world(facing, p, DRAFT_X, DRAFT_Y + Math.sin(a) * DRAFT_RING, DRAFT_Z + Math.cos(a) * DRAFT_RING);
-                upright(out, matrix, normals, camera, c, u, 0.011, 255, 125, 45, (int) Math.round(170 * flicker));
+                upright(out, matrix, normals, camera, c, u, 0.008, 255, 125, 45, (int) Math.round(170 * flicker));
             }
         }
     }
