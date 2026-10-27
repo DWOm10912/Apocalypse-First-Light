@@ -16,6 +16,18 @@ public record LightCone(double aimDown, double across, double below, double abov
         nearDistance = Math.max(0.05, Math.min(nearDistance, reach * 0.7 * 0.9));
     }
 
+    /**
+     * A bare flame or flash: the same light all round, falling only with the distance. Give it as two spots, forward down
+     * and up. The pattern has no round mode (its formula is shared with the shader pack's copy), so the cone is set so
+     * nothing but the distance counts: the aim 90 deg toward the up axis puts every direction below the aim with no loss,
+     * and the spread across measured from 10 km behind is next to nothing. Two half spheres of 89.5 deg instead (user
+     * 2026-10-26: "奇怪的光源焦点") fell off as 1 - share^2 across and above: dark seams at their join and along the
+     * diagonals, a star round the point nearest the flame.
+     */
+    public static LightCone round(double reach, double near, double far, double nearDistance) {
+        return new LightCone(-90, 89.5, 89.5, 89.5, reach, near, far, 0, nearDistance, 1e4, 0);
+    }
+
     /** A headlamp pattern of HeadlightBeam with its constants (NEAR, BACK, BELOW_LOSS). */
     public static LightCone of(HeadlightBeam.Pattern p) {
         return new LightCone(p.aimDown(), p.across(), p.below(), p.above(), p.reach(), p.near(), p.far(), p.rightReach(),

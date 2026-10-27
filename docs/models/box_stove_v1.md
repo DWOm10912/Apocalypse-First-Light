@@ -129,7 +129,7 @@
 - 温度系统热源（`temperature/temperature_v1.json`）：
   - `{"block": "apocalypse_firstlight:box_stove", "strength": 22, "radius": 6, "lit": true}`；
   - 只在 `lit=true` 时算，比营火（20 / 6）稍强。
-- 方块光：开门烧 12，关门烧 6，熄灭 0。
+- 方块光：烧着 10（开门、关门一样；用户 2026-10-26 嫌开关门亮度差太多，"统一一下"，原来开门 12、关门 6），熄灭 0。
 - 炉顶烫：烧着时站上去每次扣 1 点（`hotFloor`，像岩浆块），潜行不扣。
 
 ### 火、烟、声音（客户端 `client/BoxStoveFire`）

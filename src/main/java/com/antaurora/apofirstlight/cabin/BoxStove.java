@@ -201,8 +201,8 @@ public final class BoxStove {
             registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(OPEN, false).setValue(LIT, false).setValue(LOAD, 0));
         }
 
-        /** Block light: an open fire lights the room, a closed stove glows a little through its draft. */
-        static int light(BlockState s) { return !s.getValue(LIT) ? 0 : s.getValue(OPEN) ? 12 : 6; }
+        /** Block light: a burning stove lights the room the same with the door open or shut (user 2026-10-26: "统一一下"; was 12 open, 6 shut). */
+        static int light(BlockState s) { return s.getValue(LIT) ? 10 : 0; }
 
         @Override
         protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, OPEN, LIT, LOAD); }

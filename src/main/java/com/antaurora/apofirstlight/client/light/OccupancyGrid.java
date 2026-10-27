@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -22,6 +23,9 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The blocks around the camera for the lights' shadow rays (docs/rendering/dynamic_lights_v1.md): a 128 x 128 x 128 R8
@@ -29,9 +33,10 @@ import java.util.Arrays;
  * the 8 x 8 x 8 sections around the camera's; a section that comes into it is cleared at once (open) and queued, and the
  * queue is worked through in a time budget per frame, nearest first; changed blocks (mixin
  * client.DynamicLightBlockChangeMixin) and loaded chunks queue their sections again ahead of the rest.
- * <p>A block's value: 0 open (air, plants, fluids, anything without collision or with a thin or partial shape), 255 a full
- * block (a solid render block or a full collision cube), 1-254 solid from the bottom up to (v - 1) / 253 of the block
- * (a bottom slab, a road layer: a bottom-aligned shape over the whole block). A smoothed natural ground top (terrainsmooth)
+ * <p>A block's value: 0 open (air, plants, fluids, anything without collision or with a thin or partial shape, and
+ * see-through blocks: no visual shape, as glass or the cabin's window), 255 a full block (a solid render block or a full
+ * collision cube), 1-254 solid from the bottom up to (v - 1) / 253 of the block (a bottom slab, a road layer: a shape over
+ * the whole footprint, counted up to its lowest column, {@link #bottomUp}). A smoothed natural ground top (terrainsmooth)
  * counts as solid up to its lowest corner, so the lit slope itself is never inside its own block.
  * <p>Two layouts of the same values: the 3D texture for AFL's own programs (no shader pack), or laid flat in a 2048 x 1024
  * R8 texture for a shader pack ({@link ShaderPackLights}: g = world block & 127 at (g.x * 16 + (g.z & 15),
@@ -52,6 +57,8 @@ final class OccupancyGrid {
     private final LongLinkedOpenHashSet urgent = new LongLinkedOpenHashSet(), queue = new LongLinkedOpenHashSet();
     private final ByteBuffer buffer = MemoryUtil.memAlloc(16 * 16 * 16), zeros = MemoryUtil.memCalloc(16 * 16 * 16);
     private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+    /** Partial shapes' values ({@link #bottomUp}); blocks hand out the same shape objects, so by identity (render thread). */
+    private static final Map<VoxelShape, Integer> SHAPE_VALUES = new IdentityHashMap<>();
     /** Diagnostics: sections built since start, the last frame's build time (us). */
     int built;
     long lastMicros;
@@ -228,10 +235,43 @@ final class OccupancyGrid {
         if (state.isSolidRender(level, pos)) return 255;
         VoxelShape shape = state.getCollisionShape(level, pos);
         if (shape.isEmpty()) return 0;
+        // see-through (glass, the cabin's window: frame, sill and sashes, the recess open): the light passes
+        if (state.getVisualShape(level, pos, CollisionContext.empty()).isEmpty()) return 0;
         if (Block.isShapeFullBlock(shape)) return 255;
         AABB box = shape.bounds();
         if (box.minY > 0.01 || box.minX > 0.01 || box.minZ > 0.01 || box.maxX < 0.99 || box.maxZ < 0.99) return 0;
-        return box.maxY >= 0.99 ? 255 : height(box.maxY);
+        Integer v = SHAPE_VALUES.get(shape);
+        if (v == null) {
+            if (SHAPE_VALUES.size() >= 4096) SHAPE_VALUES.clear();   // a block that makes a new shape per call
+            SHAPE_VALUES.put(shape, v = bottomUp(shape));
+        }
+        return v;
+    }
+
+    /**
+     * A shape whose bounds fill the block's footprint, as solid from the bottom up to its lowest column (user 2026-10-26:
+     * patches of shadow in the cabin). The bounds alone took a door frame or a window (posts and head round an opening) for
+     * a full block and a roof's sloped 20 cm slab for solid from the cell's bottom up to half way, which is the room under
+     * it: the rays from the ceiling and through the doorway stopped in it. A column is solid from the bottom as far as its
+     * boxes join up from y 0; 16 x 16 columns.
+     */
+    private static int bottomUp(VoxelShape shape) {
+        List<AABB> boxes = shape.toAabbs();
+        double low = 1;
+        for (int i = 0; i < 16 && low > 0; i++) for (int k = 0; k < 16 && low > 0; k++) {
+            double cx = (i + 0.5) / 16, cz = (k + 0.5) / 16, top = 0;
+            for (boolean grew = true; grew && top < 1; ) {
+                grew = false;
+                for (AABB b : boxes) {
+                    if (b.minX <= cx && cx <= b.maxX && b.minZ <= cz && cz <= b.maxZ && b.minY <= top + 1e-4 && b.maxY > top + 1e-4) {
+                        top = b.maxY;
+                        grew = true;
+                    }
+                }
+            }
+            low = Math.min(low, top);
+        }
+        return low < 1 / 32.0 ? 0 : low >= 0.99 ? 255 : height(low);
     }
 
     private static int height(double h) {
