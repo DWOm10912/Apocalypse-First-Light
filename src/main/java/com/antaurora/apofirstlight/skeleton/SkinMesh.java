@@ -3,6 +3,9 @@ package com.antaurora.apofirstlight.skeleton;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Player skeleton V1 (docs/dev/player_skeleton_v1_design.md 2.1): the C-min skin mesh. Each vanilla box (torso, arms,
  * legs, and their second layer) is cut at its joints into segments; a joint's ring of four vertices is shared by both
@@ -10,13 +13,30 @@ import org.joml.Vector3f;
  * the box's two ends get caps. Faces, vertex order and UV follow vanilla's ModelPart.Cube (64 x 64 skin, no mirror), so
  * the rest pose is the vanilla model to the pixel; an inflated layer maps its UV over the inflated length as vanilla does.
  * Normals are per quad from the posed corners. Output: Java model px and UV in 0..1.
+ * <p>
+ * Shoulders and hips (2.1.1, user 2026-10-26 "好，先修髋部和肩部"): a limb's top end does not turn all the way with the
+ * limb, so the box no longer swings its corners out of the torso. The arm's top ring takes half the upper arm's turn (the
+ * shoulder pivot is 2 px below it). The leg's top ring stays on the pelvis (it meets the torso's bottom end) and the
+ * {@link #HIP} rings below it mix the pelvis's and the thigh's matrices a third more each px (linear blend skinning,
+ * SkeletonPose#blend): a ring corner goes straight from where the pelvis holds it to where the thigh does, so a bent
+ * hip's back rounds off instead of a sharp corner swinging out round the pivot. Turning the rings about the pivot
+ * instead (part of the thigh's rotation) gave that shard; holding them below the pelvis gave a spike on the hip's side.
+ * Deeply bent, the front bands fold up against the pelvis as the groin's crease, inside the belly and the thigh
+ * (PlayerSkeletonCheck allows it within 1 px of the pelvis box). The thigh keeps 3 px before the knee's ring and the upper
+ * arm all of its 6, more than the 2 px a bent knee or elbow ring swings along the limb. At rest all rings lie on the
+ * box's faces, so the rest pose is still vanilla's.
  */
 public final class SkinMesh {
     public interface Sink {
         void vertex(float x, float y, float z, float u, float v, float nx, float ny, float nz);
     }
 
+    /** A part's rings from its top end down: box px along its length (0 .. h), the skinning matrix, the bone each band below a ring follows. */
+    public record Rings(float[] level, Matrix4f[] matrix, int[] band) {}
+
     private static final float TEX = 64F;
+    /** Hip rings from the leg's top end: {px down the leg, the thigh's share against the pelvis (SkeletonPose#blend)}; even steps, so no band takes a jump of the turn. */
+    private static final float[][] HIP = {{0F, 0F}, {1F, 1F / 3F}, {2F, 2F / 3F}, {3F, 1F}};
 
     private SkinMesh() {
     }
@@ -44,18 +64,15 @@ public final class SkinMesh {
         }
         float stretch = (h + 2 * g) / h;
         int[] bones = part.bones();
-        int rings = bones.length + 1;
-        int[] level = new int[rings];
-        level[0] = 0;
-        for (int i = 0; i < part.cuts().length; i++) level[i + 1] = part.cuts()[i];
-        level[rings - 1] = h;
+        Rings rs = rings(pose, part, slim);
+        float[] level = rs.level();
+        int rings = level.length;
         // posed corners per ring: c0 (minX, minZ), c1 (maxX, minZ), c2 (maxX, maxZ), c3 (minX, maxZ)
         Vector3f[][] ring = new Vector3f[rings][4];
-        Matrix4f m = new Matrix4f();
         // the first bone's squash (the compressed torso, SkeletonPose#squash) pulls the top end toward its pivot
         float squash = pose.squash[bones[0]], pivotY = rig.pivot[bones[0]].y;
         for (int r = 0; r < rings; r++) {
-            ringMatrix(pose, bones, r, m);
+            Matrix4f m = rs.matrix()[r];
             float y = top + level[r] * stretch;
             if (r == 0 && squash != 1F) y = pivotY + (y - pivotY) * squash;
             ring[r][0] = m.transformPosition(new Vector3f(x0, y, z0));
@@ -79,13 +96,46 @@ public final class SkinMesh {
         }
     }
 
-    /** Ring r of a part: its first bone at the top end, its last bone at the bottom end, half way at the joints. */
-    public static Matrix4f ringMatrix(SkeletonPose pose, int[] bones, int r, Matrix4f out) {
-        if (r == 0) return out.set(pose.world[bones[0]]);
-        if (r == bones.length) return out.set(pose.world[bones[bones.length - 1]]);
-        int above = bones[r - 1], below = bones[r];
-        int child = pose.rig.parent[below] == above ? below : above;
-        return pose.half(child, out);
+    /**
+     * A part's rings: its first bone at the top end, its last bone at the bottom end, half way at the joints; a limb
+     * (its first bone's parent outside the part) also gets its shoulder or hip rings (the class comment).
+     */
+    public static Rings rings(SkeletonPose pose, SkeletonRig.SkinPart part, boolean slim) {
+        SkeletonRig rig = pose.rig;
+        int[] bones = part.bones(), cuts = part.cuts();
+        int root = bones[0], parent = rig.parent[root];
+        List<Float> level = new ArrayList<>();
+        List<Matrix4f> matrix = new ArrayList<>();
+        List<Integer> band = new ArrayList<>();
+        boolean limb = parent >= 0;
+        for (int bone : bones) limb &= bone != parent;
+        float pivot = rig.pivot[root].y - part.box(slim).y();
+        if (limb && pivot >= 1F) {   // shoulder: the pivot below the top end
+            add(level, matrix, band, 0F, pose.half(root, new Matrix4f()), root);
+        } else if (limb) {           // hip: the pivot at the top end
+            for (float[] r : HIP) add(level, matrix, band, r[0], pose.blend(root, r[1], new Matrix4f()), root);
+        } else {
+            add(level, matrix, band, 0F, new Matrix4f(pose.world[root]), root);
+        }
+        for (int i = 0; i < cuts.length; i++) {
+            int above = bones[i], below = bones[i + 1];
+            int child = rig.parent[below] == above ? below : above;
+            add(level, matrix, band, cuts[i], pose.half(child, new Matrix4f()), below);
+        }
+        add(level, matrix, band, part.box(slim).h(), new Matrix4f(pose.world[bones[bones.length - 1]]), -1);
+        float[] levels = new float[level.size()];
+        int[] bands = new int[band.size()];
+        for (int i = 0; i < levels.length; i++) {
+            levels[i] = level.get(i);
+            bands[i] = band.get(i);
+        }
+        return new Rings(levels, matrix.toArray(new Matrix4f[0]), bands);
+    }
+
+    private static void add(List<Float> level, List<Matrix4f> matrix, List<Integer> band, float at, Matrix4f m, int bone) {
+        level.add(at);
+        matrix.add(m);
+        band.add(bone);
     }
 
     private static void side(Sink sink, Vector3f[] a, Vector3f[] c, int ca, float ua, int cb, float ub, float va, float vb) {

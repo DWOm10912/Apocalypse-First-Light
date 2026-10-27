@@ -388,17 +388,13 @@ public final class BandageWrapRenderer {
                 SkeletonRig.Box b = part.box(slim);
                 float cx = b.x() + b.w() / 2F, half = b.w() / 2F * (limb.arm() ? thick : 1F);
                 arm = limb(limb, cx - half, cx + half, b.z(), b.z() + b.d(), b.y() + b.h(), rig.overlayInflate, plusX);
-                // the skin's rings along the sleeve or the trunk (SkinMesh#emit: the inflated layer's levels, the cuts' matrices)
-                int[] bones = part.bones();
-                int rings = bones.length + 1;
+                // the skin's rings along the sleeve or the trunk (SkinMesh#emit: the inflated layer's levels, the rings' matrices)
+                SkinMesh.Rings skinRings = SkinMesh.rings(pose, part, slim);
+                Matrix4f[] matrices = skinRings.matrix();
+                int rings = matrices.length;
                 float g = rig.overlayInflate, top = b.y() - g, stretch = (b.h() + 2 * g) / b.h();
                 float[] levels = new float[rings];
-                Matrix4f[] matrices = new Matrix4f[rings];
-                for (int r = 0; r < rings; r++) {
-                    int level = r == 0 ? 0 : r == rings - 1 ? b.h() : part.cuts()[r - 1];
-                    levels[r] = top + level * stretch;
-                    matrices[r] = SkinMesh.ringMatrix(pose, bones, r, new Matrix4f());
-                }
+                for (int r = 0; r < rings; r++) levels[r] = top + skinRings.level()[r] * stretch;
                 deform = (x, y, z, out) -> {
                     int r = 0;
                     while (r < rings - 2 && y > levels[r + 1]) r++;

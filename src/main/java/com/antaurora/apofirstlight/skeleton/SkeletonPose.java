@@ -102,4 +102,13 @@ public final class SkeletonPose {
         return out.translate(offset[b].x * 0.5F, offset[b].y * 0.5F, offset[b].z * 0.5F)
                 .translate(p).rotate(h).translate(-p.x, -p.y, -p.z);
     }
+
+    /**
+     * SkinMesh's hip rings: the parent's and bone b's matrices mixed {@code w} of the way, element by element (linear blend
+     * skinning). A ring corner goes straight from where the parent holds it to where the bone does, so a bent hip's back
+     * rounds off instead of swinging out round the pivot.
+     */
+    public Matrix4f blend(int b, float w, Matrix4f out) {
+        return out.set(world[rig.parent[b]]).lerp(world[b], w);
+    }
 }
