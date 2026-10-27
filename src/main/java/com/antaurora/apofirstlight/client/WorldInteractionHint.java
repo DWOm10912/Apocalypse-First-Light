@@ -43,6 +43,8 @@ import java.util.Locale;
 public final class WorldInteractionHint {
     private record Target(Component label, Vec3 anchor) {}
     private static float fade;
+    /** Whether last frame's prompt came from what the player looks at (not from the item held): the crosshair dot brightens (AflCrosshair). */
+    private static boolean aimed;
     private static long last=System.nanoTime();
     private static Component label;
     private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keys=java.util.List.of();
@@ -60,9 +62,9 @@ public final class WorldInteractionHint {
         if(!event.getOverlay().id().equals(VanillaGuiOverlay.CROSSHAIR.id())) return;
         var mc=Minecraft.getInstance();long now=System.nanoTime();
         float step=Math.min(.2f,(now-last)/1_000_000_000f)/AttachmentHintStyle.FADE_SECONDS;last=now;
-        if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;return;}
+        if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;aimed=false;return;}
         Target target=null;
-        if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
+        if(PortableGeneratorPull.active()) {fade=0;aimed=false;return;}   // the recoil QTE draws its own prompt
         Vec3 nozzleIn=NozzleFillView.localOpening();   // the fuel nozzle in an opening: a click takes it out
         // ground items (GroundItemPick): an item lying nearer than the block looked at comes before the block's own action
         var ground=nozzleIn==null?GroundItemPick.offer(mc):null;
@@ -119,14 +121,15 @@ public final class WorldInteractionHint {
                 && hit.getEntity() instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse)
             target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
         // a magazine in the hand (weapon/NativeMagazineLoading): a click starts loading it from the loose rounds carried, or stops
+        aimed=target!=null;
         if(target==null&&!mc.player.isSpectator()) target=heldMagazine(mc);
         // a furniture hardware box in the hand (item/FurnitureHardwareBoxItem): a click opens it
         if(target==null&&!mc.player.isSpectator()&&mc.player.getMainHandItem().is(com.antaurora.apofirstlight.registry.AflItems.FURNITURE_HARDWARE_BOX.get()))
             target=new Target(Component.translatable("hint.apocalypse_firstlight.furniture_hardware_box.open"),null);
         // the round point shovel at loose ground in its reach (Earthwork A2, client/ShovelClient): dig, pour, or scrape (sneak)
-        if(target==null) {var shovel=ShovelClient.hint(mc);if(shovel!=null) target=new Target(shovel,null);}
+        if(target==null) {var shovel=ShovelClient.hint(mc);if(shovel!=null) {target=new Target(shovel,null);aimed=true;}}
         // the pick mattock at a boulder in its reach (Rock R1a, client/PickClient): strike; any other hand on a boulder: it needs a pick
-        if(target==null) {var pick=PickClient.hint(mc);if(pick!=null) target=new Target(pick,null);}
+        if(target==null) {var pick=PickClient.hint(mc);if(pick!=null) {target=new Target(pick,null);aimed=true;}}
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;
@@ -134,6 +137,9 @@ public final class WorldInteractionHint {
         float[] at=anchor==null?null:project(anchor,w,h);
         AttachmentHintStyle.draw(event.getGuiGraphics(),keys,label,at==null?w/2:Math.round(at[0]),at==null?h/2:Math.round(at[1]),w,fade);
     }
+
+    /** Whether the player looks at something a click acts on (last frame's prompt; the crosshair is drawn before it). */
+    public static boolean aimed() { return aimed; }
 
     private static Target heldMagazine(Minecraft mc) {
         var stack=mc.player.getMainHandItem();

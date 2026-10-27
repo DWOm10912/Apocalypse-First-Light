@@ -1,8 +1,6 @@
 package com.antaurora.apofirstlight.client.ui;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.AflGauge;
-import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -18,15 +16,14 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.util.List;
 
 /**
  * The hotbar in the overlay style (docs/ui/afl_overlay_ui_style_v1.md 4.1), replacing vanilla's (AflHudEvents cancels
  * VanillaGuiOverlay.HOTBAR whenever {@link #replaces()}; spectators keep vanilla's spectator bar). Same footprint and
  * item positions as vanilla (182 x 22 at the bottom centre, items at x = centre - 88 + 20 i; one GUI px higher), so the
  * survival cluster, the load bar and the item name keep their places. The selected item lifts and the amber pill
- * follows it ({@link AflItemStrip}); the off-hand item gets its own tile on the off-hand side; the attack indicator, when
- * set to "hotbar", is a small ring gauge where vanilla draws its sword. Items keep vanilla's pick-up pop. In Survival /
+ * follows it ({@link AflItemStrip}); the off-hand item gets its own tile on the off-hand side; no attack indicator (Crosshair
+ * V1, 2026-10-26: the cooldown comes back with its rework). Items keep vanilla's pick-up pop. In Survival /
  * Adventure the cells are the six quick bindings instead (LoadoutHud, docs/ui/afl_inventory_grid_v0_plan.md 10); the
  * weapons are listed at the bottom right.
  */
@@ -66,14 +63,7 @@ public final class AflHotbarOverlay {
                     AflUiStyle.LINE, AflUiStyle.LINE_ALPHA, AflUiStyle.SHADOW_ALPHA, 0);
             slot(g, mc, player, offhand, (int) x + 3, height - 20, partial, 10);
         }
-        if (mc.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR && mc.player != null) {
-            float strength = mc.player.getAttackStrengthScale(0);
-            if (strength < 1) {
-                float cx = side == HumanoidArm.RIGHT ? centre - 91 - 13 : centre + 91 + 15;
-                AflGauge.draw(g, "hotbar_attack", cx, height - 11, 9.5,
-                        List.of(AflGauge.Band.gauge(7, 1.6, 0, 0, strength, AflUiStyle.LINE, 0.9)), null);
-            }
-        }
+        // no attack indicator (Crosshair V1, user 2026-10-26: the cooldown is reworked later)
     }
 
     /** Vanilla's Gui#renderSlot: the item (with its pick-up pop) and its decorations. */
