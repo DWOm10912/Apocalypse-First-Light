@@ -63,6 +63,7 @@ public final class WorldInteractionHint {
         if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;return;}
         Target target=null;
         if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
+        if(com.antaurora.apofirstlight.client.workbench.WorkbenchWork.active()) {fade=0;return;}   // at the bench the hands are busy; the work's panel shows its keys
         Vec3 nozzleIn=NozzleFillView.localOpening();   // the fuel nozzle in an opening: a click takes it out
         // ground items (GroundItemPick): an item lying nearer than the block looked at comes before the block's own action
         var ground=nozzleIn==null?GroundItemPick.offer(mc):null;

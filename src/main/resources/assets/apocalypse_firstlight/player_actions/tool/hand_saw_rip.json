@@ -19,7 +19,8 @@
     "side": 0,
     "max": 2,
     "face": "face",
-    "pitch": 40
+    "pitch": 40,
+    "out": 0.8
   },
   "prop": {
     "id": "hand_saw",

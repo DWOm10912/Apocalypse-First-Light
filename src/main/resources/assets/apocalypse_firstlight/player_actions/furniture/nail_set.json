@@ -19,7 +19,8 @@
     "max": 2,
     "face": "face",
     "pitch": 40,
-    "in": 0.6
+    "in": 0.8,
+    "out": 0.8
   },
   "first_person_view": [
     [0, 58],

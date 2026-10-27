@@ -36,7 +36,12 @@ import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.MovementInputUpdateEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import org.lwjgl.glfw.GLFW;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
@@ -69,8 +74,9 @@ import java.util.Map;
  * tools/author-hand-saw-actions.mjs WORK (which checks the reach and the clearances offline).
  * <p>
  * The furniture (2026-10-22, docs/gameplay/furniture_bench_work_v1.md) is played by FurnitureWorkClient: the server's plans
- * one action after another, the nails' and screws' timing bar (the use key), Shift or a left click to stop; here only the
- * session, its stop checks and the page's lines about a half-built piece ({@link #benchJob}, {@link #stepLine}).
+ * one action after another, the nails' and screws' timing ring (WorkbenchClient.QTE, Space by default), Shift or a left
+ * click to stop; here only the session, its stop checks, its keys and the page's lines about a half-built piece
+ * ({@link #benchJob}, {@link #stepLine}).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class WorkbenchWork {
@@ -109,14 +115,10 @@ public final class WorkbenchWork {
 
     /**
      * What a player's skeleton plays now (SkeletonActions): the action, when it started (s, game time), its anchors (world),
-     * how fast its clock runs (the furniture's nails and screws by the carpentry level), whether it follows the last one
-     * without a blend.
+     * how fast its clock runs (the furniture's nails and screws by the carpentry level). Each goes straight on from the
+     * one before (SkeletonActions: the work's chain, doc furniture_bench_work_v1.md 12.9).
      */
-    public record At(String action, double started, Map<String, Vec3> anchors, float speed, boolean chain) {
-        public At(String action, double started, Map<String, Vec3> anchors) {
-            this(action, started, anchors, 1F, false);
-        }
-    }
+    public record At(String action, double started, Map<String, Vec3> anchors, float speed) {}
 
     static final class Session {
         BlockPos bench;
@@ -179,6 +181,9 @@ public final class WorkbenchWork {
     /** Working at a bench now (the building hammer's panel keeps out of the way). */
     public static boolean active() { return own != null; }
 
+    /** The own furniture work runs (the ring's key is live, the jump is off). */
+    public static boolean furnitureActive() { return own != null && own.furniture; }
+
     @Nullable
     static Session ownSession() { return own; }
 
@@ -202,13 +207,14 @@ public final class WorkbenchWork {
         }
         if (event.phase == TickEvent.Phase.START) {
             if (own == null) return;
-            // the hands are busy: a left click stops the work, a right click does nothing (no block broken or used meanwhile)
-            // (at the furniture the right click is the nail's blow or the screw's turn on the bar)
-            boolean attack = false, use = false;
+            // the hands are busy: a left click stops the work, a right click does nothing (no block broken or used meanwhile;
+            // held, click() swallows its repeats); the furniture's blows and turns are the ring's own key (key, mouse)
+            boolean attack = false;
             while (mc.options.keyAttack.consumeClick()) attack = true;
-            while (mc.options.keyUse.consumeClick()) use = true;
+            while (mc.options.keyUse.consumeClick()) {
+                // dropped
+            }
             if (attack) stop();
-            else if (use && own.furniture) FurnitureWorkClient.press(own, mc.player);
             return;
         }
         REMOTE.keySet().removeIf(id -> !(mc.level.getEntity(id) instanceof Player));
@@ -244,6 +250,39 @@ public final class WorkbenchWork {
         s.itemStarted = now;
         // the next one: the server's word on the last may still be on its way, so one more than is carried now
         if (s.done >= s.quantity || WorkbenchRecipes.craftable(player, s.recipe) < 2) stop();
+    }
+
+    /** While working, the use and attack keys' repeats (held) neither use nor break anything, and the hand does not swing. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void click(InputEvent.InteractionKeyMappingTriggered event) {
+        if (own == null) return;
+        event.setCanceled(true);
+        event.setSwingHand(false);
+    }
+
+    /** The ring's key on the keyboard: a blow or a turn, at the press (not its repeats). */
+    @SubscribeEvent
+    public static void key(InputEvent.Key event) {
+        if (event.getAction() == GLFW.GLFW_PRESS) qte(InputConstants.getKey(event.getKey(), event.getScanCode()));
+    }
+
+    /** The ring's key rebound to a mouse button: the same, and the click goes no further. */
+    @SubscribeEvent
+    public static void mouse(InputEvent.MouseButton.Pre event) {
+        if (event.getAction() == GLFW.GLFW_PRESS && qte(InputConstants.Type.MOUSE.getOrCreate(event.getButton()))) event.setCanceled(true);
+    }
+
+    private static boolean qte(InputConstants.Key key) {
+        var mc = Minecraft.getInstance();
+        if (!furnitureActive() || mc.screen != null || mc.player == null || !WorkbenchClient.QTE.isActiveAndMatches(key)) return false;
+        FurnitureWorkClient.press(own, mc.player);
+        return true;
+    }
+
+    /** At the furniture Space is the ring's key: no jump (and so no stop by the jump) while the work runs. */
+    @SubscribeEvent
+    public static void movement(MovementInputUpdateEvent event) {
+        if (furnitureActive() && event.getEntity() == Minecraft.getInstance().player) event.getInput().jumping = false;
     }
 
     @SubscribeEvent
@@ -287,6 +326,14 @@ public final class WorkbenchWork {
         if (mc.level == null) return null;
         BlockPos master = Workbench.master(mc.level.getBlockState(bench), bench);
         return mc.level.getBlockEntity(master) instanceof WorkbenchBlockEntity be ? be.job() : null;
+    }
+
+    /** The finished piece standing on a bench's top (doc 12.3), or empty. */
+    public static net.minecraft.world.item.ItemStack benchFinished(BlockPos bench) {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) return net.minecraft.world.item.ItemStack.EMPTY;
+        BlockPos master = Workbench.master(mc.level.getBlockState(bench), bench);
+        return mc.level.getBlockEntity(master) instanceof WorkbenchBlockEntity be ? be.finished() : net.minecraft.world.item.ItemStack.EMPTY;
     }
 
     /** A piece's name: its recipe's result when this client knows the recipe, else the item named as the recipe. */
@@ -388,7 +435,7 @@ public final class WorkbenchWork {
         double now = (p.level().getGameTime() + partial) / 20.0, t0 = j.started() / 20.0;
         String first = STARTS.get(j.work());
         boolean opening = first != null && now - t0 < SET;
-        return new At(opening ? first : j.work(), opening || first == null ? t0 : t0 + SET, anchors(j));
+        return new At(opening ? first : j.work(), opening || first == null ? t0 : t0 + SET, anchors(j), 1F);
     }
 
     private static Map<String, Vec3> anchors(Job j) {

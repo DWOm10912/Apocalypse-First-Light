@@ -8,6 +8,7 @@ import com.antaurora.apofirstlight.client.CrowbarSmashClient;
 import com.antaurora.apofirstlight.client.PortableGeneratorPull;
 import com.antaurora.apofirstlight.item.FuelCanItem;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.skeleton.GunStance;
 import com.antaurora.apofirstlight.skeleton.SkeletonPose;
 import com.antaurora.apofirstlight.skeleton.SkeletonRig;
 import com.antaurora.apofirstlight.skeleton.action.ActionPose;
@@ -79,7 +80,8 @@ public final class SkeletonActions {
     /**
      * What a player does now, as its source sees it: the anchors in the world, the parameter, the side, its time's speed;
      * {@code gun}: the held gun's own (SkeletonGunStance#action), played only with the gun stance; {@code chain}: straight
-     * on from the action before (a furniture step's next action, WorkbenchWork: no blend in from the base pose).
+     * on from the action before when that one chains too (the bench's work, WorkbenchWork: no blend in from the base pose,
+     * the step kept, the switch eased from the pose shown, {@link #crossfade}).
      */
     private record Live(String id, double started, float param, Map<String, Vec3> anchors, boolean mirror, float speed, boolean gun,
                         boolean chain) {
@@ -97,7 +99,17 @@ public final class SkeletonActions {
         PlayerAction action;
         double start, shown, stoppedAt = -1;
         Live last;
+        /** The clock this frame; when a chained action last took over (NaN: none), and the view's pitch shown then (own). */
+        double now, switched = Double.NaN;
+        float fromPitch = Float.NaN;
     }
+
+    /**
+     * A chained action taking over eases from the pose shown before over this long (s, PlayerSkeleton: the body, the props,
+     * the posed eye with them), and the view's pitch over this long. A chained action whose clock starts again later by more
+     * than this (s) has begun again (the next crosscut, a plan the server played otherwise): eased the same way.
+     */
+    private static final double CROSSFADE = 0.3, LOOK_FADE = 0.5, RESTART = 0.3;
 
     private static final String CROWBAR = "tool/crowbar_smash", CROWBAR_HOLD = "item/crowbar", JERRY_CAN = "item/jerry_can";
     /** The round point shovel (Earthwork A2, tools/author-shovel-actions-a2.cjs): its hold, its strokes by ShovelAction mode. */
@@ -168,7 +180,23 @@ public final class SkeletonActions {
     /** The own posed eye (world) and the frame it was solved in; whether the own action steps the body away. */
     private static Vec3 eye;
     private static long eyeFrame = -10;
+    /** The frame {@link #camera} last put the camera on the posed eye. */
+    private static long placedFrame = -10;
+    private static Vec3 placed;
     private static boolean stepping;
+    /**
+     * How far the camera is on the posed eye from the player's own (the step's weight: eased in and out with the body, so
+     * an action's start and end do not jump it).
+     */
+    private static float eyeWeight;
+    /**
+     * The posed eye off the camera vanilla placed, as it was when the step began (model blocks, the player's frame: it
+     * turns with the body), and that frame. Only this is eased out with the step's weight: the camera is on the posed eye
+     * less this times (1 - weight). Easing the whole way from vanilla's camera on top of the step's own ease moved it
+     * twice as fast mid-way (doc furniture_bench_work_v1.md 12.9). Null till the camera is placed once more.
+     */
+    private static Vector3f residual;
+    private static final Matrix4f eyeToModel = new Matrix4f();
     /** The view's turn while stepping (deg, Minecraft's yaw and pitch) and how much of it (pitch NaN: the player's own). */
     private static float lookYaw, lookPitch = Float.NaN, lookWeight;
     private static long frame;
@@ -243,8 +271,12 @@ public final class SkeletonActions {
         double now = now(partial);
         Live live = live(p, partial, now);
         Track t = TRACKS.computeIfAbsent(p.getId(), k -> new Track());
+        t.now = now;
         if (live != null) {
-            if (!live.id().equals(t.id) || t.stoppedAt >= 0) {
+            // straight on from a chained action still running (the bench's next action), or its clock begun again
+            boolean chained = live.chain() && t.id != null && t.stoppedAt < 0 && t.last != null && t.last.chain();
+            boolean again = chained && live.id().equals(t.id) && !Double.isNaN(live.started()) && live.started() - t.start > RESTART;
+            if (!live.id().equals(t.id) || t.stoppedAt >= 0 || again) {
                 PlayerAction a = PlayerActions.get(live.id());
                 if (a == null) {
                     ApocalypseFirstLight.LOGGER.warn("[AFL skeleton] no player action {}", live.id());
@@ -252,11 +284,16 @@ public final class SkeletonActions {
                     return null;
                 }
                 boolean resumed = live.id().equals(t.id) && t.stoppedAt >= 0;
-                boolean chained = live.chain() && t.id != null && t.stoppedAt < 0;
                 t.id = live.id();
                 t.action = a;
                 t.start = resumed ? t.start : now;
                 t.shown = resumed || chained ? t.shown : now;
+                if (chained) {
+                    t.switched = now;
+                    t.fromPitch = p == Minecraft.getInstance().player && stepping ? lookPitch : Float.NaN;
+                } else if (!resumed) {
+                    t.switched = Double.NaN;
+                }
                 t.stoppedAt = -1;
             }
             if (!Double.isNaN(live.started())) t.start = live.started();   // a source with its own clock
@@ -265,7 +302,7 @@ public final class SkeletonActions {
             t.stoppedAt = now;
         }
         if (t.action == null || t.last == null) return null;
-        if (t.stoppedAt >= 0 && now - t.stoppedAt > t.action.blendOut) {
+        if (t.stoppedAt >= 0 && now - t.stoppedAt > ActionPose.fadeOut(t.action)) {
             TRACKS.remove(p.getId());
             return null;
         }
@@ -277,6 +314,7 @@ public final class SkeletonActions {
         if (m.action.loop == PlayerAction.Loop.TIME) m.seconds = ActionPose.loopSeconds(m.action, m.seconds, 0F);
         m.stopped = t.stoppedAt >= 0 ? (float) (now - t.stoppedAt) : -1F;
         m.age = (float) ((t.stoppedAt >= 0 ? t.stoppedAt : now) - t.shown);
+        if (t.last.chain()) m.stepAge = m.age;
         m.param = t.last.param();
         m.mirror = t.last.mirror();
         Map<String, Vec3> anchors = world ? t.last.anchors() : Map.of();
@@ -307,21 +345,52 @@ public final class SkeletonActions {
         return stepsFrame == frame ? STEPS.get(entity.getId()) : null;
     }
 
-    /** After the solve: the own posed eye (world), for the first-person camera while the action steps the body away. */
+    /**
+     * PlayerSkeleton: when a chained action last took over this player's (the action clock, s), NaN for none; the pose
+     * shown before it is eased from by {@link #crossfade}.
+     */
+    static double switchedAt(Player p) {
+        Track t = TRACKS.get(p.getId());
+        return t == null ? Double.NaN : t.switched;
+    }
+
+    /** PlayerSkeleton: how far the pose is from the one shown before the chained action took over to its own (0..1, 1: all). */
+    static float crossfade(Player p) {
+        Track t = TRACKS.get(p.getId());
+        if (t == null || Double.isNaN(t.switched)) return 1F;
+        return GunStance.smooth((float) ((t.now - t.switched) / CROSSFADE));
+    }
+
+    /**
+     * After the solve: the own posed eye (world), for the first-person camera while the action steps the body away. A
+     * chained action steps from its first instant (its time starts at 0 there; another one, as the jerry can's pour at 0,
+     * not yet). The view's pitch eases from the one shown when a chained action took over.
+     */
     static void solved(AbstractClientPlayer p, SkeletonPose pose, ActionPose.Moment m, Vec3 origin, Matrix4f toModel) {
         if (p != Minecraft.getInstance().player) return;
-        stepping = m != null && ActionPose.weight(m) > 0 && m.seconds > 0 && (m.action.firstPersonEye
+        Track t = TRACKS.get(p.getId());
+        boolean chained = t != null && t.last != null && t.last.chain();
+        float w = m == null ? 0F : ActionPose.stepWeight(m);
+        boolean was = stepping && frame - eyeFrame <= 2;
+        stepping = m != null && w > 0 && (m.seconds > 0 || chained) && (m.action.firstPersonEye
                 || m.action.approach != null && m.anchors.apply(m.action.approach.anchor()) != null);
+        if (!stepping || !was) residual = null;
         if (!stepping) return;
         Matrix4f fromModel = new Matrix4f(toModel).invert();
         Vector3f e = fromModel.transformPosition(ActionPose.cameraEye(pose).div(16F));
         eye = origin.add(e.x, e.y, e.z);
         eyeFrame = frame;
-        lookPitch = ActionPose.pitch(m);
+        eyeWeight = Math.min(1F, w);
+        eyeToModel.set(toModel);
+        float pitch = ActionPose.pitch(m);
+        double since = t == null || Double.isNaN(t.switched) ? LOOK_FADE : t.now - t.switched;
+        if (!Float.isNaN(pitch) && t != null && !Float.isNaN(t.fromPitch) && since < LOOK_FADE)
+            pitch = t.fromPitch + (pitch - t.fromPitch) * GunStance.smooth((float) (since / LOOK_FADE));
+        lookPitch = pitch;
         if (!Float.isNaN(lookPitch)) {
             Vector3f f = fromModel.transformDirection(ActionPose.facing(pose));
             lookYaw = (float) Math.toDegrees(Math.atan2(-f.x, f.z));
-            lookWeight = ActionPose.weight(m);
+            lookWeight = eyeWeight;
         }
     }
 
@@ -331,16 +400,37 @@ public final class SkeletonActions {
         return new float[]{Mth.rotLerp(lookWeight, yaw, lookYaw), Mth.lerp(lookWeight, pitch, lookPitch)};
     }
 
-    /** Camera#setup (mixin client.PortableGeneratorCameraMixin): the own first-person camera on the posed eye, or null. */
+    /**
+     * Camera#setup (mixin client.PortableGeneratorCameraMixin): the own first-person camera on the posed eye, eased from the
+     * player's own with the step ({@link #residual}: where the camera vanilla placed was off it as the step began), or null.
+     */
     public static Vec3 camera(Camera camera) {
         if (!stepping || eye == null || frame - eyeFrame > 2 || !drawsArms()) return null;
-        return eye;
+        placedFrame = frame;
+        if (residual == null) {
+            Vec3 off = eye.subtract(camera.getPosition());
+            residual = eyeToModel.transformDirection(new Vector3f((float) off.x, (float) off.y, (float) off.z));
+        }
+        float k = 1F - eyeWeight;
+        if (k <= 0F) {
+            placed = eye;
+        } else {
+            Vector3f r = new Matrix4f(eyeToModel).invert().transformDirection(new Vector3f(residual)).mul(k);
+            placed = eye.subtract(r.x, r.y, r.z);
+        }
+        return placed;
     }
 
-    /** client/FirstPersonBody#shown: the camera is on the own posed eye (the body is still the first-person body). */
+    /**
+     * client/FirstPersonBody#shown: the camera was put on the own posed eye this frame and is still there (the body is still
+     * the first-person body). Against the eye it was put on, not the latest one: a solve between the camera and the body draw
+     * (a shadow pass) moves the eye when the clip is driven every frame (the nail's raise), and the body skipped then left the
+     * camera flickering between the two eyes.
+     */
     public static boolean cameraOnBody(Camera camera) {
-        Vec3 e = camera(camera);
-        return e != null && e.distanceToSqr(camera.getPosition()) < 1e-4;
+        var mc = Minecraft.getInstance();
+        return placedFrame == frame && placed != null && mc.player != null && camera.getEntity() == mc.player
+                && placed.distanceToSqr(camera.getPosition()) < 1e-4;
     }
 
     static void newFrame() {
@@ -379,7 +469,9 @@ public final class SkeletonActions {
         FallLandingClient.Playing landing = FallLandingClient.playing(p, now);
         if (landing != null) return new Live(landing.id(), landing.started(), 0F, Map.of(), landing.mirror());
         var work = com.antaurora.apofirstlight.client.workbench.WorkbenchWork.at(p, partial);
-        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false, work.speed(), false, work.chain());
+        // the bench's actions go straight on from one another (doc furniture_bench_work_v1.md 12.9): the step kept, the
+        // switch eased from the pose shown (#crossfade); only the work's first one blends in from the player
+        if (work != null) return new Live(work.action(), work.started(), 0F, work.anchors(), false, work.speed(), false, true);
         SkeletonGunStance.GunAction gun = SkeletonGunStance.action(p, now);
         if (gun != null) return new Live(gun.id(), gun.started(), 0F, Map.of(), false, gun.speed(), true);
         PortableDieselGeneratorBlockEntity set = PortableGeneratorPull.heldSet(p);

@@ -111,6 +111,19 @@ public final class FirstPersonBody {
     private FirstPersonBody() {
     }
 
+    /**
+     * mixin client.EntityRenderDispatcherOwnBodyMixin: the own player's body in first person is drawn whatever the frustum
+     * says (docs/gameplay/furniture_bench_work_v1.md 12.10). With the view on a posed eye a block or more ahead (a bench
+     * action's step), the player's box was behind the view and culled: the body not solved, the camera back on the player's
+     * own eye, the box in view again, in turn. In vanilla's own first person the view is inside the box: nothing changes.
+     */
+    public static boolean neverCulled(Entity entity) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (entity != minecraft.player || !PlayerSkeleton.enabled() || !FirstPersonBodyConfig.showBody()) return false;
+        Camera camera = minecraft.gameRenderer.getMainCamera();
+        return camera.getEntity() == entity && !camera.isDetached();
+    }
+
     /** In place of the camera's isDetached() in the entity loop: also true when the first-person body is drawn this frame. */
     public static boolean shown(Camera camera) {
         if (camera.isDetached() || !FirstPersonBodyConfig.showBody()) return false;

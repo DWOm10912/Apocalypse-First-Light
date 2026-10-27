@@ -45,9 +45,6 @@
       "times": 2
     },
     {
-      "step": "furniture/wipe_off"
-    },
-    {
       "step": "furniture/fit_knob"
     }
   ],

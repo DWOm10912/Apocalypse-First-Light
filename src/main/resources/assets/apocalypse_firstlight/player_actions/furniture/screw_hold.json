@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "The screwdriver in the slot, the left hand on the hardware: looped while the timing bar runs (a press plays a turn, a slip or the seat) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "about": "The screwdriver in the slot, the left hand on the hardware: looped while the timing ring runs (a press plays a turn, a slip or the seat) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
   "clip": "tool.furniture_lean",
   "layer": "action",
   "mask": "upper",
@@ -20,7 +20,8 @@
     "max": 2,
     "face": "face",
     "pitch": 40,
-    "in": 0.6
+    "in": 0.8,
+    "out": 0.8
   },
   "first_person_view": [
     [0, 58],

@@ -272,9 +272,23 @@ public final class PlayerSkeleton {
 
         /** The ground's model y (px), NaN off it (riding): the Block-Mesh V2 toes. */
         float ground = Float.NaN;
+        /** The frame the pose was solved in: the render origin (world) and render-origin blocks to model blocks. */
+        Vec3 lastOrigin;
+        final Matrix4f lastToModel = new Matrix4f();
+        /**
+         * What was shown when a chained action last took over (SkeletonActions#switchedAt: this switch's time), eased from
+         * ({@link #crossfade}): the pose, its frame, the props; whether there was one shown just before.
+         */
+        final SkeletonPose from;
+        final Matrix4f fromToModel = new Matrix4f();
+        Vec3 fromOrigin;
+        double fromAt = Double.NaN;
+        boolean fromShown;
+        final List<Extra> fromProps = new java.util.ArrayList<>();
 
         Solved(SkeletonRig rig) {
             pose = new SkeletonPose(rig);
+            from = new SkeletonPose(rig);
         }
     }
 
@@ -656,6 +670,8 @@ public final class PlayerSkeleton {
             out.prop = null;
             out.heldHidden = false;
             out.extras.clear();
+            out.lastOrigin = origin;
+            out.lastToModel.set(toModel);
             return;
         }
         if (firstPerson) {
@@ -714,6 +730,8 @@ public final class PlayerSkeleton {
         // a player action: its clips, step and facing before the body. With a gun up only the gun's own draw and put-away
         // (the gun has both hands), and those only with it (docs/dev/p9_draw_holster_actions_v1.md 2.4)
         ActionPose.Moment action = seated != null ? null : SkeletonActions.moment(p, partial, origin, toModel, d.world);
+        // a chained action took over (the bench's next one): what was shown till now, to ease from (#crossfade)
+        if (d.world) snapshot(p, out);
         // (by its source, not its id: the magazine loading gun/<gun>_mag_load is no gun's own, user 2026-10-20 "左手从来就没有出现过")
         if (action != null && gun != SkeletonActions.gunAction(p)) action = null;
         if (action != null) action.view = ActionPose.viewFrame(eyeModel, in.viewYaw, in.viewPitch);   // a gun's own: its stance's
@@ -787,7 +805,7 @@ public final class PlayerSkeleton {
             }
             if (action != null) {
                 ActionPose.hands(in, out.pose, poser(), action);
-                if (action.action.heldHidden) {
+                if (action.action.heldHidden && ActionPose.weight(action) > 0) {
                     out.heldHidden = true;
                     PlayerProps.Prop first = action.prop == null || action.propHidden[0] ? null : PlayerProps.get(action.action.prop);
                     if (first != null) out.extras.add(new Solved.Extra(first, new Matrix4f(action.prop), action.propOpen));
@@ -804,6 +822,9 @@ public final class PlayerSkeleton {
             }
         }
         poser().solveArms(in, out.pose, report);
+        if (d.world && action != null) crossfade(p, out, origin, toModel);
+        out.lastOrigin = origin;
+        out.lastToModel.set(toModel);
         if (d.world) com.antaurora.apofirstlight.client.survivor.LiveRagdollClient.afterSolve(p, partial, origin, toModel, out.pose);
         if (d.world) SkeletonActions.solved(p, out.pose, action, origin, toModel);
         if (sit != null) GroundSitClient.solved(p, out.pose, origin, toModel);
@@ -818,6 +839,57 @@ public final class PlayerSkeleton {
                 points.put(name, origin.add(w.x, w.y, w.z));
             }
             SkeletonActions.propPoints(p, points);
+        }
+    }
+
+    /**
+     * A chained action took over since the last solve (SkeletonActions#switchedAt): the pose and the props as they were
+     * shown (the frame before, in the frame they were solved in), to ease from. Nothing when none was shown just before.
+     */
+    private static void snapshot(AbstractClientPlayer p, Solved out) {
+        double at = SkeletonActions.switchedAt(p);
+        if (Double.isNaN(at) || at == out.fromAt) return;
+        out.fromAt = at;
+        out.fromShown = out.lastOrigin != null && frame - out.frame <= 2;
+        if (!out.fromShown) return;
+        out.from.copyFrom(out.pose);
+        out.fromOrigin = out.lastOrigin;
+        out.fromToModel.set(out.lastToModel);
+        out.fromProps.clear();
+        if (out.prop != null) out.fromProps.add(new Solved.Extra(out.prop, new Matrix4f(out.propPose), out.propOpen));
+        for (Solved.Extra e : out.extras) out.fromProps.add(new Solved.Extra(e.prop(), new Matrix4f(e.pose()), e.open()));
+    }
+
+    /**
+     * Docs furniture_bench_work_v1.md 12.9: a chained action taking over (the saw put down and the hammer taken up, the next
+     * nail, the next piece) eases from what was shown over SkeletonActions#crossfade, the whole pose (and with it the posed
+     * eye the own camera sits on) and each prop both show; the old frame taken into this one (the body's yaw may turn).
+     */
+    private static void crossfade(AbstractClientPlayer p, Solved out, Vec3 origin, Matrix4f toModel) {
+        if (!out.fromShown || out.fromAt != SkeletonActions.switchedAt(p)) return;
+        float f = SkeletonActions.crossfade(p);
+        if (f >= 1F) return;
+        // the old model px to this frame's: px = 16 toModel (world - origin)
+        Matrix4f c = new Matrix4f().scale(16F).mul(toModel)
+                .translate((float) (out.fromOrigin.x - origin.x), (float) (out.fromOrigin.y - origin.y), (float) (out.fromOrigin.z - origin.z))
+                .mul(new Matrix4f(out.fromToModel).invert()).scale(1F / 16F);
+        out.pose.blendFrom(out.from, c, f);
+        blendProp(out.prop, out.propPose, out, c, f);
+        for (Solved.Extra e : out.extras) blendProp(e.prop(), e.pose(), out, c, f);
+    }
+
+    /** A prop shown before the switch too: eased from where it was (its origin and turn), else left where it is. */
+    private static void blendProp(PlayerProps.Prop prop, Matrix4f to, Solved out, Matrix4f c, float f) {
+        if (prop == null) return;
+        for (Solved.Extra e : out.fromProps) {
+            if (e.prop() != prop) continue;
+            Matrix4f from = new Matrix4f(c).mul(e.pose());
+            if (from.determinant3x3() <= 0F || to.determinant3x3() <= 0F) return;   // a reflected one (mirrored): as it is
+            Vector3f ta = from.getTranslation(new Vector3f()), tb = to.getTranslation(new Vector3f());
+            Quaternionf qa = from.getNormalizedRotation(new Quaternionf()), qb = to.getNormalizedRotation(new Quaternionf());
+            float sa = from.getScale(new Vector3f()).x, sb = to.getScale(new Vector3f()).x;
+            to.translation(ta.lerp(tb, f)).rotate(qa.slerp(qb, f)).scale(sa + (sb - sa) * f);
+            return;
         }
     }
 

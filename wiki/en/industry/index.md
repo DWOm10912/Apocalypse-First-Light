@@ -63,13 +63,16 @@ AFL measures power in FE (Forge Energy). Generators turn diesel, coal or lava in
 <StatusTag s="test" /> The 7 wooden pieces (chair, table, tool rack, gun rack, nightstand, storage chest, wardrobe) are made at the workbench with the hand saw and the claw hammer on you; the nightstand, the storage chest and the wardrobe also need a flat screwdriver (<V d="item_mass/core_v1#items.apocalypse_firstlight:screwdriver.unit_mass_kg" u="kg" />). Press Make and you step up to the bench; a piece is made in steps:
 
 - **Crosscut:** slide the board over the end of the bench, saw a length off and lay it at the back right, 6.5 s a cut
-- **Nailing:** set the nail with a light tap, then a timing bar comes up under the crosshair: press use when the marker is in the green to strike. A miss only costs time, nothing breaks. You drive as many nails as you can see on the bench; the box gives up the real count
-- **Staining, wiping off:** before the first coat the can is pried open and stirred; the rag wipes the stain on along the grain, and the piece turns walnut band by band
-- **Hardware:** set the hinge, knob or escutcheon in place, then drive its screws one by one on the same timing bar; a slip only costs time
+- **Nailing:** set the nail with a light tap, then a ring comes up around the crosshair: a needle goes round clockwise from 12 o'clock, 1.2 s a turn, and the hammer rises with it. Press Space while the needle is in the green arc to strike (rebindable in Controls); the brighter middle of the arc counts as two blows. A miss only costs time, nothing breaks. You drive as many nails as you can see on the bench; the box gives up the real count
+- **Staining:** before the first coat the can is pried open and stirred; a flat brush is dipped and drawn along the grain in three strokes, and the piece turns walnut band by band
+- **Hardware:** set the hinge, knob or escutcheon in place, then drive its screws one by one on the same ring; a slip only costs time
 
 - A novice strikes a nail 4 times and turns a screw 4 times; carpentry level 4 makes it 3, level 7 makes it 2, and each level widens the green and quickens the work. Each nail, each screw and each finished piece give carpentry experience
+- While working, right click does nothing, and at the furniture Space does not jump
+- Moving on to the next action (the saw put down for the hammer, the next nail), you move smoothly to the new spot and the view follows
 - Stopping halfway (Shift, left click, walking off, opening a screen) takes no materials; what is done stays on the bench, saved with the world. Anyone who knows the recipe can go on, from the start of that nail or screw. With another recipe's piece on the bench, the page needs a second click to throw it away
-- The materials come off when a piece is done. At the end of a batch the can is closed before you stop
+- The materials come off when a piece is done, and the can is closed before you stop. Furniture is made one piece at a time
+- The finished piece stays on the bench: standing if it fits, laid down if not (the table legs up; the wardrobe, the chair and the racks on their backs). While it is there no new piece can be started; press use on the top to take it into your inventory. Carrying it in both arms comes later
 
 ## Machines
 

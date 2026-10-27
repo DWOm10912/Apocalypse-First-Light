@@ -260,10 +260,14 @@ public final class Workbench extends BaseEntityBlock implements AflMeshInteracti
 
     // ------------------------------------------------------------------------------------------- interaction
 
-    /** The top: craft; drawers open / close, an open drawer's inside view; the pegs' prompts are the tool rack's (client WorldInteractionHint). */
+    /**
+     * The top: craft, or take the furniture piece made here off it (doc 12.3); drawers open / close, an open drawer's inside
+     * view; the pegs' prompts are the tool rack's (client WorldInteractionHint).
+     */
     @Override
     public @Nullable String interactionHintKey(Level level, BlockState state, BlockPos pos, String region) {
-        if (region.equals("top")) return "hint.apocalypse_firstlight.workbench.craft";
+        if (region.equals("top")) return level.getBlockEntity(master(state, pos)) instanceof WorkbenchBlockEntity be && !be.finished().isEmpty()
+                ? "hint.apocalypse_firstlight.workbench.take" : "hint.apocalypse_firstlight.workbench.craft";
         int side = drawerOf(region);
         if (side < 0) return null;
         boolean open = drawerOpen(level, master(state, pos), side);
@@ -280,6 +284,14 @@ public final class Workbench extends BaseEntityBlock implements AflMeshInteracti
         BlockPos m = master(state, pos);
         if (region == null || !(level.getBlockEntity(m) instanceof WorkbenchBlockEntity bench)) return InteractionResult.PASS;
         String name = region.region();
+        if (name.equals("top") && !bench.finished().isEmpty()) {
+            // the piece made here, into the inventory until it can be carried (doc 12.3, 12.4); anyone may take it
+            if (!level.isClientSide) {
+                com.antaurora.apofirstlight.inventory.CarriedItems.give((net.minecraft.server.level.ServerPlayer) player, bench.takeFinished());
+                level.playSound(null, m.above(), SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.6F, 0.9F);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (name.equals("top")) {
             if (level.isClientSide) net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.workbench.WorkbenchClient.open(m));

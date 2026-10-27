@@ -73,7 +73,8 @@ public final class WorkbenchRenderer implements BlockEntityRenderer<WorkbenchBlo
             knobWork(knob, state, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
             pose.popPose();
         }
-        FurnitureWorkRenderer.render(entity.getBlockPos(), state, partialTick, pose, buffers, LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
+        FurnitureWorkRenderer.render(entity.getBlockPos(), state, entity.finished(), partialTick, pose, buffers,
+                LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above()));
         if (entity.noTools()) return;
         int boardLight = LevelRenderer.getLightColor(entity.getLevel(), entity.getBlockPos().above());
         for (int k = 0; k < Workbench.PEGS; k++) {

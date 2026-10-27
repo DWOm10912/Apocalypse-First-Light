@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "A good blow: from the hold's pose down onto the head (0.05-0.2, the nail goes in a share), back up to it (0.2-0.35) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "about": "A good blow: from the raised hammer down onto the head (0.05-0.2, the nail goes in a share), back up to cocked over it (0.2-0.35, where the next hold starts) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
   "clip": "tool.furniture_lean",
   "layer": "action",
   "mask": "upper",
@@ -19,7 +19,8 @@
     "max": 2,
     "face": "face",
     "pitch": 40,
-    "in": 0.6
+    "in": 0.8,
+    "out": 0.8
   },
   "first_person_view": [
     [0, 58],
@@ -33,8 +34,8 @@
           "at": 0,
           "frame": "anchor:head",
           "point": "grip",
-          "pos": [-0.53, -2.59, 4.04],
-          "rot": [122.905, -84.359, 90],
+          "pos": [-0.53, -3.44, 3.36],
+          "rot": [104.036, -84.459, 90],
           "blend": 0
         },
         {

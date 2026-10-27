@@ -277,7 +277,7 @@ const ACTION = {
   layer: 'action', mask: 'upper', priority: 55, first_person: 'body', held_item: 'hidden',
   loop: 'time', length: 10,
   blend: {in: 0.3, out: 0.25},
-  approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, in: 0.6},
+  approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, in: 0.8, out: 0.8},
   first_person_view: FP_VIEW,
   props: [
     {id: 'wooden_knob_blank', keys: BLANK_KEYS},

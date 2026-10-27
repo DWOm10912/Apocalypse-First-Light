@@ -57,6 +57,29 @@ public final class SkeletonPose {
         shoulderDrop = other.shoulderDrop;
     }
 
+    /**
+     * Eases this pose from {@code from} (the pose shown before, model px in its own frame) by {@code f} (0: from, 1: this
+     * one), every bone's local rotation and offset, and recomputes the matrices. {@code toHere}: from's model px to this
+     * pose's (the body's frame may have turned since): taken by the root, which carries the rest.
+     */
+    public void blendFrom(SkeletonPose from, Matrix4f toHere, float f) {
+        Quaternionf turn = toHere.getNormalizedRotation(new Quaternionf()), q = new Quaternionf();
+        Vector3f o = new Vector3f();
+        for (int b = 0; b < local.length; b++) {
+            q.set(from.local[b]);
+            o.set(from.offset[b]);
+            if (rig.parent[b] < 0) {
+                // W = T(offset) T(P) R T(-P) taken over: R' = turn R, offset' = toHere(offset + P) - P
+                Vector3f p = rig.pivot[b];
+                q.premul(turn);
+                toHere.transformPosition(o.add(p)).sub(p);
+            }
+            local[b].set(q.slerp(local[b], f));
+            offset[b].set(o.lerp(offset[b], f));
+        }
+        update();
+    }
+
     /** Recomputes every skinning matrix from the local rotations and offsets (parents come first in the rig). */
     public void update() {
         for (int b = 0; b < local.length; b++) update(b);

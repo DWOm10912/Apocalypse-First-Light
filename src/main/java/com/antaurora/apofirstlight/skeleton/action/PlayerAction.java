@@ -65,8 +65,11 @@ public final class PlayerAction {
      * {@code pitch} deg down, going to {@code pitchHigh} as the action's parameter goes to 1 (JSON {@code pitch}: a number
      * or [at 0, at 1]; NaN: the player's own view). {@code in}: seconds of the action's time over which the step eases in
      * (0: with the action's blend-in), so an action whose time runs back (the jerry can's pour) steps back with it.
+     * {@code out}: seconds over which the step and the view's turn ease back after the action stopped (NaN: with its
+     * blend-out); the bench's actions take as long back to the player as they took to the bench.
      */
-    public record Approach(String anchor, float distance, float side, float max, String face, float pitch, float pitchHigh, float in) {}
+    public record Approach(String anchor, float distance, float side, float max, String face, float pitch, float pitchHigh, float in,
+                           float out) {}
 
     /**
      * The prop's placement from {@code at} s, eased over {@code blend} s from the one before: its {@code point}
@@ -203,7 +206,8 @@ public final class PlayerAction {
             approach = new Approach(a.get("anchor").getAsString(), a.get("distance").getAsFloat(),
                     a.has("side") ? a.get("side").getAsFloat() : 0F, a.get("max").getAsFloat(),
                     a.has("face") ? a.get("face").getAsString() : a.get("anchor").getAsString(),
-                    pitch(a, 0), pitch(a, 1), a.has("in") ? a.get("in").getAsFloat() : 0F);
+                    pitch(a, 0), pitch(a, 1), a.has("in") ? a.get("in").getAsFloat() : 0F,
+                    a.has("out") ? a.get("out").getAsFloat() : Float.NaN);
         } else approach = null;
         JsonObject hands = json.has("hands") ? json.getAsJsonObject("hands") : new JsonObject();
         right = keys(id, hands, "right");

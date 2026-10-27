@@ -34,9 +34,6 @@
     {
       "step": "furniture/wipe",
       "times": 2
-    },
-    {
-      "step": "furniture/wipe_off"
     }
   ],
   "unlock": [

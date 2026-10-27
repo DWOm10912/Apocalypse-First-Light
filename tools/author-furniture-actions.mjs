@@ -48,10 +48,10 @@ const stance = (sx, sz, yaw) => {
 };
 /** The crosscut (WorkbenchWork CUT_*): the cut plane, the board, the stance (as the wooden knob's), the pile. */
 export const CUT = {x: 0.0, z0: 0.06, z1: 0.26, top: 0.925, thick: 0.025, piece: 0.28, standX: 0.36, standZ: -0.18, yaw: -15,
-  holdX: 0.13, holdY: 0.955, pileX: 0.24, pileZ: 0.37};
-/** The assembly (WorkbenchWork ASM_*): the stand, the can, the boxes, the lid's, stick's and rag's rests. */
+  holdX: 0.24, holdY: 0.955, pileX: 0.24, pileZ: 0.37};
+/** The assembly (FurnitureBench): the stand, the can, the boxes, the lid's, stick's and brush's rests (the brush's middle). */
 export const ASM = {standX: 1.20, standZ: -0.08, can: [0.60, 0.9, 0.30], box: [1.76, 0.9, 0.14], lid: [0.52, 0.905, 0.13],
-  stick: [0.45, 0.905, 0.30], rag: [0.66, 0.9, 0.12]};
+  stick: [0.45, 0.905, 0.30], brush: [0.66, 0.9, 0.12]};
 const CS = stance(CUT.standX, CUT.standZ, CUT.yaw), AS = stance(ASM.standX, ASM.standZ, 0);
 /** The assembly's stand follows the work along the bench (WorkbenchWork#standX): the nail or screw a little right of the body's middle. */
 export const STAND_RIGHT = 0.18;
@@ -59,8 +59,8 @@ const standFor = x => clamp(x + STAND_RIGHT, 0.6, 1.62);
 /** ... and steps back from the bench for the near ones (a near nail under the shoulder folds the arm): 0.42 behind the work, at most at the front. */
 export const STAND_BACK = 0.36;
 const standZFor = z => Math.min(ASM.standZ, z - STAND_BACK);
-/** The can's actions stand at the can; the wipes at WIPE.standX, the strokes from x a to b (the right hand's reach: the rag passes the
- *  piece's right part, the bench paints the whole strip). */
+/** The can's actions stand at the can; the brush at WIPE.standX, the strokes from x a to b (the right hand's reach: the brush passes
+ *  the piece's right part, the bench paints the whole strip). */
 export const CAN_STAND = 0.62;
 export const WIPE = {standX: 1.10, a: 0.80, b: 1.32, y: 0.015};
 /** The left hand presses the piece by the work: to its left and nearer the body, within reach (WorkbenchWork#press). */
@@ -69,6 +69,8 @@ export const PRESS_LEFT = 0.25, PRESS_BACK = 0.10, PRESS_REACH = 0.36;
 const K = 0.508 * 0.9375;
 const NAIL_LEN = 0.1 * K, SCREW_LEN = 0.063 * K, CAN_H = 0.238 * K;
 const CAN_MOUTH = [ASM.can[0], ASM.can[1] + CAN_H, ASM.can[2]];
+/** The brush (FurnitureBench BRUSH_*): its middle 0.1969 mesh units up from the bristles' tip, lying on its 0.0187 half thickness. */
+const BRUSH_MID = 0.1969, BRUSH_LIFT = 0.0187 * K;
 
 // ---------------------------------------------------------------- the props
 const OUT = (px, scale) => px / (16 * scale);
@@ -103,8 +105,8 @@ const PROPS = {
       [0.494, 0, 0.494], [0.506, 0.1, 0.506], {tip: [0.5, 0, 0.5], head: [0.5, 0.1, 0.5], pinch: [0.5, 0.06, 0.5 - FINGERS]}),
   furniture_screw: meshProp('A wood screw in the left fingers: y from the tip to the head, the slot along x. tip, head; pinch: the left palm, the fingertips holding it by its middle from the body side', ['screw', 'screw_slot'], W,
       [0.492, 0, 0.492], [0.508, 0.063, 0.508], {tip: [0.5, 0, 0.5], head: [0.5, 0.063, 0.5], pinch: [0.5, 0.04, 0.5 - FINGERS]}),
-  furniture_rag: meshProp('The staining rag, a folded pad: y up from its face. center: the face\'s middle (on the wood); hold: the right palm on its back', ['rag'], 0.7,
-      [0.393, 0, 0.421], [0.607, 0.029, 0.579], {center: [0.5, 0, 0.5], hold: [0.5, 0.029 + OUT(1.5, 0.7), 0.5]}),
+  furniture_brush: meshProp('The 50 mm flat stain brush (doc 12.2): y from the bristles\' tip up the handle, the bristles\' width along x. tip; center: its middle; grip: the right hand round the handle by the ferrule', ['brush_handle', 'brush_ferrule', 'brush_bristle', 'brush_wet'], W,
+      [0.4469, 0, 0.4813], [0.5531, 0.3937, 0.5187], {tip: [0.5, 0, 0.5], center: [0.5, BRUSH_MID, 0.5], grip: [0.5, 0.25, 0.5 + OUT(1.5, W)]}),
   furniture_stick: meshProp('The stirring stick (an off-cut strip), its wet end in the stain: y from the wet end up. end; center; grip: the right hand near the top', ['stick', 'stick_wet'], W,
       [0.476, 0, 0.488], [0.524, 0.512, 0.512], {end: [0.5, 0, 0.5], center: [0.5, 0.256, 0.5], grip: [0.5, 0.44, 0.5 + OUT(1.5, W)]}),
   furniture_lid: meshProp('The can\'s lid: y up from its seat. center: the seat\'s middle; hold: the left palm on its top', ['lid'], W,
@@ -146,8 +148,11 @@ const STRIKE_ROT = hammerTurn(AS.dir([0.15, -0.2, 1]), AS.dir([0, -1, 0]));
 const STRIKE = r3(turnApply(STRIKE_ROT, FACE_TO_GRIP));                     // the grip with the face on the head
 const READY_ROT = hammerTurn(AS.dir([0.1, 0.85, 0.55]), AS.dir([0, -0.55, 0.85]));
 const READY = r3(add(STRIKE, AS.off([0, 0.05, -0.03])));                    // the wrist cocked over the nail
+const RAISED_ROT = hammerTurn(AS.dir([0.1, 1, 0.25]), AS.dir([0, -0.25, 1]));
+const RAISED = r3(add(STRIKE, AS.off([0, 0.1, 0.01])));                   // raised for the blow, the head over the forearm
 const hammerAt = (at, pos, rot, blend, extra = {}) => ({at: t3(at), frame: 'anchor:head', point: 'grip', pos: r2(pos), rot, blend: t3(blend), ...extra});
 const ready = (at, blend = 0, extra) => hammerAt(at, READY, READY_ROT, blend, extra);
+const raised = (at, blend = 0, extra) => hammerAt(at, RAISED, RAISED_ROT, blend, extra);
 const strike = (at, blend, extra) => hammerAt(at, STRIKE, STRIKE_ROT, blend, {ease: 'in', ...extra});
 const GLANCE = add(STRIKE, AS.off([-0.012, 0.01, 0.016]));
 const HAMMER_REST = {frame: 'chest', point: 'grip', pos: [-4.5, 8, -8], rot: hammerTurn([0.1, -0.6, -1], [0, 1, -0.4])};
@@ -177,7 +182,13 @@ const STICK_LIE = upTurn(AS.dir([0, 0, 1]), AS.dir([0, 1, 0]));      // lying al
 const STICK_UP = upTurn(AS.dir([0.1, 1, -0.25]), AS.dir([1, 0, 0]));
 const STICK_LEAN = upTurn(AS.dir(STICK_LEAN_DIR), AS.dir([0, 0, 1]));
 const NAIL_UP = upTurn(UP, AS.dir([1, 0, 0]));
-const RAG_HAND = {frame: 'chest', point: 'center', pos: [-4.5, 7.5, -7], rot: [0, 0, 0]};
+// the brush: painting (the handle up, back to the body and toward the stroke, the bristles' width across it), dipped, wiped on
+// the rim, lying across the can's mouth and flat on the top (FurnitureWorkRenderer the same: tip -x and +z, the flat face up)
+const BRUSH_PAINT = upTurn(AS.dir([0.45, 0.8, -0.35]), AS.dir([0, 0, 1]));
+const BRUSH_DIP = upTurn(AS.dir([0.15, 1, -0.2]), AS.dir([1, 0, 0]));
+const BRUSH_SCRAPE = upTurn(AS.dir([0.4, 1, -0.1]), AS.dir([0, 0, 1]));
+const BRUSH_ACROSS = upTurn(AS.dir([1, 0, 0]), AS.dir([0, 0, -1]));
+const BRUSH_FLAT = upTurn(AS.dir([0, 0, 1]), AS.dir([1, 0, 0]));
 const L_POLE = [0.8, 1.0, 0.2];
 const key = (at, frame, point, pos, rot, blend, extra = {}) => ({at: t3(at), frame, point, pos: r2(pos), rot, blend: t3(blend), ...extra});
 const hand = (at, target, blend, extra = {}) => ({at: t3(at), target, blend: t3(blend), ...(target === 'pose' ? {} : {roll: 0}), ...extra});
@@ -192,7 +203,7 @@ const base = (about, length, loop, extra = {}) => ({
   clip: LEAN, layer: 'action', mask: 'upper', priority: 55, first_person: 'body', held_item: 'hidden',
   ...(loop ? {loop: 'time'} : {}), length,
   blend: {in: 0.3, out: 0.25},
-  approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, in: 0.6},
+  approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, in: 0.8, out: 0.8},
   first_person_view: [[0, VIEW], [length, VIEW]],
   ...extra,
 });
@@ -218,23 +229,23 @@ ACTIONS.nail_set = base('Set a nail: the left hand takes one from the box (0.3 s
   events: [ev(0.3, 'furniture_nail_pick', 2, {volume: 0.6}), ev(0.9, 'furniture_nail_tap', 4, {volume: 0.35, pitch: 1.2, noise: 4})],
 });
 const holdHands = (right) => ({right: [hand(0, right, 0)], left: [hand(0, 'block:press', 0, {pole: L_POLE})]});
-ACTIONS.nail_hold = base('The hammer cocked over the set nail, the left hand pressing the piece: looped while the timing bar runs (a press plays a strike, a glance or the seat)', 1, true, {
-  props: [{id: 'claw_hammer', keys: [ready(0), ready(0.05, 0.45, {pos: r2(add(READY, AS.off([0, 0.008, 0])))}), ready(0.5, 0.45)]}],
+ACTIONS.nail_hold = base('The hammer over the set nail, the left hand pressing the piece, while the timing ring runs: the clip is the raise (0: cocked over the nail, 1: raised for the blow), FurnitureWorkClient plays it by the needle (up to the top at the zone, held through it, down after it); a press plays a strike, a glance or the seat from the top', 1, true, {
+  props: [{id: 'claw_hammer', keys: [ready(0), raised(0.02, 0.96)]}],
   hands: holdHands('prop:claw_hammer:grip'),
 });
 ACTIONS.nail = {...ACTIONS.nail_hold, about: 'The nail step\'s own file (the recipe names it; FurnitureWork plays nail_set, nail_hold and the blows): a copy of nail_hold (written by tools/author-furniture-actions.mjs)'};
-ACTIONS.nail_strike = base('A good blow: from the hold\'s pose down onto the head (0.05-0.2, the nail goes in a share), back up to it (0.2-0.35)', 0.35, false, {
-  props: [{id: 'claw_hammer', keys: [ready(0), strike(0.05, 0.15), ready(0.2, 0.15)]}],
+ACTIONS.nail_strike = base('A good blow: from the raised hammer down onto the head (0.05-0.2, the nail goes in a share), back up to cocked over it (0.2-0.35, where the next hold starts)', 0.35, false, {
+  props: [{id: 'claw_hammer', keys: [raised(0), strike(0.05, 0.15), ready(0.2, 0.15)]}],
   hands: holdHands('prop:claw_hammer:grip'),
   events: [ev(0.2, 'furniture_nail_strike', 10, {noise: 10})],
 });
 ACTIONS.nail_glance = base('A miss: the face glances off the head\'s edge (0.2), the nail does not move; back to the hold\'s pose', 0.35, false, {
-  props: [{id: 'claw_hammer', keys: [ready(0), hammerAt(0.05, GLANCE, STRIKE_ROT, 0.15, {ease: 'in'}), ready(0.2, 0.15)]}],
+  props: [{id: 'claw_hammer', keys: [raised(0), hammerAt(0.05, GLANCE, STRIKE_ROT, 0.15, {ease: 'in'}), ready(0.2, 0.15)]}],
   hands: holdHands('prop:claw_hammer:grip'),
   events: [ev(0.2, 'furniture_nail_glance', 4, {noise: 4})],
 });
 ACTIONS.nail_seat = base('The last blow: the head driven flush (0.2), the face rests on it, the hammer back to the rest (0.3-0.55) and the left hand off the piece', 0.55, false, {
-  props: [{id: 'claw_hammer', keys: [ready(0), strike(0.05, 0.15), strike(0.2, 0.1, {ease: 'smooth'}), rest(HAMMER_REST, 0.3, 0.25)]}],
+  props: [{id: 'claw_hammer', keys: [raised(0), strike(0.05, 0.15), strike(0.2, 0.1, {ease: 'smooth'}), rest(HAMMER_REST, 0.3, 0.25)]}],
   hands: {right: [hand(0, 'prop:claw_hammer:grip', 0)], left: [hand(0, 'block:press', 0, {pole: L_POLE}), hand(0.3, 'pose', 0.25)]},
   events: [ev(0.2, 'furniture_nail_seat', 10, {noise: 10})],
 });
@@ -276,7 +287,7 @@ ACTIONS.screw_start = base('Start a screw: the left hand puts one from its finge
     left: [hand(0, 'block:press', 0, {pole: L_POLE}), hand(0.02, 'prop:furniture_screw:pinch', 0.03, {pole: L_POLE}), hand(0.4, 'block:press', 0.2, {pole: L_POLE})]},
   events: [ev(0.05, 'furniture_screw_pick', 2, {pitch: 0.9})],
 });
-ACTIONS.screw_hold = base('The screwdriver in the slot, the left hand on the hardware: looped while the timing bar runs (a press plays a turn, a slip or the seat)', 1, true, {
+ACTIONS.screw_hold = base('The screwdriver in the slot, the left hand on the hardware: looped while the timing ring runs (a press plays a turn, a slip or the seat)', 1, true, {
   props: [{id: 'screwdriver', keys: [driver(0, ENGAGED, 0), driver(0.05, ENGAGED + 4, 0.45, -0.002), driver(0.5, ENGAGED, 0.45)]}],
   hands: holdHands('prop:screwdriver:grip'),
 });
@@ -313,7 +324,7 @@ for (let i = 0; i < 8; i++) {
   const a = i * 90 * RAD;
   stir.push(key(4.15 + 0.225 * i, 'anchor:can', 'end', AS.off([Math.cos(a) * 0.022, -0.07, Math.sin(a) * 0.022]), STICK_UP, 0.225));
 }
-ACTIONS.can_open = base('Open the can, once a batch before the first wipe: the claw pries the lid at three places (0.15-2.4, the left hand steadying the can), the left hand lifts the lid off and lays it upside down (2.4-3.1), the hammer to the hip (2.4-3.4), the right hand takes the stirring stick (3.4-3.7) and stirs slowly (4.0-5.95), leans it in the can (6.0-6.2) and picks the rag up (6.2-6.5)', 6.5, false, {
+ACTIONS.can_open = base('Open the can, once a piece before the stain: the claw pries the lid at three places (0.15-2.4, the left hand steadying the can), the left hand lifts the lid off and lays it upside down (2.4-3.1), the hammer to the hip (2.4-3.4), the right hand takes the stirring stick (3.4-3.7) and stirs slowly (4.0-5.95), leans it in the can (6.0-6.2), takes the brush off the top and lays it across the can\'s mouth (6.2-6.85)', 7, false, {
   props: [
     {id: 'claw_hammer', keys: [rest(HAMMER_REST, 0), ...pryKeys, rest(HAMMER_REST, 2.4, 0.35), rest(HAMMER_HIP, 3.1, 0.3), rest(HAMMER_HIP, 3.4, 0, {hidden: true})]},
     {id: 'furniture_lid', keys: [key(0, 'anchor:can', 'center', [0, 0, 0], LID_UP, 0, {hidden: true}), key(2.4, 'anchor:can', 'center', [0, 0, 0], LID_UP, 0),
@@ -322,43 +333,45 @@ ACTIONS.can_open = base('Open the can, once a batch before the first wipe: the c
     {id: 'furniture_stick', keys: [key(0, 'anchor:stick_bench', 'center', [0, 0, 0], STICK_LIE, 0, {hidden: true}), key(3.45, 'anchor:stick_bench', 'center', [0, 0, 0], STICK_LIE, 0),
       key(3.7, 'anchor:can', 'end', AS.off([0, 0.06, 0]), STICK_UP, 0.3), key(4.0, 'anchor:can', 'end', AS.off([0.022, -0.07, 0]), STICK_UP, 0.15), ...stir,
       key(6.0, 'anchor:stick_rest', 'end', [0, 0, 0], STICK_LEAN, 0.2), key(6.2, 'anchor:stick_rest', 'end', [0, 0, 0], STICK_LEAN, 0, {hidden: true})]},
-    {id: 'furniture_rag', keys: [key(0, 'anchor:rag_rest', 'center', [0, 0, 0], [0, 0, 0], 0, {hidden: true}), key(6.2, 'anchor:rag_rest', 'center', [0, 0, 0], [0, 0, 0], 0),
-      rest(RAG_HAND, 6.35, 0.15)]},
+    {id: 'furniture_brush', keys: [key(0, 'anchor:brush_rest', 'center', [0, 0, 0], BRUSH_FLAT, 0, {hidden: true}), key(6.2, 'anchor:brush_rest', 'center', [0, 0, 0], BRUSH_FLAT, 0),
+      key(6.25, 'anchor:brush_can', 'center', AS.off([0, 0.06, 0]), BRUSH_ACROSS, 0.3), key(6.6, 'anchor:brush_can', 'center', [0, 0, 0], BRUSH_ACROSS, 0.2),
+      key(6.85, 'anchor:brush_can', 'center', [0, 0, 0], BRUSH_ACROSS, 0, {hidden: true})]},
   ],
   hands: {
-    right: [hand(0, 'prop:claw_hammer:grip', 0), hand(3.4, 'prop:furniture_stick:grip', 0.3), hand(6.2, 'prop:furniture_rag:hold', 0.15)],
+    right: [hand(0, 'prop:claw_hammer:grip', 0), hand(3.4, 'prop:furniture_stick:grip', 0.3), hand(6.15, 'prop:furniture_brush:grip', 0.1),
+      hand(6.85, 'pose', 0.15)],
     left: [hand(0, 'pose', 0), hand(0.05, 'block:canhold', 0.3, {pole: L_POLE}), hand(2.3, 'prop:furniture_lid:hold', 0.1, {pole: L_POLE}),
       hand(3.1, 'block:canhold', 0.3, {pole: L_POLE}), hand(6.2, 'block:press', 0.3, {pole: L_POLE})],
   },
   events: [ev(0.05, 'furniture_can_open', 4, {noise: 4}), ev(4.0, 'furniture_stain_stir', 2, {noise: 2})],
 });
-const ragAt = (at, anchor, blend, up = 0) => key(at, 'anchor:' + anchor, 'center', AS.off([0, up, 0]), [0, 0, 0], blend);
-ACTIONS.wipe = base('Wipe the stain on: the rag dipped (0.05-0.5), three strokes along the grain across the piece (0.8, 1.7, 2.6; anchors w0a..w2b, the strokes\' ends; the bench paints each strip as it is passed), the rag back before the body (3.2-4.0)', 4, false, {
-  props: [{id: 'furniture_rag', keys: [rest(RAG_HAND, 0), ragAt(0.05, 'can', 0.25, 0.02), ragAt(0.3, 'can', 0.15, -0.025), ragAt(0.45, 'can', 0.1, 0.03),
-    ragAt(0.55, 'w0a', 0.25), ragAt(0.8, 'w0b', 0.6), ragAt(1.4, 'w1a', 0.3), ragAt(1.7, 'w1b', 0.6), ragAt(2.3, 'w2a', 0.3), ragAt(2.6, 'w2b', 0.6),
-    rest(RAG_HAND, 3.2, 0.8)]}],
-  hands: {right: [hand(0, 'prop:furniture_rag:hold', 0)], left: [hand(0, 'block:press', 0, {pole: L_POLE})]},
-  events: [ev(0.3, 'furniture_rag_dip', 2, {noise: 2}), ev(0.8, 'furniture_rag_wipe', 2, {noise: 2}), ev(1.7, 'furniture_rag_wipe', 2, {noise: 2}),
-    ev(2.6, 'furniture_rag_wipe', 2, {noise: 2})],
+const brushAt = (at, anchor, rot, blend, up = 0, side = [0, 0, 0]) => key(at, 'anchor:' + anchor, 'tip', add(AS.off([0, up, 0]), AS.off(side)), rot, blend);
+ACTIONS.wipe = base('Brush the stain on (doc 12.2; the step keeps the wipe\'s id): the brush taken off the can\'s mouth (0-0.55), dipped (0.55-0.8), wiped on the rim (0.8-1.0), three strokes along the grain across the piece (ending 2.0, 2.8, 3.6; anchors w0a..w2b, the strokes\' ends; the bench paints each strip as it is passed), laid back across the mouth (3.6-4.1), the hand off', 4.5, false, {
+  props: [{id: 'furniture_brush', keys: [key(0, 'anchor:brush_can', 'center', [0, 0, 0], BRUSH_ACROSS, 0),
+    brushAt(0.3, 'can', BRUSH_DIP, 0.25, 0.07), brushAt(0.55, 'can', BRUSH_DIP, 0.25, -0.035), brushAt(0.8, 'can', BRUSH_SCRAPE, 0.2, 0, [0.035, 0, 0]),
+    brushAt(1.0, 'can', BRUSH_DIP, 0.2, 0.07), brushAt(1.2, 'w0a', BRUSH_PAINT, 0.25), brushAt(1.45, 'w0b', BRUSH_PAINT, 0.55),
+    brushAt(2.0, 'w1a', BRUSH_PAINT, 0.25), brushAt(2.25, 'w1b', BRUSH_PAINT, 0.55), brushAt(2.8, 'w2a', BRUSH_PAINT, 0.25), brushAt(3.05, 'w2b', BRUSH_PAINT, 0.55),
+    key(3.6, 'anchor:brush_can', 'center', [0, 0, 0], BRUSH_ACROSS, 0.5), key(4.15, 'anchor:brush_can', 'center', [0, 0, 0], BRUSH_ACROSS, 0, {hidden: true})]}],
+  hands: {right: [hand(0, 'pose', 0), hand(0.02, 'prop:furniture_brush:grip', 0.28), hand(4.15, 'pose', 0.3)],
+    left: [hand(0, 'block:press', 0, {pole: L_POLE})]},
+  events: [ev(0.7, 'furniture_rag_dip', 2, {noise: 2}), ev(1.7, 'furniture_rag_wipe', 2, {noise: 2}), ev(2.5, 'furniture_rag_wipe', 2, {noise: 2}),
+    ev(3.3, 'furniture_rag_wipe', 2, {noise: 2})],
 });
-ACTIONS.wipe_off = base('Wipe the stain off, once a piece: the rag folded, two passes along the piece (0.3, 1.2; anchors o0a..o1b), laid down on its rest (1.9-2.25), the hands off', 2.5, false, {
-  props: [{id: 'furniture_rag', keys: [rest(RAG_HAND, 0), ragAt(0.05, 'o0a', 0.25), ragAt(0.3, 'o0b', 0.7), ragAt(1.0, 'o1a', 0.2), ragAt(1.2, 'o1b', 0.7),
-    ragAt(1.9, 'rag_rest', 0.35), {...ragAt(2.25, 'rag_rest', 0), hidden: true}]}],
-  hands: {right: [hand(0, 'prop:furniture_rag:hold', 0), hand(2.25, 'pose', 0.25)], left: [hand(0, 'block:press', 0, {pole: L_POLE}), hand(2.0, 'pose', 0.4)]},
-  events: [ev(0.3, 'furniture_rag_wipe', 2, {volume: 0.6, noise: 2}), ev(1.2, 'furniture_rag_wipe', 2, {volume: 0.6, noise: 2})],
-});
-ACTIONS.can_close = base('Close the can at a batch\'s end (no sound, user 2026-10-22): the stick out and laid down (0-0.65), the lid from its rest turned over onto the can (0.6-1.3), the right palm presses it shut (1.3-1.6)', 2, false, {
+ACTIONS.can_close = base('Close the can at a piece\'s end (no sound, user 2026-10-22): the brush off the can\'s mouth and laid on the top (0-0.8, not washed, doc 12.2), the stick out and laid down (0.8-1.45), the lid from its rest turned over onto the can (1.4-2.1), the right palm presses it shut (2.1-2.4)', 2.8, false, {
   props: [
-    {id: 'furniture_stick', keys: [key(0, 'anchor:stick_rest', 'end', [0, 0, 0], STICK_LEAN, 0), key(0.05, 'anchor:can', 'end', AS.off([0, 0.12, 0]), STICK_UP, 0.3),
-      key(0.35, 'anchor:stick_bench', 'center', [0, 0, 0], STICK_LIE, 0.3), key(0.65, 'anchor:stick_bench', 'center', [0, 0, 0], STICK_LIE, 0, {hidden: true})]},
-    {id: 'furniture_lid', keys: [key(0, 'anchor:lid', 'center', [0, 0, 0], LID_DOWN, 0, {hidden: true}), key(0.6, 'anchor:lid', 'center', [0, 0, 0], LID_DOWN, 0),
-      key(0.75, 'anchor:lid', 'center', AS.off([0, 0.06, 0]), LID_UP, 0.25), key(1.0, 'anchor:can', 'center', [0, 0, 0], LID_UP, 0.3),
-      key(1.3, 'anchor:can', 'center', [0, 0, 0], LID_UP, 0, {hidden: true})]},
+    {id: 'furniture_brush', keys: [key(0, 'anchor:brush_can', 'center', [0, 0, 0], BRUSH_ACROSS, 0), key(0.1, 'anchor:brush_can', 'center', AS.off([0, 0.05, 0]), BRUSH_ACROSS, 0.15),
+      key(0.25, 'anchor:brush_rest', 'center', [0, 0, 0], BRUSH_FLAT, 0.4), key(0.8, 'anchor:brush_rest', 'center', [0, 0, 0], BRUSH_FLAT, 0, {hidden: true})]},
+    {id: 'furniture_stick', keys: [key(0, 'anchor:stick_rest', 'end', [0, 0, 0], STICK_LEAN, 0), key(0.85, 'anchor:can', 'end', AS.off([0, 0.12, 0]), STICK_UP, 0.3),
+      key(1.15, 'anchor:stick_bench', 'center', [0, 0, 0], STICK_LIE, 0.3), key(1.45, 'anchor:stick_bench', 'center', [0, 0, 0], STICK_LIE, 0, {hidden: true})]},
+    {id: 'furniture_lid', keys: [key(0, 'anchor:lid', 'center', [0, 0, 0], LID_DOWN, 0, {hidden: true}), key(1.4, 'anchor:lid', 'center', [0, 0, 0], LID_DOWN, 0),
+      key(1.55, 'anchor:lid', 'center', AS.off([0, 0.06, 0]), LID_UP, 0.25), key(1.8, 'anchor:can', 'center', [0, 0, 0], LID_UP, 0.3),
+      key(2.1, 'anchor:can', 'center', [0, 0, 0], LID_UP, 0, {hidden: true})]},
   ],
   hands: {
-    right: [hand(0, 'prop:furniture_stick:grip', 0), hand(0.65, 'block:cantop', 0.4), hand(1.3, 'block:cantop', 0.15, {}), hand(1.6, 'pose', 0.4)],
-    left: [hand(0, 'block:canhold', 0, {pole: L_POLE}), hand(0.5, 'prop:furniture_lid:hold', 0.2, {pole: L_POLE}), hand(1.3, 'block:canhold', 0.2, {pole: L_POLE}),
-      hand(1.6, 'pose', 0.4)],
+    right: [hand(0, 'prop:furniture_brush:grip', 0), hand(0.65, 'prop:furniture_stick:grip', 0.2), hand(1.45, 'block:cantop', 0.4), hand(2.1, 'block:cantop', 0.15, {}),
+      hand(2.4, 'pose', 0.4)],
+    left: [hand(0, 'block:canhold', 0, {pole: L_POLE}), hand(1.3, 'prop:furniture_lid:hold', 0.2, {pole: L_POLE}), hand(2.1, 'block:canhold', 0.2, {pole: L_POLE}),
+      hand(2.4, 'pose', 0.4)],
   },
   events: [],
 });
@@ -460,9 +473,9 @@ if (process.argv.includes('--report')) {
     const o = {head: m(x, y + 0.85 * NAIL_LEN, z), shead: m(x, y + 0.65 * SCREW_LEN, z), press: m(...press), box: m(ASM.box[0], ASM.box[1] + 0.13, ASM.box[2]),
       hw: m(x - 0.038, y + 0.001, z), can: m(...CAN_MOUTH), cantop: m(CAN_MOUTH[0], CAN_MOUTH[1] + 0.025, CAN_MOUTH[2]),
       canhold: m(ASM.can[0] + 0.075, ASM.can[1] + 0.07, ASM.can[2]), lid: m(...ASM.lid), stick_bench: m(...ASM.stick),
-      stick_rest: m(ASM.can[0] - 0.02, ASM.can[1] + 0.02, ASM.can[2]), rag_rest: m(...ASM.rag)};
+      stick_rest: m(ASM.can[0] - 0.02, ASM.can[1] + 0.02, ASM.can[2]), brush_rest: m(ASM.brush[0], ASM.brush[1] + BRUSH_LIFT, ASM.brush[2]),
+      brush_can: m(CAN_MOUTH[0], CAN_MOUTH[1] + BRUSH_LIFT, CAN_MOUTH[2])};
     for (let i = 0; i < 3; i++) { const bz = 0.12 + 0.12 * i; o['w' + i + 'a'] = m(WIPE.a, y + WIPE.y, bz); o['w' + i + 'b'] = m(WIPE.b, y + WIPE.y, bz); }
-    for (let i = 0; i < 2; i++) { const bz = 0.16 + 0.16 * i; o['o' + i + 'a'] = m(WIPE.a, y + WIPE.y, bz); o['o' + i + 'b'] = m(WIPE.b, y + WIPE.y, bz); }
     return o;
   };
   const crosscut = t => {

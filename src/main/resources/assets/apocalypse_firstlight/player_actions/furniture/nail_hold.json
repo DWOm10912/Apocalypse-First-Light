@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "about": "The hammer cocked over the set nail, the left hand pressing the piece: looped while the timing bar runs (a press plays a strike, a glance or the seat) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "about": "The hammer over the set nail, the left hand pressing the piece, while the timing ring runs: the clip is the raise (0: cocked over the nail, 1: raised for the blow), FurnitureWorkClient plays it by the needle (up to the top at the zone, held through it, down after it); a press plays a strike, a glance or the seat from the top (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
   "clip": "tool.furniture_lean",
   "layer": "action",
   "mask": "upper",
@@ -20,7 +20,8 @@
     "max": 2,
     "face": "face",
     "pitch": 40,
-    "in": 0.6
+    "in": 0.8,
+    "out": 0.8
   },
   "first_person_view": [
     [0, 58],
@@ -39,20 +40,12 @@
           "blend": 0
         },
         {
-          "at": 0.05,
+          "at": 0.02,
           "frame": "anchor:head",
           "point": "grip",
-          "pos": [-0.53, -2.72, 4.04],
-          "rot": [122.905, -84.359, 90],
-          "blend": 0.45
-        },
-        {
-          "at": 0.5,
-          "frame": "anchor:head",
-          "point": "grip",
-          "pos": [-0.53, -2.59, 4.04],
-          "rot": [122.905, -84.359, 90],
-          "blend": 0.45
+          "pos": [-0.53, -3.44, 3.36],
+          "rot": [104.036, -84.459, 90],
+          "blend": 0.96
         }
       ]
     }

@@ -125,7 +125,7 @@ const ACTIONS = {
     clip: 'tool.hand_saw_set',
     layer: 'action', mask: 'upper', priority: 55, first_person: 'body', held_item: 'hidden',
     blend: {in: 0.3, out: 0.25},
-    approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, in: 0.6},
+    approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, in: 0.8, out: 0.8},
     prop: {id: 'hand_saw', keys: [
       {at: 0, frame: 'shoulder_r', point: 'grip', pos: [0.5, 9.5, -3.5], rot: r2(turnFor(SIDE_H, SIDE_T)), blend: 0},
       {...strokeKey(0.15, -STROKE, SET - 0.15)},
@@ -143,7 +143,7 @@ const ACTIONS = {
     layer: 'action', mask: 'upper', priority: 55, first_person: 'body', held_item: 'hidden',
     loop: 'time', length: 0.8,
     blend: {in: 0, out: 0.25},
-    approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40},
+    approach: {anchor: 'stand', distance: 0, side: 0, max: 2.0, face: 'face', pitch: 40, out: 0.8},
     prop: {id: 'hand_saw', keys: [strokeKey(0, -STROKE, 0), strokeKey(0.001, STROKE, 0.399), strokeKey(0.4, -STROKE, 0.4)]},
     hands: {
       right: [{at: 0, target: 'prop:grip', blend: 0, roll: 0}],

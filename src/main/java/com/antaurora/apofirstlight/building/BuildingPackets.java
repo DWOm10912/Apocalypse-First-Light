@@ -53,7 +53,7 @@ public final class BuildingPackets {
      * A furniture piece's word (FurnitureWork, WorkbenchCrafting#act): a timed step played to its end ({@code press} false),
      * or a press on the nail's or screw's bar ({@code good}: in the zone, the client's word as the generator's pull).
      */
-    public record Act(BlockPos bench, ResourceLocation recipe, boolean press, boolean good) {}
+    public record Act(BlockPos bench, ResourceLocation recipe, boolean press, boolean good, boolean perfect) {}
 
     /** Server to the players around: what a player works at now, or null when it stopped. */
     public record WorkOf(int entity, @Nullable WorkbenchCrafting.Working work) {}
@@ -112,8 +112,10 @@ public final class BuildingPackets {
             b.writeResourceLocation(p.recipe());
             b.writeBoolean(p.press());
             b.writeBoolean(p.good());
-        }, b -> new Act(b.readBlockPos(), b.readResourceLocation(), b.readBoolean(), b.readBoolean()),
-                (p, s) -> server(s, player -> WorkbenchCrafting.act(player, p.bench(), p.recipe(), p.press(), p.good())), Optional.of(NetworkDirection.PLAY_TO_SERVER));
+            b.writeBoolean(p.perfect());
+        }, b -> new Act(b.readBlockPos(), b.readResourceLocation(), b.readBoolean(), b.readBoolean(), b.readBoolean()),
+                (p, s) -> server(s, player -> WorkbenchCrafting.act(player, p.bench(), p.recipe(), p.press(), p.good(), p.perfect())),
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
         return id;
     }
 

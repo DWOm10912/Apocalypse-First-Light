@@ -416,7 +416,8 @@ function screwBox() {
  * (the offcut's 28 x 20 cm bounds the whole mesh symmetrically, so the bake does not move them), cm:
  *   nail        a 6d common nail standing on its point, 5.1 cm, the head 0.67 cm across
  *   screw       a #8 x 1 1/4 inch flat-head wood screw standing on its point, screw_slot across its head along x
- *   rag         an old cotton rag folded to a pad, 11 x 8 cm, lumpy, its working face (-y) wet with stain
+ *   brush_*     a 50 mm flat stain brush standing on its bristles (doc 12.2), 20 cm: brush_wet the lower 3.5 cm of the
+ *               bristles dark with stain, brush_bristle the dry rest, brush_ferrule the tinplate band, brush_handle beech
  *   stick       the stir stick, a strip of board 26 x 2.4 x 1.2 cm standing up, stick_wet its lower 9 cm
  *   offcut      a board crosscut to 28 cm (20 x 2.5 cm in section), lying flat, the length along x
  *   lid         the quart can's lid, the plug ring down, the stain wet inside the plug
@@ -424,8 +425,9 @@ function screwBox() {
  *               can_bail (folded down round the -z side), can_ear_0/1
  *   nail_heap   nails lying in the opened nail box (inside its 6.5 x 4.5 cm), screw_heap in the screw box (5.5 x 3.5)
  */
-export const WORK = {nail: 5.08, nailHead: 0.335, nailShank: 0.144, screw: 3.18, screwHead: 0.42, rag: [11, 1.4, 8], stick: [2.4, 26, 1.2],
-  stickWet: 9, offcut: [28, 2.5, 20], lidR: 5.15, stainDrop: 2.3};
+export const WORK = {nail: 5.08, nailHead: 0.335, nailShank: 0.144, screw: 3.18, screwHead: 0.42, stick: [2.4, 26, 1.2],
+  stickWet: 9, offcut: [28, 2.5, 20], lidR: 5.15, stainDrop: 2.3,
+  brush: {width: 5.0, wet: 3.5, bristle: 5.5, ferrule: 8.4, ferruleW: 5.4, ferruleT: 1.9, length: 20, handleW: 3.0, handleT: 1.5}};
 function furnitureWork() {
   const B = 'furniture_work', {R, H} = CAN;
   const nail = new Part('nail', B, 'nail');
@@ -439,12 +441,20 @@ function furnitureWork() {
   zToY(screw);
   const slot = new Part('screw_slot', B, 'slot');
   extrude(slot, 'y', {outer: orient([[-0.05, -WORK.screwHead + 0.03], [0.05, -WORK.screwHead + 0.03], [0.05, WORK.screwHead - 0.03], [-0.05, WORK.screwHead - 0.03]], true), holes: []}, S - 0.002, S + 0.012, 0);
-  // the rag: a folded pad, its top pushed about by the folds (fixed noise), the lower face wet with stain
-  const rag = new Part('rag', B, 'cloth'), [rw, rh, rd] = WORK.rag;
-  extrude(rag, 'y', {outer: orient(roundRect(-rd / 2, -rw / 2, rd / 2, rw / 2, 1.2, 3), true), holes: []}, 0, rh, 0.25);
-  rag.v = rag.v.map(([x, y, z]) => { const k = 0.5 * (vn3(x * 0.45 + 1.3, z * 0.45 + 2.7, 0.5) - 0.5);
-    return [x * (1 + 0.05 * (vn3(z * 0.3, 1, 2) - 0.5)), y > 0.01 ? Math.max(0.3, y + k) : y, z]; });
-  for (const f of rag.f) if (f.ids.every(i => rag.v[i][1] < 0.05)) f.mat = 'stain';
+  // the brush: the bristles a flat block thinning to the tip, the lower part wet; the ferrule a rounded band over their root;
+  // the handle a flat paddle, a little fuller in its middle, its end rounded off
+  const BR = WORK.brush, slab = (name, mat, w, t, y0, y1, r, ch) => {
+    const p = new Part(name, B, mat);
+    extrude(p, 'y', {outer: orient(roundRect(-t / 2, -w / 2, t / 2, w / 2, r, 2), true), holes: []}, y0, y1, ch);
+    return p;
+  };
+  const brushWet = slab('brush_wet', 'stain', BR.width - 0.1, 1.15, 0, BR.wet + 0.02, 0.2, 0.05);
+  brushWet.v = brushWet.v.map(([x, y, z]) => [x, y, z * (0.5 + 0.5 * Math.min(1, y / BR.wet))]);
+  const brushBristle = slab('brush_bristle', 'bristle', BR.width, 1.25, BR.wet, BR.bristle + 0.2, 0.2, 0);
+  const brushFerrule = slab('brush_ferrule', 'tin', BR.ferruleW, BR.ferruleT, BR.bristle, BR.ferrule, 0.6, 0.15);
+  const brushHandle = slab('brush_handle', 'beech', BR.handleW, BR.handleT, BR.ferrule, BR.length, 0.5, 0.4);
+  brushHandle.v = brushHandle.v.map(([x, y, z]) => { const s = (y - BR.ferrule) / (BR.length - BR.ferrule);
+    return [x * (1 + 0.12 * Math.sin(Math.PI * Math.min(1, s * 1.3)) - 0.15 * Math.max(0, s - 0.85) / 0.15), y, z]; });
   const [sw, sh, sd] = WORK.stick;
   const stick = new Part('stick', B, 'pine');
   extrude(stick, 'y', {outer: orient(roundRect(-sd / 2, -sw / 2, sd / 2, sw / 2, 0.1, 1), true), holes: []}, WORK.stickWet, sh, 0.05);
@@ -494,11 +504,13 @@ function furnitureWork() {
   };
   const nailHeap = heap('nail_heap', NAILS.W, NAILS.D, 16, WORK.nail, WORK.nailShank, WORK.nailHead, 'nail');
   const screwHeap = heap('screw_heap', SCREWS.W, SCREWS.D, 14, WORK.screw, 0.2, WORK.screwHead, 'zinc');
-  const PARTS = [nail, screw, slot, rag, stick, stickWet, offcut, lid, canOpen, canLabel, canStain, bail, ...ears, nailHeap, screwHeap];
+  const PARTS = [nail, screw, slot, brushWet, brushBristle, brushFerrule, brushHandle, stick, stickWet, offcut, lid, canOpen, canLabel, canStain, bail, ...ears, nailHeap, screwHeap];
   for (const q of PARTS) scaleCm(q);
   const pine = pos => tone3([206, 172, 124], 1 + 0.14 * (fbm3(pos[0] * 0.5 + 2.1, pos[1] * 6, pos[2] * 6) - 0.5) + 0.05 * (vn3(pos[0] * 1.6 + 5.3, pos[1] * 16, pos[2] * 16) - 0.5));
   const endgrain = pos => tone3([182, 146, 100], 1 + 0.06 * Math.sin(Math.hypot(pos[1] + 3, pos[2] + 9) * 40) + 0.04 * (vn3(pos[1] * 9, pos[2] * 9, 3) - 0.5));
-  const cloth = pos => tone3([196, 190, 176], 1 + 0.1 * (vn3(pos[0] * 9, pos[1] * 9, pos[2] * 9) - 0.5) - 0.2 * Math.max(0, vn3(pos[0] * 2.5 + 3, pos[2] * 2.5, 1) - 0.6));
+  // the bristles' dry part: pale natural bristle, streaked along their length
+  const bristle = pos => tone3([196, 178, 142], 1 + 0.12 * (vn3(pos[0] * 14, pos[1] * 0.8, pos[2] * 14) - 0.5));
+  const beech = pos => tone3([178, 124, 78], 1 + 0.08 * (fbm3(pos[0] * 3, pos[1] * 0.4, pos[2] * 3) - 0.5));
   return {PARTS, bg: 'plate', MATS: {
     plate: {c: [206, 172, 124], hl: 4, sm: 56, se: 62, f0: 20},
     pine: {c: pine, hl: 4, sm: 56, se: 62, f0: 20},                     // bare softwood (the bench draws the species' own boards)
@@ -506,7 +518,8 @@ function furnitureWork() {
     nail: {c: [118, 120, 124], hl: 8, sm: 120, se: 134, f0: 230},       // bright common nails, a little dull
     zinc: {c: [168, 170, 166], hl: 8, sm: 146, se: 156, f0: 230},       // zinc-plated screws
     slot: {c: [40, 40, 42], hl: 2, sm: 60, se: 70, f0: 230},            // the slot's shadow
-    cloth: {c: cloth, hl: 3, sm: 30, se: 34, f0: 20},                   // worn cotton
+    bristle: {c: bristle, hl: 2, sm: 60, se: 70, f0: 20},
+    beech: {c: beech, hl: 4, sm: 120, se: 140, f0: 20},                 // a varnished beech handle
     stain: {c: [70, 42, 24], hl: 3, sm: 196, se: 210, f0: 20},          // wet walnut stain, glossy
     tin: {c: [176, 178, 180], hl: 8, sm: 150, se: 166, f0: 230},
     label: {c: [86, 54, 34], hl: 3, sm: 70, se: 78, f0: 20},

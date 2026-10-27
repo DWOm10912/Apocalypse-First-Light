@@ -1,13 +1,13 @@
 {
   "format_version": 1,
-  "about": "Wipe the stain on: the rag dipped (0.05-0.5), three strokes along the grain across the piece (0.8, 1.7, 2.6; anchors w0a..w2b, the strokes' ends; the bench paints each strip as it is passed), the rag back before the body (3.2-4.0) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "about": "Brush the stain on (doc 12.2; the step keeps the wipe's id): the brush taken off the can's mouth (0-0.55), dipped (0.55-0.8), wiped on the rim (0.8-1.0), three strokes along the grain across the piece (ending 2.0, 2.8, 3.6; anchors w0a..w2b, the strokes' ends; the bench paints each strip as it is passed), laid back across the mouth (3.6-4.1), the hand off (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
   "clip": "tool.furniture_lean",
   "layer": "action",
   "mask": "upper",
   "priority": 55,
   "first_person": "body",
   "held_item": "hidden",
-  "length": 4,
+  "length": 4.5,
   "blend": {
     "in": 0.3,
     "out": 0.25
@@ -19,103 +19,121 @@
     "max": 2,
     "face": "face",
     "pitch": 40,
-    "in": 0.6
+    "in": 0.8,
+    "out": 0.8
   },
   "first_person_view": [
     [0, 58],
-    [4, 58]
+    [4.5, 58]
   ],
   "props": [
     {
-      "id": "furniture_rag",
+      "id": "furniture_brush",
       "keys": [
         {
           "at": 0,
-          "frame": "chest",
+          "frame": "anchor:brush_can",
           "point": "center",
-          "pos": [-4.5, 7.5, -7],
-          "rot": [0, 0, 0],
+          "pos": [0, 0, 0],
+          "rot": [90, 0, 90],
           "blend": 0
-        },
-        {
-          "at": 0.05,
-          "frame": "anchor:can",
-          "point": "center",
-          "pos": [0, -0.34, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.25
         },
         {
           "at": 0.3,
           "frame": "anchor:can",
-          "point": "center",
-          "pos": [0, 0.43, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.15
-        },
-        {
-          "at": 0.45,
-          "frame": "anchor:can",
-          "point": "center",
-          "pos": [0, -0.51, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.1
+          "point": "tip",
+          "pos": [0, -1.19, 0],
+          "rot": [-11.31, 0, 8.367],
+          "blend": 0.25
         },
         {
           "at": 0.55,
-          "frame": "anchor:w0a",
-          "point": "center",
-          "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
+          "frame": "anchor:can",
+          "point": "tip",
+          "pos": [0, 0.6, 0],
+          "rot": [-11.31, 0, 8.367],
           "blend": 0.25
         },
         {
           "at": 0.8,
+          "frame": "anchor:can",
+          "point": "tip",
+          "pos": [0.6, 0, 0],
+          "rot": [-90, 68.199, 84.695],
+          "blend": 0.2
+        },
+        {
+          "at": 1,
+          "frame": "anchor:can",
+          "point": "tip",
+          "pos": [0, -1.19, 0],
+          "rot": [-11.31, 0, 8.367],
+          "blend": 0.2
+        },
+        {
+          "at": 1.2,
+          "frame": "anchor:w0a",
+          "point": "tip",
+          "pos": [0, 0, 0],
+          "rot": [-90, 60.642, 69.127],
+          "blend": 0.25
+        },
+        {
+          "at": 1.45,
           "frame": "anchor:w0b",
-          "point": "center",
+          "point": "tip",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.6
+          "rot": [-90, 60.642, 69.127],
+          "blend": 0.55
         },
         {
-          "at": 1.4,
+          "at": 2,
           "frame": "anchor:w1a",
-          "point": "center",
+          "point": "tip",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.3
+          "rot": [-90, 60.642, 69.127],
+          "blend": 0.25
         },
         {
-          "at": 1.7,
+          "at": 2.25,
           "frame": "anchor:w1b",
-          "point": "center",
+          "point": "tip",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.6
+          "rot": [-90, 60.642, 69.127],
+          "blend": 0.55
         },
         {
-          "at": 2.3,
+          "at": 2.8,
           "frame": "anchor:w2a",
-          "point": "center",
+          "point": "tip",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.3
+          "rot": [-90, 60.642, 69.127],
+          "blend": 0.25
         },
         {
-          "at": 2.6,
+          "at": 3.05,
           "frame": "anchor:w2b",
-          "point": "center",
+          "point": "tip",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
-          "blend": 0.6
+          "rot": [-90, 60.642, 69.127],
+          "blend": 0.55
         },
         {
-          "at": 3.2,
-          "frame": "chest",
+          "at": 3.6,
+          "frame": "anchor:brush_can",
           "point": "center",
-          "pos": [-4.5, 7.5, -7],
-          "rot": [0, 0, 0],
-          "blend": 0.8
+          "pos": [0, 0, 0],
+          "rot": [90, 0, 90],
+          "blend": 0.5
+        },
+        {
+          "at": 4.15,
+          "frame": "anchor:brush_can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, 0, 90],
+          "blend": 0,
+          "hidden": true
         }
       ]
     }
@@ -124,9 +142,19 @@
     "right": [
       {
         "at": 0,
-        "target": "prop:furniture_rag:hold",
-        "blend": 0,
+        "target": "pose",
+        "blend": 0
+      },
+      {
+        "at": 0.02,
+        "target": "prop:furniture_brush:grip",
+        "blend": 0.28,
         "roll": 0
+      },
+      {
+        "at": 4.15,
+        "target": "pose",
+        "blend": 0.3
       }
     ],
     "left": [
@@ -141,14 +169,8 @@
   },
   "events": [
     {
-      "at": 0.3,
+      "at": 0.7,
       "sound": "furniture_rag_dip",
-      "radius": 2,
-      "noise": 2
-    },
-    {
-      "at": 0.8,
-      "sound": "furniture_rag_wipe",
       "radius": 2,
       "noise": 2
     },
@@ -159,7 +181,13 @@
       "noise": 2
     },
     {
-      "at": 2.6,
+      "at": 2.5,
+      "sound": "furniture_rag_wipe",
+      "radius": 2,
+      "noise": 2
+    },
+    {
+      "at": 3.3,
       "sound": "furniture_rag_wipe",
       "radius": 2,
       "noise": 2

@@ -321,6 +321,12 @@ public final class AflWorkbenchScreen extends Screen {
             boolean other = r.furniture() && !half.recipe().equals(r.id());
             text(g, fit(line, 4.8F, C_W - 4), C_X + 2, 67, 4.8F, other ? AflUiStyle.WARN : AflUiStyle.ACCENT, 1);
         }
+        // a finished piece still on the top: no furniture is started until it is taken off (doc 12.3)
+        var done = WorkbenchWork.benchFinished(bench);
+        if (half == null && !done.isEmpty() && r.furniture()) {
+            Component line = Component.translatable("screen.apocalypse_firstlight.workbench.finished", done.getHoverName());
+            text(g, fit(line, 4.8F, C_W - 4), C_X + 2, 67, 4.8F, AflUiStyle.WARN, 1);
+        }
 
         // the model, turned by dragging
         hits.add(new Hit(Kind.PREVIEW, C_X, 68, C_W, 90, 0, null));
@@ -465,19 +471,19 @@ public final class AflWorkbenchScreen extends Screen {
         y += toolsH;
         AflUiShapes.fill(g, x - 2, y - 1, R_W - 8, 0.4F, 0, AflUiStyle.LINE, 0.2F);
         y += 4;
-        // quantity
-        int max = WorkbenchRecipes.craftable(player, r);
+        // quantity (furniture: one at a time, it stays on the top, doc 12.3)
+        int max = WorkbenchRecipes.craftable(player, r), count = count(r);
         text(g, Component.translatable("screen.apocalypse_firstlight.workbench.quantity"), x, y + 4, 5.6F, AflUiStyle.TEXT_DIM, 1);
         float bx = x + 30;
-        boolean minusHover = in(mx, my, bx, y, 12, 12), plusHover = in(mx, my, bx + 34, y, 12, 12);
-        AflUiDraw.button(g, bx, y, 12, 12, minusHover, false, quantity > 1, 1);
-        AflUiShapes.fill(g, bx + 3.5F, y + 5.6F, 5, 0.8F, 0.3F, quantity > 1 ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
+        boolean minusHover = in(mx, my, bx, y, 12, 12), plusHover = in(mx, my, bx + 34, y, 12, 12), more = count < 99 && !r.furniture();
+        AflUiDraw.button(g, bx, y, 12, 12, minusHover, false, count > 1, 1);
+        AflUiShapes.fill(g, bx + 3.5F, y + 5.6F, 5, 0.8F, 0.3F, count > 1 ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         hits.add(new Hit(Kind.MINUS, bx, y, 12, 12, 0, null));
-        Component q = Component.literal(Integer.toString(quantity));
+        Component q = Component.literal(Integer.toString(count));
         text(g, q, bx + 23 - width(q, 7) / 2, y + 2.6F, 7, AflUiStyle.TEXT, 1);
-        AflUiDraw.button(g, bx + 34, y, 12, 12, plusHover, false, quantity < 99, 1);
-        AflUiShapes.fill(g, bx + 37.5F, y + 5.6F, 5, 0.8F, 0.3F, AflUiStyle.TEXT, 1);
-        AflUiShapes.fill(g, bx + 39.6F, y + 3.5F, 0.8F, 5, 0.3F, AflUiStyle.TEXT, 1);
+        AflUiDraw.button(g, bx + 34, y, 12, 12, plusHover && more, false, more, 1);
+        AflUiShapes.fill(g, bx + 37.5F, y + 5.6F, 5, 0.8F, 0.3F, more ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
+        AflUiShapes.fill(g, bx + 39.6F, y + 3.5F, 0.8F, 5, 0.3F, more ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         hits.add(new Hit(Kind.PLUS, bx + 34, y, 12, 12, 0, null));
         Component canMake = Component.translatable("screen.apocalypse_firstlight.workbench.max", max);
         text(g, canMake, right - width(canMake, 4.8F), y + 4, 4.8F, max > 0 ? AflUiStyle.TEXT_DIM : AflUiStyle.TEXT_DISABLED, 1);
@@ -489,7 +495,7 @@ public final class AflWorkbenchScreen extends Screen {
         float progress = craftProgress(r);
         ring(g, x + 8, y + 7.5F, 4.2F, progress, able);
         Component label = Component.translatable("screen.apocalypse_firstlight.workbench." + (craftStart != 0 ? "crafting"
-                        : discardArmed(r) ? "craft_discard" : "craft"), craftDone + 1, quantity);
+                        : occupied(r) ? "occupied" : discardArmed(r) ? "craft_discard" : "craft"), craftDone + 1, count);
         text(g, label, x + 17, y + 4.8F, 5.6F, able ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
         hits.add(new Hit(Kind.CRAFT, x - 1, y, R_W - 10, 15, 0, null));
 
@@ -574,7 +580,17 @@ public final class AflWorkbenchScreen extends Screen {
     // ---------------------------------------------------------------- crafting
 
     private boolean canCraft(@Nullable WorkbenchRecipeView r) {
-        return r != null && WorkbenchRecipes.craftable(minecraft.player, r) >= 1 && WorkbenchRecipes.toolPresent(minecraft.player, r);
+        return r != null && !occupied(r) && WorkbenchRecipes.craftable(minecraft.player, r) >= 1 && WorkbenchRecipes.toolPresent(minecraft.player, r);
+    }
+
+    /** A furniture recipe while a finished piece stands on the top (doc 12.3: taken off first). */
+    private boolean occupied(WorkbenchRecipeView r) {
+        return r.furniture() && !WorkbenchWork.benchFinished(bench).isEmpty();
+    }
+
+    /** How many to make: the quantity set, a furniture piece one at a time (doc 12.3). */
+    private int count(WorkbenchRecipeView r) {
+        return r.furniture() ? 1 : quantity;
     }
 
     private float craftProgress(WorkbenchRecipeView r) {
@@ -651,7 +667,7 @@ public final class AflWorkbenchScreen extends Screen {
                 click();
             }
             case MINUS -> { if (quantity > 1) { quantity -= hasShiftDown() ? Math.min(10, quantity - 1) : 1; click(); } }
-            case PLUS -> { quantity = Math.min(99, quantity + (hasShiftDown() ? 10 : 1)); click(); }
+            case PLUS -> { if (recipe == null || !recipe.furniture()) { quantity = Math.min(99, quantity + (hasShiftDown() ? 10 : 1)); click(); } }
             case CRAFT -> {
                 if (craftStart != 0) {
                     stopCrafting();
@@ -668,7 +684,7 @@ public final class AflWorkbenchScreen extends Screen {
                         setStatus(Component.translatable("screen.apocalypse_firstlight.workbench.discard_ask", WorkbenchWork.jobName(half)));
                     } else {
                         discardFor = null;
-                        WorkbenchWork.start(bench, recipe, Math.min(quantity, WorkbenchRecipes.craftable(minecraft.player, recipe)), other);
+                        WorkbenchWork.start(bench, recipe, Math.min(count(recipe), WorkbenchRecipes.craftable(minecraft.player, recipe)), other);
                     }
                 } else if (canCraft(recipe)) {
                     craftStart = System.nanoTime();
@@ -707,7 +723,7 @@ public final class AflWorkbenchScreen extends Screen {
             return true;
         }
         Hit hit = hitAt(mx, my);
-        if (hit != null && (hit.kind == Kind.MINUS || hit.kind == Kind.PLUS)) {
+        if (hit != null && (hit.kind == Kind.MINUS || hit.kind == Kind.PLUS) && (current() == null || !current().furniture())) {
             quantity = Math.max(1, Math.min(99, quantity + (delta > 0 ? 1 : -1)));
             return true;
         }

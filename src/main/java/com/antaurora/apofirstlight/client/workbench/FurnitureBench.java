@@ -16,26 +16,29 @@ import java.util.Map;
 public final class FurnitureBench {
     // ---- the crosscut (CUT): the cut plane, the board, the stance, the off-cut pile
     public static final double CUT_X = 0.0, CUT_Z0 = 0.06, CUT_Z1 = 0.26, CUT_TOP = 0.925, CUT_THICK = 0.025, CUT_PIECE = 0.28,
-            CUT_STAND_X = 0.36, CUT_STAND_Z = -0.18, CUT_YAW = -15, CUT_HOLD_X = 0.13, CUT_HOLD_Y = 0.955, PILE_X = 0.24, PILE_Z = 0.37;
+            CUT_STAND_X = 0.36, CUT_STAND_Z = -0.18, CUT_YAW = -15, CUT_HOLD_X = 0.24, CUT_HOLD_Y = 0.955, PILE_X = 0.24, PILE_Z = 0.37;
     /** The crosscut's beats (s): the slide, the strokes (the kerf from the front edge to the back), through, the carry. */
     public static final double SLIDE_FROM = 0.1, SLIDE_TO = 0.6, SAW_FROM = 0.9, SAW_SPAN = 4.8, THROUGH = 5.7, CARRY_FROM = 6.1, CARRY_TO = 6.4;
     /** The board's length before a cut: the pieces still to cut, and 30 cm over. */
     public static final double BOARD_OVER = 0.30;
 
-    // ---- the assembly (ASM): the stands, the can, the boxes, the lid's, stick's and rag's rests
+    // ---- the assembly (ASM): the stands, the can, the boxes, the lid's, stick's and brush's rests
     public static final double STAND_Z = -0.08, STAND_RIGHT = 0.18, STAND_BACK = 0.36, CAN_STAND = 0.62, WIPE_STAND = 1.10,
             WIPE_A = 0.80, WIPE_B = 1.32, WIPE_UP = 0.015, PRESS_LEFT = 0.25, PRESS_BACK = 0.10, PRESS_REACH = 0.36;
-    public static final double[] CAN = {0.60, 0.9, 0.30}, BOX = {1.76, 0.9, 0.14}, LID = {0.52, 0.905, 0.13}, STICK = {0.45, 0.905, 0.30},
-            RAG = {0.66, 0.9, 0.12};
+    public static final double[] CAN = {0.60, 0.9, 0.30}, BOX = {1.76, 0.9, 0.14}, LID = {0.52, 0.905, 0.13}, STICK = {0.45, 0.905, 0.30};
+    /** The brush (doc 12.2) lying flat on the top, its middle here, the bristles to the body; and across the open can's mouth. */
+    public static final double[] BRUSH_REST = {0.66, 0.9, 0.12};
     /** The stirring stick leaning in the can on the rim's left (its foot at the stick rest). */
     public static final double[] STICK_LEAN = {0.55, 1, 0.1};
-    /** The wipe's strokes end at these seconds (each paints the next band). */
-    public static final double[] STROKE_ENDS = {1.4, 2.3, 3.2};
+    /** The brush's strokes end at these seconds (each paints the next band). */
+    public static final double[] STROKE_ENDS = {2.0, 2.8, 3.6};
     public static final int STROKES = 3, BANDS = 8;
 
     /** One mesh unit as the props draw it: 0.508 (real size) times the player model's 0.9375. */
     public static final double K = 0.508 * 0.9375;
     public static final double NAIL_LEN = 0.1 * K, SCREW_LEN = 0.063 * K, CAN_H = 0.238 * K;
+    /** The 50 mm brush (tools/build-furniture-materials-v1.mjs WORK.brush): bristle tip to its middle, half its thickness. */
+    public static final double BRUSH_MID = 0.1969 * K, BRUSH_LIFT = 0.0187 * K;
     /** The knobs over the wood (their face screw sits on top): the iron one 0.104 mesh units with its 0.049 stud sunk in, the wooden 0.081. */
     public static final double IRON_KNOB_STUD = 0.049 * K, IRON_KNOB_H = 0.104 * K - IRON_KNOB_STUD, WOODEN_KNOB_H = 0.081 * K;
 
@@ -172,6 +175,16 @@ public final class FurnitureBench {
     public static double standZ(double z) {
         return Math.min(STAND_Z, z - STAND_BACK);
     }
+
+    /**
+     * How long the stance glides to a new stand this far away (s, blocks; doc 12.9, smoothstep): GLIDE_MIN and GLIDE_PER_BLOCK
+     * a block more, at most GLIDE_MAX (the crosscut's stand to a nail at the right: 0.9 s, about 1.1 m/s at the most).
+     */
+    public static double glideSeconds(double blocks) {
+        return Math.min(GLIDE_MAX, GLIDE_MIN + GLIDE_PER_BLOCK * blocks);
+    }
+
+    private static final double GLIDE_MIN = 0.5, GLIDE_PER_BLOCK = 0.6, GLIDE_MAX = 1.2;
 
     /** The can's mouth. */
     public static double[] mouth() {

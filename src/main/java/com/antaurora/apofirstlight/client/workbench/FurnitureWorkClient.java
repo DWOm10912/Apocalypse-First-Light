@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.cabin.FurnitureWork;
 import com.antaurora.apofirstlight.cabin.Workbench;
 import com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity;
 import com.antaurora.apofirstlight.cabin.WorkbenchCrafting;
+import com.antaurora.apofirstlight.client.AflGauge;
 import com.antaurora.apofirstlight.client.RangedSoundInstance;
 import com.antaurora.apofirstlight.client.WoodChipParticle;
 import com.antaurora.apofirstlight.client.ui.AflKeyHint;
@@ -59,20 +60,22 @@ import static com.antaurora.apofirstlight.cabin.FurnitureWork.SCREW_SLIP;
 import static com.antaurora.apofirstlight.cabin.FurnitureWork.SCREW_START;
 import static com.antaurora.apofirstlight.cabin.FurnitureWork.SCREW_TURN;
 import static com.antaurora.apofirstlight.cabin.FurnitureWork.WIPE;
-import static com.antaurora.apofirstlight.cabin.FurnitureWork.WIPE_OFF;
 import static com.antaurora.apofirstlight.client.workbench.FurnitureBench.*;
 
 /**
  * The furniture work on the client (docs/gameplay/furniture_bench_work_v1.md 4, 5): the plans the server sends (FurnitureWork
  * Plan, carried by BuildingPackets.WorkOf as the action) played one action after another, for the worker and whoever watches.
  * The own client plays the next plan as soon as it sends its word (BuildingPackets.Act): the server's copy then only brings
- * the marks, or replaces a plan that came out otherwise. Here too: the timing bar of the nails and screws (as the generator's
- * pull, client/PortableGeneratorPull), the actions' anchors (FurnitureBench's layout), their sounds and sawdust at their
- * events, and what the bench draws ({@link #scene}, client/FurnitureWorkRenderer).
+ * the marks, or replaces a plan that came out otherwise. Here too: the timing ring of the nails and screws (doc 12.1: a
+ * needle once round in 1.2 s, the zone's green arc somewhere from 3 to 11 o'clock, its middle third two blows; the hammer
+ * raised with the needle), the actions' anchors (FurnitureBench's layout), their sounds and sawdust at their events, and
+ * what the bench draws ({@link #scene}, client/FurnitureWorkRenderer).
  */
 public final class FurnitureWorkClient {
-    /** The bar's sweep there and back (ticks, the generator's pull's), and the work's stop after this long on the bar with no press. */
-    private static final int PERIOD = 28, IDLE = 600;
+    /** The ring's turn (ticks: 1.2 s, about a blow a second), and the work's stop after this long on the ring with no press. */
+    private static final int PERIOD = 24, IDLE = 600;
+    /** Where the zone may lie on the turn (3 o'clock to 11: at least 0.3 s to react), the ring's radius and track (GUI px). */
+    private static final float ZONE_FROM = 0.25F, ZONE_TO = 11 / 12F, RING_R = 18, RING_W = 1.5F;
     /** The wooden knob's fit (its own hold), played for FIT_KNOB when the piece takes wooden knobs. */
     public static final String FIT_KNOB_WOODEN = "furniture/fit_knob_wooden";
     /** A press's actions: a plan's first play after a press, drawn on the piece as it was before the press (Plan#from). */
@@ -80,20 +83,45 @@ public final class FurnitureWorkClient {
     private static final Set<String> SCREWING = Set.of(SCREW_START, SCREW_HOLD, SCREW_TURN, SCREW_SLIP, SCREW_SEAT);
     private static final ResourceLocation WHITE_OAK_PLANKS = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "white_oak_planks");
 
-    /** A plan played at a bench from {@code start} (game ticks); the server's copy of a plan already played only brings its marks. */
+    /**
+     * A plan played at a bench from {@code start} (game ticks); the server's copy of a plan already played only brings its
+     * marks. {@code tail}: the last play of the plan before at the same bench, held at its end while this one plays nothing
+     * (a piece's last step done: the tick till the next piece or the end, doc 12.9), or null.
+     */
     private static final class Run {
         FurnitureWork.Plan plan;
         final double start;
         final BlockPos bench;
+        @Nullable
+        final FurnitureWork.Play tail;
 
-        Run(FurnitureWork.Plan plan, double start, BlockPos bench) {
+        Run(FurnitureWork.Plan plan, double start, BlockPos bench, @Nullable FurnitureWork.Play tail) {
             this.plan = plan;
             this.start = start;
             this.bench = bench.immutable();
+            this.tail = tail;
         }
     }
 
     private static final Map<Integer, Run> RUNS = new HashMap<>();
+
+    /**
+     * A worker's stance as last shown, gliding to the next (doc 12.9): the actions' {@code stand} and {@code face} anchors,
+     * from where the glide began to where it goes, since when and for how long (ticks), and when last seen.
+     */
+    private static final class Glide {
+        Vec3 fromStand, fromFace, toStand, toFace;
+        double at, ticks, seen;
+
+        double k(double now) {
+            double x = ticks <= 0 ? 1 : Math.max(0, Math.min(1, (now - at) / ticks));
+            return x * x * (3 - 2 * x);
+        }
+    }
+
+    private static final Map<Integer, Glide> GLIDES = new HashMap<>();
+    /** A worker not seen this long (ticks) starts where its first action stands (its approach steps in from the player). */
+    private static final double GLIDE_FORGET = 10;
     /** The last piece seen on each bench: drawn on while its block update and the plan cross (and after the piece is taken). */
     private static final Map<BlockPos, FurnitureWork.Job> SEEN = new HashMap<>();
     /** Each worker's run and its last tick whose events were played. */
@@ -103,10 +131,12 @@ public final class FurnitureWorkClient {
 
     /** The own words whose plan has not come back yet: only the last one's is taken. */
     private static int pending;
-    /** The bar: the zone's middle, the last press (game time) and whether it was in the zone. */
+    /** The ring: the zone's middle (a share of the turn from 12 o'clock), the last press (game time), whether it was in the zone. */
     private static float zone = 0.5F;
     private static double pressedAt = -100;
     private static boolean pressedGood;
+    /** Other players' rings are not sent: their hammer is raised for a zone here. */
+    private static final float SEEN_ZONE = 0.6F, SEEN_WIDTH = 0.2F;
 
     private FurnitureWorkClient() {}
 
@@ -119,6 +149,7 @@ public final class FurnitureWorkClient {
         RUNS.clear();
         SEEN.clear();
         FIRED.clear();
+        GLIDES.clear();
         pending = 0;
     }
 
@@ -145,13 +176,24 @@ public final class FurnitureWorkClient {
         FurnitureWork.Plan plan = FurnitureWork.decode(work.action());
         Run r = RUNS.get(player.getId());
         if (r != null && r.bench.equals(work.bench()) && same(r.plan, plan)) r.plan = plan;
-        else RUNS.put(player.getId(), new Run(plan, time(0), work.bench()));
+        else run(player.getId(), plan, time(0), work.bench());
     }
 
     /** WorkOf for another player: a plan from now, or the end of it. */
     static void remote(int entity, @Nullable WorkbenchCrafting.Working work) {
         if (work == null || !FurnitureWork.queue(work.action())) RUNS.remove(entity);
-        else RUNS.put(entity, new Run(FurnitureWork.decode(work.action()), time(0), work.bench()));
+        else run(entity, FurnitureWork.decode(work.action()), time(0), work.bench());
+    }
+
+    /** A worker's next plan, the last play of the one before at that bench kept for a plan that plays nothing. */
+    private static void run(int entity, FurnitureWork.Plan plan, double start, BlockPos bench) {
+        Run before = RUNS.get(entity);
+        FurnitureWork.Play tail = null;
+        if (before != null && before.bench.equals(bench)) {
+            List<FurnitureWork.Play> plays = before.plan.plays();
+            tail = plays.isEmpty() ? before.tail : plays.get(plays.size() - 1);
+        }
+        RUNS.put(entity, new Run(plan, start, bench, tail));
     }
 
     private static boolean same(FurnitureWork.Plan a, FurnitureWork.Plan b) {
@@ -173,8 +215,8 @@ public final class FurnitureWorkClient {
         FurnitureWork.Job cur = current(r, s);
         switch (p.waits()) {
             case DONE -> {
-                word(s, false, false);
-                if (cur != null) play(player, FurnitureWork.plan(FurnitureWork.advance(cur, false, false, lv), can, lv, cur, null), r.bench, now);
+                word(s, false, false, false);
+                if (cur != null) play(player, FurnitureWork.plan(FurnitureWork.advance(cur, false, false, false, lv), can, lv, cur, null), r.bench, now);
             }
             case PRESS -> {
                 if (el - p.ticks() > IDLE) WorkbenchWork.stopOwn();
@@ -186,14 +228,14 @@ public final class FurnitureWorkClient {
                 }
                 s.done++;
                 boolean more = cur != null && s.done < s.quantity && WorkbenchRecipes.craftable(player, s.recipe) >= 1;
-                word(s, !more, false);
+                word(s, !more, false, false);
                 play(player, more ? FurnitureWork.plan(FurnitureWork.Job.begin(s.recipe.id(), s.recipe.steps(), cur.wood(), cur.knob()), can, lv, null, null)
                         : FurnitureWork.closing(can, lv), r.bench, now);
             }
         }
     }
 
-    /** The use key on the bar: a blow or a quarter turn, in the zone or not (a miss only costs time). */
+    /** The ring's key (WorkbenchClient.QTE): a blow or a quarter turn, in the zone (its middle third: two) or not (a miss only costs time). */
     static void press(WorkbenchWork.Session s, Player player) {
         Run r = RUNS.get(player.getId());
         if (r == null) return;
@@ -202,24 +244,24 @@ public final class FurnitureWorkClient {
         if (p.waits() != FurnitureWork.Wait.PRESS || now - r.start < p.ticks()) return;
         FurnitureWork.Job cur = current(r, s);
         if (cur == null) return;
-        float w = zoneWidth(player, s.level);
-        boolean good = Math.abs(marker(r, 0) - zone) <= w / 2;
+        float w = zoneWidth(player, s.level), off = Math.abs(marker(r, 0) - zone);
+        boolean good = off <= w / 2, perfect = off <= w / 6;
         pressedAt = now;
         pressedGood = good;
         zone = nextZone(w);
-        word(s, true, good);
+        word(s, true, good, perfect);
         boolean can = p.to() != null && p.to().can();
-        play(player, FurnitureWork.plan(FurnitureWork.advance(cur, true, good, s.level), can, s.level, cur,
-                FurnitureWork.reaction(cur, good, s.level)), r.bench, now);
+        play(player, FurnitureWork.plan(FurnitureWork.advance(cur, true, good, perfect, s.level), can, s.level, cur,
+                FurnitureWork.reaction(cur, good, perfect, s.level)), r.bench, now);
     }
 
-    private static void word(WorkbenchWork.Session s, boolean press, boolean good) {
-        AflNetwork.buildingToServer(new BuildingPackets.Act(s.bench, s.recipe.id(), press, good));
+    private static void word(WorkbenchWork.Session s, boolean press, boolean good, boolean perfect) {
+        AflNetwork.buildingToServer(new BuildingPackets.Act(s.bench, s.recipe.id(), press, good, perfect));
         pending++;
     }
 
     private static void play(Player player, FurnitureWork.Plan plan, BlockPos bench, double now) {
-        RUNS.put(player.getId(), new Run(plan, now, bench));
+        run(player.getId(), plan, now, bench);
     }
 
     /** The own piece as the plan leaves it. */
@@ -252,6 +294,15 @@ public final class FurnitureWorkClient {
     @Nullable
     private static Frame frame(Run r, double now, @Nullable FurnitureWork.Job base) {
         List<FurnitureWork.Play> plays = r.plan.plays();
+        if (plays.isEmpty()) {
+            // nothing played (the piece's last step done, the can not open at the end): the play before held at its end,
+            // so the body does not go back to the player for a tick and step in again
+            if (r.tail == null) return null;
+            String action = shownAction(r.tail.action(), base);
+            if (r.tail.ticks() <= 0) return new Frame(0, r.tail, action, 0, 1, now);
+            double speed = length(action) * 20 / r.tail.ticks(), local = r.tail.ticks() - 0.2;
+            return new Frame(0, r.tail, action, local / 20 * speed, speed, now - local);
+        }
         double el = Math.max(0, now - r.start), acc = 0;
         for (int i = 0; i < plays.size(); i++) {
             FurnitureWork.Play pl = plays.get(i);
@@ -332,8 +383,56 @@ public final class FurnitureWorkClient {
         Frame f = frame(r, now, base);
         if (f == null) return null;
         int level = s != null ? s.level : WorkbenchWork.carpentry();
+        if (NAIL_HOLD.equals(f.action())) f = raised(f, r, now, s != null ? zone : SEEN_ZONE, s != null ? zoneWidth(p, level) : SEEN_WIDTH);
         Map<String, Vec3> anchors = anchors(r.bench, state.getValue(Workbench.FACING), f.action(), f.seconds(), shown(r, f, r.bench, base), level);
-        return new WorkbenchWork.At(f.action(), f.started() / 20.0, anchors, (float) f.speed(), f.play().chain());
+        glide(p.getId(), anchors, now);
+        return new WorkbenchWork.At(f.action(), f.started() / 20.0, anchors, (float) f.speed());
+    }
+
+    /**
+     * The stance a worker is shown in (doc 12.9): a change of the {@code stand} and {@code face} anchors (the crosscut's
+     * stance to the nail's, one nail's to the next, the can's, the brush's) glides from where it is shown
+     * (FurnitureBench#glideSeconds, smoothstep), not at once: the body and the own camera on its eye went there in one frame.
+     */
+    private static void glide(int id, Map<String, Vec3> m, double now) {
+        Vec3 stand = m.get("stand"), face = m.get("face");
+        if (stand == null || face == null) return;
+        Glide g = GLIDES.get(id);
+        if (g == null || now - g.seen > GLIDE_FORGET) {
+            g = new Glide();
+            g.fromStand = g.toStand = stand;
+            g.fromFace = g.toFace = face;
+            g.at = now;
+            GLIDES.put(id, g);
+        } else if (stand.distanceToSqr(g.toStand) > 1e-8 || face.distanceToSqr(g.toFace) > 1e-8) {
+            double k = g.k(now);
+            g.fromStand = g.fromStand.lerp(g.toStand, k);
+            g.fromFace = g.fromFace.lerp(g.toFace, k);
+            g.toStand = stand;
+            g.toFace = face;
+            g.at = now;
+            g.ticks = 20 * glideSeconds(g.fromStand.distanceTo(stand));
+        }
+        g.seen = now;
+        double k = g.k(now);
+        m.put("stand", g.fromStand.lerp(g.toStand, k));
+        m.put("face", g.fromFace.lerp(g.toFace, k));
+    }
+
+    /**
+     * The nail's hold by the needle (doc 12.1): its clip is the hammer's raise (0: cocked over the nail, its end: the top),
+     * played from 12 o'clock up to the top at the zone's start, held there through the zone, lowered again after it, so the
+     * blow from the top lands in the zone without a jump.
+     */
+    private static Frame raised(Frame f, Run r, double now, float middle, float width) {
+        double z0 = Math.max(0.05, middle - width / 2), z1 = Math.min(0.95, middle + width / 2), ph = phase(r, now), k;
+        if (ph < z0) k = ph / z0;
+        else if (ph <= z1) k = 1;
+        else k = 1 - (ph - z1) / (1 - z1);
+        k = k * k * (3 - 2 * k);
+        // never at 0: an action at its first instant does not step the body, and the camera would drop off the posed eye
+        double seconds = Math.max(0.02, k * length(NAIL_HOLD) * 0.999);
+        return new Frame(f.index(), f.play(), f.action(), seconds, 1, now - seconds * 20);
     }
 
     // ------------------------------------------------------------------------------------------------ the piece's numbers
@@ -396,9 +495,9 @@ public final class FurnitureWorkClient {
 
     /**
      * The actions' anchors (tools/author-furniture-actions.mjs, the same numbers): the crosscut's stance, kerf, holding hand
-     * and carry; the assembly's stance at the work (the nail's slot, the hardware's place; the can and the wipes their own),
+     * and carry; the assembly's stance at the work (the nail's slot, the hardware's place; the can and the brush their own),
      * the left hand's press, the nail's and screw's heads as far as they are in, the hardware's place, the box, the can and
-     * its things, the wipes' strokes across the piece.
+     * its things, the brush's rests and its strokes across the piece.
      */
     private static Map<String, Vec3> anchors(BlockPos bench, Direction facing, String action, double t, @Nullable FurnitureWork.Job job, int level) {
         Map<String, Vec3> m = new HashMap<>();
@@ -414,7 +513,7 @@ public final class FurnitureWorkClient {
         }
         double[] ext = extent(job);
         double top = ext[0], z0 = ext[1], z1 = ext[2];
-        boolean can = action.equals(CAN_OPEN) || action.equals(CAN_CLOSE), wipe = action.equals(WIPE) || action.equals(WIPE_OFF);
+        boolean can = action.equals(CAN_OPEN) || action.equals(CAN_CLOSE), wipe = action.equals(WIPE);
         double[] at = can || wipe ? null : workPoint(job);
         double x = at == null ? 1.02 : at[0], z = at == null ? 0.25 : at[2];
         double sz = can ? STAND_Z : standZ(z), sx = can ? CAN_STAND : wipe ? WIPE_STAND : standX(x);
@@ -439,17 +538,14 @@ public final class FurnitureWorkClient {
         put(m, "lid", bench, facing, LID[0], LID[1], LID[2]);
         put(m, "stick_bench", bench, facing, STICK[0], STICK[1], STICK[2]);
         put(m, "stick_rest", bench, facing, CAN[0] - 0.02, CAN[1] + 0.02, CAN[2]);
-        put(m, "rag_rest", bench, facing, RAG[0], RAG[1], RAG[2]);
-        // the strokes along the grain over the piece's depth: three a wipe on, two a wipe off
+        // the brush's middle lying on the top and across the can's mouth
+        put(m, "brush_rest", bench, facing, BRUSH_REST[0], BRUSH_REST[1] + BRUSH_LIFT, BRUSH_REST[2]);
+        put(m, "brush_can", bench, facing, mouth[0], mouth[1] + BRUSH_LIFT, mouth[2]);
+        // the strokes along the grain over the piece's depth, three
         for (int i = 0; i < 3; i++) {
             double bz = z0 + (z1 - z0) * (i + 0.5) / 3;
             put(m, "w" + i + "a", bench, facing, WIPE_A, top + WIPE_UP, bz);
             put(m, "w" + i + "b", bench, facing, WIPE_B, top + WIPE_UP, bz);
-        }
-        for (int i = 0; i < 2; i++) {
-            double bz = z0 + (z1 - z0) * (i + 0.5) / 2;
-            put(m, "o" + i + "a", bench, facing, WIPE_A, top + WIPE_UP, bz);
-            put(m, "o" + i + "b", bench, facing, WIPE_B, top + WIPE_UP, bz);
         }
         return m;
     }
@@ -529,7 +625,7 @@ public final class FurnitureWorkClient {
         double[] ext = extent(job);
         if (action.equals(CROSSCUT)) return t >= CARRY_FROM ? new double[]{PILE_X, 0.95, PILE_Z} : new double[]{CUT_X, CUT_TOP, kerfZ(t)};
         if (action.equals(CAN_OPEN) || action.equals(CAN_CLOSE)) return mouth();
-        if (action.equals(WIPE) || action.equals(WIPE_OFF)) return new double[]{(WIPE_A + WIPE_B) / 2, ext[0], (ext[1] + ext[2]) / 2};
+        if (action.equals(WIPE)) return new double[]{(WIPE_A + WIPE_B) / 2, ext[0], (ext[1] + ext[2]) / 2};
         double[] at = workPoint(job);
         return at == null ? new double[]{1.2, ext[0], (ext[1] + ext[2]) / 2} : at;
     }
@@ -557,26 +653,31 @@ public final class FurnitureWorkClient {
         }
     }
 
-    // ------------------------------------------------------------------------------------------------ the bar and the panel
+    // ------------------------------------------------------------------------------------------------ the ring and the panel
 
     private static float zoneWidth(Player player, int level) {
         return FurnitureWork.zone(level, SurvivorStats.multiplier(player, AflAttributes.QTE_WINDOW, 0.1));
     }
 
+    /** The next zone's middle: the whole zone between 3 and 11 o'clock. */
     private static float nextZone(float width) {
-        float lo = width / 2 + 0.08F, hi = 1 - width / 2 - 0.08F;
-        return lo + (hi - lo) * (float) Math.random();
+        float lo = ZONE_FROM + width / 2, hi = ZONE_TO - width / 2;
+        return lo + Math.max(0, hi - lo) * (float) Math.random();
     }
 
-    /** The marker on the bar (0..1), sweeping back and forth from the bar's start (the plan's actions played). */
+    /** The needle (a share of the turn from 12 o'clock), going round from the ring's start (the plan's actions played). */
     private static float marker(Run r, float partial) {
-        double phase = ((time(partial) - r.start - r.plan.ticks()) % PERIOD + PERIOD) % PERIOD / PERIOD;
-        return (float) (phase < 0.5 ? phase * 2 : 2 - phase * 2);
+        return (float) phase(r, time(partial));
+    }
+
+    private static double phase(Run r, double now) {
+        return ((now - r.start - r.plan.ticks()) % PERIOD + PERIOD) % PERIOD / PERIOD;
     }
 
     /**
-     * Over the hotbar: the piece, which of how many, the step and how far it is, the key that stops; under the crosshair,
-     * while the nail or screw waits, the timing bar (WorkbenchWork's overlay draws this for a furniture session).
+     * Over the hotbar: the piece, which of how many, the step and how far it is, the key that stops; round the crosshair,
+     * while the nail or screw waits, the timing ring (WorkbenchWork's overlay draws this for a furniture session). The panel
+     * stays below the ring at any GUI scale (user 2026-10-26: they overlapped at a large one).
      */
     static void panel(GuiGraphics g, WorkbenchWork.Session s, float partial, int screenWidth, int screenHeight) {
         var mc = Minecraft.getInstance();
@@ -594,7 +695,7 @@ public final class FurnitureWorkClient {
         AflKeyHint cap = AflKeyHint.MOUSE_LEFT;
         float keyW = cap.width(font) + 3 + font.width(stopText);
         float w = Math.max(Math.max(14 + font.width(title), keyW), font.width(step)) + 12, h = 6 + 12 + 11 + 6 + 14 + 3;
-        float x = screenWidth / 2F - w / 2, y = screenHeight - 77 - h;
+        float x = screenWidth / 2F - w / 2, y = Math.min(Math.max(screenHeight - 77 - h, screenHeight / 2F + RING_R + 12), screenHeight - 24 - h);
         AflUiDraw.panel(g, x, y, w, h, 1);
         var pose = g.pose();
         pose.pushPose();
@@ -613,25 +714,29 @@ public final class FurnitureWorkClient {
         AflUiDraw.text(g, font, stopText, x + 6 + cap.width(font) + 3, ky + 2, AflUiStyle.TEXT, 1);
         if (r != null && r.plan.waits() == FurnitureWork.Wait.PRESS) {
             double since = time(partial) - r.start - r.plan.ticks();
-            if (since >= 0) bar(g, s, r, partial, screenWidth, screenHeight, (float) Math.min(1, since / 4));
+            if (since >= 0) ring(g, s, r, partial, screenWidth, screenHeight, (float) Math.min(1, since / 4));
         }
     }
 
-    /** The timing bar (as the generator's pull's): the zone, the sweeping marker (green or red a moment after a press), the keys. */
-    private static void bar(GuiGraphics g, WorkbenchWork.Session s, Run r, float partial, int screenWidth, int screenHeight, float a) {
+    /**
+     * The timing ring round the crosshair (doc 12.1), flat as the survival HUD's gauges (AflGauge): the dark track, the
+     * zone's green arc and its brighter middle third, the needle across the track (green or red a moment after a press),
+     * the keys to its right (clear of the panel under it).
+     */
+    private static void ring(GuiGraphics g, WorkbenchWork.Session s, Run r, float partial, int screenWidth, int screenHeight, float a) {
         var mc = Minecraft.getInstance();
-        float W = 150, H = 7, cx = screenWidth / 2F, y = screenHeight / 2F + 34;
-        AflUiDraw.panel(g, cx - W / 2 - 6, y - 6, W + 12, H + 26, a);
-        AflUiShapes.fill(g, cx - W / 2, y, W, H, 2.5F, 0x2A2C2F, 0.9F * a);
-        float zw = zoneWidth(mc.player, s.level);
-        AflUiShapes.fill(g, cx - W / 2 + (zone - zw / 2) * W, y, zw * W, H, 2.5F, 0x7FB061, 0.85F * a);
-        float m = marker(r, partial);
-        int markRgb = time(partial) - pressedAt < 10 ? (pressedGood ? 0xB6F08E : 0xE07A5F) : 0xF2EEE6;
-        AflUiShapes.fill(g, cx - W / 2 + m * W - 1.5F, y - 3, 3, H + 6, 1.5F, markRgb, a);
+        float cx = screenWidth / 2F, cy = screenHeight / 2F, zw = zoneWidth(mc.player, s.level), m = marker(r, partial);
+        int needle = time(partial) - pressedAt < 10 ? (pressedGood ? 0xB6F08E : 0xE07A5F) : 0xF2EEE6;
+        double outer = RING_R + RING_W / 2;
+        AflGauge.draw(g, "furniture_ring", cx, cy, RING_R + 6, List.of(
+                AflGauge.Band.line(outer, RING_W, 0, 360, 0x2A2C2F, 0.6 * a),
+                AflGauge.Band.line(outer, RING_W, (zone - zw / 2) * 360, zw * 360, 0x7FB061, 0.9 * a),
+                AflGauge.Band.line(outer, RING_W, (zone - zw / 6) * 360, zw / 3 * 360, 0xB6F08E, a),
+                AflGauge.Band.line(RING_R + 4, 8, m * 360 - 2, 4, needle, a)), null);
         String qte = "nail".equals(r.plan.qte()) ? "nail" : "screw";
         Component keys = Component.translatable("hud.apocalypse_firstlight.workbench.qte." + qte,
-                mc.options.keyUse.getTranslatedKeyMessage(), mc.options.keyShift.getTranslatedKeyMessage());
-        AflUiDraw.centred(g, mc.font, keys, cx, y + H + 6, AflUiStyle.TEXT_DIM, a);
+                WorkbenchClient.QTE.getTranslatedKeyMessage(), mc.options.keyShift.getTranslatedKeyMessage());
+        AflUiDraw.text(g, mc.font, keys, cx + RING_R + 12, cy - 4, AflUiStyle.TEXT_DIM, a);
     }
 
     /** Whether the board is still on the bench (the crosscut's steps), for the renderer's pile. */

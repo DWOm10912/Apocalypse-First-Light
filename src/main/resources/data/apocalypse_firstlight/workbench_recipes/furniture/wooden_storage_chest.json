@@ -53,9 +53,6 @@
       "times": 3
     },
     {
-      "step": "furniture/wipe_off"
-    },
-    {
       "step": "furniture/fit_hinge",
       "times": 2
     },

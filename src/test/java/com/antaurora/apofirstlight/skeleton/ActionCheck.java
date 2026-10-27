@@ -85,6 +85,16 @@ final class ActionCheck {
         return failures;
     }
 
+    /**
+     * One scene of another check's (FurnitureActionCheck): the action at its second, fully blended in, standing planted
+     * after a look 20 deg down; the anchors in render-origin blocks. The failures it adds.
+     */
+    static int one(SkeletonRig rig, HumanoidPoser poser, String action, String name, float seconds, Map<String, Vector3f> anchors) throws Exception {
+        int before = failures;
+        check(rig, poser, new Scene(action, name, seconds, 0, anchors, null, true, false, false, 1F), null);
+        return failures - before;
+    }
+
     private static Scene[] scenes() {
         // recoil starter (structure px, block/PortableDieselGeneratorBlock HANDLE_REST, PULL; client/PortableGeneratorPull
         // BRACE): the holder stands on the structure's +x side facing -x, so structure -x = ahead (+z), +z = left (+x)
@@ -337,6 +347,17 @@ final class ActionCheck {
                         (float) Math.hypot(spout.x - o.x, spout.z - o.z)));
             }
             if (clear < PROP_CLEAR) fail(sc.name() + " prop " + (-clear) + " px into the " + part);
+            if ("hand_saw".equals(action.prop) && !m.mirror) {
+                // the hand saw's blade against the hands (user 2026-10-26: the crosscut sawed into the hand holding the board):
+                // the left hand must stay off the blade; the right one is in the handle and only reported
+                for (int k = 0; k < 2; k++) {
+                    boolean right = k == 0;
+                    float cut = bladeCut(rig, pose, prop, m.prop, right);
+                    line.append(String.format(" | %s hand %s", right ? "R" : "L", Float.isNaN(cut) ? "off the blade"
+                            : cut > 0 ? String.format("%.1f px into the blade", cut) : String.format("%.1f px from the blade", -cut)));
+                    if (!right && cut > 0) fail(sc.name() + " left hand " + cut + " px into the saw's blade");
+                }
+            }
             if (System.getenv("AFL_DEBUG") != null) {
                 for (String n : new java.util.TreeSet<>(prop.points().keySet())) {
                     Vector3f q = m.prop.transformPosition(com.antaurora.apofirstlight.skeleton.action.ActionPose.point(prop, n, m.mirror));
@@ -441,6 +462,43 @@ final class ActionCheck {
             SkeletonSnapshot.bodyViews(rig, pose, fp, at, dir, "action_" + sc.name());
             SkeletonSnapshot.anchors.clear();
         }
+    }
+
+    /**
+     * How far a hand's box goes through the hand saw's blade (px, the shallower side), or minus its gap to it, or NaN when no
+     * part of the hand is over the blade. The blade (meshes/hand_saw.aflmesh.json, item units): the tooth line x 0.301, the
+     * back 0.654 at the heel (y -0.016) to 0.386 at the toe (1.274), in the plane z 0.5; the handle behind the heel is not it.
+     */
+    private static float bladeCut(SkeletonRig rig, SkeletonPose pose, com.antaurora.apofirstlight.skeleton.action.PlayerProps.Prop prop,
+                                  Matrix4f placed, boolean right) {
+        Vector3f h = placed.transformPosition(prop.local(new Vector3f(0.301F, -0.016F, 0.5F)));
+        Vector3f t = placed.transformPosition(prop.local(new Vector3f(0.301F, 1.274F, 0.5F)));
+        Vector3f bh = placed.transformPosition(prop.local(new Vector3f(0.654F, -0.016F, 0.5F)));
+        Vector3f bt = placed.transformPosition(prop.local(new Vector3f(0.386F, 1.274F, 0.5F)));
+        Vector3f u = new Vector3f(t).sub(h);
+        float len = u.length();
+        u.div(len);
+        Vector3f v = new Vector3f(bh).sub(h);
+        v.sub(new Vector3f(u).mul(v.dot(u))).normalize();
+        Vector3f w = new Vector3f(u).cross(v);
+        float backHeel = new Vector3f(bh).sub(h).dot(v), backToe = new Vector3f(bt).sub(h).dot(v);
+        int upper = right ? rig.upperArmR : rig.upperArmL, hand = right ? rig.handR : rig.handL;
+        float cx = rig.pivot[upper].x + GunStance.centreX(right, false), half = armHalf(rig);
+        float y0 = rig.pivot[hand].y, y1 = rig.pivot[upper].y + GunStance.distalY();
+        float lo = Float.MAX_VALUE, hi = -Float.MAX_VALUE, gap = Float.MAX_VALUE;
+        boolean over = false;
+        for (int i = 0; i <= 8; i++) for (int j = 0; j <= 8; j++) for (int k = 0; k <= 8; k++) {
+            Vector3f p = pose.point(hand, new Vector3f(cx - half + 2 * half * i / 8F, y0 + (y1 - y0) * j / 8F, -half + 2 * half * k / 8F), new Vector3f());
+            Vector3f d = p.sub(h);
+            float a = d.dot(u), b = d.dot(v), c = d.dot(w);
+            if (a < 0 || a > len || b < 0 || b > backHeel + (backToe - backHeel) * a / len) continue;
+            over = true;
+            lo = Math.min(lo, c);
+            hi = Math.max(hi, c);
+            gap = Math.min(gap, Math.abs(c));
+        }
+        if (!over) return Float.NaN;
+        return lo < 0 && hi > 0 ? Math.min(-lo, hi) : -gap;
     }
 
     /** First-person cover of the right arm, left arm and torso (0..1 of the screen) and the nearest visible skin (blocks). */

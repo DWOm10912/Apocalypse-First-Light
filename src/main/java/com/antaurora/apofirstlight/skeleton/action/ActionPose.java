@@ -44,6 +44,11 @@ public final class ActionPose {
          * can's pour) is not eased in again with it.
          */
         public float age = Float.NaN;
+        /**
+         * Seconds the approach's step has been easing in, NaN: {@link #seconds}. A chained action (the furniture's next
+         * one) goes on from where the one before stood, so it counts from when the chain showed.
+         */
+        public float stepAge = Float.NaN;
         /** The source's parameter 0..1 (the parameter clip's weight): a pull's travel, how low a fuel opening is. */
         public float param;
         /** Played by the left side (a left-handed player, the item in the left hand). */
@@ -129,10 +134,37 @@ public final class ActionPose {
         return Math.max(0F, Math.min(in, out));
     }
 
-    /** Before solveBody: the clips, the root's step and facing. False when the action does not show at all. */
+    /**
+     * How much of the approach's step (and the view's turn with it) shows: eased in over the blend-in and the approach's
+     * {@code in} (on the action's own time, or {@link Moment#stepAge}), out over the approach's {@code out} after it
+     * stopped (its blend-out without one). The action's weight for an action without an approach. A chained action's step
+     * (stepAge set) eases in over the approach's {@code in} alone: the blend-in on top made it a slower start and a faster
+     * middle (doc furniture_bench_work_v1.md 12.9).
+     */
+    public static float stepWeight(Moment m) {
+        PlayerAction a = m.action;
+        if (a.approach == null) return weight(m);
+        float in = a.blendIn <= 0 ? 1F : GunStance.smooth((Float.isNaN(m.age) ? m.seconds : m.age) / a.blendIn);
+        float back = Float.isNaN(a.approach.out()) ? a.blendOut : a.approach.out();
+        float out = m.stopped < 0 ? 1F : back <= 0 ? 0F : 1F - GunStance.smooth(m.stopped / back);
+        float since = Float.isNaN(m.stepAge) ? m.seconds : m.stepAge;
+        float step = a.approach.in() > 0 ? GunStance.smooth(since / a.approach.in()) : 1F;
+        if (!Float.isNaN(m.stepAge) && a.approach.in() > 0) return Math.max(0F, Math.min(step, out));
+        return Math.max(0F, Math.min(in, out)) * step;
+    }
+
+    /** How long an action still shows after it stopped (s): its blend-out, or its approach's way back when that is longer. */
+    public static float fadeOut(PlayerAction a) {
+        return a.approach == null || Float.isNaN(a.approach.out()) ? a.blendOut : Math.max(a.blendOut, a.approach.out());
+    }
+
+    /**
+     * Before solveBody: the clips, the root's step and facing. False when the action does not show at all (past its
+     * blend-out, the step may still be easing back: the clips and hands at no weight then).
+     */
     public static boolean body(HumanoidPoser.Input in, SkeletonRig rig, Moment m) {
         float w = weight(m);
-        if (w <= 0) return false;
+        if (w <= 0 && stepWeight(m) <= 0) return false;
         PlayerAction a = m.action;
         in.actionMask = a.mask(rig, m.mirror);
         in.actionMirror = m.mirror;
@@ -151,7 +183,9 @@ public final class ActionPose {
         if (a.approach != null) {
             Vector3f anchor = m.anchors.apply(a.approach.anchor());
             if (anchor != null) {
-                float wa = w * (a.approach.in() > 0 ? GunStance.smooth(m.seconds / a.approach.in()) : 1F);
+                // a chained action's from when the chain showed, not again with each (the furniture's nail and screw: the
+                // body and the camera went back to the player and stepped in at each press)
+                float wa = stepWeight(m);
                 // stand `distance` from the anchor on the player's side and `side` to the left, at most `max` from where
                 // the player is (the root is at the model's x = z = 0; facing -z, the left is +x)
                 Vector3f flat = new Vector3f(-anchor.x, 0, -anchor.z);
@@ -180,7 +214,9 @@ public final class ActionPose {
                     in.viewYaw = in.viewYaw + wrap(in.rootYaw - in.viewYaw) * wa;
                     in.viewPitch = in.viewPitch + (pitch - in.viewPitch) * wa;
                 }
-                if (wa > 0) in.eyeTarget = null;   // the body steps away from the eye on purpose (first person: the camera follows it)
+                // the body steps away from the eye on purpose (first person: the camera follows it): the hold on the eye
+                // lets go as the step comes in, not at once (the body jumped by the hold's shift as an action began)
+                if (wa > 0) in.maxRootShift *= 1F - Math.min(1F, wa);
             }
         }
         return true;
@@ -218,11 +254,21 @@ public final class ActionPose {
         return f.lengthSquared() < 1e-8F ? new Vector3f(0, 0, -1) : f.normalize();
     }
 
-    /** After solveBody: the props' placements ({@link Moment#props}), then both hands' targets. */
+    /**
+     * After solveBody: the props' placements ({@link Moment#props}), then both hands' targets. None past the blend-out (the
+     * step easing back alone): the props are put away with the hands.
+     */
     public static void hands(HumanoidPoser.Input in, SkeletonPose pose, HumanoidPoser poser, Moment m) {
-        props(pose, m);
         float w = weight(m);
-        if (w <= 0) return;
+        if (w <= 0) {
+            m.props = new Matrix4f[0];
+            m.propHidden = new boolean[0];
+            m.propsOpen = new boolean[0];
+            m.prop = null;
+            m.propOpen = false;
+            return;
+        }
+        props(pose, m);
         handsAt(in, pose, poser, m, w);
     }
 

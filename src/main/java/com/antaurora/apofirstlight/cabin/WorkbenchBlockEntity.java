@@ -59,6 +59,8 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
     /** The furniture piece on the top, or null; {@code canOpen}: its stain can stands opened (pried open this batch). */
     @Nullable private FurnitureWork.Job job;
     private boolean canOpen;
+    /** A furniture piece made here, standing on the top until someone takes it (doc 12.3), or empty. */
+    private ItemStack finished = ItemStack.EMPTY;
     /** The chunk's share of the tools, installed by the client (WoodGunRackChunking); none on a server. */
     public static volatile Function<WorkbenchBlockEntity, ModelData> toolsData = bench -> ModelData.EMPTY;
 
@@ -165,6 +167,7 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
         if (dropped || level == null) return;
         dropped = true;
         Containers.dropContents(level, worldPosition, drawers);
+        if (!finished.isEmpty()) Containers.dropItemStack(level, worldPosition.getX() + 0.5, worldPosition.getY() + 1, worldPosition.getZ() + 0.5, finished);
         Containers.dropContents(level, worldPosition.above(), tools);
     }
 
@@ -182,6 +185,23 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
         this.canOpen = canOpen;
         setChanged();
         if (seen && level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    /** The piece made here standing on the top (doc 12.3), or empty. */
+    public ItemStack finished() { return finished; }
+
+    /** Server: the finished piece set on the top (or cleared: empty), sent to the clients. */
+    public void setFinished(ItemStack stack) {
+        finished = stack.copy();
+        setChanged();
+        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    /** Server: the finished piece taken off the top (empty: none). */
+    public ItemStack takeFinished() {
+        ItemStack out = finished;
+        if (!out.isEmpty()) setFinished(ItemStack.EMPTY);
+        return out;
     }
 
     // ------------------------------------------------------------------------------------- the animated mesh
@@ -250,11 +270,13 @@ public class WorkbenchBlockEntity extends BlockEntity implements AflAnimatedMesh
     private void saveJob(CompoundTag tag) {
         if (job != null) tag.put("Furniture", job.save());
         if (canOpen) tag.putBoolean("CanOpen", true);
+        if (!finished.isEmpty()) tag.put("Finished", finished.save(new CompoundTag()));
     }
 
     private void loadJob(CompoundTag tag) {
         job = tag.contains("Furniture") ? FurnitureWork.Job.load(tag.getCompound("Furniture")) : null;
         canOpen = tag.getBoolean("CanOpen");
+        finished = tag.contains("Finished") ? ItemStack.of(tag.getCompound("Finished")) : ItemStack.EMPTY;
     }
 
     @Override

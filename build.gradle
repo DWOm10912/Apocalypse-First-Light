@@ -409,6 +409,20 @@ tasks.register('skeletonCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.skeleton.PlayerSkeletonCheck'
 }
 
+// Furniture bench work (docs/gameplay/furniture_bench_work_v1.md 11): its actions on the vanilla rig and the default body's.
+tasks.register('furnitureActionCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.FurnitureActionCheck'
+}
+
+// Furniture bench work 12.9: the action changes frame by frame, the own first-person camera continuous (no flash, no jump).
+tasks.register('furnitureTransitionCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.FurnitureTransitionCheck'
+}
+
 // AFL Block-Mesh V2 B (docs/dev/block_mesh_v2_b_ingame.md 4): the poser on the B rig against vanilla's, feet and gun hands.
 tasks.register('blockMeshV2Check', JavaExec) {
     dependsOn tasks.named('testClasses')

@@ -1,13 +1,13 @@
 {
   "format_version": 1,
-  "about": "Open the can, once a batch before the first wipe: the claw pries the lid at three places (0.15-2.4, the left hand steadying the can), the left hand lifts the lid off and lays it upside down (2.4-3.1), the hammer to the hip (2.4-3.4), the right hand takes the stirring stick (3.4-3.7) and stirs slowly (4.0-5.95), leans it in the can (6.0-6.2) and picks the rag up (6.2-6.5) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
+  "about": "Open the can, once a piece before the stain: the claw pries the lid at three places (0.15-2.4, the left hand steadying the can), the left hand lifts the lid off and lays it upside down (2.4-3.1), the hammer to the hip (2.4-3.4), the right hand takes the stirring stick (3.4-3.7) and stirs slowly (4.0-5.95), leans it in the can (6.0-6.2), takes the brush off the top and lays it across the can's mouth (6.2-6.85) (client/workbench/WorkbenchWork plays it, docs/gameplay/furniture_bench_work_v1.md 3; written by tools/author-furniture-actions.mjs)",
   "clip": "tool.furniture_lean",
   "layer": "action",
   "mask": "upper",
   "priority": 55,
   "first_person": "body",
   "held_item": "hidden",
-  "length": 6.5,
+  "length": 7,
   "blend": {
     "in": 0.3,
     "out": 0.25
@@ -19,11 +19,12 @@
     "max": 2,
     "face": "face",
     "pitch": 40,
-    "in": 0.6
+    "in": 0.8,
+    "out": 0.8
   },
   "first_person_view": [
     [0, 58],
-    [6.5, 58]
+    [7, 58]
   ],
   "props": [
     {
@@ -303,32 +304,49 @@
       ]
     },
     {
-      "id": "furniture_rag",
+      "id": "furniture_brush",
       "keys": [
         {
           "at": 0,
-          "frame": "anchor:rag_rest",
+          "frame": "anchor:brush_rest",
           "point": "center",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
+          "rot": [90, 0, 0],
           "blend": 0,
           "hidden": true
         },
         {
           "at": 6.2,
-          "frame": "anchor:rag_rest",
+          "frame": "anchor:brush_rest",
           "point": "center",
           "pos": [0, 0, 0],
-          "rot": [0, 0, 0],
+          "rot": [90, 0, 0],
           "blend": 0
         },
         {
-          "at": 6.35,
-          "frame": "chest",
+          "at": 6.25,
+          "frame": "anchor:brush_can",
           "point": "center",
-          "pos": [-4.5, 7.5, -7],
-          "rot": [0, 0, 0],
-          "blend": 0.15
+          "pos": [0, -1.02, 0],
+          "rot": [90, 0, 90],
+          "blend": 0.3
+        },
+        {
+          "at": 6.6,
+          "frame": "anchor:brush_can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, 0, 90],
+          "blend": 0.2
+        },
+        {
+          "at": 6.85,
+          "frame": "anchor:brush_can",
+          "point": "center",
+          "pos": [0, 0, 0],
+          "rot": [90, 0, 90],
+          "blend": 0,
+          "hidden": true
         }
       ]
     }
@@ -348,10 +366,15 @@
         "roll": 0
       },
       {
-        "at": 6.2,
-        "target": "prop:furniture_rag:hold",
-        "blend": 0.15,
+        "at": 6.15,
+        "target": "prop:furniture_brush:grip",
+        "blend": 0.1,
         "roll": 0
+      },
+      {
+        "at": 6.85,
+        "target": "pose",
+        "blend": 0.15
       }
     ],
     "left": [

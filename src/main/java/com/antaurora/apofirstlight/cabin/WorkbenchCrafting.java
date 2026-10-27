@@ -253,6 +253,11 @@ public final class WorkbenchCrafting {
 
     private static void startFurniture(ServerPlayer player, BlockPos bench, Recipe r, boolean discard) {
         if (!(player.serverLevel().getBlockEntity(bench) instanceof WorkbenchBlockEntity be)) return;
+        if (!be.finished().isEmpty()) {
+            // the last piece still stands on the top (doc 12.3): taken off first
+            refuse(player, "occupied");
+            return;
+        }
         if (!enough(player, r)) {
             refuse(player, "short");
             return;
@@ -306,11 +311,12 @@ public final class WorkbenchCrafting {
 
     /**
      * Server: a furniture piece's word from its player. Waiting on a timed step: {@code press} false, it was played to its
-     * end. Waiting on the bar: a press, {@code good} in the zone (a miss only costs time). The piece done: {@code press}
-     * false goes on with a new piece, true shuts the can and stops. Each word comes no sooner than 3/4 of the plan's actions
-     * take, or the work stops.
+     * end. Waiting on the ring: a press, {@code good} in the zone, {@code perfect} in its middle third (two blows; a miss
+     * only costs time). The piece done: it stays on the top (doc 12.3), the can is shut and the work stops ({@code press}
+     * false, a new piece, only while the top is clear: a client of before the round 2). Each word comes no sooner than 3/4
+     * of the plan's actions take, or the work stops.
      */
-    public static void act(ServerPlayer player, BlockPos bench, ResourceLocation id, boolean press, boolean good) {
+    public static void act(ServerPlayer player, BlockPos bench, ResourceLocation id, boolean press, boolean good, boolean perfect) {
         Furn f = FURN.get(player.getUUID());
         Working w = WORKING.get(player.getUUID());
         Recipe r = find(id);
@@ -333,7 +339,7 @@ public final class WorkbenchCrafting {
                 stopFurniture(player);
                 return;
             }
-            if (press) {
+            if (press || !be.finished().isEmpty()) {
                 // the batch is done: the can shut (if it stands open), then the client stops
                 boolean open = be.canOpen();
                 be.setJob(be.job(), false);
@@ -366,11 +372,11 @@ public final class WorkbenchCrafting {
             return;
         }
         FurnitureWork.Job before = job;
-        String reaction = press ? FurnitureWork.reaction(job, good, lv) : null;
+        String reaction = press ? FurnitureWork.reaction(job, good, perfect, lv) : null;
         boolean canOpen = be.canOpen();
         FurnitureWork.Step step = job.current();
         if (!press && step != null && FurnitureWork.WIPE.equals(step.step())) canOpen = true;   // pried open and stirred before it
-        job = FurnitureWork.worked(FurnitureWork.advance(job, press, good, lv), now - f.last(), plan);
+        job = FurnitureWork.worked(FurnitureWork.advance(job, press, good, perfect, lv), now - f.last(), plan);
         be.setJob(job, canOpen);
         if (job.complete()) {
             if (!enough(player, r)) {
@@ -384,12 +390,15 @@ public final class WorkbenchCrafting {
         send(player, new Furn(bench, FurnitureWork.plan(job, canOpen, lv, before, reaction), now, lv), r);
     }
 
-    /** The piece done: the materials taken once, the item given, the carpentry experience (doc 3.7), the bench cleared. */
+    /**
+     * The piece done: the materials taken once, the carpentry experience (doc 3.7), the piece left standing on the top (doc
+     * 12.3: one at a time, taken off with the use key, WorkbenchBlockEntity#takeFinished), the work cleared.
+     */
     private static void finish(ServerPlayer player, WorkbenchBlockEntity be, Recipe r, FurnitureWork.Job job) {
         Item result = item(r.result());
         if (result == null) return;
         take(player, r);
-        CarriedItems.give(player, new ItemStack(result, r.count()));
+        be.setFinished(new ItemStack(result));
         player.serverLevel().playSound(null, be.getBlockPos(), SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.6F, 0.9F);
         int nails = 0, screws = 0;
         for (FurnitureWork.Step s : job.steps()) {

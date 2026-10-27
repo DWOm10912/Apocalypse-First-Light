@@ -21,6 +21,7 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.client.settings.IKeyConflictContext;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -38,6 +39,20 @@ public final class WorkbenchClient {
     /** F on the crafting page: add the selected recipe to the to-do panel (or take it off). */
     public static final KeyMapping TODO = new KeyMapping("key.apocalypse_firstlight.workbench_todo", KeyConflictContext.GUI,
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F, "key.categories.apocalypse_firstlight");
+    /** At the bench's furniture work with no screen open (the ring's key shares Space with the jump, which is off then). */
+    private static final IKeyConflictContext AT_WORK = new IKeyConflictContext() {
+        @Override
+        public boolean isActive() { return Minecraft.getInstance().screen == null && WorkbenchWork.furnitureActive(); }
+
+        @Override
+        public boolean conflicts(IKeyConflictContext other) { return other == this; }
+    };
+    /**
+     * The timing ring's key (furniture_bench_work_v1.md 12.8, user 2026-10-26: Space by default, rebindable): a nail's blow,
+     * a screw's turn. The right click does nothing at the bench.
+     */
+    public static final KeyMapping QTE = new KeyMapping("key.apocalypse_firstlight.workbench_qte", AT_WORK,
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, "key.categories.apocalypse_firstlight");
     /** How far the player may stand from the bench's master cell with the page open (squared, from its centre). */
     private static final double REACH_SQ = 5.5 * 5.5;
 
@@ -151,7 +166,10 @@ public final class WorkbenchClient {
         private Registration() {}
 
         @SubscribeEvent
-        public static void keys(RegisterKeyMappingsEvent event) { event.register(TODO); }
+        public static void keys(RegisterKeyMappingsEvent event) {
+            event.register(TODO);
+            event.register(QTE);
+        }
 
         @SubscribeEvent
         public static void overlays(RegisterGuiOverlaysEvent event) {

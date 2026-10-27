@@ -1,0 +1,21 @@
+{
+  "about": "The 50 mm flat stain brush (doc 12.2): y from the bristles' tip up the handle, the bristles' width along x. tip; center: its middle; grip: the right hand round the handle by the ferrule (docs/gameplay/furniture_bench_work_v1.md; written by tools/author-furniture-actions.mjs): parts of the furniture_work mesh (code only, no item). Points, bounds: item block units of the mesh as drawn (meshes/furniture_work.aflmesh.json + (0.5, 0, 0.5)). Scale 0.508.",
+  "items": [],
+  "scale": 0.508,
+  "bounds": [
+    [0.4469, 0, 0.4813],
+    [0.5531, 0.3937, 0.5187]
+  ],
+  "symmetry": "x",
+  "mesh": {
+    "model": "furniture_work",
+    "atlas": "furniture_work_mesh",
+    "offset": 0,
+    "parts": ["brush_handle", "brush_ferrule", "brush_bristle", "brush_wet"]
+  },
+  "points": {
+    "tip": [0.5, 0, 0.5],
+    "center": [0.5, 0.1969, 0.5],
+    "grip": [0.5, 0.25, 0.6845]
+  }
+}

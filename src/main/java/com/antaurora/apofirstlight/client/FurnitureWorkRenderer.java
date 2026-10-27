@@ -21,7 +21,10 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
@@ -37,21 +40,20 @@ import static com.antaurora.apofirstlight.cabin.FurnitureWork.CAN_CLOSE;
 import static com.antaurora.apofirstlight.cabin.FurnitureWork.CAN_OPEN;
 import static com.antaurora.apofirstlight.cabin.FurnitureWork.CROSSCUT;
 import static com.antaurora.apofirstlight.cabin.FurnitureWork.WIPE;
-import static com.antaurora.apofirstlight.cabin.FurnitureWork.WIPE_OFF;
 import static com.antaurora.apofirstlight.client.workbench.FurnitureBench.*;
 
 /**
  * The furniture work on the bench top (docs/gameplay/furniture_bench_work_v1.md 3.6, 4.4), drawn by WorkbenchRenderer each
  * frame from FurnitureWorkClient#scene, in the bench's north frame: the board being crosscut (as long as the pieces still to
  * cut, slid over the end, the kerf down its top, the off-cut split off and carried onto the pile), then the piece (its
- * boards in the wood's planks, the grain along each board; the stain wiped on band by band across its depth), its nails and
- * screws as far as they are in, its hardware; while someone works: the can, its lid, the stick and the rag where the
+ * boards in the wood's planks, the grain along each board; the stain brushed on band by band across its depth), its nails
+ * and screws as far as they are in, its hardware; while someone works: the can, its lid, the stick and the brush where the
  * actions leave them, the box of nails or screws. The half-built piece stays drawn when the work stops (the bench's job),
- * so a stop and a go-on later show the same thing.
+ * so a stop and a go-on later show the same thing; a finished piece stands on the top until someone takes it (doc 12.3).
  */
 public final class FurnitureWorkRenderer {
-    /** The props' scale on the bench (as the actions draw them: real size, the player model's 0.9375), the rag's own. */
-    private static final float SCALE = (float) K, RAG_SCALE = (float) (0.7 * 0.9375);
+    /** The props' scale on the bench (as the actions draw them: real size, the player model's 0.9375). */
+    private static final float SCALE = (float) K;
     /** The stain over the wood (a walnut stain, multiplied over the planks), and the kerf's dark. */
     private static final int[] STAIN = {140, 100, 69}, KERF = {46, 36, 26};
     /** The heaps' height in their box (mesh units: the box's body 0.213 for the nails, 0.154 for the screws). */
@@ -60,13 +62,20 @@ public final class FurnitureWorkRenderer {
 
     private FurnitureWorkRenderer() {}
 
-    public static void render(BlockPos master, BlockState bench, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
+    public static void render(BlockPos master, BlockState bench, ItemStack finished, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
         FurnitureWorkClient.Scene sc = FurnitureWorkClient.scene(master, partial);
-        if (sc == null) return;
+        // the finished piece once its run is over (the can shut: it would stand in the can's way)
+        boolean laid = !finished.isEmpty() && (sc == null || sc.action() == null);
+        if (sc == null && !laid) return;
         pose.pushPose();
         pose.translate(0.5, 0, 0.5);
         pose.mulPose(Axis.YP.rotationDegrees(AflBlockMeshProfile.facingDegrees(bench.getValue(Workbench.FACING))));
         pose.translate(-0.5, 0, -0.5);
+        if (laid) finished(finished, pose, buffers, light);
+        if (sc == null) {
+            pose.popPose();
+            return;
+        }
         String action = sc.action();
         double t = sc.seconds();
         FurnitureWork.Job job = sc.job();
@@ -128,7 +137,7 @@ public final class FurnitureWorkRenderer {
         }
     }
 
-    /** The stained bands (of BANDS, from the front): the wipes' strokes so far of all of them; all once the wipes are done. */
+    /** The stained bands (of BANDS, from the front): the brush's strokes so far of all of them; all once the coats are done. */
     private static int painted(FurnitureWork.Job job, @Nullable String action, double t) {
         int[] w = job.count(WIPE);
         if (w[1] == 0) return 0;
@@ -271,17 +280,20 @@ public final class FurnitureWorkRenderer {
 
     /**
      * The can at the bench's right, as the can's actions leave its things: the lid on it until it is pried off (2.4 s of the
-     * opening) and from when it is pressed back on (1.3 s of the closing), face down at its rest in between (except while it
+     * opening) and from when it is pressed back on (2.1 s of the closing), face down at its rest in between (except while it
      * is in the hand); the stick lying right of the can while it is shut, leaning in it while it stands open (in the hand
-     * while stirring and taken out); the rag at its rest but while it wipes; the stain inside while the lid is off.
+     * while stirring and taken out); the brush flat on the top until it is taken up (6.2 s of the opening) and from when it
+     * is laid back (0.8 s of the closing), across the can's mouth in between but while it is in the hand; the stain inside
+     * while the lid is off.
      */
     private static void can(String action, double t, PoseStack pose, MultiBufferSource buffers, int light) {
         boolean opening = CAN_OPEN.equals(action), closing = CAN_CLOSE.equals(action);
-        boolean lidOn = opening ? t < 2.4 : closing && t >= 1.3;
-        boolean lidRest = opening ? t >= 3.1 : !closing || t < 0.6;
-        boolean lying = opening ? t < 3.45 : closing && t >= 0.65;
-        boolean leaning = opening ? t >= 6.2 : !closing;
-        boolean rag = WIPE.equals(action) ? false : WIPE_OFF.equals(action) ? t >= 2.25 : !opening || t < 6.2;
+        boolean lidOn = opening ? t < 2.4 : closing && t >= 2.1;
+        boolean lidRest = opening ? t >= 3.1 : !closing || t < 1.4;
+        boolean lying = opening ? t < 3.45 : closing && t >= 1.45;
+        boolean leaning = opening ? t >= 6.2 : !closing || t < 0.85;
+        boolean brushRest = opening ? t < 6.2 : closing && t >= 0.8;
+        boolean brushCan = opening ? t >= 6.85 : WIPE.equals(action) ? t >= 4.15 : !closing;
         mesh("furniture_work", lidOn ? Set.of("can_open", "can_label", "can_bail", "can_ear_0", "can_ear_1")
                 : Set.of("can_open", "can_label", "can_bail", "can_ear_0", "can_ear_1", "can_stain"), CAN, null, 0, SCALE, pose, buffers, light);
         double[] mouth = mouth();
@@ -296,7 +308,75 @@ public final class FurnitureWorkRenderer {
             double[] h = norm(STICK_LEAN), b = {0, 0, 1};
             mesh("furniture_work", stick, new double[]{CAN[0] - 0.02, CAN[1] + 0.02, CAN[2]}, turn(orth(b, h), h), 0, SCALE, pose, buffers, light);
         }
-        if (rag) mesh("furniture_work", Set.of("rag"), RAG, null, 0, RAG_SCALE, pose, buffers, light);
+        Set<String> brush = Set.of("brush_handle", "brush_ferrule", "brush_bristle", "brush_wet");
+        if (brushRest) {
+            // flat, the handle to the back, the bristles' width along x; the mesh's origin is the bristles' tip
+            mesh("furniture_work", brush, new double[]{BRUSH_REST[0], BRUSH_REST[1] + BRUSH_LIFT, BRUSH_REST[2] - BRUSH_MID},
+                    turn(new double[]{1, 0, 0}, new double[]{0, 0, 1}), 0, SCALE, pose, buffers, light);
+        } else if (brushCan) {
+            // across the mouth, the handle to the left (+x), resting on the rim
+            mesh("furniture_work", brush, new double[]{mouth[0] - BRUSH_MID, mouth[1] + BRUSH_LIFT, mouth[2]},
+                    turn(new double[]{0, 0, -1}, new double[]{1, 0, 0}), 0, SCALE, pose, buffers, light);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------ the finished piece
+
+    /** How a piece lies on the top (doc 12.3): as it stands, on its top (the table, its legs up), on its back (its front up). */
+    private enum Lie { UPRIGHT, FLIP, BACK }
+
+    /**
+     * A finished piece's closed bounds as its block stands facing north (blocks, from the master cell's bottom centre; the
+     * meshes and cabin pieces measured, doc 12.3's table) and how it lies: what fits under the shelf (0.96 over the top)
+     * stands, the table lies on its top, the tall and the wall pieces on their backs (the chair's 0.98 too).
+     */
+    private record Laid(double[] lo, double[] hi, Lie lie) {}
+
+    private static final Map<String, Laid> LAID = Map.of(
+            "wooden_table", new Laid(new double[]{-0.48, 0, -0.48}, new double[]{0.48, 0.76, 0.48}, Lie.FLIP),
+            "wooden_chair", new Laid(new double[]{-0.29, 0, -0.21}, new double[]{0.29, 0.98, 0.24}, Lie.BACK),
+            "wooden_gun_rack", new Laid(new double[]{-0.45, 0.04, 0.2}, new double[]{0.45, 0.97, 0.5}, Lie.BACK),
+            "wooden_tool_rack", new Laid(new double[]{-0.47, 0.68, 0.3}, new double[]{0.47, 0.896, 0.5}, Lie.BACK),
+            "wooden_wardrobe", new Laid(new double[]{-0.5, 0, -0.165}, new double[]{0.5, 1.96, 0.425}, Lie.BACK),
+            "wooden_nightstand", new Laid(new double[]{-0.27, 0, -0.003}, new double[]{0.27, 0.66, 0.425}, Lie.UPRIGHT),
+            "wooden_storage_chest", new Laid(new double[]{-0.144, 0, -0.264}, new double[]{1.144, 0.598, 0.262}, Lie.UPRIGHT));
+    private static final Laid OTHER = new Laid(new double[]{-0.5, 0, -0.5}, new double[]{0.5, 1, 0.5}, Lie.UPRIGHT);
+    /** The top's middle along x, its depth (from the front edge), how far the shelf's way stays clear of the pegboard. */
+    private static final double TOP_MID_X = 1.0, TOP_DEPTH = 0.72;
+
+    /**
+     * The piece made here on the top (doc 12.3), drawn by its item (the block's own mesh or cabin pieces, closed) as it lies:
+     * on the top, in the middle of its length, in the middle of its depth, or, deeper than the top, its back at the back
+     * edge (the overhang to the front, clear of the pegboard).
+     */
+    private static void finished(ItemStack stack, PoseStack pose, MultiBufferSource buffers, int light) {
+        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        Laid l = id == null ? OTHER : LAID.getOrDefault(id.getPath(), OTHER);
+        Quaternionf turn = switch (l.lie()) {
+            case UPRIGHT -> new Quaternionf();
+            case FLIP -> turn(new double[]{-1, 0, 0}, new double[]{0, -1, 0});
+            // the top to +x, the back down, the front up
+            case BACK -> turn(new double[]{0, 0, -1}, new double[]{1, 0, 0});
+        };
+        double[] lo = {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE}, hi = {-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE};
+        for (int c = 0; c < 8; c++) {
+            Vector3f v = new Vector3f((float) ((c & 1) == 0 ? l.lo()[0] : l.hi()[0]), (float) ((c & 2) == 0 ? l.lo()[1] : l.hi()[1]),
+                    (float) ((c & 4) == 0 ? l.lo()[2] : l.hi()[2])).rotate(turn);
+            double[] p = {v.x, v.y, v.z};
+            for (int k = 0; k < 3; k++) {
+                lo[k] = Math.min(lo[k], p[k]);
+                hi[k] = Math.max(hi[k], p[k]);
+            }
+        }
+        double z = hi[2] - lo[2] <= TOP_DEPTH ? TOP_DEPTH / 2 - (lo[2] + hi[2]) / 2 : TOP_DEPTH - hi[2];
+        pose.pushPose();
+        pose.translate(TOP_MID_X - (lo[0] + hi[0]) / 2, 0.9005 - lo[1], z);
+        pose.mulPose(turn);
+        // the item is drawn with the master cell's bottom centre at (0, -0.5, 0)
+        pose.translate(0, 0.5, 0);
+        var mc = Minecraft.getInstance();
+        mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.NONE, light, OverlayTexture.NO_OVERLAY, pose, buffers, mc.level, 0);
+        pose.popPose();
     }
 
     /** The open box of nails or screws at the bench's left end, its label to the body, its heap inside. */
