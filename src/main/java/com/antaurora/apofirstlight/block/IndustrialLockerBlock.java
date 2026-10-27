@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
@@ -158,7 +159,7 @@ public class IndustrialLockerBlock extends Block implements EntityBlock, AflMesh
         switch (action) {
             case OPEN_DOOR -> setOpen(level, lower, lowerState, true, player);
             case CLOSE_DOOR -> setOpen(level, lower, lowerState, false, player);
-            default -> player.openMenu((IndustrialLockerBlockEntity) level.getBlockEntity(lower));
+            default -> AflContainerSearch.open(player, (IndustrialLockerBlockEntity) level.getBlockEntity(lower));
         }
         return InteractionResult.CONSUME;
     }

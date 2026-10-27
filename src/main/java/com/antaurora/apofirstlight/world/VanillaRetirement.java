@@ -5,6 +5,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -35,7 +36,8 @@ public final class VanillaRetirement {
     public static final TagKey<Item> CREATIVE_HIDDEN = item("retired/creative_hidden");
     /** Vanilla blocks whose use is refused in survival / adventure (enchanting, anvils, brewing, ...). */
     public static final TagKey<Block> WORKSTATIONS = TagKey.create(Registries.BLOCK, id("retired/workstations"));
-    /** V1.2: vanilla mobs that no longer enter the world (every vanilla mob except minecraft:zombie, AFL's infected). */
+    /** V1.2: vanilla mobs that no longer enter the world. Since 2026-10-26 every vanilla mob, minecraft:zombie included
+     *  (AFL's own infected, Z1, replaces it). */
     public static final TagKey<EntityType<?>> MOBS = TagKey.create(Registries.ENTITY_TYPE, id("retired/mobs"));
 
     public static final ForgeConfigSpec SPEC;
@@ -88,6 +90,11 @@ public final class VanillaRetirement {
 
     public static boolean isRetiredMob(EntityType<?> type) {
         return enabled() && type.is(MOBS);
+    }
+
+    /** GameTests still use minecraft:zombie as the target for guns, noise and lightning, so the GameTest server lets it in. */
+    public static boolean isTestTarget(EntityType<?> type, Level level) {
+        return type == EntityType.ZOMBIE && level.getServer() instanceof GameTestServer;
     }
 
     /** Creative and spectator players may still open retired workstations to check old builds. */

@@ -321,7 +321,7 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
         switch (target.action()) {
             case OPEN -> setLid(level, master, masterState, target.side(), true, player);
             case CLOSE -> setLid(level, master, masterState, target.side(), false, player);
-            default -> player.openMenu(dumpster);
+            default -> AflContainerSearch.open(player, dumpster);
         }
         return InteractionResult.CONSUME;
     }

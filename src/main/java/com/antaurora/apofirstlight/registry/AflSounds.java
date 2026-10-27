@@ -283,6 +283,15 @@ public final class AflSounds {
      *  (health/Fractures#breakLimb) and a body falling over on landing (four variants). */
     public static final RegistryObject<SoundEvent> FRACTURE_CRACK = simple("fracture_crack");
     public static final RegistryObject<SoundEvent> BODY_FALL = simple("body_fall");
+    /** Infected Z1a (docs/gameplay/afl_infected_z0_design.md 12.1, tools/build-infected-sounds-v1.mjs): the shambler's voice
+     *  and its blows on a door, played through RangedSound by creature/infected/InfectedSounds. */
+    public static final RegistryObject<SoundEvent> INFECTED_IDLE = simple("infected_idle");
+    public static final RegistryObject<SoundEvent> INFECTED_ALERT = simple("infected_alert");
+    public static final RegistryObject<SoundEvent> INFECTED_CHASE = simple("infected_chase");
+    public static final RegistryObject<SoundEvent> INFECTED_ATTACK = simple("infected_attack");
+    public static final RegistryObject<SoundEvent> INFECTED_HURT = simple("infected_hurt");
+    public static final RegistryObject<SoundEvent> INFECTED_DEATH = simple("infected_death");
+    public static final RegistryObject<SoundEvent> INFECTED_DOOR_BANG = simple("infected_door_bang");
     /** Thunder V1 (docs/audio/thunder_sounds_v1_plan.md, tools/thunder-sounds/cut.py): by the distance to the nearest point
      *  of the channel (client/lightning/Thunder); the in-cloud roll is for the regional weather's cloud flashes. */
     public static final RegistryObject<SoundEvent> THUNDER_CRACK = simple("thunder_crack");

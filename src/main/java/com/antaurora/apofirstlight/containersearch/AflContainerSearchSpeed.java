@@ -8,9 +8,10 @@ import java.util.List;
 /**
  * The single server-side entry point for search timing. Screens and renderers only display the result.
  *
- * <p>{@code duration = baseTicksPerSlot * (1 + jitter) / (player multiplier * environment multiplier)}. The jitter
- * comes from the container's search seed and slot index only, never from the slot's contents, so timing cannot
- * reveal what a hidden slot holds. The player multiplier is the survivor attribute search_speed (traits); the
+ * <p>{@code duration = baseTicksPerSlot * size weight * (1 + jitter) / (player multiplier * environment multiplier)}. The
+ * size weight is 0.75 + 0.25 per cell of the item's footprint (a 1 x 1 item the base time, a 3 x 3 jerry can three times
+ * it; the grid shows the footprint anyway, AflContainerGrid). The jitter comes from the container's search seed and slot
+ * index only, so timing tells no more than the footprint does. The player multiplier is the survivor attribute search_speed (traits); the
  * environment one is 1.0, the extension point for darkness, light sources, fatigue or injuries.
  */
 public final class AflContainerSearchSpeed {
@@ -20,7 +21,7 @@ public final class AflContainerSearchSpeed {
     static int slotDurationTicks(AflSearchableContainer owner, ServerLevel level, int slot, long seed,
                                  List<ServerPlayer> searchers) {
         AflContainerSearchSettings settings = owner.aflSearchSettings();
-        double ticks = settings.baseTicksPerSlot()
+        double ticks = settings.baseTicksPerSlot() * AflContainerGrid.searchWeight(owner, slot)
                 * (1.0 + settings.durationJitter() * AflContainerSearchState.jitterUnit(seed, slot));
         double speed = sanitize(bestSearcher(owner, searchers)) * sanitize(environmentMultiplier(level, owner));
         return (int) Math.max(1L, Math.min(Short.MAX_VALUE, Math.round(ticks / speed)));

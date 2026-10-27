@@ -47,10 +47,13 @@ AFL 的储物分为两类：
 | `AflContainerSearchItemHandler` | Forge 自动化看到的遮罩视图 |
 
 其它文件：
-- 菜单类型注册：`registry/AflMenus.java` 的 `SEARCHABLE_CONTAINERS`。
+- 菜单类型注册：`registry/AflMenus.java` 的 `SEARCHABLE_CONTAINER`（2026-10-27 起只有这一个，布局在打开数据里）。
+- 网格分区：`containersearch/AflContainerSearchLayout.java`（分区）、`containersearch/AflContainerGrid.java`（锚点格、摆放、`pack`），见 [搜索页第 12 节](../ui/afl_container_search_page_v1.md)。
 - 客户端：`client/AflContainerSearchScreen.java`（开发占位遮罩），在 `client/AflMenuScreens.java` 注册。
 
-新增 Registry ID：菜单类型 `apocalypse_firstlight:searchable_container_9x1` 到 `apocalypse_firstlight:searchable_container_9x6`，以及 `apocalypse_firstlight:searchable_container_3x3`（2026-09-30）、`apocalypse_firstlight:searchable_container_6x3`（2026-10-01，冷冻冰柜）、`apocalypse_firstlight:searchable_container_3x4`（2026-10-04，收银背柜）。和原版 `GENERIC_9xN` / `GENERIC_3x3` 一样按布局各注册一个类型，打开时不附带额外数据。这样原版 `player.openMenu(be)` 和 Forge `NetworkHooks.openScreen` 两种打开方式都能正常使用，客户端不会因为缺少附加数据而崩溃。
+**2026-10-27 改了：** 下面这些按布局注册的类型都删了，换成一个 `apocalypse_firstlight:searchable_container`，打开时附带布局，必须用 `AflContainerSearch.open(player, …)` 打开（不能再用原版 `player.openMenu`）。以下是旧记录。
+
+旧 Registry ID：菜单类型 `apocalypse_firstlight:searchable_container_9x1` 到 `apocalypse_firstlight:searchable_container_9x6`，以及 `apocalypse_firstlight:searchable_container_3x3`（2026-09-30）、`apocalypse_firstlight:searchable_container_6x3`（2026-10-01，冷冻冰柜）、`apocalypse_firstlight:searchable_container_3x4`（2026-10-04，收银背柜）。和原版 `GENERIC_9xN` / `GENERIC_3x3` 一样按布局各注册一个类型，打开时不附带额外数据。这样原版 `player.openMenu(be)` 和 Forge `NetworkHooks.openScreen` 两种打开方式都能正常使用，客户端不会因为缺少附加数据而崩溃。
 
 ## 4. 接入 contract
 
@@ -64,8 +67,15 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
     public AflContainerSearchSettings aflSearchSettings() { return SETTINGS; }
     public boolean aflSearchRequiredOnInit() { return lootTable != null; }   // 世界 loot = 需要搜索
 
-    @Override public void unpackLootTable(@Nullable Player p) { AflContainerSearch.beforeLootUnpack(this); super.unpackLootTable(p); }
-    @Override public boolean canPlaceItem(int s, ItemStack st) { return AflContainerSearch.canPlaceItem(this, s) && super.canPlaceItem(s, st); }
+    public AflContainerSearchLayout aflSearchLayout() { return AflContainerSearchLayout.GRID_6X3; }  // 格数 = 分区格数之和
+
+    @Override public void unpackLootTable(@Nullable Player p) {
+        AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
+        super.unpackLootTable(p);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);   // 把 loot 摆进网格
+    }
+    @Override public boolean canPlaceItem(int s, ItemStack st) { return AflContainerSearch.canPlaceItem(this, s, st) && super.canPlaceItem(s, st); }
     @Override public boolean canTakeItem(Container t, int s, ItemStack st) { return AflContainerSearch.canTakeItem(this, s) && super.canTakeItem(t, s, st); }
     @Override protected IItemHandler createUnSidedHandler() { return AflContainerSearch.itemHandler(this); }
     @Override protected AbstractContainerMenu createMenu(int id, Inventory inv) { return AflContainerSearch.createMenu(id, inv, this); }
@@ -77,7 +87,9 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 - `getLevel()`、`getBlockPos()`、`getBlockState()`、`isRemoved()`、`setChanged()` 由 BlockEntity 自带实现，不需要额外代码。
 - 方块被移除时（玩家破坏、爆炸、失去支撑），改用 `AflContainerSearch.dropContentsOnBreak(level, pos, be)` 代替原来的 `Containers.dropContents`。
 - `getUpdateTag()` / `getUpdatePacket()` **不能包含物品**。框架无法强制这一点，接入时必须检查；RandomizableContainerBlockEntity 的默认实现不含物品。
-- 容器格数必须是 9、18、27、36、45 或 54，才能用通用的箱子网格菜单。3×3、6×3、3×4 等其它布局见第 22 节。
+- 容器格数必须等于 `aflSearchLayout()` 的格数（默认实现：8 的倍数按每行 8 格；其它格数必须自己给布局）。
+- 方块的打开代码用 `AflContainerSearch.open(player, be)`；不是方块实体的（尸体）用 `open(player, provider, container)`。
+- 网格放不下、玩家放进去过的东西走 `aflGridOverflow`，默认掉在方块位置。
 
 完整参考实现：`src/dev/java/com/antaurora/apofirstlight/dev/containersearch/DevSearchCrateBlockEntity.java`。
 
@@ -168,11 +180,15 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 
 ## 9. 搜索顺序
 
+**2026-10-27 起：** 一件一件搜，按格子顺序（分区从上到下，分区里按物品左上角），空格打开时直接揭开，不再洗牌。下面是旧做法。
+
 - 用 `Seed` 对 `0..格数-1` 做 Fisher–Yates 洗牌（SplitMix64，不依赖原版随机实现），每次按需重建，不存数组。
 - 同一容器重进世界后顺序不变。已揭示的格子自动跳过。
 - 顺序只取决于 seed 和格数，**不看任何格子内容**，所有格子机会均等，不会优先搜有物品的格子。
 
 ## 10. 搜索计时
+
+**2026-10-27 起** 每件再乘 (0.75 + 0.25 × 占的格数)，大件搜得久。时长因此和物品大小有关，但大小本来就以轮廓显示，不透露是什么东西。
 
 统一入口是 `AflContainerSearchSpeed.slotDurationTicks`，只在服务端、每格开始时计算一次：
 

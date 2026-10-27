@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
 import com.antaurora.apofirstlight.item.VendingMachineBlockItem;
@@ -156,7 +157,7 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         if(player instanceof net.minecraft.server.level.ServerPlayer server&&CrowbarSmashAction.active(server))return InteractionResult.CONSUME;
         // broken glass: search the machine, or view it once searched (3 x 3 menu)
         if (!(l.getBlockEntity(base) instanceof VendingMachineBlockEntity be)) return InteractionResult.PASS;
-        if (!l.isClientSide) player.openMenu(be);
+        if (!l.isClientSide) AflContainerSearch.open(player, be);
         return InteractionResult.sidedSuccess(l.isClientSide);
     }
 }

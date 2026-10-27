@@ -34,7 +34,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -246,8 +245,7 @@ public final class ForestHomeM2GameTests {
             check(FurnitureV2GameTests.aim(level, user, cAt, 0.3, 0.4, 0.37, 0, 1.5) == InteractionResult.CONSUME
                     && level.getBlockState(cAt).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN) && user.containerMenu == user.inventoryMenu, "counter doors not opened");
             check(FurnitureV2GameTests.aim(level, user, cAt, 0.5, 0.4, 0.37, 0, 1.5) == InteractionResult.CONSUME, "counter interior used");
-            check(user.containerMenu instanceof ChestMenu menu && menu.getContainer().getContainerSize() == slots[i],
-                    "counter menu " + user.containerMenu + " (want " + slots[i] + " slots)");
+            FurnitureV2GameTests.menuContainer(user, slots[i], "counter");
             user.closeContainer();
             check(FurnitureV2GameTests.aim(level, user, cAt, 0.01, 0.4, 0.1, 0, 1.5) == InteractionResult.CONSUME
                     && !level.getBlockState(cAt).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN), "counter doors not closed");

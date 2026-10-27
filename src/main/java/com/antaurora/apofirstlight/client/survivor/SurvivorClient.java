@@ -49,10 +49,10 @@ public final class SurvivorClient {
         return summary != null;
     }
 
-    /** Packet: a corpse's falling or final pose (Ragdoll V1). */
+    /** Packet: a corpse's falling or final pose (Ragdoll V1; a survivor's or, since Infected Z1a, a creature's body). */
     public static void corpsePose(SurvivorPackets.CorpsePose packet) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.level.getEntity(packet.entity()) instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse) {
+        if (mc.level != null && mc.level.getEntity(packet.entity()) instanceof com.antaurora.apofirstlight.creature.CorpsePoseHolder corpse) {
             corpse.receivePose(packet.origin(), packet.pose(), packet.last());
         }
     }

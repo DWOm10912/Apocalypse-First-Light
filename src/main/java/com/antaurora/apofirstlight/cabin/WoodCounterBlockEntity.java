@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.cabin;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
@@ -166,6 +167,11 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity imp
     public AflContainerSearchSettings aflSearchSettings() { return SEARCH_SETTINGS; }
 
     @Override
+    public AflContainerSearchLayout aflSearchLayout() {
+        return getBlockState().getBlock() instanceof WoodFurniture.Storage s ? s.searchLayout() : AflContainerSearchLayout.GRID_6X3;
+    }
+
+    @Override
     public boolean aflSearchRequiredOnInit() { return !placedByPlayer && lootTable != null; }
 
     public void markPlacedByPlayer() {
@@ -177,11 +183,13 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity imp
     @Override
     public void unpackLootTable(@Nullable Player player) {
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     @Override
-    public boolean canPlaceItem(int slot, ItemStack stack) { return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack); }
+    public boolean canPlaceItem(int slot, ItemStack stack) { return AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack); }
 
     @Override
     public boolean canTakeItem(Container target, int slot, ItemStack stack) { return AflContainerSearch.canTakeItem(this, slot) && super.canTakeItem(target, slot, stack); }

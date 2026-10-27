@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.blockentity;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
@@ -53,7 +54,11 @@ import java.util.Set;
  */
 public class IndustrialLockerBlockEntity extends RandomizableContainerBlockEntity
         implements AflSearchableContainer, AflAnimatedMeshHost, AflContainerGoods.Themed {
-    public static final int SIZE = 27;
+    /** Cells of its grid (since 2026-10-27; 27 slots before, which load into the first 27). */
+    public static final int SIZE = 28;
+    /** The top shelf over the locker's inside, 4 cells across (docs/ui/afl_container_search_page_v1.md 12). */
+    public static final AflContainerSearchLayout SEARCH_LAYOUT = AflContainerSearchLayout.of(
+            new AflContainerSearchLayout.Section("top_shelf", 4, 2), new AflContainerSearchLayout.Section("inside", 4, 5));
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/industrial_locker.json");
     /** Formal locker pace: 40 ticks (2 s) per slot, +-15 % seed-derived jitter, no rummaging noise configured yet. */
@@ -151,6 +156,11 @@ public class IndustrialLockerBlockEntity extends RandomizableContainerBlockEntit
 
     /** World loot (a pending loot table) is searched; anything a player placed is plain storage. */
     @Override
+    public AflContainerSearchLayout aflSearchLayout() {
+        return SEARCH_LAYOUT;
+    }
+
+    @Override
     public boolean aflSearchRequiredOnInit() {
         return !placedByPlayer && lootTable != null;
     }
@@ -167,12 +177,14 @@ public class IndustrialLockerBlockEntity extends RandomizableContainerBlockEntit
     public void unpackLootTable(@Nullable Player player) {
         if (lootTable != null && goodsTheme == null) goodsTheme = AflGoodsThemes.themeFor(lootTable);
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
+        return AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack);
     }
 
     @Override

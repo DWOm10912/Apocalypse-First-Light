@@ -4,8 +4,10 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Goods: the anonymous props a searchable container draws inside while it holds anything (docs/gameplay/container_goods_v1.md).
- * The shared rule: how many of a container's spots show, from its occupied slots (hidden ones included: the goods show
- * how full it is, never what it holds). Which spots and which props are each container's own business.
+ * The shared rule: how many of a container's spots show, from how much of it is taken (hidden items included: the goods
+ * show how full it is, never what it holds). Since the grid sections (2026-10-27) "occupied" counts cells, each item its
+ * item_size footprint (user: keep the anonymous goods, counted by area). Which spots and which props are each
+ * container's own business.
  */
 public final class AflContainerGoods {
     private AflContainerGoods() {
@@ -21,9 +23,14 @@ public final class AflContainerGoods {
         return occupied <= 0 ? 0 : Math.min(spots, (spots * occupied + fullAt - 1) / fullAt);
     }
 
+    /** Cells the items take (server sizes): a 1 x 1 item 1, a 3 x 3 jerry can 9. */
     public static int occupied(Iterable<ItemStack> items) {
         int occupied = 0;
-        for (ItemStack stack : items) if (!stack.isEmpty()) occupied++;
+        for (ItemStack stack : items) {
+            if (stack.isEmpty()) continue;
+            var size = com.antaurora.apofirstlight.inventory.grid.ItemSizes.of(stack, false);
+            occupied += size.w() * size.h();
+        }
         return occupied;
     }
 

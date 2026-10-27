@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.client.RetailShelfParticleExtensions;
 import com.antaurora.apofirstlight.registry.AflItems;
@@ -188,7 +189,7 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
             return InteractionResult.PASS;
         }
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-        player.openMenu(shelf);
+        AflContainerSearch.open(player, shelf);
         return InteractionResult.CONSUME;
     }
 

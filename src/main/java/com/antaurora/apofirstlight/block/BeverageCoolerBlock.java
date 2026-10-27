@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -299,7 +300,7 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Mes
     private static InteractionResult useContents(Level level, BlockPos master, Player player, BlockHitResult hit) {
         if (player.isSpectator() || !aimsInside(level, master, player.getEyePosition(), hit.getLocation())) return InteractionResult.PASS;
         if (level.isClientSide) return InteractionResult.SUCCESS;
-        if (level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler) player.openMenu(cooler);
+        if (level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler) AflContainerSearch.open(player, cooler);
         return InteractionResult.CONSUME;
     }
 

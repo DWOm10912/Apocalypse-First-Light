@@ -23,12 +23,17 @@ import java.util.Locale;
  * Reveal state of one searchable container (persistent) plus its single shared search session (transient).
  *
  * <p>Owned by exactly one block entity as a plain field. The reveal mask is the only authority for access to a
- * slot; it does not depend on whether the loot table has been unpacked yet. Only revealed slots, the mask itself
- * and content-independent timing ever leave the server.
+ * slot; it does not depend on whether the loot table has been unpacked yet. Only revealed slots, the mask itself,
+ * the footprints of the hidden items (the grid's dark shapes) and the timing ever leave the server.
+ * <p>Since the grid sections (2026-10-27, AflContainerGrid) a slot is a cell and an item lies on the slot of its top-left
+ * cell: the search goes item by item in slot order (sections top to bottom, rows left to right), an item's time grows
+ * with its cells, and empty cells open at once while someone looks (the grid shows where the items are anyway). The
+ * state also keeps which items lie turned.
  */
 public final class AflContainerSearchState {
     public static final String TAG = "AflContainerSearch";
-    private static final int FORMAT = 1;
+    /** 2 (2026-10-27): the turned items ("Turned"); 1 read the same, with nothing turned. */
+    private static final int FORMAT = 2;
     /** 4096 slots; longer arrays in NBT are treated as corrupt and truncated. */
     private static final int MAX_MASK_LONGS = 64;
 
@@ -38,6 +43,8 @@ public final class AflContainerSearchState {
     private long seed;
     private boolean seedMissing;
     private BitSet revealed = new BitSet();
+    /** Anchor slots whose item lies turned a quarter (AflContainerGrid). */
+    private BitSet turned = new BitSet();
     /** Slot count the mask was written for; -1 when unknown. Reconciled against the live container on use. */
     private int slotCount = -1;
 
@@ -53,8 +60,6 @@ public final class AflContainerSearchState {
     private static final int SOUND_SYNC_TICKS = 20;
     private long nextSoundSync;
     private boolean soundOn;
-    private int[] order;
-    private long orderSeed;
 
     /**
      * Creates the persistent state on first server contact. Returns false only while that is impossible
@@ -76,9 +81,42 @@ public final class AflContainerSearchState {
         seedMissing = false;
         revealed = new BitSet();
         slotCount = owner.getContainerSize();
-        order = null;
         owner.setChanged();
         return true;
+    }
+
+    /** Whether the item on this anchor slot lies turned (meaningless for an empty slot). */
+    public boolean isTurned(int slot) {
+        return slot >= 0 && turned.get(slot);
+    }
+
+    void setTurned(int slot, boolean on) {
+        turned.set(slot, on);
+    }
+
+    /** Server, initialized state: opens or hides a slot outright (AflContainerGrid moving items); ignored when nothing is searched. */
+    void setRevealed(AflSearchableContainer owner, int slot, boolean on) {
+        if (!ensureInitialized(owner) || !required || slot < 0 || slot >= slotCount) return;
+        revealed.set(slot, on);
+        if (slot == currentSlot && on) currentSlot = -1;
+    }
+
+    /**
+     * Server: every hidden slot with nothing on it opens (an empty cell, or one an item covers from its anchor); the slot
+     * being searched stops if its item went. Only once the loot is in: the menus call it, never before they exist.
+     * Returns whether anything opened.
+     */
+    boolean revealEmpty(AflSearchableContainer owner) {
+        if (!ensureInitialized(owner) || !required) return false;
+        boolean changed = false;
+        for (int slot = revealed.nextClearBit(0); slot < slotCount; slot = revealed.nextClearBit(slot + 1)) {
+            if (!owner.getItem(slot).isEmpty()) continue;
+            revealed.set(slot);
+            if (slot == currentSlot) currentSlot = -1;
+            changed = true;
+        }
+        if (changed) owner.setChanged();
+        return changed;
     }
 
     public boolean isRevealed(AflSearchableContainer owner, int slot) {
@@ -163,6 +201,7 @@ public final class AflContainerSearchState {
         if (!ensureInitialized(owner)) {
             return;
         }
+        revealEmpty(owner);
         List<ServerPlayer> searchers = searchers();
         if (owner.isRemoved() || searchers.isEmpty() || isComplete(owner)) {
             if (running) {
@@ -219,7 +258,7 @@ public final class AflContainerSearchState {
 
     private boolean beginNextSlot(AflSearchableContainer owner, ServerLevel level, long now,
                                   List<ServerPlayer> searchers) {
-        int next = nextHiddenSlot();
+        int next = nextHiddenSlot(owner);
         if (next < 0) {
             return false;
         }
@@ -249,13 +288,10 @@ public final class AflContainerSearchState {
         return searchers;
     }
 
-    private int nextHiddenSlot() {
-        if (order == null || orderSeed != seed || order.length != slotCount) {
-            order = searchOrder(seed, slotCount);
-            orderSeed = seed;
-        }
-        for (int slot : order) {
-            if (!revealed.get(slot)) {
+    /** The next item in slot order: sections top to bottom, each row left to right (the page reads that way). */
+    private int nextHiddenSlot(AflSearchableContainer owner) {
+        for (int slot = revealed.nextClearBit(0); slot < slotCount; slot = revealed.nextClearBit(slot + 1)) {
+            if (!owner.getItem(slot).isEmpty()) {
                 return slot;
             }
         }
@@ -291,8 +327,10 @@ public final class AflContainerSearchState {
             if (revealed.length() > size) {
                 revealed.clear(size, revealed.length());
             }
+            if (turned.length() > size) {
+                turned.clear(size, turned.length());
+            }
             slotCount = size;
-            order = null;
             if (currentSlot >= size) {
                 currentSlot = -1;
             }
@@ -310,7 +348,7 @@ public final class AflContainerSearchState {
      */
     public void load(CompoundTag tag) {
         currentSlot = -1;
-        order = null;
+        turned = new BitSet();
         if (!tag.contains(TAG, Tag.TAG_COMPOUND)) {
             initialized = false;
             required = false;
@@ -327,6 +365,8 @@ public final class AflContainerSearchState {
         seed = data.getLong("Seed");
         long[] words = data.getLongArray("Revealed");
         revealed = BitSet.valueOf(words.length > MAX_MASK_LONGS ? Arrays.copyOf(words, MAX_MASK_LONGS) : words);
+        long[] turns = data.getLongArray("Turned");
+        turned = BitSet.valueOf(turns.length > MAX_MASK_LONGS ? Arrays.copyOf(turns, MAX_MASK_LONGS) : turns);
         slotCount = data.contains("Slots", Tag.TAG_INT) ? Math.max(-1, data.getInt("Slots")) : -1;
     }
 
@@ -342,6 +382,9 @@ public final class AflContainerSearchState {
         }
         if (required) {
             data.putLongArray("Revealed", revealed.toLongArray());
+        }
+        if (!turned.isEmpty()) {
+            data.putLongArray("Turned", turned.toLongArray());
         }
         if (slotCount >= 0) {
             data.putInt("Slots", slotCount);
@@ -360,23 +403,6 @@ public final class AflContainerSearchState {
                 "required=%s seed=%016x revealed=%d/%d complete=%s running=%s current=%d progress=%d/%d searchers=%d",
                 required, seed, revealedCount(owner), owner.getContainerSize(), isComplete(owner), running,
                 currentSlot, elapsed, currentSlot >= 0 ? currentDuration : 0, searchers().size());
-    }
-
-    /** Deterministic shuffle of all slot indices; independent of contents and stable across reloads. */
-    static int[] searchOrder(long seed, int size) {
-        int[] order = new int[Math.max(0, size)];
-        for (int i = 0; i < order.length; i++) {
-            order[i] = i;
-        }
-        long state = seed;
-        for (int i = order.length - 1; i > 0; i--) {
-            state += 0x9E3779B97F4A7C15L;
-            int j = (int) Long.remainderUnsigned(mix(state), i + 1);
-            int swap = order[i];
-            order[i] = order[j];
-            order[j] = swap;
-        }
-        return order;
     }
 
     /** Seed-derived value in [-1, 1) for one slot. Never looks at the slot's contents. */

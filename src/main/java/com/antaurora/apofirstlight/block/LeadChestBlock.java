@@ -111,7 +111,7 @@ public class LeadChestBlock extends Block implements EntityBlock, AflMeshInterac
         switch (action) {
             case OPEN_LID -> setOpen(level, pos, state, true, player);
             case CLOSE_LID -> setOpen(level, pos, state, false, player);
-            default -> player.openMenu((LeadChestBlockEntity) level.getBlockEntity(pos));
+            default -> AflContainerSearch.open(player, (LeadChestBlockEntity) level.getBlockEntity(pos));
         }
         return InteractionResult.CONSUME;
     }

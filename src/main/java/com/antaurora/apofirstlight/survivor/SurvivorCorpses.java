@@ -135,7 +135,7 @@ public final class SurvivorCorpses {
     private static void store(ServerLevel level, SurvivorCorpseRecord corpse, List<ItemStack> stacks) {
         List<ItemStack> overflow = corpse.addItems(stacks);
         for (ItemStack stack : overflow) {
-            // only with more than 54 stacks (a mod adding many Curios slots): next to the body, never destroyed
+            // only when 8 x 8 cells cannot hold them all: next to the body, never destroyed
             Containers.dropItemStack(level, corpse.x, corpse.y + 0.2, corpse.z, stack);
         }
         if (!overflow.isEmpty()) {
@@ -280,8 +280,8 @@ public final class SurvivorCorpses {
         }
         SurvivorCorpseContainer container = container(corpse);
         if (!container.stillValid(player)) return false;
-        player.openMenu(new SimpleMenuProvider((id, inventory, viewer) -> AflContainerSearch.createMenu(id, inventory, container),
-                Component.translatable("container.apocalypse_firstlight.survivor_corpse", corpse.survivorName)));
+        AflContainerSearch.open(player, new SimpleMenuProvider((id, inventory, viewer) -> AflContainerSearch.createMenu(id, inventory, container),
+                Component.translatable("container.apocalypse_firstlight.survivor_corpse", corpse.survivorName)), container);
         return true;
     }
 

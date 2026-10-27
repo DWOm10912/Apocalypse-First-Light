@@ -111,5 +111,10 @@ public final class AflBlockEntityRenderers {
         // Survivor Death and Succession V0: the placeholder body (owner's skin lying on its back)
         event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.SURVIVOR_CORPSE.get(),
                 com.antaurora.apofirstlight.client.survivor.SurvivorCorpseRenderer::new);
+        // Infected Z1a: the r6 shambler and its body
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.INFECTED_SHAMBLER.get(),
+                com.antaurora.apofirstlight.client.creature.InfectedRenderer::new);
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.INFECTED_CORPSE.get(),
+                com.antaurora.apofirstlight.client.creature.InfectedCorpseRenderer::new);
     }
 }

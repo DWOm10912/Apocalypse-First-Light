@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.cabin;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import net.minecraft.core.BlockPos;
@@ -58,7 +59,7 @@ public final class FurnitureOpening {
         switch (action) {
             case OPEN -> storage.setDoors(true, player);
             case CLOSE -> storage.setDoors(false, player);
-            default -> player.openMenu(storage);
+            default -> AflContainerSearch.open(player, storage);
         }
         return InteractionResult.CONSUME;
     }

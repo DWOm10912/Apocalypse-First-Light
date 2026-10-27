@@ -133,7 +133,9 @@ public class RetailShelfSingleBlockEntity extends RandomizableContainerBlockEnti
     public void unpackLootTable(@Nullable Player player) {
         goods.recordTheme(lootTable);
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     /** Server, every tick: world loot is rolled at once (not on first opening), so the goods seen from outside show how much it holds. */
@@ -143,7 +145,7 @@ public class RetailShelfSingleBlockEntity extends RandomizableContainerBlockEnti
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
+        return AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack);
     }
 
     @Override

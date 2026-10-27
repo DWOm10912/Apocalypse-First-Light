@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.blockentity;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.LeadChestBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
@@ -37,7 +38,8 @@ import org.jetbrains.annotations.Nullable;
  * container (ContainerRadiation); that rule is unchanged by V2 / V3.
  */
 public class LeadChestBlockEntity extends RandomizableContainerBlockEntity implements AflSearchableContainer, AflAnimatedMeshHost {
-    public static final int SIZE = 27;
+    /** Cells of its grid, 6 x 5 (since 2026-10-27; 27 slots before, which load into the first 27). */
+    public static final int SIZE = 30;
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/lead_chest.json");
     /** Same pace as the industrial locker: 40 ticks (2 s) per slot, +-15 % seed jitter, no rummaging noise yet. */
@@ -110,6 +112,11 @@ public class LeadChestBlockEntity extends RandomizableContainerBlockEntity imple
     }
 
     @Override
+    public AflContainerSearchLayout aflSearchLayout() {
+        return AflContainerSearchLayout.single(6, 5);
+    }
+
+    @Override
     public boolean aflSearchRequiredOnInit() {
         return !placedByPlayer && lootTable != null;
     }
@@ -123,12 +130,14 @@ public class LeadChestBlockEntity extends RandomizableContainerBlockEntity imple
     @Override
     public void unpackLootTable(@Nullable Player player) {
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
+        return AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack);
     }
 
     @Override

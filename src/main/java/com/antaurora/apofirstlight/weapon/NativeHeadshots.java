@@ -17,7 +17,7 @@ public final class NativeHeadshots {
     static {
         var b = new ForgeConfigSpec.Builder();
         ENTITIES = b.comment("Exact entity IDs using the humanoid top head-box profile. Restart server after editing.")
-                .defineListAllowEmpty("headshotEntities", List.of("minecraft:zombie"),
+                .defineListAllowEmpty("headshotEntities", List.of("minecraft:zombie", "apocalypse_firstlight:infected_shambler"),
                         x -> x instanceof String s && net.minecraft.resources.ResourceLocation.tryParse(s) != null);
         MULTIPLIER = b.defineInRange("headshotMultiplier", 1.5, 1.0, 100.0);
         SPEC = b.build();

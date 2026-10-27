@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.MetalTrashCanBlockEntity;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
@@ -84,7 +85,7 @@ public final class MetalTrashCanBlock extends Block implements EntityBlock, AflM
         switch (action) {
             case OPEN_LID -> setOpen(level, position, state, true, player);
             case CLOSE_LID -> setOpen(level, position, state, false, player);
-            default -> player.openMenu((MetalTrashCanBlockEntity) level.getBlockEntity(position));
+            default -> AflContainerSearch.open(player, (MetalTrashCanBlockEntity) level.getBlockEntity(position));
         }
         return InteractionResult.CONSUME;
     }

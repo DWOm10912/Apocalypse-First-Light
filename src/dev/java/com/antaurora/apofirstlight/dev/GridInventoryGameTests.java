@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchMenu;
+import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
 import com.antaurora.apofirstlight.equipment.AflEquipmentSlots;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
 import com.antaurora.apofirstlight.inventory.NoOffHand;
@@ -530,6 +533,110 @@ public final class GridInventoryGameTests {
         h.succeed();
     }
 
+    /**
+     * The search page (docs/ui/afl_container_search_page_v1.md): a searched container keeps the search menu; "take all"
+     * moves every revealed stack the shift-click way (into the grids), what fits nowhere stays, nothing is copied or
+     * dropped; ground actions work over the search menu too.
+     */
+    @GameTest(template = "network_empty")
+    public static void searchTakeAll(GameTestHelper h) {
+        var player = survivor(h, "grid_search");
+        player.setPos(h.absoluteVec(new net.minecraft.world.phys.Vec3(1.5, 2, 1.5)));
+        var level = h.getLevel();
+        var pos = h.absolutePos(new net.minecraft.core.BlockPos(3, 2, 3));
+        var block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(
+                new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, "wooden_nightstand"));
+        // the drawer pulled out: the menu is valid only while it is (WoodCounterBlockEntity#stillValid)
+        var open = net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN;
+        var state = block.defaultBlockState();
+        level.setBlock(pos, state.hasProperty(open) ? state.setValue(open, true) : state, 3);
+        h.assertTrue(level.getBlockEntity(pos) instanceof AflSearchableContainer, "the nightstand is searchable storage");
+        var stand = (AflSearchableContainer) level.getBlockEntity(pos);
+        // a 3 x 3 grid (AflContainerGrid): bread and apples on the top row, the 2 x 2 helmet on the two rows under them
+        stand.setItem(0, new ItemStack(Items.BREAD, 6));
+        stand.setItem(1, new ItemStack(Items.APPLE, 3));
+        stand.setItem(3, new ItemStack(Items.LEATHER_HELMET));
+        var opened = AflContainerSearch.createMenu(3, player.getInventory(), stand);
+        h.assertTrue(opened instanceof AflContainerSearchMenu s && s.isSlotRevealed(0) && s.isSlotRevealed(8),
+                "searched (no loot table): still the search menu, every slot revealed; got " + opened);
+        var search = (AflContainerSearchMenu) opened;
+        player.containerMenu = search;
+        h.assertTrue(search.clickMenuButton(player, AflContainerSearchMenu.TAKE_ALL), "take all answered");
+        h.assertTrue(stand.getItem(0).isEmpty() && stand.getItem(1).isEmpty() && inGrids(player, Items.BREAD)
+                && count(player, Items.BREAD) == 6 && count(player, Items.APPLE) == 3, "take all: bread and apples into the grids");
+        // pockets only: the helmet goes into them if it fits, else stays in the drawer; never onto the head
+        h.assertTrue(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()
+                && count(player, Items.LEATHER_HELMET) + stand.getItem(3).getCount() == 1 && dropped(h, player) == 0,
+                "take all puts nothing on: the helmet is in the pockets or still in the drawer, not worn");
+        for (int i = 0; i < stand.getContainerSize(); i++) stand.setItem(i, ItemStack.EMPTY);
+        discard(player, Items.LEATHER_HELMET);
+
+        // the gear is in the search menu: a helmet and a backpack from the nightstand straight onto the player
+        stand.setItem(0, new ItemStack(Items.LEATHER_HELMET));
+        stand.setItem(1, new ItemStack(AflItems.CANVAS_BACKPACK.get()));
+        search.clicked(0, 0, ClickType.PICKUP, player);
+        search.clicked(search.gearSlot(5), 0, ClickType.PICKUP, player);
+        h.assertTrue(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(Items.LEATHER_HELMET) && search.getCarried().isEmpty(),
+                "the helmet onto the head from the search page");
+        search.clicked(1, 0, ClickType.PICKUP, player);
+        search.clicked(search.gearSlot(46), 0, ClickType.PICKUP, player);
+        h.assertTrue(AflEquipmentSlots.get(player, AflEquipmentSlots.BACK).is(AflItems.CANVAS_BACKPACK.get()) && stand.isEmpty(),
+                "the backpack onto the back from the search page");
+        h.assertTrue(search.gearSlot(4) == -1 && search.gearSlot(45) == -1 && search.gearSlot(54) == search.slots.size() - 1,
+                "crafting and the off hand are not in the search menu; the coat is its last slot");
+        wear(player, AflEquipmentSlots.BACK, ItemStack.EMPTY);
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, ItemStack.EMPTY);
+
+        for (int i = 0; i < stand.getContainerSize(); i++) stand.setItem(i, new ItemStack(Items.COBBLESTONE, 64));
+        search.clickMenuButton(player, AflContainerSearchMenu.TAKE_ALL);
+        int left = 0;
+        for (int i = 0; i < stand.getContainerSize(); i++) if (stand.getItem(i).is(Items.COBBLESTONE)) left += stand.getItem(i).getCount();
+        int taken = count(player, Items.COBBLESTONE);
+        h.assertTrue(taken > 0 && left > 0 && taken + left == 9 * 64 && dropped(h, player) == 0,
+                "pockets full: " + taken + " taken, " + left + " stay, none copied or dropped");
+
+        h.assertTrue(search.stillValid(player), "the open nightstand's menu is valid");
+        search.setCarried(new ItemStack(Items.STICK, 2));
+        h.assertTrue(!search.clickMenuButton(player, AflContainerSearchMenu.TAKE_ALL), "not with a stack on the cursor");
+        act(player, GridActions.Kind.GROUND_DROP, 0, 0, 0, 0, false, 0);
+        h.assertTrue(search.getCarried().isEmpty() && dropped(h, player) == 2, "the cursor stack goes down at the feet from the search page");
+        // gone again: dropped() looks 8 blocks around, which reaches the neighbouring tests (benchGunPicker counts drops)
+        for (var e : h.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(2), e -> e.getItem().is(Items.STICK))) e.discard();
+        player.containerMenu = player.inventoryMenu;
+        h.succeed();
+    }
+
+    /**
+     * Container grid sections (docs/ui/afl_container_search_page_v1.md 12): opening packs the grid, an item whose cells
+     * do not fit where it lies moves to a free place; a slot under an item's footprint takes nothing.
+     */
+    @GameTest(template = "network_empty")
+    public static void searchGridPack(GameTestHelper h) {
+        var player = survivor(h, "grid_pack");
+        var level = h.getLevel();
+        var pos = h.absolutePos(new net.minecraft.core.BlockPos(3, 2, 3));
+        var block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(
+                new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, "wooden_nightstand"));
+        var open = net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN;
+        var state = block.defaultBlockState();
+        level.setBlock(pos, state.hasProperty(open) ? state.setValue(open, true) : state, 3);
+        var stand = (AflSearchableContainer) level.getBlockEntity(pos);
+        h.assertTrue(stand.aflSearchLayout().size() == stand.getContainerSize() && stand.getContainerSize() == 9, "the nightstand is a 3 x 3 grid");
+        // the 2 x 2 helmet on the bottom row sticks out of the grid; the apple sits in the bottom right corner
+        stand.setItem(7, new ItemStack(Items.LEATHER_HELMET));
+        stand.setItem(8, new ItemStack(Items.APPLE, 3));
+        AflContainerSearch.createMenu(4, player.getInventory(), stand);
+        h.assertTrue(stand.getItem(0).is(Items.LEATHER_HELMET) && stand.getItem(7).isEmpty() && stand.getItem(8).is(Items.APPLE),
+                "opening moves the helmet to the first place its cells fit, the apple stays");
+        h.assertTrue(!AflContainerSearch.canPlaceItem(stand, 4, new ItemStack(Items.BREAD))
+                        && AflContainerSearch.canPlaceItem(stand, 2, new ItemStack(Items.BREAD))
+                        && !AflContainerSearch.canPlaceItem(stand, 5, new ItemStack(Items.LEATHER_HELMET))
+                        && AflContainerSearch.canPlaceItem(stand, 0, new ItemStack(Items.LEATHER_HELMET)),
+                "a slot under the helmet takes nothing, a free one a bread; a second helmet has no room, the first one's slot takes the same item");
+        for (int i = 0; i < stand.getContainerSize(); i++) stand.setItem(i, ItemStack.EMPTY);
+        h.succeed();
+    }
+
     /** Attachments (plan 13): a grid entry is a source at the maintenance bench; what comes off goes into the grids. */
     @GameTest(template = "network_empty")
     public static void attachmentsFromGrids(GameTestHelper h) {
@@ -616,7 +723,10 @@ public final class GridInventoryGameTests {
         view.commit();
         h.assertTrue(menu.clickMenuButton(player, com.antaurora.apofirstlight.menu.GunMaintenanceMenu.RETURN_GUN), "taken back with its place taken");
         var moved = first(player, PlayerGrids.Target.BACKPACK, rifle);
-        h.assertTrue(moved != null && ItemStack.matches(gun, moved.stack()) && dropped(h, player) == 0, "elsewhere in the backpack, nothing at the feet");
+        // only the rifle counts: dropped() reaches the neighbouring tests, which run at the same time and drop their own items
+        int rifleDrops = h.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(8), e -> e.getItem().is(rifle)).size();
+        h.assertTrue(moved != null && ItemStack.matches(gun, moved.stack()) && rifleDrops == 0,
+                "elsewhere in the backpack, not at the feet; rifles dropped: " + rifleDrops);
 
         // from the primary position with a sling: back to it
         var slung = moved.stack().copy();

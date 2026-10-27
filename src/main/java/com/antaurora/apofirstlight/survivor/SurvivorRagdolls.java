@@ -65,6 +65,27 @@ public final class SurvivorRagdolls {
         return body;
     }
 
+    /**
+     * Another creature's death (Infected Z1a, creature/infected/InfectedCorpse): a body on the player rig standing
+     * where it stood, slightly crouched (a shambler's stoop), moving as it moved the last tick, pushed as a survivor's
+     * death would be (section 5). Null when it cannot fall ({@link #canFall}'s rules): it lies down at once.
+     */
+    @Nullable
+    public static RagdollBody creature(net.minecraft.world.entity.LivingEntity dead, @Nullable DamageSource source) {
+        if (dead.getY() < dead.level().getMinBuildHeight() || dead.isPassenger() || dead.isInWater() || dead.isInLava()
+                || dead.isInWall() || ACTIVE.size() >= MAX_ACTIVE) return null;
+        SkeletonPose pose = new SkeletonPose(SkeletonRig.get());
+        HumanoidPoser.Input in = new HumanoidPoser.Input();
+        in.crouch = 0.3F;
+        poser().solve(in, pose);
+        Vec3 moved = dead.position().subtract(dead.xo, dead.yo, dead.zo).scale(20);
+        if (moved.length() > MAX_START_SPEED) moved = moved.normalize().scale(MAX_START_SPEED);
+        RagdollBody body = new RagdollBody(RagdollDefinition.get());
+        body.start(pose, vec(dead.position()), dead.yBodyRot, vec(moved));
+        if (source != null) push(body, source, null);
+        return body;
+    }
+
     /** A body standing as the player stands now, at its feet, moving as it moved the last tick (no push). */
     static RagdollBody stance(ServerPlayer player) {
         SkeletonPose pose = new SkeletonPose(SkeletonRig.get());
@@ -143,7 +164,7 @@ public final class SurvivorRagdolls {
      * The block world a body falls in: every block's collision shape (Terrain Smooth slopes included). A chunk that is
      * not loaded counts as solid, so a body never falls through the edge of the loaded world.
      */
-    static RagdollWorld world(ServerLevel level) {
+    public static RagdollWorld world(ServerLevel level) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         return (minX, minY, minZ, maxX, maxY, maxZ, out) -> {
             int x0 = Mth.floor(minX), y0 = Mth.floor(minY), z0 = Mth.floor(minZ);
@@ -329,7 +350,7 @@ public final class SurvivorRagdolls {
     }
 
     /** Where a body that came to rest lies: under its pelvis, at its lowest point. */
-    static Vec3 restingPoint(RagdollBody body) {
+    public static Vec3 restingPoint(RagdollBody body) {
         Vector3d pelvis = body.position(body.def.pelvis);
         return new Vec3(pelvis.x, body.lowest(), pelvis.z);
     }
@@ -351,11 +372,11 @@ public final class SurvivorRagdolls {
         ACTIVE.clear();
     }
 
-    static void started(UUID corpse) {
+    public static void started(UUID corpse) {
         ACTIVE.add(corpse);
     }
 
-    static void stopped(UUID corpse) {
+    public static void stopped(UUID corpse) {
         ACTIVE.remove(corpse);
     }
 
@@ -369,7 +390,7 @@ public final class SurvivorRagdolls {
     private static int costTicks;
 
     /** SurvivorCorpse#tick: one body's step took {@code nanos} in server tick {@code gameTime}. */
-    static void measured(long gameTime, long nanos) {
+    public static void measured(long gameTime, long nanos) {
         if (gameTime != costTick) {
             closeCostTick();
             costTick = gameTime;

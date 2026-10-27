@@ -48,7 +48,7 @@ public final class CorpsePoses {
      * Two snapshots one tick apart (RagdollSnapshot about their origins) drawn {@code partial} of the way, as a pose for a
      * model at {@code o} facing yaw 0 (a living ragdoll's too, LiveRagdollClient).
      */
-    static void pose(float[] now, Vec3 o, float[] before, Vec3 po, float partial, SkeletonPose out) {
+    public static void pose(float[] now, Vec3 o, float[] before, Vec3 po, float partial, SkeletonPose out) {
         Vector3d origin = new Vector3d(o.x, o.y, o.z);
         RagdollSnapshot.read(now, origin, POS, ROT);
         RagdollSnapshot.read(before, new Vector3d(po.x, po.y, po.z), PREV, PREV_ROT);

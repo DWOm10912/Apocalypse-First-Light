@@ -979,6 +979,56 @@
       {"name": "apocalypse_firstlight:health/fall_4", "attenuation_distance": 8}
     ]
   },
+  "infected_idle": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_idle",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/idle_1"},
+      {"name": "apocalypse_firstlight:infected/idle_2"},
+      {"name": "apocalypse_firstlight:infected/idle_3"}
+    ]
+  },
+  "infected_alert": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_alert",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/alert_1"},
+      {"name": "apocalypse_firstlight:infected/alert_2"}
+    ]
+  },
+  "infected_chase": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_chase",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/chase_1"}
+    ]
+  },
+  "infected_attack": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_attack",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/attack_1"},
+      {"name": "apocalypse_firstlight:infected/attack_2"},
+      {"name": "apocalypse_firstlight:infected/attack_3"}
+    ]
+  },
+  "infected_hurt": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_hurt",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/hurt_1"},
+      {"name": "apocalypse_firstlight:infected/hurt_2"}
+    ]
+  },
+  "infected_death": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_death",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/death_1"},
+      {"name": "apocalypse_firstlight:infected/death_2"}
+    ]
+  },
+  "infected_door_bang": {
+    "subtitle": "subtitles.apocalypse_firstlight.infected_door_bang",
+    "sounds": [
+      {"name": "apocalypse_firstlight:infected/door_bang_1"},
+      {"name": "apocalypse_firstlight:infected/door_bang_2"}
+    ]
+  },
   "thunder_crack": {
     "subtitle": "subtitles.apocalypse_firstlight.thunder_crack",
     "sounds": [{"name": "apocalypse_firstlight:weather/thunder_crack_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_crack_2", "attenuation_distance": 16}]

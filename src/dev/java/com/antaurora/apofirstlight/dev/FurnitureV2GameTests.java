@@ -155,18 +155,25 @@ public final class FurnitureV2GameTests {
     /** {@link #aim} into the open interior: expects a chest screen of `slots`, returns its container (the screen left open). */
     private static Container view(ServerLevel level, FakePlayer p, BlockPos cell, double x, double y, double z, double up, double back, int slots, String what) {
         check(aim(level, p, cell, x, y, z, up, back).consumesAction(), what + ": the interior not used");
-        check(p.containerMenu instanceof ChestMenu menu && menu.getContainer().getContainerSize() == slots,
-                what + ": menu " + p.containerMenu + " (want " + slots + " slots)");
-        return ((ChestMenu) p.containerMenu).getContainer();
+        return menuContainer(p, slots, what);
+    }
+
+    /**
+     * The open storage menu's container, `slots` big: a plain chest menu, or the search menu (searched or not: AFL's
+     * searchable storage keeps the search page, docs/ui/afl_container_search_page_v1.md).
+     */
+    static Container menuContainer(FakePlayer p, int slots, String what) {
+        Container container = p.containerMenu instanceof ChestMenu menu ? menu.getContainer()
+                : p.containerMenu instanceof AflContainerSearchMenu search ? search.owner() : null;
+        check(container != null && container.getContainerSize() == slots, what + ": menu " + p.containerMenu + " (want " + slots + " slots)");
+        return container;
     }
 
     /** Right-clicks the cell (empty hand), expects a chest screen of `slots`, returns its container (the screen left open). */
     private static Container open(ServerLevel level, FakePlayer p, BlockPos at, int slots, String what) {
         p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         level.getBlockState(at).use(level, p, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(at), Direction.NORTH, at, false));
-        check(p.containerMenu instanceof ChestMenu menu && menu.getContainer().getContainerSize() == slots,
-                what + ": menu " + p.containerMenu + " (want " + slots + " slots)");
-        return ((ChestMenu) p.containerMenu).getContainer();
+        return menuContainer(p, slots, what);
     }
 
     private static boolean open(ServerLevel level, BlockPos at) {

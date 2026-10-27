@@ -285,7 +285,15 @@ public final class WoodFurnitureV2 {
         boolean isMaster(BlockState state) { return state.getValue(HALF) == DoubleBlockHalf.LOWER; }
 
         @Override
-        public int slots() { return 27; }
+        public int slots() { return 28; }
+
+        /** A top shelf over the hanging space (docs/ui/afl_container_search_page_v1.md 12). */
+        @Override
+        public com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout searchLayout() {
+            return com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.of(
+                    new com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.Section("top_shelf", 7, 1),
+                    new com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.Section("inside", 7, 3));
+        }
 
         @Override
         public double soundHeight() { return 1.0; }
@@ -718,7 +726,7 @@ public final class WoodFurnitureV2 {
         }
 
         @Override
-        public int slots() { return 27; }
+        public int slots() { return 28; }
 
         @Override
         public double soundHeight() { return 0.6; }
@@ -789,7 +797,7 @@ public final class WoodFurnitureV2 {
         }
 
         @Override
-        public int slots() { return 27; }
+        public int slots() { return 28; }
 
         @Override
         public double soundHeight() { return 0.85; }

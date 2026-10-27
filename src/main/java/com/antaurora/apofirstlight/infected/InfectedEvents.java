@@ -53,7 +53,8 @@ public final class InfectedEvents {
                     "[AFL INFECTED] Converted baby minecraft:zombie to adult entity={}", zombie.getId()
             );
         }
-        if (!InfectedEntityRules.isNoiseResponsive(zombie) || !GOALS_ADDED.add(zombie)) {
+        if (!InfectedLegacyAi.enabled(zombie.level())
+                || !InfectedEntityRules.isNoiseResponsive(zombie) || !GOALS_ADDED.add(zombie)) {
             return;
         }
         zombie.goalSelector.addGoal(1, new InfectedBreachGoal(zombie));

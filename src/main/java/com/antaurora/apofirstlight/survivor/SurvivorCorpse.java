@@ -43,7 +43,7 @@ import java.util.UUID;
  *
  * <p>Its UUID is the corpse id, so the level's own UUID check refuses a second copy.
  */
-public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpawnData {
+public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpawnData, com.antaurora.apofirstlight.creature.CorpsePoseHolder {
     private static final EntityDataAccessor<Boolean> SEARCHED = SynchedEntityData.defineId(SurvivorCorpse.class,
             EntityDataSerializers.BOOLEAN);
 
@@ -120,6 +120,7 @@ public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpa
     }
 
     /** Client: a pose from the server (SurvivorPackets.CorpsePose); an empty last pose: it lies on its back after all. */
+    @Override
     public void receivePose(Vec3 origin, float[] data, boolean last) {
         boolean lying = last && data.length == 0;
         if (!lying && !RagdollSnapshot.valid(data, RagdollDefinition.get().bodies.length)) return;

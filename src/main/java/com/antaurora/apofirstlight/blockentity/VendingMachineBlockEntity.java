@@ -181,7 +181,9 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     public void unpackLootTable(@Nullable Player player) {
         goods.recordTheme(lootTable);
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     /**
@@ -219,7 +221,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     /** Hoppers (and every other automation) only through broken glass. */
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return getBlockState().getValue(VendingMachineBlock.BROKEN) && AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
+        return getBlockState().getValue(VendingMachineBlock.BROKEN) && AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack);
     }
 
     @Override

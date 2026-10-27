@@ -142,7 +142,7 @@ public final class CashRegisterBlock extends HorizontalDirectionalBlock implemen
         switch (action) {
             case OPEN_DRAWER -> setOpen(level, pos, state, true, player);
             case CLOSE_DRAWER -> setOpen(level, pos, state, false, player);
-            default -> player.openMenu((CashRegisterBlockEntity) level.getBlockEntity(pos));
+            default -> AflContainerSearch.open(player, (CashRegisterBlockEntity) level.getBlockEntity(pos));
         }
         return InteractionResult.CONSUME;
     }

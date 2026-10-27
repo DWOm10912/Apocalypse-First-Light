@@ -239,7 +239,7 @@ public final class ChestFreezerBlock extends Block implements EntityBlock, MeshH
             if (!(level.getBlockEntity(master) instanceof ChestFreezerBlockEntity freezer) || freezer.lidMoving())
                 return InteractionResult.CONSUME;
             if (level.isClientSide) return InteractionResult.SUCCESS;
-            player.openMenu(freezer);
+            AflContainerSearch.open(player, freezer);
             return InteractionResult.CONSUME;
         }
         if (!onLid(local)) return InteractionResult.PASS;

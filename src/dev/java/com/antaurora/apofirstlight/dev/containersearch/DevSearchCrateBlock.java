@@ -32,7 +32,7 @@ final class DevSearchCrateBlock extends Block implements EntityBlock {
             return InteractionResult.SUCCESS;
         }
         if (level.getBlockEntity(pos) instanceof DevSearchCrateBlockEntity crate) {
-            player.openMenu(crate);
+            com.antaurora.apofirstlight.containersearch.AflContainerSearch.open(player, crate);
         }
         return InteractionResult.CONSUME;
     }

@@ -20,11 +20,18 @@ import java.util.List;
  * overflow: kept and shown, it can only be taken out.
  */
 public final class GridStorage {
-    /** One stack in the grid. The stack is live: callers that change it call {@link #prune()} afterwards. */
+    /**
+     * One stack in the grid. The stack is live: callers that change it call {@link #prune()} afterwards. A locked entry
+     * (a searchable container's item not searched yet, AflContainerGrid) only takes its cells: nothing merges onto it, it
+     * is never pruned, and the grid actions leave it alone; its footprint may be given outright (the client knows the
+     * size of an unsearched item, not the item).
+     */
     public static final class Entry {
         private ItemStack stack;
         private int section, x, y;
         private boolean rotated;
+        private boolean locked;
+        @Nullable private ItemSizes.Size fixed;
 
         Entry(ItemStack stack, int section, int x, int y, boolean rotated) {
             this.stack = stack;
@@ -39,6 +46,7 @@ public final class GridStorage {
         public int x() { return x; }
         public int y() { return y; }
         public boolean rotated() { return rotated; }
+        public boolean locked() { return locked; }
         void setStack(ItemStack stack) { this.stack = stack; }
     }
 
@@ -78,7 +86,7 @@ public final class GridStorage {
         return ItemSizes.of(stack, client).turned(rotated);
     }
 
-    public ItemSizes.Size footprint(Entry entry) { return footprint(entry.stack, entry.rotated); }
+    public ItemSizes.Size footprint(Entry entry) { return entry.fixed != null ? entry.fixed : footprint(entry.stack, entry.rotated); }
 
     /** The entry covering this cell, if any. */
     @Nullable
@@ -133,6 +141,20 @@ public final class GridStorage {
         return e;
     }
 
+    /**
+     * Puts an entry whose cells are known without asking ItemSizes ({@code size} as it lies, turned already), locked or
+     * not: a searchable container's contents as its menu sent them.
+     */
+    public Entry place(ItemStack stack, int section, int x, int y, boolean rotated, ItemSizes.Size size, boolean locked) {
+        var e = place(stack, section, x, y, rotated);
+        e.fixed = size;
+        e.locked = locked;
+        return e;
+    }
+
+    /** Locks an entry (an item not searched yet): see {@link Entry}. */
+    public void lock(Entry entry) { entry.locked = true; }
+
     public void remove(Entry entry) { entries.remove(entry); }
 
     /** Takes an overflow stack out of the grid. */
@@ -148,7 +170,7 @@ public final class GridStorage {
         int before = stack.getCount();
         for (Entry e : entries) {
             if (stack.isEmpty()) break;
-            if (!ItemStack.isSameItemSameTags(e.stack, stack)) continue;
+            if (e.locked || !ItemStack.isSameItemSameTags(e.stack, stack)) continue;
             int room = Math.min(e.stack.getMaxStackSize(), 64) - e.stack.getCount();
             if (room <= 0) continue;
             int moved = Math.min(room, stack.getCount());
@@ -166,7 +188,7 @@ public final class GridStorage {
 
     /** Drops entries whose stacks went empty (someone used them up). */
     public void prune() {
-        entries.removeIf(e -> e.stack.isEmpty());
+        entries.removeIf(e -> !e.locked && e.stack.isEmpty());
         overflow.removeIf(ItemStack::isEmpty);
     }
 

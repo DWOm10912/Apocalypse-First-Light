@@ -1,25 +1,22 @@
 package com.antaurora.apofirstlight.mixin.client;
 
-import com.antaurora.apofirstlight.client.survivor.DeathCamera;
+import com.antaurora.apofirstlight.creature.AflCreatures;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 4): a dead player whose corpse lies beside it makes no death poof. Vanilla
- * removes the dead body after 20 ticks with entity event 60 (white smoke); the corpse is the body now, so the smoke
- * would look like the corpse going up in it.
+ * No white death smoke for AFL bodies (players and AFL's creatures, creature/AflCreatures; user 2026-10-26). Vanilla
+ * removes a dead body after 20 ticks with entity event 60 (the smoke). Ragdoll V1 first dropped it only for a player whose
+ * corpse lies beside it (the corpse is the body now); since 2026-10-26 no AFL body makes it at all.
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityDeathPoofMixin {
     @Inject(method = "handleEntityEvent", at = @At("HEAD"), cancellable = true)
-    private void afl$noPoofBesideCorpse(byte id, CallbackInfo ci) {
-        if (id == 60 && (Object) this instanceof Player player && player.level().isClientSide
-                && DeathCamera.corpseBeside(player)) {
-            ci.cancel();
-        }
+    private void afl$noDeathPoof(byte id, CallbackInfo ci) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (id == 60 && self.level().isClientSide && AflCreatures.isAflBody(self)) ci.cancel();
     }
 }

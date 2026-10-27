@@ -87,9 +87,10 @@ public final class AflContainerSearchView implements Container, AflContainerSear
         owner.stopOpen(player);
     }
 
+    /** Revealed, room in the grid (AflContainerGrid#canPlace: the bodies have no canPlaceItem of their own), the owner's rule. */
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return isSlotRevealed(slot) && owner.canPlaceItem(slot, stack);
+        return isSlotRevealed(slot) && AflContainerGrid.canPlace(owner, slot, stack) && owner.canPlaceItem(slot, stack);
     }
 
     @Override

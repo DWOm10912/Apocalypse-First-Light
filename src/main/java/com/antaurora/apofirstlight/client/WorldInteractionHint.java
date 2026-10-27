@@ -115,10 +115,11 @@ public final class WorldInteractionHint {
             var offer=truckOf(hit.getEntity()).actionFor(mc.player);
             if(offer!=null) target=new Target(Component.translatable(offer.action().key()),offer.anchor());
         }
-        // Survivor Death and Succession V0: a body to search, or to look through once searched
+        // any body (CorpsePoseHolder: every creature leaves a searchable body): search it; a survivor's, once searched, to look through
         else if(!mc.player.isSpectator() && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
-                && hit.getEntity() instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse)
-            target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
+                && hit.getEntity() instanceof com.antaurora.apofirstlight.creature.CorpsePoseHolder body)
+            target=new Target(Component.translatable(body instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse&&corpse.searched()
+                    ?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.corpse.search"),null);
         // a magazine in the hand (weapon/NativeMagazineLoading): a click starts loading it from the loose rounds carried, or stops
         if(target==null&&!mc.player.isSpectator()) target=heldMagazine(mc);
         // a furniture hardware box in the hand (item/FurnitureHardwareBoxItem): a click opens it

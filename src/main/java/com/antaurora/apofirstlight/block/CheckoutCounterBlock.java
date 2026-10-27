@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.blockentity.CheckoutCounterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -198,7 +199,7 @@ public class CheckoutCounterBlock extends HorizontalDirectionalBlock implements 
         if (player.isSpectator() || !opensFrom(state, hit.getDirection())) return InteractionResult.PASS;
         if (!(level.getBlockEntity(pos) instanceof CheckoutCounterBlockEntity counter)) return InteractionResult.PASS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-        player.openMenu(counter);
+        AflContainerSearch.open(player, counter);
         return InteractionResult.CONSUME;
     }
 

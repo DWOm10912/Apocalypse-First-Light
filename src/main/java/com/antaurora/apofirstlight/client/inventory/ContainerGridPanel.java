@@ -111,7 +111,7 @@ public final class ContainerGridPanel {
 
     /** The screen gets the panel: a container screen showing the player's inventory, Survival / Adventure. */
     public static boolean active(@Nullable Screen screen) {
-        if (!(screen instanceof AbstractContainerScreen<?> container) || screen instanceof AflInventoryScreen
+        if (!(screen instanceof AbstractContainerScreen<?> container) || screen instanceof AflPageScreen
                 || screen instanceof InventoryScreen || screen instanceof CreativeModeInventoryScreen) return false;
         var player = Minecraft.getInstance().player;
         if (player == null || player.isSpectator() || PlayerStorageCapacity.unrestricted(player)) return false;

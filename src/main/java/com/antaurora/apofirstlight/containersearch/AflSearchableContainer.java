@@ -24,13 +24,24 @@ public interface AflSearchableContainer extends Container {
     AflContainerSearchSettings aflSearchSettings();
 
     /**
-     * Menu layout. Default: the chest grid for 9, 18, ... 54 slots (null for other sizes); a 9-slot container that
-     * should look like a dispenser returns {@link AflContainerSearchLayout#GRID_3X3}.
+     * The container's grid sections (AflContainerSearchLayout; their cells are its slots). Default: rows of 8 when the
+     * size is a multiple of 8, else null (the menu does not open); every container names its own.
      */
     @Nullable
     default AflContainerSearchLayout aflSearchLayout() {
         int size = getContainerSize();
-        return size % 9 == 0 && size >= 9 && size <= 54 ? AflContainerSearchLayout.chest(size / 9) : null;
+        return size % AflContainerSearchLayout.MAX_W == 0 && size > 0 && size / AflContainerSearchLayout.MAX_W <= AflContainerSearchLayout.MAX_H
+                ? AflContainerSearchLayout.rows(size / AflContainerSearchLayout.MAX_W) : null;
+    }
+
+    /**
+     * Searched items the grid has no place for any more (AflContainerGrid#pack: a save from before the grids, item sizes
+     * changed): by default they drop at the container.
+     */
+    default void aflGridOverflow(java.util.List<net.minecraft.world.item.ItemStack> stacks) {
+        if (!(getLevel() instanceof ServerLevel level)) return;
+        BlockPos pos = getBlockPos();
+        for (var stack : stacks) net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY() + 0.5, pos.getZ(), stack);
     }
 
     /**
@@ -69,7 +80,7 @@ public interface AflSearchableContainer extends Container {
     default void onAflSearchSlotRevealed(ServerLevel level, int slot) {
     }
 
-    /** Every slot is revealed; later openings use the ordinary container menu. */
+    /** Every slot is revealed (the search page stays the container's screen). */
     default void onAflSearchCompleted(ServerLevel level) {
     }
 }

@@ -1,5 +1,7 @@
 package com.antaurora.apofirstlight.inventory.grid;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerGrid;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchMenu;
 import com.antaurora.apofirstlight.inventory.HotbarRoles;
 import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import net.minecraft.server.level.ServerPlayer;
@@ -53,6 +55,12 @@ public final class GridActions {
         }
     }
 
+    /**
+     * Action target meaning "the open search page's container" (AflContainerSearchMenu, its items as a grid through
+     * AflContainerGrid; docs/ui/afl_container_search_page_v1.md 12): take, put, merge, turn, shift out to the player, Q,
+     * keys 1-3. Items not searched yet are locked and nothing touches them.
+     */
+    public static final int CONTAINER_TARGET = 13;
     /** Action target meaning "the open {@link ExternalGridMenu}'s grid" (docs/ui/afl_inventory_grid_v0_plan.md 15). */
     public static final int EXTERNAL_TARGET = 14;
 
@@ -79,14 +87,25 @@ public final class GridActions {
     /** Server: one grid action (checked here; GameTests call it directly). */
     public static void handle(ServerPlayer player, GridPackets.Action action) {
         if (!player.isAlive()) return;
-        boolean external = action.target() == EXTERNAL_TARGET;
-        // Creative players have no grids of their own, but an external grid works for them too
+        boolean external = action.target() == EXTERNAL_TARGET, container = action.target() == CONTAINER_TARGET;
+        // Creative players have no grids of their own, but an external grid or a searched container works for them too
         boolean unrestricted = PlayerStorageCapacity.unrestricted(player);
-        if (unrestricted && !external) return;
+        if (unrestricted && !external && !container) return;
         var menu = player.containerMenu;
         if (!gridMenu(player, menu)) return;
         Kind kind = Kind.of(action.kind());
         if (kind == null) return;
+        if (container) {
+            var owner = menu instanceof AflContainerSearchMenu search ? search.owner() : null;
+            if (owner == null) return;
+            var storage = AflContainerGrid.view(owner);
+            if (containerAction(player, storage, kind, action, unrestricted)) {
+                AflContainerGrid.commit(owner, storage);
+                player.getInventory().setChanged();
+                menu.broadcastChanges();
+            }
+            return;
+        }
         var ext = menu instanceof ExternalGridMenu e && e.host() != null ? e : null;
         if (external && ext == null) return;
         if (external) {
@@ -97,9 +116,9 @@ public final class GridActions {
             }
             return;
         }
-        // ground items only from the inventory page; into a container only with one open
+        // ground items only from the inventory and search pages; into a container only with one open
         boolean ground = kind == Kind.GROUND_PICK || kind == Kind.GROUND_QUICK || kind == Kind.GROUND_DROP;
-        if (ground && menu != player.inventoryMenu) return;
+        if (ground && menu != player.inventoryMenu && !(menu instanceof AflContainerSearchMenu)) return;
         if (kind == Kind.TO_CONTAINER && menu == player.inventoryMenu) return;
         var loadout = Loadout.of(player);
         if (loadout != null) loadout.reconcileHand(player);
@@ -128,7 +147,7 @@ public final class GridActions {
             if (storage == null) return;
             changed = switch (kind) {
                 case PICK -> pick(player, storage, action);
-                case PLACE -> place(player, storage, action);
+                case PLACE -> place(player, storage, action, false);
                 case MERGE -> merge(player, storage, action);
                 case QUICK -> quick(player, storage, action);
                 case DROP -> drop(player, storage, action);
@@ -158,12 +177,33 @@ public final class GridActions {
         var storage = ext.grid();
         return switch (kind) {
             case PICK -> pick(player, storage, action);
-            case PLACE -> place(player, storage, action);
+            case PLACE -> place(player, storage, action, false);
             case MERGE -> merge(player, storage, action);
             case QUICK -> fromExternal(player, storage, action, unrestricted);
             case DROP -> drop(player, storage, action);
             case HOTBAR_KEY -> hotbarKey(player, storage, action);
             case OVERFLOW_TAKE -> overflowTake(player, storage, action);
+            default -> false;
+        };
+    }
+
+    /**
+     * An action on the search page's container: the external grid's clicks, on searched items only (a locked entry is an
+     * item not searched yet). Anything goes in, gear too: the container is not one of the player's grids.
+     */
+    private static boolean containerAction(ServerPlayer player, GridStorage storage, Kind kind, GridPackets.Action action,
+                                           boolean unrestricted) {
+        if (kind != Kind.PLACE) {
+            var entry = storage.at(action.section(), action.x(), action.y());
+            if (entry == null || entry.locked()) return false;
+        }
+        return switch (kind) {
+            case PICK -> pick(player, storage, action);
+            case PLACE -> place(player, storage, action, true);
+            case MERGE -> merge(player, storage, action);
+            case QUICK -> fromExternal(player, storage, action, unrestricted);
+            case DROP -> drop(player, storage, action);
+            case HOTBAR_KEY -> hotbarKey(player, storage, action);
             default -> false;
         };
     }
@@ -221,10 +261,11 @@ public final class GridActions {
         return true;
     }
 
-    private static boolean place(ServerPlayer player, GridStorage storage, GridPackets.Action a) {
+    /** {@code anyItem}: grid gear goes in too (a container, not one of the player's grids). */
+    private static boolean place(ServerPlayer player, GridStorage storage, GridPackets.Action a, boolean anyItem) {
         var menu = player.containerMenu;
         var carried = menu.getCarried();
-        if (!PlayerGrids.allowedInGrid(carried)) return false;
+        if (carried.isEmpty() || !anyItem && !PlayerGrids.allowedInGrid(carried)) return false;
         if (storage.fits(carried, a.section(), a.x(), a.y(), a.rotated(), null)) {
             int moved = a.extra() == 1 ? 1 : Math.min(carried.getCount(), carried.getMaxStackSize());
             storage.place(carried.split(moved), a.section(), a.x(), a.y(), a.rotated());
@@ -242,7 +283,7 @@ public final class GridActions {
                 if (covered != null) return false;
                 covered = e;
             }
-        if (covered == null || !storage.fits(carried, a.section(), a.x(), a.y(), a.rotated(), covered)) return false;
+        if (covered == null || covered.locked() || !storage.fits(carried, a.section(), a.x(), a.y(), a.rotated(), covered)) return false;
         if (carried.getCount() > carried.getMaxStackSize()) return false;
         storage.remove(covered);
         storage.place(carried, a.section(), a.x(), a.y(), a.rotated());

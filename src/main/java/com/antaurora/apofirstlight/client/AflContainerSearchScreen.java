@@ -2,7 +2,7 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchMenu;
-import net.minecraft.Util;
+import com.antaurora.apofirstlight.client.ui.SearchMagnifier;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.RenderType;
@@ -12,31 +12,18 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
 /**
- * Vanilla chest (9 x 1..6) or dispenser (3 x 3) layout, or AFL's 6 x 3 grid on the chest panel, plus a DEVELOPMENT PLACEHOLDER search overlay (plain fills, no textures): hidden slots are
- * masked, only the slot being searched shows a small circling magnifier and a faint progress line.
+ * Creative's screen of a searchable container (Survival and Adventure get the search page, AflSearchScreen): the vanilla
+ * chest look with the container's grid sections one under another, a plain slot per cell (AflContainerSearchLayout), plus
+ * a DEVELOPMENT PLACEHOLDER search overlay (plain fills, no textures): hidden slots are masked, only the slot being
+ * searched shows a small circling magnifier and a faint progress line. Items lie on their anchor slots as plain stacks
+ * (the grid footprints only show on the search page); a stack goes onto a slot only where the grid has room for it.
  * All state comes from {@link AflContainerSearchMenu}; the screen never decides when a slot is revealed.
  */
 public final class AflContainerSearchScreen extends AbstractContainerScreen<AflContainerSearchMenu> {
     private static final ResourceLocation BACKGROUND = new ResourceLocation("textures/gui/container/generic_54.png");
-    private static final ResourceLocation BACKGROUND_3X3 = new ResourceLocation("textures/gui/container/dispenser.png");
     private static final int HIDDEN_FILL = 0xE01A1D21;
-    /** The vanilla container panel grey, to blank the 9-wide slot rows under a narrower grid. */
-    private static final int PANEL = 0xFFC6C6C6;
     private static final int REVEAL_FLASH_RGB = 0xD8DEE4;
     private static final float REVEAL_FLASH_TICKS = 6.0F;
-    /** 7x7 magnifier: R = rim, G = glass, H = handle. Its lens center (2.5, 2.5) follows the orbit. */
-    private static final String[] MAGNIFIER = {
-            ".RRR...",
-            "RGGGR..",
-            "RGGGR..",
-            "RGGGR..",
-            ".RRRH..",
-            ".....H.",
-            "......H",
-    };
-    private static final float LENS_CENTER = 2.5F;
-    private static final float ORBIT_RADIUS = 2.0F;
-    private static final long ORBIT_PERIOD_MS = 1600L;
     /** Restrained progress: a faint 1 px line along the slot's bottom edge, under the magnifier. */
     private static final int PROGRESS_LINE = 0x70C8CED4;
 
@@ -46,17 +33,8 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     public AflContainerSearchScreen(AflContainerSearchMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.layout = menu.layout();
-        this.imageHeight = layout == AflContainerSearchLayout.GRID_3X3 ? 166 : 114 + layout.rows() * 18;
-        this.inventoryLabelY = imageHeight - 94;
-    }
-
-    /** The 3 x 3 screen centres its title like the vanilla dispenser screen. */
-    @Override
-    protected void init() {
-        super.init();
-        if (layout == AflContainerSearchLayout.GRID_3X3) {
-            titleLabelX = (imageWidth - font.width(title)) / 2;
-        }
+        this.imageHeight = layout.inventoryY() + 83;
+        this.inventoryLabelY = layout.inventoryY() - 11;
     }
 
     @Override
@@ -67,25 +45,18 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
         renderTooltip(graphics, mouseX, mouseY);
     }
 
+    /** The chest panel's title bar, its plain middle stretched over the sections, the inventory part; a chest slot frame per cell. */
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
-        if (layout == AflContainerSearchLayout.GRID_3X3) {
-            graphics.blit(BACKGROUND_3X3, x, y, 0, 0, imageWidth, imageHeight);
-            return;
-        }
-        int rows = layout.rows();
-        graphics.blit(BACKGROUND, x, y, 0, 0, imageWidth, rows * 18 + 17);
-        graphics.blit(BACKGROUND, x, y + rows * 18 + 17, 0, 126, imageWidth, 96);
-        if (layout.columns() < 9) {
-            // a narrower AFL grid: blank the chest's slot rows, then frame each slot with the chest's own slot frame
-            graphics.fill(x + 7, y + 17, x + 169, y + 17 + rows * 18, PANEL);
-            for (int row = 0; row < rows; row++) {
-                for (int column = 0; column < layout.columns(); column++) {
-                    graphics.blit(BACKGROUND, x + layout.slotX(column) - 1, y + layout.slotY(row) - 1, 7, 17, 18, 18);
-                }
-            }
+        int inventoryTop = layout.inventoryY() - 14;
+        graphics.blit(BACKGROUND, x, y, 0, 0, imageWidth, 17);
+        graphics.blit(BACKGROUND, x, y + 17, imageWidth, inventoryTop - 17, 0, 5, imageWidth, 1, 256, 256);
+        graphics.blit(BACKGROUND, x, y + inventoryTop, 0, 126, imageWidth, 96);
+        for (int index = 0; index < menu.searchSlotCount(); index++) {
+            Slot slot = menu.slots.get(index);
+            graphics.blit(BACKGROUND, x + slot.x - 1, y + slot.y - 1, 7, 17, 18, 18);
         }
     }
 
@@ -113,31 +84,16 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
             }
         }
         if (!menu.isSearchComplete()) {
-            String count = menu.revealedCount() + "/" + menu.searchSlotCount();
+            String count = menu.revealedItemCount() + "/" + menu.itemCount();
             graphics.drawString(font, count, imageWidth - 8 - font.width(count), titleLabelY, 0x404040, false);
         }
     }
 
-    /** Small magnifier slowly circling the slot centre (1.6 s per turn); sub-pixel translation keeps the path smooth. */
+    /** The round magnifier (SearchMagnifier, shared with the search page), above the slot's items. */
     private void renderMagnifier(GuiGraphics graphics, int slotX, int slotY) {
-        double angle = (Util.getMillis() % ORBIT_PERIOD_MS) / (double) ORBIT_PERIOD_MS * Math.PI * 2.0;
-        float left = slotX + 8.0F + ORBIT_RADIUS * (float) Math.cos(angle) - LENS_CENTER;
-        float top = slotY + 8.0F + ORBIT_RADIUS * (float) Math.sin(angle) - LENS_CENTER;
         graphics.pose().pushPose();
-        graphics.pose().translate(left, top, 0.0F);
-        for (int row = 0; row < MAGNIFIER.length; row++) {
-            for (int column = 0; column < MAGNIFIER[row].length(); column++) {
-                int color = switch (MAGNIFIER[row].charAt(column)) {
-                    case 'R' -> 0xFFD0D5DA;
-                    case 'G' -> 0x5590B4D0;
-                    case 'H' -> 0xFF9AA0A6;
-                    default -> 0;
-                };
-                if (color != 0) {
-                    graphics.fill(RenderType.guiOverlay(), column, row, column + 1, row + 1, color);
-                }
-            }
-        }
+        graphics.pose().translate(0.0F, 0.0F, 200.0F);
+        SearchMagnifier.draw(graphics, slotX, slotY, 16.0F);
         graphics.pose().popPose();
     }
 }

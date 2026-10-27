@@ -2,27 +2,25 @@ package com.antaurora.apofirstlight.containersearch;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.DispenserMenu;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 
 /**
  * Entry points an asset's container block entity forwards to. See
  * {@code docs/gameplay/progressive_container_search_v1.md} for the full integration contract.
  */
 public final class AflContainerSearch {
-    private static final List<MenuType<ChestMenu>> VANILLA_GRIDS = List.of(MenuType.GENERIC_9x1,
-            MenuType.GENERIC_9x2, MenuType.GENERIC_9x3, MenuType.GENERIC_9x4, MenuType.GENERIC_9x5, MenuType.GENERIC_9x6);
-
     private AflContainerSearch() {
     }
 
@@ -34,6 +32,30 @@ public final class AflContainerSearch {
         container.aflSearchState().ensureInitialized(container);
     }
 
+    /**
+     * Last line of the same override: the rolled loot laid out as the container's grid (AflContainerGrid#pack: a stack
+     * the table spread over several slots together again, items that overlap moved, the larger first).
+     */
+    public static void afterLootUnpack(AflSearchableContainer container) {
+        AflContainerGrid.pack(container);
+    }
+
+    /**
+     * Opens the container's search page for the player (server; nothing on the client). The menu's open data is the
+     * container's grid sections. {@code provider} makes the menu (normally {@link #createMenu}) and names it.
+     */
+    public static void open(Player player, MenuProvider provider, AflSearchableContainer container) {
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        AflContainerSearchLayout layout = container.aflSearchLayout();
+        if (layout == null) return;
+        NetworkHooks.openScreen(serverPlayer, provider, layout::write);
+    }
+
+    /** {@link #open(Player, MenuProvider, AflSearchableContainer)} for a block entity that is both. */
+    public static <T extends MenuProvider & AflSearchableContainer> void open(Player player, @Nullable T container) {
+        if (container != null) open(player, container, container);
+    }
+
     public static boolean isRevealed(AflSearchableContainer container, int slot) {
         return container.aflSearchState().isRevealed(container, slot);
     }
@@ -42,9 +64,12 @@ public final class AflContainerSearch {
         return container.aflSearchState().isComplete(container);
     }
 
-    /** For the asset's {@code canPlaceItem} override: vanilla hopper fallback insertion checks it first. */
-    public static boolean canPlaceItem(AflSearchableContainer container, int slot) {
-        return isRevealed(container, slot);
+    /**
+     * For the asset's {@code canPlaceItem} override: vanilla hopper fallback insertion and the Forge item handler check
+     * it first. A revealed slot, and room in the grid for the stack there (AflContainerGrid#canPlace).
+     */
+    public static boolean canPlaceItem(AflSearchableContainer container, int slot, ItemStack stack) {
+        return isRevealed(container, slot) && AflContainerGrid.canPlace(container, slot, stack);
     }
 
     /** For the asset's {@code canTakeItem} override: vanilla fallback extraction checks it first. */
@@ -58,11 +83,12 @@ public final class AflContainerSearch {
     }
 
     /**
-     * For the asset's {@code createMenu(int, Inventory)}: a search menu while anything is hidden, afterwards the
-     * ordinary vanilla menu of the same layout (chest grid 9 x 1..6, or the 3 x 3 dispenser grid; the 6 x 3 and 3 x 4
-     * grids have no vanilla menu and keep the search menu, every slot revealed). The layout comes
-     * from {@link AflSearchableContainer#aflSearchLayout()}; returns null (menu not opened) when it does not match the
-     * container size.
+     * For the asset's {@code createMenu(int, Inventory)}: the search menu, searched or not (once searched every slot is
+     * revealed). Until 2026-10-26 a searched chest grid or 3 x 3 grid opened the vanilla menu of the same layout; since the
+     * search page (docs/ui/afl_container_search_page_v1.md) these containers keep that page. The grid sections come
+     * from {@link AflSearchableContainer#aflSearchLayout()}; returns null (menu not opened) when they do not match the
+     * container size. The contents are laid out as the grid first (AflContainerGrid#pack) and the empty cells open.
+     * Open it with {@link #open}, which sends the sections along.
      */
     @Nullable
     public static AbstractContainerMenu createMenu(int containerId, Inventory inventory,
@@ -70,16 +96,12 @@ public final class AflContainerSearch {
         int size = container.getContainerSize();
         AflContainerSearchLayout layout = container.aflSearchLayout();
         if (layout == null || layout.size() != size) {
-            ApocalypseFirstLight.LOGGER.error("Searchable container at {} has {} slots and layout {}; a search menu "
-                    + "needs a 9 x 1..6 chest grid, the 3 x 3, 6 x 3 or 3 x 4 grid of the same size", container.getBlockPos(), size, layout);
+            ApocalypseFirstLight.LOGGER.error("Searchable container at {} has {} slots and grid sections {} of another size",
+                    container.getBlockPos(), size, layout);
             return null;
         }
-        if (isComplete(container) && layout.isChest()) {
-            return new ChestMenu(VANILLA_GRIDS.get(layout.rows() - 1), containerId, inventory, container, layout.rows());
-        }
-        if (isComplete(container) && layout == AflContainerSearchLayout.GRID_3X3) {
-            return new DispenserMenu(containerId, inventory, container);
-        }
+        AflContainerGrid.pack(container);
+        container.aflSearchState().revealEmpty(container);
         return AflContainerSearchMenu.server(containerId, inventory, container, layout);
     }
 

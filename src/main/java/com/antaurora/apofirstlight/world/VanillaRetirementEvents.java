@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.entity.npc.VillagerTrades;
@@ -122,8 +123,11 @@ public final class VanillaRetirementEvents {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onJoin(EntityJoinLevelEvent event) {
-        if (!event.getLevel().isClientSide() && !event.loadedFromDisk()
-                && VanillaRetirement.isRetiredMob(event.getEntity().getType())) event.setCanceled(true);
+        var type = event.getEntity().getType();
+        if (event.getLevel().isClientSide() || !VanillaRetirement.isRetiredMob(type)
+                || VanillaRetirement.isTestTarget(type, event.getLevel())) return;
+        // Saved passive mobs (players' animals) still load; saved hostile ones (the zombies of old worlds) are dropped.
+        if (!event.loadedFromDisk() || type.getCategory() == MobCategory.MONSTER) event.setCanceled(true);
     }
 
     /** The source keeps its form; the timer only spaces out the retries (zombies retry their drowning conversion). */

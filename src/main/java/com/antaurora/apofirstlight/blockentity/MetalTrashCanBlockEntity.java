@@ -138,12 +138,14 @@ public final class MetalTrashCanBlockEntity extends RandomizableContainerBlockEn
     @Override
     public void unpackLootTable(@Nullable Player player) {
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
+        return AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack);
     }
 
     @Override

@@ -109,7 +109,7 @@ public class StorageRackBlockEntity extends RandomizableContainerBlockEntity imp
 
     @Override
     public AflContainerSearchLayout aflSearchLayout() {
-        return AflContainerSearchLayout.GRID_3X4;
+        return AflContainerSearchLayout.GRID_4X3;
     }
 
     @Override
@@ -127,7 +127,9 @@ public class StorageRackBlockEntity extends RandomizableContainerBlockEntity imp
     public void unpackLootTable(@Nullable Player player) {
         goods.recordTheme(lootTable);
         AflContainerSearch.beforeLootUnpack(this);
+        boolean rolled = lootTable != null;
         super.unpackLootTable(player);
+        if (rolled) AflContainerSearch.afterLootUnpack(this);
     }
 
     public void serverTick() {
@@ -136,7 +138,7 @@ public class StorageRackBlockEntity extends RandomizableContainerBlockEntity imp
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
+        return AflContainerSearch.canPlaceItem(this, slot, stack) && super.canPlaceItem(slot, stack);
     }
 
     @Override

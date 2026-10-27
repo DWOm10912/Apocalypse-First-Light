@@ -36,9 +36,10 @@ public class AflContainerSearchSlot extends Slot {
         return isRevealed() && super.hasItem();
     }
 
+    /** A revealed slot, and the container's own rule for it (a searchable container: room in its grid, AflContainerGrid#canPlace). */
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return isRevealed() && super.mayPlace(stack);
+        return isRevealed() && container.canPlaceItem(getContainerSlot(), stack) && super.mayPlace(stack);
     }
 
     @Override

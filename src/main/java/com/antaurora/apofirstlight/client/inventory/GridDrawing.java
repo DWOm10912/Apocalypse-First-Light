@@ -102,8 +102,17 @@ final class GridDrawing {
     }
 
     static Plan plan(GridStorage storage, int sectionIndex, float cellX, float cellY, ItemStack carried, boolean rotated, float mx, float my) {
+        return plan(storage, sectionIndex, cellX, cellY, carried, rotated, mx, my, false);
+    }
+
+    /**
+     * {@code anyItem}: grid gear goes in too (a searchable container's grid, not one of the player's). A locked entry (an
+     * item not searched yet) is never merged onto or swapped out.
+     */
+    static Plan plan(GridStorage storage, int sectionIndex, float cellX, float cellY, ItemStack carried, boolean rotated, float mx, float my,
+                     boolean anyItem) {
         var under = entryAt(storage, sectionIndex, cellX, cellY, mx, my);
-        if (under != null && ItemStack.isSameItemSameTags(under.stack(), carried)
+        if (under != null && !under.locked() && ItemStack.isSameItemSameTags(under.stack(), carried)
                 && under.stack().getCount() < Math.min(under.stack().getMaxStackSize(), 64))
             return new Plan(GridActions.Kind.MERGE, under.x(), under.y(), true, false);
         var size = ItemSizes.of(carried, true).turned(rotated);
@@ -111,7 +120,7 @@ final class GridDrawing {
         int x = Math.round((mx - cellX) / CELL - size.w() / 2F), y = Math.round((my - cellY) / CELL - size.h() / 2F);
         x = Math.max(0, Math.min(x, section.w() - size.w()));
         y = Math.max(0, Math.min(y, section.h() - size.h()));
-        if (!PlayerGrids.allowedInGrid(carried)) return new Plan(GridActions.Kind.PLACE, x, y, false, false);
+        if (!anyItem && !PlayerGrids.allowedInGrid(carried)) return new Plan(GridActions.Kind.PLACE, x, y, false, false);
         if (storage.fits(carried, sectionIndex, x, y, rotated, null)) return new Plan(GridActions.Kind.PLACE, x, y, true, false);
         GridStorage.Entry covered = null;
         boolean single = true;
@@ -122,7 +131,7 @@ final class GridDrawing {
                 if (covered != null) single = false;
                 covered = e;
             }
-        boolean swap = single && covered != null && storage.fits(carried, sectionIndex, x, y, rotated, covered);
+        boolean swap = single && covered != null && !covered.locked() && storage.fits(carried, sectionIndex, x, y, rotated, covered);
         return new Plan(GridActions.Kind.PLACE, x, y, false, swap);
     }
 }

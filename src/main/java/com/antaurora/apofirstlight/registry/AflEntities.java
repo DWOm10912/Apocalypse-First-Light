@@ -45,6 +45,22 @@ public final class AflEntities {
                             com.antaurora.apofirstlight.sit.GroundSeat::new, MobCategory.MISC)
                     .sized(0.25F, 0.25F).noSave().noSummon().clientTrackingRange(10).build("ground_seat"));
 
+    /**
+     * Infected Z1a (docs/gameplay/afl_infected_z0_design.md 12): the common infected, the r6 shambler, the vanilla
+     * player's box (0.6 x 1.95); never spawned by the world yet ({@code /afl dev infected spawn}).
+     */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.creature.infected.InfectedEntity>> INFECTED_SHAMBLER =
+            ENTITY_TYPES.register("infected_shambler", () -> EntityType.Builder.<com.antaurora.apofirstlight.creature.infected.InfectedEntity>of(
+                            com.antaurora.apofirstlight.creature.infected.InfectedEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F).clientTrackingRange(8).build("infected_shambler"));
+
+    /** An infected's body: saved with its chunk, no physics, 1.2 x 0.4 blocks for the click (as a survivor's). */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.creature.infected.InfectedCorpse>> INFECTED_CORPSE =
+            ENTITY_TYPES.register("infected_corpse", () -> EntityType.Builder.<com.antaurora.apofirstlight.creature.infected.InfectedCorpse>of(
+                            com.antaurora.apofirstlight.creature.infected.InfectedCorpse::new, MobCategory.MISC)
+                    .sized(1.2F, 0.4F).noSummon().fireImmune().clientTrackingRange(8).updateInterval(100)
+                    .build("infected_corpse"));
+
     private AflEntities() {
     }
 }

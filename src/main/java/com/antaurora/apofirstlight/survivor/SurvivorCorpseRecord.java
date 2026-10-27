@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.survivor;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerGrid;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchState;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -17,11 +18,11 @@ import java.util.UUID;
  * {@code /kill} or a lost entity never touch the items. The entity ({@link SurvivorCorpse}, never saved) is only the
  * body in the world and the thing to click; it is put back whenever its chunk is loaded.
  *
- * <p>The items sit packed in the first slots of a 9 x 1..6 grid, the smallest that holds them (a survivor carries at most
- * 36 + 4 + 1 + Curios slots, under 54 with the current slot set).
+ * <p>The items lie in a grid 8 cells across (AflContainerSearchLayout.rows, since 2026-10-27; a 9 x 1..6 slot grid
+ * before), each taking its item_size footprint, with as many rows as they need up to {@link #MAX_ROWS}.
  */
 public final class SurvivorCorpseRecord {
-    static final int MAX_SLOTS = 54;
+    static final int ROW = 8, MAX_ROWS = 8, MAX_SLOTS = ROW * MAX_ROWS;
     /** The saved pose's layout: 1 = Ragdoll V1, 11 boxes x 7 floats. */
     static final int POSE_VERSION = 1;
 
@@ -41,7 +42,7 @@ public final class SurvivorCorpseRecord {
     /** The dead survivor's own look (SurvivorSkins), copied at the death: later successors never change it. */
     String skin = SurvivorSkins.ACCOUNT;
     SurvivorSkins.Arms arms = SurvivorSkins.Arms.ACCOUNT;
-    NonNullList<ItemStack> items = NonNullList.withSize(9, ItemStack.EMPTY);
+    NonNullList<ItemStack> items = NonNullList.withSize(ROW, ItemStack.EMPTY);
     /**
      * Ragdoll V1 (docs/dev/ragdoll_v1_plan.md 3): the pose the body came to rest in (RagdollSnapshot, relative to x y z),
      * or null: a body from before V1, a death that did not fall as a ragdoll, or one still falling. Null lies on its back.
@@ -90,29 +91,21 @@ public final class SurvivorCorpseRecord {
     }
 
     /**
-     * Packs more stacks in (the death's drops, later a sweep), growing the grid by whole rows up to 9 x 6. Returns the
-     * stacks that did not fit (only possible with more than 54 stacks); the caller drops those in the world.
+     * Lays more stacks in (the death's drops, later a sweep) as unsearched items of the body's grid (AflContainerGrid),
+     * growing it by whole rows of 8 until they all fit, up to {@link #MAX_ROWS}. Returns the stacks that did not fit;
+     * the caller drops those in the world.
      */
     List<ItemStack> addItems(List<ItemStack> stacks) {
-        List<ItemStack> overflow = new java.util.ArrayList<>();
-        int used = itemCount();
-        int needed = Math.min(MAX_SLOTS, used + (int) stacks.stream().filter(s -> !s.isEmpty()).count());
-        int size = Math.max(9, Math.min(MAX_SLOTS, (needed + 8) / 9 * 9));
-        if (size > items.size()) {
-            NonNullList<ItemStack> grown = NonNullList.withSize(size, ItemStack.EMPTY);
-            for (int i = 0; i < items.size(); i++) grown.set(i, items.get(i));
-            items = grown;
-        }
-        int slot = 0;
-        for (ItemStack stack : stacks) {
-            if (stack.isEmpty()) continue;
-            while (slot < items.size() && !items.get(slot).isEmpty()) slot++;
-            if (slot >= items.size()) {
-                overflow.add(stack);
-            } else {
-                items.set(slot, stack);
+        var container = SurvivorCorpses.container(this);
+        for (int rows = Math.max(1, items.size() / ROW); rows <= MAX_ROWS; rows++) {
+            if (rows * ROW > items.size()) {
+                NonNullList<ItemStack> grown = NonNullList.withSize(rows * ROW, ItemStack.EMPTY);
+                for (int i = 0; i < items.size(); i++) grown.set(i, items.get(i));
+                items = grown;
             }
+            if (AflContainerGrid.fitsAll(container, stacks)) break;
         }
+        List<ItemStack> overflow = AflContainerGrid.fillHidden(container, stacks);
         changed();
         return overflow;
     }
@@ -181,7 +174,8 @@ public final class SurvivorCorpseRecord {
             r.arms = SurvivorSkins.Arms.byId(tag.getString("Arms"));
         }
         int size = tag.contains("Size", Tag.TAG_INT) ? tag.getInt("Size") : 9;
-        size = Math.max(9, Math.min(MAX_SLOTS, size / 9 * 9));
+        // whole rows of 8, rounded up: a body from before the grids (9 x n slots) keeps every item (the grid packs them on opening)
+        size = Math.max(ROW, Math.min(MAX_SLOTS, (size + ROW - 1) / ROW * ROW));
         r.items = NonNullList.withSize(size, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, r.items);
         r.search.load(tag);

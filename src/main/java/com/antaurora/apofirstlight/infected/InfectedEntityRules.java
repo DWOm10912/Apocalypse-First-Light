@@ -12,8 +12,9 @@ public final class InfectedEntityRules {
         return entity.getType() == EntityType.ZOMBIE;
     }
 
+    /** A vanilla zombie (old worlds, GameTests) or AFL's own infected (Infected Z1a, creature/infected/InfectedEntity). */
     public static boolean isInfected(LivingEntity entity) {
-        return entity.getType() == EntityType.ZOMBIE;
+        return entity.getType() == EntityType.ZOMBIE || entity instanceof com.antaurora.apofirstlight.creature.infected.InfectedEntity;
     }
 
     public static boolean isSunlightImmune(LivingEntity entity) {

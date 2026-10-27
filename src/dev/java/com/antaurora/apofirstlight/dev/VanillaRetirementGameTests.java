@@ -278,12 +278,14 @@ public final class VanillaRetirementGameTests {
         check((retiredOffers == 0) == retired, "retired trades " + retiredOffers + ", retired=" + retired);
     }
 
-    /** V1.2: a fresh cow is refused with the switch on and joins with it off; minecraft:zombie (the infected) always joins. */
+    /** V1.2: a fresh cow is refused with the switch on and joins with it off; minecraft:zombie is retired too (2026-10-26)
+     *  but joins here as the GameTest target. */
     private static void mobs(GameTestHelper helper, boolean retired) {
         var cow = helper.spawn(EntityType.COW, new BlockPos(1, 1, 1));
         var zombie = helper.spawnWithNoFreeWill(EntityType.ZOMBIE, new BlockPos(2, 1, 1));
         check(cow.isAddedToWorld() != retired, "cow added=" + cow.isAddedToWorld() + ", retired=" + retired);
-        check(zombie.isAddedToWorld(), "zombie refused, retired=" + retired);
+        check(EntityType.ZOMBIE.is(VanillaRetirement.MOBS), "minecraft:zombie not in retired/mobs");
+        check(zombie.isAddedToWorld(), "zombie test target refused, retired=" + retired);
         cow.discard();
         zombie.discard();
     }

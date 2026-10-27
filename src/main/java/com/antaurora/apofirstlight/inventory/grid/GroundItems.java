@@ -89,9 +89,9 @@ public final class GroundItems {
         return item;
     }
 
-    /** Server: the item onto the cursor, all of it ({@code half}: the larger half). Inventory page, empty cursor. */
+    /** Server: the item onto the cursor, all of it ({@code half}: the larger half). Inventory or search page, empty cursor. */
     static boolean pick(ServerPlayer player, int id, boolean half) {
-        var menu = player.inventoryMenu;
+        var menu = player.containerMenu;   // the inventory or search page (GridActions)
         if (!menu.getCarried().isEmpty()) return false;
         var item = reachable(player, id);
         if (item == null) return false;
@@ -132,7 +132,7 @@ public final class GroundItems {
 
     /** Server: the cursor stack (button 1: one of it) onto the ground at the player's feet. */
     static boolean drop(ServerPlayer player, boolean one) {
-        var menu = player.inventoryMenu;
+        var menu = player.containerMenu;   // the inventory or search page (GridActions)
         var carried = menu.getCarried();
         if (carried.isEmpty()) return false;
         var out = one ? carried.split(1) : carried.copyAndClear();

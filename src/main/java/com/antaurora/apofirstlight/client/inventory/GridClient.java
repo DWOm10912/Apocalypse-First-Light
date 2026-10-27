@@ -39,7 +39,7 @@ public final class GridClient {
     private static final IKeyConflictContext INVENTORY_PAGE = new IKeyConflictContext() {
         @Override public boolean isActive() {
             var screen = Minecraft.getInstance().screen;
-            return screen instanceof AflInventoryScreen || screen instanceof ExternalGridScreen || ContainerGridPanel.active(screen);
+            return screen instanceof AflPageScreen || screen instanceof ExternalGridScreen || ContainerGridPanel.active(screen);
         }
         @Override public boolean conflicts(IKeyConflictContext other) { return other == this; }
     };
@@ -63,7 +63,7 @@ public final class GridClient {
     @SubscribeEvent
     public static void tooltipColour(RenderTooltipEvent.Color event) {
         var screen = Minecraft.getInstance().screen;
-        if (!(screen instanceof AflInventoryScreen || screen instanceof ExternalGridScreen)) return;
+        if (!(screen instanceof AflPageScreen || screen instanceof ExternalGridScreen)) return;
         event.setBackground(AflUiStyle.argb(AflUiStyle.BACK, 0.94F));
         int line = AflUiStyle.argb(AflUiStyle.LINE, AflUiStyle.LINE_ALPHA);
         event.setBorderStart(line);

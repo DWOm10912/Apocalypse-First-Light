@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.blockentity.StorageRackBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -123,7 +124,7 @@ public class StorageRackBlock extends HorizontalDirectionalBlock implements Enti
         if (player.isSpectator() || hit.getDirection() != state.getValue(FACING)) return InteractionResult.PASS;
         if (!(level.getBlockEntity(lower(state, pos)) instanceof StorageRackBlockEntity rack)) return InteractionResult.PASS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-        player.openMenu(rack);
+        AflContainerSearch.open(player, rack);
         return InteractionResult.CONSUME;
     }
 

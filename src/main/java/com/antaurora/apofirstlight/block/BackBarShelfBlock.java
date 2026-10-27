@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.blockentity.BackBarShelfBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -105,7 +106,7 @@ public class BackBarShelfBlock extends HorizontalDirectionalBlock implements Ent
         if (player.isSpectator() || hit.getDirection() != state.getValue(FACING)) return InteractionResult.PASS;
         if (!(level.getBlockEntity(lower(state, pos)) instanceof BackBarShelfBlockEntity shelf)) return InteractionResult.PASS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-        player.openMenu(shelf);
+        AflContainerSearch.open(player, shelf);
         return InteractionResult.CONSUME;
     }
 

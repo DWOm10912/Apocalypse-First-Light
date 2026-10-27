@@ -93,7 +93,17 @@ public final class WoodFurniture {
      * where and how its doors sound, and how it shows open.
      */
     public interface Storage {
+        /** Cells of its grid (AflContainerSearchLayout): 9, 18 or 28 (27 until 2026-10-27, which load into the first 27). */
         int slots();
+
+        /** Its grid sections: 3 x 3, 6 x 3 or 7 x 4 by its size; the wardrobe has a top shelf. */
+        default com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout searchLayout() {
+            return switch (slots()) {
+                case 9 -> com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.GRID_3X3;
+                case 18 -> com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.GRID_6X3;
+                default -> com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.GRID_7X4;
+            };
+        }
 
         /** Sets the open look of the furniture at pos (every cell it has). */
         void setOpen(Level level, BlockPos pos, BlockState state, boolean open);

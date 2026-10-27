@@ -14,7 +14,7 @@
     "client.LevelRendererFirstPersonBodyMixin", "client.LivingEntityRendererFirstPersonBodyMixin", "client.HumanoidArmorLayerFirstPersonBodyMixin",
     "client.ItemInHandRendererFirstPersonBodyMixin", "client.HumanoidModelFirstPersonBodyMixin",
     "client.LivingEntityRendererSkeletonMixin", "client.ItemInHandLayerSkeletonMixin", "client.PlayerRendererProneMixin",
-    "client.LivingEntityDeathPoofMixin",
+    "client.LivingEntityDeathPoofMixin", "client.LivingEntityRendererNoHurtTintMixin",
     "client.HeadlightLightColorMixin", "client.HeadlightEntityLightMixin", "client.HeadlightWorldSliceMixin", "client.EarthworkVisGraphMixin", "client.GroundLightMixin", "client.EarthworkParticleLightMixin",
     "client.DynamicLightProgramMixin", "client.DynamicLightShaderApplyMixin", "client.DynamicLightEmbeddiumShaderMixin",
     "client.DynamicLightEmbeddiumStateMixin", "client.DynamicLightBlockChangeMixin",

@@ -1,8 +1,12 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.inventory.AflSearchScreen;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchMenu;
+import com.antaurora.apofirstlight.inventory.PlayerStorageCapacity;
 import com.antaurora.apofirstlight.registry.AflMenus;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -26,7 +30,10 @@ public final class AflMenuScreens {
             MenuScreens.register(AflMenus.ALLOY_FURNACE.get(), AlloyFurnaceScreen::new);
             MenuScreens.register(AflMenus.COMPRESSOR.get(), CompressorScreen::new);
             MenuScreens.register(AflMenus.CHEMICAL_REACTOR.get(), ChemicalReactorScreen::new);
-            AflMenus.SEARCHABLE_CONTAINERS.forEach(type -> MenuScreens.register(type.get(), AflContainerSearchScreen::new));
+            // the search page (AFL inventory layout) in Survival / Adventure; Creative keeps the old chest-style screen
+            MenuScreens.<AflContainerSearchMenu, AbstractContainerScreen<AflContainerSearchMenu>>register(AflMenus.SEARCHABLE_CONTAINER.get(),
+                    (menu, inventory, title) -> PlayerStorageCapacity.unrestricted(inventory.player)
+                            ? new AflContainerSearchScreen(menu, inventory, title) : new AflSearchScreen(menu, inventory, title));
         });
     }
 }
