@@ -324,7 +324,7 @@
 
 **货物模型：** `AflContainerGoods.occupied` 改成按面积算（每件物品占的格数之和），没搜出的也算。
 
-**新词（报 Main 进术语表）：** 上层隔板、柜内、上衣口袋、裤袋、腰间（`container.apocalypse_firstlight.section.*`），以及之前的“全部拿走”。
+**新词（已进术语表）：** 上层隔板、柜内、上衣口袋、裤袋、腰间（`container.apocalypse_firstlight.section.*`）和“全部拿走”，Main 2026-10-27 补进 `docs/localization/zh_cn_style_guide_v1.md` 5.6；“搜索”表里本来就有。
 
 **已知限制：**
 - 容器格里的物品不能“检视”（只有身上的格子能）。用户 2026-10-27 定了先不做：“容器格先不做检视，悬停提示够用”；以后要做就只做只读的（只看已搜出的，不显示交互点）；
