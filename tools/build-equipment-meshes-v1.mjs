@@ -1844,6 +1844,144 @@ function screwdriver() {
   points: {axis: [0, 0, 0], grip, tip: [0, L * S, 0], butt: [0, 0, 0]}};
 }
 
+// ---------------------------------------------------------------- Cooking V1 (docs/gameplay/cooking_v1_plan.md, K0)
+// Cast iron cookware for the box stove and a table spoon, authored in cm (1 px = 1 cm, like the sling hook), Y up, a
+// pot's axis on x = z = 0. Lathed bodies are revolve() profiles [z, r] (z the height), stood up by upright().
+const upright = part => { part.v = part.v.map(([x, y, z]) => [x, z, -y]); return part; };
+/** A closed polygon [a, b, radius?] with the corners that carry a radius filleted (arc steps of about 15 deg). */
+function roundPoly(pts) {
+  const out = [], N = pts.length, u2 = ([a, b]) => { const l = Math.hypot(a, b) || 1; return [a / l, b / l]; };
+  for (let i = 0; i < N; i++) {
+    const [px, py, rad = 0] = pts[i];
+    if (!rad) { out.push([px, py]); continue; }
+    const A = pts[(i - 1 + N) % N], C = pts[(i + 1) % N], e1 = u2([A[0] - px, A[1] - py]), e2 = u2([C[0] - px, C[1] - py]);
+    const th = Math.acos(Math.max(-1, Math.min(1, e1[0] * e2[0] + e1[1] * e2[1]))) / 2, d = rad / Math.tan(th), h = rad / Math.sin(th);
+    const bis = u2([e1[0] + e2[0], e1[1] + e2[1]]), c = [px + bis[0] * h, py + bis[1] * h];
+    const a1 = Math.atan2(py + e1[1] * d - c[1], px + e1[0] * d - c[0]);
+    let da = Math.atan2(py + e2[1] * d - c[1], px + e2[0] * d - c[0]) - a1;
+    while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    const n = Math.max(2, Math.round(Math.abs(da) / (Math.PI / 12)));
+    for (let k = 0; k <= n; k++) out.push([c[0] + rad * Math.cos(a1 + da * k / n), c[1] + rad * Math.sin(a1 + da * k / n)]);
+  }
+  return out;
+}
+/** A band swept along a path: section [u, v] points with u along the path's in-plane normal (cross(T, side)), v along side. */
+function band(part, path, side, section) {
+  const rings = path.map((p, i) => { const t = unit(sub3(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)]));
+    return ringAt(part, p, unit(cross3(t, side)), side, section); });
+  loft(part, rings, path);
+}
+// seasoned cast iron: near black, a faint mottling; the stove's own iron is [40, 40, 41], smoothness 88
+const IRON = {c: pos => mul3([37, 36, 35], 1 + 0.08 * (fbm3(pos[0] * 0.8 + 3.1, pos[1] * 0.8, pos[2] * 0.8) - 0.5)), hl: 7, sm: 96, se: 122, f0: 10};
+const IRON_PLATE = {...IRON, c: [37, 36, 35]};
+export const OVEN = {R: 13.0, Ri: 12.55, H: 10.2, B: 0.55, handleY: 7.7, lidR: 13.25};
+const ovenLidTop = r => OVEN.H + 0.55 + 0.85 * (1 - (r / OVEN.lidR) ** 2);
+const ovenLidUnder = r => OVEN.H + 0.85 * (1 - (r / 12.0) ** 2);
+
+/**
+ * Cast iron dutch oven (Cooking V1): a plain 5 quart pot, 26 cm across inside, 10 cm deep, the wall 4.5 mm, two cast loop
+ * handles; the lid a separate part (`lid`, with its own loop handle) that sits on the rim and drops a flange inside it.
+ * About 4.7 L to the brim; 4 L fills it to about 8.6 cm.
+ */
+function castIronDutchOven() {
+  const B = 'cast_iron_dutch_oven', {R, Ri, H, B: BOT, lidR: RL} = OVEN;
+  const body = new Part('body', B, 'iron');
+  revolve(body, 0, 0, roundPoly([[0, 0], [BOT, 0], [BOT, Ri, 0.9], [H, Ri, 0.2], [H, R, 0.2], [0, R, 1.4]]), 48);
+  upright(body);
+  const parts = [body], sec = rr(-0.45, -0.8, 0.45, 0.8, 0.3, 2);
+  for (const s of [1, -1]) {
+    const path = [[12.5, 0, -2.6], [13.2, 0, -2.6]];
+    for (let a = -90; a <= 90; a += 15) path.push([13.6 + 2.6 * Math.cos(a * Math.PI / 180), 0, 2.6 * Math.sin(a * Math.PI / 180)]);
+    path.push([13.2, 0, 2.6], [12.5, 0, 2.6]);
+    const h = new Part(s > 0 ? 'handle_east' : 'handle_west', B, 'iron');
+    band(h, path.map(([x, , z]) => [s * x, OVEN.handleY, z]), [0, 1, 0], sec);
+    parts.push(h);
+  }
+  // lid: domed top, the rounded edge overhanging the rim, the flange inside the wall, a domed underside
+  const lid = new Part('lid', B, 'iron'), top = [], under = [];
+  for (let r = 0; r <= 12.6; r += 1.4) top.push([ovenLidTop(r), r]);
+  for (let r = 10.8; r > 0.5; r -= 1.35) under.push([ovenLidUnder(r), r]);
+  revolve(lid, 0, 0, roundPoly([[ovenLidUnder(0), 0], ...top, [H + 0.55, RL, 0.22], [H, RL, 0.2], [H, 12.45, 0.06], [H - 0.7, 12.45, 0.12], [H - 0.7, 12.0, 0.12], [H, 12.0], ...under]), 48);
+  upright(lid);
+  const knob = new Part('lid_handle', B, 'iron'), base = ovenLidTop(3.8) + 0.05, path = [[-3.8, base - 0.5, 0]];
+  for (let a = 180; a >= 0; a -= 15) path.push([3.8 * Math.cos(a * Math.PI / 180), base + 2.0 * Math.sin(a * Math.PI / 180), 0]);
+  path.push([3.8, base - 0.5, 0]);
+  band(knob, path, [0, 0, 1], rr(-0.42, -0.75, 0.42, 0.75, 0.28, 2));
+  parts.push(lid, knob);
+  return {PARTS: parts, MATS: {iron: IRON, plate: IRON_PLATE}, bg: 'plate', atlas: 512, texelsPerPx: 4,
+    icon: {view: [30, 45, 0], coverage: 0.3, mat: {iron: [62, 60, 58]}},
+    points: {axis: [0, 0, 0], rim: [0, H, 0], floor: [0, BOT, 0]}};
+}
+
+export const SKILLET = {rb: 11.0, rt: 13.3, D: 5.0, B: 0.55, wall: 0.45};
+/**
+ * Cast iron skillet (Cooking V1): the common 10 1/4 inch pattern, 26.6 cm across the rim, 5 cm deep, the wall sloping
+ * out from an 22 cm flat bottom. A 14 cm cast handle with a teardrop hanging hole, tilted up 10 deg, and a helper lip with
+ * an oval hole on the far side; both are seated in the wall (their root vertices put inside the wall's thickness).
+ */
+function castIronSkillet() {
+  const B = 'cast_iron_skillet', {rb, rt, D, B: BOT, wall} = SKILLET, slope = (rt - rb) / D;
+  const rIn = y => rb + slope * y - wall * Math.hypot(1, slope);   // inner wall radius at a height
+  const pan = new Part('pan', B, 'iron');
+  revolve(pan, 0, 0, roundPoly([[0, 0], [BOT, 0], [BOT, rIn(BOT), 0.9], [D, rIn(D), 0.15], [D, rt, 0.18], [0, rb, 1.2]]), 48);
+  upright(pan);
+  // seat a handle: vertices of its root (authored at |x| = x0) moved to just inside the wall, keeping their offsets
+  const seat = (part, x0, s) => { part.v = part.v.map(([x, y, z]) => { const o = s * x - x0; if (o > 0.35) return [x, y, z];
+    const r = rIn(y) + 0.18; return [s * (Math.sqrt(Math.max(0, r * r - z * z)) + Math.max(0, o)), y, z]; }); };
+  const tilt = (part, px, py, deg) => { const c = Math.cos(deg * Math.PI / 180), s = Math.sin(deg * Math.PI / 180);
+    part.v = part.v.map(([x, y, z]) => [px + (x - px) * c - (y - py) * s, py + (x - px) * s + (y - py) * c, z]); };
+  // main handle (+X): plan [z, x], the hole a teardrop pointing to the pan
+  const handle = new Part('handle', B, 'iron'), TOP = D - 0.08;
+  const end = Array.from({length: 9}, (_, k) => { const a = -Math.PI / 2 + Math.PI * k / 8; return [1.25 * Math.sin(a), 26.2 + 1.25 * Math.cos(a)]; });
+  const plan = roundPoly([[-1.65, 12.4], [-1.3, 14.0, 0.8], ...end, [1.3, 14.0, 0.8], [1.65, 12.4]]);
+  const tip = [0, 24.1], hole = [tip];
+  for (let k = 0; k <= 10; k++) { const a = (115 - 230 * k / 10) * Math.PI / 180; hole.push([0.72 * Math.sin(a), 25.75 + 0.72 * Math.cos(a)]); }
+  extrude(handle, 'y', {outer: orient(plan, true), holes: [orient(hole, false)]}, TOP - 0.95, TOP, 0.15);
+  tilt(handle, 13.4, TOP, 10);
+  seat(handle, 12.4, 1);
+  // helper lip (-X)
+  const lip = new Part('helper', B, 'iron');
+  const lipPlan = roundPoly([[-3.0, -12.4], [-3.0, -16.7, 2.2], [3.0, -16.7, 2.2], [3.0, -12.4]]);
+  const slot = roundPoly([[-1.35, -15.7, 0.55], [-1.35, -14.3, 0.55], [1.35, -14.3, 0.55], [1.35, -15.7, 0.55]]);
+  extrude(lip, 'y', {outer: orient(lipPlan, true), holes: [orient(slot, false)]}, TOP - 0.8, TOP, 0.12);
+  seat(lip, 12.4, -1);
+  return {PARTS: [pan, handle, lip], MATS: {iron: IRON, plate: IRON_PLATE}, bg: 'plate', atlas: 512, texelsPerPx: 4,
+    icon: {view: [35, 30, 0], coverage: 0.3, mat: {iron: [62, 60, 58]}},
+    points: {axis: [0, 0, 0], floor: [0, BOT, 0], grip: [21.0, TOP + 2.0, 0]}};
+}
+
+/**
+ * Table spoon (Cooking V1): a plain 18.5 cm stainless soup spoon, an egg-shaped bowl 6.4 x 4.2 cm and 8 mm deep (a thin
+ * lathed cap scaled along x, narrower toward the handle), the 2 mm handle narrowest at the neck, widening to a 2.4 cm
+ * rounded end and bending up 1 cm. Authored with the bowl's centre on the origin, the handle toward +X.
+ */
+function tableSpoon() {
+  const B = 'table_spoon', RB = 2.1, DEPTH = 0.8, T = 0.1;
+  const bowl = new Part('bowl', B, 'steel'), inner = [], outer = [];
+  for (let k = 0; k <= 8; k++) { const r = RB * k / 8; inner.push([-DEPTH * (1 - (r / RB) ** 2), r]); }
+  for (let k = 8; k >= 0; k--) { const r = RB * k / 8; outer.push([-DEPTH * (1 - (r / RB) ** 2) - T, r]); }
+  revolve(bowl, 0, 0, [...inner, ...outer], 32);
+  upright(bowl);
+  bowl.v = bowl.v.map(([x, y, z]) => x > 0 ? [x * 1.65, y, z * (1 - 0.1 * x / RB)] : [x * 1.4, y, z]);
+  // handle: superellipse sections along a path rising toward the end
+  const handle = new Part('handle', B, 'steel'), X0 = 3.35, XE = 15.56, RE = 1.2, xc = XE - RE;
+  const halfW = x => x > xc ? Math.max(0.12, Math.sqrt(Math.max(0, RE * RE - (x - xc) ** 2))) : x < 4.2 ? 0.55 + (0.31 - 0.55) * (x - X0) / (4.2 - X0)
+    : x < 5.6 ? 0.31 : 0.31 + (RE - 0.31) * sstep01((x - 5.6) / (xc - 5.6));
+  const xs = [X0, 3.8, 4.2, 4.9, 5.6]; for (let x = 6.6; x < xc; x += 1.0) xs.push(x); for (let k = 0; k <= 6; k++) xs.push(xc + (RE - 0.04) * Math.sin(k / 6 * Math.PI / 2));
+  const yAt = x => -0.05 + 1.05 * ((x - X0) / (XE - X0)) ** 1.6, path = xs.map(x => [x, yAt(x), 0]);
+  const rings = path.map((p, i) => {
+    const t = unit(sub3(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)])), n = [-t[1], t[0], 0];
+    const th = p[0] < 5.6 ? 0.12 + 0.03 * (5.6 - p[0]) / (5.6 - X0) : 0.1, w = halfW(p[0]);
+    return ringAt(handle, p, n, [0, 0, 1], Array.from({length: 12}, (_, k) => { const a = 2 * Math.PI * k / 12, c = Math.cos(a), s = Math.sin(a);
+      return [th * Math.sign(s) * Math.abs(s) ** 0.35, w * Math.sign(c) * Math.abs(c) ** 0.35]; }));
+  });
+  loft(handle, rings, path);
+  return {PARTS: [bowl, handle], MATS: {steel: {c: [176, 178, 182], hl: 8, sm: 190, se: 205, f0: 230}}, bg: 'steel', atlas: 256, texelsPerPx: 20,
+    icon: {view: [40, 30, 0], coverage: 0.3},
+    points: {bowl: [0, -DEPTH, 0], grip: [11.5, yAt(11.5), 0], end: [XE, yAt(XE), 0]}};
+}
+const sstep01 = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+
 // ---------------------------------------------------------------- Old-body clothes V1 (docs/dev/old_body_clothes_v1.md)
 // The garments as items, folded as on a shop shelf (user 2026-10-27 "叠起来那样，后面可以做颜色变体"): x across, z front to
 // back (the collar or the waistband at +z / -z), y up, at icon size. Worn, the body draws them as shells over the skin
@@ -2038,6 +2176,9 @@ export const ITEMS = {
   screwdriver,
   field_survival_guide: fieldSurvivalGuide,
   folding_knife: foldingKnife,
+  cast_iron_dutch_oven: castIronDutchOven,
+  cast_iron_skillet: castIronSkillet,
+  table_spoon: tableSpoon,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
