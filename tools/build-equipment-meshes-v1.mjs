@@ -1844,7 +1844,170 @@ function screwdriver() {
   points: {axis: [0, 0, 0], grip, tip: [0, L * S, 0], butt: [0, 0, 0]}};
 }
 
+// ---------------------------------------------------------------- Old-body clothes V1 (docs/dev/old_body_clothes_v1.md)
+// The garments as items, folded as on a shop shelf (user 2026-10-27 "叠起来那样，后面可以做颜色变体"): x across, z front to
+// back (the collar or the waistband at +z / -z), y up, at icon size. Worn, the body draws them as shells over the skin
+// (skeleton/OldBodyClothes); these meshes are the hand, ground, shelf and icon look. One colour each for now: a colour
+// variant is the same mesh with its cloth material recoloured. Cloth carries a faint low-frequency mottle, no pattern.
+/** A flat rounded slab: x0..x1 by z0..z1 in plan, y0..y1 high. */
+function slab(part, x0, z0, x1, z1, y0, y1, r, c = 0.2, hole = null) {
+  extrude(part, 'y', {outer: orient(roundRect(z0, x0, z1, x1, Math.min(r, (z1 - z0) / 2 - 1e-3, (x1 - x0) / 2 - 1e-3)), true),
+    holes: hole ? [orient(roundRect(hole[1], hole[0], hole[3], hole[2], hole[4]), false)] : []}, y0, y1, c);
+  return part;
+}
+const cloth3 = (base, k = 0.06) => ({c: pos => mul3(base, 1 + k * (fbm3(pos[0] * 0.35 + 1.3, pos[1] * 0.35, pos[2] * 0.35 + 4.1) - 0.5))});
+const DENIM_SHIRT = [104, 132, 166], JEANS_DENIM = [64, 86, 124], JACKET_LEATHER = [118, 80, 52], SHOE_LEATHER = [70, 46, 32];
+const ZIP = {c: [158, 156, 148], hl: 6, sm: 170, se: 190, f0: 230};   // nickel zip and rivets: small, bare
+const BUTTON = {c: [226, 222, 212], hl: 4, sm: 120, se: 130, f0: 20};   // white shirt buttons
+
+/** The denim shirt, folded: the front panel up, the collar at the far end (-z), the placket and its buttons, a chest pocket. */
+function clothingShirt() {
+  const B = 'clothing_shirt';
+  const body = slab(new Part('body', B, 'denim'), -5.5, -4.5, 5.5, 4.5, 0, 1.5, 0.8, 0.3);
+  const collar = slab(new Part('collar', B, 'denim'), -2.4, -4.3, 2.4, -2.2, 1.5, 1.95, 0.6, 0.12, [-1.6, -3.9, 1.6, -2.8, 0.4]);
+  const placket = slab(new Part('placket', B, 'denim'), -0.36, -2.3, 0.36, 4.3, 1.5, 1.6, 0.05, 0);
+  const pocket = slab(new Part('pocket', B, 'denim'), 1.2, -1.6, 3.4, 0.2, 1.5, 1.6, 0.2, 0);
+  const buttons = [-1.6, 0.0, 1.6, 3.2].map((z, i) => slab(new Part('button_' + i, B, 'button'), -0.24, z - 0.24, 0.24, z + 0.24, 1.6, 1.7, 0.2, 0));
+  return {PARTS: [body, collar, placket, pocket, ...buttons], MATS: {
+    denim: {...cloth3(DENIM_SHIRT), hl: 4, sm: 44, se: 52, f0: 20},   // light denim (chambray): matte cotton twill
+    button: BUTTON,
+    plate: {c: DENIM_SHIRT, hl: 4, sm: 44, se: 52, f0: 20},   // the atlas background
+  }, bg: 'plate', icon: {view: [35, 30, 0]}};
+}
+
+/** The leather jacket, folded: thicker, rounder, the collar standing at the far end, the zip down the middle, the welts. */
+function clothingJacket() {
+  const B = 'clothing_jacket';
+  const body = slab(new Part('body', B, 'leather'), -5.8, -4.8, 5.8, 4.8, 0, 2.2, 1.1, 0.55);
+  const collar = slab(new Part('collar', B, 'leather'), -2.8, -4.7, 2.8, -2.0, 2.2, 2.85, 0.9, 0.2, [-1.9, -4.2, 1.9, -2.7, 0.6]);
+  const zip = slab(new Part('zip', B, 'zip'), -0.18, -2.1, 0.18, 4.5, 2.2, 2.3, 0.05, 0);
+  const welts = [-1, 1].map((s, i) => slab(new Part('welt_' + i, B, 'leather'), s > 0 ? 1.4 : -3.8, 1.9, s > 0 ? 3.8 : -1.4, 2.4, 2.2, 2.32, 0.15, 0));
+  return {PARTS: [body, collar, zip, ...welts], MATS: {
+    leather: {...cloth3(JACKET_LEATHER, 0.08), hl: 6, sm: 128, se: 140, f0: 20},   // brown cowhide, a soft sheen
+    zip: ZIP,
+    plate: {c: JACKET_LEATHER, hl: 6, sm: 128, se: 140, f0: 20},
+  }, bg: 'plate', icon: {view: [35, 30, 0]}};
+}
+
+/** The jeans, folded in half and again: the top layer short of the bottom one, the waistband and its button, the back pockets. */
+function clothingJeans() {
+  const B = 'clothing_jeans';
+  const under = slab(new Part('under', B, 'denim'), -5, -4.2, 5, 4.2, 0, 1.2, 0.6, 0.3);
+  const top = slab(new Part('top', B, 'denim'), -5, -4.2, 5, 2.8, 1.2, 2.3, 0.6, 0.35);
+  const band = slab(new Part('band', B, 'denim'), -5, -4.25, 5, -3.3, 2.3, 2.45, 0.3, 0);
+  const button = slab(new Part('button', B, 'zip'), -0.3, -4.0, 0.3, -3.5, 2.45, 2.55, 0.25, 0);
+  const pockets = [-1, 1].map((s, i) => slab(new Part('pocket_' + i, B, 'denim'), s > 0 ? 0.8 : -3.6, -2.6, s > 0 ? 3.6 : -0.8, 0.6, 2.3, 2.38, 0.3, 0));
+  return {PARTS: [under, top, band, button, ...pockets], MATS: {
+    denim: {...cloth3(JEANS_DENIM, 0.07), hl: 4, sm: 40, se: 48, f0: 20},   // indigo denim
+    zip: ZIP,
+    plate: {c: JEANS_DENIM, hl: 4, sm: 40, se: 48, f0: 20},
+  }, bg: 'plate', icon: {view: [35, 30, 0]}};
+}
+
+/** A pair of leather shoes side by side, the right a little ahead: the upper over a darker sole, the opening, the laces. */
+function clothingShoes() {
+  const B = 'clothing_shoes', parts = [];
+  // the side profile (z along the foot, y up): heel at -z, toe at +z
+  const upper = [[-4.5, 0.55], [2.9, 0.55], [4.1, 0.75], [4.55, 1.2], [4.3, 1.75], [3.4, 2.05], [-1.6, 3.0], [-4.3, 3.05], [-4.6, 2.6]];
+  const sole = [[-4.6, 0], [4.5, 0], [4.75, 0.35], [4.6, 0.6], [-4.7, 0.6], [-4.75, 0.25]];
+  for (const [s, dz] of [[1, 0.6], [-1, -0.6]]) {
+    const name = s > 0 ? 'right' : 'left', cx = 2.05 * s;
+    const up = new Part('upper_' + name, B, 'leather');
+    extrude(up, 'x', {outer: orient(upper.map(([z, y]) => [z + dz, y]), true), holes: []}, cx - 1.6, cx + 1.6, 0.4);
+    const so = new Part('sole_' + name, B, 'sole');
+    extrude(so, 'x', {outer: orient(sole.map(([z, y]) => [z + dz, y]), true), holes: []}, cx - 1.72, cx + 1.72, 0.15);
+    const open = slab(new Part('opening_' + name, B, 'inside'), cx - 1.0, -4.0 + dz, cx + 1.0, -1.9 + dz, 3.0, 3.06, 0.6, 0);
+    // the last's shape: narrow heel, widest across the ball, a rounded toe; the upper rounds in toward its top
+    const width = z => { const t = Math.max(0, Math.min(1, (z - dz + 4.7) / 9.45));
+      return t < 0.65 ? 0.84 + 0.16 * t / 0.65 : 1 - 0.42 * ((t - 0.65) / 0.35) ** 2; };
+    const last = (part, top) => { part.v = part.v.map(([x, y, z]) => {
+      const k = top ? 1 - 0.2 * Math.max(0, (y - 1.1) / 1.95) ** 1.5 : 1.03;
+      return [cx + (x - cx) * width(z) * k, y, z]; }); };
+    last(up, true);
+    last(so, false);
+    last(open, true);
+    parts.push(up, so, open);
+    // laces across the instep (its line from (-1.6, 3.0) to (3.4, 2.05))
+    for (const [k, z] of [-0.9, 0.1, 1.1].entries()) {
+      const y = 3.0 + (2.05 - 3.0) * (z + 1.6) / 5.0;
+      const lace = slab(new Part(`lace_${name}_${k}`, B, 'lace'), cx - 0.95, z + dz - 0.14, cx + 0.95, z + dz + 0.14, y - 0.05, y + 0.1, 0.1, 0);
+      last(lace, true);
+      parts.push(lace);
+    }
+  }
+  return {PARTS: parts, MATS: {
+    leather: {...cloth3(SHOE_LEATHER, 0.06), hl: 6, sm: 150, se: 160, f0: 20},   // dark brown polished leather
+    sole: {c: [52, 40, 32], hl: 4, sm: 60, se: 70, f0: 20},                        // rubber sole
+    inside: {c: [40, 30, 24], hl: 3, sm: 50, se: 60, f0: 20},                      // the lining in shadow
+    lace: {c: [128, 110, 88], hl: 3, sm: 40, se: 48, f0: 20},                      // waxed cotton laces
+    plate: {c: SHOE_LEATHER, hl: 6, sm: 150, se: 160, f0: 20},
+  }, bg: 'plate', icon: {view: [30, -40, 0]}};
+}
+
+/**
+ * The garments hung up, for the wardrobe (B, user 2026-10-27 "B那边就可以让衣柜挂衣服"): at world size (px = 1/16 block, the
+ * body's scale: a shirt 12 px long), front +z, x across, y up, flat on the hanger; mesh only (no item model or icon). The
+ * shirt and jacket hang from their shoulders on a wooden hanger, the jeans folded over its bar. `points.hook` is where the
+ * hook's curl rests on the rail (after the bake's shift): a renderer puts that on the rail. Shoes stand on the floor as
+ * the item mesh (clothing_shoes).
+ */
+function clothingHung(kind) {
+  const B = `clothing_${kind}_hung`, parts = [];
+  const flat = (name, mat, pts, z0, z1, c = 0.15) => { const p = new Part(name, B, mat);
+    extrude(p, 'z', {outer: orient(pts, true), holes: []}, z0, z1, c); parts.push(p); return p; };
+  const box = (name, mat, x0, y0, x1, y1, z0, z1, r = 0.1) => flat(name, mat, roundRect(x0, y0, x1, y1, r), z0, z1, 0);
+  // the hanger: a wooden bar across the shoulders (inside the garment but for its ends), the steel hook above
+  const top = kind === 'jeans' ? 8.2 : 12.0;
+  flat('hanger', 'wood', roundRect(-3.3, top - 0.95, 3.3, top - 0.45, 0.2), -0.25, 0.25, 0.08);
+  const hook = new Part('hook', B, 'steel');
+  sweptWire(hook, [[0, top - 0.5, 0], [0, top + 0.6, 0], [0, top + 1.15, 0], [0.25, top + 1.45, 0], [0.6, top + 1.5, 0], [0.85, top + 1.3, 0], [0.85, top + 1.05, 0]], 0.09, {sides: 6});
+  parts.push(hook);
+  let MATS;
+  if (kind === 'jeans') {
+    // both legs folded over the bar: a slab hanging either side of it, the fold rounded over the top
+    const T = 0.55;
+    for (const [s, name] of [[1, 'front'], [-1, 'back']]) box('leg_' + name, 'denim', -2.7, s > 0 ? 0.5 : 0.4, 2.7, top - 0.95, s > 0 ? 0.25 : -0.25 - T, s > 0 ? 0.25 + T : -0.25);
+    // the fold over the bar: a half round (z across, y up) along the width
+    const R = 0.25 + T, y0 = top - 1.0;   // just below the bar's underside: no shared face
+    const arch = Array.from({length: 9}, (_, k) => { const a = Math.PI * k / 8; return [R * Math.cos(a), y0 + R * Math.sin(a)]; });
+    const fold = new Part('fold', B, 'denim');
+    extrude(fold, 'x', {outer: orient(arch, true), holes: []}, -2.75, 2.75, 0.15);
+    parts.push(fold);
+    box('hem_front', 'denim', -2.75, 0.0, 2.75, 0.55, 0.22, 0.3 + T);   // the turned-up hem, a little proud
+    MATS = {denim: {...cloth3(JEANS_DENIM, 0.07), hl: 4, sm: 40, se: 48, f0: 20}};
+  } else {
+    const jacket = kind === 'jacket', T = jacket ? 1.1 : 0.7, z0 = -T / 2, z1 = T / 2, mat = jacket ? 'leather' : 'denim';
+    const hem = jacket ? 1.2 : 0.0, sh = top - 0.6;
+    // the body: shoulders sloping from the collar, straight sides to the hem
+    flat('body', mat, [[-1.1, top], [-3.7, sh - 0.8], [-3.5, hem], [3.5, hem], [3.7, sh - 0.8], [1.1, top]], z0, z1, jacket ? 0.3 : 0.15);
+    // the sleeves hang down the sides, a little in front of the body
+    for (const s of [-1, 1]) flat('sleeve_' + (s > 0 ? 'l' : 'r'), mat,
+      orient([[s * 3.1, sh - 0.7], [s * 4.15, sh - 1.1], [s * 4.35, hem + (jacket ? 0.6 : 1.6)], [s * 3.15, hem + (jacket ? 0.5 : 1.5)]], true), z0 + 0.05, z1 + 0.25, 0.12);
+    // the collar round the neck, standing a little proud of the front
+    flat('collar', mat, [[-1.5, top + 0.1], [1.5, top + 0.1], [1.15, top - 1.3], [0, top - 2.0], [-1.15, top - 1.3]], z1 - 0.05, z1 + (jacket ? 0.35 : 0.2), 0.08);
+    if (jacket) {
+      box('zip', 'zip', -0.12, hem + 0.1, 0.12, top - 2.0, z1, z1 + 0.08, 0.04);
+      box('hem_band', 'leather', -3.56, hem - 0.04, 3.56, hem + 0.6, z0 - 0.04, z1 + 0.06, 0.1);
+    } else {
+      box('placket', 'denim', -0.3, 0.1, 0.3, top - 2.0, z1, z1 + 0.06, 0.05);
+      for (const [k, y] of [top - 2.6, top - 4.4, top - 6.2, top - 8.0, top - 9.8].entries()) box('button_' + k, 'button', -0.18, y - 0.18, 0.18, y + 0.18, z1 + 0.06, z1 + 0.12, 0.15);
+      for (const s of [-1, 1]) box('pocket_' + (s > 0 ? 'l' : 'r'), 'denim', s > 0 ? 0.8 : -2.6, top - 4.6, s > 0 ? 2.6 : -0.8, top - 2.8, z1, z1 + 0.06, 0.15);
+    }
+    MATS = jacket ? {leather: {...cloth3(JACKET_LEATHER, 0.08), hl: 6, sm: 128, se: 140, f0: 20}, zip: ZIP}
+      : {denim: {...cloth3(DENIM_SHIRT), hl: 4, sm: 44, se: 52, f0: 20}, button: BUTTON};
+  }
+  return {PARTS: parts, MATS: {...MATS, wood: {c: [150, 112, 72], hl: 5, sm: 110, se: 120, f0: 20}, steel: {c: [176, 178, 182], hl: 8, sm: 190, se: 205, f0: 230}},
+    meshOnly: true, texelsPerPx: 16, points: {hook: [0.42, top + 1.4, 0]}};
+}
+
 export const ITEMS = {
+  clothing_shirt: clothingShirt,
+  clothing_jacket: clothingJacket,
+  clothing_jeans: clothingJeans,
+  clothing_shoes: clothingShoes,
+  clothing_shirt_hung: () => clothingHung('shirt'),
+  clothing_jacket_hung: () => clothingHung('jacket'),
+  clothing_jeans_hung: () => clothingHung('jeans'),
   pickup_t15_key: pickupT15Key,
   clinical_thermometer: clinicalThermometer,
   wrist_thermometer: wristThermometer,

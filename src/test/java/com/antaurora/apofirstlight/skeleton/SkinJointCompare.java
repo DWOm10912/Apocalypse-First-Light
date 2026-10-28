@@ -82,35 +82,81 @@ public final class SkinJointCompare {
     /**
      * Female body V1 (docs/dev/female_body_v1.md): the game's SkinMesh with the female torso and chest on slim arms, at
      * rest, sat, mid run and in the P9's idle hold (the arms' clip pose), as OBJ like {@link #main} for a render against
-     * the offline sheet.
+     * the offline sheet. Old-body clothes V1: the man (classic arms) too, and each garment's shells as its own OBJ
+     * ({@code <sex>_<shot>_<garment>.obj}, OldBodyClothes), for a render dressed and undressed.
      */
+    /**
+     * The waist flicker (user 2026-10-27: the jacket's zip and the shirt's buttons "一直左右闪烁"): frame to frame at 60 fps,
+     * how many of the female torso's quads (bare, under the shirt, under the jacket) change their diagonal (SkinMesh#quad
+     * starts at another corner, so the first vertex's UV changes).
+     */
+    private static void flips(SkeletonRig rig, HumanoidPoser poser) {
+        SkeletonRig.SkinPart body = null;
+        for (SkeletonRig.SkinPart part : rig.skin) if (part.part().equals("body")) body = part;
+        SkinMesh.Shell[] shells = {null, new SkinMesh.Shell(0.3F, 0F, 10.5F), new SkinMesh.Shell(0.675F, 0F, 11.5F)};
+        String[] names = {"bare", "shirt", "jacket"};
+        for (String clip : new String[]{"locomotion.idle", "locomotion.walk", "locomotion.crouch_idle"}) {
+            SkeletonClips.Clip c = SkeletonClips.byKey(clip);
+            for (int k = 0; k < shells.length; k++) {
+                List<float[]> last = null;
+                int quads = 0, flips = 0, frames = Math.max(2, Math.round(c.length * 60F));
+                for (int f = 0; f <= frames; f++) {
+                    SkeletonPose pose = pose(rig, poser, clip, c.length * f / frames);
+                    List<float[]> v = new ArrayList<>();
+                    SkinMesh.Sink sink = (x, y, z, u, vv, nx, ny, nz) -> v.add(new float[]{u, vv});
+                    if (shells[k] == null) SkinMesh.emit(pose, body, false, false, 1F, true, sink);
+                    else SkinMesh.shell(pose, body, false, 1F, true, shells[k], sink);
+                    quads = v.size() / 4;
+                    if (last != null && last.size() == v.size())
+                        for (int q = 0; q < quads; q++)
+                            if (Math.abs(last.get(q * 4)[0] - v.get(q * 4)[0]) > 1e-6F || Math.abs(last.get(q * 4)[1] - v.get(q * 4)[1]) > 1e-6F) flips++;
+                    last = v;
+                }
+                System.out.printf(Locale.ROOT, "female torso %-6s %-24s %4d quads, %d frames, diagonal flips %d%n", names[k], clip, quads, frames, flips);
+            }
+        }
+    }
+
     private static void female(Path out) throws Exception {
         Files.createDirectories(out);
         SkeletonRig rig = SkeletonRig.get();
         HumanoidPoser poser = new HumanoidPoser(rig, SkeletonClips.locomotion());
+        flips(rig, poser);
         String[][] shots = {{"rest", null, "0"}, {"sat", "body.sit", "0.5"}, {"run", "locomotion.run", "0.15"}, {"crouch", "locomotion.crouch_idle", "0.2"}};
-        for (String[] s : shots) {
-            SkeletonPose pose = s[1] == null ? new SkeletonPose(rig) : pose(rig, poser, s[1], Float.parseFloat(s[2]));
-            StringBuilder o = new StringBuilder();
-            int[] n = {0};
-            for (SkeletonRig.SkinPart part : rig.skin) {
-                for (boolean overlay : new boolean[]{false, true}) {
-                    List<Vector3f> p = new ArrayList<>();
-                    List<float[]> uv = new ArrayList<>();
-                    SkinMesh.emit(pose, part, true, overlay, 1F, true, (x, y, z, u, v, nx, ny, nz) -> {
-                        p.add(new Vector3f(x, y, z));
-                        uv.add(new float[]{u * TEX, v * TEX});
-                    });
-                    for (int q = 0; q < p.size(); q += 4)
-                        quad(o, n, p.get(q), uv.get(q)[0], uv.get(q)[1], p.get(q + 1), uv.get(q + 1)[0], uv.get(q + 1)[1],
-                                p.get(q + 2), uv.get(q + 2)[0], uv.get(q + 2)[1], p.get(q + 3), uv.get(q + 3)[0], uv.get(q + 3)[1]);
+        for (boolean woman : new boolean[]{true, false}) {
+            String sex = woman ? "female" : "male";
+            for (String[] s : shots) {
+                SkeletonPose pose = s[1] == null ? new SkeletonPose(rig) : pose(rig, poser, s[1], Float.parseFloat(s[2]));
+                StringBuilder o = new StringBuilder();
+                int[] n = {0};
+                for (SkeletonRig.SkinPart part : rig.skin) {
+                    for (boolean overlay : new boolean[]{false, true})
+                        quads(o, n, sink -> SkinMesh.emit(pose, part, woman, overlay, 1F, woman, sink));
+                }
+                head(pose, false, o, n);
+                head(pose, true, o, n);
+                Files.writeString(out.resolve(sex + "_" + s[0] + ".obj"), o);
+                for (OldBodyClothes.Garment g : OldBodyClothes.Garment.values()) {
+                    StringBuilder go = new StringBuilder();
+                    quads(go, new int[]{0}, sink -> OldBodyClothes.emit(pose, g, woman, woman, 1F, p -> true, sink));
+                    Files.writeString(out.resolve(sex + "_" + s[0] + "_" + g.name().toLowerCase(Locale.ROOT) + ".obj"), go);
                 }
             }
-            head(pose, false, o, n);
-            head(pose, true, o, n);
-            Files.writeString(out.resolve("female_" + s[0] + ".obj"), o);
         }
-        System.out.println("female body written to " + out.toAbsolutePath());
+        System.out.println("old body (female, male, clothes) written to " + out.toAbsolutePath());
+    }
+
+    /** Everything a mesh call sends to its sink, as OBJ quads. */
+    private static void quads(StringBuilder o, int[] n, java.util.function.Consumer<SkinMesh.Sink> mesh) {
+        List<Vector3f> p = new ArrayList<>();
+        List<float[]> uv = new ArrayList<>();
+        mesh.accept((x, y, z, u, v, nx, ny, nz) -> {
+            p.add(new Vector3f(x, y, z));
+            uv.add(new float[]{u * TEX, v * TEX});
+        });
+        for (int q = 0; q < p.size(); q += 4)
+            quad(o, n, p.get(q), uv.get(q)[0], uv.get(q)[1], p.get(q + 1), uv.get(q + 1)[0], uv.get(q + 1)[1],
+                    p.get(q + 2), uv.get(q + 2)[0], uv.get(q + 2)[1], p.get(q + 3), uv.get(q + 3)[0], uv.get(q + 3)[1]);
     }
 
     /**

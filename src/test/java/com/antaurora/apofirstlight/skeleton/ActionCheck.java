@@ -82,18 +82,25 @@ final class ActionCheck {
                 + ARM_HALF + " px outside the chest box, planted soles within " + SOLE_ERR + " px of the ground, first person: an arm on <= "
                 + Math.round(COVER_MAX * 100) + "% of the screen)");
         FEMALE_CLOSER.clear();
+        JACKET_CLOSER.clear();
         for (Scene sc : scenes()) check(rig, poser, sc, snapDir);
         if (rig.profile == null) {
-            System.out.println("  female chest (SkinMesh, up to " + BUST_DEPTH + " px out at 1-5.9 px down, x +-" + BUST_HALF
+            System.out.println("  female chest (SkinMesh, up to " + BUST_DEPTH + " px out at " + BUST_TOP + "-" + BUST_LOW + " px down, x +-" + BUST_HALF
                     + "): scenes a forearm or hand comes nearer than " + ARM_HALF + " px only because of it: "
                     + (FEMALE_CLOSER.isEmpty() ? "none" : String.join(", ", FEMALE_CLOSER)));
+            System.out.println("  old-body clothes (OldBodyClothes): scenes whose forearm or hand is nearer than " + (ARM_HALF + 2 * JACKET)
+                    + " px, so a jacket's sleeve (" + JACKET + " px out) goes into its body (" + JACKET + " px out): "
+                    + (JACKET_CLOSER.isEmpty() ? "none" : String.join(", ", JACKET_CLOSER)));
         }
         return failures;
     }
 
-    /** The female chest's slab in front of the chest box (SkinMesh BUST / LOBE_HALF): reported, not failed. */
-    private static final float BUST_DEPTH = 0.7F, BUST_HALF = 3.05F, BUST_TOP = 1F, BUST_LOW = 5.9F;
+    /** The female chest's slab in front of the chest box (SkinMesh r4 domes: PROJECTION, LOBE_X + REACH_OUT, the top and the fold): reported, not failed. */
+    private static final float BUST_DEPTH = 1.05F, BUST_HALF = 3.1F, BUST_TOP = 1.4F, BUST_LOW = 4.65F;
     private static final java.util.List<String> FEMALE_CLOSER = new java.util.ArrayList<>();
+    /** The jacket's shell over the skin (OldBodyClothes JACKET): over the torso and the sleeves alike; reported, not failed. */
+    private static final float JACKET = 0.675F;
+    private static final java.util.List<String> JACKET_CLOSER = new java.util.ArrayList<>();
 
     private static Scene[] scenes() {
         // recoil starter (structure px, block/PortableDieselGeneratorBlock HANDLE_REST, PULL; client/PortableGeneratorPull
@@ -318,6 +325,9 @@ final class ActionCheck {
         if (rig.profile == null && worstFemale < worst - 0.01F) {
             line.append(String.format(" female %.1f px (%s)", worstFemale, whereFemale));
             if (worstFemale < ARM_HALF && worst >= ARM_HALF) FEMALE_CLOSER.add(String.format("%s (%s %.1f px)", sc.name(), whereFemale, worstFemale));
+        }
+        if (rig.profile == null && worst >= ARM_HALF && worst < ARM_HALF + 2 * JACKET) {
+            JACKET_CLOSER.add(String.format("%s (%s %.1f px)", sc.name(), where, worst));
         }
         if (worst < armHalf(rig)) fail(sc.name() + " " + where + " " + worst + " px from the chest box (skin into the body)");
         java.util.List<Vector3f> propBox = new java.util.ArrayList<>();

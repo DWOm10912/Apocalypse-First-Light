@@ -16,11 +16,12 @@ import top.theillusivec4.curios.api.type.capability.ICurio;
 import top.theillusivec4.curios.api.type.capability.ICurioItem;
 
 /**
- * Character creation V1 clothes (docs/ui/character_creation_v1.md, user 2026-10-26): B5's mesh garments as items. The
- * shirt goes in the base layer slot and the jacket in the coat slot (AFL Curios slots, AflEquipmentSlots.BASE / COAT); the
- * jeans and shoes in vanilla's legs and feet slots (Equipable, so the armour slots take them; not ArmorItem, so vanilla's
- * armour layer draws nothing). The body draws what is worn (client/skeleton/BlockMeshWardrobe). Right-click wears one,
- * swapping out what is there.
+ * Character creation V1 clothes (docs/ui/character_creation_v1.md, user 2026-10-26), worn on the old body since old-body
+ * clothes V1 (docs/dev/old_body_clothes_v1.md, 2026-10-27). The shirt goes in the base layer slot and the jacket in the
+ * coat slot (AFL Curios slots, AflEquipmentSlots.BASE / COAT); the jeans and shoes in vanilla's legs and feet slots
+ * (Equipable, so the armour slots take them; not ArmorItem, so vanilla's armour layer draws nothing). The body draws what
+ * is worn (client/skeleton/OldBodyWardrobe on the old body, BlockMeshWardrobe on B5); the item itself is a folded mesh
+ * (tools/build-equipment-meshes-v1.mjs). The same items for men and women. Right-click wears one, swapping out what is there.
  */
 public class ClothingItem extends Item implements ICurioItem {
     private final String slot;

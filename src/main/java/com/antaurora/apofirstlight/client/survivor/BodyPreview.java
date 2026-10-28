@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client.survivor;
 
 import com.antaurora.apofirstlight.client.skeleton.BlockMeshBody;
 import com.antaurora.apofirstlight.client.skeleton.BlockMeshWardrobe;
+import com.antaurora.apofirstlight.client.skeleton.OldBodyWardrobe;
 import com.antaurora.apofirstlight.client.skeleton.SkeletonBodyRenderer;
 import com.antaurora.apofirstlight.skeleton.SkeletonPose;
 import com.antaurora.apofirstlight.skeleton.SkeletonRig;
@@ -65,6 +66,9 @@ final class BodyPreview {
             ResourceLocation texture = SurvivorSkins.texture(skin.id());
             SkeletonBodyRenderer.draw(model, oldPose, thin, look.female(), true, true, g.pose(), g.bufferSource().getBuffer(model.renderType(texture)),
                     0xF000F0, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+            // the starting clothes over it (old-body clothes V1)
+            OldBodyWardrobe.drawOutfit(look.outfit(), oldPose, thin, look.female(), g.pose().last().pose(), g.pose().last().normal(),
+                    g.bufferSource(), 0xF000F0, OverlayTexture.NO_OVERLAY);
         }
         g.flush();
         Lighting.setupFor3DItems();

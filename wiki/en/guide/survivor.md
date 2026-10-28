@@ -15,7 +15,7 @@ Before the survivor setup, the Appearance page decides how your survivor looks a
 | Option | Choices |
 |---|---|
 | Sex | Male or female. Sex only changes the look, never any stat |
-| Starting look | One set each. Male: short hair, blue T-shirt, jeans, boots. Female: chin-length bob, red T-shirt, jeans, boots, slimmer arms and a narrower waist |
+| Starting look | One set each. Male: short hair, dark grey briefs. Female: chin-length bob, dark bra and briefs, slimmer arms, a narrower waist and a bust. The underwear is part of the body and never comes off; everything else on the body is the clothes chosen below |
 | Starting clothes | Base layer (denim shirt), coat (leather jacket), trousers (jeans), shoes (leather shoes); each can be left off |
 
 The chosen clothes are worn from the start, in the base layer, coat, legs and feet slots of the inventory screen, and come off as ordinary items. In Normal mode a successor's sex and look are drawn from the survivor skin pool, and they start in the shirt, jeans and shoes

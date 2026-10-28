@@ -442,6 +442,9 @@ public final class PlayerSkeleton {
                     SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, part.part().endsWith("_arm") ? arms : 1F, female, marks);
             m.head.render(pose, wounds, light, overlay, r, g, b, a);
         }
+        // old-body clothes V1: what the player wears over the skin (after the skin's own buffer is done with)
+        OldBodyWardrobe.draw(d.player, d.solved.pose, d.solved.slim, female, arms, mp, mn, d.buffers, light, overlay, r, g, b, a,
+                name -> base(m, name).visible);
         drawGear(d, pose, light, overlay, arms);
         return true;
     }
