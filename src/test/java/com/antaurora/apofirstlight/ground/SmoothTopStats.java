@@ -46,6 +46,15 @@ public final class SmoothTopStats {
 
     static int H(TerrainPlanSurface s, int x, int z) { return (int) Math.floor(s.heightAt(x + 0.5, z + 0.5)); }
 
+    /** The planned ground as cells: natural up to each column's top (R2f: SmoothRules#stairs reads them). */
+    static SmoothRules.Cells cells(TerrainPlanSurface s) {
+        return new SmoothRules.Cells() {
+            @Override public int cell(int x, int y, int z) { return y < H(s, x, z) ? SmoothRules.NATURAL : SmoothRules.AIR; }
+
+            @Override public int surface(int x, int z) { return H(s, x, z) - 1; }
+        };
+    }
+
     /** The corner point (px, pz)'s height (mode B, SmoothRules#corner for natural columns), NaN when pinned. */
     static float corner(TerrainPlanSurface s, int px, int pz) {
         int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0;
@@ -56,7 +65,9 @@ public final class SmoothTopStats {
             sum += h;
         }
         if (hi - lo > 2) return Float.NaN;
-        return hi - lo == 2 ? lo + 1 : sum * 0.25F;
+        if (hi - lo == 2) return lo + 1;
+        float v = SmoothRules.stairs(cells(s), px, pz);
+        return v == SmoothRules.NONE ? sum * 0.25F : Math.round(Math.max(hi - 1, Math.min(lo + 1, v)) * 4) / 4F;
     }
 
     /** A block's drawn corners nw, ne, sw, se (absolute). */

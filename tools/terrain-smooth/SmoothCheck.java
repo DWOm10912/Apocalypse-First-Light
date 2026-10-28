@@ -596,6 +596,7 @@ final class SmoothCheck {
                 boolean near = false;
                 int R = SmoothRules.REACH;
                 for (int dx = -R; dx <= R; dx++) for (int dz = -R; dz <= R; dz++) {
+                    if (a + dx < 0 || b + dz < 0 || a + dx >= g.w || b + dz >= g.w) continue;   // REACH 12 since R2f: past the grid
                     int s = surface[a + dx][b + dz];
                     if (s != SmoothRules.NO_SURFACE && s >= y - 2 && s <= y + 2) near = true;
                 }
@@ -625,18 +626,20 @@ final class SmoothCheck {
      * Vanilla culls a block's face against any full neighbour, and a sloped block still counts as full. Two solid blocks
      * side by side on one level, at least one sloped, leave a see-through gap when the drawn tops differ along the shared
      * edge AND the culled face would show: below 1.0 (a lowered top beside a block whose face toward it is culled), or above
-     * 1.0 where the cell above the other block is not solid (a raised top whose side toward it is culled).
+     * 1.0 where the cell above the other block is not solid (a raised top whose side toward it is culled). A tree's block
+     * (TREE: AFL's mesh trunks, roots and logs, noOcclusion) culls nothing, and since terrain rework 13.13 the ground meets
+     * a trunk's foot: its sides are #seeThroughNeighbours' (beside mesh trunk / root), not a seam here.
      */
     static int seams(Grid g) {
         int bad = 0;
         // corner indices nw 0, ne 1, sw 2, se 3; east edge of A = (ne, se) against west edge of B = (nw, sw); south: (sw, se) / (nw, ne)
         int[][] edge = {{1, 0, 1, 3, 0, 2}, {0, 1, 2, 3, 0, 1}};   // dx, dz, A corner 1, A corner 2, B corner 1, B corner 2
         for (int z = g.z0 + 1; z < g.z0 + g.w - 2; z++) for (int x = g.x0 + 1; x < g.x0 + g.w - 2; x++) for (int y = g.y0; y < g.y0 + g.h - 1; y++) {
-            if (!g.solid(x, y, z)) continue;
+            if (!g.solid(x, y, z) || g.cell(x, y, z) == SmoothRules.TREE) continue;
             long ga = SmoothRules.geometry(g, SmoothRules.MODE_B, x, y, z);
             for (int[] e : edge) {
                 int bx = x + e[0], bz = z + e[1];
-                if (!g.solid(bx, y, bz)) continue;
+                if (!g.solid(bx, y, bz) || g.cell(bx, y, bz) == SmoothRules.TREE) continue;
                 long gb = SmoothRules.geometry(g, SmoothRules.MODE_B, bx, y, bz);
                 if (ga < 0 && gb < 0) continue;
                 float[] ca = ga < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(ga), cb = gb < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(gb);

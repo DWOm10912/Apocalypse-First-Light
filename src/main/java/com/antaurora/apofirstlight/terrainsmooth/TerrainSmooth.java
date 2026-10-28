@@ -287,6 +287,13 @@ public final class TerrainSmooth {
             return d == null ? NO_SURFACE : d.surface(x, z);
         }
 
+        @Override
+        public float stairs(int px, int pz) {
+            LevelChunk c = chunk(px >> 4, pz >> 4);
+            SmoothChunkData d = c == null ? null : owner ? data(level, c) : peek(c, side(level));
+            return d == null ? SmoothRules.stairs(this, px, pz) : d.stairs(this, px, pz);
+        }
+
         void reset() {
             level = null;
             last = null;

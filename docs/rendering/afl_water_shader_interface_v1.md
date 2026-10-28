@@ -146,3 +146,5 @@ RGBA32F，4 × 1，最近邻，1 层，clamp。FMLClientSetupEvent 时注册。
 - 修了什么：AFL 水的顶面照抄 `afl_water.fsh` 的 `ripples()`。坡度 0.8 / 0.5，各自漂移，流水两个相位顺流平移，表面一律当水平，三角形不再显出来。流速低于 0.025 m/s 当静水。alpha.78 的固定方向条纹去掉了，alpha.79 的白水细条纹不变。
 - **新的依赖（改动前先通知 Aureveil）**：包以 `customTexture.aflRipples0/1` 直接读 `apocalypse_firstlight:textures/water/water_normal_0.png` 和 `water_normal_1.png`，尺寸按 512 × 512 写死（逐纹素双线性插值）。这两张贴图改名、挪位置或换尺寸，都要先告诉 Aureveil。
 - Aureveil 还没做的：AFL 在水深 6 cm 以内淡掉反光，包里还没有。用户看到岸边有一层灰膜时再补。
+- 实机（2026-10-28）：用户确认 alpha.80 PASS。Aureveil 把 alpha.77–80 一起提交并推送到它的 origin master（提交 24b5913）。C 工作区的 `run/shaderpacks` 只留 alpha.80。
+- 以后等用户反馈再做：岸边 6 cm 内淡掉反光；在阴影 pass 里画水面、河床焦散（要 AFL 在阴影 pass 也画水面，到时再定格式）。

@@ -34,6 +34,9 @@ import java.util.zip.InflaterInputStream;
  *   its graded banks (RiverBed's section) cutting the forest home's graded ring below the home's ground; a build over 10 s.</li>
  *   <li>The wetted bed's plants (vegetation v7, VegetationPlan.Area#riverAllows): the share of the bed under water where a
  *   wetland plant may still stand (shallow, at the margin; before v7: all of it).</li>
+ *   <li>The bed's patches (river_flow#4, RiverBed#patch, seed-free): each share (20 % sand on the runs, 35 % gravel at the
+ *   edge, half sand on a beach) within 2 points of its target, and a patch a few metres across: the mean patch at 20 %
+ *   (4-connected columns) at least 6 columns (a column hash: about 1.4).</li>
  * </ul>
  * <pre>
  *   RiverChannelCheck [terrain-plan.bin ...]     (none: SystemPlans.DEFAULTS; plans from systemPlans)
@@ -45,7 +48,7 @@ public final class RiverChannelCheck {
     public static void main(String[] args) throws Exception {
         List<String> bins = new ArrayList<>(List.of(args.length > 0 ? args : SystemPlans.DEFAULTS));
         Map<String, Path> plans = TownCheck.newestPlans();
-        int fails = 0, seeds = 0;
+        int fails = patches() ? 0 : 1, seeds = 0;
         for (String f : bins) {
             String name = Path.of(f).getFileName().toString();
             String unsigned = name.substring(name.lastIndexOf('_') + 1, name.length() - ".bin".length());
@@ -66,6 +69,41 @@ public final class RiverChannelCheck {
         }
         System.out.println(fails == 0 ? "RIVER CHANNEL CHECK PASS (" + seeds + " seeds)" : "RIVER CHANNEL CHECK FAIL (" + fails + " of " + seeds + " seeds)");
         if (fails > 0) System.exit(1);
+    }
+
+    /** RiverBed#patch: shares and patch sizes over 512 x 512 columns (seed-free); whether they pass. */
+    static boolean patches() {
+        int W = 512;
+        boolean ok = true;
+        for (int salt = 1; salt <= 3; salt++) {
+            double share = salt == 1 ? 0.2 : salt == 2 ? 0.5 : 0.35;
+            boolean[] in = new boolean[W * W];
+            int n = 0;
+            for (int z = 0; z < W; z++)
+                for (int x = 0; x < W; x++)
+                    if (com.antaurora.apofirstlight.worldgen.terrain.v2.RiverBed.patch(x - 3000, z + 1700, salt) < share) { in[z * W + x] = true; n++; }
+            // 4-connected patches
+            int[] stack = new int[W * W];
+            boolean[] seen = new boolean[W * W];
+            int patches = 0;
+            for (int i = 0; i < W * W; i++) {
+                if (!in[i] || seen[i]) continue;
+                patches++;
+                int sp = 0;
+                stack[sp++] = i;
+                seen[i] = true;
+                while (sp > 0) {
+                    int c = stack[--sp], x = c % W, z = c / W;
+                    int[] nb = {x > 0 ? c - 1 : -1, x < W - 1 ? c + 1 : -1, z > 0 ? c - W : -1, z < W - 1 ? c + W : -1};
+                    for (int q : nb) if (q >= 0 && in[q] && !seen[q]) { seen[q] = true; stack[sp++] = q; }
+                }
+            }
+            double got = n / (double) (W * W), mean = n / (double) Math.max(1, patches);
+            System.out.printf(java.util.Locale.ROOT, "  bed patches %d: share %.1f %% (target %.0f %%), mean patch %.1f columns%n", salt, 100 * got, 100 * share, mean);
+            if (Math.abs(got - share) > 0.02) { System.out.println("  FAIL bed patch share " + salt); ok = false; }
+            if (salt == 1 && mean < 6) { System.out.println("  FAIL sand patches not clustered"); ok = false; }
+        }
+        return ok;
     }
 
     private static void check(long seed, TerrainPlanSurface s, String planJson, List<String> bad) {

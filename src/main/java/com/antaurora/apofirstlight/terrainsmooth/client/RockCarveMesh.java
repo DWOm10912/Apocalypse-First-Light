@@ -100,8 +100,9 @@ public final class RockCarveMesh {
         }
         List<BakedQuad> out = new ArrayList<>();
         Faces faces = new Faces(pos);
-        CarveNet.build(f.solid, f.carved, f.cube, f.vert, (pts, axis, lowSolid, solidN, emptyN, emptySample) ->
-                quad(f, faces, out, pts, axis, lowSolid, solidN, emptyN, emptySample, pos, region));
+        // R2e: flat squares of one texture merged (a fresh cut and a worn face side by side stay apart)
+        CarveNet.buildMerged(f.solid, f.carved, f.cube, f.vert, (emptyN, emptySample) -> fresh(f, emptyN, emptySample) ? 1 : 0,
+                (pts, axis, lowSolid, solidN, emptyN, emptySample) -> quad(f, faces, out, pts, axis, lowSolid, solidN, emptyN, emptySample, pos, region));
         TerrainSmoothClient.markSloped(state);
         meshed.increment();
         quadCount.add(out.size());
@@ -137,19 +138,20 @@ public final class RockCarveMesh {
         }
         Direction dir = n[main] >= 0 ? AXIS_POS[main] : AXIS_NEG[main];
         int sdx = solidN % 3 - 1, sdy = solidN / 3 % 3 - 1, sdz = solidN / 9 - 1;
-        // fresh: the empty sub-cell was cut by a pick (stored carving, not worn by the relief); a worn face keeps the rock's own look
-        boolean fresh = false;
-        if (f.stored[emptyN]) {
-            long[] r = f.relief[emptyN];
-            int li = emptySample % L - LO - (emptyN % 3 - 1) * N, lj = emptySample / L % L - LO - (emptyN / 3 % 3 - 1) * N,
-                    lk = emptySample / (L * L) - LO - (emptyN / 9 - 1) * N;
-            fresh = r == null || !CarveChunk.gone(r, li, lj, lk);
-        }
-        Face face = faces.face(f.states[solidN], sdx, sdy, sdz, dir, fresh);
+        Face face = faces.face(f.states[solidN], sdx, sdy, sdz, dir, fresh(f, emptyN, emptySample));
         if (face == null) return;
         float[][] uv = new float[4][];
         for (int q = 0; q < 4; q++) uv[q] = face.uv(pts[q][0] - sdx, pts[q][1] - sdy, pts[q][2] - sdz);
         out.add(SmoothSurfaceModel.quad(pts, uv, face.sprite, face.tint, dir, -1, light(f, emptyN, pos, region)));
+    }
+
+    /** Whether the empty sub-cell was cut by a pick (stored carving, not worn by the relief): the fresh sprite; a worn face keeps the rock's own look. */
+    private static boolean fresh(Field f, int emptyN, int emptySample) {
+        if (!f.stored[emptyN]) return false;
+        long[] r = f.relief[emptyN];
+        int li = emptySample % L - LO - (emptyN % 3 - 1) * N, lj = emptySample / L % L - LO - (emptyN / 3 % 3 - 1) * N,
+                lk = emptySample / (L * L) - LO - (emptyN / 9 - 1) * N;
+        return r == null || !CarveChunk.gone(r, li, lj, lk);
     }
 
     private static float[] normal(float[][] p) {

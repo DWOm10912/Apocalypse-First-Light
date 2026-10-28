@@ -17,7 +17,10 @@ import com.antaurora.apofirstlight.ground.GroundClass;
  * when one of the four is not natural surface, or they differ by 3 or more; mode A the lowest of the four, mode B their
  * mean; when they differ by exactly 2, the middle (the one height every block there can draw: dig R1, a hole two deep
  * slopes in instead of standing as a shaft). When the four differ by at most two, every block touching the point reads
- * all four inside its window, so the window never changes the answer.
+ * all four inside its window, so the window never changes the answer. Terrain rework R2f (#stairs): when the four are
+ * plain natural columns at most one apart and the point lies on a staircase (a gentle slope's terraces), mode B puts it
+ * on the line between the terrace's two steps instead of their mean, so a gentle slope tilts every block and not only
+ * the two beside each step.
  * <p>
  * Dig R1 (user 2026-10-26, "挖下去就是一个很奇怪的坑"): a column lower than both its neighbours along x or along z (a dug
  * hole, a trench) or higher than both (a placed block, a ridge) has a centre point at its own top: the hole was drawn as a
@@ -30,6 +33,11 @@ import com.antaurora.apofirstlight.ground.GroundClass;
  * a corner point it touches takes the turf's height there, so the natural ground meets the earthworks without a step,
  * when the turf passes the same spread test as a natural column and every natural block there can draw that height;
  * else the point is pinned like any other (#corner; a band then closes the step down to the turf's edge).
+ * <p>
+ * A tree's column (a trunk or root, TREE, standing on its column's natural surface: K_TRUNK, terrain rework 13.13) is
+ * not a wall: a corner point it touches takes the height of the ground under the trunk, on the same terms as turf, so
+ * the ground rises or falls to meet the trunk's foot and the block under the trunk (a cube, not open above) never shows
+ * a side (user 2026-10-28: a star of bare soil walls round a trunk on a slope, "是不是有点丑").
  * <p>
  * Geometry key (long, -1 = the block keeps its vanilla shape): corner heights nw, ne, sw, se above B's floor in quarters
  * (bits 0-15, 4 each, 0..8), then for the N, S, W, E sides the neighbour's surface at the two ends of that edge (bottom of
@@ -54,7 +62,7 @@ public final class SmoothRules {
     /** Cells#surface of a column without natural surface (water, a roof, an overhang on top) or not loaded */
     public static final int NO_SURFACE = Integer.MIN_VALUE;
     /** column kinds */
-    static final int K_NAT = 0, K_FIXED = 1, K_FLUID = 2, K_LOW = 3, K_HIGH = 4, K_UNKNOWN = 5, K_ROCK = 6;
+    static final int K_NAT = 0, K_FIXED = 1, K_FLUID = 2, K_LOW = 3, K_HIGH = 4, K_UNKNOWN = 5, K_ROCK = 6, K_TRUNK = 7;
     /**
      * Collision / selection boxes per side of a block. Offline (SmoothCheck, mode B): 2 x 2 leaves feet up to 0.375 in or
      * over the drawn top and 0.5 steps; 4 x 4 0.188 (p95 0.094) and 0.25 steps; 8 x 8 0.125 (p95 0.063) and 1/8 steps.
@@ -66,8 +74,10 @@ public final class SmoothRules {
      * columns (#column), and a neighbour's kind reads that neighbour's own neighbours: GroundClass#soilWall (U6 V3) asks whether the
      * soil beside it is open. So a dig two columns away can turn a neighbour into a soil wall and pin this top. 3 since
      * terrain rework R2b (SmoothTop): a smooth top reads its four neighbours' geometry keys and corner points two columns out.
+     * TERRACE + 2 since R2f (#stairs): a corner point reads the natural surfaces along its lines up to TERRACE columns
+     * out, its block's outer ring of corner points (SmoothTop#points) and its neighbours' corners one further.
      */
-    public static final int REACH = 3;
+    public static final int REACH = 12;   // TERRACE + 2
 
     public interface Cells {
         int cell(int x, int y, int z);
@@ -77,6 +87,9 @@ public final class SmoothRules {
 
         /** Absolute height of corner k (nw, ne, sw, se) of a graded_turf block at (x, y, z); NaN for any other block. */
         default float turf(int x, int y, int z, int k) { return Float.NaN; }
+
+        /** SmoothRules#stairs at corner point (px, pz); the game's cells keep it per chunk (SmoothChunkData#stairs). */
+        default float stairs(int px, int pz) { return SmoothRules.stairs(this, px, pz); }
     }
 
     private SmoothRules() {}
@@ -150,6 +163,8 @@ public final class SmoothRules {
     }
 
     private static long kindOf(Cells c, int c0, int x, int y, int z) {
+        long trunk = trunk(c, x, y, z);
+        if (trunk >= 0) return trunk;
         int c2 = c.cell(x, y + 2, z), c1 = c.cell(x, y + 1, z), cm = c.cell(x, y - 1, z);
         if ((c2 == FLUID || c1 == FLUID || c0 == FLUID || cm == FLUID) && wetColumn(c, x, z)) {
             if (c2 == FLUID) c2 = AIR;
@@ -170,6 +185,16 @@ public final class SmoothRules {
         return pack(K_LOW, y - 1);
     }
 
+    /**
+     * Terrain rework 13.13: column (x, z) as a tree's column read near level y: K_TRUNK at the top of the ground under the
+     * trunk (its natural surface, natural ground with a trunk or root block on it, from two below y to two above), else -1.
+     */
+    private static long trunk(Cells c, int x, int y, int z) {
+        int s = c.surface(x, z);
+        if (s == NO_SURFACE || s < y - 2 || s > y + 2 || c.cell(x, s + 1, z) != TREE || !natural(c.cell(x, s, z))) return -1;
+        return pack(K_TRUNK, s + 1) | (s >= y ? SOLID_HERE : 0);
+    }
+
     /** A solid column top's kind, open above: GroundClass H natural (K_NAT), V rock or a soil wall (K_ROCK: soil slopes onto it), else fixed. */
     private static int kindAt(Cells c, int cell, int above, int x, int top, int z) {
         if (!openOver(cell, above)) return K_FIXED;
@@ -186,12 +211,13 @@ public final class SmoothRules {
      * as the natural columns (2026-10-15, the see-through seams of the C3.3a check): it counts with its block top in the
      * spread test (so every block at the point reads all four columns inside its window and answers alike), all turf
      * columns at the point must give the same height, and that height must lie where every natural block at the point can
-     * draw it (0..2 above its floor); otherwise the point is pinned for everyone.
+     * draw it (0..2 above its floor); otherwise the point is pinned for everyone. A tree's column (K_TRUNK, 13.13) gives the
+     * top of the ground under its trunk on the same terms.
      */
-    static float corner(long[] col, float[][] turf, int oi, int oj, int mode) {
+    static float corner(Cells cells, int px, int pz, long[] col, float[][] turf, int oi, int oj, int mode) {
         int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0, nlo = Integer.MAX_VALUE, nhi = Integer.MIN_VALUE;
         int rlo = Integer.MAX_VALUE, rhi = Integer.MIN_VALUE, rsum = 0;
-        float t = Float.NaN;
+        float t = Float.NaN, k = Float.NaN;
         boolean pinned = false;
         for (int j = oj; j <= oj + 1; j++) for (int i = oi; i <= oi + 1; i++) {
             long c = col[j * 3 + i];
@@ -199,6 +225,12 @@ public final class SmoothRules {
                 rlo = Math.min(rlo, height(c));
                 rhi = Math.max(rhi, height(c));
                 rsum += height(c);
+                continue;
+            }
+            if (kind(c) == K_TRUNK) {   // the ground under a trunk: its height here (a wide trunk on a slope: the highest)
+                k = Float.isNaN(k) ? height(c) : Math.max(k, height(c));
+                lo = Math.min(lo, height(c));
+                hi = Math.max(hi, height(c));
                 continue;
             }
             if (turf[j * 3 + i] != null) {
@@ -225,13 +257,83 @@ public final class SmoothRules {
             lo = Math.min(lo, rlo);
             sum += rsum;
         }
+        // a tree's column (13.13): the ground meets the trunk's foot, where every natural block there can draw it
+        if (!Float.isNaN(k)) {
+            if (pinned || !Float.isNaN(t) || rhi != Integer.MIN_VALUE || hi - lo > 2) return Float.NaN;
+            return nlo == Integer.MAX_VALUE || k >= nhi - 1 && k <= nlo + 1 ? k : Float.NaN;
+        }
         // natural columns two apart (dig R1): the middle, the one height the high block (down to its floor) and the low one
         // (up to two over its floor) both draw; rock and turf keep the step of one
         boolean plain = rhi == Integer.MIN_VALUE && Float.isNaN(t);
         if (pinned || hi - lo > (plain ? 2 : 1)) return Float.NaN;
         if (!Float.isNaN(t)) return t >= nhi - 1 && t <= nlo + 1 ? t : Float.NaN;
         if (hi - lo == 2) return lo + 1;
-        return mode == MODE_A ? lo : sum * 0.25F;
+        if (mode == MODE_A) return lo;
+        if (!plain) return sum * 0.25F;
+        float v = cells.stairs(px, pz);
+        return v == NONE ? sum * 0.25F : Math.max(hi - 1, Math.min(lo + 1, v));
+    }
+
+    /** Terrain rework R2f: the widest terrace (columns between its two steps) a staircase reads across. */
+    public static final int TERRACE = 10;
+    /** #stairs: the point lies on no staircase. */
+    public static final float NONE = Float.NEGATIVE_INFINITY;
+
+    /**
+     * Terrain rework R2f (docs/worldgen/terrain_rework_v1_design.md 13.10, user 2026-10-28: the far hillsides still read as
+     * terraces): the height of corner point (px, pz) where it lies on a staircase, else #NONE. A gentle slope (one up every
+     * three to ten columns) is rows of level terraces; the four columns at a point inside one are level, so their mean
+     * left every block but the two beside each step flat. Along x through the point's two rows of columns, and along z
+     * through its two columns, the terrace the point lies inside is read out to its two steps: when both go the same way
+     * (up into it from one side and up out of it on the other, each one or two high, the terrace at most #TERRACE wide,
+     * natural ground all along), the point lies on the line from the one step's middle to the other's. A terrace between
+     * two steps up (a hole's floor, a valley) or two down (a ridge), or with one side level or built on, is no staircase:
+     * the mean, as before (a dug hole stays at its true depth, a lone step keeps its 1:2 ramp). A line that is no staircase
+     * gives its two columns' mean; x and z each count when a line of theirs is a staircase, averaged when both do. Only
+     * natural surfaces are read, so every block touching the point, whatever its level, answers alike (SmoothTop#point
+     * too); Cells#stairs may keep the answer.
+     */
+    public static float stairs(Cells c, int px, int pz) {
+        float x0 = line(c, true, pz - 1, px), x1 = line(c, true, pz, px), z0 = line(c, false, px - 1, pz), z1 = line(c, false, px, pz);
+        boolean xs = !Float.isNaN(x0) || !Float.isNaN(x1), zs = !Float.isNaN(z0) || !Float.isNaN(z1);
+        if (!xs && !zs) return NONE;
+        double vx = (or(x0, c, true, pz - 1, px) + or(x1, c, true, pz, px)) / 2, vz = (or(z0, c, false, px - 1, pz) + or(z1, c, false, px, pz)) / 2;
+        return (float) (xs && zs ? (vx + vz) / 2 : xs ? vx : vz);
+    }
+
+    /** A line's staircase height v, or (NaN) its two columns' mean at the point. */
+    private static double or(float v, Cells c, boolean alongX, int r, int p) {
+        return Float.isNaN(v) ? (top(c, alongX, r, p - 1) + top(c, alongX, r, p)) / 2.0 : v;
+    }
+
+    /** Natural top (surface + 1) of the column at p along line r (x when alongX, else z), or NO_SURFACE. */
+    private static int top(Cells c, boolean alongX, int r, int p) {
+        int x = alongX ? p : r, z = alongX ? r : p, s = c.surface(x, z);
+        return s == NO_SURFACE || !natural(c.cell(x, s, z)) ? NO_SURFACE : s + 1;
+    }
+
+    /** #stairs along one line: the staircase height at lattice position p (between columns p - 1 and p), or NaN. */
+    private static float line(Cells c, boolean alongX, int r, int p) {
+        int h = top(c, alongX, r, p - 1);
+        if (h == NO_SURFACE || top(c, alongX, r, p) != h) return Float.NaN;   // a step at the point: its middle, the mean
+        int lo = p - 1, hi = p, down, up;   // the terrace's first and last column
+        while (true) {
+            if (hi - lo + 1 > TERRACE) return Float.NaN;
+            int n = top(c, alongX, r, lo - 1);
+            if (n == NO_SURFACE) return Float.NaN;
+            if (n != h) { down = h - n; break; }
+            lo--;
+        }
+        while (true) {
+            if (hi - lo + 1 > TERRACE) return Float.NaN;
+            int n = top(c, alongX, r, hi + 1);
+            if (n == NO_SURFACE) return Float.NaN;
+            if (n != h) { up = n - h; break; }
+            hi++;
+        }
+        if (down * up <= 0 || Math.abs(down) > 2 || Math.abs(up) > 2) return Float.NaN;
+        double a = h - down / 2.0, b = h + up / 2.0;   // the steps' middles at lattice lo and hi + 1
+        return (float) (a + (b - a) * (p - lo) / (hi + 1 - lo));
     }
 
     private static int q(float relative) { return Math.max(0, Math.min(8, Math.round(relative * 4))); }
@@ -261,7 +363,7 @@ public final class SmoothRules {
         float[] abs = new float[4];
         boolean flat = true;
         for (int k = 0; k < 4; k++) {
-            float v = corner(col, turf, CORNER[k][0], CORNER[k][1], mode);
+            float v = corner(c, x + CORNER[k][0], z + CORNER[k][1], col, turf, CORNER[k][0], CORNER[k][1], mode);
             abs[k] = Float.isNaN(v) ? h : v;
             if (abs[k] != h) flat = false;
         }
@@ -273,8 +375,8 @@ public final class SmoothRules {
             // a neighbour whose top is above this block's cell is counted on to hide this side up to its surface; with a cavity
             // at this level (the ground under an overhang, blasted out) it does not: draw the whole side
             boolean hollow = height(n) > y + 1 && (n & SOLID_HERE) == 0;
-            int qa = Math.min(q(abs[SIDE[s][1]] - y), hollow ? 0 : lower(n, col, turf, SIDE[s][0], SIDE[s][1], mode, y));
-            int qb = Math.min(q(abs[SIDE[s][2]] - y), hollow ? 0 : lower(n, col, turf, SIDE[s][0], SIDE[s][2], mode, y));
+            int qa = Math.min(q(abs[SIDE[s][1]] - y), hollow ? 0 : lower(c, x, z, n, col, turf, SIDE[s][0], SIDE[s][1], mode, y));
+            int qb = Math.min(q(abs[SIDE[s][2]] - y), hollow ? 0 : lower(c, x, z, n, col, turf, SIDE[s][0], SIDE[s][2], mode, y));
             g |= (long) qa << (16 + 8 * s) | (long) qb << (20 + 8 * s);
         }
         return g | fan(col, h);
@@ -318,7 +420,7 @@ public final class SmoothRules {
     }
 
     private static final String[] KIND_NAMES = {"natural", "not natural ground or not open above (built, a path, a plant block...)",
-            "water", "two or more lower", "two or more higher (a wall)", "not loaded", "bare rock"};
+            "water", "two or more lower", "two or more higher (a wall)", "not loaded", "bare rock", "a tree"};
     private static final String[] CORNER_NAMES = {"north-west", "north-east", "south-west", "south-east"};
 
     /** Why #freeCorners fails (development output, English), or null when the corners are free. */
@@ -345,14 +447,14 @@ public final class SmoothRules {
             // wet ground beside (R0) is water to the earthwork: its skin must not open a shore
             if (!(i == 1 && j == 1) && wetColumn(c, nx, nz)) return "neighbour " + nx + " " + nz + " is water";
             // bare rock beside (U6 V3, never sloped) is as a wall: EarthSkin closes the side toward it
-            if (walls && (k == K_HIGH || k == K_ROCK || k == K_LOW && stepDown(c, nx, y - 2, nz))) wall = true;
+            if (walls && (k == K_HIGH || k == K_ROCK || k == K_TRUNK || k == K_LOW && stepDown(c, nx, y - 2, nz))) wall = true;
             else if (k == K_LOW && walls) return "neighbour " + nx + " " + nz + " is three or more lower (a cliff)";
             else if (k != K_NAT) return "neighbour " + nx + " " + nz + " is " + KIND_NAMES[k];
         }
         if (wall) return null;
         float[][] turf = new float[9][];
         for (int k = 0; k < 4; k++)
-            if (Float.isNaN(corner(col, turf, CORNER[k][0], CORNER[k][1], mode)))
+            if (Float.isNaN(corner(c, x + CORNER[k][0], z + CORNER[k][1], col, turf, CORNER[k][0], CORNER[k][1], mode)))
                 return "its " + CORNER_NAMES[k] + " corner is pinned (the four columns there differ by two or more)";
         return null;
     }
@@ -364,14 +466,16 @@ public final class SmoothRules {
     }
 
     /** Bottom of B's side band at a corner, in quarters above B's floor: the neighbour column's surface there. */
-    private static int lower(long n, long[] col, float[][] turf, int index, int cornerIndex, int mode, int y) {
+    private static int lower(Cells c, int x, int z, long n, long[] col, float[][] turf, int index, int cornerIndex, int mode, int y) {
         int oi = CORNER[cornerIndex][0], oj = CORNER[cornerIndex][1];
         // a turf neighbour: rounded down, so the band starts at or below the turf's edge (turf corners are eighths, the
         // block's own corners quarters rounded half up: the block may stand 1/8 above the turf, and its band closes that)
         if (turf[index] != null)
             return Math.max(0, Math.min(8, (int) Math.floor((turf[index][(oi + 1 - index % 3) + 2 * (oj + 1 - index / 3)] - y) * 4 + 1e-4F)));
         return switch (kind(n)) {
-            case K_NAT -> { float v = corner(col, turf, oi, oj, mode); yield q((Float.isNaN(v) ? height(n) : v) - y); }
+            // a tree's column: down to the ground under its trunk at most (a wide trunk's lower foot: behind the trunk)
+            case K_TRUNK -> { float v = corner(c, x + oi, z + oj, col, turf, oi, oj, mode); yield q((Float.isNaN(v) ? height(n) : Math.min(v, height(n))) - y); }
+            case K_NAT -> { float v = corner(c, x + oi, z + oj, col, turf, oi, oj, mode); yield q((Float.isNaN(v) ? height(n) : v) - y); }
             case K_FIXED, K_HIGH, K_ROCK -> q(height(n) - y);
             default -> 0;   // water, a drop of two or more, not loaded: the whole side shows
         };
