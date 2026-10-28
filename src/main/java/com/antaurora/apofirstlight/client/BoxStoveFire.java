@@ -66,6 +66,7 @@ public final class BoxStoveFire {
         stove.clientBurn(state);
         BlockPos pos = stove.getBlockPos();
         long now = level.getGameTime();
+        steam(level, stove, state, now);
         if (!state.getValue(BoxStove.Stove.LIT)) {
             LIVE.remove(pos.asLong());
             stove.clientLitAt = Long.MIN_VALUE;
@@ -103,6 +104,24 @@ public final class BoxStoveFire {
             Vec3 v = BoxStove.world(facing, BlockPos.ZERO, -0.04 - 0.03 * r.nextDouble(), 0.03, 0.5 + (r.nextDouble() - 0.5) * 0.04)
                     .subtract(BoxStove.world(facing, BlockPos.ZERO, 0, 0, 0.5));
             FireFx.ember(level, at.x, at.y, at.z, v.x, v.y, v.z, 0.004F, 18);
+        }
+    }
+
+    /**
+     * Steam off a water pail on the top (Cooking V1 K1b), lit or not, from the water's surface (client/cooking/PailClient#steam).
+     */
+    private static void steam(ClientLevel level, BoxStoveBlockEntity stove, BlockState state, long now) {
+        var player = Minecraft.getInstance().player;
+        if (player == null || Minecraft.getInstance().isPaused() || stove.getBlockPos().distToCenterSqr(player.position()) > RANGE * RANGE) return;
+        for (int k = 0; k < BoxStove.SPOTS.length; k++) {
+            var s = stove.item(k);
+            if (!(s.getItem() instanceof com.antaurora.apofirstlight.cooking.WaterPailItem)) continue;
+            long ml = com.antaurora.apofirstlight.cooking.WaterPailItem.water(s);
+            if (ml <= 0) continue;
+            Vec3 at = BoxStove.world(state.getValue(BoxStove.Stove.FACING), stove.getBlockPos(), BoxStove.SPOTS[k][0],
+                    BoxStove.TOP + com.antaurora.apofirstlight.cooking.PailSlosh.level(ml), BoxStove.SPOTS[k][1]);
+            com.antaurora.apofirstlight.client.cooking.PailClient.steam(level, at, com.antaurora.apofirstlight.cooking.PailHeat.temp(s, now),
+                    state.getValue(BoxStove.Stove.LIT));
         }
     }
 

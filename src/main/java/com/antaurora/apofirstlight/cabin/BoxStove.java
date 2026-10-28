@@ -61,7 +61,7 @@ import java.util.Optional;
  * <ul>
  * <li>{@link Stove}: burns wood (item tags {@code apocalypse_firstlight:stove_fuel/logs | wood | kindling}); the door opens
  * on a right-click (fuel goes in, a flint and steel or fire charge lights it), the top takes two things to cook (anything
- * with a smoking recipe: food, dirty water). {@code lit} is a heat source (temperature_v1.json) and lights the room; the
+ * with a smoking recipe: food, dirty water; an enamel water pail of water, heated to the boil: cooking/PailHeat). {@code lit} is a heat source (temperature_v1.json) and lights the room; the
  * fire, its glow and the chimney's smoke are the client's (client BoxStoveFire).</li>
  * <li>{@link HeatShield}: a galvanised sheet on ceramic spools in front of a wall (facing = away from it); shields side by
  * side, above and below join into one sheet, and a stove or a stove pipe standing between shields (on their line) shows
@@ -109,6 +109,12 @@ public final class BoxStove {
     public static boolean igniter(ItemStack s) {
         if (s.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return com.antaurora.apofirstlight.item.FlipLighterItem.isLit(s);
         return s.is(Items.FLINT_AND_STEEL) || s.is(Items.FIRE_CHARGE);
+    }
+
+    /** What the top takes: anything with a smoking recipe, and the enamel water pail with water in it (Cooking V1 K1b). */
+    public static boolean cookable(Level level, ItemStack s) {
+        return s.getItem() instanceof com.antaurora.apofirstlight.cooking.WaterPailItem ? com.antaurora.apofirstlight.cooking.WaterPailItem.water(s) > 0
+                : recipe(level, s).isPresent();
     }
 
     /** The smoking recipe of an item (food, dirty water: AFL's boiling recipes are smoking recipes). */
@@ -263,7 +269,7 @@ public final class BoxStove {
             int spot = spotAt(state, pos, hit, face);
             if (spot >= 0) {
                 if (held.isEmpty()) { if (stove.takeSpot(spot) >= 0) return Action.TAKE; }
-                else if (recipe(level, held).isPresent()) return stove.freeSpot(spot) >= 0 ? Action.PUT : Action.FULL;
+                else if (cookable(level, held)) return stove.freeSpot(spot) >= 0 ? Action.PUT : Action.FULL;
             }
             if (!state.getValue(OPEN)) return Action.OPEN;
             int fuel = fuelTicks(held);

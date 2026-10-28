@@ -35,7 +35,8 @@ import java.util.Locale;
 /**
  * Enamel water pail (Cooking V1 K1a, docs/gameplay/cooking_v1_plan.md 7): carries up to 12 L of the AFL water, its amount
  * in the stack's tag ({@link #WATER_KEY}, mL) with whether it was boiled ({@link #BOILED_KEY}: the box stove, K1b) and the
- * contamination of where it was taken (contamination/ItemContamination). Never stacks.
+ * contamination of where it was taken (contamination/ItemContamination), and its heat ({@link PailHeat}: hot off the box
+ * stove, cooling in the hand). Never stacks.
  * <ul>
  *   <li>use at water in reach ({@link #scoopAt}): dip it, filled to 12 L where the water is deep enough (a pail's depth),
  *   less where it is shallower; taken out of the engine's cell there, or free from a river (its cells are boundaries: the
@@ -78,6 +79,7 @@ public final class WaterPailItem extends Item {
         if (stack.getTag() == null) return;
         stack.getTag().remove(WATER_KEY);
         stack.getTag().remove(BOILED_KEY);
+        PailHeat.clear(stack.getTag());
         ItemContamination.clear(stack);   // may drop the whole tag already
         if (stack.getTag() != null && stack.getTag().isEmpty()) stack.setTag(null);
     }
@@ -138,6 +140,7 @@ public final class WaterPailItem extends Item {
         BlockPos pos = BlockPos.containing(at.x, y, at.z);
         ItemContamination.applyMinimumLevel(stack, ItemContamination.getTargetLevel(RadiationManager.getAmbientRadiationForContamination(level, pos)));
         stack.getOrCreateTag().remove(BOILED_KEY);   // raw water in it now
+        PailHeat.mixIn(stack, have, got, level.getGameTime());
         setWater(stack, have + got);
         level.playSound(null, at.x, at.y, at.z, SoundEvents.BUCKET_FILL, SoundSource.PLAYERS, 0.8F, 0.9F + level.random.nextFloat() * 0.15F);
         level.gameEvent(player, GameEvent.FLUID_PICKUP, at);
@@ -200,6 +203,9 @@ public final class WaterPailItem extends Item {
         lines.add((ml <= 0 ? Component.translatable("tooltip.apocalypse_firstlight.water_pail.empty", cap)
                 : Component.translatable("tooltip.apocalypse_firstlight.water_pail." + (boiled(stack) ? "boiled" : "raw"), litres(ml), cap))
                 .withStyle(ChatFormatting.GRAY));
+        double t = level == null ? PailHeat.AMBIENT : PailHeat.temp(stack, level.getGameTime());
+        if (t >= PailHeat.AMBIENT + 5)
+            lines.add(Component.translatable("tooltip.apocalypse_firstlight.water_pail.temp", Math.round(t)).withStyle(ChatFormatting.GRAY));
     }
 
     /** mL as litres with one decimal (no decimal when whole). */

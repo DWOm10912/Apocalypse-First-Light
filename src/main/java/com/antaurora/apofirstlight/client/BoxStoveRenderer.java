@@ -15,7 +15,9 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Box Stove V1 (docs/models/box_stove_v1.md): what cooks on a box stove's top, lying flat on its two spots (the display
- * frame model at 18 cm, each a little turned), in the stove's north frame turned to its facing; and the loading door, an
+ * frame model at 18 cm, each a little turned), in the stove's north frame turned to its facing, an enamel water pail
+ * standing on its lid at real size, its bail laid toward the stove's end (client/cooking/WaterPailRenderer#onStove: the
+ * water heaving as it boils, Cooking V1 K1b); and the loading door, an
  * animated mesh (2026-10-15), through the generic renderer. The fire, its glow and the smoke are drawn in the world pass
  * ({@link BoxStoveFire}).
  */
@@ -41,6 +43,16 @@ public final class BoxStoveRenderer implements BlockEntityRenderer<BoxStoveBlock
             pose.pushPose();
             pose.translate(0.5, 0, 0.5);
             pose.mulPose(Axis.YP.rotationDegrees(-90 * turn));
+            if (s.getItem() instanceof com.antaurora.apofirstlight.cooking.WaterPailItem) {
+                pose.translate(BoxStove.SPOTS[k][0] - 0.5, BoxStove.TOP, BoxStove.SPOTS[k][1] - 0.5);
+                pose.mulPose(Axis.YP.rotationDegrees(k == 0 ? 90 : -90));   // the laid bail (its -z) out toward the end
+                long now = stove.getLevel() == null ? 0 : stove.getLevel().getGameTime();
+                com.antaurora.apofirstlight.client.cooking.WaterPailRenderer.onStove(s, pose, buffers, light, OverlayTexture.NO_OVERLAY,
+                        com.antaurora.apofirstlight.cooking.PailHeat.temp(s, now), stove.getBlockState().getValue(BoxStove.Stove.LIT), now + partialTick,
+                        stove.getBlockPos().asLong() * 31 + k);
+                pose.popPose();
+                continue;
+            }
             pose.translate(BoxStove.SPOTS[k][0] - 0.5, BoxStove.TOP + 0.0135, BoxStove.SPOTS[k][1] - 0.5);
             pose.mulPose(Axis.YP.rotationDegrees(k == 0 ? 12 : -9));
             pose.mulPose(Axis.XP.rotationDegrees(90));

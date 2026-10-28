@@ -894,6 +894,7 @@
   "tooltip.apocalypse_firstlight.water_pail.empty": "空（容量 %s L）",
   "tooltip.apocalypse_firstlight.water_pail.raw": "生水：%s / %s L",
   "tooltip.apocalypse_firstlight.water_pail.boiled": "开水：%s / %s L",
+  "tooltip.apocalypse_firstlight.water_pail.temp": "水温 %s °C",
   "tooltip.apocalypse_firstlight.flip_lighter.fuel": "燃油：%s%%",
   "tooltip.apocalypse_firstlight.flip_lighter.use": "右键翻开、打火；点着时可点燃营火、蜡烛、柴炉和 TNT；潜行按右键合上",
 

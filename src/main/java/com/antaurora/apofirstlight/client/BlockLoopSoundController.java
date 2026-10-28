@@ -55,7 +55,12 @@ public final class BlockLoopSoundController {
 
     private record Source<T extends BlockEntity>(Class<T> type, Predicate<T> active, Function<T, Vec3> position,
                                                  Supplier<SoundEvent> sound, float pitch, int delayTicks, int fadeTicks,
-                                                 double radius) {
+                                                 double radius, @org.jetbrains.annotations.Nullable java.util.function.ToDoubleFunction<T> gain) {
+        Source(Class<T> type, Predicate<T> active, Function<T, Vec3> position, Supplier<SoundEvent> sound, float pitch,
+               int delayTicks, int fadeTicks, double radius) {
+            this(type, active, position, sound, pitch, delayTicks, fadeTicks, radius, null);
+        }
+
         Source(Class<T> type, Predicate<T> active, Function<T, Vec3> position, Supplier<SoundEvent> sound, float pitch) {
             this(type, active, position, sound, pitch, 0, 0, AUDIBLE_RADIUS);
         }
@@ -71,6 +76,11 @@ public final class BlockLoopSoundController {
 
         Vec3 positionOf(BlockEntity entity) {
             return position.apply(type.cast(entity));
+        }
+
+        /** The volume it plays at now (1 without a gain). */
+        float gainOf(BlockEntity entity) {
+            return gain == null || !type.isInstance(entity) ? 1F : (float) gain.applyAsDouble(type.cast(entity));
         }
     }
 
@@ -119,8 +129,9 @@ public final class BlockLoopSoundController {
             new Source<>(BoxStoveBlockEntity.class, stove -> stove.getBlockState().getValue(BoxStove.Stove.LIT),
                     stove -> BoxStove.Stove.doorPoint(stove.getBlockState(), stove.getBlockPos()),
                     AflSounds.BOX_STOVE_FIRE_LOOP, 1.0F, 0, 10, BoxStove.FIRE_RADIUS),
+            // (a water pail's boiling grows from a quiet simmer to full at a rolling boil: BoxStoveBlockEntity#boilLoudness)
             new Source<>(BoxStoveBlockEntity.class, BoxStoveBlockEntity::boiling, BlockLoopSoundController::stoveTop,
-                    AflSounds.BOX_STOVE_BOIL_LOOP, 1.0F, 0, 10, BoxStove.BOIL_RADIUS),
+                    AflSounds.BOX_STOVE_BOIL_LOOP, 1.0F, 0, 10, BoxStove.BOIL_RADIUS, BoxStoveBlockEntity::boilLoudness),
             new Source<>(BoxStoveBlockEntity.class, BoxStoveBlockEntity::frying, BlockLoopSoundController::stoveTop,
                     AflSounds.BOX_STOVE_FRY_LOOP, 1.0F, 0, 10, BoxStove.FRY_RADIUS),
             new Source<>(EmergencyRadioBlockEntity.class, radio -> radio.getBlockState().getBlock() instanceof EmergencyRadio.Radio
@@ -207,7 +218,8 @@ public final class BlockLoopSoundController {
 
         @Override
         public void tick() {
-            if (source.fadeTicks() > 0) volume = Math.max(0.0F, Math.min(1.0F, (float) (++age - source.delayTicks()) / source.fadeTicks()));
+            float fade = source.fadeTicks() > 0 ? Math.max(0.0F, Math.min(1.0F, (float) (++age - source.delayTicks()) / source.fadeTicks())) : 1.0F;
+            if (source.fadeTicks() > 0 || source.gain() != null) volume = fade * (level.isLoaded(position) ? source.gainOf(level.getBlockEntity(position)) : 1.0F);
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.level != level || minecraft.player == null || !level.isLoaded(position)
                     || !source.activeOn(level.getBlockEntity(position))

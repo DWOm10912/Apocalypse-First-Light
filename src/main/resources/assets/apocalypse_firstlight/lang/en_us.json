@@ -894,6 +894,7 @@
   "tooltip.apocalypse_firstlight.water_pail.empty": "Empty (holds %s L)",
   "tooltip.apocalypse_firstlight.water_pail.raw": "Raw water: %s / %s L",
   "tooltip.apocalypse_firstlight.water_pail.boiled": "Boiled water: %s / %s L",
+  "tooltip.apocalypse_firstlight.water_pail.temp": "Water at %s °C",
   "tooltip.apocalypse_firstlight.flip_lighter.fuel": "Fuel: %s%%",
   "tooltip.apocalypse_firstlight.flip_lighter.use": "Use to flick it open and strike it; lit, use on a campfire, candle, stove or TNT to light it; sneak + use to snap it shut",
 

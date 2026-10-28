@@ -2,6 +2,8 @@ package com.antaurora.apofirstlight.cabin;
 
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
+import com.antaurora.apofirstlight.cooking.PailHeat;
+import com.antaurora.apofirstlight.cooking.WaterPailItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -86,9 +88,22 @@ public class BoxStoveBlockEntity extends BlockEntity implements AflAnimatedMeshH
 
     /**
      * What the cook top sounds like while the fire burns (both sides: the client's loops, the server's noise): water
-     * boiling (a dirty-water item cooking), a pan frying (anything else cooking). A finished result is quiet.
+     * boiling (a dirty-water item cooking, a water pail at a simmer or over: cooking/PailHeat#SIMMER), a pan frying
+     * (anything else cooking). A finished result is quiet.
      */
-    public boolean boiling() { return cooking(true); }
+    public boolean boiling() {
+        return boilLoudness() > 0;
+    }
+
+    /** How loud the boiling is, 0..1: a dirty-water item cooking 1, a water pail by its heat (cooking/PailHeat#loudness). */
+    public float boilLoudness() {
+        if (cooking(true)) return 1;
+        if (level == null) return 0;
+        float g = 0;
+        for (ItemStack s : items)
+            if (s.getItem() instanceof WaterPailItem) g = Math.max(g, PailHeat.loudness(PailHeat.temp(s, level.getGameTime())));
+        return g;
+    }
 
     public boolean frying() { return cooking(false); }
 
@@ -170,6 +185,8 @@ public class BoxStoveBlockEntity extends BlockEntity implements AflAnimatedMeshH
             progress[k] = total[k] = 0;
             done = true;
         }
+        // a water pail on a lid heats while it burns (cooking/PailHeat; off the fire it cools as it is read)
+        if (lit) for (ItemStack s : items) if (s.getItem() instanceof WaterPailItem && PailHeat.heat(s, level.getGameTime())) done = true;
         if (done) changed();
         // the loops' noise, every 2 s while they run (the loudest one; heard as far as the client's loop carries)
         if (state.getValue(BoxStove.Stove.LIT) && level instanceof net.minecraft.server.level.ServerLevel server
@@ -183,9 +200,11 @@ public class BoxStoveBlockEntity extends BlockEntity implements AflAnimatedMeshH
 
     private static final int NOISE_INTERVAL = 40;
 
-    /** Client: the fuel burns down here too (for the prompt). */
+    /** Client: the fuel burns down here too (for the prompt), and a water pail on it heats (between the server's updates). */
     public void clientBurn(BlockState state) {
-        if (state.getValue(BoxStove.Stove.LIT)) fuel = Math.max(0, fuel - (state.getValue(BoxStove.Stove.OPEN) ? 2 : 1));
+        if (!state.getValue(BoxStove.Stove.LIT)) return;
+        fuel = Math.max(0, fuel - (state.getValue(BoxStove.Stove.OPEN) ? 2 : 1));
+        if (level != null) for (ItemStack s : items) if (s.getItem() instanceof WaterPailItem) PailHeat.heat(s, level.getGameTime());
     }
 
     private void changed() {
