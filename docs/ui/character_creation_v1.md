@@ -63,10 +63,10 @@ E 栏现状：头部、防弹衣、腿部、脚部是原版盔甲格；耳部、
 
 | 物品 | id | 放在 | 重量 | 格子 | 保暖 |
 |---|---|---|---|---|---|
-| 牛仔布衬衫 | `clothing_shirt` | 打底衣（Curios `base`） | 0.35 kg | 2 × 2 | 2 |
-| 皮夹克 | `clothing_jacket` | 外套（Curios `coat`） | 1.6 kg | 2 × 3 | 5 |
-| 牛仔裤 | `clothing_jeans` | 原版腿部格 | 0.7 kg | 2 × 2 | 3 |
-| 皮鞋 | `clothing_shoes` | 原版脚部格 | 0.9 kg | 2 × 2 | 2 |
+| 牛仔布衬衫 | `clothing_shirt` | 打底衣（Curios `base`） | 0.35 kg | 1 × 2 | 2 |
+| 皮夹克 | `clothing_jacket` | 外套（Curios `coat`） | 1.6 kg | 1 × 2 | 5 |
+| 牛仔裤 | `clothing_jeans` | 原版腿部格 | 0.7 kg | 1 × 2 | 3 |
+| 皮鞋 | `clothing_shoes` | 原版脚部格 | 0.9 kg | 1 × 1 | 2 |
 
 重量是估算值（`estimated`）。手里和地上是平面图标（64 × 64，从网格渲染），没有单独的手持网格。
 

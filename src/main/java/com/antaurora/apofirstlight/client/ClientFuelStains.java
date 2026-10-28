@@ -143,6 +143,8 @@ public final class ClientFuelStains {
         buffers.endBatch(LiquidRenderTypes.SMOKE);
         FireFx.renderDust(pose, buffers, level, event.getCamera(), event.getPartialTick());   // pick strike dust, its own sheet
         buffers.endBatch(LiquidRenderTypes.DUST);
+        FireFx.renderSteam(pose, buffers, level, event.getCamera(), event.getPartialTick());   // steam off hot water, its own sheet
+        buffers.endBatch(LiquidRenderTypes.STEAM);
         FireStats.lap(FireStats.SMOKE);
         FuelFlames.render(pose, buffers, camera, now);   // last: they add light onto everything behind them
         ClientFuelLeaks.renderFlames(buffers.getBuffer(LiquidRenderTypes.FLAME), pose, camera, now);

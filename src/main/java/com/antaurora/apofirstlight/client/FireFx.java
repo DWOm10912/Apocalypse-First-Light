@@ -72,6 +72,9 @@ public final class FireFx {
         /** rock dust: the colour the grey is multiplied by, and settling instead of rising */
         float tr = 1, tg = 1, tb = 1;
         boolean dust;
+        /** steam: an upright wisp off its own sheet; its sway's phase */
+        boolean steam;
+        float sway;
         int life, age, sprite;
     }
 
@@ -175,6 +178,33 @@ public final class FireFx {
         p.roll = p.oldRoll = (r.nextFloat() - 0.5F) * 0.7F;
         p.spin = (r.nextFloat() - 0.5F) * 0.008F;
         p.sprite = r.nextInt(8);
+        PUFFS.add(p);
+    }
+
+    /**
+     * A wisp of steam off hot water at x, y, z (Cooking V1 K1b: client/cooking/PailClient#steam): {@code size} its starting
+     * half-width (blocks; it stands twice as tall, its foot at x, y, z, and widens 1.8 times), {@code alpha} at its
+     * thickest, {@code life} ticks, {@code rise} its first upward speed (blocks a tick). Not smoke: it leaves fast, slows,
+     * sways as it rises, stays white and is gone in about a second (its droplets evaporate again); textures/effect/steam.
+     */
+    public static void steam(ClientLevel level, double x, double y, double z, float size, float alpha, int life, double rise) {
+        if (PUFFS.size() >= MAX_PUFFS || !allowed(level.random)) return;
+        RandomSource r = level.random;
+        Puff p = new Puff();
+        p.x = p.ox = x;
+        p.y = p.oy = y;
+        p.z = p.oz = z;
+        p.vx = (r.nextDouble() - 0.5) * 0.004;
+        p.vy = rise;
+        p.vz = (r.nextDouble() - 0.5) * 0.004;
+        p.size = size * (0.85F + 0.3F * r.nextFloat());
+        p.shade = p.grey = 0.95F;
+        p.peak = alpha;
+        p.life = life + r.nextInt(Math.max(1, life / 3));
+        p.roll = p.oldRoll = (r.nextFloat() - 0.5F) * 0.25F;   // a little lean, upright
+        p.sprite = r.nextInt(8);
+        p.steam = true;
+        p.sway = r.nextFloat() * Mth.TWO_PI;
         PUFFS.add(p);
     }
 
@@ -340,6 +370,10 @@ public final class FireFx {
                     p.vy = 0;
                     p.vz *= 0.3;
                 }
+            } else if (p.steam) {   // quick off the water, slowing; swaying side to side as it goes
+                p.vy = p.vy * 0.93 + 0.0004;
+                p.vx += Math.cos(p.sway + p.age * 0.35) * 0.0012;
+                p.vz += Math.sin(p.sway * 1.7 + p.age * 0.29) * 0.0012;
             } else p.vy = p.vy * 0.975 + 0.0012;   // buoyant: settles at about 0.05 a tick
             if (!p.dust && p.vy > 0 && solid(level, above, p.x, p.y + p.vy + 0.2, p.z)) {
                 p.vy = 0;   // under a ceiling: it spreads instead
@@ -350,9 +384,9 @@ public final class FireFx {
             p.y += p.vy;
             p.z += p.vz;
             p.roll += p.spin;
-            float t = (float) p.age / p.life, out = Mth.clamp((t - 0.35F) / 0.65F, 0.0F, 1.0F);
-            p.alpha = p.peak * Math.min(1.0F, t / 0.12F) * (1.0F - out * out * (3.0F - 2.0F * out));
-            if (!p.dust) p.grey = p.shade + (0.5F - p.shade) * t * 0.6F;
+            float t = (float) p.age / p.life, out = Mth.clamp((t - (p.steam ? 0.2F : 0.35F)) / (p.steam ? 0.8F : 0.65F), 0.0F, 1.0F);
+            p.alpha = p.peak * Math.min(1.0F, t / (p.steam ? 0.08F : 0.12F)) * (1.0F - out * out * (3.0F - 2.0F * out));
+            if (!p.dust && !p.steam) p.grey = p.shade + (0.5F - p.shade) * t * 0.6F;
         }
         PUFFS.removeIf(p -> p.age >= p.life);
         for (Spark s : SPARKS) {
@@ -435,7 +469,7 @@ public final class FireFx {
         Quaternionf turn = new Quaternionf();
         Vector3f corner = new Vector3f();
         for (Puff p : PUFFS) {
-            if (p.alpha <= 0.01F || p.dust != dust) continue;
+            if (p.alpha <= 0.01F || p.dust != dust || p.steam) continue;
             double x = Mth.lerp(partialTick, p.ox, p.x) - cam.x, y = Mth.lerp(partialTick, p.oy, p.y) - cam.y, z = Mth.lerp(partialTick, p.oz, p.z) - cam.z;
             float t = Mth.clamp((p.age + partialTick) / p.life, 0.0F, 1.0F), size = p.size * (1.0F + (GROWTH - 1.0F) * (1.0F - (1.0F - t) * (1.0F - t)));
             if (x * x + y * y + z * z > RANGE * RANGE || x * look.x() + y * look.y() + z * look.z() < -size) continue;   // far, or behind the camera
@@ -449,6 +483,44 @@ public final class FireFx {
             corner(out, matrix, normals, turn, corner, 1, 1, size, x, y, z, u0, v0, red, green, blue, alpha, light);
             corner(out, matrix, normals, turn, corner, 1, -1, size, x, y, z, u0, v1, red, green, blue, alpha, light);
         }
+    }
+
+    /**
+     * The steam (LiquidRenderTypes.STEAM), relative to the camera: each wisp upright (turned about the vertical to face the
+     * camera, a slight lean), twice as tall as wide, its foot where it was let go.
+     */
+    static void renderSteam(PoseStack pose, MultiBufferSource buffers, ClientLevel level, Camera camera, float partialTick) {
+        if (PUFFS.isEmpty()) return;
+        VertexConsumer out = null;
+        Vec3 cam = camera.getPosition();
+        Vector3f look = camera.getLookVector();
+        Matrix4f matrix = pose.last().pose();
+        Matrix3f normals = pose.last().normal();
+        BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
+        for (Puff p : PUFFS) {
+            if (!p.steam || p.alpha <= 0.01F) continue;
+            if (out == null) out = buffers.getBuffer(LiquidRenderTypes.STEAM);
+            double x = Mth.lerp(partialTick, p.ox, p.x) - cam.x, y = Mth.lerp(partialTick, p.oy, p.y) - cam.y, z = Mth.lerp(partialTick, p.oz, p.z) - cam.z;
+            float t = Mth.clamp((p.age + partialTick) / p.life, 0.0F, 1.0F), w = p.size * (1.0F + 0.8F * (1.0F - (1.0F - t) * (1.0F - t))), h = 2 * w * 1.15F;
+            if (x * x + y * y + z * z > RANGE * RANGE || x * look.x() + y * look.y() + z * look.z() < -h) continue;
+            // across: horizontal, square to the line to the camera; up: the vertical, leant by the roll
+            float hx = (float) z, hz = (float) -x, hl = Mth.sqrt(hx * hx + hz * hz);
+            if (hl < 1e-4F) { hx = 1; hz = 0; } else { hx /= hl; hz /= hl; }
+            float roll = Mth.lerp(partialTick, p.oldRoll, p.roll), ux = hx * Mth.sin(roll), uy = Mth.cos(roll), uz = hz * Mth.sin(roll);
+            int light = lightAt(level, at, x + cam.x, y + cam.y, z + cam.z);
+            int alpha = Math.round(p.alpha * 255), grey = Math.round(p.grey * 255);
+            float u0 = (p.sprite % 4) / 4.0F, u1 = u0 + 0.25F, v0 = (p.sprite / 4) / 2.0F, v1 = v0 + 0.5F;
+            float fx = (float) x, fy = (float) y, fz = (float) z;
+            vertex(out, matrix, normals, fx - hx * w, fy, fz - hz * w, u0, v1, grey, alpha, light);
+            vertex(out, matrix, normals, fx + hx * w, fy, fz + hz * w, u1, v1, grey, alpha, light);
+            vertex(out, matrix, normals, fx + hx * w + ux * h, fy + uy * h, fz + hz * w + uz * h, u1, v0, grey, alpha, light);
+            vertex(out, matrix, normals, fx - hx * w + ux * h, fy + uy * h, fz - hz * w + uz * h, u0, v0, grey, alpha, light);
+        }
+    }
+
+    private static void vertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, float x, float y, float z, float u, float v, int grey, int alpha, int light) {
+        out.vertex(matrix, x, y, z).color(grey, grey, grey, alpha).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light)
+                .normal(normals, 0, 1, 0).endVertex();
     }
 
     /** The sparks (the GLOW batch: added, full bright), relative to the camera. */

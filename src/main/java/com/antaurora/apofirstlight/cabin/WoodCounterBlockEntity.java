@@ -55,6 +55,12 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity imp
     /** The locker's pace: 40 ticks (2 s) a slot, +-15 % seed jitter. */
     public static final AflContainerSearchSettings SEARCH_SETTINGS = new AflContainerSearchSettings(40, 0.15F, 0.0F, 0);
     private static final String SYNC_SEARCH_COMPLETE = "AflSearchComplete";
+    private static final String SYNC_HUNG = "AflHung";
+    /**
+     * The wardrobe's clothes (hungClothes): in the hanging space a shirt, jacket and jeans on the rod, shoes on the floor
+     * board; ON_SHELF added: folded on the top shelf.
+     */
+    public static final byte SHIRT = 1, JACKET = 2, JEANS = 3, SHOES = 4, ON_SHELF = 0x10;
 
     private NonNullList<ItemStack> items;
     private final AflContainerSearchState search = new AflContainerSearchState();
@@ -64,6 +70,9 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity imp
     private boolean clientSearchComplete = true;
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private ResourceLocation meshProfile;
+    /** The wardrobe's revealed clothes in slot order (SHIRT..SHOES): the server's last sent, the client's last received. */
+    private byte[] hung = new byte[0];
+    private boolean hungSync;
 
     public WoodCounterBlockEntity(BlockPos pos, BlockState state) { this(WoodFurniture.COUNTER, pos, state); }
 
@@ -200,13 +209,71 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity imp
     @Override
     public void onAflSearchCompleted(ServerLevel level) { level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS); }
 
+    @Override
+    public void onAflSearchSlotRevealed(ServerLevel level, int slot) { syncHung(); }
+
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        syncHung();
+    }
+
     /** Search or view (the prompt): clients know only whether the search is done, never the items. */
     public boolean isSearchCompleteForPrompt() { return level != null && level.isClientSide ? clientSearchComplete : AflContainerSearch.isComplete(this); }
+
+    // ---- the wardrobe's clothes (Main's clothing_*_hung meshes, 2026-10-27) ----
+
+    /** What hangs in the wardrobe (client; WoodFurnitureRenderer): its revealed clothes only, never unsearched loot. */
+    public byte[] hungClothes() { return hung; }
+
+    /** The revealed clothes now; a world copy nobody opened yet shows none (its search is not set up here). */
+    private byte[] hungNow() {
+        if (!(getBlockState().getBlock() instanceof WoodFurnitureV2.Wardrobe) || !search.isInitialized()) return new byte[0];
+        var out = new java.io.ByteArrayOutputStream();
+        for (int i = 0; i < items.size(); i++) {
+            ItemStack stack = items.get(i);
+            byte code = stack.isEmpty() ? 0 : hungCode(stack);
+            if (i < WoodFurnitureV2.Wardrobe.SHELF_SLOTS) code |= ON_SHELF;
+            if ((code & ~ON_SHELF) != 0 && AflContainerSearch.isRevealed(this, i)) for (int n = Math.min(stack.getCount(), 8); n > 0; n--) out.write(code);
+        }
+        return out.toByteArray();
+    }
+
+    private static byte hungCode(ItemStack stack) {
+        if (stack.is(com.antaurora.apofirstlight.registry.AflItems.CLOTHING_SHIRT.get())) return SHIRT;
+        if (stack.is(com.antaurora.apofirstlight.registry.AflItems.CLOTHING_JACKET.get())) return JACKET;
+        if (stack.is(com.antaurora.apofirstlight.registry.AflItems.CLOTHING_JEANS.get())) return JEANS;
+        return stack.is(com.antaurora.apofirstlight.registry.AflItems.CLOTHING_SHOES.get()) ? SHOES : 0;
+    }
+
+    /** A slot set or revealed: the clothes changed, tell the clients tracking the wardrobe (the search's own setChanged re-enters). */
+    private void syncHung() {
+        if (hungSync || !(level instanceof ServerLevel server)) return;
+        hungSync = true;
+        try {
+            byte[] now = hungNow();
+            if (!java.util.Arrays.equals(now, hung)) {
+                hung = now;
+                server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+            }
+        } finally {
+            hungSync = false;
+        }
+    }
 
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean(SYNC_SEARCH_COMPLETE, AflContainerSearch.isComplete(this));
+        if (!hungSync) {
+            hungSync = true;
+            try {
+                hung = hungNow();
+            } finally {
+                hungSync = false;
+            }
+        }
+        if (hung.length > 0) tag.putByteArray(SYNC_HUNG, hung);
         return tag;
     }
 
@@ -214,7 +281,10 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity imp
     public Packet<ClientGamePacketListener> getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) { if (tag.contains(SYNC_SEARCH_COMPLETE)) clientSearchComplete = tag.getBoolean(SYNC_SEARCH_COMPLETE); }
+    public void handleUpdateTag(CompoundTag tag) {
+        if (tag.contains(SYNC_SEARCH_COMPLETE)) clientSearchComplete = tag.getBoolean(SYNC_SEARCH_COMPLETE);
+        hung = tag.getByteArray(SYNC_HUNG);
+    }
 
     @Override
     public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {

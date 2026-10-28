@@ -1,0 +1,93 @@
+{
+  "format_version": 1,
+  "about": "Pouring the enamel water pail out (Cooking V1 K1a, docs/gameplay/cooking_v1_plan.md 7; the item's use action, item_actions/enamel_water_pail): from the carry (item/water_pail) the pail is lifted forward off the leg (0.2 s), then turned so its lip faces ahead and tipped 70 deg forward over the lip in front of the belly (0.45 s) (cooking/WaterPailItem POUR_TIP 9 ticks: the water runs from then, out of the lip, WaterPailItem#lip). The bail falls back against the body side; the right hand moves to the rim nearest the body, the left goes under the bottom. Held tipped until the use key is let go.",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 40,
+  "first_person": "body",
+  "blend": {
+    "in": 0.15,
+    "out": 0.3
+  },
+  "prop": {
+    "id": "enamel_water_pail",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [
+          -3.5,
+          8.6,
+          -0.3
+        ],
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "blend": 0
+      },
+      {
+        "at": 0.02,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [
+          -1.5,
+          5.0,
+          -9.0
+        ],
+        "rot": [
+          15,
+          45,
+          0
+        ],
+        "blend": 0.18
+      },
+      {
+        "at": 0.2,
+        "frame": "shoulder_r",
+        "point": "lip",
+        "pos": [
+          5.0,
+          9.0,
+          -11.0
+        ],
+        "rot": [
+          70,
+          0,
+          0
+        ],
+        "blend": 0.25
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      },
+      {
+        "at": 0.2,
+        "target": "prop:rim_back",
+        "blend": 0.25,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose"
+      },
+      {
+        "at": 0.3,
+        "target": "prop:base",
+        "blend": 0.15
+      }
+    ]
+  },
+  "events": []
+}

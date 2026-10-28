@@ -40,7 +40,7 @@ const json = v => JSON.stringify(v, null, 2) + '\n';
 
 /** The blocks: id, item mass (kg; carry scale), carry tag, mining (AGENTS.md audit), names. */
 export const BLOCKS = [
-  {id: 'box_stove', mass: 60, carry: 'oversized', tier: 'iron', noise: 'metal', en: 'Cast Iron Box Stove', zh: '铸铁箱式炉'},
+  {id: 'box_stove', mass: 90, carry: 'oversized', tier: 'iron', noise: 'metal', en: 'Cast Iron Box Stove', zh: '铸铁箱式炉'},
   {id: 'stove_heat_shield', mass: 3, carry: 'bulky', tier: 'stone', noise: 'metal', en: 'Stove Heat Shield', zh: '隔热钢板'},
   {id: 'flagstone', mass: 0.25, carry: null, tier: null, noise: 'stone', en: 'Flagstone', zh: '石板'},
 ];

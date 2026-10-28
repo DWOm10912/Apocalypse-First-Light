@@ -1,0 +1,142 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/table_spoon"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/table_spoon"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          15
+        ],
+        "translation": [
+          0,
+          0.279,
+          -0.438
+        ],
+        "scale": [
+          0.24,
+          0.24,
+          0.24
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -75,
+          50
+        ],
+        "translation": [
+          0.674,
+          -0.744,
+          -1.649
+        ],
+        "scale": [
+          0.32,
+          0.32,
+          0.32
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          0.26,
+          0.26,
+          0.26
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.455,
+          0.455,
+          0.455
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          75,
+          -50
+        ],
+        "translation": [
+          0.674,
+          -0.744,
+          -1.649
+        ],
+        "scale": [
+          0.32,
+          0.32,
+          0.32
+        ]
+      },
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          90,
+          -15
+        ],
+        "translation": [
+          0,
+          0.279,
+          -0.438
+        ],
+        "scale": [
+          0.24,
+          0.24,
+          0.24
+        ]
+      },
+      "gui": {
+        "rotation": [
+          40,
+          30,
+          0
+        ],
+        "translation": [
+          0.011,
+          -0.148,
+          0
+        ],
+        "scale": [
+          0.855,
+          0.855,
+          0.855
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/table_spoon"
+      }
+    }
+  }
+}

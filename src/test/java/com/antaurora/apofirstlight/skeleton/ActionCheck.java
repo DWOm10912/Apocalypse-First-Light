@@ -143,6 +143,19 @@ final class ActionCheck {
         // block ahead: the left hand at the cap, then on the spout end, the spout over the opening; the tip mirrored for a
         // left-handed player. Anchors and parameter as client/skeleton/SkeletonActions (SPOUT_OVER 0.2, SPOUT_LOWEST 0.65,
         // POUR_UPRIGHT 1.0, POUR_LEAN_SPAN 0.6, POUR_STEP_IN 0.9).
+        // water pail (Cooking V1 K1a): carried by the bail at the side; poured: lifting, tipped (0.45 s), held tipped
+        list.add(new Scene("item/water_pail", "pail_carry", 0F, 0, Map.of(), null, false, false, false, 1F));
+        list.add(new Scene("item/dutch_oven", "dutch_oven_hold", 0F, 0, Map.of(), null, false, false, false, 1F));
+        // held carry V1 (client/skeleton/CarryHug): a chair (0.45 x 0.9 x 0.5, the hands on its sides) and a wide desk
+        // (1.4 x 0.75 x 0.7, the hands under its near edge), as the client makes them from a block's shape
+        Map<String, net.minecraft.world.phys.AABB> hugs = Map.of("chair", new net.minecraft.world.phys.AABB(0.275, 0, 0.25, 0.725, 0.9, 0.75),
+                "desk", new net.minecraft.world.phys.AABB(-0.2, 0, 0.15, 1.2, 0.75, 0.85));
+        com.antaurora.apofirstlight.skeleton.action.PlayerProps.made = id -> com.antaurora.apofirstlight.client.skeleton.CarryHug.prop(id, hugs.get(id.substring(id.indexOf('#') + 1)));
+        com.antaurora.apofirstlight.skeleton.action.PlayerActions.made = id -> com.antaurora.apofirstlight.client.skeleton.CarryHug.actionJson(id, hugs.get(id.substring(id.indexOf('#') + 1)));
+        for (String hug : hugs.keySet()) list.add(new Scene("item/carry_hug#" + hug, "hug_" + hug, 0F, 0, Map.of(), null, false, false, false, 1F));
+        list.add(new Scene("item/skillet", "skillet_hold", 0F, 0, Map.of(), null, false, false, false, 1F));
+        for (float t : new float[]{0.1F, 0.2F, 0.3F, 0.45F, 1.5F})
+            list.add(new Scene("item/water_pail_pour", "pail_pour_" + Math.round(t * 100), t, 0, Map.of(), null, false, false, false, 1F));
         list.add(new Scene("item/jerry_can", "can_carry", 0F, 0, Map.of(), null, false, false, false, 1F));
         list.add(new Scene("item/jerry_can", "can_carry_crouch", 0F, 0, Map.of(), null, false, true, false, 1F));
         for (float h : new float[]{-0.55F, 0.39F, 0.64F}) {

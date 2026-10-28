@@ -1,0 +1,20 @@
+{
+  "format_version": 1,
+  "about": "Enamel water pail in the main hand, first and third person alike (Cooking V1 K1a, docs/gameplay/cooking_v1_plan.md 7): carried at the side by the bail, the arm hanging, the pail a little out from the leg and its bail across the way (front to back) as a pail is carried. Pouring is item/water_pail_pour (the item's use action), which starts and ends here.",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {"in": 0.15, "out": 0.2},
+  "prop": {
+    "id": "enamel_water_pail",
+    "keys": [
+      {"at": 0, "frame": "shoulder_r", "point": "grip", "pos": [-3.5, 8.6, -0.3], "rot": [0, 90, 0], "blend": 0}
+    ]
+  },
+  "hands": {
+    "right": [{"at": 0, "target": "prop:grip", "blend": 0, "roll": 0}],
+    "left": [{"at": 0, "target": "pose"}]
+  },
+  "events": []
+}

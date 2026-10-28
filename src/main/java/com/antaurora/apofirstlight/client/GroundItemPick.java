@@ -46,6 +46,8 @@ public final class GroundItemPick {
     /** What the use key does on a ground item: the prompt's key and the pickup mode; {@code sneak} when it takes sneak + use. */
     public record Offer(ItemEntity item, String key, int mode, boolean sneak) {
         public Component label() {
+            if (key.equals("too_heavy"))   // a status, not an action: the name inside the sentence (held carry V1)
+                return Component.translatable("hint.apocalypse_firstlight.ground_item.too_heavy", item.getItem().getHoverName());
             return Component.translatable("hint.apocalypse_firstlight.ground_item." + key).append(" ").append(item.getItem().getHoverName());
         }
 
@@ -70,6 +72,8 @@ public final class GroundItemPick {
     @Nullable
     private static Offer offer(Player player, ItemEntity item) {
         var stack = item.getItem();
+        // too heavy for one person (weight/HeldCarry): said, not offered
+        if (com.antaurora.apofirstlight.weight.HeldCarry.tooHeavy(player, stack)) return new Offer(item, "too_heavy", GroundItems.AUTO, false);
         boolean gunInHand = player.getMainHandItem().getItem() instanceof NativeGunItem, sneaking = player.isShiftKeyDown();
         String auto = wearable(player, stack) ? "wear" : equippable(player, stack) ? "equip" : "pick_up";
         if (gunInHand) return sneaking ? new Offer(item, auto, GroundItems.AUTO, true) : null;

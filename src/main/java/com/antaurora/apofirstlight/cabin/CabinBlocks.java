@@ -77,7 +77,7 @@ public final class CabinBlocks {
             "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
             "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
-            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "emergency_radio",
+            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "wood_cookstove", "propane_range", "emergency_radio",
             "wooden_bed", "wooden_wardrobe", "wooden_nightstand", "wooden_tool_rack", "wooden_storage_chest", "vintage_chest_freezer", "wooden_workbench"};
 
     private CabinBlocks() {}
@@ -136,6 +136,10 @@ public final class CabinBlocks {
             case "stove_heat_shield" -> new BoxStove.HeatShield(metal(MapColor.METAL, SoundType.METAL).noOcclusion());
             case "flagstone" -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM)
                     .strength(2.0F, 6.0F).requiresCorrectToolForDrops().sound(SoundType.STONE));
+            // Cooking V1 K1c (KitchenStoves): the old enamel wood cookstove (two cells), the propane range; not lit in V1
+            case "wood_cookstove" -> new KitchenStoves.Cookstove(metal(MapColor.TERRACOTTA_WHITE, SoundType.METAL).strength(3.0F, 6.0F).noOcclusion()
+                    .pushReaction(PushReaction.BLOCK));
+            case "propane_range" -> new KitchenStoves.Range(metal(MapColor.SNOW, SoundType.METAL).strength(2.5F, 6.0F).noOcclusion().pushReaction(PushReaction.BLOCK));
             // Emergency Radio V1 (EmergencyRadio): a small appliance, breaks by hand (no correct-tool requirement)
             case "emergency_radio" -> new EmergencyRadio.Radio(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(1.0F, 3.0F)
                     .sound(SoundType.METAL).noOcclusion().pushReaction(PushReaction.DESTROY).lightLevel(EmergencyRadio.Radio::light));
@@ -172,7 +176,8 @@ public final class CabinBlocks {
             ITEMS.clear();
             for (int i = 0; i < IDS.length; i++) {
                 Block b = BLOCKS.get(i);
-                Item item = b instanceof DoorBlock || b instanceof WoodFurnitureV2.Wardrobe ? new DoubleHighBlockItem(b, new Item.Properties())
+                Item item = b instanceof DoorBlock || b instanceof WoodFurnitureV2.Wardrobe || b instanceof KitchenStoves.Cookstove
+                        ? new DoubleHighBlockItem(b, new Item.Properties())
                         : b instanceof net.minecraft.world.level.block.BedBlock ? new net.minecraft.world.item.BedItem(b, new Item.Properties().stacksTo(1))
                         : new BlockItem(b, new Item.Properties());
                 ITEMS.add(item);
@@ -181,6 +186,7 @@ public final class CabinBlocks {
         });
         WoodFurniture.register(event);
         BoxStove.register(event);
+        KitchenStoves.register(event);
         EmergencyRadio.register(event);
         WoodFurnitureV2.register(event);
         Workbench.register(event);

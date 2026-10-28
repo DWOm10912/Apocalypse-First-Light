@@ -65,6 +65,22 @@ Comfortable load is <V d="item_mass/core_v1#policy.comfort_capacity_kg" u="kg" /
 
 Kilograms in these tables assume the default 30 kg comfortable load
 
+## Carrying in both arms
+
+<StatusTag s="verified" d="2026-10-27" /> How the item in your main hand is carried depends on the weight of one of it, including the water or fuel inside
+
+| Weight of one | Carried | Limits |
+|---|---|---|
+| Under 8 kg | In one hand | None |
+| With a handle or bail, up to 25 kg (water pail, jerry can, metal trash can, hand fuel pump, industrial waste bucket) | In one hand at your side | None |
+| 8 kg or more, or bulky (furniture, appliances) | In both arms in front of you | No sprinting |
+| Over 25 kg | In both arms in front of you | No sprinting, 30% slower, no jumping |
+| Over 45 kg | Too heavy for one person | Stays on the ground, cannot be picked up |
+
+- Narrow things such as chairs are held by their sides; wide things such as desks by their near edge
+- Vending machines, wardrobes, the box stove, generators and fuel dispensers are too heavy to lift alone; looking at one on the ground says so. Creative mode is not limited
+- Things in the hand are drawn half again their real size so they suit the blocky hands; things held in both arms are drawn at real size
+
 ## Inspecting items
 
 <StatusTag s="integrated" />

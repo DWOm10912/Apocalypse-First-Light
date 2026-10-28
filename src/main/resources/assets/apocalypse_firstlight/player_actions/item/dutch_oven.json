@@ -1,0 +1,52 @@
+{
+  "format_version": 1,
+  "about": "Cast iron dutch oven in the main hand, first and third person alike (Cooking V1 K1a): carried in front of the belly with both hands on its loop handles, as a heavy pot is carried (the right hand on the west handle, model -x).",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0.15,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "cast_iron_dutch_oven",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "center",
+        "pos": [
+          5.0,
+          8.5,
+          -6.0
+        ],
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:handle_w",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:handle_e",
+        "blend": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "events": []
+}

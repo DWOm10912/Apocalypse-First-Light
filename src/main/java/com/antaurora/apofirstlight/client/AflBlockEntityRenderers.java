@@ -91,6 +91,7 @@ public final class AflBlockEntityRenderers {
         // the chair's seat is an invisible rider anchor
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.GUN_RACK, AflBlockEntityRendering.wrap("wooden_gun_rack", WoodGunRackRenderer::new));
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.BoxStove.STOVE, AflBlockEntityRendering.wrap("box_stove", BoxStoveRenderer::new));   // Box Stove V1: the cook top, the door
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.KitchenStoves.COOKTOP, AflBlockEntityRendering.wrap("cooktop", CooktopRenderer::new));   // Cooking V1 K1c: the pots on a kitchen stove
         // Emergency Radio V1: the crank's arm, an animated mesh (2026-10-15)
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.EmergencyRadio.RADIO,
                 AflBlockEntityRendering.wrap("emergency_radio", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
@@ -99,7 +100,7 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurnitureV2.FREEZER, AflBlockEntityRendering.wrap("vintage_chest_freezer", VintageFreezerRenderer::new));
         // Furniture Mesh V1 (2026-10-15): the counters, wardrobe, nightstand and storage chest as animated meshes
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.COUNTER,
-                AflBlockEntityRendering.wrap("wood_furniture", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+                AflBlockEntityRendering.wrap("wood_furniture", WoodFurnitureRenderer::new));
         // AFL Workbench V1 (2026-10-21): the drawers as an animated mesh, the tools on the pegs drawn by the chunk
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.Workbench.TYPE, AflBlockEntityRendering.wrap("wooden_workbench", WorkbenchRenderer::new));
         com.antaurora.apofirstlight.cabin.WorkbenchBlockEntity.toolsData = WoodGunRackChunking::workbenchTools;

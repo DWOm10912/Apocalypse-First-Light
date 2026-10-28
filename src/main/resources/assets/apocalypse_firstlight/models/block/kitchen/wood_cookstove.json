@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/kitchen/wood_cookstove_body"
+  },
+  "item": [
+    [
+      "kitchen/wood_cookstove_body",
+      0
+    ],
+    [
+      "kitchen/wood_cookstove_top",
+      0,
+      0,
+      1,
+      0
+    ]
+  ]
+}

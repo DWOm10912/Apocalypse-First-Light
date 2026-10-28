@@ -1,0 +1,142 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/enamel_water_pail"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/enamel_water_pail"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.16,
+          0.16,
+          0.16
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          -2.56,
+          6.4,
+          -0.48
+        ],
+        "scale": [
+          0.16,
+          0.16,
+          0.16
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          2,
+          0
+        ],
+        "scale": [
+          0.16,
+          0.16,
+          0.16
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.269,
+          0.269,
+          0.269
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          2.56,
+          6.4,
+          -0.48
+        ],
+        "scale": [
+          0.16,
+          0.16,
+          0.16
+        ]
+      },
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.16,
+          0.16,
+          0.16
+        ]
+      },
+      "gui": {
+        "rotation": [
+          30,
+          45,
+          0
+        ],
+        "translation": [
+          -0.05,
+          0.004,
+          0
+        ],
+        "scale": [
+          0.403,
+          0.403,
+          0.403
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/enamel_water_pail"
+      }
+    }
+  }
+}

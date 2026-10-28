@@ -1,0 +1,108 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/table_spoon"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/table_spoon"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          75,
+          45,
+          0
+        ],
+        "translation": [
+          0,
+          0.962,
+          0.927
+        ],
+        "scale": [
+          0.273,
+          0.273,
+          0.273
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          45,
+          0
+        ],
+        "translation": [
+          0,
+          1,
+          0
+        ],
+        "scale": [
+          0.325,
+          0.325,
+          0.325
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          0.26,
+          0.26,
+          0.26
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.455,
+          0.455,
+          0.455
+        ]
+      },
+      "gui": {
+        "rotation": [
+          40,
+          30,
+          0
+        ],
+        "translation": [
+          0.011,
+          -0.148,
+          0
+        ],
+        "scale": [
+          0.855,
+          0.855,
+          0.855
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/table_spoon"
+      }
+    }
+  }
+}

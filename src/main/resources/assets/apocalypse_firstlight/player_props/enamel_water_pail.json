@@ -1,0 +1,13 @@
+{
+  "about": "The enamel water pail as the skeleton holds it, first and third person (Cooking V1 K1a, docs/gameplay/cooking_v1_plan.md 7). Points, bounds: item block units of the pail mesh as client/cooking/WaterPailRenderer draws it as a prop (meshes/enamel_water_pail.aflmesh.json + (0.5, -0.301551, 0.5), 1 px = 1 cm, so one item unit is 16 cm; the bail stood up while it is carried, laid back while it is poured). Scale 0.24: 1.5 x real size (0.16 m an item unit x 1.5, the held size rule of 2026-10-27, user: 1.5 倍), 43 cm across, 35 cm tall. grip: the middle of the wooden grip with the bail up (the carrying hand); lip: the rim on +z (the side it pours over); rim_back: the rim opposite it (the right hand while pouring); base: the middle of the bottom (the left hand under it while pouring).",
+  "items": ["enamel_water_pail"],
+  "scale": 0.24,
+  "bounds": [[-0.475, -0.301551, -0.389], [1.475, 1.934699, 1.411]],
+  "symmetry": "x",
+  "points": {
+    "grip": [0.5, 1.875324, 0.511019],
+    "lip": [0.5, 1.135949, 1.404769],
+    "rim_back": [0.5, 1.135949, -0.382731],
+    "base": [0.5, -0.289051, 0.511019]
+  }
+}

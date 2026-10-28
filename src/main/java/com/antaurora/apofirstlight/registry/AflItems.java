@@ -764,6 +764,17 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.item.ClothingItem.Armour(net.minecraft.world.entity.EquipmentSlot.LEGS));
     public static final RegistryObject<Item> CLOTHING_SHOES = ITEMS.register("clothing_shoes",
             () -> new com.antaurora.apofirstlight.item.ClothingItem.Armour(net.minecraft.world.entity.EquipmentSlot.FEET));
+    // Cooking V1 K1a (docs/gameplay/cooking_v1_plan.md 7, meshes: tools/build-equipment-meshes-v1.mjs Cooking V1): the cookware
+    // as items (nothing cooks in them yet), and the enamel water pail that scoops, carries (sloshing, spilling) and pours the
+    // AFL water (cooking/WaterPailItem); Creative tab only, no recipe
+    public static final RegistryObject<Item> CAST_IRON_DUTCH_OVEN = ITEMS.register("cast_iron_dutch_oven",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CAST_IRON_SKILLET = ITEMS.register("cast_iron_skillet",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> TABLE_SPOON = ITEMS.register("table_spoon",
+            () -> new Item(new Item.Properties().stacksTo(8)));
+    public static final RegistryObject<Item> ENAMEL_WATER_PAIL = ITEMS.register("enamel_water_pail",
+            () -> new com.antaurora.apofirstlight.cooking.WaterPailItem(new Item.Properties()));
     // Vehicle keys (docs/vehicles/t15_hotwire_v1_design.md 9, 2026-10-21): one per vehicle, bound by its UUID; one key item
     // per vehicle model, its maker's badge on the head (user 2026-10-21); Creative tab only (an unbound key), no recipe.
     // Saves from before the split hold vehicle_key: VehicleKeyLegacyMappings

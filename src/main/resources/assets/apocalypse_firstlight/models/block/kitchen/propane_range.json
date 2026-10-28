@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/kitchen/propane_range_body"
+  },
+  "item": [
+    [
+      "kitchen/propane_range_body",
+      0
+    ]
+  ]
+}

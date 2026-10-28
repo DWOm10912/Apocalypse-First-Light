@@ -48,6 +48,11 @@ import java.util.Optional;
 public final class PlayerProps {
     private static final String ROOT = "assets/apocalypse_firstlight/player_props/";
     private static final Map<String, Optional<Prop>> PROPS = new HashMap<>();
+    /**
+     * Props made for an item rather than read from a file (ids with a {@code #}: held carry V1's {@code carry#<item path>},
+     * client/skeleton/CarryHug), or null when there is no maker (the offline checks).
+     */
+    public static java.util.function.Function<String, Prop> made;
 
     /** A hand's frame on a gun prop: the anchor (item units) and the hand's turn on it (deg, GunStance.Grip). */
     public record Grip(Vector3f pos, Quaternionf rot, Vector3f turn) {
@@ -117,6 +122,7 @@ public final class PlayerProps {
     }
 
     public static synchronized Prop get(String id) {
+        if (id.indexOf('#') >= 0) return made == null ? null : PROPS.computeIfAbsent(id, k -> Optional.ofNullable(made.apply(k))).orElse(null);
         return PROPS.computeIfAbsent(id, k -> {
             try (InputStream in = PlayerProps.class.getClassLoader().getResourceAsStream(ROOT + k + ".json")) {
                 if (in == null) return Optional.empty();

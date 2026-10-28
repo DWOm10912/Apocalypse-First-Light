@@ -353,7 +353,11 @@ public final class AflCreativeTabs {
             AflItems.WRIST_THERMOMETER,
             AflItems.BANDAGE,
             AflItems.MEDICAL_ALCOHOL,
-            AflItems.SPLINT);
+            AflItems.SPLINT,
+            AflItems.ENAMEL_WATER_PAIL,
+            AflItems.CAST_IRON_DUTCH_OVEN,
+            AflItems.CAST_IRON_SKILLET,
+            AflItems.TABLE_SPOON);
 
     // Vehicles (2026-10-21): each one a spawner (VehicleSpawnerItem), its icon a small side view
     public static final RegistryObject<CreativeModeTab> VEHICLES = tab("vehicles", SURVIVAL_SUPPLIES, AflItems.PICKUP_T15,
