@@ -3,7 +3,9 @@ package com.antaurora.apofirstlight.vegetation;
 import com.antaurora.apofirstlight.tree.ForestPlan;
 import com.antaurora.apofirstlight.worldgen.home.ForestHomeRuntime;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
+import com.antaurora.apofirstlight.worldgen.terrain.v2.HydroQuery;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.PlanNoise;
+import com.antaurora.apofirstlight.worldgen.terrain.v2.RiverChannels;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 
 import java.util.HashMap;
@@ -40,9 +42,11 @@ public final class VegetationPlan {
      * world would then keep the version it grows (as ForestPlan.VERSION). 1: P2a. 2: covers times 0.6, a stronger cover
      * noise (user 2026-10-24: one tuft-sized block on two columns of three made a carpet). 3: P4a batch 1's four species.
      * 4: covers times {@value #COVER_V4}, the forbs in shared flower patches and none under the crowns (user 2026-10-24: too
-     * dense, flowers everywhere; doc 22). 5: P4a batch 2's four species (doc 23). 6: batch 3's four (doc 24).
+     * dense, flowers everywhere; doc 22). 5: P4a batch 2's four species (doc 23). 6: batch 3's four (doc 24). 7: AFL rivers' wider channel (river R2) counts as
+     * water, and under its water only the wetland plants at the shallow margin (Area#riverAllows; user 2026-10-28: plants
+     * on the bed of a pool).
      */
-    public static final int VERSION = 6;
+    public static final int VERSION = 7;
     /** v4: every community's cover times this (doc 22.3). */
     static final double COVER_V4 = 0.75;
     /**
@@ -53,6 +57,11 @@ public final class VegetationPlan {
     static final double FORB_PATCH = 3.5, FORB_FROM = 0.4;
     /** Wetland plants grow within this many blocks of planned water (and in water a block deep). */
     static final int WET_REACH = 6;
+    /**
+     * AFL rivers (v7): a plant's base under less water than RIVER_DRY (m) stands dry; a wetland plant under at most
+     * RIVER_WET_DEPTH, within RIVER_MARGIN (m) of the water's edge (cattail and reed stands: shallow, slow margins).
+     */
+    public static final double RIVER_DRY = 0.05, RIVER_WET_DEPTH = 0.5, RIVER_MARGIN = 2;
     /** Planned slope beyond which only the plants that hold on steep ground stay, and fewer. */
     static final double STEEP = 0.45;
     /** Crowns: a column within this share of a tree's crown radius is under it, within EDGE at its edge. */
@@ -276,6 +285,9 @@ public final class VegetationPlan {
         final boolean[] water = new boolean[SIDE * SIDE];
         final byte[] light = new byte[256];
         final ForestHomeRuntime.Active home;
+        /** The world's wider river channel (RiverChannels; null without AFL rivers) and a point for its queries. */
+        final HydroQuery hydro;
+        private final HydroQuery.Point point = new HydroQuery.Point();
 
         Area(VegetationPlan plan, int cx, int cz) {
             this.plan = plan;
@@ -297,6 +309,7 @@ public final class VegetationPlan {
                                 }
                         }
             }
+            hydro = RiverChannels.active(plan.seed);
             ForestHomeRuntime.Active a = ForestHomeRuntime.active();
             home = a != null && a.seed() == plan.seed ? a : null;
         }
@@ -320,7 +333,23 @@ public final class VegetationPlan {
                 double e = plan.surface.rivers.nearestEdge(x + 0.5, z + 0.5, WET_REACH + 1, new double[1]);
                 if (e < best) best = Math.max(0, e);
             }
+            // river R2: in a world with AFL rivers the channel is wider than the plan's, and its water open air in the
+            // chunk (the AFL water fills it live), so the wider edge counts: no dry ground's plants on its bed
+            if (hydro != null && hydro.near(x + 0.5, z + 0.5, WET_REACH + 1, point) && point.edge < best) best = Math.max(0, point.edge);
             return best;
+        }
+
+        /**
+         * Whether plant p may stand at (x, y, z) under an AFL river's water. The channel is open air when the feature runs
+         * (the AFL water fills it live), so the feature's own rule for vanilla water (a wetland plant in water a block deep)
+         * never sees it: above the water any plant; under it only a wetland plant, in water at most {@link #RIVER_WET_DEPTH}
+         * deep within {@link #RIVER_MARGIN} of the edge (the slow margin: never mid-stream, never in a pool).
+         */
+        public boolean riverAllows(Plant p, int x, int y, int z) {
+            if (hydro == null || !hydro.near(x + 0.5, z + 0.5, 0, point)) return true;
+            double under = point.eta - y;
+            if (under < RIVER_DRY) return true;
+            return p.wet() && under <= RIVER_WET_DEPTH && point.edge >= -RIVER_MARGIN;
         }
 
         /** A town's limit (its own lawns later) or the forest home's plot (C, 2026-10-24: the plot itself, not its tree clearance). */

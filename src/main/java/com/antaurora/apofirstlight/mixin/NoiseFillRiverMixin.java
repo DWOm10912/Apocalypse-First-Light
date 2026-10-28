@@ -30,6 +30,7 @@ public abstract class NoiseFillRiverMixin {
         TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
         if (plan == null || plan.rivers == null) return;
         RiverWaterFill.apply(plan, cir.getReturnValue(),
-                ((NoiseBasedChunkGenerator) (Object) this).generatorSettings().value().defaultBlock());
+                ((NoiseBasedChunkGenerator) (Object) this).generatorSettings().value().defaultBlock(),
+                com.antaurora.apofirstlight.worldgen.terrain.v2.RiverChannels.of(randomState));
     }
 }

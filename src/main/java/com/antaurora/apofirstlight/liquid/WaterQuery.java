@@ -9,7 +9,8 @@ import net.minecraft.world.level.Level;
  * where its surface is above a point, and how deep and how fast it is around a box. The server asks the engine, the client
  * the surfaces it was sent (ClientLiquid), so a body goes into the water where the water is drawn. Only water at least
  * {@link #MIN_DEPTH} deep counts: a film on wet ground is not water to stand in. Natural water bodies (vanilla's water
- * blocks, the engine's boundaries) are not asked here: vanilla's own fluid code has them.
+ * blocks, the engine's boundaries) are not asked here: vanilla's own fluid code has them; a river's flow field (R1) is
+ * AFL's and is.
  */
 public final class WaterQuery {
     /** Shallower is wet ground, not water (m): the client draws a full surface from here (ClientLiquid.SHOW_FULL). */
@@ -50,7 +51,9 @@ public final class WaterQuery {
             int n = 0;
             for (LiquidCell c : col.cells()) {
                 if (n == MAX_LAYERS) break;
-                if (c.boundary() || c.volume() <= 0 || c.liquid() != Liquids.WATER || c.level() - c.floor() < MIN_DEPTH) continue;
+                // a river's water is AFL's (river plan R1); other held levels are vanilla's water bodies
+                boolean water = c.river() || (!c.boundary() && c.volume() > 0 && c.liquid() == Liquids.WATER);
+                if (!water || c.level() - c.floor() < MIN_DEPTH) continue;
                 c.velocity(v);
                 int o = n++ * STRIDE;
                 out[o] = c.floor();

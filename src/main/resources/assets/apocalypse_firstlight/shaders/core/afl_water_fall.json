@@ -20,6 +20,9 @@
             "name": "Scene"
         },
         {
+            "name": "SceneDepth"
+        },
+        {
             "name": "Normal0"
         },
         {
@@ -27,6 +30,18 @@
         }
     ],
     "uniforms": [
+        {
+            "name": "InvProj",
+            "type": "matrix4x4",
+            "count": 16,
+            "values": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        },
+        {
+            "name": "ScatterTint",
+            "type": "float",
+            "count": 3,
+            "values": [1.0, 1.0, 1.0]
+        },
         {
             "name": "ModelViewMat",
             "type": "matrix4x4",

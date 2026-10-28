@@ -30,7 +30,9 @@ public final class AflNetwork {
     // 78: B, the furniture bench's round 2 (2026-10-26): Act carries the timing ring's perfect press
     // 78: female body V1 (2026-10-27, master): Identity and SetupChoice carry the survivor's sex
     // 79: B (B-Workbench) and master merged 2026-10-27
-    private static final String PROTOCOL = "79";
+    // 78: C, Mesh water M1 (2026-10-26): the liquid Surface packet carries running films' mean depth
+    // 80: C (feature/c-worldgen) merged into master 2026-10-27
+    private static final String PROTOCOL = "80";
     private static SimpleChannel channel;
     private static int nextId;
 

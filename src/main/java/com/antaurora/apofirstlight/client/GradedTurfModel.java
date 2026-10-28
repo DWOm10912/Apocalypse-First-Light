@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
 import com.antaurora.apofirstlight.ground.TopsoilBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.client.TopTexture;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
@@ -46,8 +47,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
- * The chunk model of graded_turf (docs/worldgen/highway_r4_sample_v1.md, E): a sloped top (two triangles of one quad, the
- * NW-SE diagonal) with the grass top texture tinted by the biome (tint 0), sides down to the floor, all built from the
+ * The chunk model of graded_turf (docs/worldgen/highway_r4_sample_v1.md, E): a sloped top (two triangles of one quad, on
+ * the diagonal SmoothRules#swNe picks) with the grass top texture tinted by the biome (tint 0), sides down to the floor, all built from the
  * block state and cached per state. Flat lighting (no ambient occlusion: vanilla AO assumes faces on the cell planes).
  * C3.3a group B (docs/worldgen/federal_highways_c3.md 11.11): it looks like the grass block beside it: the top texture in
  * the orientation of the vanilla grass block's variant at the position (TopTexture), shaded by its tilt without a shader
@@ -159,10 +160,12 @@ public final class GradedTurfModel {
             float nw = c[0], ne = c[1], sw = c[2], se = c[3];
             List<BakedQuad> free = new ArrayList<>(), cutoutFree = new ArrayList<>();
             Map<Direction, List<BakedQuad>> culled = new EnumMap<>(Direction.class), cutoutCulled = new EnumMap<>(Direction.class);
-            // top: nw (0,0) -> sw (0,1) -> se (1,1) -> ne (1,0), normal up; the tile and orientation as topsoil's turf variant
-            // at the position (TopTexture), shaded by its tilt like the natural slopes without a shader pack
-            float[][] t = {{0, nw, 0}, {0, sw, 1}, {1, se, 1}, {1, ne, 0}};
-            BakedQuad topQuad = quad(t, TopTexture.uv(orientation), top, 0, Direction.UP, TopTexture.topColor(t));
+            // top: nw (0,0) -> sw (0,1) -> se (1,1) -> ne (1,0), normal up, split on the diagonal the natural slopes take
+            // (SmoothRules#topQuads: from sw when it is sw-ne, dig R1; plants and wet ground read it through #surface); the
+            // tile and orientation as topsoil's turf variant at the position (TopTexture), shaded by its tilt like the
+            // natural slopes without a shader pack
+            float[][] t = SmoothRules.topQuads(c)[0];
+            BakedQuad topQuad = quad(t, TopTexture.uvAt(TopTexture.uv(orientation), t), top, 0, Direction.UP, TopTexture.topColor(t));
             free.add(topQuad);
             float tall = Math.max(Math.max(nw, ne), Math.max(sw, se));
             boolean above = tall > 1.0001F;

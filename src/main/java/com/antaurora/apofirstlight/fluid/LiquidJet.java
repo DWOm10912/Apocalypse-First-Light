@@ -47,10 +47,18 @@ public final class LiquidJet {
     private final Deque<Parcel> parcels = new ArrayDeque<>();
     private final double gravity, maxAge;
     private long nextId;
+    /** Air drag, a = -drag |v| v (1/blocks); 0 (the default): a plain parabola. */
+    private double drag;
 
     public LiquidJet(double gravity, double maxAge) {
         this.gravity = gravity;
         this.maxAge = maxAge;
+    }
+
+    /** With air drag (a fast jet breaking up: liquid/Orifice#JET_DRAG). */
+    public LiquidJet drag(double k) {
+        this.drag = k;
+        return this;
     }
 
     /** A parcel leaving {@code pos} with {@code velocity}, already {@code lead} seconds into its flight (emitted mid-tick). */
@@ -114,6 +122,7 @@ public final class LiquidJet {
                     landed = true;
                 } else {
                     p.pos = next;
+                    if (drag > 0) p.vel = p.vel.scale(1 - drag * p.vel.length() * STEP);
                     p.vel = p.vel.add(0, -gravity * STEP, 0);
                 }
             }

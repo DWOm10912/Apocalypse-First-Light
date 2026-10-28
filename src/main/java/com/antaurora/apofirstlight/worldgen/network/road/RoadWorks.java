@@ -1074,6 +1074,18 @@ public final class RoadWorks {
         return Double.isNaN(f) ? g : f;
     }
 
+    /**
+     * Whether a river keeps its planned width at a point (river / lake R2, HydroQuery.Narrow): in a town or by the
+     * driveway (their clearances + extra), or within extra of a road's paved edge on its route (its bridges, culverts and
+     * the embankments over them), not over a tunnel's bores.
+     */
+    public boolean holdsRiver(double x, double z, double extra) {
+        if (!towns.isEmpty() && towns.clear(x, z, extra)) return true;
+        if (drive.clear(x, z, extra)) return true;
+        Hit h = hit(x, z, MAX_HALF_WIDTH + extra);
+        return h != null && h.beyond() == 0 && h.v() <= h.road().section.edge + extra && !TunnelWorks.overBores(h);
+    }
+
     /** Whether a point is inside a road's clearance (forest roots, spawn): within CLEAR + extra of a centreline, ends included. */
     public boolean clear(double x, double z, double extra) {
         if (!towns.isEmpty() && towns.clear(x, z, extra)) return true;

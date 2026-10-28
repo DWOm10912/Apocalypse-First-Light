@@ -6,33 +6,24 @@
 //   ray inside the water (absorption and scattering, per metre: Beer-Lambert), red first, so deep water is blue-green;
 // - the light the water scatters back: its own colour (Scatter over the extinction) grows with that length, lit by the
 //   light map at the surface (dark at night and under a roof);
-// - reflection by Fresnel (Schlick, water 0.02 head-on): the sky (its colour overhead, the fog's at the horizon) where
-//   the surface sees it (sky light), and the sun's or moon's glint;
+// (body colour, reflection, glint, white water and fog: afl_water_look.glsl, shared with the water in the air)
+// - reflection by Fresnel (Schlick, water 0.02 head-on): what stands round the water (banks, grass, trees: traced in
+//   the frame copy along the reflected ray, screen-space), else the sky (its colour overhead, the fog's at the horizon)
+//   where the surface sees it (sky light); the sun's or moon's glint, by Fresnel too, its edge soft (M1 round 3);
 // - two layers of ripples (water_normal_0, 8 m; water_normal_1, 1.6 m), drifting different ways; their speeds times the
 //   1,200 s WaterTime wraps are whole tiles, so the wrap does not jump;
 // - rings where water lands on it (Impacts, ClientFalls: a drop's ring spreads and fades in 2 s, a fall's goes on and
-//   on), and in the rain, rain rings in a 0.5 m cell grid, each cell's drop at its own time (only under open sky).
+//   on), and in the rain, rain rings in a 0.5 m cell grid, each cell's drop at its own time (only under open sky);
+// - running water's ripples carried along its real flow, and white water (foam, from the vertices: fast water, running
+//   water meeting a pool, a break in the slope) as streaks drawn out along the flow (Mesh water A3).
 // The ray's length: from the surface to what the depth copy holds behind it; on a side face, no further than up to the
 // surface (toSurface); seen from under water, from the eye to the surface. Shores fade in over the first centimetres.
 
-uniform sampler2D Scene;
-uniform sampler2D SceneDepth;
+#moj_import <apocalypse_firstlight:afl_water_look.glsl>
+
 uniform sampler2D Normal0;
 uniform sampler2D Normal1;
-uniform mat4 InvProj;
-uniform vec2 ViewSize;
-uniform float FogStart;
-uniform float FogEnd;
-uniform vec4 FogColor;
 uniform float WaterTime;
-uniform vec3 SkyColor;
-uniform vec3 HorizonColor;
-uniform vec3 SunDir;
-uniform vec3 SunColor;
-uniform vec3 Absorption;
-uniform float Scatter;
-uniform float ScatterLight;
-uniform vec3 ScatterTint;
 uniform vec2 Waves;
 uniform float Refraction;
 uniform float RainRipple;
@@ -49,18 +40,10 @@ in float toSurface;
 in float shown;
 in vec2 flow;
 in float film;
+in float foam;
+in float clear;
 
 out vec4 fragColor;
-
-// distance from the eye of the point at screen uv and depth (0-1)
-float eyeDistance(vec2 uv, float depth) {
-    vec4 v = InvProj * vec4(vec3(uv, depth) * 2.0 - 1.0, 1.0);
-    return length(v.xyz / v.w);
-}
-
-float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
 
 // the slope of a ring wave at distance r from where it began, t seconds ago: a crest running out at c, a few wavelengths
 // behind it, dying out as it spreads
@@ -108,6 +91,23 @@ vec2 rainRipples(vec2 p) {
         }
     }
     return s;
+}
+
+// white water's streaks at p: long along the fixed direction d (moved t along it), fine across it
+float streaksAlong(vec2 p, vec2 d, float t) {
+    vec2 q = vec2(dot(p, d) - t, dot(p, vec2(-d.y, d.x)));
+    return valueNoise(vec2(q.x * 1.5, q.y * 9.0)) * 0.6 + valueNoise(vec2(q.x * 4.0, q.y * 22.0) + 7.3) * 0.4;
+}
+
+// ... along the flow dir: the two nearest of 16 fixed directions, blended. Never a frame turning with the flow: p is the
+// world position, so a turning frame swings the streaks round the world origin, kilometres away, and a bend's white
+// water comes out as arcs across the river (river R2, docs/worldgen/river_lake_v1_design.md 13.4)
+float streaks(vec2 p, vec2 dir, float t) {
+    const float SECTOR = 6.2831853 / 16.0;
+    float a = atan(dir.y, dir.x) / SECTOR, k = floor(a);
+    float a0 = k * SECTOR, a1 = a0 + SECTOR;
+    return mix(streaksAlong(p, vec2(cos(a0), sin(a0)), t), streaksAlong(p + vec2(3.1, 5.7), vec2(cos(a1), sin(a1)), t),
+            smoothstep(0.2, 0.8, a - k));
 }
 
 // the two ripple layers at p, drifting their own ways
@@ -159,27 +159,26 @@ void main() {
     }
     thick = min(thick, 64.0);
 
-    vec3 ext = Absorption + vec3(Scatter);
-    vec3 through = exp(-ext * thick);
-    // what it scatters back takes the colour of what is held in it (ScatterTint: silt, grey-brown)
-    vec3 own = Scatter * ScatterTint / ext * (1.0 - through) * lightColor * ScatterLight;
-    vec3 color = texture(Scene, ruv).rgb * through + own;
+    vec3 color = waterThroughAs(texture(Scene, ruv).rgb, thick, lightColor, clear);
 
-    // reflection
-    // a running film is thin everywhere: its gloss is not faded out as a shore's is
+    // reflection; a running film is thin everywhere: its gloss is not faded out as a shore's is
     float shore = max(smoothstep(0.0, 0.06, thick), film * 0.75);
-    vec3 R = reflect(V, n);
-    float cosV = clamp(dot(-V, n), 0.0, 1.0);
-    float fresnel = 0.02 + 0.98 * pow(1.0 - cosV, 5.0);
-    if (under) fresnel = 0.02;
-    float sees = skyLight * skyLight;
-    vec3 sky = mix(HorizonColor, SkyColor, smoothstep(-0.05, 0.45, R.y)) * sees;
-    color = mix(color, sky, fresnel * shore);
-    if (!under) color += SunColor * pow(max(dot(R, SunDir), 0.0), 900.0) * sees * shore;
+    color = waterReflect(color, worldPos, V, n, skyLight, shore, top, under);
 
-    // a film's surface fades in over the ground under it (ClientLiquid SHOW_FROM / SHOW_FULL)
+    // white water: streaks carried along the flow in the ripples' two phases, more and denser the stronger it is, lit as
+    // the surface is
+    if (top && foam > 0.01) {
+        float speed = length(flow);
+        vec2 dir = speed > 1e-3 ? flow / speed : vec2(1.0, 0.0);
+        float p0 = fract(WaterTime * 0.5), p1 = fract(WaterTime * 0.5 + 0.5);
+        float st = mix(streaks(waterUV, dir, speed * p0 * 2.0), streaks(waterUV + vec2(0.37, 0.61), dir, speed * p1 * 2.0), abs(1.0 - 2.0 * p0));
+        // soft-edged and never opaque: bright specks read as a white texture (M1 in game 2026-10-26)
+        float white = smoothstep(0.85 - foam * 0.45, 1.25 - foam * 0.4, st + foam * 0.25) * foam * 0.55;
+        color = whiteWater(color, white, lightColor, skyLight);
+    }
+
+    // a film's surface fades in over the ground under it (ClientLiquid SHOW_FROM / SHOW_FULL), running water out at its dry edges
     color = mix(texture(Scene, uv).rgb, color, shown);
 
-    float fog = vertexDistance < FogEnd ? smoothstep(FogStart, FogEnd, vertexDistance) : 1.0;
-    fragColor = vec4(mix(color, FogColor.rgb, fog * FogColor.a), 1.0);
+    fragColor = vec4(waterFog(color, vertexDistance), 1.0);
 }

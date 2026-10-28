@@ -1,25 +1,19 @@
 package com.antaurora.apofirstlight.liquid.world;
 
-import com.antaurora.apofirstlight.fluid.LiquidJet;
-import com.antaurora.apofirstlight.liquid.LiquidCell;
-import com.antaurora.apofirstlight.liquid.LiquidColumn;
 import com.antaurora.apofirstlight.liquid.LiquidEngine;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
- * Players pouring water ({@code /afl dev water pour}; docs/gameplay/water_falling_v1_design.md 3.3): a LiquidJet from the
- * hand, one parcel a tick carrying its share of the flow, landing in the AFL water (on a surface it comes down to, else
- * in the open layer where it meets a block) and only then counted as poured. The clients draw the same stream
- * (LiquidPackets.Pour). Water still in the air when the pour is cut short (the player leaves, the world stops) is lost:
- * under a second's worth, and never in the engine's account.
+ * Players pouring water ({@code /afl dev water pour}; docs/gameplay/water_falling_v1_design.md 3.3): each tick the
+ * tick's share of the flow leaves the hand as engine parcels (LiquidEngine#launch, at most 1 L each, M2 of
+ * docs/gameplay/water_mesh_parcels_v1_design.md). They are on the engine's account from the moment they leave, fly the
+ * same arc the clients draw (LiquidPackets.Pour) and add to the water only where they come down, so a pour cut short
+ * still lands what is in the air.
  */
 final class LiquidPours {
     /** How fast it leaves the hand, m/s (a bucket tipped over). */
@@ -27,10 +21,8 @@ final class LiquidPours {
 
     static final class Pour {
         final ServerPlayer player;
-        final LiquidJet jet = new LiquidJet(LiquidJet.EARTH_GRAVITY, 6);
-        final Map<Long, Long> carried = new HashMap<>();
         final double litresPerSecond;
-        long left, poured, lost;
+        long left, poured;
 
         Pour(ServerPlayer player, long ml, double litresPerSecond) {
             this.player = player;
@@ -39,7 +31,7 @@ final class LiquidPours {
         }
 
         boolean done() {
-            return left <= 0 && jet.isEmpty();
+            return left <= 0;
         }
     }
 
@@ -73,11 +65,6 @@ final class LiquidPours {
         if (st.pours.isEmpty()) return;
         ServerLevel level = st.level;
         LiquidEngine e = st.engine;
-        LiquidJet.Surface surface = (x, y, z) -> {
-            LiquidColumn col = e.column(Mth.floor(x), Mth.floor(z));
-            LiquidCell c = col == null ? null : col.cellAt(y);
-            return c != null && c.volume() > 0 && y <= c.level() ? c.level() : Double.NaN;
-        };
         for (Iterator<Pour> it = st.pours.values().iterator(); it.hasNext(); ) {
             Pour p = it.next();
             boolean gone = p.player.isRemoved() || p.player.level() != level;
@@ -88,34 +75,15 @@ final class LiquidPours {
             if (p.left > 0) {
                 long ml = Math.min(p.left, Math.max(1, Math.round(p.litresPerSecond * 1000 / 20)));
                 p.left -= ml;
-                p.carried.put(p.jet.nextId(), ml);
-                p.jet.emit(hand(p.player), p.player.getLookAngle().scale(SPEED), 0);
-                if (p.left <= 0) AflNetwork.sendTrackingAndSelf(p.player, new LiquidPackets.Pour(p.player.getId(), 0, 0));
-            }
-            p.jet.tick(level, p.player, (parcel, hit) -> {
-                // just off the face it met, into the open
-                land(e, p, parcel, hit.getLocation().add(Vec3.atLowerCornerOf(hit.getDirection().getNormal()).scale(0.05)));
-            }, surface, (parcel, at) -> land(e, p, parcel, at.add(0, -0.01, 0)));
-            // parcels that aged out or fell out of the world
-            if (!p.carried.isEmpty()) {
-                long oldest = p.jet.parcels().isEmpty() ? p.jet.nextId() : p.jet.parcels().getFirst().id;
-                for (Iterator<Map.Entry<Long, Long>> c = p.carried.entrySet().iterator(); c.hasNext(); ) {
-                    Map.Entry<Long, Long> en = c.next();
-                    if (en.getKey() < oldest) {
-                        p.lost += en.getValue();
-                        c.remove();
-                    }
+                Vec3 at = hand(p.player), v = p.player.getLookAngle().scale(SPEED);
+                int n = (int) Math.max(1, (ml + LiquidEngine.PARCEL_ML - 1) / LiquidEngine.PARCEL_ML);
+                for (int i = 0; i < n; i++) {
+                    long part = ml / n + (i < ml % n ? 1 : 0);
+                    if (e.launch(at.x, at.y, at.z, v.x, v.y, v.z, part, p.player.getId())) p.poured += part;
                 }
+                if (p.left <= 0) AflNetwork.sendTrackingAndSelf(p.player, new LiquidPackets.Pour(p.player.getId(), 0, 0));
             }
             if (p.done()) it.remove();
         }
-    }
-
-    private static void land(LiquidEngine e, Pour p, LiquidJet.Parcel parcel, Vec3 at) {
-        Long ml = p.carried.remove(parcel.id);
-        if (ml == null) return;
-        int x = Mth.floor(at.x), z = Mth.floor(at.z);
-        if (e.add(x, at.y, z, ml) || e.add(x, at.y + 0.1, z, ml)) p.poured += ml;
-        else p.lost += ml;
     }
 }

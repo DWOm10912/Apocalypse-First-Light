@@ -644,7 +644,7 @@ public final class UndergroundCheck {
      */
     static void relief(List<String> bad) {
         final int X = 12, Y = 11, Z = 34;
-        String[] names = {"granite", "sandstone", "limestone", "shale", "soil"};
+        String[] names = {"granite", "sandstone", "limestone", "shale"};   // soil is no longer worn (dig R1)
         for (int look = 0; look < names.length; look++) {
             int[] kind = new int[X * Y * Z];   // 0 air, 1 rock, 2 another full cube (an ore)
             for (int z = 0; z < Z; z++) for (int y = 0; y < Y; y++) for (int x = 0; x < X; x++) {

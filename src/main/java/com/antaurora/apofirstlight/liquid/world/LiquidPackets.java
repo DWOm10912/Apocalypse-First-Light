@@ -21,6 +21,7 @@ public final class LiquidPackets {
         channel.registerMessage(id++, Falls.class, Falls::encode, Falls::decode, Falls::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Pour.class, Pour::encode, Pour::decode, Pour::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(id++, Wet.class, Wet::encode, Wet::decode, Wet::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(id++, Burst.class, Burst::encode, Burst::decode, Burst::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         return id;
     }
 
@@ -119,19 +120,55 @@ public final class LiquidPackets {
         }
     }
 
+    /**
+     * A jet of water out of a burst (LiquidBursts; Mesh water M4): where it leaves, its direction, how fast (m/s), its
+     * flow (L/s; 0: it stopped) and the air drag the server flies its parcels with, so the clients draw the same jet.
+     */
+    public record Burst(int id, double x, double y, double z, float dx, float dy, float dz, float speed, float flow, float drag) {
+        static void encode(Burst p, FriendlyByteBuf b) {
+            b.writeVarInt(p.id);
+            b.writeDouble(p.x);
+            b.writeDouble(p.y);
+            b.writeDouble(p.z);
+            b.writeFloat(p.dx);
+            b.writeFloat(p.dy);
+            b.writeFloat(p.dz);
+            b.writeFloat(p.speed);
+            b.writeFloat(p.flow);
+            b.writeFloat(p.drag);
+        }
+
+        static Burst decode(FriendlyByteBuf b) {
+            return new Burst(b.readVarInt(), b.readDouble(), b.readDouble(), b.readDouble(), b.readFloat(), b.readFloat(), b.readFloat(),
+                    b.readFloat(), b.readFloat(), b.readFloat());
+        }
+
+        static void handle(Burst p, Supplier<NetworkEvent.Context> s) {
+            s.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.liquid.ClientFalls.burst(p)));
+            s.get().setPacketHandled(true);
+        }
+    }
+
     /** Held at a fixed level (a natural water body's stand-in, 5.7). */
     public static final int BOUNDARY = 1;
     /** Still (a sleeping basin): the client need not ease it. */
     public static final int STILL = 2;
     /** Flags bits 2–5: LiquidCell#joinedSides, the sides where the cell's water goes on into its neighbour's. */
     public static final int SIDES_SHIFT = 2;
+    /** Running (LiquidCell#running): sent however thin, its mean depth in {@code film} (Mesh water A1). */
+    public static final int RUNNING = 64;
+    /** A river's water (LiquidCell#river, river plan R1): held like BOUNDARY, its velocity sent, AFL's water to swim in. */
+    public static final int RIVER = 128;
 
     /**
      * One chunk's wet cells, all of them (none: the chunk has no liquid left): per cell its column in the chunk
-     * (x << 4 | z), its layer's floor (slabs, 1/16 m), its surface (1/4096 m), {@link #BOUNDARY} / {@link #STILL} and its
-     * joined sides, and its water's velocity east and south ({@link #VELOCITY} m/s: WaterQuery, package 4).
+     * (x << 4 | z), its layer's floor (slabs, 1/16 m), its surface (1/4096 m), {@link #BOUNDARY} / {@link #STILL} /
+     * {@link #RUNNING} and its joined sides, its water's velocity east and south ({@link #VELOCITY} m/s: WaterQuery,
+     * package 4) and, running, its water spread over the column's square metre (mm: the film's mean depth, Mesh water A2).
      */
-    public record Surface(int chunkX, int chunkZ, byte[] column, int[] floor, int[] level, byte[] flags, short[] vx, short[] vz) {
+    public record Surface(int chunkX, int chunkZ, byte[] column, int[] floor, int[] level, byte[] flags, short[] vx, short[] vz,
+                          short[] film) {
         /** Velocity units a m/s (2 cm/s each). */
         public static final double VELOCITY = 50;
 
@@ -139,14 +176,20 @@ public final class LiquidPackets {
         static final double SHOWN = 0.008;
 
         /**
-         * The chunk's cells the client draws: held at a level, or deeper than {@link #SHOWN}. Films, running or held, are
-         * not sent: without a shader pack only standing water is drawn, the rest is the shader pack's (falling water 19,
-         * the user 2026-10-25; Aureveil takes them up with package 6's interface).
+         * The chunk's cells the client draws (docs/gameplay/water_mesh_parcels_v1_design.md A1): held at a level, deeper
+         * than {@link #SHOWN}, or running however thin (the user approved 9.1 on 2026-10-26: running water drawn without a
+         * shader pack too, reversing falling water 19). Whether it is drawn goes by whether it runs, not by its depth; the
+         * film the floor holds after rain, not running, is still not sent (no sheet of water on grass, 2026-10-24).
          */
-        static List<LiquidCell> shown(List<LiquidCell> wet) {
+        public static List<LiquidCell> shown(List<LiquidCell> wet) {
             List<LiquidCell> out = new java.util.ArrayList<>(wet.size());
-            for (LiquidCell c : wet) if (c.boundary() || c.level() - c.floor() >= SHOWN) out.add(c);
+            for (LiquidCell c : wet) if (sends(c)) out.add(c);
             return out;
+        }
+
+        /** Is c sent to the client ({@link #shown})? */
+        public static boolean sends(LiquidCell c) {
+            return c.boundary() || c.level() - c.floor() >= SHOWN || c.running();
         }
 
         /** What it shows, to skip sending the same again. */
@@ -156,27 +199,34 @@ public final class LiquidPackets {
             h = 31 * h + java.util.Arrays.hashCode(level);
             h = 31 * h + java.util.Arrays.hashCode(flags);
             h = 31 * h + java.util.Arrays.hashCode(vx);
-            return 31 * h + java.util.Arrays.hashCode(vz);
+            h = 31 * h + java.util.Arrays.hashCode(vz);
+            return 31 * h + java.util.Arrays.hashCode(film);
         }
 
-        static Surface of(int chunkX, int chunkZ, List<LiquidCell> wet) {
+        public static Surface of(int chunkX, int chunkZ, List<LiquidCell> wet) {
             int n = wet.size();
             byte[] column = new byte[n], flags = new byte[n];
             int[] floor = new int[n], level = new int[n];
-            short[] vx = new short[n], vz = new short[n];
+            short[] vx = new short[n], vz = new short[n], film = new short[n];
             double[] v = new double[2];
             for (int i = 0; i < n; i++) {
                 LiquidCell c = wet.get(i);
                 column[i] = (byte) ((c.x() & 15) << 4 | (c.z() & 15));
                 floor[i] = c.floorSlab();
-                level[i] = (int) Math.round(c.level() * 4096);
-                flags[i] = (byte) ((c.boundary() ? BOUNDARY : 0) | (c.sleeping() ? STILL : 0) | c.joinedSides() << SIDES_SHIFT);
-                if (c.boundary()) continue;
+                boolean running = c.running();
+                double depth = c.level() - c.floor();
+                // a thin running film's depth to the millimetre: a steady sheet shows the same again and is not resent (A1)
+                level[i] = (int) Math.round((running && depth < SHOWN ? c.floor() + Math.round(depth * 1000) / 1000.0 : c.level()) * 4096);
+                flags[i] = (byte) ((c.boundary() ? BOUNDARY : 0) | (c.sleeping() ? STILL : 0) | (running ? RUNNING : 0)
+                        | (c.river() ? RIVER : 0) | c.joinedSides() << SIDES_SHIFT);
+                // running: its litres over the column's square metre, mm (at least 1)
+                if (running) film[i] = (short) Math.max(1, Math.min(Short.MAX_VALUE, Math.round(c.volume() / 1000.0)));
+                if (c.boundary() && !c.river()) continue;
                 c.velocity(v);
                 vx[i] = velocity(v[0]);
                 vz[i] = velocity(v[1]);
             }
-            return new Surface(chunkX, chunkZ, column, floor, level, flags, vx, vz);
+            return new Surface(chunkX, chunkZ, column, floor, level, flags, vx, vz, film);
         }
 
         private static short velocity(double v) {
@@ -194,6 +244,7 @@ public final class LiquidPackets {
                 b.writeByte(p.flags[i]);
                 b.writeShort(p.vx[i]);
                 b.writeShort(p.vz[i]);
+                b.writeShort(p.film[i]);
             }
         }
 
@@ -202,7 +253,7 @@ public final class LiquidPackets {
             if (n < 0 || n > 16 * 16 * 64) throw new IllegalArgumentException("liquid surface: " + n + " cells");
             byte[] column = new byte[n], flags = new byte[n];
             int[] floor = new int[n], level = new int[n];
-            short[] vx = new short[n], vz = new short[n];
+            short[] vx = new short[n], vz = new short[n], film = new short[n];
             for (int i = 0; i < n; i++) {
                 column[i] = b.readByte();
                 floor[i] = b.readInt();
@@ -210,8 +261,9 @@ public final class LiquidPackets {
                 flags[i] = b.readByte();
                 vx[i] = b.readShort();
                 vz[i] = b.readShort();
+                film[i] = b.readShort();
             }
-            return new Surface(cx, cz, column, floor, level, flags, vx, vz);
+            return new Surface(cx, cz, column, floor, level, flags, vx, vz, film);
         }
 
         static void handle(Surface p, Supplier<NetworkEvent.Context> s) {

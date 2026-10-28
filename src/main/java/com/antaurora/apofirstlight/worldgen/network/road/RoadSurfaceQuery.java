@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.worldgen.network.road;
 
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
 import com.antaurora.apofirstlight.worldgen.network.town.TownWorks;
 import com.antaurora.apofirstlight.block.RoadStructureBlock;
@@ -231,8 +232,8 @@ public final class RoadSurfaceQuery {
             float[] c = GradedTurfBlock.corners(s);
             for (int j = 0; j <= 4; j++) for (int i = 0; i <= 4; i++) {
                 double fx = i / 4.0, fz = j / 4.0;
-                // the triangle (nw, ne, se) or (nw, sw, se), as drawn
-                rel[j * 5 + i] = fx >= fz ? c[0] + (c[1] - c[0]) * fx + (c[3] - c[1]) * fz : c[0] + (c[3] - c[2]) * fx + (c[2] - c[0]) * fz;
+                // the triangle under the point, split on the diagonal GradedTurfModel draws (SmoothRules#swNe, dig R1)
+                rel[j * 5 + i] = SmoothRules.surface(c, fx, fz);
             }
             top = y + (c[0] + c[1] + c[2] + c[3]) / 4;
         } else if (b instanceof RoadSurfaceBlock) {

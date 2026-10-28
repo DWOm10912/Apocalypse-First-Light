@@ -89,6 +89,12 @@ final class LevelGround implements GroundSource {
     }
 
     @Override
+    public float[] smoothTop(int x, int y, int z, long k) {
+        LevelChunk c = chunk(x, z);
+        return c == null ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.corners(k) : TerrainSmooth.top(level, c, x, y, z, k);
+    }
+
+    @Override
     public boolean drawn(int x, int y, int z, double[] rel) {
         BlockState s = state(x, y, z);
         if (s == null || !(s.getBlock() instanceof RoadSurfaceBlock || s.getBlock() instanceof GradedTurfBlock)) return false;

@@ -3,7 +3,9 @@
 // Physical water's surface without a shader pack (client/liquid/ClientLiquid, docs/gameplay/water_v1_design.md 16.10,
 // docs/rendering/water_visual_v1_design.md 5.2). Positions + ChunkOffset are camera-relative; UV0 is the world position (x, z) from
 // an origin on a 1024 m grid, for the ripple textures; Color.r is the height from the vertex up to the water's surface
-// and Color.g the water's depth below it, both / 8 m, Color.b how far a film's surface has faded in (0-1); Normal the face's (up: the surface, down: its underside, else a side).
+// / 8 m on a side (on the top and underside: 1 for a river's clear water, 0 for rain water), Color.g white water on the top (0-1, Mesh water A3), Color.b how far the surface is shown (0-1: a still film fading
+// in, running water's dry edges), Color.a 0 on running water (a film); Normal the face's (up: the surface, down: its
+// underside, else a side).
 
 in vec3 Position;
 in vec4 Color;
@@ -28,6 +30,8 @@ out float toSurface;
 out float shown;
 out vec2 flow;
 out float film;
+out float foam;
+out float clear;
 
 void main() {
     vec3 pos = Position + ChunkOffset;
@@ -39,10 +43,12 @@ void main() {
     lightColor = texture(Sampler2, clamp(vec2(UV2) / 256.0, vec2(0.5 / 16.0), vec2(15.5 / 16.0))).rgb;
     skyLight = clamp(float(UV2.y) / 240.0, 0.0, 1.0);
     faceNormal = Normal;
-    toSurface = Color.r * 8.0;
+    bool level = abs(Normal.y) > 0.5;
+    toSurface = level ? 0.0 : Color.r * 8.0;
+    clear = level ? Color.r : 0.0;
     shown = Color.b;
-    // running water's top: its flow, m/s, in the normal as (fx / 4, 1, fz / 4); a film's Color.a 0. Nothing sends them
-    // without a shader pack now (falling water 19): (0, 1, 0) and 1, so still water
+    // the top's flow, m/s, in the normal as (fx / 4, 1, fz / 4) (the server's velocity, package 4); a film's Color.a 0
     flow = Normal.y > 0.5 ? Normal.xz / Normal.y * 4.0 : vec2(0.0);
     film = 1.0 - Color.a;
+    foam = Color.g;
 }

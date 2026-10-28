@@ -394,7 +394,8 @@ public final class Earthwork {
         int t = TerrainSmooth.data(level, chunk).surface(x, z);
         BlockState top = level.getBlockState(new BlockPos(x, t, z));
         long g = TerrainSmooth.fresh(level, chunk, x, t, z);   // before marking: the neighbours read as they are
-        float[] c = g < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(g);
+        // R2b: the smooth top with its edges straight, as the neighbours draw them toward an edited column (SmoothTop#top)
+        float[] c = g < 0 ? new float[]{1, 1, 1, 1} : TerrainSmooth.topAlone(level, chunk, x, t, z, g);
         for (int j = 0; j <= PER_BLOCK; j++) for (int i = 0; i <= PER_BLOCK; i++) {
             int vx = x * PER_BLOCK + i, vz = z * PER_BLOCK + j;
             EarthChunk o = own(level, vx >> 6, vz >> 6);

@@ -22,6 +22,12 @@ import java.util.Random;
  *   <li>the class against the old decisions: V = rock, or soil that is a soil wall (what RockRelief wears); H = the old
  *   natural top (what Terrain Smooth slopes); GroundClass#surface agrees with the class; soilWall is the old one.</li>
  * </ul>
+ * Dig R1 (2026-10-26, docs/worldgen/terrain_smooth_v1.md Z) changes answers on purpose, and only there: within two
+ * columns of a step of two or more between neighbouring columns (the middle of a two-block spread, the deeper window,
+ * the soil wall from a drop of three), and where a block's top gets a fan (a column lower or higher than both
+ * neighbours along x or z). Those are counted apart ({@link #digR1}); any other difference still fails: the slopes of
+ * one-block steps keep the frozen answers.
+ * <p>
  * Scenes: random 3D grids of every cell kind (graded_turf among them), terrains with soil over rock, caves, water and
  * cover; and (UndergroundCheck, per seed) patches of the six seeds' planned ground: their surface, soil depth, rock and
  * caves.
@@ -83,9 +89,29 @@ public final class GroundClassCheck {
         return top ? GroundClass.H : GroundClass.C;
     }
 
+    /**
+     * Dig R1: whether cell (x, y, z) may answer differently from the frozen rules on purpose: two columns or less from a
+     * step of two or more between neighbouring columns, or its new geometry has a fan (mode A or B).
+     */
+    static boolean digR1(Cells c, int x, int y, int z) {
+        for (int mode : new int[]{SmoothRules.MODE_A, SmoothRules.MODE_B}) {
+            long g = SmoothRules.geometry(c, mode, x, y, z);
+            if (g >= 0 && (g & SmoothRules.FAN) != 0) return true;
+        }
+        for (int dz = -2; dz <= 2; dz++) for (int dx = -2; dx <= 2; dx++) {
+            int s = c.surface(x + dx, z + dz);
+            if (s == SmoothRules.NO_SURFACE) continue;
+            for (int[] n : new int[][]{{1, 0}, {0, 1}, {1, 1}, {1, -1}}) {
+                int t = c.surface(x + dx + n[0], z + dz + n[1]);
+                if (t != SmoothRules.NO_SURFACE && Math.abs(t - s) >= 2) return true;
+            }
+        }
+        return false;
+    }
+
     /** Totals over every scene: cells compared, answers compared, differences; and how many of each class (coverage). */
     static final class Tally {
-        long cells, answers, diffs;
+        long cells, answers, diffs, dig;
         final long[] cls = new long[3];
         long sloped, free;
         final List<String> first = new ArrayList<>();
@@ -96,8 +122,8 @@ public final class GroundClassCheck {
         }
 
         String line() {
-            return String.format(Locale.ROOT, "%d cells, %d answers, %d different (H %d, V %d, C %d; %d sloped tops, %d free columns)",
-                    cells, answers, diffs, cls[GroundClass.H], cls[GroundClass.V], cls[GroundClass.C], sloped, free);
+            return String.format(Locale.ROOT, "%d cells, %d answers, %d different, %d changed by dig R1 (H %d, V %d, C %d; %d sloped tops, %d free columns)",
+                    cells, answers, diffs, dig, cls[GroundClass.H], cls[GroundClass.V], cls[GroundClass.C], sloped, free);
         }
     }
 
@@ -108,6 +134,14 @@ public final class GroundClassCheck {
             int cls = GroundClass.of(c, x, y, z), old = oldClass(c, x, y, z);
             t.cls[cls]++;
             t.answers += 8;
+            if (digR1(c, x, y, z)) {   // the frozen answers do not hold here on purpose; the classes still agree with themselves
+                if (GroundClass.surface(c, x, y, z) != (cls == GroundClass.H)) t.diff(at("surface", x, y, z));
+                long g = SmoothRules.geometry(c, SmoothRules.MODE_B, x, y, z);
+                if (g >= 0) t.sloped++;
+                if (SmoothRules.notFree(c, SmoothRules.MODE_B, x, y, z, true) == null) t.free++;
+                t.dig++;
+                continue;
+            }
             if (cls != old) t.diff(at("class", x, y, z) + " " + cls + " was " + old);
             if (GroundClass.surface(c, x, y, z) != (cls == GroundClass.H)) t.diff(at("surface", x, y, z));
             if (GroundClass.soilWall(c, x, y, z) != SmoothRulesR0.soilWall(c, x, y, z)) t.diff(at("soilWall", x, y, z));

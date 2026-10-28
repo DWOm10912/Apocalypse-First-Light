@@ -82,11 +82,14 @@ final class SmoothCheck {
 
     public static void main(String[] args) {
         straightStep();
+        digs();
         for (int mode : new int[]{SmoothRules.MODE_A, SmoothRules.MODE_B}) {
             World t = terrain(7 + mode, -40, -40, 96, true);
             int[] a = area(t);
             corners(t, mode, a);
             watertight(t, mode, a);
+            edgeSeams(t, mode, a, "mode " + (mode == SmoothRules.MODE_A ? "A" : "B"));
+            overlayFit(t, mode, a, "mode " + (mode == SmoothRules.MODE_A ? "A" : "B"));
             collision(t, mode, a);
             edits(t, mode, a);
         }
@@ -99,6 +102,139 @@ final class SmoothCheck {
         bench();
         System.out.println(failures == 0 ? "TERRAIN SMOOTH CHECK OK" : "TERRAIN SMOOTH CHECK FAILED: " + failures);
         if (failures != 0) System.exit(1);
+    }
+
+    /**
+     * Dig R1 (user 2026-10-26: "挖下去就是一个很奇怪的坑，而不是平滑的"): holes dug into flat ground (and blocks put on it), mode
+     * B. One and two deep (or high): every block around takes part (no pins, no soil walls, none under the slopes either), the hole's floor is drawn at its true
+     * depth, the tops meet along every shared edge; three deep: the rim stays a wall. A one-wide trench is a trough whose
+     * floor runs along its whole length at the trench's depth.
+     */
+    static void digs() {
+        Object[][] scenes = {
+                {"pit 1x1 d1", 0, 0, 0, 0, -1}, {"pit 3x3 d1", -1, -1, 1, 1, -1}, {"pit 1x1 d2", 0, 0, 0, 0, -2},
+                {"pit 3x3 d2", -1, -1, 1, 1, -2}, {"pit 3x3 d3", -1, -1, 1, 1, -3}, {"trench 1x7 d1", 0, -3, 0, 3, -1},
+                {"trench 1x7 d2", 0, -3, 0, 3, -2}, {"mound 1x1 +1", 0, 0, 0, 0, 1}, {"ridge 1x7 +1", -3, 0, 3, 0, 1},
+                {"mound 1x1 +2", 0, 0, 0, 0, 2}, {"mound 3x3 +2", -1, -1, 1, 1, 2}, {"ridge 1x7 +2", -3, 0, 3, 0, 2}};
+        int mode = SmoothRules.MODE_B;
+        for (Object[] sc : scenes) {
+            String name = (String) sc[0];
+            int x0 = (int) sc[1], z0 = (int) sc[2], x1 = (int) sc[3], z1 = (int) sc[4], d = (int) sc[5];
+            World t = new World(-12, -12, 24);
+            java.util.Arrays.fill(t.h, 70);
+            for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) t.h[t.i(x, z)] = 70 + d;
+            int[] a = {-8, -8, 16};
+            int cubes = 0;
+            double low = Double.MAX_VALUE, high = -Double.MAX_VALUE, slope = 0;
+            for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
+                long g = geo(t, mode, x, z);
+                int floor = t.h[t.i(x, z)] - 1;
+                if (g < 0) {   // flat ground away from the hole stays a cube; one beside a different column is a wall
+                    boolean beside = false;
+                    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) beside |= t.h[t.i(x + i, z + j)] != floor + 1;
+                    if (beside) cubes++;
+                    low = Math.min(low, floor + 1);
+                    high = Math.max(high, floor + 1);
+                    continue;
+                }
+                float[] c = SmoothRules.corners(g);
+                for (int j = 0; j <= 8; j++) for (int i = 0; i <= 8; i++) {
+                    double v = floor + SmoothRules.surface(c, i / 8.0, j / 8.0);
+                    low = Math.min(low, v);
+                    high = Math.max(high, v);
+                    if (i < 8) slope = Math.max(slope, Math.abs(SmoothRules.surface(c, (i + 1) / 8.0, j / 8.0) - SmoothRules.surface(c, i / 8.0, j / 8.0)) * 8);
+                    if (j < 8) slope = Math.max(slope, Math.abs(SmoothRules.surface(c, i / 8.0, (j + 1) / 8.0) - SmoothRules.surface(c, i / 8.0, j / 8.0)) * 8);
+                }
+            }
+            // soil walls (RockRelief wears them into rock shapes): none where the slopes cover every side (the block under a
+            // two-deep rim, the foot of a mound two high; user 2026-10-26 "怎么还是有岩石形状的泥土")
+            int walls = 0;
+            for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++)
+                for (int y = t.h[t.i(x, z)] - 4; y < t.h[t.i(x, z)]; y++) if (com.antaurora.apofirstlight.ground.GroundClass.soilWall(t, x, y, z)) walls++;
+            int seams = edgeSeams(t, mode, a, "dig " + name);
+            overlayFit(t, mode, a, "dig " + name);
+            if (Math.abs(d) <= 2) {
+                require(cubes == 0, "dig " + name + ": every block around it slopes (" + cubes + " cubes or walls)");
+                require(walls == 0, "dig " + name + ": no soil walls (" + walls + ")");
+                require(Math.abs((d < 0 ? low : high) - (70 + d)) < 1e-6, "dig " + name + ": drawn at its true " + (d < 0 ? "depth" : "height") + " (" + (d < 0 ? low : high) + ")");
+            } else {
+                require(cubes > 0 && walls > 0, "dig " + name + ": a three-deep hole keeps its walls (" + walls + " soil walls)");
+            }
+            String along = "";
+            if (name.startsWith("trench")) {   // the trench floor along its middle line, x = 0.5, z from the first block to the last
+                double worst = 0;
+                for (int z = z0; z <= z1; z++) {
+                    long g = geo(t, mode, 0, z);
+                    if (g < 0) { worst = 9; continue; }
+                    float[] c = SmoothRules.corners(g);
+                    int from = z == z0 ? 4 : 0, to = z == z1 ? 4 : 8;   // the ends: from the block's middle on
+                    for (int j = from; j <= to; j++) worst = Math.max(worst, Math.abs(t.h[t.i(0, z)] - 1 + SmoothRules.surface(c, 0.5, j / 8.0) - (70 + d)));
+                }
+                require(worst < 1e-6, "dig " + name + ": the floor runs the whole length at the trench depth (off by " + worst + ")");
+                along = String.format(Locale.ROOT, ", floor line off by %.3f", worst);
+            }
+            System.out.printf(Locale.ROOT, "dig %-14s: %d cubes / walls beside the edit, %d soil walls, drawn %.3f..%.3f, steepest %.2f (rise per run), %d seam points%s%n", name, cubes, walls, low, high, slope, seams, along);
+        }
+    }
+
+    /**
+     * Dig R1: the wet ground overlays (ClientLiquid, ClientRainWet) draw a top as 2 x 2 quads from #surface at their
+     * corners, each split on SmoothRules#swNe's diagonal: they lie on the drawn top everywhere (sampled every 1/8).
+     */
+    static void overlayFit(World t, int mode, int[] a, String what) {
+        double worst = 0;
+        for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
+            long g = geo(t, mode, x, z);
+            if (g < 0) continue;
+            float[] c = SmoothRules.corners(g);
+            for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) {
+                double x0 = i * 0.5, z0 = j * 0.5;
+                boolean flip = SmoothRules.swNe(c, x0, z0, x0 + 0.5, z0 + 0.5);
+                float[] q = {(float) SmoothRules.surface(c, x0, z0), (float) SmoothRules.surface(c, x0 + 0.5, z0),
+                        (float) SmoothRules.surface(c, x0, z0 + 0.5), (float) SmoothRules.surface(c, x0 + 0.5, z0 + 0.5)};
+                for (int v = 0; v <= 4; v++) for (int u = 0; u <= 4; u++) {
+                    double fu = u / 4.0, fv = v / 4.0, drawn = flip
+                            ? (fu + fv <= 1 ? q[0] + (q[1] - q[0]) * fu + (q[2] - q[0]) * fv : q[3] + (q[2] - q[3]) * (1 - fu) + (q[1] - q[3]) * (1 - fv))
+                            : (fv >= fu ? q[0] + (q[3] - q[2]) * fu + (q[2] - q[0]) * fv : q[0] + (q[1] - q[0]) * fu + (q[3] - q[1]) * fv);
+                    worst = Math.max(worst, Math.abs(drawn - SmoothRules.surface(c, x0 + fu * 0.5, z0 + fv * 0.5)));
+                }
+            }
+        }
+        require(worst < 1e-5, what + ": wet ground quads lie on the top (off by " + worst + ")");
+    }
+
+    /**
+     * Dig R1: where two sloped blocks meet with both corners of the shared edge at one height, the drawn tops meet along the
+     * whole edge (the midpoints of fan tops too), sampled every 1/8. Returns the number of points that part.
+     */
+    static int edgeSeams(World t, int mode, int[] a, String what) {
+        int points = 0, bad = 0;
+        for (int z = a[1]; z < a[1] + a[2] - 1; z++) for (int x = a[0]; x < a[0] + a[2] - 1; x++) {
+            long g = geo(t, mode, x, z);
+            if (g < 0 || t.above[t.i(x, z)] >= 2) continue;
+            float[] c = SmoothRules.corners(g);
+            int fa = t.h[t.i(x, z)] - 1;
+            for (int side = 0; side < 2; side++) {   // east, south
+                int nx = x + (side == 0 ? 1 : 0), nz = z + (side == 1 ? 1 : 0);
+                long gn = geo(t, mode, nx, nz);
+                if (gn < 0 || t.above[t.i(nx, nz)] >= 2) continue;
+                float[] cn = SmoothRules.corners(gn);
+                int fb = t.h[t.i(nx, nz)] - 1;
+                // both ends of the edge meet?
+                double a0 = fa + (side == 0 ? c[1] : c[2]), b0 = fb + (side == 0 ? cn[0] : cn[0]);
+                double a1 = fa + c[3], b1 = fb + (side == 0 ? cn[2] : cn[1]);
+                if (Math.abs(a0 - b0) > 1e-6 || Math.abs(a1 - b1) > 1e-6) continue;
+                for (int k = 0; k <= 8; k++) {
+                    double f = k / 8.0;
+                    double va = fa + (side == 0 ? SmoothRules.surface(c, 1, f) : SmoothRules.surface(c, f, 1));
+                    double vb = fb + (side == 0 ? SmoothRules.surface(cn, 0, f) : SmoothRules.surface(cn, f, 0));
+                    points++;
+                    if (Math.abs(va - vb) > 1e-6) bad++;
+                }
+            }
+        }
+        require(bad == 0, what + ": sloped tops meet along shared edges (" + bad + " of " + points + " points part)");
+        return bad;
     }
 
     /** A straight one-block step: mode B spreads it over two blocks (1:2), mode A cuts the upper block at 45 degrees. */

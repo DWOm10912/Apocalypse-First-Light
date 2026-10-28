@@ -219,7 +219,7 @@ public final class GroundGeometry {
             long k = src.smooth(x, y, z);
             if (k >= 0) {
                 Cell c = new Cell(SMOOTH, y);
-                c.corners = SmoothRules.corners(k);
+                c.corners = src.smoothTop(x, y, z, k);
                 return c;
             }
             if (src.drawn(x, y, z, drawn)) {

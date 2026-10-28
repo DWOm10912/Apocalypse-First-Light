@@ -82,6 +82,13 @@ public final class LiquidWorld {
         long[] perfSpent = new long[4];
         /** Players pouring (LiquidPours), by entity id. */
         final Map<Integer, LiquidPours.Pour> pours = new java.util.LinkedHashMap<>();
+        /** The level's rivers when they are AFL's (RiverFlow, the river_flow gate); null: vanilla's. Asked once. */
+        com.antaurora.apofirstlight.worldgen.terrain.v2.HydroQuery hydro;
+        boolean hydroAsked;
+        /** River columns made river water since the level loaded (readout). */
+        long riverColumns;
+        /** Burst pipes (LiquidBursts, /afl dev water burst). */
+        final List<LiquidBursts.Burst> bursts = new ArrayList<>();
 
         State(ServerLevel level) {
             this.level = level;
@@ -212,7 +219,20 @@ public final class LiquidWorld {
             for (long key : ready) {
                 st.toLoad.remove(key);
                 int cx = net.minecraft.world.level.ChunkPos.getX(key), cz = net.minecraft.world.level.ChunkPos.getZ(key);
-                if (!e.loaded(cx, cz)) e.loadChunk(cx, cz, st.read.remove(key));
+                if (!e.loaded(cx, cz)) {
+                    e.loadChunk(cx, cz, st.read.remove(key));
+                    // the river plan's flow field (R1): the chunk's river columns as river water
+                    if (!st.hydroAsked) {
+                        st.hydro = RiverFlow.hydro(level);
+                        st.hydroAsked = true;
+                    }
+                    if (st.hydro != null) {
+                        int laid = RiverFlow.apply(level, e, st.hydro, cx, cz);
+                        st.riverColumns += laid;
+                        // the neighbours sent before this chunk came: their edge cells join this one's river now
+                        if (laid > 0) for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) e.resend(cx + d[0], cz + d[1]);
+                    }
+                }
             }
         }
         if (!st.changed.isEmpty()) {
@@ -224,8 +244,12 @@ public final class LiquidWorld {
         LiquidRain.tick(level, e);
         long t2 = System.nanoTime();
         LiquidPours.tick(st);
+        if (!st.paused) LiquidBursts.tick(st);
         long t3 = System.nanoTime();
-        if (!st.paused) e.tick();
+        if (!st.paused) {
+            e.tick();
+            LiquidParcelHits.tick(level, e);
+        }
         long t4 = System.nanoTime();
         if (level.getGameTime() % SYNC_EVERY == 0) sync(st);
         long t5 = System.nanoTime();

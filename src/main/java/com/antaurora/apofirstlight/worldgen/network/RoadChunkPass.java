@@ -13,6 +13,8 @@ import com.antaurora.apofirstlight.worldgen.network.road.TunnelFixtures;
 import com.antaurora.apofirstlight.worldgen.network.road.TunnelWorks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
+import com.antaurora.apofirstlight.worldgen.lock.WorldgenGateState;
+import com.antaurora.apofirstlight.worldgen.lock.WorldgenGates;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -133,6 +135,8 @@ public final class RoadChunkPass {
         int cx = chunk.getPos().x, cz = chunk.getPos().z;
         Column[] cols = columns(n, cx, cz);
         if (cols == null) return;
+        // a world with AFL rivers: the culverts are left dry, the river's own water runs through them
+        DRY.set(WorldgenGateState.enabled(level.getLevel(), WorldgenGates.RIVER_FLOW));
         BlockState dirt = backfill(), base = gravel(GravelGroundBlock.Kind.ANGULAR), gravel = gravel(GravelGroundBlock.Kind.ROUND),
                 structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState(), stone = Blocks.STONE.defaultBlockState();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
@@ -307,6 +311,9 @@ public final class RoadChunkPass {
      * that keeps its ground (across a tip, Culvert.Cell#keepGround: only the top block replaces it). Water near a tip is
      * marked for the fluid's first tick (it meets the natural river there).
      */
+    /** The chunk being written is in a world with AFL rivers (set by apply on the generating thread). */
+    private static final ThreadLocal<Boolean> DRY = ThreadLocal.withInitial(() -> false);
+
     private static void culvert(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int z, Culvert.Cell cell, int cap, int solid, boolean own) {
         if (cell == null) return;
         Culvert cv = cell.culvert();
@@ -323,7 +330,7 @@ public final class RoadChunkPass {
         double a = cv.a(x + 0.5, z + 0.5);
         boolean tip = own && (a < cv.tip0 + 1.5 || a > cv.tip1 - 1.5);
         for (int y = cv.bed; y <= hi; y++) {
-            boolean conc = y <= top && cell.concrete(y), wet = cell.water(y);
+            boolean conc = y <= top && cell.concrete(y), wet = cell.water(y) && !DRY.get();
             if (keep && y <= solid && !(conc && y == cell.top())) continue;
             if (conc) {
                 set(chunk, p, x, y, z, structure.setValue(RoadStructureBlock.LAYERS, y == cell.top() ? cell.layers() : 32).setValue(RoadStructureBlock.WATERLOGGED, wet));

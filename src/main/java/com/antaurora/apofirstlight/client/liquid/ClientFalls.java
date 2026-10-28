@@ -196,6 +196,17 @@ public final class ClientFalls {
         float flow, speed;
     }
 
+    /** A burst pipe's jet (LiquidPackets.Burst, M4): where and how it leaves, flown with the server's air drag. */
+    static final class Burst {
+        final LiquidJet jet;
+        Vec3 at, dir;
+        float speed, flow;
+
+        Burst(float drag) {
+            jet = new LiquidJet(G, 6).drag(drag);
+        }
+    }
+
     /** Falls side by side along one edge at about one height whose water runs together on top and leaves at one place. */
     static final class Group {
         final List<Fall> falls = new ArrayList<>(4);
@@ -216,6 +227,7 @@ public final class ClientFalls {
     private static final List<Wet> WET = new ArrayList<>();
     private static final List<Impact> RINGS = new ArrayList<>();
     private static final Int2ObjectOpenHashMap<Pour> POURS = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<Burst> BURSTS = new Int2ObjectOpenHashMap<>();
     private static final RandomSource RANDOM = RandomSource.create();
     private static ClientLevel tracked;
     /** Dev switch ({@code /afl_render falls}); diagnostics. */
@@ -238,6 +250,7 @@ public final class ClientFalls {
         WET.clear();
         RINGS.clear();
         POURS.clear();
+        BURSTS.clear();
         tracked = level;
     }
 
@@ -288,6 +301,19 @@ public final class ClientFalls {
         }
         pour.flow = p.flow();
         pour.speed = p.speed();
+    }
+
+    public static void burst(LiquidPackets.Burst p) {
+        track();
+        Burst b = BURSTS.get(p.id());
+        if (b == null) {
+            if (p.flow() <= 0) return;
+            BURSTS.put(p.id(), b = new Burst(p.drag()));
+        }
+        b.at = new Vec3(p.x(), p.y(), p.z());
+        b.dir = new Vec3(p.dx(), p.dy(), p.dz());
+        b.speed = p.speed();
+        b.flow = p.flow();
     }
 
     @SubscribeEvent
@@ -349,6 +375,17 @@ public final class ClientFalls {
             } else pour.jet.gap();
             tickJet(level, pour.jet, pour.flow, null);
             if ((who == null || pour.flow <= 0) && pour.jet.isEmpty()) it.remove();
+        }
+        for (Iterator<Burst> it = BURSTS.values().iterator(); it.hasNext(); ) {
+            Burst b = it.next();
+            if (b.flow > 0) {
+                // two a tick: a fast jet's parcels are over a metre apart at one
+                Vec3 v = b.dir.scale(b.speed);
+                b.jet.emit(b.at, v, LiquidJet.STEP);
+                b.jet.emit(b.at, v, 0);
+            } else b.jet.gap();
+            tickJet(level, b.jet, b.flow, null);
+            if (b.flow <= 0 && b.jet.isEmpty()) it.remove();
         }
         DROPS.addAll(NEW_DROPS);
         NEW_DROPS.clear();
@@ -669,7 +706,7 @@ public final class ClientFalls {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         track();
-        if (CHUNKS.isEmpty() && ENDED.isEmpty() && POURS.isEmpty() && DROPS.isEmpty() && WET.isEmpty()) return;
+        if (CHUNKS.isEmpty() && ENDED.isEmpty() && POURS.isEmpty() && BURSTS.isEmpty() && DROPS.isEmpty() && WET.isEmpty()) return;
         try {
             long t0 = System.nanoTime();
             render(mc, mc.level, event.getPoseStack(), event.getCamera().getPosition(), event.getPartialTick(), event.getProjectionMatrix());
@@ -690,19 +727,14 @@ public final class ClientFalls {
      * Two ways (as the standing water, ClientLiquid): without a shader pack the streams, sheets and drops go into one buffer
      * drawn by afl_water_fall over a fresh copy of the frame (the standing water in it): clear water that bends what is
      * behind it, mirrors the sky at grazing angles, whitens where it is broken up. With a pack (or in Fabulous), vanilla's
-     * translucent entity type, faint. Wet marks and the runs down walls are decals either way.
+     * translucent entity type, faint. Wet marks (with a pack only: no darkened ground without one) and the runs down walls
+     * are decals.
      */
     private static void render(Minecraft mc, ClientLevel level, PoseStack pose, Vec3 cam, float partial, Matrix4f projection) {
         var atlas = mc.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
-        // without a shader pack water in the air is not drawn: streams, sheets, wall films and drops never matched the
-        // standing water ("水帘你不删吗？材质都不一样", the user 2026-10-25, falling water 19); the falls' rings on the
-        // water (impacts) stay. With a pack they are drawn as before, for Aureveil to take over (package 6)
-        if (!AflShaderCompat.shaderPackInUse()) {
-            lastLook = false;
-            lastJets = lastSheets = lastFilms = 0;
-            lastDrops = 0;
-            return;
-        }
+        // without a shader pack water in the air is drawn again, now with the standing water's own look
+        // (afl_water_look.glsl, Mesh water M3, the user's 9.1 2026-10-26); falling water 19 had turned it off because
+        // it did not match ("水帘你不删吗？材质都不一样", 2026-10-25)
         TextureAtlasSprite stream = atlas.apply(FALL_SPRITE), sheet = atlas.apply(FALL_SPRITE), drop = atlas.apply(DROP);
         MultiBufferSource.BufferSource vanilla = mc.renderBuffers().bufferSource();
         ShaderInstance program = AflShaderCompat.shaderPackInUse() || Minecraft.useShaderTransparency() ? null : WaterLook.fallProgram();
@@ -749,9 +781,22 @@ public final class ClientFalls {
             at.popPose();
             jets++;
         }
+        for (Burst b : BURSTS.values()) {
+            if (b.jet.isEmpty()) continue;
+            BlockPos origin = BlockPos.containing(b.jet.parcels().getLast().pos);
+            double radius = radius(Math.max(b.flow, 0.05), Math.max(b.speed, 0.5));
+            at.pushPose();
+            at.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
+            LiquidJetRenderer.render(at, buffers, level, origin, b.jet, null, partial, stream, streamRgb(), streamAlpha(), radius, b.speed, 6,
+                    0.25 + radius * 20);
+            at.popPose();
+            jets++;
+        }
         drawDrops(level, at, buffers, cam, partial, drop);
         long now = level.getGameTime();
-        for (Wet w : WET) {
+        // wet marks darken the ground: only for a shader pack's eyes; without one the ground is not drawn darker (the
+        // user 2026-10-25: wet looks are the pack's)
+        if (AflShaderCompat.shaderPackInUse()) for (Wet w : WET) {
             float age = (now - w.born + partial) / 400F;
             int alpha = (int) (110 * (1 - age) * Math.min(1, age * 40));
             Vec3 u = new Vec3(1, 0, 0), v = new Vec3(0, 0, 1);
@@ -765,7 +810,7 @@ public final class ClientFalls {
                 // a copy with the standing water in it: what is only partly there blends with it (falling water 17)
                 if (!WaterLook.copyScene(main)) rendered.release();
                 else {
-                    WaterLook.setUpFall(program, level, cam, partial, main);
+                    WaterLook.setUpFall(program, level, cam, partial, projection, main);
                     RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
                     mc.gameRenderer.lightTexture().turnOnLightLayer();
                     RenderSystem.disableBlend();
@@ -1052,8 +1097,8 @@ public final class ClientFalls {
     public static String status() {
         int falls = 0;
         for (List<Fall> f : CHUNKS.values()) falls += f.size();
-        return String.format(Locale.ROOT, "%s; %d falls (%d stopping), %d pours; %d groups; last frame %d streams, %d sheets, %d wall films, %d drops (max %d), %d wet marks, %d rings; draw %d us (%s), tick %d us",
-                enabled ? "on" : "off", falls, ENDED.size(), POURS.size(), lastGroups, lastJets, lastSheets, lastFilms, lastDrops, MAX_DROPS, WET.size(), RINGS.size(),
-                lastDrawMicros, lastLook ? "AFL falling-water program" : AflShaderCompat.shaderPackInUse() ? "vanilla translucent (shader pack)" : "not drawn without a shader pack", lastTickMicros);
+        return String.format(Locale.ROOT, "%s; %d falls (%d stopping), %d pours, %d bursts; %d groups; last frame %d streams, %d sheets, %d wall films, %d drops (max %d), %d wet marks, %d rings; draw %d us (%s), tick %d us",
+                enabled ? "on" : "off", falls, ENDED.size(), POURS.size(), BURSTS.size(), lastGroups, lastJets, lastSheets, lastFilms, lastDrops, MAX_DROPS, WET.size(), RINGS.size(),
+                lastDrawMicros, lastLook ? "AFL falling-water program" : AflShaderCompat.shaderPackInUse() ? "vanilla translucent (shader pack)" : "vanilla translucent (Fabulous)", lastTickMicros);
     }
 }

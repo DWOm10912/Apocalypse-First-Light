@@ -39,6 +39,18 @@ public final class SmoothChunkData {
 
     void clearGeometry() {
         if (geometry != null) geometry.clear();
+        if (tops != null) tops.clear();
+    }
+
+    /** R2b: the smooth tops (SmoothTop#top) of the blocks asked for, by block key (main thread, cleared with the geometry). */
+    private it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<float[]> tops;
+
+    float[] top(int key) { return tops == null ? null : tops.get(key); }
+
+    void storeTop(int key, float[] top) {
+        if (tops == null) tops = new it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<>(64);
+        if (tops.size() >= 4096) tops.clear();
+        tops.put(key, top);
     }
 
     int cachedCount() { return geometry == null ? 0 : geometry.size(); }
