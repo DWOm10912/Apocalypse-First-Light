@@ -21,7 +21,8 @@ package com.antaurora.apofirstlight.worldgen.terrain.v2;
  *   draw the slope between them.</li>
  *   <li>Top material (4.5): mud in a pool's deep, slow water, sand on a point bar and in patches on the runs, round gravel
  *   on the rest of the bed; at the water's edge sand or gravel patches on a beach and on a bar, the land's own soil
- *   elsewhere (no bare strip).</li>
+ *   elsewhere (no bare strip). The patches are clustered ({@link #patch}, terrain rework 13.12): sand lies in drifts a
+ *   few metres across, not as single columns (user 2026-10-28: the sand read as stuck-on squares).</li>
  * </ul>
  */
 public final class RiverBed {
@@ -136,16 +137,60 @@ public final class RiverBed {
 
     static byte material(double dep, HydroQuery.Point p, double d, int x, int z) {
         boolean inner = p.offset * p.outer < 0;
-        double bar = p.pool * p.bend, u = hash(x, z, 1);
+        double bar = p.pool * p.bend;
         if (dep > 0) {
-            if (p.pool > 0.6 && dep > 1.0) return MUD;                       // a pool's deep, slow water
-            if (bar > 0.3 && inner && dep < 0.9) return SAND;                // the point bar's foot
-            if (dep < 0.7 && p.pool > 0.3 && u < 0.2) return SAND;           // sand patches on the runs
+            if (p.pool > 0.6 && dep > 1.0) return MUD;                                  // a pool's deep, slow water
+            if (bar > 0.3 && inner && dep < 0.9) return SAND;                           // the point bar's foot
+            if (dep < 0.7 && p.pool > 0.3 && patch(x, z, 1) < 0.2) return SAND;         // sand patches on the runs
             return GRAVEL;
         }
-        if (dep > -0.5 && bar > 0.3 && inner) return SAND;                   // the bar over the water
-        if (dep > -0.4 && p.bank < 0.3) return u < 0.5 ? SAND : GRAVEL;      // a beach
-        if (dep > -0.3 && u < 0.35) return GRAVEL;                           // gravel at the water's edge, in patches
+        if (dep > -0.5 && bar > 0.3 && inner) return SAND;                              // the bar over the water
+        if (dep > -0.4 && p.bank < 0.3) return patch(x, z, 2) < 0.5 ? SAND : GRAVEL;    // a beach
+        if (dep > -0.3 && patch(x, z, 3) < 0.35) return GRAVEL;                         // gravel at the water's edge, in patches
         return KEEP;
+    }
+
+    /**
+     * Terrain rework 13.12: 0..1, spread evenly (u < s holds on a share s of the columns, as a column hash would), but
+     * clustered: value noise of wavelengths about 5 and 2 m in world coordinates, put through its own distribution
+     * ({@link #CDF}), so a patch is a few metres of the same material with a ragged edge.
+     */
+    public static double patch(int x, int z, int salt) {
+        double v = 0.65 * noise(x / 5.0, z / 5.0, salt * 2) + 0.35 * noise(x / 2.0, z / 2.0, salt * 2 + 1);
+        int lo = 0, hi = CDF.length - 1;
+        if (v <= CDF[lo]) return 0;
+        if (v >= CDF[hi]) return 1;
+        while (hi - lo > 1) {
+            int mid = (lo + hi) >>> 1;
+            if (CDF[mid] <= v) lo = mid;
+            else hi = mid;
+        }
+        return (lo + (v - CDF[lo]) / Math.max(1e-12, CDF[hi] - CDF[lo])) / (CDF.length - 1);
+    }
+
+    /** Smooth value noise 0..1 at (x, z) (cells a unit wide, corner values from #hash). */
+    private static double noise(double x, double z, int salt) {
+        int i = (int) Math.floor(x), j = (int) Math.floor(z);
+        double fx = x - i, fz = z - j;
+        fx = fx * fx * (3 - 2 * fx);
+        fz = fz * fz * (3 - 2 * fz);
+        double a = hash(i, j, 100 + salt), b = hash(i + 1, j, 100 + salt), c = hash(i, j + 1, 100 + salt), e = hash(i + 1, j + 1, 100 + salt);
+        return (a + (b - a) * fx) * (1 - fz) + (c + (e - c) * fx) * fz;
+    }
+
+    /** #patch's noise sorted over a fixed spread of 65536 columns (the same on every machine): its distribution. */
+    private static final double[] CDF;
+
+    static {
+        int n = 1 << 16, k = 0;
+        double[] v = new double[n];
+        for (int z = 0; z < 256; z++)
+            for (int x = 0; x < 256; x++) {
+                int wx = x * 7 + z * 3, wz = z * 7 - x * 2;
+                v[k++] = 0.65 * noise(wx / 5.0, wz / 5.0, 0) + 0.35 * noise(wx / 2.0, wz / 2.0, 1);
+            }
+        java.util.Arrays.sort(v);
+        CDF = new double[257];
+        for (int q = 0; q <= 256; q++) CDF[q] = v[Math.min(n - 1, q * (n / 256))];
     }
 }

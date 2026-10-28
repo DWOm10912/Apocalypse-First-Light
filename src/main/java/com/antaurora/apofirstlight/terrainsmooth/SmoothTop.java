@@ -43,10 +43,13 @@ public final class SmoothTop {
 
     /**
      * Absolute height of corner point (px, pz) from its four columns' natural surfaces (mode B as SmoothRules#corner for
-     * natural columns: the mean, the middle when two apart, NaN when further apart or any column is not natural ground).
+     * natural columns: on a staircase SmoothRules#stairs, else the mean; the middle when two apart; NaN when further apart
+     * or any column is not natural ground). A tree's column (terrain rework 13.13: a trunk or root on its natural surface)
+     * gives the top of the ground under the trunk (the highest of a wide trunk's), where every natural column there can draw
+     * it.
      */
     public static float point(SmoothRules.Cells c, int px, int pz) {
-        int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0;
+        int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0, nlo = Integer.MAX_VALUE, nhi = Integer.MIN_VALUE, trunk = Integer.MIN_VALUE;
         for (int dz = -1; dz <= 0; dz++)
             for (int dx = -1; dx <= 0; dx++) {
                 int x = px + dx, z = pz + dz, s = c.surface(x, z);
@@ -54,9 +57,18 @@ public final class SmoothTop {
                 lo = Math.min(lo, s + 1);
                 hi = Math.max(hi, s + 1);
                 sum += s + 1;
+                if (c.cell(x, s + 1, z) == SmoothRules.TREE) trunk = Math.max(trunk, s + 1);   // a wide trunk: the highest foot
+                else {
+                    nlo = Math.min(nlo, s + 1);
+                    nhi = Math.max(nhi, s + 1);
+                }
             }
         if (hi - lo > 2) return Float.NaN;
-        return hi - lo == 2 ? lo + 1 : sum * 0.25F;
+        if (trunk != Integer.MIN_VALUE) return nlo == Integer.MAX_VALUE || trunk >= nhi - 1 && trunk <= nlo + 1 ? trunk : Float.NaN;
+        // in quarters, as the geometry keys hold their corners: the ring meets the neighbours' own corners
+        if (hi - lo == 2) return lo + 1;
+        float v = c.stairs(px, pz);
+        return v == SmoothRules.NONE ? sum * 0.25F : Math.round(Math.max(hi - 1, Math.min(lo + 1, v)) * 4) / 4F;
     }
 
     /** The 16 corner points from (x - 1, z - 1) to (x + 2, z + 2), absolute (#point), [j * 4 + i]. */

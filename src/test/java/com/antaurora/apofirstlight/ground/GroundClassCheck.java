@@ -28,6 +28,14 @@ import java.util.Random;
  * neighbours along x or z). Those are counted apart ({@link #digR1}); any other difference still fails: the slopes of
  * one-block steps keep the frozen answers.
  * <p>
+ * Terrain rework R2f (docs/worldgen/terrain_rework_v1_design.md 13.10) changes mode B's corners on purpose everywhere
+ * (SmoothRules#stairs: a point on a gentle slope's staircase follows the line between its terrace's steps): mode B's geometry is counted apart ("changed by R2f") and
+ * checked by SmoothTopCheck (seams, gentle slopes); mode A, notFree, freeCorners and the classes stay frozen.
+ * <p>
+ * Terrain rework 13.13 changes answers on purpose within two columns of a tree's column (a trunk or root on its natural
+ * surface is no longer a wall: the corners it touches take the ground under it): counted apart ("beside a tree",
+ * {@link #nearTree}), checked by SmoothTopCheck#trunk.
+ * <p>
  * Scenes: random 3D grids of every cell kind (graded_turf among them), terrains with soil over rock, caves, water and
  * cover; and (UndergroundCheck, per seed) patches of the six seeds' planned ground: their surface, soil depth, rock and
  * caves.
@@ -109,9 +117,19 @@ public final class GroundClassCheck {
         return false;
     }
 
+    /** Terrain rework 13.13: whether a column within two of (x, z) has a trunk or root (TREE) on its natural surface. */
+    static boolean nearTree(Cells c, int x, int z) {
+        for (int dz = -2; dz <= 2; dz++)
+            for (int dx = -2; dx <= 2; dx++) {
+                int s = c.surface(x + dx, z + dz);
+                if (s != SmoothRules.NO_SURFACE && c.cell(x + dx, s + 1, z + dz) == SmoothRules.TREE) return true;
+            }
+        return false;
+    }
+
     /** Totals over every scene: cells compared, answers compared, differences; and how many of each class (coverage). */
     static final class Tally {
-        long cells, answers, diffs, dig;
+        long cells, answers, diffs, dig, r2f, tree;
         final long[] cls = new long[3];
         long sloped, free;
         final List<String> first = new ArrayList<>();
@@ -122,8 +140,8 @@ public final class GroundClassCheck {
         }
 
         String line() {
-            return String.format(Locale.ROOT, "%d cells, %d answers, %d different, %d changed by dig R1 (H %d, V %d, C %d; %d sloped tops, %d free columns)",
-                    cells, answers, diffs, dig, cls[GroundClass.H], cls[GroundClass.V], cls[GroundClass.C], sloped, free);
+            return String.format(Locale.ROOT, "%d cells, %d answers, %d different, %d changed by dig R1, %d beside a tree, %d mode B tops changed by R2f (H %d, V %d, C %d; %d sloped tops, %d free columns)",
+                    cells, answers, diffs, dig, tree, r2f, cls[GroundClass.H], cls[GroundClass.V], cls[GroundClass.C], sloped, free);
         }
     }
 
@@ -134,12 +152,14 @@ public final class GroundClassCheck {
             int cls = GroundClass.of(c, x, y, z), old = oldClass(c, x, y, z);
             t.cls[cls]++;
             t.answers += 8;
-            if (digR1(c, x, y, z)) {   // the frozen answers do not hold here on purpose; the classes still agree with themselves
+            boolean tree = nearTree(c, x, z);
+            if (tree || digR1(c, x, y, z)) {   // the frozen answers do not hold here on purpose; the classes still agree with themselves
                 if (GroundClass.surface(c, x, y, z) != (cls == GroundClass.H)) t.diff(at("surface", x, y, z));
                 long g = SmoothRules.geometry(c, SmoothRules.MODE_B, x, y, z);
                 if (g >= 0) t.sloped++;
                 if (SmoothRules.notFree(c, SmoothRules.MODE_B, x, y, z, true) == null) t.free++;
-                t.dig++;
+                if (tree) t.tree++;
+                else t.dig++;
                 continue;
             }
             if (cls != old) t.diff(at("class", x, y, z) + " " + cls + " was " + old);
@@ -147,7 +167,8 @@ public final class GroundClassCheck {
             if (GroundClass.soilWall(c, x, y, z) != SmoothRulesR0.soilWall(c, x, y, z)) t.diff(at("soilWall", x, y, z));
             for (int mode : new int[]{SmoothRules.MODE_A, SmoothRules.MODE_B}) {
                 long g = SmoothRules.geometry(c, mode, x, y, z), r = SmoothRulesR0.geometry(c, mode, x, y, z);
-                if (g != r) t.diff(at("geometry mode " + mode, x, y, z) + String.format(Locale.ROOT, " %x was %x", g, r));
+                if (g != r && mode == SmoothRules.MODE_B) t.r2f++;
+                else if (g != r) t.diff(at("geometry mode " + mode, x, y, z) + String.format(Locale.ROOT, " %x was %x", g, r));
                 if (mode == SmoothRules.MODE_B && g >= 0) t.sloped++;
             }
             for (boolean walls : new boolean[]{false, true}) {

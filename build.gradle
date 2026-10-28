@@ -818,3 +818,11 @@ tasks.register('smoothTopCheck', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.ground.SmoothTopCheck'
 }
+
+// R2b follow-up diagnostics: a test world dump (tools/terrain-smooth/dump_world.py) through the Terrain Smooth rules.
+tasks.register('worldDumpProbe', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.WorldDumpProbe'
+    args = [project.findProperty('probeIn') ?: 'dump.txt', project.findProperty('probeOut') ?: 'dump.png']
+}

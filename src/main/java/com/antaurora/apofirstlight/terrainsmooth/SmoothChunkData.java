@@ -16,7 +16,10 @@ public final class SmoothChunkData {
     final int[] surface = new int[256];
     private Int2LongOpenHashMap geometry;
 
-    SmoothChunkData(int epoch) { this.epoch = epoch; }
+    SmoothChunkData(int epoch) {
+        this.epoch = epoch;
+        java.util.Arrays.fill(stairs, Float.NaN);
+    }
 
     static int index(int x, int z) { return (z & 15) << 4 | (x & 15); }
 
@@ -40,6 +43,27 @@ public final class SmoothChunkData {
     void clearGeometry() {
         if (geometry != null) geometry.clear();
         if (tops != null) tops.clear();
+        generation++;
+        java.util.Arrays.fill(stairs, Float.NaN);
+    }
+
+    /**
+     * R2f: SmoothRules#stairs at the chunk's 256 corner points (each column's north-west corner), NaN not read yet; read and
+     * written by any thread (plain float reads and writes), cleared with the geometry: an answer read before a clear is
+     * not kept after it (#generation).
+     */
+    private final float[] stairs = new float[256];
+    private volatile int generation;
+
+    /** SmoothRules#stairs at corner point (px, pz) of this chunk, kept. */
+    public float stairs(SmoothRules.Cells c, int px, int pz) {
+        int i = index(px, pz);
+        float v = stairs[i];
+        if (!Float.isNaN(v)) return v;
+        int g = generation;
+        v = SmoothRules.stairs(c, px, pz);
+        if (generation == g) stairs[i] = v;
+        return v;
     }
 
     /** R2b: the smooth tops (SmoothTop#top) of the blocks asked for, by block key (main thread, cleared with the geometry). */

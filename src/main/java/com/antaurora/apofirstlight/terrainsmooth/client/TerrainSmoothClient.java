@@ -176,6 +176,13 @@ public final class TerrainSmoothClient {
             SmoothChunkData d = TerrainSmooth.peek(c, TerrainSmooth.CLIENT);
             return d == null ? SmoothRules.NO_SURFACE : d.surface(x, z);
         }
+
+        @Override
+        public float stairs(int px, int pz) {
+            LevelChunk c = level.getChunkSource().getChunk(px >> 4, pz >> 4, ChunkStatus.FULL, false);
+            SmoothChunkData d = c == null ? null : TerrainSmooth.peek(c, TerrainSmooth.CLIENT);
+            return d == null ? SmoothRules.stairs(this, px, pz) : d.stairs(this, px, pz);
+        }
     }
 
     private static final ThreadLocal<RegionCells> REGION = ThreadLocal.withInitial(RegionCells::new);

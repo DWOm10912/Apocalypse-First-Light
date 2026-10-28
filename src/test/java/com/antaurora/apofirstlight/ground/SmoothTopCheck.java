@@ -115,8 +115,126 @@ public final class SmoothTopCheck {
         check(seamBad == 0, "shared edges meet");
         check(rangeBad == 0, "midpoints and centres within their corners");
         pieces();
+        gentle();
+        trunk();
         System.out.println(fails == 0 ? "SMOOTH TOP CHECK PASS" : "SMOOTH TOP CHECK FAIL (" + fails + ")");
         if (fails > 0) System.exit(1);
+    }
+
+    /**
+     * Terrain rework R2f: planes of natural columns rising one block every 3, 5, 8 and 12 (along x and on a diagonal), the
+     * corner points against the plane: how many blocks tilt and how far the corners stand off it (RMS, the mean offset
+     * taken out), with the four-column mean (before R2f) beside.
+     */
+    static void gentle() {
+        for (int run : new int[]{3, 5, 8, 12})
+            for (boolean diagonal : new boolean[]{false, true}) {
+                int w = 48, y0 = 40;
+                double a = 1.0 / run, b = diagonal ? 0.6 / run : 0;
+                GroundClassCheck.Grid c = new GroundClassCheck.Grid(0, y0, 0, w, 48);
+                for (int x = 0; x < w; x++)
+                    for (int z = 0; z < w; z++) {
+                        int h = 50 + (int) Math.floor(a * x + b * z + 0.37);
+                        for (int y = y0; y < y0 + 48; y++) c.c[c.i(x, y, z)] = (byte) (y <= h ? SmoothRules.NATURAL : SmoothRules.AIR);
+                    }
+                c.surfaces();
+                int n = 0, tilted = 0, oldTilted = 0;
+                double off = 0, oldOff = 0, sq = 0, oldSq = 0;
+                int m = 0;
+                for (int x = 6; x < w - 6; x++)
+                    for (int z = 6; z < w - 6; z++) {
+                        int y = c.surface(x, z);
+                        long g = SmoothRules.geometry(c, SmoothRules.MODE_B, x, y, z);
+                        n++;
+                        float[] k = g < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(g);
+                        boolean flat = k[0] == k[1] && k[1] == k[2] && k[2] == k[3];
+                        if (!flat) tilted++;
+                        // the block's nw corner point against the plane; the mean of its four columns (before R2f)
+                        int sum = 0, lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+                        for (int dz = -1; dz <= 0; dz++) for (int dx = -1; dx <= 0; dx++) {
+                            int s = c.surface(x + dx, z + dz) + 1;
+                            sum += s;
+                            lo = Math.min(lo, s);
+                            hi = Math.max(hi, s);
+                        }
+                        double old = hi - lo == 2 ? lo + 1 : Math.round(sum) / 4.0;
+                        double plane = a * x + b * z, d = y + k[0] - plane, od = old - plane;
+                        off += d; oldOff += od; sq += d * d; oldSq += od * od; m++;
+                        // old: a block tilts when one of its corner points' four columns differ
+                        boolean oldFlat = true;
+                        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) if (c.surface(x + dx, z + dz) != y) oldFlat = false;
+                        if (!oldFlat) oldTilted++;
+                    }
+                double rms = Math.sqrt(Math.max(0, sq / m - (off / m) * (off / m))), oldRms = Math.sqrt(Math.max(0, oldSq / m - (oldOff / m) * (oldOff / m)));
+                System.out.printf(Locale.ROOT, "  gentle 1 in %2d %-8s: %5.1f %% of blocks tilt (four-column mean %5.1f %%); corners off the plane RMS %.3f (mean %.3f)%n",
+                        run, diagonal ? "diagonal" : "along x", 100.0 * tilted / n, 100.0 * oldTilted / n, rms, oldRms);
+                if (run <= 8) check(rms < oldRms - 0.02, "R2f follows a 1 in " + run + " slope closer than the four-column mean");
+            }
+    }
+
+    /**
+     * Terrain rework 13.13: a tree's trunk (1 x 1 or 2 x 2 TREE columns, six high, on the natural surface) on level ground
+     * and on slopes of one in one, two and four. Every natural block beside it: each corner it shares with a trunk column
+     * stands at the top of the ground under that trunk (the highest of a wide trunk's: the ground meets the trunk's foot),
+     * and its side toward the trunk shows no band below the trunk's foot (before: the trunk was a wall, the corners pinned,
+     * a star of bare soil sides round it).
+     */
+    static void trunk() {
+        int blocks = 0, corners = 0, off = 0, bands = 0;
+        for (int run : new int[]{0, 1, 2, 4})
+            for (int size = 1; size <= 2; size++) {
+                int w = 32, y0 = 40;
+                GroundClassCheck.Grid c = new GroundClassCheck.Grid(0, y0, 0, w, 32);
+                int[][] h = new int[w][w];
+                for (int x = 0; x < w; x++)
+                    for (int z = 0; z < w; z++) h[x][z] = 50 + (run == 0 ? 0 : (int) Math.floor((x + 0.3 * z) / run));
+                for (int x = 0; x < w; x++)
+                    for (int z = 0; z < w; z++)
+                        for (int y = y0; y < y0 + 32; y++) {
+                            boolean tree = x >= 15 && x < 15 + size && z >= 15 && z < 15 + size && y > h[x][z] && y <= h[x][z] + 6;
+                            c.c[c.i(x, y, z)] = (byte) (y <= h[x][z] ? SmoothRules.NATURAL : tree ? SmoothRules.TREE : SmoothRules.AIR);
+                        }
+                c.surfaces();
+                for (int x = 13; x < 18 + size; x++)
+                    for (int z = 13; z < 18 + size; z++) {
+                        if (x >= 15 && x < 15 + size && z >= 15 && z < 15 + size) continue;
+                        int y = c.surface(x, z);
+                        long g = SmoothRules.geometry(c, SmoothRules.MODE_B, x, y, z);
+                        float[] k = g < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(g);
+                        blocks++;
+                        int[][] at = {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+                        for (int q = 0; q < 4; q++) {
+                            int px = x + at[q][0], pz = z + at[q][1], t = Integer.MIN_VALUE;
+                            for (int dz = -1; dz <= 0; dz++)
+                                for (int dx = -1; dx <= 0; dx++) {
+                                    int cx = px + dx, cz = pz + dz;
+                                    if (cx >= 15 && cx < 15 + size && cz >= 15 && cz < 15 + size) t = Math.max(t, h[cx][cz] + 1);
+                                }
+                            if (t == Integer.MIN_VALUE) continue;
+                            corners++;
+                            if (Math.abs(y + k[q] - t) > 1e-4) {
+                                off++;
+                                int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+                                for (int dz = -1; dz <= 0; dz++) for (int dx = -1; dx <= 0; dx++) { lo = Math.min(lo, h[px + dx][pz + dz] + 1); hi = Math.max(hi, h[px + dx][pz + dz] + 1); }
+                                System.out.printf(Locale.ROOT, "    off: run %d size %d block %d %d corner %d at %.2f, trunk foot %d, columns %d..%d%n", run, size, x, z, q, y + k[q], t, lo, hi);
+                            }
+                        }
+                        // the side toward a trunk column: no band below the ground under that trunk (a wide trunk's lower foot
+                        // gets a band down to it, behind the trunk)
+                        int[][] side = {{0, -1, 0, 1}, {0, 1, 2, 3}, {-1, 0, 0, 2}, {1, 0, 1, 3}};
+                        for (int s = 0; s < 4; s++) {
+                            int nx = x + side[s][0], nz = z + side[s][1];
+                            if (!(nx >= 15 && nx < 15 + size && nz >= 15 && nz < 15 + size) || g < 0) continue;
+                            int qa = (int) (g >>> (16 + 8 * s) & 15), qb = (int) (g >>> (20 + 8 * s) & 15);
+                            int foot = Math.round((h[nx][nz] + 1 - y) * 4);
+                            if (qa < Math.min(Math.round(k[side[s][2]] * 4), foot) || qb < Math.min(Math.round(k[side[s][3]] * 4), foot)) bands++;
+                        }
+                    }
+            }
+        System.out.printf(Locale.ROOT, "  trunks: %d blocks beside a trunk, %d corners shared with it, %d not at the trunk's foot, %d sides toward it showing a band%n",
+                blocks, corners, off, bands);
+        check(off == 0, "the ground meets the trunk's foot");
+        check(bands == 0, "no band toward a trunk");
     }
 
     /** GroundBlend's pieces over random nine-point tops lie on the drawn top. */

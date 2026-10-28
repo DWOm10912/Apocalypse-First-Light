@@ -63,7 +63,8 @@ public final class WorldgenRules {
     // 2: the measured channel (RiverBed: bankfull depth, pools and riffles, sloped banks, bed materials), dry culverts
     // 3 (R2, 2026-10-27): the channel 1.6 times the plan's width with wandering banks, narrowing at road works; riffles,
     // pools every 5-7 widths and deep holes; no dither; beaches and cut banks; the fall gathered into the riffles
-    static final int RIVER_FLOW = 3;
+    // 4 (2026-10-28, terrain rework 13.12): the bed's sand and gravel patches clustered (RiverBed#patch), not single columns
+    static final int RIVER_FLOW = 4;
 
     /** The rules of this build for an r1 overworld; forestEnabled is the world's mesh forest switch. */
     public static List<WorldgenSystem> current(boolean forestEnabled) {
