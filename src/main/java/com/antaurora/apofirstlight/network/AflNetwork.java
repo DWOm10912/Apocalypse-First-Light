@@ -28,7 +28,9 @@ public final class AflNetwork {
     //     and outfit; and on B (physical water package 4, 2026-10-26)
     // 77: both merged 2026-10-26
     // 78: B, the furniture bench's round 2 (2026-10-26): Act carries the timing ring's perfect press
-    private static final String PROTOCOL = "78";
+    // 78: female body V1 (2026-10-27, master): Identity and SetupChoice carry the survivor's sex
+    // 79: B (B-Workbench) and master merged 2026-10-27
+    private static final String PROTOCOL = "79";
     private static SimpleChannel channel;
     private static int nextId;
 

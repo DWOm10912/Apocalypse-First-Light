@@ -58,6 +58,11 @@ public final class SurvivorSkins {
     }
 
     private static final List<Skin> LEGACY = List.of(new Skin("test_classic", Arms.CLASSIC), new Skin("test_slim", Arms.SLIM));
+    /**
+     * The first survivor's skin by the sex chosen at character creation (female body V1, user 2026-10-27: one set each;
+     * 128 x 128, tools/characters/old_body_skin_paint_v1.py). Never rolled for a successor.
+     */
+    private static final Skin STARTER_MALE = new Skin("afl_male_v1", Arms.CLASSIC), STARTER_FEMALE = new Skin("afl_female_v1", Arms.SLIM);
     private static final List<Skin> POOL = pool();
     /** Shown for an id no longer in the pool: a classic-arm skin, which also reads right on a slim model. */
     private static final String FALLBACK = "m01";
@@ -69,7 +74,21 @@ public final class SurvivorSkins {
         List<Skin> pool = new ArrayList<>();
         for (SurvivorRoster.Person person : SurvivorRoster.PEOPLE) pool.add(of(person));
         pool.addAll(LEGACY);
+        pool.add(STARTER_MALE);
+        pool.add(STARTER_FEMALE);
         return List.copyOf(pool);
+    }
+
+    /** Whether a pool skin is a woman's (a roster woman's or the female starting skin): a corpse's body (SkinMesh's female torso). */
+    public static boolean female(String id) {
+        if (STARTER_FEMALE.id().equals(id)) return true;
+        for (SurvivorRoster.Person person : SurvivorRoster.PEOPLE) if (person.id().equals(id)) return person.sex() == SurvivorRecord.Sex.FEMALE;
+        return false;
+    }
+
+    /** The first survivor's skin for a sex. */
+    public static Skin starter(SurvivorRecord.Sex sex) {
+        return sex == SurvivorRecord.Sex.FEMALE ? STARTER_FEMALE : STARTER_MALE;
     }
 
     /** A roster person's skin: the person's id, slim arms for women and classic arms for men. */

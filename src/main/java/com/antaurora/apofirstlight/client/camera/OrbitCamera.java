@@ -493,9 +493,14 @@ public final class OrbitCamera {
         static final IGuiOverlay DOT = (gui, graphics, partialTick, width, height) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui || mc.screen != null || !onFoot() || !CameraDirector.holding(ID)) return;
-            int cx = width / 2, cy = height / 2;
-            graphics.fill(cx - 2, cy - 2, cx + 2, cy + 2, 0x66000000);
-            graphics.fill(cx - 1, cy - 1, cx + 1, cy + 1, 0xE6FFFFFF);
+            // the first-person crosshair's dot (client/AflCrosshair), at its bright step: here it is the aim, always in use
+            com.antaurora.apofirstlight.client.AflCrosshair.begin(graphics);
+            try {
+                com.antaurora.apofirstlight.client.AflCrosshair.dot(graphics, com.antaurora.apofirstlight.client.AflCrosshair.AIMED,
+                        com.antaurora.apofirstlight.client.AflCrosshair.COLOR);
+            } finally {
+                com.antaurora.apofirstlight.client.AflCrosshair.end(graphics);
+            }
         };
     }
 }

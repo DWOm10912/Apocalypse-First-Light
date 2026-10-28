@@ -7,7 +7,7 @@
   "client": ["client.CreateWorldScreenAccessor", "client.LightTextureDarknessMixin", "client.MaintenanceCameraMixin", "client.MaintenanceGameRendererMixin", "client.PostGameRendererMixin", "client.RestroomDoorPickMixin", "client.HearingProtectionSoundEngineMixin", "client.LockedInventoryTooltipMixin", "client.AflMeshShapePickMixin", "client.LocalPlayerWeightSprintMixin", "client.HumanoidModelThermometerMixin", "client.EntityRenderDispatcherFireMixin", "client.LevelRendererFireTrackMixin", "client.BaseFireBlockSmokeMixin",
     "client.TerrainParticleSampleMixin",
     "client.MeshHitPickMixin", "client.HumanoidModelPullMixin", "client.PortableGeneratorCameraMixin", "client.ExplosionSoundMixin", "client.LevelRendererBreakSoundMixin", "client.ItemInHandLayerNozzleMixin", "client.EntityRenderDispatcherShadowMixin", "client.EntityRenderDispatcherOwnBodyMixin", "client.CameraDirectorMixin", "client.MouseHandlerLookLockMixin", "client.CreateWorldFederalDefaultMixin",
-    "client.SurvivorSkinPlayerInfoMixin",
+    "client.SurvivorSkinPlayerInfoMixin", "client.GuiCrosshairMixin",
     "client.AflTrueTypeDefinitionMixin", "client.AflFontSetMixin", "client.AflWindowGuiScaleMixin",
     "client.AflFontTextureMixin", "client.AflFontStringOutputMixin",
     "client.InventoryWeaponScrollMixin", "client.AbstractContainerScreenGridMixin",

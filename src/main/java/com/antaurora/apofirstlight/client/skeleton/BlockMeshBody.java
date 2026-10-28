@@ -219,9 +219,10 @@ public final class BlockMeshBody {
         Mesh rigMesh = mesh(pose.rig);
         if (rigMesh == null) return false;
         Matrix4f[] mats = matrices(rigMesh, pose, ground);
+        boolean cull = stack.last().pose().determinant() > 0F;   // back faces off but under a mirror (BlockMeshSkin#body)
         for (BlockMeshWardrobe.Layer layer : layers) {
             Mesh m = layer.mesh().equals(pose.rig.profile.mesh()) ? rigMesh : layer(pose.rig, layer.mesh());
-            if (m != null) emit(m, mats, pose, model, stack, buffers.getBuffer(BlockMeshSkin.body(layer.texture())), light, overlay, r, g, b, a);
+            if (m != null) emit(m, mats, pose, model, stack, buffers.getBuffer(BlockMeshSkin.body(layer.texture(), cull)), light, overlay, r, g, b, a);
         }
         return true;
     }

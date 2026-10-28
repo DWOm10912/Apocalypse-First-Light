@@ -303,6 +303,15 @@ public final class SurvivorSetupGameTests {
         log.check(SurvivorAppearance.Look.read(new net.minecraft.nbt.CompoundTag()).equals(SurvivorAppearance.Look.DEFAULT), "old host setup: default look");
         log.check(new SurvivorAppearance.Look(9, "mohawk", 0xFF).equals(new SurvivorAppearance.Look(SurvivorAppearance.DEFAULT_TONE,
                 SurvivorAppearance.DEFAULT_HAIR, SurvivorAppearance.FULL_OUTFIT)), "a bad look is put into range");
+        // female body V1: the sex rides along too and picks the starting skin
+        var her = new SurvivorAppearance.Look(2, "short", SurvivorAppearance.FULL_OUTFIT, true);
+        var herTag = SurvivorSetupFlow.encode(made, "Ada", her);
+        log.check(SurvivorAppearance.Look.read(herTag).equals(her) && SurvivorAppearance.Look.read(herTag).female(), "host setup sex encode / decode");
+        log.check(SurvivorSkins.starter(SurvivorRecord.Sex.FEMALE).arms() == SurvivorSkins.Arms.SLIM
+                && SurvivorSkins.starter(SurvivorRecord.Sex.MALE).arms() == SurvivorSkins.Arms.CLASSIC
+                && SurvivorSkins.byId(SurvivorSkins.starter(SurvivorRecord.Sex.FEMALE).id()) != null
+                && SurvivorSkins.female(SurvivorSkins.starter(SurvivorRecord.Sex.FEMALE).id())
+                && !SurvivorSkins.female(SurvivorSkins.starter(SurvivorRecord.Sex.MALE).id()), "starting skins: female slim, male classic, both in the pool");
         var rolled = new SurvivorRecord(java.util.UUID.randomUUID(), 2, "A", "B", 12345L, SurvivorRecord.State.PENDING);
         SurvivorAppearance.roll(rolled, 12345L);
         var rolledBack = SurvivorRecord.load(rolled.save());

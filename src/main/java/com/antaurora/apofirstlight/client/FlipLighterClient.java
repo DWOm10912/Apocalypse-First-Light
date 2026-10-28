@@ -32,7 +32,7 @@ import java.util.Map;
  *   the next strike and comes up as the lit lighter does. The mouse is locked only while the hand moves
  *   ({@link #lockUntil}).</li>
  *   <li><b>Sparks</b> off the wheel as it is struck (FireFx#flintSparks), for every player.</li>
- *   <li><b>The light</b> of a lit lighter (client/light/DynamicLights): two half-sphere lights at the flame, warm, about
+ *   <li><b>The light</b> of a lit lighter (client/light/DynamicLights): one round light at the flame (two halves, LightCone#round), warm, about
  *   6 blocks, flickering with it.</li>
  * </ul>
  */
@@ -45,8 +45,8 @@ public final class FlipLighterClient {
     private static final double DIP_IN = 0.2, DIP_OUT = 0.35;
     /** After an open or a failed strike the view stays down this long for the next strike (s). */
     private static final double LINGER = 1.2;
-    /** The flame's light: the lower and upper half spheres. */
-    private static final LightCone GLOW = new LightCone(0, 89.5, 89.5, 89.5, 6.0, 9.0, 2.0, 0, 0.25, 0, 0);
+    /** The flame's light, the same all round (LightCone#round): the lower and upper half. */
+    private static final LightCone GLOW = LightCone.round(6.0, 9.0, 2.0, 0.25);
     private static final Vec3 DOWN = new Vec3(0, -1, 0), UP = new Vec3(0, 1, 0), EAST = new Vec3(1, 0, 0);
     private static final double LIGHT_RANGE = 48;
     /** Per player: the act start whose sparks were thrown. */

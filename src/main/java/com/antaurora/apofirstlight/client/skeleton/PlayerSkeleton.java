@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.client.skeleton;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.FirstPersonBody;
 import com.antaurora.apofirstlight.client.FirstPersonBodyConfig;
+import com.antaurora.apofirstlight.client.survivor.SurvivorIdentityClient;
 import com.antaurora.apofirstlight.skeleton.GunStance;
 import com.antaurora.apofirstlight.skeleton.HumanoidPoser;
 import com.antaurora.apofirstlight.skeleton.SkeletonClips;
@@ -433,10 +434,12 @@ public final class PlayerSkeleton {
             drawGear(d, pose, light, overlay, 1F);
             return true;
         }
+        // female body V1: the survivor's sex (SurvivorIdentityClient) gives the female torso and chest
+        boolean female = d.player != null && SurvivorIdentityClient.body(d.player.getUUID()).female();
         for (SkeletonRig.SkinPart part : rig.skin) {
             float thick = part.part().endsWith("_arm") ? arms : 1F;
-            if (base(m, part.part()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, thick, sink);
-            if (layer(m, part.overlay()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, true, thick, sink);
+            if (base(m, part.part()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, thick, female, sink);
+            if (layer(m, part.overlay()).visible) SkinMesh.emit(d.solved.pose, part, d.solved.slim, true, thick, female, sink);
         }
         m.head.render(pose, consumer, light, overlay, r, g, b, a);
         m.hat.render(pose, consumer, light, overlay, r, g, b, a);
@@ -450,9 +453,12 @@ public final class PlayerSkeleton {
             };
             for (SkeletonRig.SkinPart part : rig.skin)
                 if (base(m, part.part()).visible)
-                    SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, part.part().endsWith("_arm") ? arms : 1F, marks);
+                    SkinMesh.emit(d.solved.pose, part, d.solved.slim, false, part.part().endsWith("_arm") ? arms : 1F, female, marks);
             m.head.render(pose, wounds, light, overlay, r, g, b, a);
         }
+        // old-body clothes V1: what the player wears over the skin (after the skin's own buffer is done with)
+        OldBodyWardrobe.draw(d.player, d.solved.pose, d.solved.slim, female, arms, mp, mn, d.buffers, light, overlay, r, g, b, a,
+                name -> base(m, name).visible);
         drawGear(d, pose, light, overlay, arms);
         return true;
     }

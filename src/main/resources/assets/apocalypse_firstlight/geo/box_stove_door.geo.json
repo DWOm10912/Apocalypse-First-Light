@@ -4,8 +4,8 @@
     {
       "description": {
         "identifier": "geometry.box_stove_door",
-        "texture_width": 512,
-        "texture_height": 512,
+        "texture_width": 256,
+        "texture_height": 256,
         "visible_bounds_width": 3,
         "visible_bounds_height": 3,
         "visible_bounds_offset": [
@@ -18,9 +18,9 @@
         {
           "name": "door",
           "pivot": [
-            8,
+            7.2,
             0,
-            1.28
+            0.88
           ]
         }
       ]

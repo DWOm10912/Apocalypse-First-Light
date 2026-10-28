@@ -1,6 +1,108 @@
 {
-  "parent": "minecraft:item/generated",
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
   "textures": {
-    "layer0": "apocalypse_firstlight:item/clothing_shoes"
+    "particle": "apocalypse_firstlight:item/clothing_shoes"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/clothing_shoes"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          75,
+          45,
+          0
+        ],
+        "translation": [
+          0,
+          1.54,
+          1.292
+        ],
+        "scale": [
+          0.471,
+          0.471,
+          0.471
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          45,
+          0
+        ],
+        "translation": [
+          0,
+          1,
+          0
+        ],
+        "scale": [
+          0.561,
+          0.561,
+          0.561
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          0.449,
+          0.449,
+          0.449
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.785,
+          0.785,
+          0.785
+        ]
+      },
+      "gui": {
+        "rotation": [
+          30,
+          -40,
+          0
+        ],
+        "translation": [
+          -0.213,
+          0.107,
+          0
+        ],
+        "scale": [
+          1.366,
+          1.366,
+          1.366
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/clothing_shoes"
+      }
+    }
   }
 }

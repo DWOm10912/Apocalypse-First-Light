@@ -10,7 +10,11 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** Shooter-only confirmed feedback. Pixel primitives, no textures or client raycast. */
+/**
+ * Shooter-only confirmed feedback. Pixel primitives, no textures or client raycast. Crosshair V1 (docs/ui/crosshair_v1.md,
+ * 2026-10-26): hip fire the dot and the X (NativeDynamicCrosshair), a hit flashing the X white / red; aiming down the sights
+ * the X shows only for a hit.
+ */
 @Mod.EventBusSubscriber(modid=ApocalypseFirstLight.MOD_ID,value=Dist.CLIENT)
 public final class NativeGunCrosshair {
     private static net.minecraft.client.multiplayer.ClientLevel hitLevel;
@@ -44,19 +48,19 @@ public final class NativeGunCrosshair {
         var mc=Minecraft.getInstance();if(!holding(mc))return;
         event.setCanceled(true);
         if(mc.options.hideGui||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return;
-        var g=event.getGuiGraphics();int x=mc.getWindow().getGuiScaledWidth()/2,y=mc.getWindow().getGuiScaledHeight()/2;
-        if (NativeGunAds.progress(event.getPartialTick()) < .999F) {
-            NativeDynamicCrosshair.render(g,x,y,event.getPartialTick());
+        var g=event.getGuiGraphics();
+        double hit=-1;
+        if(sameGun(mc)) {
+            double age=mc.level.getGameTime()+event.getPartialTick()-started,duration=head?6:5;
+            if(age>=0&&age<duration)hit=age/duration;
         }
-        if(!sameGun(mc))return;
-        double age=mc.level.getGameTime()+event.getPartialTick()-started,duration=head?6:5;
-        if(age<0||age>=duration)return;
-        double u=age/duration;int gap=(int)Math.round(7-3*u);
-        int alpha=(int)(255*(1-u)*(1-u)),color=(alpha<<24)|(head?0xFF3B30:0xFFFFFF);
-        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-        try { for(int sx:new int[]{-1,1})for(int sy:new int[]{-1,1})for(int i=0;i<3;i++) {
-            int px=x+sx*(gap+i),py=y+sy*(gap+i);g.fill(px,py,px+1,py+1,color);
-        }} finally {com.mojang.blaze3d.systems.RenderSystem.disableBlend();}
+        boolean hip=NativeGunAds.progress(event.getPartialTick())<.999F;
+        if(!hip&&hit<0)return;
+        com.antaurora.apofirstlight.client.AflCrosshair.begin(g);
+        try {
+            if(hip)NativeDynamicCrosshair.render(g,event.getPartialTick(),hit,head);
+            else NativeDynamicCrosshair.hitOnly(g,hit,head);
+        } finally {com.antaurora.apofirstlight.client.AflCrosshair.end(g);}
     }
     private NativeGunCrosshair() {}
 }

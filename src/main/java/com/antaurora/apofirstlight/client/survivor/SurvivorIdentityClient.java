@@ -32,9 +32,9 @@ public final class SurvivorIdentityClient {
     private static final Map<UUID, Look> LOOKS = new HashMap<>();
     private static final Map<UUID, String> NAMES = new HashMap<>();
 
-    /** The B5 body's skin tone and hair (SurvivorAppearance); missing: the defaults. */
-    public record Body(int tone, String hair) {
-        public static final Body DEFAULT = new Body(SurvivorAppearance.DEFAULT_TONE, SurvivorAppearance.DEFAULT_HAIR);
+    /** The B5 body's skin tone and hair (SurvivorAppearance), the old body's female torso (SkinMesh); missing: the defaults. */
+    public record Body(int tone, String hair, boolean female) {
+        public static final Body DEFAULT = new Body(SurvivorAppearance.DEFAULT_TONE, SurvivorAppearance.DEFAULT_HAIR, false);
     }
 
     private static final Map<UUID, Body> BODIES = new HashMap<>();
@@ -45,8 +45,8 @@ public final class SurvivorIdentityClient {
     }
 
     /** Packet: the name and look of one player. A changed name refreshes that player's display name at once. */
-    public static void set(UUID player, String name, String skin, String arms, int tone, String hair) {
-        BODIES.put(player, new Body(tone, hair));
+    public static void set(UUID player, String name, String skin, String arms, int tone, String hair, boolean female) {
+        BODIES.put(player, new Body(tone, hair, female));
         if (SurvivorSkins.ACCOUNT.equals(skin)) {
             LOOKS.remove(player);
         } else {

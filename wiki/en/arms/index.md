@@ -56,6 +56,12 @@ Every AFL gun is modelled from scratch and driven by data files. The table below
 - Reloading and firing cost stamina; when you are tired, your aim sways and the spread opens up
 - Bullets stop at ordinary blocks; only glass tagged as breakable is shot through. Hits leave bullet holes that fade after a few minutes
 
+## Crosshair
+
+<StatusTag s="verified" /> Hip firing a gun, the screen's centre shows a dot and four diagonal lines (an X). The further the lines sit from the centre, the wider the spread: moving and firing open them up, and they close again once you settle. A hit flashes the lines white, a headshot red. Aiming down the sights shows no crosshair, only the X flashing on a hit
+
+Without a gun there is just a faint dot in the centre, brightening on things you can use, such as doors, switches and items on the ground. Vanilla's cross and attack cooldown indicator are gone
+
 ## Accuracy
 
 Spread is a cone around the crosshair, scaled by stance:

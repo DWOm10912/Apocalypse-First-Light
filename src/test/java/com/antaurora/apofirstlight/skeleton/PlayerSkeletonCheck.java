@@ -223,11 +223,18 @@ public final class PlayerSkeletonCheck {
                 cases.add(new Case("wrist" + s + " " + x + "/" + z, hand, new Quaternionf().rotationZYX(rad(z), 0, rad(x))));
             for (float flex : new float[]{90, 150}) cases.add(new Case("knee" + s + " " + flex, shin, new Quaternionf().rotationX(rad(flex))));
             for (float x : new float[]{-30, 30}) cases.add(new Case("ankle" + s + " " + x, foot, new Quaternionf().rotationX(rad(x))));
+            // shoulders and hips (SkinMesh 2.1.1): forward, back, out and across
+            int upper = side == 0 ? rig.upperArmR : rig.upperArmL, thigh = side == 0 ? rig.thighR : rig.thighL;
+            for (float x : new float[]{-170, -90, 0, 45}) for (float z : new float[]{-90, -20, 0, 20, 90})
+                cases.add(new Case("shoulder" + s + " " + x + "/" + z, upper, new Quaternionf().rotationZYX(rad(z), 0, rad(x))));
+            for (float x : new float[]{-130, -90, -45, 0, 30}) for (float z : new float[]{-40, -10, 0, 10, 40})
+                cases.add(new Case("hip" + s + " " + x + "/" + z, thigh, new Quaternionf().rotationZYX(rad(z), 0, rad(x))));
         }
         for (float twist : new float[]{-45, 0, 45}) for (float bend : new float[]{-15, 30}) for (float lean : new float[]{-15, 15})
             cases.add(new Case("waist twist " + twist + " bend " + bend + " side " + lean, rig.chest,
                     new Quaternionf().rotationZYX(rad(lean), rad(twist), rad(bend))));
-        float worstDot = 1F;
+        float worstDot = 1F, creaseOff = 0F;
+        int creased = 0;
         String worst = "";
         for (boolean slim : new boolean[]{false, true}) for (Case c : cases) {
             SkeletonPose pose = new SkeletonPose(rig);
@@ -245,12 +252,22 @@ public final class PlayerSkeletonCheck {
             if (open > 0) fail((slim ? "slim " : "") + c.name() + ": " + open + " open edges (crack)");
             for (Quad q : quads) {
                 Vector3f[] p = q.p();
+                SkeletonRig.SkinPart part = rig.skin.get(q.part());
+                SkinMesh.Rings rings = SkinMesh.rings(pose, part, slim);
+                int s = (q.index() - 2) / 4;
+                // a hip's bands (rings that only take part of the thigh's turn, SkinMesh 2.1.1) fold at the groin
+                boolean hip = q.index() >= 2 && rings.band()[s + 1] == rings.band()[s];
                 Vector3f n1 = new Vector3f(p[1]).sub(p[0]).cross(new Vector3f(p[2]).sub(p[0]));
                 Vector3f n2 = new Vector3f(p[2]).sub(p[0]).cross(new Vector3f(p[3]).sub(p[0]));
-                if (n1.dot(n2) <= 0) fail((slim ? "slim " : "") + c.name() + ": quad folds (" + rig.skin.get(q.part()).part() + " " + q.index() + ")");
+                if (n1.dot(n2) <= 0) {
+                    float off = hip ? crease(pose, q, slim, true) : Float.MAX_VALUE;
+                    if (off > CREASE) fail((slim ? "slim " : "") + c.name() + ": quad folds (" + part.part() + " " + q.index() + ")");
+                    else { creased++; creaseOff = Math.max(creaseOff, off); }
+                }
                 // against the face's rest normal carried by the segment's bone
-                SkeletonRig.SkinPart part = rig.skin.get(q.part());
-                int segment = q.index() < 2 ? (q.index() == 0 ? 0 : part.bones().length - 1) : (q.index() - 2) / 4;
+                // an end cap turns with its ring (a hip's top ring stays on the pelvis), a band with its bone, a hip's
+                // bands (only part of the thigh's turn) half way between their two rings' turns
+                Matrix4f end = rings.matrix()[q.index() == 0 ? 0 : rings.matrix().length - 1];
                 Vector3f rest = switch (q.index() < 2 ? q.index() - 2 : (q.index() - 2) % 4) {
                     case -2 -> new Vector3f(0, -1, 0);
                     case -1 -> new Vector3f(0, 1, 0);
@@ -259,13 +276,48 @@ public final class PlayerSkeletonCheck {
                     case 2 -> new Vector3f(1, 0, 0);
                     default -> new Vector3f(0, 0, 1);
                 };
-                Vector3f expected = pose.rotation(part.bones()[segment], new Quaternionf()).transform(rest);
+                Quaternionf turn = q.index() < 2 ? end.getNormalizedRotation(new Quaternionf())
+                        : hip ? rings.matrix()[s].getNormalizedRotation(new Quaternionf())
+                        .slerp(rings.matrix()[s + 1].getNormalizedRotation(new Quaternionf()), 0.5F)
+                        : pose.rotation(rings.band()[s], new Quaternionf());
+                Vector3f expected = turn.transform(rest);
                 float dot = q.normal().dot(expected);
-                if (dot < worstDot) { worstDot = dot; worst = (slim ? "slim " : "") + c.name() + " " + part.part() + " quad " + q.index(); }
-                if (dot <= 0) fail((slim ? "slim " : "") + c.name() + ": " + part.part() + " quad " + q.index() + " inside out");
+                if (dot < worstDot && !hip) { worstDot = dot; worst = (slim ? "slim " : "") + c.name() + " " + part.part() + " quad " + q.index(); }
+                if (dot <= 0) {
+                    float off = hip ? crease(pose, q, slim, false) : Float.MAX_VALUE;
+                    if (off > CREASE) fail((slim ? "slim " : "") + c.name() + ": " + part.part() + " quad " + q.index() + " inside out");
+                    else { creased++; creaseOff = Math.max(creaseOff, off); }
+                }
             }
         }
         System.out.printf("  %d poses x Steve/Alex; least aligned face: %.3f (cos of its turn off its bone) at %s%n", cases.size(), worstDot, worst);
+        System.out.printf("  groin crease (hip bands folded or turned within %.0f px of the pelvis): %d quads, at most %.2f px out%n", CREASE, creased, creaseOff);
+    }
+
+    /** How far a hip band's fold may reach out of the pelvis's box and still lie in the groin crease (px). */
+    private static final float CREASE = 1F;
+
+    /**
+     * How far a hip band's quad reaches out of the box its limb hangs from (the same layer, in that bone's frame): its
+     * reflex corners for a fold, all its corners for a face turned inside out. A deeply bent hip folds the leg's front
+     * bands up against the pelvis there (SkinMesh 2.1.1); within {@link #CREASE} the belly and the thigh cover them.
+     */
+    private static float crease(SkeletonPose pose, Quad q, boolean slim, boolean fold) {
+        SkeletonRig rig = pose.rig;
+        int holder = rig.parent[rig.skin.get(q.part()).bones()[0]];
+        SkeletonRig.Box b = rig.skin.stream().filter(o -> java.util.Arrays.stream(o.bones()).anyMatch(x -> x == holder)).findFirst().orElseThrow().box(slim);
+        float g = q.overlay() ? rig.overlayInflate : 0F, off = 0F;
+        Matrix4f back = new Matrix4f(pose.world[holder]).invert();
+        Vector3f[] c = q.p();
+        Vector3f n = new Vector3f(c[2]).sub(c[0]).cross(new Vector3f(c[3]).sub(c[1]));
+        for (int k = 0; k < 4; k++) {
+            Vector3f turn = new Vector3f(c[k]).sub(c[(k + 3) % 4]).cross(new Vector3f(c[(k + 1) % 4]).sub(c[k]));
+            if (fold && turn.dot(n) > 0) continue;
+            Vector3f l = back.transformPosition(new Vector3f(c[k]));
+            off = Math.max(off, Math.max(Math.max(b.x() - g - l.x, l.x - b.x() - b.w() - g),
+                    Math.max(Math.max(b.y() - g - l.y, l.y - b.y() - b.h() - g), Math.max(b.z() - g - l.z, l.z - b.z() - b.d() - g))));
+        }
+        return off;
     }
 
     private static String key(Vector3f p) {

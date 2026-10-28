@@ -85,7 +85,7 @@ public final class SurvivorCorpseRenderer extends EntityRenderer<SurvivorCorpse>
             pose.mulPose(Axis.YP.rotationDegrees(180.0F));
             pose.scale(-MODEL_SCALE, -MODEL_SCALE, MODEL_SCALE);
             pose.translate(0.0F, -1.501F, 0.0F);
-            SkeletonBodyRenderer.draw(model, skeleton, slimArms, PlayerSkeleton.enabled(), !DeathCamera.insideHead(corpse),
+            SkeletonBodyRenderer.draw(model, skeleton, slimArms, SurvivorSkins.female(corpse.skin()), PlayerSkeleton.enabled(), !DeathCamera.insideHead(corpse),
                     pose, buffers.getBuffer(model.renderType(getTextureLocation(corpse))), light, OverlayTexture.NO_OVERLAY,
                     TINT_R, TINT_G, TINT_B, 1.0F);
             pose.popPose();

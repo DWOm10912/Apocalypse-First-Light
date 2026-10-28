@@ -47,29 +47,36 @@ public final class SurvivorAppearance {
     /** A successor's clothes: shirt, jeans and shoes. */
     public static final int SUCCESSOR_OUTFIT = Garment.SHIRT.bit() | Garment.JEANS.bit() | Garment.SHOES.bit();
 
-    /** A body's look and starting outfit, checked into range. */
-    public record Look(int tone, String hair, int outfit) {
+    /** A body's look and starting outfit, checked into range; {@code female}: the sex (female body V1: the body, its starting skin). */
+    public record Look(int tone, String hair, int outfit, boolean female) {
         public Look {
             tone = tone < 1 || tone > TONES ? DEFAULT_TONE : tone;
             hair = HAIR.contains(hair) ? hair : DEFAULT_HAIR;
             outfit &= FULL_OUTFIT;
         }
 
-        public static final Look DEFAULT = new Look(DEFAULT_TONE, DEFAULT_HAIR, FULL_OUTFIT);
+        /** A man's look. */
+        public Look(int tone, String hair, int outfit) {
+            this(tone, hair, outfit, false);
+        }
+
+        public static final Look DEFAULT = new Look(DEFAULT_TONE, DEFAULT_HAIR, FULL_OUTFIT, false);
 
         public boolean wears(Garment g) {
             return (outfit & g.bit()) != 0;
         }
 
-        /** Into a host setup tag (Tone, Hair, Outfit) or back. */
+        /** Into a host setup tag (Tone, Hair, Outfit, Female) or back. */
         public void write(CompoundTag tag) {
             tag.putInt("Tone", tone);
             tag.putString("Hair", hair);
             tag.putInt("Outfit", outfit);
+            tag.putBoolean("Female", female);
         }
 
         public static Look read(CompoundTag tag) {
-            return tag.contains("Tone") ? new Look(tag.getInt("Tone"), tag.getString("Hair"), tag.getInt("Outfit")) : DEFAULT;
+            return tag.contains("Tone")
+                    ? new Look(tag.getInt("Tone"), tag.getString("Hair"), tag.getInt("Outfit"), tag.getBoolean("Female")) : DEFAULT;
         }
     }
 

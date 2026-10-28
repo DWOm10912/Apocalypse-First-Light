@@ -7,6 +7,8 @@
 
 概念图：`design/buildings/forest_start_home_v1/m2_sheets/m2_2_stove_A.png`（源页 `m2_source/stove_concepts.html`）。
 
+> **2026-10-26 炉子换成 V2**（[box_stove_v2_plan.md](box_stove_v2_plan.md)）：一格用满（炉身 90 × 50 cm，炉顶 65.5 cm，两个炉盖），Blender 建模烘焙，炉身、炉膛、炉门三块网格。本文第 2 节的「外形」「碰撞」、第 7 节炉身和炉门网格的写法、`TOP` / `SPOTS`、劈柴和火焰位置都是 V1 的记录，以 V2 文档为准。方块、状态、交互、燃料、做饭、热和光、声音、隔热钢板、石板都没变。
+
 状态：
 - 代码、资源、离线检查、Java 编译都完成。
 - 离线网页预览看过真实生成的拼块：开门、关门、炉膛里的柴、钢板拼接、烟管接口。图在 `m2_sheets/m2_2_v1_*.png`，源页 `m2_source/stove_preview.html`。
@@ -129,7 +131,7 @@
 - 温度系统热源（`temperature/temperature_v1.json`）：
   - `{"block": "apocalypse_firstlight:box_stove", "strength": 22, "radius": 6, "lit": true}`；
   - 只在 `lit=true` 时算，比营火（20 / 6）稍强。
-- 方块光：开门烧 12，关门烧 6，熄灭 0。
+- 方块光：烧着 10（开门、关门一样；用户 2026-10-26 嫌开关门亮度差太多，"统一一下"，原来开门 12、关门 6），熄灭 0。
 - 炉顶烫：烧着时站上去每次扣 1 点（`hotFloor`，像岩浆块），潜行不扣。
 
 ### 火、烟、声音（客户端 `client/BoxStoveFire`）

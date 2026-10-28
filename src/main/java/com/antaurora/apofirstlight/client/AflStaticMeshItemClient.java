@@ -135,6 +135,11 @@ public final class AflStaticMeshItemClient {
             // draws them as action props (player_props/bandage, medical_alcohol: the bottle's parts, its cap a second prop)
             bind(AflItems.BANDAGE.get(), "bandage", "bandage_mesh", 0.370357);
             bind(AflItems.MEDICAL_ALCOHOL.get(), "medical_alcohol", "medical_alcohol_mesh", 0.210938);
+            // Old-body clothes V1 (equipment meshes, 2026-10-27): folded as on a shelf; worn, the body draws them (OldBodyWardrobe)
+            bind(AflItems.CLOTHING_SHIRT.get(), "clothing_shirt", "clothing_shirt_mesh", 0.439063);
+            bind(AflItems.CLOTHING_JACKET.get(), "clothing_jacket", "clothing_jacket_mesh", 0.410938);
+            bind(AflItems.CLOTHING_JEANS.get(), "clothing_jeans", "clothing_jeans_mesh", 0.420312);
+            bind(AflItems.CLOTHING_SHOES.get(), "clothing_shoes", "clothing_shoes_mesh", 0.404375);
             // Fractures and splints V1 (equipment meshes, 2026-10-20): 0.5 - 0.77 / 32
             bind(AflItems.SPLINT.get(), "splint", "splint_mesh", 0.475938);
             // Tamarack T15 key (equipment meshes, 2026-10-21): 0.5 - 3.32 / 32

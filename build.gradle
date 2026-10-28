@@ -430,6 +430,15 @@ tasks.register('blockMeshV2Check', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.skeleton.BlockMeshV2Check'
 }
 
+// The old body's joints, one ring vs two, as OBJ for a close-up render (user 2026-10-26; offline only).
+tasks.register('skinJointCompare', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.skeleton.SkinJointCompare'
+    // -Pfemale: the female body V1 shots (SkinJointCompare#female)
+    args = project.hasProperty('female') ? ['--female', project.findProperty('out') ?: 'build/female_body'] : [project.findProperty('out') ?: 'build/skin_joints']
+}
+
 // Earthwork A1 (docs/worldgen/earthwork_a1.md 7): the height field's grid math, skin partition and volume conservation.
 tasks.register('earthworkCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
