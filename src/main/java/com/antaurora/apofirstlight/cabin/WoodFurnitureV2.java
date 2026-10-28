@@ -284,6 +284,9 @@ public final class WoodFurnitureV2 {
         @Override
         boolean isMaster(BlockState state) { return state.getValue(HALF) == DoubleBlockHalf.LOWER; }
 
+        /** The top shelf's slots: the first section, before the hanging space's. */
+        public static final int SHELF_SLOTS = 7;
+
         @Override
         public int slots() { return 28; }
 
@@ -291,7 +294,7 @@ public final class WoodFurnitureV2 {
         @Override
         public com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout searchLayout() {
             return com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.of(
-                    new com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.Section("top_shelf", 7, 1),
+                    new com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.Section("top_shelf", SHELF_SLOTS, 1),
                     new com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout.Section("inside", 7, 3));
         }
 

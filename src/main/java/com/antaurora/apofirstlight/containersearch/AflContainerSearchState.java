@@ -66,6 +66,11 @@ public final class AflContainerSearchState {
      * (no level yet, or a client-side copy); callers then answer from {@link AflSearchableContainer#aflSearchRequiredOnInit()}
      * without persisting anything.
      */
+    /** Whether the state was ever set up (a world copy not opened yet: false); never sets it up itself. */
+    public boolean isInitialized() {
+        return initialized;
+    }
+
     public boolean ensureInitialized(AflSearchableContainer owner) {
         if (initialized) {
             reconcile(owner);
