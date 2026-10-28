@@ -31,9 +31,9 @@ import java.util.Locale;
  * The body map in the inventory's gear column (docs/ui/body_silhouette_v1_plan.md, user 2026-10-20: B, the player's own
  * skin, from the front): in place of the 3D player model, the flat Minecraft figure of seven parts (head 8 x 8, chest and
  * belly 8 x 6, arms and legs 4 x 12, slim arms 3 wide), one skin pixel {@link #U} canvas units, a dark seam between parts.
- * The skin's front faces (base and outer layer) are dimmed to grey; a part with an injury is washed with the colour of its
- * most pressing one (amber: treated and healing; brown: wants treating; red: wants treating soon) and carries that one's
- * HUD badge. "R / L" under the feet (the screen's left is the body's right), health under them. Hovering a part shows its
+ * Plain white since 2026-10-27 (no skin, so what is worn never shows; the user: "这样就不用管衣服的状态了"); a part with an
+ * injury is washed with the colour of its most pressing one (amber: treated and healing; brown: wants treating; red: wants
+ * treating soon) and carries that one's HUD badge. "R / L" under the feet (the screen's left is the body's right), health under them. Hovering a part shows its
  * name, every injury on it with its state, and for each what to use: best first; the best one on the player (pockets, rig,
  * backpack, hands) is outlined in amber, better ones not on the player are dimmed above it, worse ones are left out; with
  * none at all, a line on what to do without. No crafting suggestions: nothing gets a recipe before the recipe rework (user
@@ -46,6 +46,9 @@ final class BodySilhouette {
     /** The hover tooltip's widest text (GUI px). */
     private static final int TIP_W = 220, ICON = 18, LINE = 10, PAD = 4;
     private static final int AMBER = 0xD9A441, BROWN = 0xA86A3A, RED = 0xB8443C;
+    /** The figure's own colour: white, a touch warm, not quite opaque so it sits on the dark panel. */
+    private static final int FIGURE = 0xE8E6E1;
+    private static final float FIGURE_ALPHA = 0.9F;
 
     record Part(BodyPart part, float x, float y, float w, float h) {}
 
@@ -170,7 +173,6 @@ final class BodySilhouette {
      */
     static List<Object[]> draw(GuiGraphics g, Font font, AbstractClientPlayer player, @Nullable BodyPart hovered) {
         boolean slim = "slim".equals(player.getModelName());
-        ResourceLocation skin = player.getSkinTextureLocation();
         ResourceLocation wounds = com.antaurora.apofirstlight.client.WoundSkin.texture(player, slim);
         Carried carried = new Carried(player);
         List<Object[]> badges = new ArrayList<>();
@@ -178,19 +180,16 @@ final class BodySilhouette {
         for (Part p : layout(slim)) {
             int[] uv = uv(p.part(), slim);
             float x = p.x() + SEAM, y = p.y() + SEAM, w = p.w() - 2 * SEAM, h = p.h() - 2 * SEAM;
-            // the skin dimmed, then a grey film over it: the colours mostly gone, the shapes still the player's
-            RenderSystem.setShaderColor(0.62F, 0.62F, 0.6F, 1F);
-            blit(g, skin, x, y, w, h, uv[0], uv[1], uv[2], uv[3]);
-            blit(g, skin, x, y, w, h, uv[4], uv[5], uv[2], uv[3]);
-            RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-            AflUiShapes.fill(g, x, y, w, h, 0.6F, 0x7E7E7A, 0.5F);
+            // plain white (user 2026-10-27: "把E这个界面的人物模型改成白色的贴图，这样就不用管衣服的状态了"): no skin, no
+            // clothes, the same figure whatever is worn
+            AflUiShapes.fill(g, x, y, w, h, 0.6F, FIGURE, FIGURE_ALPHA);
             List<Injury> injuries = injuries(player, p.part(), carried);
             if (!injuries.isEmpty()) {
                 Injury top = injuries.get(0);
                 AflUiShapes.fill(g, x, y, w, h, 0.6F, top.urgency() >= 3 ? RED : top.urgency() == 2 ? BROWN : AMBER, 0.42F);
                 badges.add(new Object[]{p, top.status()});
             }
-            // the marks on the skin's front (client/WoundSkin) in their own colours over the grey
+            // the marks on the skin's front (client/WoundSkin) in their own colours over the white
             if (wounds != null) blit(g, wounds, x, y, w, h, uv[0], uv[1], uv[2], uv[3]);
             if (p.part() == hovered)
                 AflUiShapes.box(g, x, y, w, h, 0.6F, AflUiStyle.BACK_HOVER, 0F, AflUiStyle.LINE, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
