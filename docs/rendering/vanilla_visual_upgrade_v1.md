@@ -1,4 +1,8 @@
-# AFL 画面增强 V1：不开光影时的"轻光影"（2026-10-24）
+# AFL 画面增强 V1：不开光影时的"轻光影"（2026-10-24，2026-10-27 已删除）
+
+> **已删除（2026-10-27）。** 用户："先删之前做的【画面升级 V1a】，因为这会导致Lumyra Mod的画面出问题，原版看着也怪怪的，完全可以靠光影表达，原版不需要，我们尽力做好光影和模组的优化就行"。
+>
+> 删掉的：`client/post/AflPost`、`mixin/client/PostGameRendererMixin`（和 mixins.json 里的登记）、`shaders/core/afl_post.vsh`、`afl_ssao`、`afl_ssao_apply`、`afl_final`（.json + .fsh）、`/afl_render post` 开发命令、Wiki 天气页"不开光影时的画面增强"一节。原版画面回到不加任何后处理；画面效果交给光影包（Aureveil）和 Lumyra。`GpuTimer` 别处还在用，留着。下面是当时的方案，只作记录。
 
 ## 1. 起因和范围
 

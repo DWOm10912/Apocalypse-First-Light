@@ -101,17 +101,6 @@
 
 <StatusTag s="verified" d="2026-10-17" /> Without shaders the T15's lamps really light their surroundings (needs Embeddium). Flashlights and torches don't cast dynamic light yet
 
-## Picture upgrade without shaders
-
-<StatusTag s="test" /> On a branch only, not checked in game yet
-
-- Without a shader pack AFL adds a layer to the vanilla picture: corners, the foot of walls, under eaves and under trucks darken naturally (ambient occlusion), edges are less jagged, and colours are a little richer
-- With a shader pack it is off: the pack draws everything
-- Full darkness at night and in caves is unchanged
-- Dev command: `/afl_render post status` to read it; `/afl_render post ao / smooth / grade on|off` for each part
-
-<StatusTag s="planned" /> Bloom, cleaner anti-aliasing (no shimmer on distant thin lines), entries in the graphics settings
-
 ## Darkness
 
 <StatusTag s="verified" d="2026-10-24" /> Where there is no light it is truly dark: in caves, unlit rooms and underground, light level 0 shows nothing, and turning up the brightness doesn't help; place torches, switch on lamps or use the truck's lights. Walk from the light into a cave and the far end darkens within half a second
