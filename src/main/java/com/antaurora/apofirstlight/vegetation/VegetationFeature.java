@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.LongAdder;
  * <li>The column's biome from the level (as the biome modifier saw it), its plan's choice.</li>
  * <li>Into air the plant goes where it survives (its own soil rule: the dirt tag, graded turf; the wetland plants also
  * mud, sand, clay, gravel); into water a block deep over its bed (a source, no water above) only a wetland plant,
- * waterlogged. Anything else (a road, a floor, a trunk, snow, deeper water) leaves the column bare.</li>
+ * waterlogged. Anything else (a road, a floor, a trunk, snow, deeper water) leaves the column bare. Under an AFL
+ * river's water (air here, filled live) the plan's own rule ({@code VegetationPlan.Area#riverAllows}).</li>
  * <li>No plant inside a structure piece's box.</li>
  * </ol>
  * Written through WorldGenLevel#setBlock: C's guards on WorldGenRegion#setBlock keep the plants off the bare turf beside
@@ -98,7 +99,7 @@ final class VegetationFeature extends Feature<NoneFeatureConfiguration> {
                         .filter(k -> k.location().getNamespace().equals("apocalypse_firstlight")).map(k -> k.location().getPath()).orElse(null);
                 VegetationPlan.Plant p = area.choose(x, z, biome);
                 if (p == null) continue;
-                if (inStructure(boxes, x, y, z)) { REFUSED.increment(); continue; }
+                if (inStructure(boxes, x, y, z) || !area.riverAllows(p, x, y, z)) { REFUSED.increment(); continue; }
                 BlockState here = level.getBlockState(pos), plant = block(p);
                 boolean wet = false;
                 if (here.isAir()) {

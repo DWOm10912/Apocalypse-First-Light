@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Chunk model of a small plant (grass, ferns, flowers, saplings, both halves of tall plants; Terrain Smooth V1): standing
  * on a sloped natural surface top, it moves up or down to the sloped surface under its own (randomly offset) position,
  * so it neither floats over a lowered slope nor sinks into a raised one; on graded_turf (the road's earthworks, whose
- * top is drawn with the same nw-se split) the same with the turf's corners. Elsewhere exactly the vanilla model.
+ * top is drawn on the same diagonal, SmoothRules#swNe) the same with the turf's corners. Elsewhere exactly the vanilla model.
  */
 final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Integer> SHIFT = new ModelProperty<>();   // in 1/64 block
@@ -48,13 +48,12 @@ final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
         float[] c;   // above the support's floor
         if (ground.getBlock() instanceof GradedTurfBlock) c = GradedTurfBlock.corners(ground);   // the road's turf (C3.3a group B)
         else {
-            long g = TerrainSmoothClient.supportGeometry(level, below);
-            if (g < 0) return base;
-            c = SmoothRules.corners(g);
+            c = TerrainSmoothClient.supportTop(level, below);   // R2b: the smooth top
+            if (c == null) return base;
         }
         Vec3 off = state.getOffset(level, pos);
         double fx = Math.max(0, Math.min(1, 0.5 + off.x)), fz = Math.max(0, Math.min(1, 0.5 + off.z));
-        // the sloped top is drawn as triangles (nw, sw, se) and (nw, se, ne): split on the nw-se diagonal
+        // the drawn top at the plant (SmoothRules#surface: its diagonal or its fan)
         double surface = SmoothRules.surface(c, fx, fz);
         int shift = (int) Math.round((surface - 1) * 64);
         if (shift == 0) return base;

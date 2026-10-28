@@ -446,6 +446,14 @@ public final class RiverNetwork {
         }
     }
 
+    private volatile HydroQuery hydro;
+
+    HydroQuery hydro() {
+        HydroQuery h = hydro;
+        if (h == null) hydro = h = new HydroQuery(this, null);
+        return h;
+    }
+
     /**
      * Distance from (x, z) to the nearest river water edge within maxDist (scans the index buckets in range), and that
      * river's width into width[0]; maxDist when no river is that close (ecology: the riparian corridor).

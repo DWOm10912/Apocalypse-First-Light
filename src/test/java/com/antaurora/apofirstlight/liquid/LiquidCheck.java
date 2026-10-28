@@ -26,7 +26,8 @@ import java.util.Random;
  *   <li>D (chunks): flow across a chunk border; saving and loading every 50 ticks changes nothing, to the millilitre and the
  *   cell; a chunk unloaded mid-flow keeps its liquid while its neighbour runs on, and on reload the flow goes on;</li>
  *   <li>G (ground changes under liquid): soil into a pond, a hole dug in it, a column filled solid, a plate through the
- *   water, a change mid-flow: the liquid exact every time, levels as computed;</li>
+ *   water, a change mid-flow: the liquid exact every time, levels as computed; a wall dug open beside a pond at its
+ *   waterline, 0.5-1.5 m deep: the hole fills to the pond's level, never rising more than 2 cm above it, calm within 6 s;</li>
  *   <li>V (layers): liquid off a ledge falls into the cave layer of the next columns, not onto the roof above;</li>
  *   <li>E (query, package 4): WaterQuery over a pond on a cave's roof: the surface and depth a body stands in, the cave
  *   under it dry, still water still; in a running channel the velocity points downstream;</li>
@@ -57,9 +58,13 @@ public final class LiquidCheck {
         pool();
         chunks();
         groundChanges();
+        digBeside();
         layers();
         query();
         falls();
+        parcels();
+        bursts();
+        riverCells();
         slope();
         crest();
         reaching();
@@ -531,6 +536,52 @@ public final class LiquidCheck {
                 l1, l2, l3, e.ledger(0, 0).limbo());
     }
 
+    /** The pond (x 3-10, z 4-10, floor 24) in walls up to 26: filled to 25.5. */
+    private static double walledPond(double x, double z) {
+        return x >= 3 && x < 11 && z >= 4 && z < 11 ? 24 : 26;
+    }
+
+    /**
+     * G7: a wall dug open beside a still pond, 2 m into the wall, 1 or 3 m wide, down to 0.5, 1 or 1.5 m under its level.
+     * The hole fills from the pond; its water never rises more than 2 cm above the level it ends at (the first look in
+     * game: every hole rose 0.2-0.7 m above the pond and rocked for 15-25 s, M1 2026-10-26), and within 120 ticks every cell
+     * is within 1 cm of the others.
+     */
+    private static void digBeside() {
+        StringBuilder out = new StringBuilder();
+        for (double dig : new double[]{25, 24.5, 24}) {
+            for (int w : new int[]{1, 3}) {
+                SyntheticGround g = new SyntheticGround(0, 0, 16, 16, LiquidCheck::walledPond);
+                LiquidEngine e = engine(g, 10, 30);
+                e.fill(6, 24.05, 6, 84_000_000);
+                settle(e, "G7", 20000);
+                g.set(11, 7, 13, 7 + w, dig);
+                e.groundChanged(10, 6, 13, 8 + w);
+                double end = (25.5 * 56 + dig * 2 * w) / (56 + 2 * w), over = 0;
+                int calm = -1;
+                for (int t = 0; t < 600; t++) {
+                    tick(e, "G7");
+                    double hi = -Double.MAX_VALUE, lo = Double.MAX_VALUE;
+                    for (LiquidCell c : e.cells()) {
+                        if (c.volume() <= 0) continue;
+                        hi = Math.max(hi, c.level());
+                        lo = Math.min(lo, c.level());
+                        // the hole's water rising past the level it ends at (the pond falls to it from 25.5)
+                        if (c.x() >= 11) over = Math.max(over, c.level() - end);
+                    }
+                    if (hi - lo > 0.01) calm = -1;
+                    else if (calm < 0) calm = t + 1;
+                }
+                String scene = String.format(java.util.Locale.ROOT, "G7 dug to %.1f, %d m wide", dig, w);
+                check(e.total() == 84_000_000, scene + ": kept (" + e.total() + ")");
+                check(over <= 0.02, String.format(java.util.Locale.ROOT, "%s: never more than 2 cm above the pond (%.3f m)", scene, over));
+                check(calm > 0 && calm <= 120, scene + ": calm to 1 cm within 120 ticks (" + calm + ")");
+                out.append(String.format(java.util.Locale.ROOT, " %.1f/%d: %.3f m, calm %d;", dig, w, over, calm));
+            }
+        }
+        System.out.println("G7 dug beside a pond (to / wide: highest over the pond, calm after ticks):" + out);
+    }
+
     // ---- V: layers --------------------------------------------------------------------------------------------------------
 
     private static void layers() {
@@ -648,6 +699,151 @@ public final class LiquidCheck {
         check(settled > 0 && e.fallsIn(0, 0).isEmpty(), "falls: settles, and the fall ends");
         System.out.printf("F falls: lip %.2f, fell to %.2f, %.2f L/s at most, landed %d ticks after leaving (free fall %d)%n",
                 lip, bottom, flow, firstBelow - firstAir, expected);
+    }
+
+    // ---- P: parcels in the air (docs/gameplay/water_mesh_parcels_v1_design.md B5, M2) ----------------------------------------
+
+    private static void parcels() {
+        // flat ground at 20 over two chunks, a wall to 30 at x = 30..31
+        SyntheticGround g = new SyntheticGround(0, 0, 40, 8, (x, z) -> x >= 30 && x < 32 ? 30 : 20);
+        LiquidEngine e = engine(g, 10, 40);
+
+        // thrown level from 5 m up at 4 m/s: it comes down where the parabola does, 4 sqrt(2 * 5 / g) out
+        check(e.launch(2.5, 25, 4.5, 4, 0, 0, 1000, -1), "parcels: a parcel leaves over loaded ground");
+        LiquidParcel thrown = e.parcels().get(0);
+        int flew = 0;
+        while (thrown.ml() > 0 && flew < 200) {
+            tick(e, "parcels range");
+            flew++;
+        }
+        double range = thrown.x() - 2.5, expected = 4 * Math.sqrt(2 * 5 / LiquidEngine.G);
+        check(thrown.ml() == 0 && Math.abs(range - expected) < 0.02 * expected,
+                "parcels: a level throw lands as far out as the parabola, within 2% (" + range + " of " + expected + " m)");
+        check(volumeIn(e, 6, 4, 7, 5) == 1000 && e.inFlight() == 0, "parcels: its litre is in the column it came down on, none in the air");
+
+        // thrown at the wall: it meets it below its top and runs down into the column in front
+        e.launch(25.5, 25, 4.5, 10, 0, 0, 2000, -1);
+        LiquidParcel atWall = e.parcels().get(0);
+        for (int t = 0; t < 40; t++) tick(e, "parcels wall");
+        check(atWall.ml() == 0 && atWall.x() >= 29 && atWall.x() < 30 && volumeIn(e, 30, 0, 40, 8) == 0 && volumeIn(e, 0, 0, 30, 8) == 3000,
+                "parcels: one thrown at a wall lands in front of it (x " + atWall.x() + "), none on or behind it");
+
+        // thrown from chunk 0 into chunk 1 and saved mid-flight: it lands where it would have, the ledger to the millilitre
+        long before = e.total();
+        e.launch(14.5, 30, 2.5, 4, 0, 0, 3000, -1);
+        for (int t = 0; t < 8; t++) tick(e, "parcels save");
+        boolean inAir = e.inFlight() == 3000;
+        e.saveChunk(0, 0);
+        double lands = 14.5 + 4 * Math.sqrt(2 * 10 / LiquidEngine.G);
+        check(inAir && e.inFlight() == 0 && e.verify().isEmpty() && e.total() == before + 3000,
+                "parcels: a save lands what is in the air over the chunk, the ledgers hold (" + e.verify() + ")");
+        check(volumeIn(e, (int) Math.floor(lands), 2, (int) Math.floor(lands) + 1, 3) == 3000,
+                "parcels: and it lands where its arc comes down, in the next chunk at x " + (int) Math.floor(lands));
+
+        // many at once: past the cap new ones are bigger, the water the same
+        LiquidEngine m = engine(new SyntheticGround(0, 0, 16, 16, (x, z) -> 20), 10, 60);
+        for (int i = 0; i < LiquidEngine.PARCELS_MAX + 500; i++) m.launch(8.5, 55, 8.5, 0, 0, 0, 10, -1);
+        int most = m.parcels().size();
+        for (int t = 0; t < 100; t++) tick(m, "parcels many");
+        check(m.inFlight() == 0 && m.total() == 10L * (LiquidEngine.PARCELS_MAX + 500) && m.verify().isEmpty(),
+                "parcels: " + most + " in the air land, every millilitre");
+        System.out.printf("P parcels: level throw %.3f m (parabola %.3f), %d ticks in the air; wall met at x %.2f; save lands at x %d%n",
+                range, expected, flew, atWall.x(), (int) Math.floor(lands));
+    }
+
+    // ---- B bursts: a jet out of a hole under pressure, flown with air drag (M4) -----------------------------------------
+
+    private static void bursts() {
+        // flat ground at 20, 48 m to the east over three chunks
+        SyntheticGround g = new SyntheticGround(0, 0, 48, 8, (x, z) -> 20);
+        LiquidEngine e = engine(g, 10, 60);
+
+        // 3 bar out of a hole: 24.2 m/s; at 30 degrees from 1 m up it carries about as far as a fire stream, some 30 m,
+        // where in vacuum it would go 54 m
+        double v = Orifice.speed(3), a = Math.toRadians(30);
+        e.launch(1.5, 21, 4.5, v * Math.cos(a), v * Math.sin(a), 0, 1000, -1, 0, Orifice.JET_DRAG);
+        LiquidParcel jet = e.parcels().get(0);
+        int flew = 0;
+        while (jet.ml() > 0 && flew < 400) {
+            tick(e, "bursts range");
+            flew++;
+        }
+        double range = jet.x() - 1.5;
+        double vx = v * Math.cos(a), vy = v * Math.sin(a), vacuum = vx * (vy + Math.sqrt(vy * vy + 2 * LiquidEngine.G)) / LiquidEngine.G;
+        check(jet.ml() == 0 && range > 28 && range < 36,
+                "bursts: a 3 bar jet at 30 degrees carries about a fire stream's reach with drag, 28 to 36 m (" + range + " m; " + vacuum + " in vacuum)");
+
+        // 50 mm at 3 bar for 10 s straight up, as LiquidBursts launches it: every litre comes down, the ledger holds
+        LiquidEngine b = engine(new SyntheticGround(0, 0, 32, 32, (x, z) -> 20), 10, 60);
+        double flow = Orifice.litresPerSecond(50, 3), rise = 0;
+        long left = Math.round(flow * 1000 * 10), out = 0;
+        Random r = new Random(4);
+        for (int t = 0; t < 400; t++) {
+            if (left > 0) {
+                long ml = Math.min(left, Math.round(flow * 1000 / 20));
+                left -= ml;
+                int n = (int) ((ml + LiquidEngine.PARCEL_ML - 1) / LiquidEngine.PARCEL_ML);
+                for (int i = 0; i < n; i++) {
+                    long part = ml / n + (i < ml % n ? 1 : 0);
+                    double sx = (r.nextDouble() - 0.5) * 0.1, sz = (r.nextDouble() - 0.5) * 0.1;
+                    if (b.launch(16.5, 20.05, 16.5, sx * Orifice.speed(3), Orifice.speed(3), sz * Orifice.speed(3), part, -1,
+                            LiquidEngine.DT * (n - i - 0.5) / n, Orifice.JET_DRAG)) out += part;
+                }
+            }
+            for (LiquidParcel p : b.parcels()) rise = Math.max(rise, p.y() - 20.05);
+            tick(b, "bursts flow");
+        }
+        check(out == Math.round(flow * 1000 * 10) && b.inFlight() == 0 && b.total() == out && b.verify().isEmpty(),
+                "bursts: 10 s of a 50 mm hole at 3 bar, " + out / 1000 + " L, all landed, the ledgers hold (" + b.verify() + ")");
+        check(rise > 15 && rise < 25, "bursts: straight up it rises some 20 m, not the 30 of vacuum (" + rise + " m)");
+        System.out.printf("B bursts: 3 bar %.1f m/s, %.1f L/s through 50 mm; 30 degrees %.1f m (vacuum %.1f); straight up %.1f m%n",
+                v, flow, range, vacuum, rise);
+    }
+
+    // ---- R river cells: the flow field's river water in the engine (river plan R1) --------------------------------------
+
+    private static void riverCells() {
+        // a channel x 0..3 with its bed at 18, a bank at 19.5 east of it, a pit at x 8..9 down to 18.5 (under the river's
+        // 19.0 surface, not joined to it: the bank between); river water at 19.0 running east at 0.8 m/s
+        SyntheticGround g = new SyntheticGround(0, 0, 16, 8, (x, z) -> x < 4 ? 18 : x >= 8 && x < 10 ? 18.5 : 19.5);
+        LiquidEngine e = engine(g, 10, 40);
+        int laid = 0;
+        for (int x = 0; x < 4; x++) for (int z = 0; z < 8; z++) {
+            LiquidCell c = e.riverLayer(x, z, 19.0);
+            if (c != null) {
+                e.setRiver(c, 19.0, 0.8, 0);
+                laid++;
+            }
+        }
+        check(laid == 32, "river: every channel column takes river water (" + laid + " of 32)");
+        LiquidCell c = e.riverLayer(1, 3, 19.0);
+        double[] v = new double[2];
+        c.velocity(v);
+        check(c.river() && c.boundary() && Math.abs(c.level() - 19.0) < 1e-9 && v[0] == 0.8f && v[1] == 0,
+                "river: its water is held at the surface and moves at the field's velocity");
+        check(e.riverLayer(6, 3, 19.0) == null, "river: no river layer where the bank stands over the surface");
+        WaterQuery.Source q = WaterQuery.server(e);
+        double[] layers = new double[WaterQuery.MAX_LAYERS * WaterQuery.STRIDE];
+        int n = q.layers(1, 3, layers);
+        check(n == 1 && Math.abs(layers[1] - layers[0] - 1.0) < 1e-6 && Math.abs(layers[2] - 0.8) < 1e-6,
+                "river: WaterQuery reports it, 1 m deep, at 0.8 m/s (swimming, being carried)");
+        for (int t = 0; t < 200; t++) tick(e, "river still");
+        check(volumeIn(e, 4, 0, 16, 8) == 0, "river: it gives no water to the banks or the pit (" + volumeIn(e, 4, 0, 16, 8) + " mL)");
+        // 20 L poured on the bank beside it runs in and is gone to the river, the account to the millilitre
+        e.launch(4.5, 20.5, 3.5, 0, 0, 0, 20_000, -1);
+        for (int t = 0; t < 600; t++) tick(e, "river inflow");
+        long left = volumeIn(e, 4, 0, 16, 8);
+        // (some runs the other way over the flat bank, into the pit; the rest spreads as a film still draining)
+        check(left < 6000 && e.inFlight() == 0 && e.verify().isEmpty(),
+                "river: most water poured beside it runs into it (" + left + " mL of 20 L left on the bank and in the pit), the ledgers hold");
+        // a ground change in the river (a block placed on its bed) keeps it a river
+        g.set(2, 3, 3, 4, 18.5);
+        e.groundChanged(1, 2, 3, 4);
+        for (int t = 0; t < 5; t++) tick(e, "river ground change");
+        LiquidCell after = e.riverLayer(2, 3, 19.0);
+        check(after != null && after.river() && Math.abs(after.floor() - 18.5) < 1e-9,
+                "river: a block placed on its bed leaves river water over it (" + (after == null ? "none" : after.floor()) + ")");
+        System.out.printf("R river: %d columns, %d mL left on the bank of 20 L poured%n", laid, left);
     }
 
     // ---- slope: rain running down a smoothed hillside (falling water 18) ------------------------------------------------

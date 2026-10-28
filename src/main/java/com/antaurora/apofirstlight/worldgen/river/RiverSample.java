@@ -14,8 +14,8 @@ import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
  *   blended by |sin| of the meander phase;</li>
  *   <li>a pond east of it, R 10 m, 1.4 m deep, its west shore a beach (10 %), its east shore steep (40 %).</li>
  * </ul>
- * The continuous target height is dithered (2 x 2 Bayer) into integer tops, so Terrain Smooth's corner means (mode B,
- * four columns) follow it to a quarter of a block.
+ * The continuous target height becomes whole column tops as RiverBed's do (R2, no dither): under the water the nearest
+ * block (at least 0.15 m under the water), the shallower margin and dry ground rounded up; Terrain Smooth's corner means (mode B, four columns) draw the slope between them.
  * <p>
  * Wet ground (4.9): every bed under water is wet, and a column at the water level (T = 1) is wet where its sloped top
  * dips below the water surface ({@link #below}); nothing else. Such a column only ever has ground or water beside it at
@@ -32,7 +32,6 @@ public final class RiverSample {
 
     static final double W = 8, LAMBDA = 11 * W, AMPLITUDE = 9, CENTRE_X = 18;
     static final double POND_X = 50, POND_Z = 48, POND_R = 10, POND_DEPTH = 1.4;
-    private static final double[] BAYER = {0.125, 0.625, 0.875, 0.375};
 
     /** column tops above L and top materials, [z * SIZE_X + x] */
     public final int[] top = new int[SIZE_X * SIZE_Z];
@@ -59,12 +58,15 @@ public final class RiverSample {
                 s.depth[i] = d;
                 s.pool[i] = r[0] >= p[0] ? r[1] : Double.NaN;
                 double h = SURFACE - d;
-                int t = (int) Math.floor(h);
-                if (h - t > BAYER[(z & 1) * 2 + (x & 1)]) t++;
+                int t;
+                if (d >= 0.15) {
+                    t = (int) Math.round(h);
+                    if (SURFACE - t < 0.15) t--;
+                } else t = (int) Math.ceil(Math.max(h, SURFACE + 0.1) - 1e-6);
                 s.top[i] = Math.max(-2, Math.min(PLAIN, t));
                 s.material[i] = r[0] >= p[0] ? riverMaterial(d, r[1], r[2]) : pondMaterial(d, p[1]);
             }
-        // the dither can put two levels between neighbours on a slope (a pinned corner, a bared side): where their targets
+        // rounding can put two levels between neighbours on a slope (a pinned corner, a bared side): where their targets
         // lie less than 1.5 m apart (anything but the cut bank), the higher one comes down a level
         for (int pass = 0; pass < 3; pass++)
             for (int z = 2; z < SIZE_Z - 2; z++)
@@ -163,8 +165,7 @@ public final class RiverSample {
         if (d > 1.0) return MUD;                                  // the pool's deep water
         if (d > 0) return pool > 0.4 && side < 0 ? SAND : GRAVEL; // the point bar's foot, else gravel
         if (d > -0.5 && pool > 0.3 && side < 0) return SAND;      // the bar above the water
-        if (d > -0.35) return BARE;                               // the wet margin
-        if (pool > 0.5 && side > 3.0) return BARE;                // the cut bank's face
+        if (d > -0.3) return GRAVEL;                              // the water's edge (R2: no bare strip)
         return GRASS;
     }
 
@@ -172,7 +173,7 @@ public final class RiverSample {
         if (d > 0.8) return MUD;
         if (d > 0) return steep < 0.5 ? SAND : GRAVEL;
         if (d > -0.5 && steep < 0.4) return SAND;                 // the beach
-        if (d > -0.3) return BARE;
+        if (d > -0.3) return GRAVEL;
         return GRASS;
     }
 }

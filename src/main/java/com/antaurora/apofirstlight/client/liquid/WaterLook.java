@@ -86,9 +86,12 @@ public final class WaterLook {
     }
 
     /** The falling-water program's inputs for this frame (the frame copied after the standing water). */
-    static void setUpFall(ShaderInstance sh, ClientLevel level, Vec3 cam, float pt, RenderTarget main) {
+    static void setUpFall(ShaderInstance sh, ClientLevel level, Vec3 cam, float pt, Matrix4f projection, RenderTarget main) {
         sh.setSampler("Scene", COPY.color);
-        // the standing water's ripples and colour (falling water 17)
+        // the standing water's ripples and its whole look (afl_water_look.glsl, Mesh water M3): its reflection traces the
+        // depth copy too
+        sh.setSampler("SceneDepth", COPY.depth);
+        sh.safeGetUniform("InvProj").set(INV.set(projection).invert());
         sh.setSampler("Normal0", normal[0]);
         sh.setSampler("Normal1", normal[1]);
         sh.safeGetUniform("ViewSize").set((float) main.width, (float) main.height);
@@ -97,6 +100,7 @@ public final class WaterLook {
         sh.safeGetUniform("Absorption").set(ABS_R, ABS_G, ABS_B);
         sh.safeGetUniform("Scatter").set(SCATTER);
         sh.safeGetUniform("ScatterLight").set(SCATTER_LIGHT);
+        sh.safeGetUniform("ScatterTint").set(TINT_R, TINT_G, TINT_B);
     }
 
     /** The program, its textures loaded; null: draw the plain surface. */

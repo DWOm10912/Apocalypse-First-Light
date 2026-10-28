@@ -16,7 +16,9 @@ import static com.antaurora.apofirstlight.worldgen.river.RiverSample.*;
  *   bank (pool, outer side), which is meant to stand;</li>
  *   <li>wet beds take part: every wet top is Terrain Smooth's natural surface and sloped or level with its neighbours;</li>
  *   <li>the same sample without wet ground (an old world's river): beds are no natural surface, as before R0;</li>
- *   <li>the drawn depths: riffle and pool cross-sections on the centreline, against 4.2 (riffle 0.15-0.4 m, pool 1-2 m).</li>
+ *   <li>the drawn depths: riffle and pool cross-sections on the centreline. The sample's water is vanilla's (its top 8/9
+ *   over the block) and its tops whole blocks (R2, no dither), so a riffle's water is its top water block's, under 0.9 m,
+ *   and a pool's 1-2 m.</li>
  * </ul>
  *   ./gradlew wetGroundCheck
  */
@@ -114,7 +116,7 @@ public final class WetGroundCheck {
             }
             System.out.printf(Locale.ROOT, "     %s z %d: water %d m wide, mean %.2f m, max %.2f m%n     %s%n",
                     row[1] == 0 ? "riffle" : "pool  ", z, n, n == 0 ? 0 : sum / n, max, line);
-            if (row[1] == 0) check(n > 0 && max <= 0.65 && sum / n >= 0.15 && sum / n <= 0.45, "riffle mean 0.15-0.45 m, max <= 0.65 m");
+            if (row[1] == 0) check(n > 0 && max <= SURFACE + 1e-9 && sum / n >= 0.15, "riffle water no deeper than its top water block (" + SURFACE + " m)");
             else check(max >= 1.0 && max <= 2.0, "pool max 1-2 m");
         }
         System.out.println(failures == 0 ? "wetGroundCheck: all passed" : "wetGroundCheck: " + failures + " failed");

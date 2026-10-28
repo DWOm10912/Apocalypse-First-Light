@@ -33,7 +33,7 @@
 | Big sagebrush <StatusTag s="test" /> | Plateau steppe, canyon badlands | 0.6–1.2 m | Gnarled grey-brown trunks under a ragged, rounded silver-grey crown |
 | American beachgrass <StatusTag s="test" /> | Sandy coastal clearings, on sand too | Leaves about 0.6 m, culms 0.7–1 m | Tufts of narrow rolled leaves arching out, dense pale straw spikes on the culms |
 
-- Broadleaf cattail, common reed and smooth cordgrass grow only by water and can stand in water one block deep; the cordgrass grows closest to it
+- Broadleaf cattail, common reed and smooth cordgrass grow only by water and can stand in water one block deep; the cordgrass grows closest to it. In AFL's rivers they grow only in the shallows within 2 m of the bank, in water no deeper than 0.5 m, never mid-stream or in a pool
 - Sedge and bracken grow under trees, grasses and wildflowers in the open, blackberries in a ring along the crowns' edges
 - <StatusTag s="test" /> Open ground is mostly grass; wildflowers grow in patches with only grass between them. No wildflowers grow under the crowns, only in clearings and along the edges
 - Plants grow only on newly generated ground; chunks generated before do not get them

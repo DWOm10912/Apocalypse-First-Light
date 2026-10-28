@@ -24,6 +24,11 @@ public interface GroundSource {
     /** The geometry key of a sloped natural top (SmoothRules#geometry), -1 when the block is not one. */
     long smooth(int x, int y, int z);
 
+    /** The drawn top of sloped natural block (x, y, z) whose key is k (#smooth >= 0): SmoothTop#top (R2b), above its floor. */
+    default float[] smoothTop(int x, int y, int z, long k) {
+        return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.corners(k);
+    }
+
     /**
      * A drawn top that is not the block's collision (road drainage D1, docs/worldgen/road_drainage_v1_design.md 3): a road's
      * pavement at its design height, graded turf as its triangles. rel: the 25 vertex heights 0.25 m apart (EarthGrid

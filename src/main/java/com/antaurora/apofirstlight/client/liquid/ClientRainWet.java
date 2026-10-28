@@ -240,7 +240,8 @@ public final class ClientRainWet {
 
     /**
      * The chunk's quads onto the GPU: each column not dry as one quad where the field is even over it (on a smoothed
-     * slope, through its corners: the quad's two triangles split on the nw-se diagonal like the top's), else 2 x 2 quads
+     * slope, through its corners: the quad's two triangles split on the top's diagonal, SmoothRules#swNe; a fan top always in
+     * quarters), else 2 x 2 quads
      * with the field's values at their corners, on the ground the rain stops on (a smoothed top, a full block top).
      */
     private static void build(ClientLevel level, Wet w, long now, TextureAtlasSprite mask) {
@@ -272,7 +273,7 @@ public final class ClientRainWet {
             f[6] = (c + wv + s + sw) / 4;  f[7] = (c + s) / 2;  f[8] = (c + e + s + se) / 4;
             BlockState top = chunk.getBlockState(pos.set(x, yb, z));
             long g = smooth ? TerrainSmooth.geometry(level, chunk, x, yb, z) : -1;
-            float[] corners = g >= 0 ? SmoothRules.corners(g) : null;
+            float[] corners = g >= 0 ? TerrainSmooth.top(level, chunk, x, yb, z, g) : null;   // R2b: the smooth top
             // only a smoothed slope's top or a block whose whole top face is flat at its top: stairs, roofs over steps, fences
             // and walls are not ground, a flat quad over their steps showed as dark stripes (in game 2026-10-25)
             if (corners == null && !Block.isFaceFull(top.getCollisionShape(level, pos), Direction.UP)) continue;
@@ -284,12 +285,16 @@ public final class ClientRainWet {
             float tu = (x & 3) / 4F, tv = (z & 3) / 4F;
             boolean even = true;
             for (float v : f) even &= Math.abs(v - c) < 0.02F;
-            if (even) {
-                // nw, sw, se, ne: the corners of the 3 x 3 (0, 6, 8, 2)
+            // a fan top (dig R1) takes the four quarters below, which follow its creases
+            if (even && (corners == null || corners.length < 9)) {
+                // nw, sw, se, ne: the corners of the 3 x 3 (0, 6, 8, 2); from sw when the top splits sw-ne (SmoothRules#swNe)
                 int[] idx = {0, 6, 8, 2};
                 double[][] at = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
-                for (int q = 0; q < 4; q++)
+                int first = corners != null && SmoothRules.swNe(corners) ? 1 : 0;
+                for (int r = 0; r < 4; r++) {
+                    int q = (r + first) & 3;
                     put(b, lx + at[q][0], h[idx[q]], lz + at[q][1], mask, tu + at[q][0] / 4, tv + at[q][1] / 4, strength * c, light);
+                }
                 n += 4;
                 continue;
             }
@@ -297,7 +302,9 @@ public final class ClientRainWet {
                 for (int k = 0; k < 2; k++) {
                     int[] idx = {j * 3 + k, (j + 1) * 3 + k, (j + 1) * 3 + k + 1, j * 3 + k + 1};
                     int[][] at = {{k, j}, {k, j + 1}, {k + 1, j + 1}, {k + 1, j}};
-                    for (int q = 0; q < 4; q++) {
+                    int first = corners != null && SmoothRules.swNe(corners, k * 0.5, j * 0.5, (k + 1) * 0.5, (j + 1) * 0.5) ? 1 : 0;
+                    for (int r = 0; r < 4; r++) {
+                        int q = (r + first) & 3;
                         double fx = at[q][0] * 0.5, fz = at[q][1] * 0.5;
                         put(b, lx + fx, h[idx[q]], lz + fz, mask, tu + fx / 4, tv + fz / 4, strength * f[idx[q]], light);
                     }

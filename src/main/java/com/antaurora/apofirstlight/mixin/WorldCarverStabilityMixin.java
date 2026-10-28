@@ -51,6 +51,9 @@ public abstract class WorldCarverStabilityMixin<C extends CarverConfiguration> {
             if (depth < stable + 1) { cir.setReturnValue(false); return; }
         }
         // Phase 2b: no carver under a river bed, its banks or a marsh pool (RiverCarver.carveCeiling)
-        if (pos.getY() >= RiverCarver.carveCeiling(plan, pos.getX(), pos.getZ())) cir.setReturnValue(false);
+        if (pos.getY() >= RiverCarver.carveCeiling(plan, pos.getX(), pos.getZ())) { cir.setReturnValue(false); return; }
+        // river / lake R2: nor under the wider channel of a world with AFL rivers
+        if (pos.getY() >= com.antaurora.apofirstlight.worldgen.terrain.v2.RiverChannels.carveCeiling(context.randomState(), pos.getX(), pos.getZ()))
+            cir.setReturnValue(false);
     }
 }

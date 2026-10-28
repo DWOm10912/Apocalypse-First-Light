@@ -205,7 +205,7 @@ final class EarthSkin {
     private static Ground sloped(BlockAndTintGetter region, BlockState s, BlockPos pos, float base, boolean open, Direction toward) {
         long geo = TerrainSmoothClient.renderGeometry(region, pos, s);
         if (geo < 0) return new Ground(s, pos, open, base + 1, null, null, toward);
-        float[] c = SmoothRules.corners(geo);
+        float[] c = TerrainSmoothClient.renderTop(region, pos, geo);   // R2b: the smooth top (its band corners as before)
         int side = sideIndex(toward);
         float la = (geo >>> (16 + 8 * side) & 15) / 4F, lb = (geo >>> (20 + 8 * side) & 15) / 4F;
         float ua = c[SmoothSurfaceModel.SIDE_CORNERS[side][0]], ub = c[SmoothSurfaceModel.SIDE_CORNERS[side][1]];

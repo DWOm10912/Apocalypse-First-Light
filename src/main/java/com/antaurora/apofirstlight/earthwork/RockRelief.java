@@ -45,29 +45,16 @@ public final class RockRelief {
     static final double WALL = 3.6, ROOF = 3.0, FLOOR = 2.0, THIN = 2.4, THIN_EDGE = 3.4, EDGE_MAX = 6.0;
     /** Direction ordinals: down, up, north (-z), south (+z), west (-x), east (+x) */
     static final int DOWN = 0, UP = 1;
-    public static final int GRANITE = 0, SANDSTONE = 1, LIMESTONE = 2, SHALE = 3, SOIL = 4;
+    public static final int GRANITE = 0, SANDSTONE = 1, LIMESTONE = 2, SHALE = 3;
 
-    /** Natural loose ground (Terrain Smooth's ground blocks other than rock): worn where it is a soil wall (V3). */
+    /**
+     * Natural loose ground (Terrain Smooth's ground blocks other than rock). Worn like rock where it was a soil wall from U6
+     * V3 to dig R1; no longer (user 2026-10-27: "怎么还是有岩石形状的泥土", and the worn-back soil left see-through gaps
+     * beside the slopes and cubes that counted on it being whole): a soil wall is a plain cube, a straight cut.
+     */
     public static boolean soil(Block b) {
         return com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth.ground(b) && !Earthwork.rock(b);
     }
-
-    /** The level's blocks as Terrain Smooth's cells, for GroundClass (the same answer the slopes take). */
-    private static final class GetterCells implements com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells {
-        BlockGetter getter;
-        final BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-
-        @Override
-        public int cell(int x, int y, int z) {
-            BlockState s = stateNow(getter, p.set(x, y, z));
-            return s == null ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.UNKNOWN : com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth.cell(s);
-        }
-
-        @Override
-        public int surface(int x, int z) { return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NO_SURFACE; }
-    }
-
-    private static final ThreadLocal<GetterCells> CELLS = ThreadLocal.withInitial(GetterCells::new);
 
     private record Entry(int open, int look, long[] bits) {}
 
@@ -79,25 +66,12 @@ public final class RockRelief {
      * the side's (null: the client's earthwork copies); getter: reads the neighbours (a level reads only loaded chunks).
      */
     public static long[] of(Level level, BlockGetter getter, BlockPos pos, Block block) {
-        int look;
-        if (Earthwork.rock(block)) {
-            RockTypes.Rock rock = RockTypes.of(block);
-            if (rock == null) return null;
-            look = look(rock.look());
-        } else if (soil(block)) {
-            look = SOIL;
-        } else {
-            return null;
-        }
+        if (!Earthwork.rock(block)) return null;   // loose ground is never worn (dig R1): its walls are straight cut faces
+        RockTypes.Rock rock = RockTypes.of(block);
+        if (rock == null) return null;
+        int look = look(rock.look());
         int open = openSides(getter, pos);
         if (open == 0 || managed(level, pos)) return null;
-        if (look == SOIL) {   // worn only where GroundClass makes it V (a soil wall); the soil Terrain Smooth slopes stays its own
-            GetterCells c = CELLS.get();
-            c.getter = getter;
-            int cls = com.antaurora.apofirstlight.ground.GroundClass.of(c, pos.getX(), pos.getY(), pos.getZ());
-            c.getter = null;
-            if (cls != com.antaurora.apofirstlight.ground.GroundClass.V) return null;
-        }
         Long2ObjectOpenHashMap<Entry> cache = CACHE.get();
         long key = pos.asLong();
         Entry e = cache.get(key);
@@ -195,8 +169,7 @@ public final class RockRelief {
         double near = N - u - 0.5, far = u + 0.5, best = 0, a = far / N, b = (v + 0.5) / N;
         // the radius by the face point (world): the faces meeting at an edge read nearly the same point, a ledge's rim varies along it
         double wx = d == 4 ? x : d == 5 ? x + 1 : x + a, wy = d == UP ? y + 1 : y + b, wz = d == 2 ? z : d == 3 ? z + 1 : d == UP ? z + b : z + a;
-        // soil slumps to broader rounded rims than rock
-        double r = look == SOIL ? 3.2 + 1.0 * value(wx / 1.1, wy / 1.1, wz / 1.1, 62) : 2.4 + 0.8 * value(wx / 0.9, wy / 0.9, wz / 0.9, 61);
+        double r = 2.4 + 0.8 * value(wx / 0.9, wy / 0.9, wz / 0.9, 61);
         if (d == UP) {   // u: x, v: z
             if ((open & 1 << 4) != 0) best = Math.max(best, bevel(r, far));
             if ((open & 1 << 5) != 0) best = Math.max(best, bevel(r, near));
@@ -221,8 +194,6 @@ public final class RockRelief {
     static double depth(int look, double x, double y, double z) {
         return switch (look) {
             case LIMESTONE -> 4.4 * smooth(0.3, 0.75, fbm(x / 1.7, y / 1.7, z / 1.7, 11, 3)) + 0.9 * (value(x / 0.5, y / 0.5, z / 0.5, 12) - 0.5) - 0.2;
-            // soil: slumped, broad soft swells and shallow hollows, no edges
-            case SOIL -> 1.3 + 2.0 * smooth(0.3, 0.75, fbm(x / 1.3, y / 1.3, z / 1.3, 71, 3)) + 0.4 * (value(x / 0.45, y / 0.45, z / 0.45, 72) - 0.5);
             case SHALE -> {
                 double band = value1(y * 2.4 + 1.2 * fbm(x / 3.5, y / 3.5, z / 3.5, 21, 2), 22);
                 yield 3.6 * band * band + 0.7 * (value(x / 0.6, y / 0.6, z / 0.6, 23) - 0.5);
@@ -243,7 +214,6 @@ public final class RockRelief {
      */
     static double floor(int look, double x, double y, double z) {
         if (look == LIMESTONE) return 2.4 * smooth(0.35, 0.8, fbm(x / 1.4, y / 1.4, z / 1.4, 51, 3)) + 0.5 * (value(x / 0.45, y / 0.45, z / 0.45, 52) - 0.5);
-        if (look == SOIL) return 0.3 + 1.5 * smooth(0.35, 0.75, fbm(x / 1.5, y / 1.5, z / 1.5, 73, 2));
         double scale = look == SHALE ? 1.3 : look == SANDSTONE ? 1.9 : 1.6;
         return Math.floor(2.6 * fbm(x / scale, y / scale, z / scale, 53 + look, 3)) + 0.6;
     }

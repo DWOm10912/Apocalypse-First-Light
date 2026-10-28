@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.earthwork.EarthChunk;
 import com.antaurora.apofirstlight.earthwork.Earthwork;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothChunkData;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
+import com.antaurora.apofirstlight.terrainsmooth.SmoothTop;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import net.minecraft.client.Minecraft;
@@ -114,7 +115,7 @@ public final class TerrainSmoothClient {
     static void blockChanged(int x, int y, int z, int oldSurface, int newSurface) {
         var mc = Minecraft.getInstance();
         if (!mc.isSameThread() || mc.level == null) return;
-        if (oldSurface == newSurface && !surfaceNear(mc.level, x, z, y - 2, y + 2)) return;   // deep under or high above every top around
+        if (oldSurface == newSurface && !surfaceNear(mc.level, x, z, y - 3, y + 4)) return;   // deep under or high above every top around (SmoothRules#affected)
         int[] r = SmoothRules.affected(y, oldSurface, newSurface);
         int R = SmoothRules.REACH;
         markDirty(x - R, z - R, x + R, z + R, r[0], r[1] + 2);   // + plants standing on the tops, tall ones two high
@@ -259,8 +260,94 @@ public final class TerrainSmoothClient {
     public static float[] groundCorners(BlockAndTintGetter region, BlockPos support) {
         BlockState ground = region.getBlockState(support);
         if (ground.getBlock() instanceof GradedTurfBlock) return GradedTurfBlock.corners(ground);
+        return supportTop(region, support);
+    }
+
+    /**
+     * R2b: the drawn top of a plant's, a stone's or a snow layer's support block above its floor (SmoothTop#top: nine
+     * points; a fan's), or null where it is the flat block top (render threads; does not touch the AO hand-over).
+     */
+    public static float[] supportTop(BlockAndTintGetter region, BlockPos support) {
         long g = supportGeometry(region, support);
-        return g < 0 ? null : SmoothRules.corners(g);
+        return g < 0 ? null : renderTop(region, support, g);
+    }
+
+    /** A column's natural surface for the chunk models (RegionCells#surface without a region), or NO_SURFACE. */
+    static int surfaceAt(ClientLevel level, int x, int z) {
+        int t = Earthwork.editedTop(level, x, z);
+        if (t != Integer.MIN_VALUE) return t;
+        LevelChunk c = level.getChunkSource().getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false);
+        if (c == null) return SmoothRules.NO_SURFACE;
+        SmoothChunkData d = TerrainSmooth.peek(c, TerrainSmooth.CLIENT);
+        return d == null ? SmoothRules.NO_SURFACE : d.surface(x, z);
+    }
+
+    /**
+     * R2b: the drawn top (SmoothTop#top) of the sloped block at pos whose geometry key g is >= 0 (#renderGeometry), from the
+     * render region: its four neighbours' keys, then the corner points round it. Render threads.
+     */
+    static float[] renderTop(BlockAndTintGetter region, BlockPos pos, long g) {
+        if ((g & SmoothRules.CENTRE) != 0) return SmoothRules.corners(g);
+        float[] points = renderPoints(region, pos);
+        if (points == null) return SmoothRules.corners(g);
+        long[] keys = new long[4];
+        int[] floors = new int[4];
+        neighbourKeys(region, pos, keys, floors);
+        return SmoothTop.top(g, pos.getY(), points, keys, floors);
+    }
+
+    /** The four neighbours' geometry keys and floors (SmoothTop#neighbours) from the render region. */
+    static void neighbourKeys(BlockAndTintGetter region, BlockPos pos, long[] keys, int[] floors) {
+        ClientLevel level = Minecraft.getInstance().level;
+        BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
+        SmoothTop.neighbours(new SmoothTop.Keys() {
+            @Override public long key(int x, int z) {
+                int s = floor(x, z);
+                return s == SmoothRules.NO_SURFACE ? -1 : supportGeometry(region, n.set(x, s, z));
+            }
+
+            @Override public int floor(int x, int z) { return level == null ? SmoothRules.NO_SURFACE : surfaceAt(level, x, z); }
+        }, pos.getX(), pos.getZ(), keys, floors);
+    }
+
+    /** SmoothTop#points round pos from the render region, null without a level. */
+    static float[] renderPoints(BlockAndTintGetter region, BlockPos pos) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) return null;
+        RegionCells c = REGION.get();
+        BlockAndTintGetter keptRegion = c.region;
+        ClientLevel keptLevel = c.level;
+        c.region = region;
+        c.level = level;
+        try {
+            return SmoothTop.points(c, pos.getX(), pos.getZ());
+        } finally {
+            c.region = keptRegion;
+            c.level = keptLevel;
+        }
+    }
+
+    /**
+     * R2b: the 3 x 3 columns round pos for GroundBlend: each one's material (its natural surface block's state id, the
+     * state into states; GroundBlend.NONE where its surface is not natural loose ground, is edited, or is not loaded) and
+     * its natural surface y. Render threads.
+     */
+    static void columns(BlockAndTintGetter region, BlockPos pos, int[] mats, int[] surf, BlockState[] states) {
+        ClientLevel level = Minecraft.getInstance().level;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++) {
+                int x = pos.getX() + i - 1, z = pos.getZ() + j - 1, k = j * 3 + i;
+                mats[k] = com.antaurora.apofirstlight.ground.GroundBlend.NONE;
+                states[k] = null;
+                int s = level == null ? SmoothRules.NO_SURFACE : surfaceAt(level, x, z);
+                surf[k] = s;
+                if (s == SmoothRules.NO_SURFACE || Earthwork.editedTop(level, x, z) != Integer.MIN_VALUE) continue;
+                BlockState st = region.getBlockState(p.set(x, s, z));
+                if (st == null || !SmoothRules.natural(TerrainSmooth.cell(st))) continue;
+                mats[k] = net.minecraft.world.level.block.Block.getId(st);
+                states[k] = st;
+            }
     }
 
     /** Geometry of a plant's or a snow layer's support block (render threads), -1 = none or flat; does not touch the AO hand-over. */

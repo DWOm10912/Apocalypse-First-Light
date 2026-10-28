@@ -12,11 +12,19 @@ import com.antaurora.apofirstlight.ground.GroundClass;
  * <b>natural surface</b> ({@link Cells#surface}: the first block met going down from the highest block through sky,
  * plants, leaves and tree trunks only). Cave floors, mine and basement floors, ground under a roof or an overhang are not
  * a column's natural surface and keep their cubes. Each of the 3 x 3 columns around B is read near B's level only
- * (y - 1 .. y + 2): its surface height H (top block + 1) and kind. Every block corner point gets one height from the four
- * columns around it (the same for every block touching it, so tops meet): pinned (each block keeps its own H) when one of
- * the four is not natural surface, or they differ by 2 or more; mode A the lowest of the four, mode B their mean. When the
- * four differ by at most one, every block touching the point reads all four inside its window, so the window never
- * changes the answer.
+ * (y - 2 .. y + 3, #deep): its surface height H (top block + 1) and kind. Every block corner point gets one height from
+ * the four columns around it (the same for every block touching it, so tops meet): pinned (each block keeps its own H)
+ * when one of the four is not natural surface, or they differ by 3 or more; mode A the lowest of the four, mode B their
+ * mean; when they differ by exactly 2, the middle (the one height every block there can draw: dig R1, a hole two deep
+ * slopes in instead of standing as a shaft). When the four differ by at most two, every block touching the point reads
+ * all four inside its window, so the window never changes the answer.
+ * <p>
+ * Dig R1 (user 2026-10-26, "挖下去就是一个很奇怪的坑"): a column lower than both its neighbours along x or along z (a dug
+ * hole, a trench) or higher than both (a placed block, a ridge) has a centre point at its own top: the hole was drawn as a
+ * dent a quarter deep, the corners' mean of three high columns and one low. Its top is then a fan of eight triangles
+ * around the centre through the four corners and the four edge midpoints (#surface); an edge's midpoint lies on the line
+ * between its corners, except between two such columns of the same height and the same kind along the edge (a trench's
+ * floor, a ridge's crest), where it stands at their top too, so a trench is one trough and not a row of dents.
  * <p>
  * A graded_turf column (the road's earthworks, docs/worldgen/federal_highways_c3.md 10.4) has its own corner heights:
  * a corner point it touches takes the turf's height there, so the natural ground meets the earthworks without a step,
@@ -25,7 +33,8 @@ import com.antaurora.apofirstlight.ground.GroundClass;
  * <p>
  * Geometry key (long, -1 = the block keeps its vanilla shape): corner heights nw, ne, sw, se above B's floor in quarters
  * (bits 0-15, 4 each, 0..8), then for the N, S, W, E sides the neighbour's surface at the two ends of that edge (bottom of
- * the visible side band, clamped to the top; bits 16-47).
+ * the visible side band, clamped to the top; bits 16-47); bit 48 the centre at the top (dig R1), bits 49-52 the N, S, W,
+ * E edge midpoints at the top.
  */
 public final class SmoothRules {
     public static final int MODE_OFF = 0, MODE_A = 1, MODE_B = 2;
@@ -55,9 +64,10 @@ public final class SmoothRules {
     /**
      * How many columns away a block change can re-shape a top: 2 (rework R0 10.5, 2026-10-24). A top reads its neighbour
      * columns (#column), and a neighbour's kind reads that neighbour's own neighbours: GroundClass#soilWall (U6 V3) asks whether the
-     * soil beside it is open. So a dig two columns away can turn a neighbour into a soil wall and pin this top.
+     * soil beside it is open. So a dig two columns away can turn a neighbour into a soil wall and pin this top. 3 since
+     * terrain rework R2b (SmoothTop): a smooth top reads its four neighbours' geometry keys and corner points two columns out.
      */
-    public static final int REACH = 2;
+    public static final int REACH = 3;
 
     public interface Cells {
         int cell(int x, int y, int z);
@@ -114,6 +124,23 @@ public final class SmoothRules {
         int c0 = c.cell(x, y, z);
         long k = kindOf(c, c0, x, y, z);
         return solid(c0) ? k | SOLID_HERE : k;
+    }
+
+    /**
+     * Dig R1: column k (#column at level y) read a level further each way where it found nothing (K_LOW) or a wall
+     * (K_HIGH): a natural top two under B's (a hole two deep beside it) or two over (its rim, seen from the hole's floor)
+     * is a natural column, not a drop or a wall. Only the geometry reads this far; the earthwork's #notFree keeps the near
+     * window.
+     */
+    static long deep(Cells c, long k, int x, int y, int z) {
+        if (kind(k) == K_LOW) {
+            int cell = c.cell(x, y - 2, z), above = c.cell(x, y - 1, z);
+            if (solid(cell) && above != UNKNOWN && kindAt(c, cell, above, x, y - 2, z) == K_NAT) return pack(K_NAT, y - 1) | k & SOLID_HERE;
+        } else if (kind(k) == K_HIGH) {
+            int cell = c.cell(x, y + 2, z), above = c.cell(x, y + 3, z);
+            if (solid(cell) && above != UNKNOWN && kindAt(c, cell, above, x, y + 2, z) == K_NAT) return pack(K_NAT, y + 3) | k & SOLID_HERE;
+        }
+        return k;
     }
 
     /** Column (x, z)'s natural surface is wet ground (R0): its water reads as air for the slopes. */
@@ -198,8 +225,12 @@ public final class SmoothRules {
             lo = Math.min(lo, rlo);
             sum += rsum;
         }
-        if (pinned || hi - lo > 1) return Float.NaN;
+        // natural columns two apart (dig R1): the middle, the one height the high block (down to its floor) and the low one
+        // (up to two over its floor) both draw; rock and turf keep the step of one
+        boolean plain = rhi == Integer.MIN_VALUE && Float.isNaN(t);
+        if (pinned || hi - lo > (plain ? 2 : 1)) return Float.NaN;
         if (!Float.isNaN(t)) return t >= nhi - 1 && t <= nlo + 1 ? t : Float.NaN;
+        if (hi - lo == 2) return lo + 1;
         return mode == MODE_A ? lo : sum * 0.25F;
     }
 
@@ -215,7 +246,8 @@ public final class SmoothRules {
         if (mode == MODE_OFF || !GroundClass.surface(c, x, y, z)) return -1;
         long[] col = new long[9];
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++)
-            col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, x + i - 1, y, z + j - 1);
+            col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE
+                    : deep(c, column(c, x + i - 1, y, z + j - 1), x + i - 1, y, z + j - 1);
         // graded_turf columns read at this level: their corner heights
         float[][] turf = new float[9][];
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) {
@@ -245,7 +277,34 @@ public final class SmoothRules {
             int qb = Math.min(q(abs[SIDE[s][2]] - y), hollow ? 0 : lower(n, col, turf, SIDE[s][0], SIDE[s][2], mode, y));
             g |= (long) qa << (16 + 8 * s) | (long) qb << (20 + 8 * s);
         }
-        return g;
+        return g | fan(col, h);
+    }
+
+    /** Geometry key bits (dig R1): the centre at the top; the N, S, W, E edge midpoints at the top. */
+    public static final long CENTRE = 1L << 48, MID_N = 1L << 49, MID_S = 1L << 50, MID_W = 1L << 51, MID_E = 1L << 52;
+    public static final long FAN = 31L << 48;
+
+    /**
+     * Dig R1: the centre and midpoint bits of the block whose 3 x 3 columns are col, its top h. A neighbour's kind along the
+     * edge is read in this block's window from the same level as its own (its top is h), so both blocks answer alike.
+     */
+    static long fan(long[] col, int h) {
+        int sx = sense(col[3], col[4], col[5]), sz = sense(col[1], col[4], col[7]);
+        if (sx == 0 && sz == 0) return 0;
+        long f = CENTRE;
+        // a trench or a crest running north-south: its floor goes on into the columns north and south of the same kind
+        if (sx != 0 && height(col[1]) == h && sense(col[0], col[1], col[2]) == sx) f |= MID_N;
+        if (sx != 0 && height(col[7]) == h && sense(col[6], col[7], col[8]) == sx) f |= MID_S;
+        if (sz != 0 && height(col[3]) == h && sense(col[0], col[3], col[6]) == sz) f |= MID_W;
+        if (sz != 0 && height(col[5]) == h && sense(col[2], col[5], col[8]) == sz) f |= MID_E;
+        return f;
+    }
+
+    /** -1 when the middle column m is lower than both a and b, 1 when higher than both, else 0 (natural columns only). */
+    private static int sense(long a, long m, long b) {
+        if (kind(a) != K_NAT || kind(m) != K_NAT || kind(b) != K_NAT) return 0;
+        int ha = height(a), hm = height(m), hb = height(b);
+        return ha > hm && hb > hm ? -1 : ha < hm && hb < hm ? 1 : 0;
     }
 
     /**
@@ -318,16 +377,78 @@ public final class SmoothRules {
         };
     }
 
-    /** Corner heights nw, ne, sw, se above the floor. */
+    /**
+     * Corner heights nw, ne, sw, se above the floor; with a centre (dig R1, #CENTRE) nine points: then also the centre and
+     * the N, S, W, E edge midpoints (#surface).
+     */
     public static float[] corners(long g) {
-        float[] c = new float[4];
+        boolean fan = (g & CENTRE) != 0;
+        float[] c = new float[fan ? 9 : 4];
         for (int k = 0; k < 4; k++) c[k] = (g >>> (4 * k) & 15) / 4F;
+        if (fan) {
+            c[4] = 1;
+            c[5] = (g & MID_N) != 0 ? 1 : (c[0] + c[1]) / 2;
+            c[6] = (g & MID_S) != 0 ? 1 : (c[2] + c[3]) / 2;
+            c[7] = (g & MID_W) != 0 ? 1 : (c[0] + c[2]) / 2;
+            c[8] = (g & MID_E) != 0 ? 1 : (c[1] + c[3]) / 2;
+        }
         return c;
     }
 
-    /** Height above the floor of the drawn top at (fx, fz) in 0..1: two triangles split on the nw-se diagonal. */
+    /**
+     * Whether a plain top (four corners) splits on the sw-ne diagonal instead of nw-se (dig R1): on the one whose corners
+     * differ more. A lone corner off the other three (a hole's corner block, the rim of a mound) folds through it into two
+     * equal slopes; split the other way it showed a flat shelf beside a steep triangle (user 2026-10-26: "坑坑洼洼").
+     */
+    public static boolean swNe(float[] c) { return Math.abs(c[2] - c[1]) > Math.abs(c[0] - c[3]) + 1e-6F; }
+
+    /**
+     * Height above the floor of the drawn top at (fx, fz) in 0..1: two triangles split on one diagonal (#swNe); with nine
+     * points (#corners) eight, two per quarter, each from the centre to the quarter's corner and one of its edge midpoints.
+     */
     public static double surface(float[] c, double fx, double fz) {
-        return fz >= fx ? c[0] + (c[3] - c[2]) * fx + (c[2] - c[0]) * fz : c[0] + (c[1] - c[0]) * fx + (c[3] - c[1]) * fz;
+        if (c.length < 9 && swNe(c))
+            return fx + fz <= 1 ? c[0] + (c[1] - c[0]) * fx + (c[2] - c[0]) * fz : c[3] + (c[2] - c[3]) * (1 - fx) + (c[1] - c[3]) * (1 - fz);
+        if (c.length < 9)
+            return fz >= fx ? c[0] + (c[3] - c[2]) * fx + (c[2] - c[0]) * fz : c[0] + (c[1] - c[0]) * fx + (c[3] - c[1]) * fz;
+        boolean east = fx >= 0.5, south = fz >= 0.5;
+        double u = Math.abs(fx - 0.5) * 2, v = Math.abs(fz - 0.5) * 2;   // from the centre (0) to the quarter's corner (1, 1)
+        float k = c[south ? (east ? 3 : 2) : (east ? 1 : 0)], mx = c[east ? 8 : 7], mz = c[south ? 6 : 5], m = c[4];
+        return u >= v ? m + (mx - m) * (u - v) + (k - m) * v : m + (mz - m) * (v - u) + (k - m) * u;
+    }
+
+    /**
+     * The drawn top's slope {d height / dx, d height / dz} at (fx, fz) (#surface, any of its splits and fans; on a crease
+     * one of the faces meeting there): the vehicles' ground normal.
+     */
+    public static double[] slope(float[] c, double fx, double fz) {
+        double e = 1e-4, x0 = Math.min(fx, 1 - e), z0 = Math.min(fz, 1 - e), s = surface(c, x0, z0);
+        return new double[]{(surface(c, x0 + e, z0) - s) / e, (surface(c, x0, z0 + e) - s) / e};
+    }
+
+    /**
+     * For a quad drawn over part (x0, z0)..(x1, z1) of a top from heights read off #surface at its corners (the wet ground
+     * overlays): whether it must split sw-ne to lie on the top, the diagonal whose middle meets the top there (a fan's
+     * creases and a plain top's diagonal run along the halves' diagonals).
+     */
+    public static boolean swNe(float[] c, double x0, double z0, double x1, double z1) {
+        double m = surface(c, (x0 + x1) / 2, (z0 + z1) / 2);
+        double nwSe = (surface(c, x0, z0) + surface(c, x1, z1)) / 2, swNe = (surface(c, x0, z1) + surface(c, x1, z0)) / 2;
+        return Math.abs(swNe - m) < Math.abs(nwSe - m) - 1e-6;
+    }
+
+    /**
+     * The drawn top as quads (corner points {fx, height above the floor, fz}), each in the order nw, sw, se, ne of the
+     * plain top: one quad, or with a centre one per quarter, centre first, so a quad's first diagonal (the one renderers
+     * split on) runs from the centre to the corner as #surface's. A plain top split sw-ne (#swNe) starts at sw.
+     */
+    public static float[][][] topQuads(float[] c) {
+        if (c.length < 9 && swNe(c)) return new float[][][]{{{0, c[2], 1}, {1, c[3], 1}, {1, c[1], 0}, {0, c[0], 0}}};
+        if (c.length < 9) return new float[][][]{{{0, c[0], 0}, {0, c[2], 1}, {1, c[3], 1}, {1, c[1], 0}}};
+        float[] m = {0.5F, c[4], 0.5F}, n = {0.5F, c[5], 0}, s = {0.5F, c[6], 1}, w = {0, c[7], 0.5F}, e = {1, c[8], 0.5F};
+        float[] nw = {0, c[0], 0}, ne = {1, c[1], 0}, sw = {0, c[2], 1}, se = {1, c[3], 1};
+        // the plain top's turning sense (nw, sw, se, ne), quarter by quarter
+        return new float[][][]{{m, n, nw, w}, {m, w, sw, s}, {m, s, se, e}, {m, e, ne, n}};
     }
 
     /** Box heights in 1/16 above the floor of the GRID x GRID collision / selection boxes ([j * GRID + i], i along x). */
@@ -335,7 +456,11 @@ public final class SmoothRules {
 
     /** The same for any grid (the offline check compares 2, 4 and 8): each box reaches the drawn top at its centre. */
     public static int[] boxes(long g, int grid) {
-        float[] c = corners(g);
+        return boxes(corners(g), grid);
+    }
+
+    /** The same for a drawn top as #corners gives it (four corners, or nine points: a fan, a smooth top SmoothTop#top). */
+    public static int[] boxes(float[] c, int grid) {
         int[] out = new int[grid * grid];
         for (int j = 0; j < grid; j++) for (int i = 0; i < grid; i++)
             out[j * grid + i] = (int) Math.max(0, Math.min(32, Math.round(surface(c, (i + 0.5) / grid, (j + 0.5) / grid) * 16)));
@@ -343,18 +468,17 @@ public final class SmoothRules {
     }
 
     /**
-     * What a block change at (x, y, z) re-shapes: the blocks of columns within #REACH from y - 2 to y + 2 (the
-     * neighbours read it from y - 2 to y + 1; the columns two away through a neighbour's GroundClass#soilWall, which reads the changed
-     * cell from one level below the neighbour's top: tops from y - 1 to y + 2), and around the changed column's natural
-     * surface before and after (its neighbours' corners read whether it takes part): {min y, max y} of the affected blocks,
-     * the surfaces counted 2 below to 1 above.
+     * What a block change at (x, y, z) re-shapes: the blocks of columns within #REACH from y - 3 to y + 4 (a block at level
+     * t reads its neighbours from t - 2 to t + 3, #deep, and their kinds through GroundClass#soilWall from two below their
+     * tops: down to t - 4, dig R1), and around the changed column's natural surface before and after (its neighbours'
+     * corners read whether it takes part): {min y, max y} of the affected blocks, the surfaces counted 3 below to 2 above.
      */
     public static int[] affected(int y, int oldSurface, int newSurface) {
-        int lo = y - 2, hi = y + 2;
+        int lo = y - 3, hi = y + 4;
         for (int s : new int[]{oldSurface, newSurface}) {
             if (s == NO_SURFACE) continue;
-            lo = Math.min(lo, s - 2);
-            hi = Math.max(hi, s + 1);
+            lo = Math.min(lo, s - 3);
+            hi = Math.max(hi, s + 2);
         }
         return new int[]{lo, hi};
     }

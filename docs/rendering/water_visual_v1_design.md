@@ -130,6 +130,8 @@
 
 ### 5.1 开光影：Aureveil 接口
 
+> **2026-10-28 更新**：下面方块 id 53/54/55 的设想走不通。AFL 的水面是立即画的，没有方块 id。现在的方案见 [AFL 水面 ↔ Aureveil 光影接口 V1](afl_water_shader_interface_v1.md)：按贴图矩形认出水，数据放在顶点颜色和动态贴图 `afl_water` 里，包选项 `AFL_WATER`。AFL 这边已实现，等 Aureveil。下面保留原设想作记录。
+
 Aureveil 的写实水已经很好，接口只做"让包认出 AFL 的水，并拿到物理数据"，不改包的画法：
 
 - AFL 水面网格在 Oculus 下按半透明水的程序画，给新的方块 id：

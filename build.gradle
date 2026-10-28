@@ -447,6 +447,13 @@ tasks.register('groundCheck', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.ground.GroundCheck'
 }
 
+// Terrain rework R2 (docs/worldgen/terrain_rework_v1_design.md 13): the smooth tops (SmoothField) and the material boundaries (GroundBlend).
+tasks.register('smoothFieldCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.SmoothFieldCheck'
+}
+
 // Terrain rework R1 (docs/worldgen/terrain_rework_v1_design.md 11): GroundClass against the frozen SmoothRules, cell by cell.
 tasks.register('groundClassCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
@@ -466,6 +473,28 @@ tasks.register('wetGroundCheck', JavaExec) {
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.worldgen.river.WetGroundCheck'
+}
+
+// River plan R1 (docs/gameplay/water_river_v1_design.md 18): HydroQuery's continuous surface eta and point query.
+tasks.register('riverFlowCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.terrain.v2.RiverFlowCheck'
+}
+
+// River / lake V1 R2 (docs/worldgen/river_lake_v1_design.md 13): the wider channel on the survey seeds' plans and road works.
+tasks.register('riverChannelCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.RiverChannelCheck'
+    maxHeapSize = '6g'
+}
+
+// Mesh water M1 (docs/gameplay/water_mesh_parcels_v1_design.md A4): running films sent and drawn as one continuous surface.
+tasks.register('waterMeshCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.liquid.WaterMeshCheck'
 }
 
 // World Time V1 (docs/gameplay/world_time_v1_design.md 5): the world clock's fixed-point step never drifts.
@@ -751,4 +780,18 @@ tasks.register('wikiStatusIcons', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.antaurora.apofirstlight.client.StatusBadgeIcons'
     args file('wiki/public/img/status').absolutePath
+}
+
+// Terrain rework R2b sizing (docs/worldgen/terrain_rework_v1_design.md 13.6): curved tops' offset and quad counts on the survey plans.
+tasks.register('smoothTopStats', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.SmoothTopStats'
+}
+
+// Terrain rework R2b (docs/worldgen/terrain_rework_v1_design.md 13.9): SmoothTop seams, ranges and pieces on synthetic ground.
+tasks.register('smoothTopCheck', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.SmoothTopCheck'
 }

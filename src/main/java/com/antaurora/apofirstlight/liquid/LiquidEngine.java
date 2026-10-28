@@ -50,6 +50,14 @@ import static com.antaurora.apofirstlight.liquid.LiquidUnits.*;
  */
 public final class LiquidEngine {
     public static final double DT = 0.05, G = 9.81, MANNING = 0.03, DAMPING = 0.5;
+    /**
+     * Extra damping (1/s) on a face whose water runs against the level difference, carried on by its own momentum: water
+     * slowing down loses far more than water speeding up (it breaks up, as in a widening pipe). Without it a hole opened
+     * beside a pond filled and rose 0.2-0.7 m above the pond, then rocked for 15-25 s ("每次方块变化，水都会往上涌", M1 in
+     * game 2026-10-26); with it the hole fills to the pond's level and is calm in 3-5 s. Filling and draining run as fast as
+     * before (water running down its slope is not touched).
+     */
+    public static final double ADVERSE = 10;
     /** A level difference across an open perimeter face that wakes a basin, m. */
     public static final double WAKE = 0.002;
     /**
@@ -103,15 +111,17 @@ public final class LiquidEngine {
      * the steps of smoothed slopes' collision as thin streams that were not there; a lower step is a chute it runs down.
      */
     public static final double FALL_MIN = 0.5;
-    /** Flights land at most this many ticks ahead (a ring of lists; 12.8 s, a fall of some 800 m). */
-    private static final int FLIGHT_TICKS = 256;
+    /**
+     * Liquid in the air flies as parcels (docs/gameplay/water_mesh_parcels_v1_design.md B1-B2, M2): a parcel holds at most
+     * this much (1 L), and a fall or a pour sends at least one a tick, so a trickle is a row of small parcels.
+     */
+    public static final long PARCEL_ML = 1000;
+    /** Parcels in the air at most before new ones are made bigger (the liquid in them stays the same). */
+    public static final int PARCELS_MAX = 2000;
+    /** A parcel's flight sub-step (s; two a tick, as LiquidJet), and how long one flies at most before it lands where it is. */
+    static final double PARCEL_STEP = 0.025, PARCEL_MAX_AGE = 12.8;
 
-    /** Liquid in the air: it left one cell and lands in another when its fall is done. */
-    private record Flight(LiquidCell into, long ml) {
-    }
-
-    @SuppressWarnings("unchecked")
-    private final List<Flight>[] flights = new List[FLIGHT_TICKS];
+    private final List<LiquidParcel> parcels = new ArrayList<>();
     private final Map<LiquidFace, LiquidFall> falls = new HashMap<>();
     /** Chunks whose falls started, stopped or changed their flow by a fifth since the last takeFallsChanged. */
     private final java.util.TreeSet<Long> fallsChanged = new java.util.TreeSet<>();
@@ -252,7 +262,7 @@ public final class LiquidEngine {
         long ck = LiquidColumn.chunkKey(chunkX, chunkZ);
         LiquidLedger ledger = ledgers.get(ck);
         if (ledger == null) throw new IllegalStateException("chunk not loaded " + chunkX + " " + chunkZ);
-        // liquid in the air is not saved: it lands now (at most a few seconds early)
+        // liquid in the air is not saved: it lands now, where it would come down (at most a few seconds early)
         landAll(ck);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(bytes)) {
@@ -539,6 +549,41 @@ public final class LiquidEngine {
         return taken;
     }
 
+    /**
+     * The layer a river's water at level stands in at (x, z) (the river plan's flow field, R1): the column's open layer
+     * under level whose floor is at least WaterQuery#MIN_DEPTH below it; null: none (the bed stands up to it, or the
+     * chunk is not in the engine).
+     */
+    public LiquidCell riverLayer(int x, int z, double level) {
+        if (!loaded(x >> 4, z >> 4)) return null;
+        LiquidColumn col = column(x, z);
+        LiquidCell c = col == null ? null : col.cellAt(level - 1e-3);
+        return c == null || c.floor() > level - WaterQuery.MIN_DEPTH ? null : c;
+    }
+
+    /**
+     * Make c a river's water (R1): held at level like a natural water body, moving at (vx, vz) m/s, and a sink only: water
+     * runs into it from beside it (and leaves the chunk's account as gone to a water body), none runs out of it, so a
+     * bank lower than the river's surface is not flooded from it (spilling over is R3's).
+     */
+    public void setRiver(LiquidCell c, double level, double vx, double vz) {
+        if (!c.boundary || Math.abs(c.level - level) > 1e-6) setBoundary(c.column.x, c.floor() + 1e-3, c.column.z, level);
+        if (!c.river || c.riverVx != (float) vx || c.riverVz != (float) vz) c.column.ledger.changed = true;
+        c.river = true;
+        c.riverVx = (float) vx;
+        c.riverVz = (float) vz;
+    }
+
+    /**
+     * Send chunk (chunkX, chunkZ) again with the next sync, if it is in the engine: its cells' joined sides lean on the
+     * neighbours' cells, which change when a neighbour comes in (a river's water laid in it after the chunk was sent left
+     * the shared edge joined from one side only, a strip across the river at every chunk border, R1 in game 2026-10-26).
+     */
+    public void resend(int chunkX, int chunkZ) {
+        LiquidLedger l = ledgers.get(LiquidColumn.chunkKey(chunkX, chunkZ));
+        if (l != null) l.changed = true;
+    }
+
     /** Hold the layer at (x, y, z) at a fixed level (a natural water body, V1: 5.7). */
     public boolean setBoundary(int x, double y, int z, double level) {
         LiquidColumn col = column(x, z);
@@ -641,7 +686,7 @@ public final class LiquidEngine {
         tick++;
         if (dirty) rebuild();
         if (basinsDirty) rebuildBasins();
-        land();
+        flyParcels();
         depositRain();
         if (tick % LEVEL_EVERY == 0) levelBasins();
         long t1 = System.nanoTime();
@@ -650,6 +695,7 @@ public final class LiquidEngine {
         if (dirty) rebuild();
         long t2 = System.nanoTime();
         flow();
+        launchFalls();
         long t3 = System.nanoTime();
         spent[0] += t1 - t0;
         spent[1] += t2 - t1;
@@ -772,7 +818,8 @@ public final class LiquidEngine {
         // nothing, and a film that wetted a hillside once leaves thousands of dry columns loaded (offline perf, river plan
         // step 1). The faces in the engine's order still: each cell's own faces, cell by cell.
         for (LiquidCell c : cells) {
-            if (!(c.volume > 0 || c.boundary) || !takesPart(c)) continue;
+            // a river only takes water in: it is near only when wet cells are beside it (thousands of them in a valley)
+            if (!(c.volume > 0 || (c.boundary && !c.river)) || !takesPart(c)) continue;
             c.near = tick;
             for (LiquidFace f : c.faces) f.other(c).near = tick;
         }
@@ -788,6 +835,7 @@ public final class LiquidEngine {
                 LiquidCell a = f.a, b = f.b;
                 boolean active = takesPart(a) && takesPart(b) && !(a.boundary && b.boundary)
                         && (a.volume > 0 || b.volume > 0 || a.boundary || b.boundary)
+                        && !(a.river && b.volume <= 0) && !(b.river && a.volume <= 0)
                         && (a.liquid == null || b.liquid == null || a.liquid == b.liquid);
                 if (active) live.add(f);
                 else {
@@ -838,12 +886,14 @@ public final class LiquidEngine {
             // the water set moving is the metre between the cells, or in deep water the depth (a U-tube's column): without
             // that two deep shafts slosh four times too fast and never settle (offline 2026-10-24)
             double inertia = Math.max(1, depth);
-            double q = (f.q + dt * G * area * (ha - hb) / inertia) / (1 + dt * (DAMPING + friction));
+            double q = (f.q + dt * G * area * (ha - hb) / inertia) / (1 + dt * (DAMPING + friction + (f.q * (ha - hb) < 0 ? ADVERSE : 0)));
             // no faster than water falling its own depth (about twice critical flow): thin films on steep ground stay
             // believable, waves in deep water are not touched
             double cap = area * Math.sqrt(2 * G * depth);
             if (q > cap) q = cap;
             else if (q < -cap) q = -cap;
+            // a river gives nothing (setRiver)
+            if ((q > 0 && a.river) || (q < 0 && b.river)) q = 0;
             f.q = q;
             if (q > 0) a.out += q * toMl;
             else b.out -= q * toMl;
@@ -864,6 +914,13 @@ public final class LiquidEngine {
         for (LiquidFace f : live) {
             LiquidCell into = f.q > 0 ? f.b : f.q < 0 ? f.a : null;
             if (into != null && !into.boundary && into.in > into.space) f.q *= into.space / into.in;
+            // nor is filled past the level of the water it comes from in one step: a cell with little room at its bottom (a
+            // block dug at a pond's waterline, its smoothed slope) took in so much in a step that it stood 0.45 m over the
+            // pond (M1 in game round 5, 2026-10-26)
+            if (into != null && !into.boundary) {
+                double room = Math.max(0, into.volumeBelow(head(into == f.b ? f.a : f.b)) - into.volume) / toMl;
+                if (Math.abs(f.q) > room) f.q = Math.copySign(room, f.q);
+            }
             if (f.q == 0 && Math.abs(f.carry) < 1) continue;
             f.carry += f.q * toMl;
             long due = (long) f.carry;
@@ -911,66 +968,247 @@ public final class LiquidEngine {
     }
 
     /**
-     * As move, but over an edge: the liquid leaves src now and lands in dst after its fall (free fall from the opening to
-     * dst's surface), meanwhile on dst's chunk's ledger as in the air.
+     * As move, but over an edge: the liquid leaves src now and goes into the air, on src's chunk's ledger as in the air
+     * (dst's, when src is a boundary); after the flow it leaves the lip as parcels (launchFalls) and lands where they come
+     * down, not in dst: the stream carries out from the edge as far as it is fast.
      */
     private void fall(LiquidFace f, LiquidCell src, LiquidCell dst, long ml) {
         src.column.ledger.changed = dst.column.ledger.changed = true;
-        if (src.boundary) ledger(dst).boundaryIn += ml;
-        else {
+        LiquidLedger owner;
+        if (src.boundary) {
+            ledger(dst).boundaryIn += ml;
+            owner = ledger(dst);
+        } else {
             src.volume -= ml;
             if (src.volume == 0) src.liquid = null;
-            if (src.column.chunk() != dst.column.chunk()) {
-                ledger(src).crossOut += ml;
-                ledger(dst).crossIn += ml;
-            }
+            owner = ledger(src);
         }
-        ledger(dst).inFlight += ml;
-        double drop = Math.max(0, f.sill() - dst.level);
-        int ticks = Math.max(1, Math.min(FLIGHT_TICKS - 1, (int) Math.ceil(Math.sqrt(2 * drop / G) / DT)));
-        int slot = (int) ((tick + ticks) % FLIGHT_TICKS);
-        if (flights[slot] == null) flights[slot] = new ArrayList<>();
-        flights[slot].add(new Flight(dst, ml));
+        owner.inFlight += ml;
         LiquidFall fl = falls.get(f);
         if (fl == null) falls.put(f, fl = new LiquidFall(f));
+        long chunk = (src.boundary ? dst : src).column.chunk();
+        // the liquid waiting to leave belongs to one chunk's account: a change of side mid-tick sends what waits first
+        if (fl.pending > 0 && fl.owner != chunk) launch(fl);
+        fl.owner = chunk;
+        fl.pending += ml;
         fl.src = src;
         fl.dst = dst;
         fl.ml += ml;
         fl.last = tick;
     }
 
-    /** The liquid whose fall ends this tick lands: in its cell, or where that cell's water is now (the ground changed). */
-    private void land() {
-        List<Flight> due = flights[(int) (tick % FLIGHT_TICKS)];
-        if (due == null || due.isEmpty()) return;
-        List<Flight> now = new ArrayList<>(due);
-        due.clear();
-        for (Flight fl : now) arrive(fl);
+    // ---- parcels ----------------------------------------------------------------------------------------------------
+
+    /** What went over each edge this tick leaves its lip as parcels. */
+    private void launchFalls() {
+        for (LiquidFall fl : falls.values()) if (fl.pending > 0) launch(fl);
     }
 
-    private void arrive(Flight fl) {
-        LiquidCell c = fl.into;
-        LiquidLedger l = ledger(c);
-        l.inFlight -= fl.ml;
-        LiquidColumn col = index.get(c.column.key);
-        LiquidCell into = col == c.column && col.cells.contains(c) ? c : col == null ? null : nearest(col, c.level);
-        if (into == null) l.limbo += fl.ml;
-        else if (into.boundary) ledger(into).boundaryOut += fl.ml;
-        else addTo(into, fl.ml);
-        l.changed = true;
-    }
-
-    /** Lands at once everything falling into the chunk (it saves or goes). */
-    private void landAll(long chunk) {
-        for (List<Flight> slot : flights) {
-            if (slot == null || slot.isEmpty()) continue;
-            for (java.util.Iterator<Flight> it = slot.iterator(); it.hasNext(); ) {
-                Flight fl = it.next();
-                if (fl.into.column.chunk() != chunk) continue;
-                it.remove();
-                arrive(fl);
+    /**
+     * fl's waiting liquid as parcels of at most PARCEL_ML, spread over the tick it went over (each already as far into its
+     * flight as it left before the tick's end) and along the opening, leaving the brink at the fall's own depth and speed:
+     * the arc ClientFalls draws.
+     */
+    private void launch(LiquidFall fl) {
+        long ml = fl.pending;
+        fl.pending = 0;
+        int n = (int) Math.max(1, (ml + PARCEL_ML - 1) / PARCEL_ML);
+        if (parcels.size() + n > PARCELS_MAX) n = Math.max(1, PARCELS_MAX - parcels.size());
+        double speed = fl.speed(), y = fl.lip() + 0.5 * fl.depth(), half = 0.45 * Math.min(1, fl.width());
+        int sign = fl.sign();
+        for (int i = 0; i < n; i++) {
+            long part = ml / n + (i < ml % n ? 1 : 0);
+            if (part <= 0) continue;
+            // golden-ratio steps along the edge: an even spread whatever the count
+            double along = (((fl.launched++ * 0.6180339887) % 1) - 0.5) * 2 * half;
+            double x, z, vx = 0, vz = 0;
+            if (fl.alongX()) {
+                x = fl.x() + 0.5 + along;
+                z = fl.z() + sign * 0.01;
+                vz = sign * speed;
+            } else {
+                x = fl.x() + sign * 0.01;
+                z = fl.z() + 0.5 + along;
+                vx = sign * speed;
             }
+            LiquidParcel p = new LiquidParcel(x, y, z, vx, 0, vz, part, fl.owner, -1, fl.src.liquid != null ? fl.src.liquid : Liquids.WATER);
+            p.fall = fl;
+            fly(p, DT * (n - i - 0.5) / n);
+            if (p.ml > 0) parcels.add(p);
         }
+    }
+
+    /**
+     * Liquid thrown into the air at (x, y, z) with the velocity (vx, vy, vz) m/s (a pour, a burst): one parcel, counted as
+     * added to the chunk it leaves from and in the air there until it lands. source: the entity it came from (it does not
+     * hit that one in its first half second), or -1. False when there is no loaded column there (nothing thrown).
+     */
+    public boolean launch(double x, double y, double z, double vx, double vy, double vz, long ml, int source) {
+        return launch(x, y, z, vx, vy, vz, ml, source, 0, 0);
+    }
+
+    /**
+     * As above, already lead seconds into its flight (sent mid-tick: a steady jet is a row, not bunches a tick apart), with
+     * air drag (Orifice#JET_DRAG for a fast jet; 0 a plain parabola).
+     */
+    public boolean launch(double x, double y, double z, double vx, double vy, double vz, long ml, int source, double lead, double drag) {
+        if (ml <= 0) return false;
+        LiquidColumn col = column(floor(x), floor(z));
+        if (col == null) return false;
+        col.ledger.added += ml;
+        col.ledger.inFlight += ml;
+        col.ledger.changed = true;
+        LiquidParcel p = new LiquidParcel(x, y, z, vx, vy, vz, ml, col.chunk(), source, Liquids.WATER);
+        p.drag = drag;
+        if (lead > 0) fly(p, lead);
+        if (p.ml > 0) parcels.add(p);
+        return true;
+    }
+
+    private static int floor(double v) {
+        return (int) Math.floor(v);
+    }
+
+    /** The parcels in the air (read them; LiquidWorld lets them hit people). */
+    public List<LiquidParcel> parcels() {
+        return java.util.Collections.unmodifiableList(parcels);
+    }
+
+    /**
+     * p met someone at (x, y, z): it stops there, falls straight down from the feet, and no longer hits anyone (B2: the
+     * water lands under the one it hit).
+     */
+    public void stopParcel(LiquidParcel p, double x, double y, double z) {
+        p.x = x;
+        p.y = y;
+        p.z = z;
+        p.vx = p.vz = 0;
+        p.vy = Math.min(0, p.vy) * 0.2;
+        p.hit = true;
+    }
+
+    /** One tick of flight for every parcel; one that comes down lands and is gone. */
+    private void flyParcels() {
+        if (parcels.isEmpty()) return;
+        int keep = 0;
+        for (int i = 0; i < parcels.size(); i++) {
+            LiquidParcel p = parcels.get(i);
+            fly(p, DT);
+            if (p.ml > 0) parcels.set(keep++, p);
+        }
+        parcels.subList(keep, parcels.size()).clear();
+    }
+
+    /** p flies t seconds in steps; when it comes down it lands (its ml goes to 0). */
+    private void fly(LiquidParcel p, double t) {
+        while (t > 1e-9 && p.ml > 0) {
+            double h = Math.min(PARCEL_STEP, t);
+            t -= h;
+            step(p, h);
+            p.age += h;
+            if (p.ml > 0 && p.age > PARCEL_MAX_AGE) landNear(p);
+        }
+    }
+
+    /**
+     * One sub-step: a parabola (with air drag for fast jets, Orifice#JET_DRAG; falls and pours none: the clients draw
+     * them as plain arcs), the columns' layers as the world. It comes down onto the surface of the layer it is in at its
+     * height (water, else the floor); one it meets the side of a column with no open layer at its height (a wall) runs down
+     * that wall into the column it came from; it does not rise through a roof.
+     */
+    private void step(LiquidParcel p, double h) {
+        // drag (a fast jet): taken over the step from the velocity at its start
+        double ax = 0, ay = -G, az = 0;
+        if (p.drag > 0) {
+            double k = p.drag * Math.sqrt(p.vx * p.vx + p.vy * p.vy + p.vz * p.vz);
+            ax = -k * p.vx;
+            ay -= k * p.vy;
+            az = -k * p.vz;
+        }
+        double nx = p.x + p.vx * h + 0.5 * ax * h * h, ny = p.y + p.vy * h + 0.5 * ay * h * h, nz = p.z + p.vz * h + 0.5 * az * h * h;
+        double nvy = p.vy + ay * h;
+        int cx = floor(nx), cz = floor(nz);
+        boolean moved = cx != floor(p.x) || cz != floor(p.z);
+        LiquidColumn col = column(cx, cz);
+        if (col == null) {
+            landNear(p);
+            return;
+        }
+        // the layer open at the height it comes in at: a floor between that and where it gets to is met, however thin
+        LiquidCell c = col.cellAt(p.y);
+        if (c == null) {
+            if (moved) {
+                LiquidColumn from = column(floor(p.x), floor(p.z));
+                LiquidCell back = from == null ? null : from.cellAt(p.y);
+                if (back == null && from != null) back = nearest(from, p.y);
+                land(p, back);
+            } else land(p, nearest(col, p.y));
+            return;
+        }
+        double surface = c.volume > 0 ? Math.max(c.floor(), c.level) : c.floor();
+        if (ny <= surface) {
+            // where in the step it came down to the surface
+            double f = p.y > ny ? Math.max(0, Math.min(1, (p.y - surface) / (p.y - ny))) : 1;
+            p.x += (nx - p.x) * f;
+            p.y = surface;
+            p.z += (nz - p.z) * f;
+            land(p, c);
+            return;
+        }
+        if (!c.openTop && ny > c.ceiling() - 0.01) {
+            ny = c.ceiling() - 0.01;
+            nvy = Math.min(0, nvy);
+        }
+        p.x = nx;
+        p.y = ny;
+        p.z = nz;
+        p.vx += ax * h;
+        p.vy = nvy;
+        p.vz += az * h;
+    }
+
+    /** p lands where it is now: the layer at its height in its column, or the nearest one; none (unloaded): limbo. */
+    private void landNear(LiquidParcel p) {
+        LiquidColumn col = existingColumn(floor(p.x), floor(p.z));
+        land(p, col == null ? null : nearest(col, p.y));
+    }
+
+    /** p's liquid goes into c (null: its chunk's limbo), off the account of the chunk it was in the air over. */
+    private void land(LiquidParcel p, LiquidCell c) {
+        long ml = p.ml;
+        p.ml = 0;
+        LiquidLedger owner = ledgers.get(p.owner);
+        if (owner == null) throw new IllegalStateException("a parcel's chunk is not loaded " + (p.owner >> 32) + " " + (int) p.owner);
+        owner.inFlight -= ml;
+        owner.changed = true;
+        if (c == null) {
+            owner.limbo += ml;
+            return;
+        }
+        // a fall is drawn down to where its water lands (not someone it hit on the way)
+        if (p.fall != null && !p.hit) p.fall.landed = c.volume > 0 ? Math.max(c.floor(), c.level) : c.floor();
+        LiquidLedger to = ledger(c);
+        if (to != owner) {
+            owner.crossOut += ml;
+            to.crossIn += ml;
+        }
+        if (c.boundary) to.boundaryOut += ml;
+        else addTo(c, ml);
+    }
+
+    /**
+     * Lands at once everything in the air over the chunk's account (it saves or goes): each parcel flies on to where it
+     * would come down, as far as the loaded columns go.
+     */
+    private void landAll(long chunk) {
+        for (LiquidFall fl : falls.values()) if (fl.pending > 0 && fl.owner == chunk) launch(fl);
+        int keep = 0;
+        for (int i = 0; i < parcels.size(); i++) {
+            LiquidParcel p = parcels.get(i);
+            if (p.owner == chunk) fly(p, PARCEL_MAX_AGE + 1);
+            if (p.ml > 0) parcels.set(keep++, p);
+        }
+        parcels.subList(keep, parcels.size()).clear();
     }
 
     /** Once a second: each fall's flow over the second; falls dry for two seconds end. */
@@ -983,8 +1221,10 @@ public final class LiquidEngine {
             if (gone) {
                 it.remove();
                 fallsChanged.add(fl.src.column.chunk());
-            } else if (fl.sent < 0 || Math.abs(fl.flow - fl.sent) > 0.2 * Math.max(fl.sent, 1e-3)) {
+            } else if (fl.sent < 0 || Math.abs(fl.flow - fl.sent) > 0.2 * Math.max(fl.sent, 1e-3)
+                    || !(Math.abs(fl.bottom() - fl.sentBottom) <= 0.1)) {
                 fl.sent = fl.flow;
+                fl.sentBottom = fl.bottom();
                 fallsChanged.add(fl.src.column.chunk());
             }
         }
@@ -1301,6 +1541,9 @@ public final class LiquidEngine {
                     n.boundary = true;
                     n.liquid = Liquids.WATER;
                     n.level = o.level;
+                    n.river = o.river;
+                    n.riverVx = o.riverVx;
+                    n.riverVz = o.riverVz;
                     wetted.add(n);
                 }
                 continue;
@@ -1485,8 +1728,9 @@ public final class LiquidEngine {
             if (c.volume > 0) wet++;
             if (c.awake() && c.volume > 0) awake++;
         }
-        return String.format(java.util.Locale.ROOT, "%d chunks, %d columns, %d cells (%d wet, %d flowing), %d faces (%d live), %d basins, %d substeps; ms so far: rain + levels %.1f, wake %.1f, flow %.1f, quiet %.1f",
+        return String.format(java.util.Locale.ROOT, "%d chunks, %d columns, %d cells (%d wet, %d flowing), %d faces (%d live), %d basins, %d substeps, %d parcels in the air (%.1f L); ms so far: rain + levels %.1f, wake %.1f, flow %.1f, quiet %.1f",
                 ledgers.size(), columns.size(), cells.size(), wet, awake, faces.size(), live.size(), basins.size(), substeps,
+                parcels.size(), inFlight() / 1000.0,
                 spent[0] / 1e6, spent[1] / 1e6, spent[2] / 1e6, spent[3] / 1e6);
     }
 

@@ -35,9 +35,14 @@ public final class WorldgenGates {
     public static final String TOWN_BUILDINGS = "town_buildings";
     /** C, N1c: the natural ground made of the AFL blocks (NaturalGroundPass; 2026-10-25). */
     public static final String NATURAL_GROUND = "natural_ground";
+    /**
+     * C7 of the river plan (docs/gameplay/water_river_v1_design.md 8, 12; R1 2026-10-26): the river channels hold AFL's
+     * flowing water (the steady flow field), no vanilla river water; mouths onto the sea and lakes keep theirs.
+     */
+    public static final String RIVER_FLOW = "river_flow";
 
     /** Every gated system id, in a fixed order. */
-    public static final List<String> GATED = List.of(ROAD_NETWORK, TERRAIN_WORKS, START_AREA, TOWN_BUILDINGS, NATURAL_GROUND);
+    public static final List<String> GATED = List.of(ROAD_NETWORK, TERRAIN_WORKS, START_AREA, TOWN_BUILDINGS, NATURAL_GROUND, RIVER_FLOW);
 
     public static boolean gated(String id) { return GATED.contains(id); }
 

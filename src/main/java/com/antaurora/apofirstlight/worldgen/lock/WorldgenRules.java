@@ -59,6 +59,11 @@ public final class WorldgenRules {
     static final int FEDERAL_ECOLOGY = 1;
     // N1c (2026-10-25): the AFL natural ground swap (NaturalGroundTable, NaturalGroundPass), a gated system
     static final int NATURAL_GROUND = 1;
+    // River plan R1 (2026-10-26): river channels without vanilla water, AFL's flow field in them (C7, a gated system);
+    // 2: the measured channel (RiverBed: bankfull depth, pools and riffles, sloped banks, bed materials), dry culverts
+    // 3 (R2, 2026-10-27): the channel 1.6 times the plan's width with wandering banks, narrowing at road works; riffles,
+    // pools every 5-7 widths and deep holes; no dither; beaches and cut banks; the fall gathered into the riffles
+    static final int RIVER_FLOW = 3;
 
     /** The rules of this build for an r1 overworld; forestEnabled is the world's mesh forest switch. */
     public static List<WorldgenSystem> current(boolean forestEnabled) {
@@ -113,6 +118,9 @@ public final class WorldgenRules {
                 // C, N1c (2026-10-25): the natural ground made of the AFL blocks (gated like the roads)
                 new WorldgenSystem(WorldgenGates.NATURAL_GROUND, "natural_ground#" + NATURAL_GROUND, Severity.HARD,
                         "natural ground blocks: topsoil, mud, sand, gravel, clay, snow and the badlands beds"),
+                // River plan R1 (2026-10-26): the river channels hold AFL's flowing water, not vanilla's (gated like the roads)
+                new WorldgenSystem(WorldgenGates.RIVER_FLOW, "river_flow#" + RIVER_FLOW, Severity.HARD,
+                        "measured river channels (sloped banks, pools, riffles, bed materials) holding AFL's flowing river water, not vanilla's"),
                 new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
                         "natural trees"));
         return List.of(

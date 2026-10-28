@@ -31,6 +31,12 @@ public final class LiquidCell {
     /** The surface (or the floor while dry), metres; boundary cells: their fixed level. */
     double level;
     boolean boundary;
+    /**
+     * A river's water (a boundary; the river plan's steady flow field, R1): held at the river's surface, moving at the
+     * field's velocity (m/s, east and south), and only taking water in (LiquidEngine#setRiver).
+     */
+    boolean river;
+    float riverVx, riverVz;
     int quiet;
     boolean sleeping;
     LiquidBasin basin, lastBasin;
@@ -70,6 +76,7 @@ public final class LiquidCell {
     public Liquid liquid() { return liquid; }
     public boolean sleeping() { return sleeping; }
     public boolean boundary() { return boundary; }
+    public boolean river() { return river; }
     public double floor() { return floorSlab / (double) SLABS; }
     public double ceiling() { return ceilSlab / (double) SLABS; }
     public int floorSlab() { return floorSlab; }
@@ -132,6 +139,11 @@ public final class LiquidCell {
      * the west and leaving east reads as one current. A sleeping cell's faces carry nothing: still water reads 0.
      */
     public void velocity(double[] out) {
+        if (river) {
+            out[0] = riverVx;
+            out[1] = riverVz;
+            return;
+        }
         double x = 0, z = 0;
         int nx = 0, nz = 0;
         for (LiquidFace f : faces) {
@@ -149,6 +161,19 @@ public final class LiquidCell {
         }
         out[0] = nx == 0 ? 0 : x / nx;
         out[1] = nz == 0 ? 0 : z / nz;
+    }
+
+    /** A face carrying less than this (m3/s, 0.1 mL/s) carries nothing (running()). */
+    static final double RUNNING_Q = 1e-7;
+
+    /**
+     * Running water (docs/gameplay/water_mesh_parcels_v1_design.md A1): awake, more water than the floor holds back as a
+     * film (storage), and flowing through a face. The film rain leaves on the ground is not running: the floor holds it.
+     */
+    public boolean running() {
+        if (sleeping || boundary || volume <= storage) return false;
+        for (LiquidFace f : faces) if (!f.removed && Math.abs(f.q) > RUNNING_Q) return true;
+        return false;
     }
 
     /** Is height m inside this layer (floor inclusive, ceiling exclusive; open to the sky: anything above the floor)? */

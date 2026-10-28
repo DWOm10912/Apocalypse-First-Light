@@ -160,6 +160,11 @@ public final class TerrainSmooth {
         return block == Blocks.MUD || block instanceof com.antaurora.apofirstlight.ground.MudGroundBlock ? SmoothShapes.sunk(g) : SmoothShapes.shape(g, true);
     }
 
+    /** The same for a drawn top (R2b, #top). */
+    static VoxelShape collision(Block block, float[] top) {
+        return block == Blocks.MUD || block instanceof com.antaurora.apofirstlight.ground.MudGroundBlock ? SmoothShapes.sunk(top) : SmoothShapes.shape(top, true);
+    }
+
     /** SmoothRules cell code of a block state. */
     public static int cell(BlockState s) {
         if (s.isAir()) return AIR;
@@ -324,6 +329,75 @@ public final class TerrainSmooth {
         return g;
     }
 
+    /**
+     * R2b: the drawn top (SmoothTop#top, nine points above the floor) of block (x, y, z) of chunk whose geometry key g
+     * (#geometry) is >= 0; cached with the geometry on the main thread.
+     */
+    public static float[] top(Level level, LevelChunk chunk, int x, int y, int z, long g) {
+        if ((g & SmoothRules.CENTRE) != 0) return SmoothRules.corners(g);
+        boolean owner = owner(level);
+        SmoothChunkData d = owner ? data(level, chunk) : peek(chunk, side(level));
+        int key = SmoothChunkData.key(x, y, z);
+        if (owner && d != null) {
+            float[] t = d.top(key);
+            if (t != null) return t;
+        }
+        // the neighbours' keys first (#geometry takes the thread's cells and lets them go), then the corner points
+        long[] keys = new long[4];
+        int[] floors = new int[4];
+        SmoothTop.neighbours(new SmoothTop.Keys() {
+            @Override public long key(int nx, int nz) {
+                int s = floor(nx, nz);
+                LevelChunk c = level.getChunkSource().getChunkNow(nx >> 4, nz >> 4);
+                return s == NO_SURFACE || c == null ? -1 : geometry(level, c, nx, s, nz);
+            }
+
+            @Override public int floor(int nx, int nz) {
+                LevelChunk c = level.getChunkSource().getChunkNow(nx >> 4, nz >> 4);
+                SmoothChunkData n = c == null ? null : owner ? data(level, c) : peek(c, side(level));
+                return n == null ? NO_SURFACE : n.surface(nx, nz);
+            }
+        }, x, z, keys, floors);
+        LevelCells c = CELLS.get();
+        c.level = level;
+        c.owner = owner;
+        float[] points;
+        try {
+            points = SmoothTop.points(c, x, z);
+        } finally {
+            c.reset();
+        }
+        float[] t = SmoothTop.top(g, y, points, keys, floors);
+        if (owner && d != null) d.storeTop(key, t);
+        return t;
+    }
+
+    /**
+     * #top as the block stands once its column is edited (Earthwork's snapshot): no neighbour shares an edge with an edited
+     * column (its key is none), so its edges are straight and only its inside curves. Not cached.
+     */
+    public static float[] topAlone(Level level, LevelChunk chunk, int x, int y, int z, long g) {
+        if ((g & SmoothRules.CENTRE) != 0) return SmoothRules.corners(g);
+        LevelCells c = CELLS.get();
+        c.level = level;
+        c.owner = owner(level);
+        float[] points;
+        try {
+            points = SmoothTop.points(c, x, z);
+        } finally {
+            c.reset();
+        }
+        return SmoothTop.top(g, y, points, new long[]{-1, -1, -1, -1}, new int[4]);
+    }
+
+    /** The drawn top of block pos when it is a sloped natural top on a level (#geometry, #top), else null. */
+    public static float[] top(Level level, BlockPos pos) {
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        if (chunk == null) return null;
+        long g = geometry(level, chunk, pos.getX(), pos.getY(), pos.getZ());
+        return g < 0 ? null : top(level, chunk, pos.getX(), pos.getY(), pos.getZ(), g);
+    }
+
     /** Fresh geometry, ignoring the cache (diagnostics: compare with #geometry). */
     public static long fresh(Level level, LevelChunk chunk, int x, int y, int z) {
         SmoothChunkData d = owner(level) ? data(level, chunk) : peek(chunk, side(level));
@@ -396,6 +470,15 @@ public final class TerrainSmooth {
         return chunk == null ? -1 : geometry(level, chunk, x, y, z);
     }
 
+    /** R2b: #sloped's drawn top (#top), null for the vanilla shape. */
+    static float[] slopedTop(BlockGetter getter, BlockPos pos) {
+        long g = sloped(getter, pos);
+        if (g < 0) return null;
+        Level level = levelOf(getter);
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        return chunk == null ? SmoothRules.corners(g) : top(level, chunk, pos.getX(), pos.getY(), pos.getZ(), g);
+    }
+
     /** Hook (BlockStateBase#getCollisionShape, collision true / #getShape): the slope boxes, or null for the vanilla shape. */
     public static VoxelShape shape(Block block, BlockGetter getter, BlockPos pos, boolean collision) {
         if (!ground(block)) return null;
@@ -405,8 +488,8 @@ public final class TerrainSmooth {
         if (!anyCollides) return null;
         VoxelShape e = earth(block, getter, pos, collision);
         if (e != null) return e;
-        long g = sloped(getter, pos);
-        return g < 0 ? null : collision ? collision(block, g) : SmoothShapes.shape(g, false);
+        float[] t = slopedTop(getter, pos);
+        return t == null ? null : collision ? collision(block, t) : SmoothShapes.shape(t, false);
     }
 
     /**
@@ -418,9 +501,9 @@ public final class TerrainSmooth {
     public static double standingTop(Block block, BlockGetter getter, BlockPos pos, double fx, double fz) {
         if (!anyCollides || !ground(block)) return Double.NaN;
         VoxelShape e = earth(block, getter, pos, true);
-        long g = e != null ? 0 : sloped(getter, pos);
-        if (g < 0) return Double.NaN;
-        double top = (e != null ? e : collision(block, g)).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
+        float[] t = e != null ? null : slopedTop(getter, pos);
+        if (e == null && t == null) return Double.NaN;
+        double top = (e != null ? e : collision(block, t)).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
         return Double.isInfinite(top) ? Double.NaN : top;
     }
 
@@ -462,7 +545,7 @@ public final class TerrainSmooth {
                         continue;
                     }
                     long g = geometry(level, chunk, x, y, z);
-                    if (g >= 0) tops.add(collision(block, g).move(x, y, z));
+                    if (g >= 0) tops.add(collision(block, top(level, chunk, x, y, z, g)).move(x, y, z));
                 }
             }
         return tops.isEmpty() ? 0 : SmoothShapes.lift(box, tops);

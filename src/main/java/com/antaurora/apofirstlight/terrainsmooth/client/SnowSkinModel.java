@@ -54,7 +54,9 @@ final class SnowSkinModel extends BakedModelWrapper<BakedModel> {
         int light = LevelRenderer.getLightColor(level, pos);
         SKINNED.set(state);
         TerrainSmoothClient.snowSkins.increment();
-        return base.derive().with(SKIN, g & 0xFFFFL | (long) (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 16).build();
+        float[] top = TerrainSmoothClient.renderTop(level, pos.below(), g);   // R2b: the support's smooth top
+        return base.derive().with(SKIN, g & (0xFFFFL | SmoothRules.FAN) | (long) (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 16)
+                .with(TOP, top).build();
     }
 
     @Override
@@ -71,13 +73,18 @@ final class SnowSkinModel extends BakedModelWrapper<BakedModel> {
         if (side != null) return List.of();   // the whole skin is in the unculled list: its rims leave the cell
         int layers = state.getValue(SnowLayerBlock.LAYERS);
         int layer = renderType == null ? 0 : RenderType.chunkBufferLayers().indexOf(renderType) + 1;
-        // skin: corners 0-15, light 16-23; layers 24-27; render layer 28-30; shader pack 31
+        // skin: corners 0-15, light 16-23, the fan 48-52 (dig R1); layers 24-27; render layer 28-30; shader pack 31
         long key = skin | (long) layers << 24 | (long) (layer & 7) << 28 | (TerrainSmoothClient.shaderPack ? 1L << 31 : 0);
+        float[] top = data.get(TOP);
+        if (top != null && top.length == 9 && (skin & SmoothRules.FAN) == 0) return build(state, skin, layers, renderType, top);   // a smooth top: its own
         if (cache.size() > 32768) cache.clear();
-        return cache.computeIfAbsent(key, k -> build(state, skin, layers, renderType));
+        return cache.computeIfAbsent(key, k -> build(state, skin, layers, renderType, null));
     }
 
-    private List<BakedQuad> build(BlockState state, long skin, int layers, @Nullable RenderType renderType) {
+    /** R2b: the support's drawn top (SmoothTop#top) */
+    static final ModelProperty<float[]> TOP = new ModelProperty<>();
+
+    private List<BakedQuad> build(BlockState state, long skin, int layers, @Nullable RenderType renderType, @Nullable float[] support) {
         // the snow texture from the vanilla top: below eight layers it is not on the cell's top face, so vanilla lists it
         // with the unculled quads, not under UP (2026-10-14: looking under UP only drew nothing, and the support's top,
         // culled by the snow, left a hole to the sky)
@@ -94,18 +101,22 @@ final class SnowSkinModel extends BakedModelWrapper<BakedModel> {
         }
         TextureAtlasSprite sprite = o != null ? o.getSprite() : originalModel.getParticleIcon(ModelData.EMPTY);
         int tint = o != null ? o.getTintIndex() : -1;
-        float[] c = SmoothRules.corners(skin);   // above the support's floor, one block under this cell's floor
+        float[] c = support != null ? support : SmoothRules.corners(skin);   // above the support's floor, one block under this cell's floor
         float h = layers / 8F;
-        float[] lo = new float[4], hi = new float[4];
-        for (int k = 0; k < 4; k++) {
-            lo[k] = c[k] - 1;
-            hi[k] = lo[k] + h;
+        float[] lo = new float[4], hi = new float[c.length];
+        for (int k = 0; k < c.length; k++) {
+            if (k < 4) lo[k] = c[k] - 1;
+            hi[k] = c[k] - 1 + h;
         }
         int light = LightTexture.pack((int) (skin >> 16) & 15, (int) (skin >> 20) & 15);
-        List<BakedQuad> out = new ArrayList<>(5);
-        float[][] top = {{0, hi[0], 0}, {0, hi[2], 1}, {1, hi[3], 1}, {1, hi[1], 0}};
-        int color = TerrainSmoothClient.shaderPack ? -1 : SmoothSurfaceModel.gray(SmoothSurfaceModel.tiltShade(top));
-        out.add(SmoothSurfaceModel.quad(top, new float[][]{{0, 0}, {0, 1}, {1, 1}, {1, 0}}, sprite, tint, Direction.UP, color, light));
+        List<BakedQuad> out = new ArrayList<>(8);
+        // the top: the support's top raised by the layers, quarter by quarter around a centre (dig R1)
+        for (float[][] top : SmoothRules.topQuads(hi)) {
+            int color = TerrainSmoothClient.shaderPack ? -1 : SmoothSurfaceModel.gray(SmoothSurfaceModel.tiltShade(top));
+            float[][] uv = new float[4][];
+            for (int i = 0; i < 4; i++) uv[i] = new float[]{top[i][0], top[i][2]};
+            out.add(SmoothSurfaceModel.quad(top, uv, sprite, tint, Direction.UP, color, light));
+        }
         for (int s = 0; s < 4; s++) {
             int a = SmoothSurfaceModel.SIDE_CORNERS[s][0], b = SmoothSurfaceModel.SIDE_CORNERS[s][1];
             float[] pa = SmoothSurfaceModel.SIDE_A[s], pb = SmoothSurfaceModel.SIDE_B[s];

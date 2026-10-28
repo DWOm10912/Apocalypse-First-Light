@@ -27,7 +27,8 @@ public final class AflNetwork {
     // 76: character creation V1 (2026-10-26, master): the Identity packet carries the B5 tone and hair, SetupChoice the look
     //     and outfit; and on B (physical water package 4, 2026-10-26)
     // 77: both merged 2026-10-26
-    private static final String PROTOCOL = "77";
+    // 78: C, Mesh water M1 (2026-10-26): the liquid Surface packet carries running films' mean depth
+    private static final String PROTOCOL = "78";
     private static SimpleChannel channel;
     private static int nextId;
 

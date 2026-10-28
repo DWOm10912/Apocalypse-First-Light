@@ -33,6 +33,11 @@ import java.util.Locale;
  *   <li>{@code fill <litres>} / {@code drain <litres>}: fill the pool looked at (8 m), else at the feet, its whole surface
  *   rising at once (LiquidEngine#fill) / take out of that layer;</li>
  *   <li>{@code pour <litres> [L/s]} / {@code pour stop}: pour from the hand, a stream landing where it falls (package F);</li>
+ *   <li>{@code burst <mm> <bar> [seconds]} / {@code burst stop}: a burst pipe at the block face looked at (64 m), water
+ *   out of a hole mm across at bar (Orifice), up from a top face, 20 degrees above level from a side (M4 of
+ *   docs/gameplay/water_mesh_parcels_v1_design.md);</li>
+ *   <li>{@code river} / {@code river scale <x>}: the river flow field at the feet (river plan R1: the river line, eta, slope,
+ *   depth, velocity) / every river's speed times x (river_velocity_scale), laid again over the chunks within 8;</li>
  *   <li>{@code rain <mm/h> [radius]}: test rain on the columns around (package 1's stand-in; 0 stops it);</li>
  *   <li>{@code surface}: the natural rain's surface water on the column at the feet and its chunk's account (package 3a,
  *   LiquidRain); {@code rainstats [reset]}: how long settling every loaded chunk takes (the server stress test);
@@ -64,6 +69,17 @@ public final class LiquidDevCommand {
                                 .then(Commands.argument("litres_per_second", DoubleArgumentType.doubleArg(0.001, 20))
                                         .executes(c -> pourFromHand(c.getSource(), DoubleArgumentType.getDouble(c, "litres"),
                                                 DoubleArgumentType.getDouble(c, "litres_per_second"))))))
+                .then(Commands.literal("burst")
+                        .then(Commands.literal("stop").executes(c -> burstStop(c.getSource())))
+                        .then(Commands.argument("mm", DoubleArgumentType.doubleArg(1, 300))
+                                .then(Commands.argument("bar", DoubleArgumentType.doubleArg(0.05, 20))
+                                        .executes(c -> burst(c.getSource(), DoubleArgumentType.getDouble(c, "mm"), DoubleArgumentType.getDouble(c, "bar"), 10))
+                                        .then(Commands.argument("seconds", DoubleArgumentType.doubleArg(0.1, 600))
+                                                .executes(c -> burst(c.getSource(), DoubleArgumentType.getDouble(c, "mm"), DoubleArgumentType.getDouble(c, "bar"),
+                                                        DoubleArgumentType.getDouble(c, "seconds")))))))
+                .then(Commands.literal("river").executes(c -> river(c.getSource()))
+                        .then(Commands.literal("scale").then(Commands.argument("x", DoubleArgumentType.doubleArg(0, 4))
+                                .executes(c -> riverScale(c.getSource(), DoubleArgumentType.getDouble(c, "x"))))))
                 .then(Commands.literal("rain").then(Commands.argument("mm_per_hour", DoubleArgumentType.doubleArg(0, 500))
                         .executes(c -> rain(c.getSource(), DoubleArgumentType.getDouble(c, "mm_per_hour"), 16))
                         .then(Commands.argument("radius", IntegerArgumentType.integer(1, 64))
@@ -227,6 +243,86 @@ public final class LiquidDevCommand {
         boolean was = LiquidPours.stop(LiquidWorld.state(source.getLevel()), player);
         source.sendSuccess(() -> Component.literal(was ? "AFL water: stopped pouring." : "AFL water: you are not pouring."), false);
         return was ? 1 : 0;
+    }
+
+    /** The river flow field at the feet (river plan R1). */
+    private static int river(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        LiquidWorld.State st = LiquidWorld.state(level);
+        if (!st.hydroAsked) {
+            st.hydro = RiverFlow.hydro(level);
+            st.hydroAsked = true;
+        }
+        if (st.hydro == null) {
+            source.sendFailure(Component.literal("AFL river: this world's rivers are vanilla water (no river_flow gate: made before R1, or not a Terrain V2 world)."));
+            return 0;
+        }
+        Vec3 at = source.getPosition();
+        var p = new com.antaurora.apofirstlight.worldgen.terrain.v2.HydroQuery.Point();
+        if (!st.hydro.river(at.x, at.z, p)) {
+            source.sendFailure(Component.literal(String.format(Locale.ROOT, "AFL river: no river at (%.1f, %.1f); %d river columns laid since the level loaded, speed x%.2f.",
+                    at.x, at.z, st.riverColumns, RiverFlow.velocityScale)));
+            return 0;
+        }
+        int x = (int) Math.floor(at.x), z = (int) Math.floor(at.z);
+        LiquidCell c = st.engine.riverLayer(x, z, p.eta);
+        String cell;
+        if (c == null) cell = "no water layer under it (the bed stands up to the surface, or the chunk is not in the engine yet)";
+        else {
+            double[] v = new double[2];
+            c.velocity(v);
+            cell = String.format(Locale.ROOT, "%s, bed %.2f, depth %.2f m, velocity (%.2f, %.2f) %.2f m/s",
+                    c.river() ? "river water" : c.boundary() ? "held, not a river" : "not laid", c.floor(), p.eta - c.floor(), v[0], v[1], Math.hypot(v[0], v[1]));
+        }
+        String msg = String.format(Locale.ROOT, "AFL river: line %d, %.0f m from its source, %.1f m %s of its centreline (half width %.1f), %.1f km2; level block %d, surface %.3f, slope %.5f; %s. %d columns laid, speed x%.2f.",
+                p.line, p.s, Math.abs(p.offset), p.offset >= 0 ? "right" : "left", p.halfWidth, p.area / 1e6, p.level, p.eta, p.slope, cell,
+                st.riverColumns, RiverFlow.velocityScale);
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    private static int riverScale(CommandSourceStack source, double x) {
+        ServerLevel level = source.getLevel();
+        LiquidWorld.State st = LiquidWorld.state(level);
+        RiverFlow.velocityScale = x;
+        if (!st.hydroAsked) {
+            st.hydro = RiverFlow.hydro(level);
+            st.hydroAsked = true;
+        }
+        int n = 0;
+        if (st.hydro != null) {
+            int cx = (int) Math.floor(source.getPosition().x) >> 4, cz = (int) Math.floor(source.getPosition().z) >> 4;
+            for (int dx = -8; dx <= 8; dx++) for (int dz = -8; dz <= 8; dz++)
+                if (st.engine.loaded(cx + dx, cz + dz)) n += RiverFlow.apply(level, st.engine, st.hydro, cx + dx, cz + dz);
+        }
+        int laid = n;
+        source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "AFL river: speed x%.2f; %d river columns within 8 chunks laid again (the rest when they load).", x, laid)), false);
+        return 1;
+    }
+
+    /** A burst pipe at the face looked at (M4). */
+    private static int burst(CommandSourceStack source, double mm, double bar, double seconds) {
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
+            source.sendFailure(Component.literal("AFL water: only a player can pick the face."));
+            return 0;
+        }
+        HitResult hit = player.pick(64, 1, false);
+        if (!(hit instanceof BlockHitResult bh) || hit.getType() != HitResult.Type.BLOCK) {
+            source.sendFailure(Component.literal("AFL water: look at a block face within 64 m."));
+            return 0;
+        }
+        Vec3 at = bh.getLocation().add(Vec3.atLowerCornerOf(bh.getDirection().getNormal()).scale(0.05));
+        LiquidBursts.Burst b = LiquidBursts.start(LiquidWorld.state(source.getLevel()), at, bh.getDirection(), mm, bar, seconds);
+        source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                "AFL water: burst at (%.2f, %.2f, %.2f) out of the %s face: %.0f mm hole at %.2f bar, %.1f m/s, %.2f L/s for %.1f s (%.1f L). /afl dev water burst stop stops it.",
+                at.x, at.y, at.z, bh.getDirection().getName(), mm, bar, b.speed, b.litresPerSecond, seconds, b.left / 1000.0)), false);
+        return 1;
+    }
+
+    private static int burstStop(CommandSourceStack source) {
+        int n = LiquidBursts.stop(LiquidWorld.state(source.getLevel()));
+        source.sendSuccess(() -> Component.literal(n > 0 ? "AFL water: stopped " + n + " burst(s)." : "AFL water: nothing is bursting."), false);
+        return n;
     }
 
     private static int rain(CommandSourceStack source, double mm, int radius) {

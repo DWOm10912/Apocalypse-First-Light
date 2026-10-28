@@ -58,7 +58,9 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
     static final int[][] SIDE_CORNERS = {{1, 0}, {2, 3}, {0, 2}, {3, 1}};
     /** by top orientation (TopTexture), then geometry key */
-    private final Map<Integer, Map<Long, List<BakedQuad>[]>> cache = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Key, List<BakedQuad>[]>> cache = new ConcurrentHashMap<>();
+
+    private record Key(long geometry, int extra) {}
 
     SmoothSurfaceModel(BakedModel original) {
         super(original);
@@ -75,11 +77,17 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         List<BakedQuad> skin = EarthSkin.quads(level, pos, state);   // an edited column's skin cell (Earthwork)
         if (skin != null) return base.derive().with(SKIN, skin).build();
         long g = TerrainSmoothClient.renderGeometry(level, pos, state);   // every ground block of every chunk passes here
-        if (g < 0) return base;
+        // R2b: the smooth top and the meeting of loose grounds (flat blocks too), null where the vanilla top stands
+        SmoothTopMesh.Top top = SmoothTopMesh.inputs(level, pos, state, g);
+        if (g < 0) return top == null ? base : base.derive().with(TOP, top).build();
         int under = TerrainSmoothClient.underSides(level, pos, g);
         var sloped = base.derive().with(GEOMETRY, g);
+        if (top != null) sloped.with(TOP, top);
         return (under == 0 ? sloped : sloped.with(UNDER, under)).build();
     }
+
+    /** R2b: the block's top as SmoothTopMesh draws it (a smooth top, a boundary between loose grounds). */
+    static final ModelProperty<SmoothTopMesh.Top> TOP = new ModelProperty<>();
 
     /** A skin cell is drawn in the solid layer only (its tops are opaque, a grass top's overlay sides are not drawn). */
     @Override
@@ -109,16 +117,19 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
             if (side == null) return skin;
             return side == Direction.DOWN ? originalModel.getQuads(state, side, random, ModelData.EMPTY, renderType) : List.of();
         }
+        SmoothTopMesh.Top top = data.get(TOP);
+        if (top != null && state != null && side == Direction.UP) return SmoothTopMesh.quads(top, originalModel, state, random, renderType);
         Long g = data.get(GEOMETRY);
         if (g == null || state == null) return super.getQuads(state, side, random, data, renderType);
         int layer = renderType == null ? 0 : RenderType.chunkBufferLayers().indexOf(renderType) + 1;
         Integer u = data.get(UNDER);
         int under = u == null ? 0 : u;
-        // g: bits 0-47; layer 48-50 (five chunk layers); shader pack 51; under (sides and light, 12 bits) 52-63
-        long key = g | (long) (layer & 7) << 48 | (TerrainSmoothClient.shaderPack ? 1L << 51 : 0) | (long) under << 52;
+        // g: bits 0-52 (the fan's 48-52, dig R1); layer (five chunk layers) 0-2, shader pack 3, under (sides and light, 12
+        // bits) 4-15 of the second half
+        Key key = new Key(g, layer & 7 | (TerrainSmoothClient.shaderPack ? 8 : 0) | under << 4);
         // the top's texture orientation of the vanilla variant at this position (the renderer seeded random for it)
         int orientation = TopTexture.orientation(originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType));
-        Map<Long, List<BakedQuad>[]> byKey = cache.computeIfAbsent(orientation, o -> new ConcurrentHashMap<>());
+        Map<Key, List<BakedQuad>[]> byKey = cache.computeIfAbsent(orientation, o -> new ConcurrentHashMap<>());
         if (byKey.size() > 32768) byKey.clear();   // distinct slopes are far fewer; bound it anyway
         List<BakedQuad>[] quads = byKey.computeIfAbsent(key, k -> build(state, g, under, renderType, orientation));
         return quads[side == null ? 6 : side.ordinal()];
@@ -130,14 +141,16 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         List<BakedQuad>[] out = new List[7];
         for (int i = 0; i < 7; i++) out[i] = List.of();
         RandomSource random = RandomSource.create(42);
-        float[] c = SmoothRules.corners(g);   // nw, ne, sw, se above the floor
-        // top
-        float[][] top = {{0, c[0], 0}, {0, c[2], 1}, {1, c[3], 1}, {1, c[1], 0}};
+        float[] c = SmoothRules.corners(g);   // nw, ne, sw, se above the floor (with a centre, dig R1: its fan's points)
+        // top: one quad, or one per quarter around a centre (SmoothRules#topQuads)
         float[][] topUv = TopTexture.uv(orientation);
-        int color = TopTexture.topColor(top);
         List<BakedQuad> tops = new ArrayList<>();
-        for (BakedQuad o : originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType))
-            tops.add(quad(top, topUv, o.getSprite(), o.getTintIndex(), Direction.UP, color, 0));
+        List<BakedQuad> up = originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType);
+        for (float[][] top : SmoothRules.topQuads(c)) {
+            int color = TopTexture.topColor(top);
+            float[][] uv = TopTexture.uvAt(topUv, top);   // by position: fan quarters, a top split sw-ne starting at sw
+            for (BakedQuad o : up) tops.add(quad(top, uv, o.getSprite(), o.getTintIndex(), Direction.UP, color, 0));
+        }
         out[Direction.UP.ordinal()] = List.copyOf(tops);
         // side bands, and where a neighbour that hides nothing was counted on for the part below a band, that part too
         int underLight = LightTexture.pack(under >> 4 & 15, under >> 8 & 15);

@@ -83,11 +83,12 @@ public final class LevelVehicleWorld implements VehicleWorld {
             if (smooth && TerrainSmooth.ground(block)) {
                 long g = TerrainSmooth.geometry(level, chunk, bx, y, bz);
                 if (g >= 0) {
-                    float[] c = SmoothRules.corners(g);
+                    float[] c = TerrainSmooth.top(level, chunk, bx, y, bz, g);   // R2b: the smooth top
                     double h = y + SmoothRules.surface(c, fx, fz);
                     if (h < yBottom) break;
-                    // the triangle's slope (SmoothRules#surface: split on the nw-se diagonal)
-                    double dx = fz >= fx ? c[3] - c[2] : c[1] - c[0], dz = fz >= fx ? c[2] - c[0] : c[3] - c[1];
+                    // the drawn face's slope (SmoothRules#slope: its diagonal or its fan, dig R1)
+                    double[] d = SmoothRules.slope(c, fx, fz);
+                    double dx = d[0], dz = d[1];
                     double len = Math.sqrt(dx * dx + 1 + dz * dz);
                     out.set(h, -dx / len, 1 / len, -dz / len, grip(block), Source.SMOOTH);
                     return true;
@@ -125,10 +126,11 @@ public final class LevelVehicleWorld implements VehicleWorld {
             if (smooth && TerrainSmooth.ground(state.getBlock())) {
                 long g = TerrainSmooth.geometry(level, chunk, bx, yy, bz);
                 if (g >= 0) {
-                    float[] c = SmoothRules.corners(g);
+                    float[] c = TerrainSmooth.top(level, chunk, bx, yy, bz, g);   // R2b: the smooth top
                     double fx = x - bx, fz = z - bz, h = yy + SmoothRules.surface(c, fx, fz);
                     if (y >= h) continue;
-                    double dx = fz >= fx ? c[3] - c[2] : c[1] - c[0], dz = fz >= fx ? c[2] - c[0] : c[3] - c[1];
+                    double[] d = SmoothRules.slope(c, fx, fz);
+                    double dx = d[0], dz = d[1];
                     double len = Math.sqrt(dx * dx + 1 + dz * dz);
                     out.set(-dx / len, 1 / len, -dz / len, (h - y) / len);
                     return true;

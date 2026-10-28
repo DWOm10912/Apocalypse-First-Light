@@ -12,6 +12,11 @@ public final class LiquidFall {
     long ml;
     double flow, sent = -1;
     long last;
+    /** Gone over this tick, not yet off the lip as parcels, on chunk owner's account; parcels sent so far (spread along). */
+    long pending, owner;
+    long launched;
+    /** The surface its last landed parcel came down on (m; NaN: none yet), and the one last sent to the clients. */
+    double landed = Double.NaN, sentBottom = Double.NaN;
 
     LiquidFall(LiquidFace face) {
         this.face = face;
@@ -56,9 +61,12 @@ public final class LiquidFall {
         return Math.cbrt(q * q / LiquidEngine.G);
     }
 
-    /** Where it lands: the surface below (m). */
+    /**
+     * Where it lands (m): the surface its parcels come down on, out where their arc takes them (Mesh water M3), until the
+     * first lands the surface across the edge.
+     */
     public double bottom() {
-        return dst.level;
+        return Double.isNaN(landed) ? dst.level : landed;
     }
 
     /** The opening's width at the surface (m). */

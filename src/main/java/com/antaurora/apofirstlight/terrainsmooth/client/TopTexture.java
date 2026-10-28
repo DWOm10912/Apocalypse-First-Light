@@ -51,6 +51,25 @@ public final class TopTexture {
     }
 
     /**
+     * UVs of points {fx, y, fz} of a top (a quarter of a fan top, dig R1), from the corner UVs (#uv, nw, sw, se, ne)
+     * spread over the block, so the quarters show one texture as the plain top does.
+     */
+    public static float[][] uvAt(float[][] corners, float[][] points) {
+        float[][] out = new float[points.length][];
+        for (int i = 0; i < points.length; i++) {
+            float x = points[i][0], z = points[i][2];
+            float[] w = {(1 - x) * (1 - z), (1 - x) * z, x * z, x * (1 - z)};
+            float u = 0, v = 0;
+            for (int k = 0; k < 4; k++) {
+                u += w[k] * corners[k][0];
+                v += w[k] * corners[k][1];
+            }
+            out[i] = new float[]{u, v};
+        }
+        return out;
+    }
+
+    /**
      * Vertex colour of a sloped top without a shader pack: vanilla-like directional shading by its tilt (as the natural
      * slopes, SmoothSurfaceModel), white with one (the pack shades from the normals).
      */

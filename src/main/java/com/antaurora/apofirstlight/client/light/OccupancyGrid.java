@@ -220,7 +220,8 @@ final class OccupancyGrid {
             long g = TerrainSmooth.geometry(level, chunk, x, y, z);
             if (g >= 0) {
                 float[] c = SmoothRules.corners(g);
-                float low = Math.min(Math.min(c[0], c[1]), Math.min(c[2], c[3]));
+                float low = 2;
+                for (float v : c) low = Math.min(low, v);   // the corners, and a dug hole's centre (dig R1)
                 return low >= 1 ? 255 : height(low);
             }
         }
