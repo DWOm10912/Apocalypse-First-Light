@@ -507,6 +507,12 @@ public final class SkeletonActions {
         ItemStack main = p.getMainHandItem();
         if (main.getItem() instanceof com.antaurora.apofirstlight.item.FlipLighterItem) return lighter(p, main, now);
         if (main.getItem() instanceof com.antaurora.apofirstlight.item.FoldingKnifeItem) return knife(p, main, partial, now);
+        // the water pail (Cooking V1): carried at the side; pouring is its use action (item_actions/enamel_water_pail, below)
+        if (main.getItem() instanceof com.antaurora.apofirstlight.cooking.WaterPailItem && !p.isUsingItem())
+            return new Live("item/water_pail", now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
+        // the cookware (Cooking V1): the dutch oven in both hands by its handles, the skillet out by its handle
+        if (main.is(AflItems.CAST_IRON_DUTCH_OVEN.get())) return new Live("item/dutch_oven", now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
+        if (main.is(AflItems.CAST_IRON_SKILLET.get())) return new Live("item/skillet", now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         KNIFE_STABS.remove(p.getId());
         if (main.is(AflItems.ROUND_POINT_SHOVEL.get())) return new Live(SHOVEL_HOLD, now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
         if (main.is(AflItems.PICK_MATTOCK.get())) return new Live(PICK_HOLD, now, 0F, Map.of(), p.getMainArm() == HumanoidArm.LEFT);
@@ -547,6 +553,11 @@ public final class SkeletonActions {
             // authored with the magazine in the left hand; it stays in the hand it was taken out with (the main hand), so a
             // right-handed player plays it mirrored (user 2026-10-20 “取下来的弹匣明明是在右手，压弹的时候直接瞬移到左手了”)
             if (since >= 0 && PlayerActions.get(load) != null) return new Live(load, since / 20.0, 0F, Map.of(), p.getMainArm() == HumanoidArm.RIGHT);
+        }
+        // held carry V1 (weight/HeldCarry): 8 kg or more, or bulky, in both arms in front of the belly (CarryHug)
+        if (!p.isUsingItem() && com.antaurora.apofirstlight.weight.HeldCarry.style(main).hug()) {
+            String hug = CarryHug.action(main);
+            if (hug != null) return new Live(hug, now, 0F, Map.of(), false);
         }
         if (p.isUsingItem()) {
             ItemStack stack = p.getUseItem();

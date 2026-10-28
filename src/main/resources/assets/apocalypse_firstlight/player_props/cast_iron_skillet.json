@@ -1,0 +1,32 @@
+{
+  "about": "The cast iron skillet as the skeleton holds it, first and third person (Cooking V1 K1a, docs/gameplay/cooking_v1_plan.md 7). Points, bounds: item block units of the skillet mesh as client/AflStaticMeshItemClient draws it (meshes/cast_iron_skillet.aflmesh.json + (0.5, 0.236482, 0.5), 1 px = 1 cm, an item unit 16 cm; the pan's axis at x -6.32 cm, the handle along +x). Scale 0.24: 1.5 x real size (the held size rule of 2026-10-27), 76 cm long with the handle. grip: the middle of the handle; center: the middle of the pan's floor.",
+  "items": [
+    "cast_iron_skillet"
+  ],
+  "scale": 0.24,
+  "bounds": [
+    [
+      -0.69,
+      0.236482,
+      -0.46
+    ],
+    [
+      2.49,
+      0.763544,
+      1.46
+    ]
+  ],
+  "symmetry": "z",
+  "points": {
+    "grip": [
+      1.63596,
+      0.731482,
+      0.5
+    ],
+    "center": [
+      0.10471,
+      0.273982,
+      0.5
+    ]
+  }
+}

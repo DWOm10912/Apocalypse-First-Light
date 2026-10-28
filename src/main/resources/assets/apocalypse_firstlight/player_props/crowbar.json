@@ -1,7 +1,7 @@
 {
-  "about": "The crowbar as the skeleton holds it, first and third person (player actions S2 round 3, docs/dev/player_actions_v1_plan.md 12). Points, bounds: item block units of the crowbar mesh as client/AflStaticMeshItemClient draws it (meshes/crowbar.aflmesh.json + (0.5, -0.36419, 0.5); y up the bar, the claw curling to -x at the top). Scale 0.53: about 0.91 m long, a 36 inch wrecking bar. Held two-handed, left hand low (the user, 2026-10-16: the left at the end and the right above it is the natural grip): the left at grip_end (the straight end), the right at grip_high, 0.3 block up the bar; swinging, the right slides down to grip, just above the left.",
+  "about": "The crowbar as the skeleton holds it, first and third person (player actions S2 round 3, docs/dev/player_actions_v1_plan.md 12). Points, bounds: item block units of the crowbar mesh as client/AflStaticMeshItemClient draws it (meshes/crowbar.aflmesh.json + (0.5, -0.36419, 0.5); y up the bar, the claw curling to -x at the top). Scale 0.53: about 0.91 m long, a 36 inch wrecking bar. Scale 0.65 (2026-10-27, the held size rule: 1.5 x real size, held back to 1.3 x: larger, the smash brings the claw into the head and the left forearm into the chest, skeletonCheck crowbar_60; it was 0.53, about real): about 1.2 m long. Held two-handed, left hand low (the user, 2026-10-16: the left at the end and the right above it is the natural grip): the left at grip_end (the straight end), the right at grip_high, 0.3 block up the bar; swinging, the right slides down to grip, just above the left.",
   "items": ["crowbar"],
-  "scale": 0.53,
+  "scale": 0.65,
   "bounds": [[0.341, -0.364, 0.465], [0.659, 1.359, 0.535]],
   "symmetry": "z",
   "points": {

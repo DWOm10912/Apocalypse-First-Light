@@ -140,6 +140,12 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.CLOTHING_JACKET.get(), "clothing_jacket", "clothing_jacket_mesh", 0.410938);
             bind(AflItems.CLOTHING_JEANS.get(), "clothing_jeans", "clothing_jeans_mesh", 0.420312);
             bind(AflItems.CLOTHING_SHOES.get(), "clothing_shoes", "clothing_shoes_mesh", 0.404375);
+            // Cooking V1 K1a (equipment meshes, 2026-10-27, 1 px = 1 cm): 0.5 - height / 32; the water pail hangs plumb in the hand,
+            // its water level with the world and sloshing (client/cooking/WaterPailRenderer)
+            bind(AflItems.CAST_IRON_DUTCH_OVEN.get(), "cast_iron_dutch_oven", "cast_iron_dutch_oven_mesh", 0.011204);
+            bind(AflItems.CAST_IRON_SKILLET.get(), "cast_iron_skillet", "cast_iron_skillet_mesh", 0.236482);
+            bind(AflItems.TABLE_SPOON.get(), "table_spoon", "table_spoon_mesh", 0.437701);
+            bind(AflItems.ENAMEL_WATER_PAIL.get(), com.antaurora.apofirstlight.client.cooking.WaterPailRenderer::new, "enamel_water_pail");
             // Fractures and splints V1 (equipment meshes, 2026-10-20): 0.5 - 0.77 / 32
             bind(AflItems.SPLINT.get(), "splint", "splint_mesh", 0.475938);
             // Tamarack T15 key (equipment meshes, 2026-10-21): 0.5 - 3.32 / 32

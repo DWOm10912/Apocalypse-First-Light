@@ -1,0 +1,108 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/cast_iron_skillet"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/cast_iron_skillet"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          75,
+          45,
+          0
+        ],
+        "translation": [
+          0,
+          0.957,
+          0.742
+        ],
+        "scale": [
+          0.099,
+          0.099,
+          0.099
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          45,
+          0
+        ],
+        "translation": [
+          0,
+          1,
+          0
+        ],
+        "scale": [
+          0.118,
+          0.118,
+          0.118
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          0.094,
+          0.094,
+          0.094
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.165,
+          0.165,
+          0.165
+        ]
+      },
+      "gui": {
+        "rotation": [
+          35,
+          30,
+          0
+        ],
+        "translation": [
+          0.093,
+          0.223,
+          0
+        ],
+        "scale": [
+          0.311,
+          0.311,
+          0.311
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/cast_iron_skillet"
+      }
+    }
+  }
+}

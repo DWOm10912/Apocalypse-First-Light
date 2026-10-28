@@ -86,6 +86,11 @@ public final class GroundItems {
     static ItemEntity reachable(ServerPlayer player, int id) {
         if (!(player.level().getEntity(id) instanceof ItemEntity item)) return null;
         if (!pickable(player, item) || !area(player, SLACK).intersects(item.getBoundingBox()) || !inSight(player, item)) return null;
+        // one person cannot lift it (weight/HeldCarry: over 45 kg); it stays where it lies
+        if (com.antaurora.apofirstlight.weight.HeldCarry.tooHeavy(player, item.getItem())) {
+            player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.carry.too_heavy"), true);
+            return null;
+        }
         return item;
     }
 

@@ -25,6 +25,11 @@ public final class PlayerActions {
     private static final String ROOT = "assets/apocalypse_firstlight/";
     private static final Map<String, Optional<PlayerAction>> ACTIONS = new HashMap<>();
     private static final Map<String, Optional<String>> USE = new HashMap<>();
+    /**
+     * Actions made for an item rather than read from a file (ids with a {@code #}: held carry V1's {@code item/carry_hug#<item
+     * path>}, client/skeleton/CarryHug): the definition's JSON, or null.
+     */
+    public static java.util.function.Function<String, JsonObject> made;
 
     private PlayerActions() {
     }
@@ -32,7 +37,7 @@ public final class PlayerActions {
     /** An action by id, or null when there is no such file. A broken file throws (found by the checks). */
     public static synchronized PlayerAction get(String id) {
         return ACTIONS.computeIfAbsent(id, k -> {
-            JsonObject json = read(ROOT + "player_actions/" + k + ".json");
+            JsonObject json = k.indexOf('#') >= 0 ? (made == null ? null : made.apply(k)) : read(ROOT + "player_actions/" + k + ".json");
             return Optional.ofNullable(json == null ? null : PlayerAction.parse(k, json));
         }).orElse(null);
     }

@@ -132,6 +132,8 @@ public final class WorldInteractionHint {
         if(target==null) {var shovel=ShovelClient.hint(mc);if(shovel!=null) {target=new Target(shovel,null);aimed=true;}}
         // the pick mattock at a boulder in its reach (Rock R1a, client/PickClient): strike; any other hand on a boulder: it needs a pick
         if(target==null) {var pick=PickClient.hint(mc);if(pick!=null) {target=new Target(pick,null);aimed=true;}}
+        // the water pail (Cooking V1, client/cooking/PailClient): scoop at water in reach, else pour it out
+        if(target==null) {var pail=com.antaurora.apofirstlight.client.cooking.PailClient.hint(mc);if(pail!=null) target=new Target(pail,null);}
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;
@@ -191,6 +193,7 @@ public final class WorldInteractionHint {
     private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keysFor(Minecraft mc,Component label) {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
+        if(key.endsWith(".ground_item.too_heavy")) return java.util.List.of();
         if(key.contains(".ground_item.")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".pickup_t15.get_out")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift));
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);

@@ -338,7 +338,7 @@
       "estimated": true
     },
     "apocalypse_firstlight:diesel_generator": {
-      "unit_mass_kg": 90,
+      "unit_mass_kg": 450,
       "estimated": true
     },
     "apocalypse_firstlight:portable_diesel_generator": {
@@ -362,7 +362,7 @@
       "estimated": true
     },
     "apocalypse_firstlight:rooftop_unit": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 150,
       "estimated": true
     },
     "apocalypse_firstlight:price_sign": {
@@ -418,11 +418,11 @@
       "estimated": true
     },
     "apocalypse_firstlight:vending_machine": {
-      "unit_mass_kg": 45,
+      "unit_mass_kg": 300,
       "estimated": true
     },
     "apocalypse_firstlight:fuel_dispenser": {
-      "unit_mass_kg": 60,
+      "unit_mass_kg": 300,
       "estimated": true
     },
     "apocalypse_firstlight:fuel_island_curb": {
@@ -454,11 +454,11 @@
       "estimated": true
     },
     "apocalypse_firstlight:underground_fuel_tank_gasoline": {
-      "unit_mass_kg": 150,
+      "unit_mass_kg": 1000,
       "estimated": true
     },
     "apocalypse_firstlight:underground_fuel_tank_diesel": {
-      "unit_mass_kg": 150,
+      "unit_mass_kg": 1000,
       "estimated": true
     },
     "apocalypse_firstlight:submersible_fuel_pump": {
@@ -530,27 +530,27 @@
       "estimated": true
     },
     "apocalypse_firstlight:commercial_dumpster": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 180,
       "estimated": true
     },
     "apocalypse_firstlight:commercial_dumpster_blue": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 180,
       "estimated": true
     },
     "apocalypse_firstlight:commercial_dumpster_brown": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 180,
       "estimated": true
     },
     "apocalypse_firstlight:commercial_dumpster_gray": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 180,
       "estimated": true
     },
     "apocalypse_firstlight:commercial_glass_double_door": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 80,
       "estimated": true
     },
     "apocalypse_firstlight:commercial_glass_double_door_black": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 80,
       "estimated": true
     },
     "apocalypse_firstlight:storefront_glazing": {
@@ -586,23 +586,23 @@
       "estimated": true
     },
     "apocalypse_firstlight:beverage_cooler": {
-      "unit_mass_kg": 35,
+      "unit_mass_kg": 120,
       "estimated": true
     },
     "apocalypse_firstlight:gun_maintenance_bench": {
-      "unit_mass_kg": 35,
+      "unit_mass_kg": 80,
       "estimated": true
     },
     "apocalypse_firstlight:precision_fabrication_station": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 200,
       "estimated": true
     },
     "apocalypse_firstlight:chest_freezer": {
-      "unit_mass_kg": 30,
+      "unit_mass_kg": 50,
       "estimated": true
     },
     "apocalypse_firstlight:lead_chest": {
-      "unit_mass_kg": 30,
+      "unit_mass_kg": 200,
       "estimated": true
     },
     "apocalypse_firstlight:office_multifunction_printer": {
@@ -822,31 +822,31 @@
       "estimated": true
     },
     "apocalypse_firstlight:crusher": {
-      "unit_mass_kg": 50,
+      "unit_mass_kg": 400,
       "estimated": true
     },
     "apocalypse_firstlight:industrial_furnace": {
-      "unit_mass_kg": 50,
+      "unit_mass_kg": 600,
       "estimated": true
     },
     "apocalypse_firstlight:alloy_furnace": {
-      "unit_mass_kg": 45,
+      "unit_mass_kg": 400,
       "estimated": true
     },
     "apocalypse_firstlight:chemical_reactor": {
-      "unit_mass_kg": 45,
+      "unit_mass_kg": 300,
       "estimated": true
     },
     "apocalypse_firstlight:compressor": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 150,
       "estimated": true
     },
     "apocalypse_firstlight:thermal_generator": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 300,
       "estimated": true
     },
     "apocalypse_firstlight:energy_cell": {
-      "unit_mass_kg": 35,
+      "unit_mass_kg": 60,
       "estimated": true
     },
     "apocalypse_firstlight:fluid_tank": {
@@ -1096,7 +1096,7 @@
       "estimated": true
     },
     "apocalypse_firstlight:box_stove": {
-      "unit_mass_kg": 60,
+      "unit_mass_kg": 90,
       "estimated": true
     },
     "apocalypse_firstlight:stove_heat_shield": {
@@ -1112,11 +1112,11 @@
       "estimated": true
     },
     "apocalypse_firstlight:wooden_bed": {
-      "unit_mass_kg": 40,
+      "unit_mass_kg": 60,
       "estimated": true
     },
     "apocalypse_firstlight:wooden_wardrobe": {
-      "unit_mass_kg": 55,
+      "unit_mass_kg": 70,
       "estimated": true
     },
     "apocalypse_firstlight:wooden_nightstand": {

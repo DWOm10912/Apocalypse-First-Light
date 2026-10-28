@@ -34,6 +34,10 @@
 | <ItemIcon id="hand_saw" /> 手锯 | 在工作台上把原木锯成白栎横梁 | <StatusTag s="creative" /> |
 | <ItemIcon id="field_survival_guide" /> 野外求生指南 | 右键打开阅读；在讲做法的那一页停一会儿，就学会对应的工作台配方 | <StatusTag s="creative" /> |
 | <ItemIcon id="flip_lighter" /> 翻盖打火机 | 右键翻盖、打火，点着能照明，也能点燃柴炉、营火、蜡烛和 TNT | <StatusTag s="creative" /> |
+| <ItemIcon id="enamel_water_pail" /> 搪瓷水桶 | 舀水、提水、倒水，见 [搪瓷水桶](#搪瓷水桶) | <StatusTag s="creative" /> |
+| <ItemIcon id="cast_iron_dutch_oven" /> 铸铁炖锅 | 7 夸脱，能装约 8 L。现在还不能做饭 | <StatusTag s="creative" /> |
+| <ItemIcon id="cast_iron_skillet" /> 铸铁煎锅 | 12 寸。现在还不能做饭 | <StatusTag s="creative" /> |
+| <ItemIcon id="table_spoon" /> 汤匙 | 现在没有用途 | <StatusTag s="creative" /> |
 
 ## 伐木斧
 
@@ -119,6 +123,19 @@
 - 点着时会消耗燃油，物品栏里的燃油条显示剩余燃油；燃油用完或到了水下，火会熄灭
 - 翻盖、打火的声音能被附近 <V j="FlipLighterItem.SOUND_RADIUS" /> 格内的感染者听到
 - 目前只能从创造模式物品栏获得，音效是临时的
+
+## 搪瓷水桶
+
+<StatusTag s="verified" d="2026-10-27" /> 蓝灰色搪瓷钢桶，铁丝提梁配木握把，能装 12 L
+
+- 对着池塘、水坑或河按右键舀水：水深 20 cm 以上一下舀满，浅一些舀得少；池塘和水坑里的水会真的变少，河里的水舀不完
+- 舀上来的是生水，带着取水处的辐射
+- 在别处按住右键往前倒：双手把桶端到身前，右手扶桶沿、左手托桶底往前倾，每秒约 2.4 L，松开就停；倒出去的水落在地上照样流、照样积
+- 提着走时桶里的水会晃：起步、停下、转身、跳、落地都会晃起来，走路时每一步都在推它
+- 装到 10 L 以上走路会洒，洒出去的水落在桶边；跑起来 10 L 也会洒一点；潜行走能端着满桶不洒
+- 水有重量，每升 1 kg，算进负重；满桶 13.1 kg，提梁单手提，不影响疾跑（见 [双手搬运](../guide/inventory.md#双手搬运)）
+- 还不能从桶里取水喝，以后用水壶；放到柴炉上烧水还没做
+- 目前只能从创造模式物品栏获得
 
 ## 挂点
 

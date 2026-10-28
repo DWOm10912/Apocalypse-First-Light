@@ -1,0 +1,50 @@
+{
+  "format_version": 1,
+  "about": "Cast iron skillet in the main hand, first and third person alike (Cooking V1 K1a): held out by the handle in front of the right hip, the pan ahead and level.",
+  "layer": "action",
+  "mask": "arms",
+  "priority": 30,
+  "first_person": "body",
+  "blend": {
+    "in": 0.15,
+    "out": 0.2
+  },
+  "prop": {
+    "id": "cast_iron_skillet",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "shoulder_r",
+        "point": "grip",
+        "pos": [
+          -1.2,
+          8.6,
+          -5.0
+        ],
+        "rot": [
+          0,
+          -90,
+          0
+        ],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip",
+        "blend": 0,
+        "roll": 0
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "pose"
+      }
+    ]
+  },
+  "events": []
+}
