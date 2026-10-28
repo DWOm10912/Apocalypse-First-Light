@@ -153,42 +153,6 @@ public final class AflRenderDev {
                     c.getSource().sendSuccess(() -> Component.literal("falls " + com.antaurora.apofirstlight.client.liquid.ClientFalls.status()), false);
                     return 1;
                 })))
-                // AFL picture upgrade V1a (docs/rendering/vanilla_visual_upgrade_v1.md): post all|ao|smooth|grade on|off,
-                // post strength|radius|contrast|saturation <number>, post status
-                .then(Commands.literal("post")
-                        .then(Commands.literal("status").executes(c -> {
-                            c.getSource().sendSuccess(() -> Component.literal("post " + com.antaurora.apofirstlight.client.post.AflPost.status()), false);
-                            return 1;
-                        }))
-                        .then(Commands.argument("part", StringArgumentType.word()).then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
-                            String part = StringArgumentType.getString(c, "part").toLowerCase(Locale.ROOT);
-                            String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
-                            boolean on = value.equals("on");
-                            boolean flag = on || value.equals("off");
-                            float number;
-                            try {
-                                number = flag ? 0 : Float.parseFloat(value);
-                            } catch (NumberFormatException e) {
-                                c.getSource().sendFailure(Component.literal("on / off or a number"));
-                                return 0;
-                            }
-                            switch (part) {
-                                case "all" -> { if (!flag) return 0; com.antaurora.apofirstlight.client.post.AflPost.enabled = on; }
-                                case "ao" -> { if (!flag) return 0; com.antaurora.apofirstlight.client.post.AflPost.ao = on; }
-                                case "smooth" -> { if (!flag) return 0; com.antaurora.apofirstlight.client.post.AflPost.smooth = on; }
-                                case "grade" -> { if (!flag) return 0; com.antaurora.apofirstlight.client.post.AflPost.grade = on; }
-                                case "strength" -> com.antaurora.apofirstlight.client.post.AflPost.aoStrength = Math.max(0, Math.min(1.5F, number));
-                                case "radius" -> com.antaurora.apofirstlight.client.post.AflPost.aoRadius = Math.max(0.1F, Math.min(3, number));
-                                case "contrast" -> com.antaurora.apofirstlight.client.post.AflPost.contrast = Math.max(0, Math.min(1, number));
-                                case "saturation" -> com.antaurora.apofirstlight.client.post.AflPost.saturation = Math.max(0, Math.min(2, number));
-                                default -> {
-                                    c.getSource().sendFailure(Component.literal("all / ao / smooth / grade / strength / radius / contrast / saturation"));
-                                    return 0;
-                                }
-                            }
-                            c.getSource().sendSuccess(() -> Component.literal("post " + com.antaurora.apofirstlight.client.post.AflPost.status()), false);
-                            return 1;
-                        }))))
                 // Rain V1 (docs/rendering/rain_v1.md): off brings back vanilla rain to compare
                 .then(Commands.literal("rain").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
                     String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
