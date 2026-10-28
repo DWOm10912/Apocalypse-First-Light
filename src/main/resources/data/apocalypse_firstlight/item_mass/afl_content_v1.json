@@ -1099,6 +1099,14 @@
       "unit_mass_kg": 90,
       "estimated": true
     },
+    "apocalypse_firstlight:wood_cookstove": {
+      "unit_mass_kg": 180,
+      "estimated": true
+    },
+    "apocalypse_firstlight:propane_range": {
+      "unit_mass_kg": 68,
+      "estimated": true
+    },
     "apocalypse_firstlight:stove_heat_shield": {
       "unit_mass_kg": 3,
       "estimated": true

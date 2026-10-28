@@ -106,6 +106,7 @@ public final class WorldInteractionHint {
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=fluidPipe(mc,hit);
             if(target==null) target=boxStove(mc,hit);
+            if(target==null) target=cooktop(mc,hit);
             if(target==null) target=emergencyRadio(mc,hit);
             if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=tunnelFixture(mc,hit);
@@ -611,6 +612,20 @@ public final class WorldInteractionHint {
             case TAKE -> new Target(Component.translatable(k+"take"),com.antaurora.apofirstlight.cabin.BoxStove.Stove.spotPoint(s,pos,stove.takeSpot(spot)));
             default -> null;
         };
+    }
+
+    /** Cooking V1 K1c: a pot or a skillet onto a kitchen stove's cooktop, or off it (KitchenStoves.Stove#use). */
+    private static Target cooktop(Minecraft mc,BlockHitResult hit) {
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.KitchenStoves.Stove stove)||mc.player.isSecondaryUseActive()) return null;
+        Object[] aim=stove.aim(mc.level,s,pos,hit.getLocation(),hit.getDirection());
+        if(aim==null) return null;
+        var top=(com.antaurora.apofirstlight.cabin.CooktopBlockEntity)aim[0];int[] a=(int[])aim[1];
+        var act=com.antaurora.apofirstlight.cabin.KitchenStoves.Stove.action(top,mc.player.getMainHandItem(),a);
+        if(act==com.antaurora.apofirstlight.cabin.KitchenStoves.Action.NONE) return null;
+        int burner=act==com.antaurora.apofirstlight.cabin.KitchenStoves.Action.TAKE?top.burner(a[0]):a[1];
+        return new Target(Component.translatable("hint.apocalypse_firstlight.cooktop."+(act==com.antaurora.apofirstlight.cabin.KitchenStoves.Action.PUT?"put":"take")),
+                stove.spotPoint(s,pos,a[0],burner));
     }
 
     /** Emergency Radio V1: the slide switch (on / off), the crank (its end), as EmergencyRadio.Radio#use. */

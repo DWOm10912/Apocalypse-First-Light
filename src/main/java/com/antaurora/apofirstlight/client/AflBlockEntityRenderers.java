@@ -91,6 +91,7 @@ public final class AflBlockEntityRenderers {
         // the chair's seat is an invisible rider anchor
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.GUN_RACK, AflBlockEntityRendering.wrap("wooden_gun_rack", WoodGunRackRenderer::new));
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.BoxStove.STOVE, AflBlockEntityRendering.wrap("box_stove", BoxStoveRenderer::new));   // Box Stove V1: the cook top, the door
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.KitchenStoves.COOKTOP, AflBlockEntityRendering.wrap("cooktop", CooktopRenderer::new));   // Cooking V1 K1c: the pots on a kitchen stove
         // Emergency Radio V1: the crank's arm, an animated mesh (2026-10-15)
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.EmergencyRadio.RADIO,
                 AflBlockEntityRendering.wrap("emergency_radio", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));

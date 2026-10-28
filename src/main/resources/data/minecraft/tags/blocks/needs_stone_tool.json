@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "apocalypse_firstlight:propane_range",
     "apocalypse_firstlight:asphalt",
     "apocalypse_firstlight:road_surface",
     "apocalypse_firstlight:fused_ground",

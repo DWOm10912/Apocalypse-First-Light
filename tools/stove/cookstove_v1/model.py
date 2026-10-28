@@ -9,7 +9,10 @@
 #
 # Frame: the AFL cabin piece frame, facing north: x along the stove (seen from the front +x is on the left, so the firebox
 # is at the x 1 end), y up, z from the room (front, z 0) to the wall (z 1); block units (1 = 1 m). Parts are named
-# <group>:<what>: body (one baked piece for now; the doors open in a later step).
+# <group>:<what>: body (one baked piece for now; the doors open in a later step). In game (K1c) it stands in two cells: the
+# build cuts it at y 1 (tools/stove/kitchen_build.py), the flue goes up behind the high back, turns in an elbow at 1.62 m
+# and runs back into the wall through a thimble, as a kitchen range's pipe goes into the chimney behind it (it stays
+# inside the two cells; it went straight up to 2.4 m in the K0b renders).
 import os
 
 STOVE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -61,9 +64,20 @@ box("body:shelf", (X0 - 0.02, WC["y1"], WC["z0"] - 0.03), (X1 + 0.02, WC["y1"] +
 box("body:shelf_edge", (X0 - 0.024, WC["y1"] + 0.004, WC["z0"] - 0.034), (X1 + 0.024, WC["y1"] + 0.018, WC["z0"] - 0.026), "st_nickel", 0.003)
 for x in (X0 + 0.01, X1 - 0.03):   # the cast brackets under the closet, down to the cooktop
     box(f"body:bracket_{x:.2f}", (x, TOP1, WC["z0"] + 0.02), (x + 0.02, WC["y0"] - 0.012, BACK_Z), "st_iron", 0.003)
-# the flue: a collar on the cooktop behind the high back, the pipe up past the shelf
+# the flue: a collar on the cooktop behind the high back, the pipe up past the shelf, an elbow, back into the wall
+ELBOW_Y, ELBOW_R, THIMBLE_Z = 1.62, 0.09, 0.965
 cyl("body:collar", "y", FLUE_CS, TOP1, TOP1 + 0.05, CS_PIPE_R + 0.01, "st_iron", 32, bev=0.002)
-cyl("body:pipe", "y", FLUE_CS, TOP1 + 0.05, 2.4, CS_PIPE_R, "st_pipe", 32)
+cyl("body:pipe", "y", FLUE_CS, TOP1 + 0.05, ELBOW_Y, CS_PIPE_R, "st_pipe", 32, caps=False)
+rings = []
+for k in range(13):   # the quarter bend: rings square to the path, which leaves upward and ends heading for the wall
+    a = math.pi / 2 * k / 12
+    yc, zc = ELBOW_Y + ELBOW_R * math.sin(a), FLUE_CS[1] + ELBOW_R * (1 - math.cos(a))
+    rings.append([(FLUE_CS[0] + CS_PIPE_R * math.cos(t), yc - CS_PIPE_R * math.sin(t) * math.sin(a), zc + CS_PIPE_R * math.sin(t) * math.cos(a))
+                  for t in (2 * math.pi * i / 32 for i in range(32))])
+loft("body:elbow", rings, "st_pipe", caps=False)
+RUN_Y = ELBOW_Y + ELBOW_R
+cyl("body:pipe_run", "z", (FLUE_CS[0], RUN_Y), FLUE_CS[1] + ELBOW_R, 1.0, CS_PIPE_R, "st_pipe", 32)
+cyl("body:thimble", "z", (FLUE_CS[0], RUN_Y), THIMBLE_Z, 1.0, CS_PIPE_R + 0.035, "st_iron", 32, bev=0.002)
 
 # ---------------------------------------------------------------- legs
 def cs_leg(tag, x, z):

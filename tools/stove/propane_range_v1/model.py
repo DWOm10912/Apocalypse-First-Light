@@ -30,7 +30,7 @@ X0, X1, Z0, Z1 = RG["x0"], RG["x1"], RG["z0"], RG["z1"]
 box("body:carcass", (X0, 0.10, Z0 + 0.02), (X1, TOP - 0.004, Z1), "rg_white", 0.004, 3)
 box("body:toe_kick", (X0 + 0.01, 0.0, Z0 + 0.06), (X1 - 0.01, 0.10, Z1 - 0.01), "rg_knob", 0.002)
 box("body:cooktop", (X0 - 0.004, TOP - 0.006, Z0), (X1 + 0.004, TOP, Z1), "rg_white", 0.005, 3)
-box("body:backguard", (X0 - 0.004, TOP, Z1 - 0.05), (X1 + 0.004, TOP + 0.11, Z1), "rg_white", 0.006, 3)
+box("body:backguard", (X0 - 0.004, TOP, Z1 - 0.05), (X1 + 0.004, TOP + 0.085, Z1), "rg_white", 0.006, 3)   # to 0.995: inside its one cell
 # the burners: an aluminium base, a black cap, a shallow well round each in the top
 for k, (x, z) in enumerate(BURNERS):
     big = k in (0, 3)
