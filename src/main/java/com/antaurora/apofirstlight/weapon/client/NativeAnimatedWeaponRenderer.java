@@ -164,7 +164,11 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                 if (!right && !bone.getName().equals(profile.leftAnchor())) return;
                 PoseStack anchor = NativeRenderMatrices.detachedCopy(pose);
                 RenderUtils.translateToPivotPoint(anchor, bone);
-                try { NativePlayerArmRenderer.render(anchor, right, buffers, light, overlay); }
+                // the elbow on the guns the skeleton carries (checked offline: BR-51, P9), the sleeves on every gun
+                var id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(currentItemStack.getItem());
+                var carried = com.antaurora.apofirstlight.ApocalypseFirstLight.MOD_ID.equals(id.getNamespace())
+                        ? com.antaurora.apofirstlight.skeleton.GunStance.carried(id.getPath()) : null;
+                try { NativePlayerArmRenderer.renderGun(anchor, right, buffers, light, overlay, carried == null ? null : carried.kind()); }
                 finally { buffers.getBuffer(type); }
             }
         });

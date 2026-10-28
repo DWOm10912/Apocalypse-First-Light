@@ -65,6 +65,18 @@ public final class OldBodyWardrobe {
     }
 
     /**
+     * The worn garments' sleeves on one arm, inside out: each one's texture and its shell over the arm (the own first
+     * person's gun arms, weapon/client/NativePlayerArmRenderer#renderGun; a shell's {@code from} is 0 for every sleeve).
+     */
+    public static void sleeves(@Nullable LivingEntity entity, boolean right, boolean slim,
+                               java.util.function.BiConsumer<ResourceLocation, SkinMesh.Shell> out) {
+        String part = right ? "right_arm" : "left_arm";
+        for (Garment garment : worn(entity))
+            for (OldBodyClothes.Cover cover : garment.covers())
+                if (cover.part().equals(part)) out.accept(texture(garment, slim), cover.shell());
+    }
+
+    /**
      * What an entity wears, on its posed skin mesh ({@code arms}: the own first person's thinner arms, SkinMesh#emit;
      * {@code shown}: whether a skin part is drawn, so a garment hides with the part it covers).
      */

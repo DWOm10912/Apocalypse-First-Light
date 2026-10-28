@@ -1,0 +1,372 @@
+{
+  "format_version": 1,
+  "about": "BR-51 tactical reload while aiming (gun/br51_01_reload_tactical_experienced_ads; docs/native_guns/br51_animation_redo_v1.md 5.7): eyes stay on the target; the rifle stays shouldered (view frame) and only dips and cants so the magwell meets the support hand, which works between the magwell and the belt pouch by feel; then straight back onto the sights. Same beats as the first-person clip; ends where that one is back on the sights (the clip runs on to its full length) and blends out into the aim. Written by tools/author-br51-01-reload-actions.mjs. Proficiency tier experiencedAds (docs/native_guns/br51_animation_redo_v1.md 5.8): the first-person tier clip's beats.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 2.46,
+  "view_pitch": [
+    -30,
+    25
+  ],
+  "props": [
+    {
+      "id": "br51_01",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.342,
+            5.952,
+            -4.12
+          ],
+          "rot": [
+            -179.633,
+            0.001,
+            -179.788
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.142,
+            6.852,
+            -3.92
+          ],
+          "rot": [
+            -176.636,
+            2.061,
+            -169.905
+          ],
+          "blend": 0.25
+        },
+        {
+          "at": 0.68,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.242,
+            7.052,
+            -3.92
+          ],
+          "rot": [
+            -175.636,
+            3.075,
+            -167.016
+          ],
+          "blend": 1.07
+        },
+        {
+          "at": 2.2,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.342,
+            5.952,
+            -4.12
+          ],
+          "rot": [
+            -179.633,
+            0.001,
+            -179.788
+          ],
+          "blend": 0.26
+        }
+      ]
+    },
+    {
+      "id": "br51_01_mag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5,
+            10.6,
+            -4.8
+          ],
+          "rot": [
+            162,
+            0,
+            -180
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 1.05,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5,
+            10.6,
+            -4.8
+          ],
+          "rot": [
+            162,
+            0,
+            -180
+          ],
+          "blend": 0
+        },
+        {
+          "at": 1.2,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            1.6,
+            8.6,
+            -6.8
+          ],
+          "rot": [
+            148.433,
+            17.229,
+            -135.686
+          ],
+          "blend": 0.2475
+        },
+        {
+          "at": 1.4475,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -3.833,
+            -0.383
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.3025
+        },
+        {
+          "at": 1.75,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.11
+        },
+        {
+          "at": 1.86,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.3
+        },
+        {
+          "at": 2.16,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "br51_01_mag_old",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.45,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.45,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.17
+        },
+        {
+          "at": 0.62,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -3.833,
+            -0.383
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.06
+        },
+        {
+          "at": 0.68,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5,
+            10.6,
+            -4.8
+          ],
+          "rot": [
+            162,
+            0,
+            -180
+          ],
+          "blend": 0.37
+        },
+        {
+          "at": 1.05,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5,
+            10.6,
+            -4.8
+          ],
+          "rot": [
+            162,
+            0,
+            -180
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.35,
+          1,
+          0.45
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      },
+      {
+        "at": 0.04,
+        "target": "prop:br51_01_mag_old:base",
+        "blend": 0.32,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 1.05,
+        "target": "prop:br51_01_mag:base",
+        "blend": 0.06,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 2.2,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0.2999999999999999,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      }
+    ]
+  },
+  "events": []
+}

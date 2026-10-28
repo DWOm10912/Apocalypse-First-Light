@@ -470,6 +470,29 @@ public final class GunStance {
         return s <= 0 ? stance : new Matrix4f().translation(new Vector3f(back).mul(s / 16F)).mul(stance);
     }
 
+    /** How far a rifle comes toward the support shoulder for a reload or an inspect on the body (model px). */
+    public static final float SUPPORT_REACH_MOST = 4F;
+
+    /**
+     * A rifle's reload or inspect on the body (BR-51 fix pass, user 2026-10-27 "可以，按你的建议改"): the clips turn the gun
+     * for the first-person camera, and on the body some of their poses (the inspect showing the right side) put the support
+     * hand's anchor out of its reach (1.24 x the arm). The stance moved toward the support shoulder until the left hand
+     * reaches, at most {@link #SUPPORT_REACH_MOST}, as a rifleman brings the gun in to his left hand; both hands stay on
+     * their anchors. Called after {@link #inReach} with the arms set up as for it.
+     */
+    public static Matrix4f supportReach(Kind kind, HumanoidPoser poser, HumanoidPoser.Input in, SkeletonPose pose, Matrix4f stance,
+                                        Matrix4f rightAnchor, Matrix4f leftAnchor) {
+        handTarget(stance, rightAnchor, kind.gripRight, true, in.slim, in.targetRight);
+        handTarget(stance, leftAnchor, kind.gripLeft, false, in.slim, in.targetLeft);
+        SkeletonRig rig = pose.rig;
+        Vector3f wrist = in.targetLeft.transformPosition(new Vector3f(rig.pivot[rig.handL]).sub(rig.pivot[rig.upperArmL]));
+        Vector3f dir = pose.world[rig.chest].transformPosition(new Vector3f(rig.pivot[rig.upperArmL])).sub(wrist);
+        if (dir.lengthSquared() < 1e-6F) return stance;
+        dir.normalize();
+        float s = Math.min(poser.shortfall(in, pose, dir), SUPPORT_REACH_MOST);
+        return s <= 0 ? stance : new Matrix4f().translation(new Vector3f(dir).mul(s / 16F)).mul(stance);
+    }
+
     /** The eye frame: view space to a frame with world axes (blocks), an eye at {@code eye} looking yaw / pitch (deg). */
     public static Matrix4f eye(Vector3f eye, float yaw, float pitch) {
         return new Matrix4f().translation(eye).rotateY(rad(-(yaw + 180F))).rotateX(rad(-pitch));

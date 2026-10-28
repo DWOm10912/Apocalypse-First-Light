@@ -126,6 +126,87 @@ final class SkeletonSnapshot {
         }
     }
 
+    /** The gun's clip and time on the pictures. */
+    static String gunClip = "static_idle";
+    static float gunTime = 0F;
+
+    /**
+     * The BR-51 fix pass (2026-10-27): third-person pictures of a rifle's reload / inspect before (the clip's whole-gun move in
+     * full, lowered while sprinting) and after (PlayerSkeletonCheck#rifleActingFix), where the support hand fell short. One
+     * sheet: a row a moment, columns before / after from behind-right and in front-left.
+     */
+    static void rifleActing(SkeletonRig rig, HumanoidPoser poser, String outDir) throws Exception {
+        File dir = new File(outDir);
+        dir.mkdirs();
+        SkeletonPose pose = new SkeletonPose(rig);
+        record Moment(String label, String clip, float t, float lower) {}
+        Moment[] moments = {new Moment("检视：翻到右侧（2.95 秒）", "inspect", 2.95F, 0F),
+                new Moment("没弹匣检视：看弹匣井（3.8 秒）", "inspect_no_mag", 3.8F, 0F),
+                new Moment("疾跑中战术换弹：取新弹匣（1.05 秒）", "reload_tactical", 1.05F, 1F)};
+        PlayerSkeletonCheck.Gun g = PlayerSkeletonCheck.Gun.of("br51_01");
+        GunMesh mesh = gunMesh(g.carried().asset());
+        Vector3f at = new Vector3f(-0.05F, 1.4F, 0.3F);
+        Matrix4f[] cams = {camera(new Vector3f(-0.75F, 1.75F, -0.75F), at), camera(new Vector3f(0.7F, 1.6F, 1.25F), at)};
+        int tw = W * 3 / 5, th = H * 3 / 5, head = 34, left = 330;
+        BufferedImage sheet = new BufferedImage(left + 4 * tw, head + moments.length * th, BufferedImage.TYPE_INT_RGB);
+        Graphics2D sg = sheet.createGraphics();
+        sg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        sg.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        sg.setColor(new Color(40, 42, 46));
+        sg.fillRect(0, 0, sheet.getWidth(), sheet.getHeight());
+        sg.setFont(new java.awt.Font("Microsoft YaHei", java.awt.Font.PLAIN, 18));
+        sg.setColor(Color.WHITE);
+        String[] heads = {"改前 · 右后", "改后 · 右后", "改前 · 左前", "改后 · 左前"};
+        for (int c = 0; c < 4; c++) sg.drawString(heads[c], left + c * tw + 12, 24);
+        for (int r = 0; r < moments.length; r++) {
+            Moment m = moments[r];
+            // the worst pose before: the view's pitch and crouch where the left hand fell shortest
+            float pitch = 0F, worst = 0F;
+            boolean crouch = false;
+            PlayerSkeletonCheck.rifleActingFix = false;
+            for (boolean c : new boolean[]{false, true})
+                for (float pt = -60; pt <= 60; pt += 30) {
+                    HumanoidPoser.Input in = PlayerSkeletonCheck.standing(false, g.carried().kind().chestTwist * (1 - m.lower()), 0, pt, true, c);
+                    float reach = PlayerSkeletonCheck.gunSolve(poser, in, pose, g, 1F, m.lower(), 0F, m.clip(), m.t()).leftReach;
+                    if (reach > worst) { worst = reach; pitch = pt; crouch = c; }
+                }
+            sg.setColor(Color.WHITE);
+            sg.drawString(m.label(), 10, head + r * th + th / 2);
+            sg.drawString(String.format("视角 %+.0f°%s", -pitch, crouch ? "，蹲着" : "，站着"), 10, head + r * th + th / 2 + 26);
+            for (int v = 0; v < 2; v++) {
+                PlayerSkeletonCheck.rifleActingFix = v == 1;
+                float lowerAt = v == 1 ? 0F : m.lower();
+                HumanoidPoser.Input in = PlayerSkeletonCheck.standing(false, g.carried().kind().chestTwist * (1 - lowerAt), 0, pitch, true, crouch);
+                HumanoidPoser.Report rep = PlayerSkeletonCheck.gunSolve(poser, in, pose, g, 1F, m.lower(), 0F, m.clip(), m.t());
+                Matrix4f gun = new Matrix4f(PlayerSkeletonCheck.lastGun);
+                marks.clear();
+                marks.add(in.targetRight.transformPosition(new Vector3f(rig.pivot[rig.handR]).sub(rig.pivot[rig.upperArmR])));
+                marks.add(in.targetLeft.transformPosition(new Vector3f(rig.pivot[rig.handL]).sub(rig.pivot[rig.upperArmL])));
+                marks.add(pose.point(rig.handR, rig.pivot[rig.handR], new Vector3f()));
+                marks.add(pose.point(rig.handL, rig.pivot[rig.handL], new Vector3f()));
+                gunClip = m.clip();
+                gunTime = m.t();
+                for (int c = 0; c < 2; c++) {
+                    File tile = new File(dir, "_tile.png");
+                    draw(rig, pose, g, mesh, gun, cams[c], false, tile);
+                    BufferedImage img = ImageIO.read(tile);
+                    int x0 = left + (c * 2 + v) * tw, y0 = head + r * th;
+                    sg.drawImage(img, x0, y0, tw, th, null);
+                    tile.delete();
+                    sg.setColor(new Color(40, 42, 46));
+                    sg.drawString(String.format("左手要伸到手臂长度的 %.0f%%%s", rep.leftReach * 100F, rep.leftReach > 1.02F ? "（够不着）" : ""), x0 + 10, y0 + th - 12);
+                }
+                System.out.printf("  %s %s: left reach %.2f, right %.2f%n", m.clip(), v == 0 ? "before" : "after", rep.leftReach, rep.rightReach);
+            }
+        }
+        PlayerSkeletonCheck.rifleActingFix = true;
+        gunClip = "static_idle";
+        gunTime = 0F;
+        sg.dispose();
+        ImageIO.write(sheet, "png", new File(dir, "br51_tp_reload_inspect_compare.png"));
+        System.out.println("sheet " + new File(dir, "br51_tp_reload_inspect_compare.png"));
+    }
+
     /** Model px points marked on the pictures: the wrist targets right, left, then the posed wrists right, left. */
     static final List<Vector3f> marks = new ArrayList<>();
     /** Model px points marked yellow (a player action's anchors). */
@@ -176,12 +257,12 @@ final class SkeletonSnapshot {
                 add(polys, v, f == faces[0] ? new Color(240, 200, 170) : new Color(200, 160, 130), light, tanX, tanY);
             }
         }
-        // gun, at its static idle
+        // gun, at its clip's frame (static idle by default)
         java.util.Map<String, Matrix4f> frames = new java.util.HashMap<>();
         for (int i = 0; g != null && i < mesh.faces().size(); i++) {
             String bone = mesh.bones().get(i);
             Matrix4f f = frames.computeIfAbsent(bone, b -> {
-                Matrix4f m = g.sampler().frame(b, "static_idle", 0F, null, null);
+                Matrix4f m = g.sampler().frame(b, gunClip, gunTime, null, "static_idle");
                 return m == null ? null : new Matrix4f(fromModel).scale(1F / 16F).scale(16F).mul(gun).mul(m);
             });
             if (f == null) continue;
@@ -216,7 +297,7 @@ final class SkeletonSnapshot {
             gr.fillOval(x - 4, y - 4, 9, 9);
         };
         for (String anchor : g == null ? new String[0] : new String[]{"right_hand_anchor", "left_hand_anchor"}) {
-            Matrix4f m = g.sampler().frame(anchor, "static_idle", 0F, null, null);
+            Matrix4f m = g.sampler().frame(anchor, gunClip, gunTime, null, "static_idle");
             mark.accept(new Matrix4f(fromModel).mul(gun).mul(m).transformPosition(new Vector3f()), Color.YELLOW);
         }
         for (Vector3f w : anchors) mark.accept(fromModel.transformPosition(new Vector3f(w).div(16F)), Color.YELLOW);

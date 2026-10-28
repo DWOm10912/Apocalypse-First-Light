@@ -62,6 +62,16 @@ public final class NativePlayerArmRenderer {
         render(evaluatedLocator,right,buffers,light,overlay,1F);
     }
 
+    /**
+     * A native gun's arm (NativeAnimatedWeaponRenderer): the worn shirt's and jacket's sleeves over it, and with
+     * {@code elbowKind} (the guns the skeleton carries, GunStance#carried) the elbow and upper arm behind the forearm
+     * (NativeArmTube, docs/rendering/first_person_body_v1.md 9.1).
+     */
+    public static void renderGun(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers, int light, int overlay,
+                                 @org.jetbrains.annotations.Nullable com.antaurora.apofirstlight.skeleton.GunStance.Kind elbowKind) {
+        render(evaluatedLocator,right,buffers,light,overlay,1F,1F,1F,elbowKind,true);
+    }
+
     /** Optional contact-centred cross-section for a tool rig; gun callers retain the default. */
     public static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
                               int light, int overlay, float crossSection) {
@@ -94,6 +104,12 @@ public final class NativePlayerArmRenderer {
 
     private static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
                                int light, int overlay, float x, float y, float z) {
+        render(evaluatedLocator,right,buffers,light,overlay,x,y,z,null,false);
+    }
+
+    private static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
+                               int light, int overlay, float x, float y, float z,
+                               com.antaurora.apofirstlight.skeleton.GunStance.Kind elbowKind, boolean sleeves) {
         var mc = Minecraft.getInstance();
         var player = mc.player;
         if (player == null || player.isInvisible() || !handFilter.test(right) || FieldAttachmentViewState.isActive()) return;
@@ -106,14 +122,32 @@ public final class NativePlayerArmRenderer {
         com.antaurora.apofirstlight.client.sling.SlingStraps.arm(pose.last().pose(), right, player.getModelName().equals("slim"));
         var model = renderer.getModel();
         var skin = player.getSkinTextureLocation();
-        renderPart(right ? model.rightArm : model.leftArm, pose,
+        boolean slim = player.getModelName().equals("slim");
+        var m = pose.last().pose();
+        // the elbow (NativeArmTube): the skin, the wounds and the sleeve layer as one bent tube each, on Vanilla's arm UV
+        NativeArmTube.Elbow elbow = elbowKind == null ? null
+                : NativeArmTube.elbow(m, right, slim, NativeArmTube.shoulder(elbowKind, right));
+        int armU = right ? 40 : 32, armV = right ? 16 : 48, sleeveU = right ? 40 : 48, sleeveV = right ? 32 : 48;
+        if (elbow != null) NativeArmTube.emit(m, right, slim, elbow, 0F, armU, armV, 12F,
+                buffers.getBuffer(RenderType.entitySolid(skin)), light, overlay);
+        else renderPart(right ? model.rightArm : model.leftArm, pose,
                 buffers.getBuffer(RenderType.entitySolid(skin)), light, overlay);
         // skin wound marks V1: the arm once more with the wound texture, under the sleeve
-        var wounds = com.antaurora.apofirstlight.client.WoundSkin.consumer(player, player.getModelName().equals("slim"), buffers);
-        if (wounds != null) renderPart(right ? model.rightArm : model.leftArm, pose, wounds, light, overlay);
-        if (player.isModelPartShown(right ? PlayerModelPart.RIGHT_SLEEVE : PlayerModelPart.LEFT_SLEEVE))
-            renderPart(right ? model.rightSleeve : model.leftSleeve, pose,
+        var wounds = com.antaurora.apofirstlight.client.WoundSkin.consumer(player, slim, buffers);
+        if (wounds != null) {
+            if (elbow != null) NativeArmTube.emit(m, right, slim, elbow, 0F, armU, armV, 12F, wounds, light, overlay);
+            else renderPart(right ? model.rightArm : model.leftArm, pose, wounds, light, overlay);
+        }
+        if (player.isModelPartShown(right ? PlayerModelPart.RIGHT_SLEEVE : PlayerModelPart.LEFT_SLEEVE)) {
+            if (elbow != null) NativeArmTube.emit(m, right, slim, elbow, 0.25F, sleeveU, sleeveV, 12F,
                     buffers.getBuffer(RenderType.entityTranslucent(skin)), light, overlay);
+            else renderPart(right ? model.rightSleeve : model.leftSleeve, pose,
+                    buffers.getBuffer(RenderType.entityTranslucent(skin)), light, overlay);
+        }
+        // old-body clothes: the worn shirt's and jacket's sleeves, inside out, as the third person's shells (OldBodyClothes)
+        if (sleeves) com.antaurora.apofirstlight.client.skeleton.OldBodyWardrobe.sleeves(player, right, slim, (texture, shell) ->
+                NativeArmTube.emit(m, right, slim, elbow, shell.inflate(), armU, armV, Math.min(12F, shell.to()),
+                        buffers.getBuffer(RenderType.entityCutout(texture)), light, overlay));
         // health V1a: the gauze wrap on the bandaged forearm, in the same (zeroed) part frame
         com.antaurora.apofirstlight.client.BandageWrapRenderer.drawArm(player, right, player.getModelName().equals("slim"),
                 pose, buffers, light, overlay);

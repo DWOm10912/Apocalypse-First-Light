@@ -2,9 +2,10 @@
 // Rebuilds the in-game chain: [P9 composition offset] -> item Display -> GeckoLib bone matrices (Blockbench source
 // values) -> NativePlayerArmRenderer (canonical anchor, presentation scale .62/.78/.62, Vanilla 4x12x4 arm).
 //   node tools/preview-fp-arms.mjs <gun> <clip> <t1,t2,...> <out.png> [--gun2 <gun> <clip>]
-//   gun = p9_01 (legacy rig) | p9_01_v2_native | p9_01_v3_native | blackridge_50; <gun>@ads = fully aimed down the sights
+//   gun = p9_01 (legacy rig) | p9_01_v2_native | p9_01_v3_native | blackridge_50 | br51_01_v3_native; <gun>@ads = fully aimed down the sights;
+//   <gun>=<path.bbmodel> = the same rig read from a saved copy of its source (old / new comparisons)
 //   (guns with a `def`: NativeGunAds#apply's correction ads() * hip()^-1 on the display, the FOV times ads.fov_multiplier)
-// Colours: grey = gun meshes, amber = magazines, blue = right arm, green = left arm.
+// Colours: grey = gun meshes, amber = magazines, blue = right arm, green = left arm (darker: the elbow and upper arm; FP_UPPER=0 hides them).
 import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -17,9 +18,11 @@ const read = p => JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''));
 const GUNS = {
   p9_01: {src: 'src/main/blockbench/p9_01.bbmodel', display: 'models/item/p9_01_in_hand.json', comp: [0.07, 0.045], right: 'right_hand_anchor', left: 'left_hand_anchor'},
   p9_01_v2_native: {src: 'src/main/blockbench/p9_01_v2_native.bbmodel', display: 'models/item/p9_01_v2_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor'},
-  p9_01_v3_native: {src: 'src/main/blockbench/p9_01_v3_native.bbmodel', display: 'models/item/p9_01_v3_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor',
+  p9_01_v3_native: {src: 'src/main/blockbench/p9_01_v3_native.bbmodel', display: 'models/item/p9_01_v3_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor', kind: 'pistol',
     def: 'src/main/resources/data/apocalypse_firstlight/native_guns/p9_01.json'},
   blackridge_50: {src: 'src/main/blockbench/blackridge_50.bbmodel', display: 'models/item/blackridge_50_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor'},
+  br51_01_v3_native: {src: 'src/main/blockbench/br51_01_v3_native.bbmodel', display: 'models/item/br51_01_v3_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor', kind: 'rifle',
+    def: 'src/main/resources/data/apocalypse_firstlight/native_guns/br51_01.json'},
 };
 
 // ---- 4x4 row-major matrices ----
@@ -50,8 +53,8 @@ function adsBase(def) {
 }
 
 export function rig(name) {
-  const [gun, mode] = name.split('@'), ads = mode === 'ads';
-  const cfg = GUNS[gun], src = read(path.join(root, cfg.src)), disp = read(path.join(assets, cfg.display)).display.firstperson_righthand;
+  const [spec, srcOverride] = name.split('='), [gun, mode] = spec.split('@'), ads = mode === 'ads';   // <gun>=<path.bbmodel>: a saved copy of the source (old / new comparisons)
+  const cfg = GUNS[gun], src = read(path.resolve(root, srcOverride ?? cfg.src)), disp = read(path.join(assets, cfg.display)).display.firstperson_righthand;
   const def = cfg.def ? read(path.join(root, cfg.def)) : null;
   if (ads && !def) throw new Error(gun + ': no gun definition for @ads');
   const fovHalf = 35 * (ads ? def.ads.fov_multiplier : 1);   // vanilla FOV 70 (vertical), ADS times fov_multiplier
@@ -78,6 +81,57 @@ export function armMatrix(anchorM, right) {
   return chain(anchorM, S([0.62 / s, 0.78 / s, 0.62 / s]), T([(right ? 1 : -1) / 16, -10 / 16, 0]));
 }
 const ARM_BOX = right => right ? [[-3, -2, -2], [1, 10, 2]] : [[-1, -2, -2], [3, 10, 2]];
+// The elbow and upper arm behind the forearm box (NativePlayerArmRenderer; docs/rendering/first_person_body_v1.md 9): the box's
+// near end bends at an elbow toward the shoulder, as the third person's skin mesh bends (SkinMesh: one ring shared by both
+// segments, turned half the bend), the upper arm the forearm's cross-section. FP_UPPER=0 leaves it out (the old picture);
+// FP_ELBOW=round: a rounded elbow instead (rings at the elbow turned 0, 1/4 .. 1 of the bend).
+// The shoulder: the third person's shoulder pivot off the eye (rig afl_humanoid_v1: pivot [±5, 22, 0], eye [0, 27.63, -2.5],
+// chest pivot y 18), the gun kind's shrug and chest twist (GunStance.Kind), model px at the player's 0.9375; FP_SHOULDER_SCALE
+// times that (the view model's own scale shrinks the body about the eye), or FP_SHOULDER=[x,y,z] for both arms mirrored.
+const KIND = {rifle: {twist: 30, right: [1.5, 0, -3], left: [0, 0, 0]}, pistol: {twist: 0, right: [0.5, 0, -2], left: [-0.5, 0, -2]}};
+export function shoulder(kind, right) {
+  if (process.env.FP_SHOULDER) return JSON.parse(process.env.FP_SHOULDER).map((v, i) => i === 0 && !right ? -v : v);
+  const k = KIND[kind] ?? {twist: 0, right: [0, 0, 0], left: [0, 0, 0]}, sh = right ? k.right : k.left, side = right ? 1 : -1;
+  const x = side * (5 - sh[0]), y = 4 - sh[1], z = sh[2], a = k.twist * Math.PI / 180;
+  const p = [x * Math.cos(a) - z * Math.sin(a), y, x * Math.sin(a) + z * Math.cos(a)];   // the twist: left shoulder forward
+  const s = 0.9375 / 16 * +(process.env.FP_SHOULDER_SCALE || 1);
+  return [p[0] * s, (p[1] - 9.63) * s, (p[2] + 2.5) * s];
+}
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const nrm = v => sc(v, 1 / Math.hypot(...v));
+/** Rotate v about the unit axis by ang (rad). */
+const rotAbout = (v, axis, ang) => { const c = Math.cos(ang), s = Math.sin(ang), k = cross(axis, v), d = dot(axis, v); return v.map((x, i) => x * c + k[i] * s + axis[i] * d * (1 - c)); };
+/** Quads of the arm's tube: the forearm box (its near end on the elbow ring), the elbow, the upper arm; [points, upper?]. */
+export function armTube(am, right, sh) {
+  const [lo, hi] = ARM_BOX(right), cx = (lo[0] + hi[0]) / 32, col = j => [am[j], am[4 + j], am[8 + j]];
+  const P = (x, y, z) => pt(am, [x / 16, y / 16, z / 16]);
+  const ring = y => [[lo[0], lo[2]], [hi[0], lo[2]], [hi[0], hi[2]], [lo[0], hi[2]]].map(([x, z]) => P(x, y, z));
+  const hand = ring(hi[1]), near = ring(lo[1]), E = pt(am, [cx, lo[1] / 16, 0]);
+  const quads = [[hand.slice().reverse(), false]];
+  const side = (A, B, up) => { for (let i = 0; i < 4; i++) quads.push([[A[i], A[(i + 1) % 4], B[(i + 1) % 4], B[i]], up]); };
+  if (process.env.FP_UPPER === '0') { side(hand, near, false); quads.push([near, false]); return quads; }
+  const xa = nrm(col(0)), ya = nrm(sc(col(1), -1)), za = nrm(col(2));            // ya: from the hand toward the elbow
+  const toS = sh.map((v, i) => v - E[i]), u = nrm(toS);
+  // the bend: the rotation taking ya onto u (shortest arc), so the cross-section turns with it as a bent joint does
+  const axis0 = cross(ya, u), sinA = Math.hypot(...axis0), axis = sinA < 1e-6 ? xa : sc(axis0, 1 / sinA);
+  // FP_BEND_SHARE / FP_BEND_MAX (deg): the upper arm turns only that share of the way to the shoulder, at most that far (it
+  // keeps the shoulder's distance, so it still runs out of the picture)
+  const full = Math.atan2(sinA, dot(ya, u)), ang = Math.min(full * +(process.env.FP_BEND_SHARE || 1), +(process.env.FP_BEND_MAX || 180) * Math.PI / 180);
+  armTube.last = full * 180 / Math.PI;
+  const turned = (f, at) => near.map(p => { const o = p.map((v, i) => v - E[i]); return rotAbout(o, axis, ang * f).map((v, i) => v + at[i]); });
+  const end = E.map((v, i) => v + rotAbout(ya, axis, ang)[i] * Math.hypot(...toS)), top = turned(1, end);
+  if (process.env.FP_ELBOW === 'round') {
+    side(hand, near, false);
+    let prev = near;
+    for (const f of [0.25, 0.5, 0.75, 1]) { const r = turned(f, E); side(prev, r, true); prev = r; }
+    side(prev, top, true);
+  } else {
+    const mid = turned(0.5, E);                                                    // the shared ring, half the bend
+    side(hand, mid, false); side(mid, top, true);
+  }
+  quads.push([top, true]);
+  return quads;
+}
 
 function renderFrame(g, clip, t, W, H, pixels, zbuf, ox, oy, stride) {
   const sc2 = g.scene(clip, t), f = H / 2 / Math.tan(g.fovHalf * Math.PI / 180);
@@ -105,9 +159,8 @@ function renderFrame(g, clip, t, W, H, pixels, zbuf, ox, oy, stride) {
     for (const fc of Object.values(el.faces)) drawPoly(fc.vertices.map(k => V[k]), col);
   }
   for (const right of [true, false]) {
-    const am = armMatrix(sc2.anchor(right ? g.cfg.right : g.cfg.left), right), [lo, hi] = ARM_BOX(right);
-    const v = Array.from({length: 8}, (_, i) => pt(am, [0, 1, 2].map(j => (i & (1 << j) ? hi[j] : lo[j]) / 16)));
-    for (const face of [[0, 2, 3, 1], [4, 5, 7, 6], [0, 1, 5, 4], [2, 6, 7, 3], [0, 4, 6, 2], [1, 3, 7, 5]]) drawPoly(face.map(i => v[i]), right ? [90, 140, 220] : [90, 190, 110]);
+    const am = armMatrix(sc2.anchor(right ? g.cfg.right : g.cfg.left), right);
+    for (const [q, up] of armTube(am, right, shoulder(g.cfg.kind, right))) drawPoly(q, right ? (up ? [60, 95, 160] : [90, 140, 220]) : (up ? [55, 130, 75] : [90, 190, 110]));
   }
 }
 

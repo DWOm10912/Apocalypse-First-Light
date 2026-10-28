@@ -266,15 +266,24 @@ public final class SkeletonGunStance {
         t.onAnchorO = t.onAnchor;
         boolean aiming = aim(p, 1F) > 0.05F;
         // an ADS reload keeps the aim's raise and grips: its action (shorter than the clip) eases out into the aim (2.7)
-        boolean acting = (t.clip.startsWith("reload") || t.clip.startsWith("inspect") || t.clip.startsWith("unload"))
-                && !t.clip.endsWith(com.antaurora.apofirstlight.weapon.NativeGunActions.ADS_SUFFIX);
+        boolean acting = acting(t.clip);
         // a hip-fire idle loop (docs/dev/p9_stance_loops_v1.md) is already held out on the crosshair: a shot leaves it there
         PlayerAction idle = loops(hand).idle();
         boolean hipFire = idle != null && idle.hipFire;
         boolean raised = aiming || acting || !hipFire && now - t.lastShot < RAISED_AFTER_SHOT;
         t.raise += ((raised ? 1F : 0F) - t.raise) * 0.4F;
-        t.lower += ((p.isSprinting() && !aiming ? 1F : 0F) - t.lower) * 0.3F;
+        // a rifle comes up to the ready for a reload or an inspect, sprinting or not: its magazine and hands are out of
+        // reach lowered (BR-51 fix pass, user 2026-10-27)
+        GunStance.Carried held = carried(hand);
+        boolean rifleActing = acting && held != null && held.kind() == GunStance.Kind.RIFLE;
+        t.lower += ((p.isSprinting() && !aiming && !rifleActing ? 1F : 0F) - t.lower) * 0.3F;
         t.onAnchor += ((acting ? 1F : 0F) - t.onAnchor) * 0.45F;
+    }
+
+    /** A reload, an inspect or an unload, not an aimed one: the hands on the clip's anchors, the gun raised. */
+    static boolean acting(String clip) {
+        return (clip.startsWith("reload") || clip.startsWith("inspect") || clip.startsWith("unload"))
+                && !clip.endsWith(com.antaurora.apofirstlight.weapon.NativeGunActions.ADS_SUFFIX);
     }
 
     /** A gun's draw or put-away as a player action: its id, when it started (level s) and its speed. */
@@ -589,6 +598,9 @@ public final class SkeletonGunStance {
             boolean under = carried.support() != null && (t == null || t.onAnchor < 0.5F);
             stance = GunStance.inReach(kind, under ? carried.support() : null, PlayerSkeleton.poser(), in, pose, stance, back,
                     rightAnchor, leftAnchor);
+            // a rifle's reload or inspect: brought toward the support shoulder where the left hand falls short
+            if (kind == GunStance.Kind.RIFLE && action != null && acting(action.clip()))
+                stance = GunStance.supportReach(kind, PlayerSkeleton.poser(), in, pose, stance, rightAnchor, leftAnchor);
         }
 
         Matrix4f gun = stance;

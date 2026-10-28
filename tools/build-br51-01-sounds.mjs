@@ -6,7 +6,9 @@
 //   开火.wav            fire (0.03 onset, 2 s tail)               -> fire.ogg (mono) + fire_near.ogg (the same mono in both ears)
 //   弹匣出 + 入.wav     0.00-0.30 latch press                       -> magazine_release.ogg
 //                       0.38-1.40 the magazine rocked out             -> magazine_out.ogg
-//                       1.50-2.00 rocked in (scrape 1.59, click 1.78) -> magazine_in.ogg (the click 0.28 s in: the clip's seat)
+//                       1.50-1.72 hooked and rocked in (scrape 1.59)   -> magazine_in.ogg
+//                       1.72-2.00 the latch click (1.78)               -> magazine_seat.ogg (the clip's seat; split 2026-10-27 so the
+//                                 tier reloads find their seat cue, NativeReloadTiers; both at the gain of the whole 1.50-end)
 //   拉机柄拉 + 放.wav   0.00-0.27 operating rod pulled back           -> charging_back.ogg
 //                       0.27-end  let go, the bolt slams home         -> charging_release.ogg
 //   掏枪.wav / 收枪.wav  draw / put away                              -> draw.ogg / put_away.ogg
@@ -30,13 +32,16 @@ const CUTS = {
   fire: ['fire', 0, null, -15],
   magazine_release: ['mag', 0, 0.30, {gainOf: 'magazine_out'}],
   magazine_out: ['mag', 0.38, 1.40, -28],
-  magazine_in: ['mag', 1.50, null, -21],
+  magazine_in: ['mag', 1.50, 1.72, {gainOf: 'rocked_in'}],
+  magazine_seat: ['mag', 1.72, null, {gainOf: 'rocked_in'}],
   charging_back: ['charge', 0, 0.27, -24],
   charging_release: ['charge', 0.27, null, -18.5],
   draw: ['draw', 0, null, -27],
   put_away: ['putAway', 0, null, -27],
 };
 const EDGE = 0.004;   // fade at an inner cut (s), so a cut never clicks
+// gain references that are not written: the whole rock-in, as cut until 2026-10-27
+const GAIN_REF = {rocked_in: ['mag', 1.50, null, -21]};
 
 const take = {};
 for (const [k, [file, sha]] of Object.entries(TAKES)) {
@@ -53,7 +58,7 @@ const cut = ([t, from, to]) => {
 const gains = {};
 const gainFor = name => {
   if (gains[name] != null) return gains[name];
-  const c = CUTS[name], target = c[3];
+  const c = CUTS[name] ?? GAIN_REF[name], target = c[3];
   if (typeof target === 'object') return gains[name] = gainFor(target.gainOf);
   const x = cut(c);
   let g = target - maxLoudness(x, 0.4);

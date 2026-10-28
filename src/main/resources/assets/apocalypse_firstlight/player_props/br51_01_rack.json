@@ -1,0 +1,24 @@
+{
+  "about": "Where the BR-51's firing hand takes the operating rod handle for the empty reload's rack (docs/native_guns/br51_animation_redo_v1.md 5.6): no look of its own; keyed on the gun prop at the handle, moved with the rod. Written by tools/author-br51-01-reload-actions.mjs.",
+  "items": [],
+  "scale": 0.38375,
+  "bounds": [
+    [
+      -0.01,
+      -0.01,
+      -0.01
+    ],
+    [
+      0.01,
+      0.01,
+      0.01
+    ]
+  ],
+  "points": {
+    "hand": [
+      0.08375,
+      0.726875,
+      0.1475
+    ]
+  }
+}

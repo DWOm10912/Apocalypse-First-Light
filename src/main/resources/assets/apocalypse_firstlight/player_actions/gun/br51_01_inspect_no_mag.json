@@ -1,0 +1,129 @@
+{
+  "format_version": 1,
+  "about": "BR-51 inspect with no magazine in the gun (gun/br51_01_inspect_no_mag; docs/native_guns/br51_animation_redo_v1.md 5.4, 5.6): unhurried, both hands on the rifle: its left side, its right side, then tipped up to look into the empty magwell; back to the low ready. Same beats and length as the first-person clip (INSPECT_NO_MAG_T). Written by tools/author-br51-01-reload-actions.mjs.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 5,
+  "props": [
+    {
+      "id": "br51_01",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            1.7,
+            5.15,
+            -7.64
+          ],
+          "rot": [
+            -146.31,
+            25.659,
+            163.898
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.02,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.2,
+            4.71,
+            -7.4
+          ],
+          "rot": [
+            158.799,
+            48.012,
+            178.083
+          ],
+          "blend": 0.68
+        },
+        {
+          "at": 1.9,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.18,
+            4.1,
+            -6.09
+          ],
+          "rot": [
+            157.322,
+            37.748,
+            154.349
+          ],
+          "blend": 0.7
+        },
+        {
+          "at": 3.3,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.46,
+            5.9,
+            -7.2
+          ],
+          "rot": [
+            134.134,
+            26.413,
+            -121.369
+          ],
+          "blend": 0.3
+        },
+        {
+          "at": 4.15,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            1.7,
+            5.15,
+            -7.64
+          ],
+          "rot": [
+            -146.31,
+            25.659,
+            163.898
+          ],
+          "blend": 0.55
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.35,
+          1,
+          0.45
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      }
+    ]
+  },
+  "events": []
+}

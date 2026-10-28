@@ -61,6 +61,10 @@ public final class PlayerSkeletonCheck {
         if (System.getenv("AFL_SNAP_SEAT") != null) {   // the seated riders alone, with their pictures
             System.exit(SeatCheck.run(rig, poser, System.getenv("AFL_SNAP_SEAT")) > 0 ? 1 : 0);
         }
+        if (System.getenv("AFL_SNAP_RIFLE") != null) {   // the rifle reload / inspect fix, before and after
+            SkeletonSnapshot.rifleActing(rig, poser, System.getenv("AFL_SNAP_RIFLE"));
+            return;
+        }
         if (System.getenv("AFL_SNAP") != null) {
             SkeletonSnapshot.run(rig, poser, System.getenv("AFL_SNAP"));
             return;
@@ -424,12 +428,25 @@ public final class PlayerSkeletonCheck {
      */
     /** The gun frame (model blocks) and anchors' clip the last gunSolve placed. */
     static Matrix4f lastGun = new Matrix4f();
+    /**
+     * As SkeletonGunStance plays a rifle's reload or inspect on the body (BR-51 fix pass 2026-10-27): raised to the ready
+     * even sprinting, brought toward the support shoulder where the left hand falls short (GunStance#supportReach). Off:
+     * as before (the snapshot's before / after sheet).
+     */
+    static boolean rifleActingFix = true;
+
+    static boolean acting(String clip) {
+        return (clip.startsWith("reload") || clip.startsWith("inspect") || clip.startsWith("unload"))
+                && !clip.endsWith(com.antaurora.apofirstlight.weapon.NativeGunActions.ADS_SUFFIX);
+    }
 
     static HumanoidPoser.Report gunSolve(HumanoidPoser poser, HumanoidPoser.Input in, SkeletonPose pose, Gun g,
                                                  float raise, float lower, float aim, String clip, float t) {
         HumanoidPoser.Report r = poser.solveBody(in, pose);
         GunStance.Kind kind = g.carried().kind();
         float real = g.carried().scale();
+        boolean rifleActing = rifleActingFix && kind == GunStance.Kind.RIFLE && acting(clip);
+        if (rifleActing) lower = 0F;
         if (kind.readyHand == null) raise = 1F;
         float up = raise * (1F - lower);
         Matrix4f rightRest = g.carried().rightHand(g.sampler().frame("right_hand_anchor", "static_idle", 0F));
@@ -462,6 +479,7 @@ public final class PlayerSkeletonCheck {
         boolean acting0 = clip.startsWith("reload") || clip.startsWith("inspect");
         if (up > 0) gun = GunStance.inReach(kind, acting0 || labLeft != null ? null : g.carried().support(), poser, in, pose, gun, back,
                 rightAnchor, leftAnchor);
+        if (up > 0 && rifleActing) gun = GunStance.supportReach(kind, poser, in, pose, gun, rightAnchor, leftAnchor);
         GunStance.handTarget(gun, rightAnchor, labR != null ? labR : kind.gripRight, true, in.slim, in.targetRight);
         GunStance.handTarget(gun, leftAnchor, labL != null ? labL : kind.gripLeft, false, in.slim, in.targetLeft);
         if (labLeft != null) labLeft.accept(gun, in);
@@ -513,7 +531,8 @@ public final class PlayerSkeletonCheck {
                     boolean short_ = false;
                     for (boolean crouch : new boolean[]{false, true}) for (float pitch = -60; pitch <= 60; pitch += 30)
                         for (boolean slim : new boolean[]{false, true}) {
-                            float up = rifle ? 1 - st.lower() : st.up();
+                            float lowerAt = rifleActingFix && rifle && acting(clip) ? 0F : st.lower();
+                            float up = rifle ? 1 - lowerAt : st.up();
                             HumanoidPoser.Input in = standing(slim, g.carried().kind().chestTwist * up, 0, pitch, rifle || st.raise() > 0.5F, crouch);
                             HumanoidPoser.Report r = gunSolve(poser, in, pose, g, st.raise(), st.lower(), st.aim(), clip, t);
                             boolean left = st.left(rifle);

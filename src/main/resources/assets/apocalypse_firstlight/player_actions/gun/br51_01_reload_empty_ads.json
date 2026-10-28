@@ -1,0 +1,527 @@
+{
+  "format_version": 1,
+  "about": "BR-51 empty reload while aiming (gun/br51_01_reload_empty_ads; docs/native_guns/br51_animation_redo_v1.md 5.7): eyes stay on the target; the rifle stays shouldered (view frame) and only dips and cants so the magwell meets the support hand, which works between the magwell and the belt pouch by feel; canted back for the firing hand to rack the operating rod; then straight back onto the sights. Same beats as the first-person clip; ends where that one is back on the sights (the clip runs on to its full length) and blends out into the aim. Written by tools/author-br51-01-reload-actions.mjs.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 2.6,
+  "view_pitch": [
+    -30,
+    25
+  ],
+  "props": [
+    {
+      "id": "br51_01",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.342,
+            5.952,
+            -4.12
+          ],
+          "rot": [
+            -179.633,
+            0.001,
+            -179.788
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.142,
+            6.852,
+            -3.92
+          ],
+          "rot": [
+            -176.636,
+            2.061,
+            -169.905
+          ],
+          "blend": 0.25
+        },
+        {
+          "at": 0.68,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.242,
+            7.052,
+            -3.92
+          ],
+          "rot": [
+            -175.636,
+            3.075,
+            -167.016
+          ],
+          "blend": 0.72
+        },
+        {
+          "at": 1.74,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.642,
+            6.652,
+            -3.92
+          ],
+          "rot": [
+            -177.635,
+            -2.049,
+            172.295
+          ],
+          "blend": 0.31
+        },
+        {
+          "at": 2.32,
+          "frame": "view",
+          "point": "grip_r",
+          "pos": [
+            -2.342,
+            5.952,
+            -4.12
+          ],
+          "rot": [
+            -179.633,
+            0.001,
+            -179.788
+          ],
+          "blend": 0.28
+        }
+      ]
+    },
+    {
+      "id": "br51_01_mag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5,
+            10.6,
+            -4.8
+          ],
+          "rot": [
+            162,
+            0,
+            -180
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.95,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5,
+            10.6,
+            -4.8
+          ],
+          "rot": [
+            162,
+            0,
+            -180
+          ],
+          "blend": 0
+        },
+        {
+          "at": 1.05,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            1.6,
+            8.6,
+            -6.8
+          ],
+          "rot": [
+            148.433,
+            17.229,
+            -135.686
+          ],
+          "blend": 0.1575
+        },
+        {
+          "at": 1.2075,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -3.833,
+            -0.383
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.1925
+        },
+        {
+          "at": 1.4,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.07
+        },
+        {
+          "at": 1.47,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.23
+        },
+        {
+          "at": 1.7,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "br51_01_mag_old",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.45,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.45,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.17
+        },
+        {
+          "at": 0.62,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -3.833,
+            -0.383
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.06
+        },
+        {
+          "at": 0.68,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -2.327,
+            3.104,
+            -9.291
+          ],
+          "rot": [
+            140.847,
+            1.28,
+            -160.477
+          ],
+          "blend": 0.1043
+        },
+        {
+          "at": 0.7843,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -2.327,
+            5.666,
+            -9.458
+          ],
+          "rot": [
+            119.984,
+            4.41,
+            -151.088
+          ],
+          "blend": 0.1043
+        },
+        {
+          "at": 0.8886,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -2.327,
+            9.936,
+            -9.625
+          ],
+          "rot": [
+            99.121,
+            7.539,
+            -141.7
+          ],
+          "blend": 0.1043
+        },
+        {
+          "at": 0.9929,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -2.327,
+            15.914,
+            -9.792
+          ],
+          "rot": [
+            78.257,
+            10.669,
+            -132.311
+          ],
+          "blend": 0.1043
+        },
+        {
+          "at": 1.0973,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -2.327,
+            23.6,
+            -9.959
+          ],
+          "rot": [
+            57.394,
+            13.798,
+            -122.923
+          ],
+          "blend": 0.1043
+        },
+        {
+          "at": 1.2216,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -2.327,
+            23.6,
+            -9.959
+          ],
+          "rot": [
+            57.394,
+            13.798,
+            -122.923
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "br51_01_rack",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:br51_01",
+          "point": "hand",
+          "pos": [
+            0.514,
+            -4.463,
+            -2.517
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 2.07,
+          "frame": "prop:br51_01",
+          "point": "hand",
+          "pos": [
+            0.514,
+            -4.463,
+            -2.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.2
+        },
+        {
+          "at": 2.3,
+          "frame": "prop:br51_01",
+          "point": "hand",
+          "pos": [
+            0.514,
+            -4.463,
+            -2.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.35,
+          1,
+          0.45
+        ]
+      },
+      {
+        "at": 1.92,
+        "target": "prop:br51_01_rack:hand",
+        "blend": 0.1299999999999999,
+        "roll": 0,
+        "pole": [
+          -0.6,
+          0.8,
+          0.2
+        ]
+      },
+      {
+        "at": 2.34,
+        "target": "prop:br51_01:grip_r",
+        "blend": 0.2200000000000002,
+        "roll": 0,
+        "pole": [
+          -0.35,
+          1,
+          0.45
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      },
+      {
+        "at": 0.04,
+        "target": "prop:br51_01_mag_old:base",
+        "blend": 0.32,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 0.7000000000000001,
+        "target": "prop:br51_01_mag:base",
+        "blend": 0.16199999999999995,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 1.74,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0.15999999999999995,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      }
+    ]
+  },
+  "events": []
+}

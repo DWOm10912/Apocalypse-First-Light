@@ -1,0 +1,366 @@
+{
+  "format_version": 1,
+  "about": "BR-51 inspect (gun/br51_01_inspect; docs/native_guns/br51_animation_redo_v1.md 5.3, 5.6): unhurried, both hands on the rifle: brought up before the chest to show its left side, turned to show its right side (the operating rod), then the magazine check: rocked out and brought up before the face at the left, held by its base plate: one side, the top turned to the eyes (the round on the follower), the other side, each held, while the rifle rests low to the right in the firing hand; hooked and rocked back home; back to the low ready. Same beats and length as the first-person clip (INSPECT_T). Written by tools/author-br51-01-reload-actions.mjs.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 9.8,
+  "props": [
+    {
+      "id": "br51_01",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            1.7,
+            5.15,
+            -7.64
+          ],
+          "rot": [
+            -146.31,
+            25.659,
+            163.898
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.02,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.2,
+            4.71,
+            -7.4
+          ],
+          "rot": [
+            158.799,
+            48.012,
+            178.083
+          ],
+          "blend": 0.68
+        },
+        {
+          "at": 1.9,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.18,
+            4.1,
+            -6.09
+          ],
+          "rot": [
+            157.322,
+            37.748,
+            154.349
+          ],
+          "blend": 0.7
+        },
+        {
+          "at": 3.3,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.8,
+            5.43,
+            -7
+          ],
+          "rot": [
+            142.584,
+            34.622,
+            -126.508
+          ],
+          "blend": 0.3
+        },
+        {
+          "at": 4.02,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -5,
+            7,
+            -6.6
+          ],
+          "rot": [
+            160.926,
+            18.983,
+            -161.583
+          ],
+          "blend": 0.58
+        },
+        {
+          "at": 7.9,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.8,
+            5.43,
+            -7
+          ],
+          "rot": [
+            142.584,
+            34.622,
+            -126.508
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 8.85,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            1.7,
+            5.15,
+            -7.64
+          ],
+          "rot": [
+            -146.31,
+            25.659,
+            163.898
+          ],
+          "blend": 0.55
+        }
+      ]
+    },
+    {
+      "id": "br51_01_mag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 3.66,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 3.66,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.26
+        },
+        {
+          "at": 3.92,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -3.833,
+            -0.383
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.1
+        },
+        {
+          "at": 4.02,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            4.6,
+            3,
+            -9.4
+          ],
+          "rot": [
+            -157.353,
+            -63.194,
+            -154.575
+          ],
+          "blend": 0.58
+        },
+        {
+          "at": 5.4,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            4.8,
+            3.2,
+            -9.2
+          ],
+          "rot": [
+            -124.503,
+            -21.635,
+            -149.791
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 6.7,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            4.4,
+            3,
+            -9.4
+          ],
+          "rot": [
+            -156.969,
+            57.898,
+            156.195
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 7.9,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -3.833,
+            -0.383
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.5
+        },
+        {
+          "at": 8.4,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            22,
+            0,
+            0
+          ],
+          "blend": 0.1
+        },
+        {
+          "at": 8.5,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.25
+        },
+        {
+          "at": 8.75,
+          "frame": "prop:br51_01",
+          "point": "top",
+          "pos": [
+            0,
+            -4.082,
+            -0.594
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.35,
+          1,
+          0.45
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      },
+      {
+        "at": 3.15,
+        "target": "prop:br51_01_mag:base",
+        "blend": 0.4,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 8.79,
+        "target": "prop:br51_01:grip_l",
+        "blend": 0.30999999999999966,
+        "roll": 0,
+        "pole": [
+          1,
+          0.5,
+          0
+        ]
+      }
+    ]
+  },
+  "events": []
+}
