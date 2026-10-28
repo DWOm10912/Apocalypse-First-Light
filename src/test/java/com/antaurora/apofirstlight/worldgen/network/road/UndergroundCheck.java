@@ -569,6 +569,7 @@ public final class UndergroundCheck {
         boolean[] solid = new boolean[L * L * L], isCarved = new boolean[27], cube = new boolean[27];
         float[][] vert = new float[com.antaurora.apofirstlight.earthwork.CarveNet.VERTS][];
         long meshNanos = 0;
+        Merged mg = new Merged();
         for (var en : carved.entrySet()) {
             int bx = en.getKey() % W, by = en.getKey() / W % W, bz = en.getKey() / (W * W);
             long t = System.nanoTime();
@@ -581,15 +582,9 @@ public final class UndergroundCheck {
             for (int k = 0; k < L; k++) for (int j = 0; j < L; j++) for (int i = 0; i < L; i++)
                 solid[com.antaurora.apofirstlight.earthwork.CarveNet.sample(i, j, k)] = w.filled(bx * 8 + i - LO, by * 8 + j - LO, bz * 8 + k - LO);
             final int ox = bx, oy = by, oz = bz;
-            int[] count = {0};
-            com.antaurora.apofirstlight.earthwork.CarveNet.build(solid, isCarved, cube, vert, (pts, axis, lowSolid, solidN, emptyN, emptySample) -> {
-                float[][] p = new float[4][];
-                for (int c = 0; c < 4; c++) p[c] = new float[]{pts[c][0] + ox, pts[c][1] + oy, pts[c][2] + oz};
-                edgeLoop(edges, p);
-                count[0]++;
-            });
+            // the game's look: a pick's cut (a carved block's empty sub-cell) and open air apart
+            quads += mg.block(solid, isCarved, cube, vert, (n, s) -> isCarved[n] ? 1 : 0, edges, ox, oy, oz);
             meshNanos += System.nanoTime() - t;
-            quads += count[0];
         }
         for (int bz = 0; bz < W; bz++) for (int by = 0; by < W; by++) for (int bx = 0; bx < W; bx++) {
             if (w.kindOf(bx, by, bz) == 0 || carved.containsKey(bx + W * (by + W * bz))) continue;
@@ -621,6 +616,7 @@ public final class UndergroundCheck {
             if (back == null || !back.equals(en.getValue())) open++;
         }
         if (open > 0) bad.add("rock carve: the surface has " + open + " unmatched edges (a gap or a flipped face)");
+        mg.check(bad, "rock carve");
         int shapesOff = 0;
         for (long[] b : carved.values()) {
             double vol = 0;
@@ -628,9 +624,9 @@ public final class UndergroundCheck {
             if (Math.abs(vol - (512 - com.antaurora.apofirstlight.earthwork.CarveChunk.count(b)) / 512.0) > 1e-6) shapesOff++;
         }
         if (shapesOff > 0) bad.add("rock carve: " + shapesOff + " collision shapes not the sub-cells left");
-        out("  rock carve: %d pieces, %d blocks carved, %d emptied; spread across %.2f, along %.2f sub-cells; %d net quads (%.0f a block, %.2f ms a block); %d unmatched edges",
+        out("  rock carve: %d pieces, %d blocks carved, %d emptied; spread across %.2f, along %.2f sub-cells; %d net quads (%.0f a block, %.2f ms a block; %s); %d unmatched edges",
                 pieces, carved.size(), emptied, across / Math.max(1, pieces), along / Math.max(1, pieces), quads,
-                carved.isEmpty() ? 0.0 : (double) quads / carved.size(), carved.isEmpty() ? 0.0 : meshNanos / 1e6 / carved.size(), open);
+                carved.isEmpty() ? 0.0 : (double) quads / carved.size(), carved.isEmpty() ? 0.0 : meshNanos / 1e6 / carved.size(), mg.line(), open);
     }
 
     /**
@@ -727,6 +723,7 @@ public final class UndergroundCheck {
             float[][] vert = new float[com.antaurora.apofirstlight.earthwork.CarveNet.VERTS][];
             long meshNanos = 0;
             int quads = 0, vanillaFaces = 0, exposedFaces = 0;
+            Merged mg = new Merged();
             for (var en : m.occ.entrySet()) {
                 int bx = en.getKey() % X, by = en.getKey() / X % Y, bz = en.getKey() / (X * Y);
                 long t = System.nanoTime();
@@ -738,15 +735,9 @@ public final class UndergroundCheck {
                 for (int k = 0; k < L; k++) for (int j = 0; j < L; j++) for (int i = 0; i < L; i++)
                     solid[com.antaurora.apofirstlight.earthwork.CarveNet.sample(i, j, k)] = m.filled(bx * 8 + i - LO, by * 8 + j - LO, bz * 8 + k - LO);
                 final int ox = bx, oy = by, oz = bz;
-                int[] count = {0};
-                com.antaurora.apofirstlight.earthwork.CarveNet.build(solid, isCarved, cube, vert, (pts, axis, lowSolid, solidN, emptyN, emptySample) -> {
-                    float[][] p = new float[4][];
-                    for (int c = 0; c < 4; c++) p[c] = new float[]{pts[c][0] + ox, pts[c][1] + oy, pts[c][2] + oz};
-                    edgeLoop(edges, p);
-                    count[0]++;
-                });
+                // worn only, no pick's cut: one look (RockCarveMesh#fresh is false without a stored carving)
+                quads += mg.block(solid, isCarved, cube, vert, (n, s) -> 0, edges, ox, oy, oz);
                 meshNanos += System.nanoTime() - t;
-                quads += count[0];
             }
             for (int bz = 0; bz < Z; bz++) for (int by = 0; by < Y; by++) for (int bx = 0; bx < X; bx++) {
                 if (m.kindOf(bx, by, bz) == 0) continue;
@@ -781,6 +772,7 @@ public final class UndergroundCheck {
                 if (back == null || !back.equals(en.getValue())) open++;
             }
             if (open > 0) bad.add("rock relief " + names[look] + ": the surface has " + open + " unmatched edges (a gap or a flipped face)");
+            mg.check(bad, "rock relief " + names[look]);
             int shapesOff = 0;
             double worn = 0;
             for (long[] b : m.occ.values()) {
@@ -791,9 +783,9 @@ public final class UndergroundCheck {
             }
             if (shapesOff > 0) bad.add("rock relief " + names[look] + ": " + shapesOff + " collision shapes not the sub-cells left");
             int blocks = m.occ.size();
-            out("  rock relief %s: %d worn blocks (%d cave floors, %d tops under the sky, %d of the tops rims), %d faces toward air (%d drawn the vanilla way); worn %.1f%% of their volume; %d net quads (%.0f a worn block); relief %.3f ms, net %.3f ms a block; %d unmatched edges",
+            out("  rock relief %s: %d worn blocks (%d cave floors, %d tops under the sky, %d of the tops rims), %d faces toward air (%d drawn the vanilla way); worn %.1f%% of their volume; %d net quads (%.0f a worn block; %s); relief %.3f ms, net %.3f ms a block; %d unmatched edges",
                     names[look], blocks, floors, skyTops, rims, exposedFaces, vanillaFaces, blocks == 0 ? 0.0 : 100 * worn / (blocks * 512.0), quads, blocks == 0 ? 0.0 : (double) quads / blocks,
-                    blocks == 0 ? 0.0 : reliefNanos / 1e6 / blocks, blocks == 0 ? 0.0 : meshNanos / 1e6 / blocks, open);
+                    mg.line(), blocks == 0 ? 0.0 : reliefNanos / 1e6 / blocks, blocks == 0 ? 0.0 : meshNanos / 1e6 / blocks, open);
         }
     }
 
@@ -855,6 +847,125 @@ public final class UndergroundCheck {
         if (onto == 0) bad.add("smooth rock: soil never slopes down onto a lower rock");
         out("  smooth rock: %d soil tops sloped, %d beside bare rock or a soil wall, %d corners sloping down onto lower rock, %d baring a rock side",
                 sloped, besideRock, onto, bared);
+    }
+
+    /**
+     * Terrain rework R2e: one carved or worn block's merged net (CarveNet#buildMerged) into the closure's edges (split on
+     * the 1/8 m grid, #edgeLoopGrid), against its unmerged net (CarveNet#build): the same area on every plane and facing,
+     * and the merged quads counted; the unmerged ones by shape (grid squares, flat off the grid, flat tilted, not flat and
+     * how far) and plane groups, the most any coplanar merge could reach. Returns the merged count.
+     */
+    static final class Merged {
+        long before, after, blocks, over30, areaOff;
+        /** the unmerged quads by shape: grid squares, flat on the axis plane off the grid, flat tilted, not flat; plane groups (the best a coplanar merge could do) */
+        final long[] kind = new long[4];
+        /** the not-flat quads by how far a corner is off the plane of the others: under 1, 2, 4, 8 mm, more */
+        final long[] twist = new long[5];
+        long planes;
+
+        int block(boolean[] solid, boolean[] carved, boolean[] cube, float[][] vert, com.antaurora.apofirstlight.earthwork.CarveNet.Look look,
+                  java.util.Map<String, Integer> edges, int ox, int oy, int oz) {
+            java.util.Map<String, Double> area = new java.util.HashMap<>();
+            int[] n = {0, 0};
+            java.util.Set<String> groups = new java.util.HashSet<>();
+            com.antaurora.apofirstlight.earthwork.CarveNet.build(solid, carved, cube, vert, (pts, axis, lowSolid, solidN, emptyN, emptySample) -> {
+                n[0]++;
+                area.merge(axis + (lowSolid ? "+" : "-") + look.of(emptyN, emptySample), quadArea(pts), Double::sum);
+                double[] nn = new double[3];
+                for (int[] t : new int[][]{{0, 1, 2}, {0, 2, 3}}) {
+                    double ux = pts[t[1]][0] - pts[t[0]][0], uy = pts[t[1]][1] - pts[t[0]][1], uz = pts[t[1]][2] - pts[t[0]][2];
+                    double vx = pts[t[2]][0] - pts[t[0]][0], vy = pts[t[2]][1] - pts[t[0]][1], vz = pts[t[2]][2] - pts[t[0]][2];
+                    nn[0] += uy * vz - uz * vy;
+                    nn[1] += uz * vx - ux * vz;
+                    nn[2] += ux * vy - uy * vx;
+                }
+                double len = Math.sqrt(nn[0] * nn[0] + nn[1] * nn[1] + nn[2] * nn[2]);
+                boolean flat = len > 0;
+                double dev = 0;
+                if (flat) for (int c = 0; c < 4; c++) {
+                    double d = ((pts[c][0] - pts[0][0]) * nn[0] + (pts[c][1] - pts[0][1]) * nn[1] + (pts[c][2] - pts[0][2]) * nn[2]) / len;
+                    dev = Math.max(dev, Math.abs(d));
+                    if (Math.abs(d) > 1e-5) flat = false;
+                }
+                if (!flat && len > 0) twist[dev < 0.001 ? 0 : dev < 0.002 ? 1 : dev < 0.004 ? 2 : dev < 0.008 ? 3 : 4]++;
+                boolean onAxis = pts[0][axis] == pts[1][axis] && pts[0][axis] == pts[2][axis] && pts[0][axis] == pts[3][axis];
+                int k = com.antaurora.apofirstlight.earthwork.CarveNet.gridSquare(pts, axis) >= 0 ? 0 : onAxis ? 1 : flat ? 2 : 3;
+                kind[k]++;
+                if (k < 3) {
+                    double off = (pts[0][0] * nn[0] + pts[0][1] * nn[1] + pts[0][2] * nn[2]) / len;
+                    groups.add(Math.round(nn[0] / len * 1000) + "," + Math.round(nn[1] / len * 1000) + "," + Math.round(nn[2] / len * 1000) + "," + Math.round(off * 1000)
+                            + "," + solidN + "," + emptyN + "," + look.of(emptyN, emptySample));
+                } else groups.add("q" + n[0]);
+            });
+            planes += groups.size();
+            com.antaurora.apofirstlight.earthwork.CarveNet.buildMerged(solid, carved, cube, vert, look, (pts, axis, lowSolid, solidN, emptyN, emptySample) -> {
+                n[1]++;
+                area.merge(axis + (lowSolid ? "+" : "-") + look.of(emptyN, emptySample), -quadArea(pts), Double::sum);
+                float[][] p = new float[4][];
+                for (int c = 0; c < 4; c++) p[c] = new float[]{pts[c][0] + ox, pts[c][1] + oy, pts[c][2] + oz};
+                edgeLoopGrid(edges, p);
+            });
+            for (double d : area.values()) if (Math.abs(d) > 1e-5) { areaOff++; break; }
+            before += n[0];
+            after += n[1];
+            blocks++;
+            if (n[1] > 30) over30++;
+            return n[1];
+        }
+
+        void check(List<String> bad, String what) {
+            if (areaOff > 0) bad.add(what + ": " + areaOff + " blocks whose merged net covers a different area than the unmerged one");
+            // the doc's first target, under 30 a block, does not hold: most of a worn face's quads are not flat (13.14)
+            if (blocks > 0 && after >= before) bad.add(what + ": the merged net is not smaller (" + after + " of " + before + " quads)");
+        }
+
+        String line() {
+            return String.format(Locale.ROOT, "R2e merged from %d (%.0f a block), %.1f%% of blocks over 30; unmerged: %d grid squares, %d flat on the axis plane off the grid, %d flat tilted, %d not flat (off the plane <1/2/4/8/more mm: %d %d %d %d %d); %.0f plane groups a block",
+                    before, blocks == 0 ? 0.0 : (double) before / blocks, blocks == 0 ? 0.0 : 100.0 * over30 / blocks, kind[0], kind[1], kind[2], kind[3], twist[0], twist[1], twist[2], twist[3], twist[4],
+                    blocks == 0 ? 0.0 : (double) planes / blocks);
+        }
+    }
+
+    /** The area of a planar quad (two triangles). */
+    static double quadArea(float[][] p) {
+        double s = 0;
+        for (int[] t : new int[][]{{0, 1, 2}, {0, 2, 3}}) {
+            double ux = p[t[1]][0] - p[t[0]][0], uy = p[t[1]][1] - p[t[0]][1], uz = p[t[1]][2] - p[t[0]][2];
+            double vx = p[t[2]][0] - p[t[0]][0], vy = p[t[2]][1] - p[t[0]][1], vz = p[t[2]][2] - p[t[0]][2];
+            double cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+            s += 0.5 * Math.sqrt(cx * cx + cy * cy + cz * cz);
+        }
+        return s;
+    }
+
+    /**
+     * As #edgeLoop, an axis-aligned edge between two 1/8 m grid points cut into its 1/8 m pieces: a merged rectangle's
+     * long edge then meets the squares beside it piece by piece (a T-junction on the grid is closed, a gap is not).
+     */
+    static void edgeLoopGrid(java.util.Map<String, Integer> edges, float[][] p) {
+        for (int c = 0; c < 4; c++) {
+            float[] a = p[c], b = p[(c + 1) % 4];
+            int axis = -1, same = 0;
+            boolean grid = true;
+            for (int d = 0; d < 3; d++) {
+                if (a[d] == b[d]) same++;
+                else axis = d;
+                grid &= a[d] * 8 == Math.rint(a[d] * 8) && b[d] * 8 == Math.rint(b[d] * 8);
+            }
+            int steps = axis < 0 ? 0 : Math.round(Math.abs(b[axis] - a[axis]) * 8);
+            if (same != 2 || !grid || steps <= 1) {
+                String qa = q(a), qb = q(b);
+                if (!qa.equals(qb)) edges.merge(qa + ">" + qb, 1, Integer::sum);
+                continue;
+            }
+            float dir = Math.signum(b[axis] - a[axis]) / 8;
+            for (int s = 0; s < steps; s++) {
+                float[] u = a.clone(), v = a.clone();
+                u[axis] = a[axis] + dir * s;
+                v[axis] = a[axis] + dir * (s + 1);
+                edges.merge(q(u) + ">" + q(v), 1, Integer::sum);
+            }
+        }
     }
 
     /** The four directed edges of a quad (zero-length ones skipped), quantized to 1/4096. */
