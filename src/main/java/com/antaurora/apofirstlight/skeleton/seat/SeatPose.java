@@ -439,7 +439,7 @@ public final class SeatPose {
         return frame(rig, right, wrist, q);
     }
 
-    private static Matrix4f frame(SkeletonRig rig, boolean right, Vector3f wrist, Quaternionf rotation) {
+    static Matrix4f frame(SkeletonRig rig, boolean right, Vector3f wrist, Quaternionf rotation) {
         int upper = right ? rig.upperArmR : rig.upperArmL, hand = right ? rig.handR : rig.handL;
         Vector3f o = new Vector3f(rig.pivot[hand]).sub(rig.pivot[upper]);
         return new Matrix4f().translation(wrist).rotate(rotation).translate(-o.x, -o.y, -o.z);

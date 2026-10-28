@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.skeleton;
 
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -111,8 +112,22 @@ public final class HumanoidPoser {
          * {@link #rootYaw} turn), for a seat that faces its own way or tilts with its vehicle.
          */
         public Quaternionf rootTurn;
-        /** Where the pelvis pivot goes (model px; null: where the clips put it): the root moves there. */
+        /** Where the pelvis pivot goes (model px; null: where the clips put it): the root moves there, by {@link #hipWeight}. */
         public Vector3f hipTarget;
+        /** How far toward {@link #hipTarget} the root moves (1: all the way; sat on the ground: the clip's share, GroundPose). */
+        public float hipWeight = 1F;
+        /**
+         * Sat on the ground (GroundPose): the hip target moves the hips alone, the soles the clips keep on the ground (B's
+         * {@code plantFeet}) stay where they are, and each leg goes from there toward its IK target by {@link #legIkWeight}
+         * as a place (the ankle, the knee's way, the foot's turn), not by blending the two legs' turns (their ankle dips
+         * on the way).
+         */
+        public boolean plantedBlend;
+        /**
+         * How much of B's {@code plantFeet} (the clips' legs fitted to vanilla's soles) the solve takes: 0 under clips keyed
+         * on this rig's own legs (Block-Mesh V2 sat on the ground: body_b.*, GroundSitClient), by their weight.
+         */
+        public float plantWeight = 1F;
         /**
          * Model px y the eye should come down to (NaN: none): the torso is compressed (chest and head lowered, the chest's
          * top end squashed, the shoulders with it) down to {@link #torsoMin} of its height, so a cab's eye height fits.
@@ -275,10 +290,13 @@ public final class HumanoidPoser {
             report.rootShift.set(dx, 0, dz);
             pose.update();
         }
+        Vector3f hipShift = new Vector3f();
         if (in.hipTarget != null) {
             Vector3f at = pose.point(rig.pelvis, rig.pivot[rig.pelvis], new Vector3f());
-            pose.offset[rig.root].add(new Vector3f(in.hipTarget).sub(at));
+            hipShift.set(in.hipTarget).sub(at).mul(in.hipWeight);
+            pose.offset[rig.root].add(hipShift);
             pose.update();
+            if (!in.plantedBlend) hipShift.zero();
         }
         if (!Float.isNaN(in.eyeLevel)) report.torso = torso(in, pose);
         else if (in.torsoDirect < 1F) report.torso = compress(pose, 1F, Math.max(in.torsoMin, in.torsoDirect));
@@ -294,8 +312,15 @@ public final class HumanoidPoser {
             }
             pose.update();
         }
-        if (rig.profile != null && in.legIkWeight < 1F && !in.legsVanilla) plantFeet(pose, 1F - clamp01(in.legIkWeight));
-        if (in.legIkWeight > 0) {
+        boolean planted = rig.profile != null && in.legIkWeight < 1F && !in.legsVanilla && in.plantWeight > 0F;
+        if (planted && in.plantedBlend && in.legIkWeight > 0) {
+            report.rightLegReach = plantFeet(pose, 1F, hipShift, in, true);
+            report.leftLegReach = plantFeet(pose, 1F, hipShift, in, false);
+        } else if (planted) {
+            plantFeet(pose, (1F - clamp01(in.legIkWeight)) * clamp01(in.plantWeight), hipShift, null, true);
+            plantFeet(pose, (1F - clamp01(in.legIkWeight)) * clamp01(in.plantWeight), hipShift, null, false);
+        }
+        if (in.legIkWeight > 0 && !(planted && in.plantedBlend)) {
             report.rightLegReach = leg(in, pose, true);
             report.leftLegReach = leg(in, pose, false);
         }
@@ -337,22 +362,27 @@ public final class HumanoidPoser {
      * target over the leg's length.
      */
     private float leg(Input in, SkeletonPose pose, boolean right) {
-        Quaternionf own = right ? in.footRestRight : in.footRestLeft;
-        Quaternionf rest = own != null ? new Quaternionf(own) : in.footRest != null ? new Quaternionf(in.footRest) : pose.rotation(rig.root, new Quaternionf());
-        return legTo(pose, right, right ? in.ankleRight : in.ankleLeft, right ? in.kneePoleRight : in.kneePoleLeft, rest,
+        return legTo(pose, right, right ? in.ankleRight : in.ankleLeft, right ? in.kneePoleRight : in.kneePoleLeft, footRest(in, pose, right),
                 clamp01(in.legIkWeight), in.thighStretch, in.shinStretch);
+    }
+
+    private Quaternionf footRest(Input in, SkeletonPose pose, boolean right) {
+        Quaternionf own = right ? in.footRestRight : in.footRestLeft;
+        return own != null ? new Quaternionf(own) : in.footRest != null ? new Quaternionf(in.footRest) : pose.rotation(rig.root, new Quaternionf());
     }
 
     /**
      * AFL Block-Mesh V2 (a rig with a {@link SkeletonRig.Profile}): the locomotion and action clips turn the legs for
      * vanilla's shorter ones, so on longer legs the same turns lift the feet. Each foot goes where vanilla's leg, turned
      * as the clips turn this one, puts its sole (its hip lower by the longer waist), by IK with the knee in the plane it
-     * has; the foot keeps its turn. {@code w}: how much (the seat's leg IK takes the rest).
+     * has; the foot keeps its turn. {@code w}: how much (the seat's leg IK takes the rest); {@code shift}: the hip
+     * target's move the soles do not follow ({@link Input#plantedBlend}); {@code toward}: from there toward its IK target
+     * by its leg IK weight (Input#plantedBlend), null: the planted foot alone. Returns the leg's reach.
      */
-    private void plantFeet(SkeletonPose pose, float w) {
+    private float plantFeet(SkeletonPose pose, float w, Vector3f shift, @Nullable Input toward, boolean right) {
         SkeletonRig.Profile p = rig.profile;
         Quaternionf rootRot = pose.rotation(rig.root, new Quaternionf()), pelvisRot = pose.rotation(rig.pelvis, new Quaternionf());
-        for (boolean right : new boolean[]{true, false}) {
+        {
             int thigh = right ? rig.thighR : rig.thighL, shin = right ? rig.shinR : rig.shinL, foot = right ? rig.footR : rig.footL;
             float sx = right ? -1F : 1F;
             Vector3f hip = pose.point(thigh, rig.pivot[thigh], new Vector3f());
@@ -364,9 +394,14 @@ public final class HumanoidPoser {
             Vector3f ankle = new Vector3f(vanillaHip).add(thighRot.transform(new Vector3f(0, p.refThigh(), 0)))
                     .add(shinRot.transform(new Vector3f(0, p.refShin(), 0)));
             // the sole where vanilla's is: this ankle nearer the sole, the feet apart as this rig's
-            ankle.add(footRot.transform(new Vector3f(sx * (p.footX() - p.refHip().x), p.refAnkle() - p.ankle(), 0)));
+            ankle.add(footRot.transform(new Vector3f(sx * (p.footX() - p.refHip().x), p.refAnkle() - p.ankle(), 0))).sub(shift);
             Vector3f pole = thighRot.transform(new Vector3f(0, 0, -1));
-            legTo(pose, right, ankle, pole, footRot, w, 1F, 1F);
+            if (toward == null) return legTo(pose, right, ankle, pole, footRot, w, 1F, 1F);
+            float k = clamp01(toward.legIkWeight);
+            ankle.lerp(right ? toward.ankleRight : toward.ankleLeft, k);
+            pole.lerp(new Vector3f(right ? toward.kneePoleRight : toward.kneePoleLeft).normalize(), k);
+            footRot.slerp(footRest(toward, pose, right), k);
+            return legTo(pose, right, ankle, pole, footRot, w, toward.thighStretch, toward.shinStretch);
         }
     }
 

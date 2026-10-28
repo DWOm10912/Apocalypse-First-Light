@@ -15,25 +15,7 @@ const WRITE = process.argv.includes('--write');
 const P = require('./pose_lib.cjs');   // the legs, the body by FK, the palms by IK baked to FK, the seat
 const {ID, bendOf, fullKey, solveArms, clipOf, SEAT, REST, STAND, kneeUp} = P;
 const {mul} = q4;
-const SIT_LEN = 1.25, STAND_LEN = 1.0;
-const SIT_DOWN = [
-    Object.assign({t: 0}, STAND),
-    // weight on the right leg, the right hand back toward the ground, the left leg slid out ahead, heel down
-    {t: 0.35, view: 15, drop: 3, zoff: 0.5, tip: 14, legR: {ik: [-1.9, 22, 0.3], hint: [0, -0.3, -1]}, legL: {foot: 25}, palmR: [-7, 16, 2], palmL: [6, 12, -5]},
-    {t: 0.7, view: 25, drop: 7, zoff: 1.5, tip: 26, legR: {ik: [-1.9, 22, 0.2], hint: [0, -0.3, -1]}, legL: {foot: 30}, palmR: [-6.2, 21.8, 2.5], palmL: [5.5, 13, -7]},
-    // down, leaning back on the right hand a moment, then the forearm onto the knee
-    Object.assign({t: 0.95}, SEAT, {view: 20, tip: 6, lean: -4, palmR: [-6.2, 23.6, 3.5], palmL: [3.6, 19.6, -0.5]}),
-    Object.assign({}, REST, {t: SIT_LEN}),
-];
-const SITTING = [Object.assign({}, REST, {t: 0}), Object.assign({}, REST, {t: 2})];
-const STAND_UP = [
-    Object.assign({}, REST, {t: 0}),
-    // the right foot pulled in, both hands on the right knee, the left leg kept straight, heel down
-    Object.assign({t: 0.2}, SEAT, {view: 25, tip: 22, lean: 6, legR: kneeUp(-1.5, -2.2), palmR: [-2.6, 16.6, -4.2], palmL: [-0.8, 16.8, -4.0]}),
-    {t: 0.5, view: 15, drop: 6, zoff: 0.8, tip: 32, lean: 2, legR: {ik: [-2.2, 22, -1.5], hint: [0, -0.6, -1]}, legL: {foot: 28}, palmR: [-2.8, 15.5, -3.6], palmL: [-1.0, 15.7, -3.4]},
-    {t: 0.75, view: 5, drop: 2, zoff: 0.2, tip: 12, legR: {ik: [-1.9, 22, -0.8], hint: [0, -0.3, -1]}, legL: {foot: 15}, armR: q4.x(rad(-15)), armL: q4.x(rad(-12))},
-    Object.assign({t: STAND_LEN}, STAND),
-];
+const {SIT_LEN, STAND_LEN, SIT_DOWN, SITTING, STAND_UP} = P;   // the sitting keys (pose_lib.cjs)
 
 // ------------------------------------------------------------------ the leg's splint (sat; the concept's B-D, 6 s)
 const LEG_LEN = 6.0, LEG_SLATS_AT = 0.9, LEG_TIES = [1.45, 2.7, 3.95], LEG_TIE_TURN = 0.65;

@@ -2,11 +2,13 @@ package com.antaurora.apofirstlight.skeleton;
 
 import com.antaurora.apofirstlight.skeleton.seat.ChairLegs;
 import com.antaurora.apofirstlight.skeleton.seat.ChairPose;
+import com.antaurora.apofirstlight.skeleton.seat.GroundPose;
 import com.antaurora.apofirstlight.skeleton.seat.SeatPose;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.io.InputStream;
@@ -26,7 +28,9 @@ import java.nio.charset.StandardCharsets;
  * than vanilla's;</li>
  * <li>chairs (ChairLegs, docs 11): the wood and the office chair as the game sits B on them: the feet reach their targets,
  * the soles on the floor, the thighs on the cushion, the knees past the seat's front edge with the shins hanging, the
- * hands reach the lap.</li>
+ * hands reach the lap;</li>
+ * <li>ground sits (GroundPose, docs 17.5): the three styles, plain and mirrored, the seat and the soles on the ground,
+ * nothing into it, the ankles and hands on their targets; sitting down and getting up part way.</li>
  * </ol>
  */
 public final class BlockMeshV2Check {
@@ -53,6 +57,7 @@ public final class BlockMeshV2Check {
         guns(vanilla, pv, b, pb);
         use(b);
         chairs(b, pb);
+        groundSits(b, pb);
         System.out.printf("guns: B %d cells off vanilla's (known %d)%n", gunFails, KNOWN_GUNS);
         if (gunFails > KNOWN_GUNS) fail("guns: B " + gunFails + " cells against known " + KNOWN_GUNS);
         // the player actions and the seats (T15 at B's 0.85) on B: their own checks, failures counted against vanilla's
@@ -163,6 +168,208 @@ public final class BlockMeshV2Check {
             if (clear < 0F) fail("chair " + chair.name() + " " + idle + ": the torso " + (-clear) + " cm into the backrest");
             if (idle == ChairPose.Idle.BOUNCE && Math.abs(toe) > 0.6F) fail("chair " + chair.name() + " bouncing: the toe " + toe + " cm off the floor");
         }
+    }
+
+    /**
+     * Sat on the ground (GroundPose, docs/dev/block_mesh_v2_b_ingame.md 17.5): each style, plain and mirrored, over the
+     * sitting clip as GroundSitClient puts it on (the rider's feet on the seat's face: the ground at the model's origin).
+     * The body mesh skinned rigidly by each vertex's heaviest bone: the seat (pelvis and thighs) and the soles against the
+     * ground (px, + = over it), nothing into it; the ankles and wrists on their targets. Then the sitting down and getting
+     * up part way: nothing into the ground.
+     */
+    private static void groundSits(SkeletonRig rig, HumanoidPoser poser) throws Exception {
+        System.out.println("\nground sits: seat / soles over the ground (px), lowest point, ankles / hands off their targets (px), reach");
+        float[][] rest;
+        int[] from;
+        try (InputStream s = BlockMeshV2Check.class.getClassLoader().getResourceAsStream("assets/apocalypse_firstlight/" + rig.profile.mesh())) {
+            JsonObject json = JsonParser.parseReader(new InputStreamReader(s, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonArray bones = json.getAsJsonArray("bones"), v = json.getAsJsonArray("vertices");
+            int[] source = new int[bones.size()];
+            for (int i = 0; i < source.length; i++) {
+                String name = bones.get(i).getAsJsonObject().get("name").getAsString();
+                int same = rig.find(name);
+                source[i] = same >= 0 ? same : switch (name) {
+                    case "spine", "neck" -> rig.chest;
+                    case "clavicle_r" -> rig.upperArmR;
+                    case "clavicle_l" -> rig.upperArmL;
+                    case "toes_r" -> rig.footR;
+                    case "toes_l" -> rig.footL;
+                    default -> throw new IllegalArgumentException(name);
+                };
+            }
+            int n = v.size() / 13;
+            rest = new float[n][];
+            from = new int[n];
+            for (int i = 0; i < n; i++) {
+                rest[i] = new float[]{v.get(i * 13).getAsFloat(), v.get(i * 13 + 1).getAsFloat(), v.get(i * 13 + 2).getAsFloat()};
+                int best = 0;
+                for (int j = 1; j < 4; j++) if (v.get(i * 13 + 9 + j).getAsFloat() > v.get(i * 13 + 9 + best).getAsFloat()) best = j;
+                from[i] = source[v.get(i * 13 + 5 + best).getAsInt()];
+            }
+        }
+        float floor = PlayerSkeletonCheck.toModel().transformPosition(new Vector3f()).mul(16F).y;
+        record Phase(String name, String clip, float time, float w) {}
+        Phase[] phases = {new Phase("sat", "body.sit", 0.5F, 1F),
+                new Phase("sit down 0.7 s", "body.sit_down", 0.7F, GroundPose.ease(0.7F, 0.55F, 1.15F)),
+                new Phase("sit down 0.85 s", "body.sit_down", 0.85F, GroundPose.ease(0.85F, 0.55F, 1.15F)),
+                new Phase("sit down 1.0 s", "body.sit_down", 1.0F, GroundPose.ease(1.0F, 0.55F, 1.15F)),
+                new Phase("sit down 1.15 s", "body.sit_down", 1.15F, 1F),
+                new Phase("stand up 0.2 s", "body.stand_up", 0.2F, 1F - GroundPose.ease(0.2F, 0.1F, 0.55F)),
+                new Phase("stand up 0.3 s", "body.stand_up", 0.3F, 1F - GroundPose.ease(0.3F, 0.1F, 0.55F)),
+                new Phase("stand up 0.45 s", "body.stand_up", 0.45F, 1F - GroundPose.ease(0.45F, 0.1F, 0.55F)),
+                new Phase("sit down 0.35 s", "body.sit_down", 0.35F, 0F), new Phase("sit down 0.95 s", "body.sit_down", 0.95F, 1F),
+                new Phase("stand up 0.5 s", "body.stand_up", 0.5F, 0F), new Phase("stand up 0.75 s", "body.stand_up", 0.75F, 0F)};
+        // B's own sitting clips (body_b.*, tools/medical-actions-v1a/author_ground_sit_b.cjs: the game's now) against vanilla's on B
+        for (boolean mirror : new boolean[]{false, true})
+            for (Phase ph : phases) {
+                float[] own = groundSit(rig, poser, null, mirror, ph.clip(), ph.time(), 1F, floor, rest, from);
+                float[] clip = groundSit(rig, poser, null, mirror, ph.clip(), ph.time(), 0F, floor, rest, from);
+                System.out.printf("  B CLIPS %-6s %-15s: seat %+.2f (vanilla's clips on B %+.2f), soles R %+.2f L %+.2f, lowest %+.2f %s (vanilla's %+.2f)%n",
+                        mirror ? "mirror" : "plain", ph.name(), own[0], clip[0], own[1], own[2], own[3], rig.names[(int) own[9]], clip[3]);
+                String what = "ground sit B clips" + (mirror ? " mirrored " : " ") + ph.name();
+                // sat 0.6 px; sitting down and getting up 1.1 (0.85 s: the right ankle between two keys, as vanilla's clips on B)
+                if (-own[3] > (ph.clip().equals("body.sit") ? 0.6F : 1.1F)) fail(what + ": " + (-own[3]) + " px into the ground");
+                if (ph.clip().equals("body.sit") && Math.abs(own[0]) > 0.5F) fail(what + ": the seat " + own[0] + " px off the ground");
+            }
+        for (GroundPose.Style style : GroundPose.Style.values())
+            for (boolean mirror : new boolean[]{false, true})
+                for (Phase ph : phases) {
+                    float[] own = groundSit(rig, poser, style, mirror, ph.clip(), ph.time(), ph.w(), floor, rest, from);
+                    // the sitting clips on their own (B's plantFeet): the feet's own dip while sitting down and getting up
+                    float[] clip = ph.w() < 1F ? groundSit(rig, poser, style, mirror, ph.clip(), ph.time(), 0F, floor, rest, from) : own;
+                    System.out.printf("  %-5s %-6s %-15s w %.2f: seat %+.2f, soles R %+.2f L %+.2f, lowest %+.2f (the clip alone %+.2f); "
+                                    + "ankles %.2f, hands R %.2f L %.2f; reach %.2f / %.2f%n", style, mirror ? "mirror" : "plain", ph.name(), ph.w(),
+                            own[0], own[1], own[2], own[3], clip[3], own[4], own[5], own[6], own[7], own[8]);
+                    String what = "ground sit " + style + (mirror ? " mirrored " : " ") + ph.name();
+                    if (-own[3] > Math.max(0.6F, -clip[3] + 0.2F)) fail(what + ": " + (-own[3]) + " px into the ground (the clip alone " + (-clip[3]) + ")");
+                    if (ph.w() < 1F) continue;
+                    if (Math.abs(own[0]) > 0.5F) fail(what + ": the seat " + own[0] + " px off the ground");
+                    if (Math.min(own[1], own[2]) > 0.6F) fail(what + ": no foot on the ground");
+                    if (own[4] > 0.1F) fail(what + ": an ankle " + own[4] + " px off its target");
+                    if (Math.max(own[5], own[6]) > 0.5F) fail(what + ": a hand " + Math.max(own[5], own[6]) + " px off its target");
+                }
+    }
+
+    /**
+     * One ground sit solved as the game does it: {seat, sole R, sole L, lowest point (px over the ground), ankles off,
+     * hand ends R, L off (px), reach R, reach L}.
+     */
+    private static float[] groundSit(SkeletonRig rig, HumanoidPoser poser, @org.jetbrains.annotations.Nullable GroundPose.Style style, boolean mirror, String clip, float time,
+                                     float w, float floor, float[][] rest, int[] from) {
+        HumanoidPoser.Input in = PlayerSkeletonCheck.standing(false, 0, 0, 0, false, false);
+        in.eyeTarget = null;
+        in.chestPitch = 0F;
+        boolean[] mask = new boolean[rig.size()];
+        java.util.Arrays.fill(mask, true);
+        // style null: B's own sitting clips (body_b.*, GroundSitClient as the game has it now; w 0: vanilla's clips on B)
+        boolean own = style == null && w > 0F;
+        SkeletonClips.Clip c = SkeletonClips.byKey(own ? "body_b." + clip.substring(clip.indexOf('.') + 1) : clip);
+        if (c == null) throw new IllegalStateException("no clip for " + clip);
+        in.stance.add(new HumanoidPoser.Input.StanceClip(c, time, 1F, mask, mirror));
+        if (own) in.plantWeight = 0F;
+        if (style != null) GroundPose.body(in, rig, style, mirror, floor, w);
+        SkeletonPose pose = new SkeletonPose(rig);
+        HumanoidPoser.Report report = poser.solveBody(in, pose);
+        in.right = in.left = HumanoidPoser.ArmMode.CLIP;
+        if (style != null) GroundPose.hands(in, pose, poser, style, mirror, w);
+        poser.solveArms(in, pose, report);
+        String objDir = System.getenv("AFL_SIT_OBJ");
+        if (objDir != null && style == null && !mirror)
+            obj(pose, java.nio.file.Path.of(objDir, (own ? "b_" : "vanilla_") + clip.substring(clip.indexOf('.') + 1) + "_" + Math.round(time * 100) + ".obj"), floor);
+        float seat = -Float.MAX_VALUE, footR = -Float.MAX_VALUE, footL = -Float.MAX_VALUE, low = -Float.MAX_VALUE;
+        int lowBone = 0;
+        Vector3f p = new Vector3f();
+        for (int i = 0; i < rest.length; i++) {
+            pose.point(from[i], p.set(rest[i][0], rest[i][1], rest[i][2]), p);
+            int b = from[i];
+            if (b == rig.pelvis || b == rig.thighR || b == rig.thighL) seat = Math.max(seat, p.y);
+            if (b == rig.footR) footR = Math.max(footR, p.y);
+            if (b == rig.footL) footL = Math.max(footL, p.y);
+            if (p.y > low) { low = p.y; lowBone = b; }
+        }
+        if (System.getenv("AFL_SIT_DUMP") != null && (w == 1F || w == 0F) && clip.equals("body.sit") && !mirror) {
+            System.out.printf("DUMP %s %s w %.0f%n", style == null ? (own ? "B_CLIPS" : "VANILLA_CLIPS") : style, mirror ? "mirror" : "plain", w);
+            for (int b : new int[]{rig.pelvis, rig.chest, rig.head, rig.upperArmR, rig.forearmR, rig.handR, rig.upperArmL, rig.forearmL, rig.handL,
+                    rig.thighR, rig.shinR, rig.footR, rig.thighL, rig.shinL, rig.footL}) {
+                Vector3f at = pose.point(b, rig.pivot[b], new Vector3f());
+                Quaternionf local = new Quaternionf(pose.local[b]);
+                float deg = (float) Math.toDegrees(2 * Math.acos(Math.min(1F, Math.abs(local.w))));
+                System.out.printf("  %-12s blender (%+6.2f %+6.2f %+6.2f)  local turn %5.1f deg%n", rig.names[b], -at.x, at.z, floor - at.y, deg);
+            }
+        }
+        float ankle = 0;
+        float[] hand = new float[2];
+        if (w > 0F && style != null) for (boolean right : new boolean[]{true, false}) {
+            int f = right ? rig.footR : rig.footL, upper = right ? rig.upperArmR : rig.upperArmL, h = right ? rig.handR : rig.handL;
+            ankle = Math.max(ankle, pose.point(f, rig.pivot[f], new Vector3f()).distance(right ? in.ankleRight : in.ankleLeft));
+            // the hand's end (HumanoidPoser: kept on its target past the wrist's limit, the wrist moved)
+            Vector3f cap = new Vector3f((right ? 1F : -1F) * rig.profile.handCapX(), rig.profile.handCapY(), 0F);
+            Vector3f want = (right ? in.targetRight : in.targetLeft).transformPosition(new Vector3f(cap));
+            hand[right ? 0 : 1] = pose.point(h, cap.add(rig.pivot[upper]), new Vector3f()).distance(want);
+        }
+        return new float[]{floor - seat, floor - footR, floor - footL, floor - low, ankle, hand[0], hand[1], report.rightReach, report.leftReach, lowBone};
+    }
+
+    /**
+     * The B body mesh in this pose as the game skins it (BlockMeshBody#matrices: the spine half the chest's turn, the
+     * clavicle the arm's turn less 8 deg, four weights; the toes' bend on the ground left out), as an OBJ in Blender px
+     * (z up from the ground, the front +y, the body's right +x) for a render next to the concept (AFL_SIT_OBJ).
+     */
+    private static void obj(SkeletonPose pose, java.nio.file.Path out, float floor) {
+        SkeletonRig rig = pose.rig;
+        try (InputStream s = BlockMeshV2Check.class.getClassLoader().getResourceAsStream("assets/apocalypse_firstlight/" + rig.profile.mesh())) {
+            JsonObject json = JsonParser.parseReader(new InputStreamReader(s, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonArray bones = json.getAsJsonArray("bones"), v = json.getAsJsonArray("vertices");
+            Matrix4f[] m = new Matrix4f[bones.size()];
+            for (int i = 0; i < m.length; i++) {
+                String name = bones.get(i).getAsJsonObject().get("name").getAsString();
+                int same = rig.find(name);
+                m[i] = switch (name) {
+                    case "spine" -> pose.half(rig.chest, new Matrix4f());
+                    case "neck" -> new Matrix4f(pose.world[rig.chest]);
+                    case "clavicle_r" -> clavicle(pose, rig.upperArmR);
+                    case "clavicle_l" -> clavicle(pose, rig.upperArmL);
+                    case "toes_r" -> new Matrix4f(pose.world[rig.footR]);
+                    case "toes_l" -> new Matrix4f(pose.world[rig.footL]);
+                    default -> new Matrix4f(pose.world[same]);
+                };
+            }
+            StringBuilder o = new StringBuilder("# " + out.getFileName() + " (BlockMeshV2Check#obj)\n");
+            int n = v.size() / 13;
+            Vector3f rest = new Vector3f(), part = new Vector3f(), sum = new Vector3f();
+            for (int i = 0; i < n; i++) {
+                rest.set(v.get(i * 13).getAsFloat(), v.get(i * 13 + 1).getAsFloat(), v.get(i * 13 + 2).getAsFloat());
+                sum.zero();
+                for (int j = 0; j < 4; j++) {
+                    float wt = v.get(i * 13 + 9 + j).getAsFloat();
+                    if (wt > 0F) sum.add(m[v.get(i * 13 + 5 + j).getAsInt()].transformPosition(rest, part).mul(wt));
+                }
+                o.append(String.format(java.util.Locale.ROOT, "v %.4f %.4f %.4f%nvt %.5f %.5f%n", -sum.x, -sum.z, floor - sum.y,
+                        v.get(i * 13 + 3).getAsFloat(), 1F - v.get(i * 13 + 4).getAsFloat()));
+            }
+            for (int q = 0; q < n / 4; q++) {
+                int a = q * 4 + 1;
+                o.append(String.format("f %d/%d %d/%d %d/%d %d/%d%n", a, a, a + 1, a + 1, a + 2, a + 2, a + 3, a + 3));
+            }
+            java.nio.file.Files.createDirectories(out.getParent());
+            java.nio.file.Files.writeString(out, o);
+        } catch (Exception e) {
+            throw new IllegalStateException("obj " + out, e);
+        }
+    }
+
+    /** BlockMeshBody#clavicle. */
+    private static Matrix4f clavicle(SkeletonPose pose, int upperArm) {
+        Matrix4f arm = pose.world[upperArm];
+        Quaternionf chest = pose.world[pose.rig.chest].getUnnormalizedRotation(new Quaternionf()).normalize();
+        Quaternionf rel = chest.conjugate().mul(arm.getUnnormalizedRotation(new Quaternionf()).normalize());
+        if (rel.w < 0) rel.set(-rel.x, -rel.y, -rel.z, -rel.w);
+        float angle = 2F * (float) Math.acos(Math.min(1F, rel.w)), dead = (float) Math.toRadians(8F);
+        Quaternionf keep = new Quaternionf();
+        if (angle > dead) keep.slerp(rel, (angle - dead) / angle);
+        Quaternionf delta = new Quaternionf(rel).conjugate().mul(keep);
+        Vector3f p = pose.rig.pivot[upperArm];
+        return new Matrix4f(arm).translate(p).rotate(delta).translate(-p.x, -p.y, -p.z);
     }
 
     private static void use(SkeletonRig rig) {

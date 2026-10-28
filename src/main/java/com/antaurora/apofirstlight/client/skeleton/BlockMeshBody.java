@@ -78,7 +78,12 @@ public final class BlockMeshBody {
     private static final double CAMERA_OUT = 0.25;
     private static final int STRIDE = 13;
 
-    private static boolean on = true, chairCamera = true, failed;
+    /**
+     * Off by default since 2026-10-26 (user: "如果你修不好的话，就退回之前的那种旧版"): sitting on the ground and getting up
+     * did not come right on B5 (docs/dev/block_mesh_v2_b_ingame.md 17.5), so players are the old cube body again;
+     * {@code /afl dev blockmesh on} still brings B5 back. B5's files and its body_b.* clips are kept.
+     */
+    private static boolean on = false, chairCamera = true, failed;
     /** The rig's mesh (its bones drive every layer) and each layer's, by path. */
     private static Mesh mesh;
     private static final java.util.Map<String, Mesh> LAYERS = new java.util.HashMap<>();
@@ -90,7 +95,7 @@ public final class BlockMeshBody {
     private BlockMeshBody() {
     }
 
-    /** B is the body (the default; off only by the dev command, or when its rig or mesh failed): PlayerSkeleton solves and draws on the B rig. */
+    /** B is the body (on by the dev command; off by default since 2026-10-26, or when its rig or mesh failed): PlayerSkeleton solves and draws on the B rig. */
     public static boolean active() {
         return on && !failed;
     }

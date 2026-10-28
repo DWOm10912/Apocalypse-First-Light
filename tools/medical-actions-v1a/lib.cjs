@@ -5,7 +5,9 @@ const core = require(path.join(root, 'tools/blockbench/afl_rig.js'));
 const {v3, q4, tf, rad, deg} = core;
 const A = path.join(root, 'src/main/resources/assets/apocalypse_firstlight');
 const read = p => JSON.parse(fs.readFileSync(p, 'utf8'));
-const rig = core.loadRig(read(path.join(A, 'rigs/afl_humanoid_v1.json')));
+// the rig the clips are made on (AFL_RIG: a rigs/ file name; author_ground_sit_b.cjs sets afl_block_mesh_v2)
+const RIG = process.env.AFL_RIG || 'afl_humanoid_v1';
+const rig = core.loadRig(read(path.join(A, 'rigs/' + RIG + '.json')));
 const poser = new core.Poser(rig, core.loadClips(rig, read(path.join(A, 'animations/player/locomotion.animation.json'))));
 const propDef = id => read(path.join(A, 'player_props', id + '.json'));
 
@@ -47,4 +49,4 @@ function armFk(u, f, h, twist) {
 /** A local quat as clip file numbers (the plugin's clip: q = zyx(rad v2, rad v1, rad v0)). */
 const fileEuler = q => q4.eulerZYX(q).map(deg).map(x => +x.toFixed(3));
 
-module.exports = {fs, path, root, core, v3, q4, tf, rad, deg, A, read, rig, poser, propDef, between, armFk, fileEuler};
+module.exports = {fs, path, root, core, v3, q4, tf, rad, deg, A, read, RIG, rig, poser, propDef, between, armFk, fileEuler};

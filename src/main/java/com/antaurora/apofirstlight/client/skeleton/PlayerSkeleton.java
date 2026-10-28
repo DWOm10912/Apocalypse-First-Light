@@ -764,6 +764,8 @@ public final class PlayerSkeleton {
                 ChairPose.body(in, ChairLegs.WOOD, chairLegs, chairIdle.idle(), chairIdle.weight(), chairIdle.time(), chairIdle.right());
             }
         }
+        // Block-Mesh V2 sat on the ground: the hips on it, the sit's legs and lean (GroundSitClient#ground, skeleton/seat/GroundPose)
+        float groundSit = sit != null && blockMesh ? GroundSitClient.ground(in, poser().rig(), sit, origin, toModel, action == null ? null : action.action) : 0F;
         HumanoidPoser.Report report = poser().solveBody(in, out.pose);
         if (seated != null && d.world && seated.move() == SeatPose.Move.NONE) SeatedRiders.solvedTorso(p, report.torso);
         out.hold = null;
@@ -808,7 +810,7 @@ public final class PlayerSkeleton {
             if (seat != null) SeatPose.hands(in, out.pose, poser(), seat, moment);
             else if (chairLegs != null) {
                 ChairPose.hands(in, out.pose, poser());
-            }
+            } else if (groundSit > 0F) GroundSitClient.groundHands(in, out.pose, poser(), sit, groundSit);
             if (action != null) {
                 ActionPose.hands(in, out.pose, poser(), action);
                 if (action.action.heldHidden && ActionPose.weight(action) > 0) {
