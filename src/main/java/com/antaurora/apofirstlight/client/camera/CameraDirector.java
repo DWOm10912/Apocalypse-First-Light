@@ -36,7 +36,7 @@ import java.util.Set;
  *   <li><b>Shake</b> (2.5): the sources in CameraSources#SHAKES, summed and put on the view once a frame, times
  *   {@link #shakeScale}.</li>
  *   <li><b>Body offset</b> (2.6): where a player's body is drawn away from the entity (CameraSources#BODY_OFFSETS), for
- *   the shadow (mixin client.EntityRenderDispatcherShadowMixin) and later the name tag.</li>
+ *   the name tag later (the round shadow it moved is gone since 2026-10-28, mixin client.EntityRenderDispatcherShadowMixin).</li>
  *   <li><b>Input lock</b> (2.7) and <b>HUD</b> (2.8): the union of the open requests' {@link Lock}s (until they start
  *   easing out) and the strictest {@link Hud} (until they are gone).</li>
  * </ul>

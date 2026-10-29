@@ -1029,6 +1029,60 @@
       {"name": "apocalypse_firstlight:infected/door_bang_2"}
     ]
   },
+  "deer_snort": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_snort",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/snort"}
+    ]
+  },
+  "deer_stomp": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_stomp",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/stomp"}
+    ]
+  },
+  "deer_bleat": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_bleat",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/bleat"}
+    ]
+  },
+  "deer_grunt": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_grunt",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/grunt"}
+    ]
+  },
+  "deer_hurt": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_hurt",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/hurt"}
+    ]
+  },
+  "deer_step": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_step",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/step"}
+    ]
+  },
+  "deer_bound": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_bound",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/bound"}
+    ]
+  },
+  "deer_brush": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_brush",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/brush"}
+    ]
+  },
+  "deer_graze": {
+    "subtitle": "subtitles.apocalypse_firstlight.deer_graze",
+    "sounds": [
+      {"name": "apocalypse_firstlight:deer/graze"}
+    ]
+  },
   "thunder_crack": {
     "subtitle": "subtitles.apocalypse_firstlight.thunder_crack",
     "sounds": [{"name": "apocalypse_firstlight:weather/thunder_crack_1", "attenuation_distance": 16}, {"name": "apocalypse_firstlight:weather/thunder_crack_2", "attenuation_distance": 16}]

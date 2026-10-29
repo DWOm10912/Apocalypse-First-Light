@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.noise;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.creature.deer.DeerHearing;
 import com.antaurora.apofirstlight.infected.InfectedLegacyAi;
 import com.antaurora.apofirstlight.infected.perception.InfectedHearingSystem;
 import net.minecraft.server.level.ServerLevel;
@@ -16,11 +17,13 @@ public final class NoiseSystem {
                 && player.level() instanceof ServerLevel level && InfectedLegacyAi.enabled(level)) {
             InfectedHearingSystem.handle(event, level);
         }
+        if (event.source() != null && event.source().level() instanceof ServerLevel level) DeerHearing.heard(event, level);
     }
 
     public static void emit(NoiseEvent event, ServerLevel level) {
         log(event);
         if (InfectedLegacyAi.enabled(level)) InfectedHearingSystem.handle(event, level);
+        DeerHearing.heard(event, level);
     }
 
     private static void log(NoiseEvent event) {

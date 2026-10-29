@@ -117,5 +117,10 @@ public final class AflBlockEntityRenderers {
                 com.antaurora.apofirstlight.client.creature.InfectedRenderer::new);
         event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.INFECTED_CORPSE.get(),
                 com.antaurora.apofirstlight.client.creature.InfectedCorpseRenderer::new);
+        // White-tailed deer D1: the deer and its carcass
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.WHITETAIL_DEER.get(),
+                com.antaurora.apofirstlight.client.creature.DeerRenderer::new);
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.DEER_CORPSE.get(),
+                com.antaurora.apofirstlight.client.creature.DeerCorpseRenderer::new);
     }
 }
