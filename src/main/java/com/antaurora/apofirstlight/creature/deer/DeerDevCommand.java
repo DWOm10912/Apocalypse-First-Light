@@ -21,13 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * White-tailed deer test commands (op), the deer not spawning in the world yet:
+ * White-tailed deer test commands (op); the world places its own deer (DeerPopulation), these put more in by hand (not
+ * counted in any cell):
  * <ul>
  *   <li>{@code /afl dev deer spawn buck|doe [count]}: deer 24 blocks in front of the caller, side on;</li>
  *   <li>{@code /afl dev deer spawn herd [count]}: a doe leading, the rest does and a buck (one in four), following her;</li>
  *   <li>{@code /afl dev deer calm true|false}: the deer stop seeing, smelling and hearing anything (to watch them up
  *   close); not saved;</li>
- *   <li>{@code /afl dev deer clear}: removes every deer and carcass in the caller's level.</li>
+ *   <li>{@code /afl dev deer census}: the natural population's books (DeerPopulation) in the 9 cells round the caller;</li>
+ *   <li>{@code /afl dev deer clear}: removes every deer and carcass in the caller's level (the cells' counts follow).</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -45,6 +47,7 @@ public final class DeerDevCommand {
                         .then(kind("buck", 0)).then(kind("doe", 1)).then(kind("herd", 2)))
                 .then(Commands.literal("calm").then(Commands.argument("on", BoolArgumentType.bool())
                         .executes(c -> calm(c.getSource(), BoolArgumentType.getBool(c, "on")))))
+                .then(Commands.literal("census").executes(c -> census(c.getSource())))
                 .then(Commands.literal("clear").executes(c -> clear(c.getSource()))))));
     }
 
@@ -86,6 +89,14 @@ public final class DeerDevCommand {
         int n = made;
         source.sendSuccess(() -> Component.literal("放出 " + n + " 只白尾鹿"), true);
         return made;
+    }
+
+    private static int census(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        Vec3 at = source.getPosition();
+        String text = DeerPopulation.get(level).census(level, at.x, at.z);
+        source.sendSuccess(() -> Component.literal(text), false);
+        return 1;
     }
 
     private static int calm(CommandSourceStack source, boolean on) {

@@ -60,6 +60,20 @@ public final class VegetationClient {
      * 2026-10-24 "LOD0 的范围太小了": were 12-20, 36-48, 64-80 m to a section's nearest point).
      */
     private static final float[][] BANDS = {{24, 40}, {56, 80}, {96, 120}};
+    /**
+     * The share of low plant blocks drawn at a stage (doc 25; user 2026-10-28: "现在的植被还是太密集了，看着有点糊"): all of
+     * them nearer than 24 m, three quarters by 40 m (across the LOD0 band), the same to 56 m, three tenths by 80 m (across
+     * the LOD1 band), then the LOD2 band fades the rest to nothing as before. Read per stage, so the share only changes
+     * when a section is rebuilt for its band anyway: no extra rebuilds, no popping.
+     */
+    static float keep(int stage) {
+        if (stage <= 0) return 1F;
+        if (stage < STEPS) return 1F - 0.25F * stage / STEPS;
+        if (stage == STEPS) return 0.75F;
+        if (stage < 2 * STEPS) return 0.75F - 0.45F * (stage - STEPS) / STEPS;
+        return 0.3F;
+    }
+
     /** How far the camera's distance to a section in each band moves before the section is rebuilt (m). */
     private static final float[] BUCKET = {2, 4, 6};
     static final int FLUSH_TICKS = 5;

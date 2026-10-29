@@ -56,7 +56,8 @@ import java.util.UUID;
  * ({@link #heard}). An infected within 30 blocks in sight, or 12 anyway, makes it run.
  *
  * <p>No loot or experience yet (D3 butchers it), no vanilla step or ambient sounds (DeerSounds), never despawns. On death it
- * is replaced at once by its carcass (DeerCorpse), which plays the fall and stays.
+ * is replaced at once by its carcass (DeerCorpse), which plays the fall and stays. The world places deer by DeerPopulation
+ * (D2a), which counts them per 512 m cell: a deer remembers its home cell, and its death takes it off that count.
  */
 public class DeerEntity extends PathfinderMob {
     public static final byte STAND = 0, GRAZE = 1, ALERT = 2, FLEE = 3;
@@ -91,6 +92,8 @@ public class DeerEntity extends PathfinderMob {
     private double alertDistance;
     private int seenTicks;
     @Nullable private UUID leaderId;
+    /** The 512 m cell whose count it is in (DeerPopulation), or NO_CELL (placed by a command). */
+    private long homeCell = DeerPopulation.NO_CELL;
     @Nullable private Entity leader;
     private final Map<Integer, Vec3> playerLast = new HashMap<>();
     private double stepDistance, boundDistance;
@@ -192,6 +195,11 @@ public class DeerEntity extends PathfinderMob {
         if (entityData.get(STATE) == s) return;
         entityData.set(STATE, s);
         entityData.set(STATE_AT, (int) level().getGameTime());
+    }
+
+    /** DeerPopulation placed it for this cell: its death takes one off the cell's count. */
+    void setHomeCell(long key) {
+        homeCell = key;
     }
 
     public void setLeader(@Nullable DeerEntity lead) {
@@ -547,6 +555,16 @@ public class DeerEntity extends PathfinderMob {
         if (!level().isClientSide && !isRemoved()) remove(RemovalReason.KILLED);
     }
 
+    /** Killed or removed for good (not unloaded with its chunk): one fewer in its cell. */
+    @Override
+    public void remove(RemovalReason reason) {
+        if (!isRemoved() && homeCell != DeerPopulation.NO_CELL && reason.shouldDestroy() && level() instanceof ServerLevel level) {
+            DeerPopulation.get(level).died(homeCell);
+            homeCell = DeerPopulation.NO_CELL;
+        }
+        super.remove(reason);
+    }
+
     @Override
     protected boolean shouldDropLoot() {
         return false;
@@ -569,6 +587,7 @@ public class DeerEntity extends PathfinderMob {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Doe", doe());
         if (leaderId != null) tag.putUUID("Leader", leaderId);
+        if (homeCell != DeerPopulation.NO_CELL) tag.putLong("HomeCell", homeCell);
     }
 
     @Override
@@ -576,6 +595,7 @@ public class DeerEntity extends PathfinderMob {
         super.readAdditionalSaveData(tag);
         setDoe(tag.getBoolean("Doe"));
         leaderId = tag.hasUUID("Leader") ? tag.getUUID("Leader") : null;
+        homeCell = tag.contains("HomeCell") ? tag.getLong("HomeCell") : DeerPopulation.NO_CELL;
         enterCalm(Calm.GRAZE, level().getGameTime());
     }
 
