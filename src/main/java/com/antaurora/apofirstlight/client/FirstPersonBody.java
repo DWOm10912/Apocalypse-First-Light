@@ -38,6 +38,7 @@ import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Vector3f;
 
 /**
  * First-person body V1 (docs/rendering/first_person_body_v1.md): in first person the own player is drawn in the normal entity
@@ -85,6 +86,13 @@ public final class FirstPersonBody {
      * something the gun does, and to go again after it (s).
      */
     private static final float GUN_BACK = 0.12F, GUN_FREE = 0.25F;
+    /**
+     * The gun's view model also tips down about the eye over the second half of its slide, up to this (deg): down
+     * {@link #HAND_DROP} alone, a long barrel (the BR-51's) still showed at the bottom beside the body's gun (user 2026-10-28:
+     * "第一人称低头到下面的时候，会重复露出枪管"); 45 clears it at FOV 126 (110 sprinting), 30 does not
+     * (tools/preview-fp-arms.mjs FP_SLIDE / FP_TILT).
+     */
+    private static final float GUN_TILT = 45F;
     /** Once the body holds the gun it keeps it until this many degrees above {@link #HAND_TO}: no flicker at the edge. */
     private static final float GUN_KEEP = 3F;
     /** Once the body holds an ordinary item ({@link #itemOnBody}) it keeps it until this many degrees above {@link #HAND_TO}: no flicker at the edge. */
@@ -192,12 +200,25 @@ public final class FirstPersonBody {
     }
 
     /**
-     * weapon/client/ConfiguredGunFirstPerson, first in the gun's view-model pose: how far the view model goes down this
-     * frame (camera space, blocks; {@link #gunHandOver}).
+     * weapon/client/ConfiguredGunFirstPerson, first in the gun's view-model pose: the view model's slide out of view this
+     * frame ({@link #gunHandOver}), camera space: down {@link #HAND_DROP}, tipped down about the eye up to {@link #GUN_TILT}.
      */
-    public static float gunDrop() {
+    public static void gunSlideOut(PoseStack pose) {
         gunHandOver();
-        return HAND_DROP * gunSlide;
+        if (gunSlide <= 0F) return;
+        pose.mulPose(Axis.XN.rotationDegrees(gunTilt()));
+        pose.translate(0F, -HAND_DROP * gunSlide, 0F);
+    }
+
+    /** A view-space point carried along {@link #gunSlideOut}: the gun arms' shoulder (weapon/client/NativeArmTube), so the arm slides as one. */
+    public static Vector3f gunSlid(Vector3f point) {
+        gunHandOver();
+        if (gunSlide <= 0F) return point;
+        return point.add(0F, -HAND_DROP * gunSlide, 0F).rotateX(-gunTilt() * Mth.DEG_TO_RAD);
+    }
+
+    private static float gunTilt() {
+        return GUN_TILT * smooth((gunSlide - 0.5F) / 0.5F);
     }
 
     /** The body holds the held gun this frame ({@link #gunHandOver}): its arms and the gun are drawn, the view model is out of view. */

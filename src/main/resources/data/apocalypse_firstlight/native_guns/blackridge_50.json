@@ -37,7 +37,7 @@
     }
   },
   "presentation": {
-    "hud": {"width": 48, "height": 22},
+    "hud": {"width": 48, "height": 27},
     "mag_in_tick": 25,
     "empty_mag_in_tick": 26,
     "trail": "subtle_pistol",

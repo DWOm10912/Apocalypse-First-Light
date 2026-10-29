@@ -23,9 +23,8 @@ public final class ConfiguredGunFirstPerson {
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
         var pose = NativeRenderMatrices.detachedCopy(e.getPoseStack());
         // looking down at the ready the view model slides out of view and the body's arms take the gun
-        // (client/FirstPersonBody#gunDrop, docs/rendering/first_person_body_v1.md 3.5.1); still drawn for the shot snapshot
-        float drop = FirstPersonBody.gunDrop();
-        if (drop > 0F) pose.translate(0F, -drop, 0F);
+        // (client/FirstPersonBody#gunSlideOut, docs/rendering/first_person_body_v1.md 3.5.1); still drawn for the shot snapshot
+        FirstPersonBody.gunSlideOut(pose);
         if(!FieldAttachmentViewState.isActive()){
             NativeWeaponSway.apply(pose,e.getPartialTick());
             NativeGunRecoil.applyViewmodel(pose);

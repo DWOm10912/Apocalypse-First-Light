@@ -126,7 +126,7 @@ public final class NativePlayerArmRenderer {
         var m = pose.last().pose();
         // the elbow (NativeArmTube): the skin, the wounds and the sleeve layer as one bent tube each, on Vanilla's arm UV
         NativeArmTube.Elbow elbow = elbowKind == null ? null
-                : NativeArmTube.elbow(m, right, slim, NativeArmTube.shoulder(elbowKind, right));
+                : NativeArmTube.elbow(m, right, slim, com.antaurora.apofirstlight.client.FirstPersonBody.gunSlid(NativeArmTube.shoulder(elbowKind, right)));
         int armU = right ? 40 : 32, armV = right ? 16 : 48, sleeveU = right ? 40 : 48, sleeveV = right ? 32 : 48;
         if (elbow != null) NativeArmTube.emit(m, right, slim, elbow, 0F, armU, armV, 12F,
                 buffers.getBuffer(RenderType.entitySolid(skin)), light, overlay);
