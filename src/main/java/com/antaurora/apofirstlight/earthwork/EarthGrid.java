@@ -278,6 +278,30 @@ public final class EarthGrid {
     }
 
     /**
+     * A ring brush (a crater's rim, terrain rework R4c): every vertex from inner to outer (blocks) of (cx, cz), weighted in
+     * thousandths (no zero entries): rising as sin over the first RING_RISE of inner..peak, its thickest from there to
+     * peak, then thinning as the square down to outer (round 1, 2026-10-28: the rim against the crater's edge, thinner
+     * further out, no strip of turf between); the earth is shared out by #distribute.
+     */
+    public static final double RING_RISE = 0.3;
+
+    public static Long2IntOpenHashMap ring(double cx, double cz, double inner, double peak, double outer) {
+        var out = new Long2IntOpenHashMap();
+        if (!(inner < peak && peak < outer)) return out;
+        int x0 = (int) Math.floor((cx - outer) * PER_BLOCK), x1 = (int) Math.ceil((cx + outer) * PER_BLOCK);
+        int z0 = (int) Math.floor((cz - outer) * PER_BLOCK), z1 = (int) Math.ceil((cz + outer) * PER_BLOCK);
+        for (int vz = z0; vz <= z1; vz++) for (int vx = x0; vx <= x1; vx++) {
+            double dx = (double) vx / PER_BLOCK - cx, dz = (double) vz / PER_BLOCK - cz, d = Math.sqrt(dx * dx + dz * dz);
+            if (d < inner || d >= outer) continue;
+            double rise = (d - inner) / ((peak - inner) * RING_RISE);
+            double f = d >= peak ? Math.pow((outer - d) / (outer - peak), 2) : rise < 1 ? Math.sin(Math.PI / 2 * rise) : 1;
+            int w = (int) Math.round(1000 * f);
+            if (w > 0) out.put(key(vx, vz), w);
+        }
+        return out;
+    }
+
+    /**
      * total quanta split over weights (all &gt; 0) in proportion, the largest remainders (then the lowest keys) taking the
      * leftover quanta, so the parts sum to exactly total: earth put down is exactly the earth carried.
      */

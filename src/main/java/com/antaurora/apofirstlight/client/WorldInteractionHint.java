@@ -188,7 +188,7 @@ public final class WorldInteractionHint {
 
     /**
      * The key caps in front of a prompt (docs/ui/afl_overlay_ui_style_v1.md 6), following the player's bindings: the use key
-     * for every action, sneak + use to pick a container up, none for prompts that only tell (cannot charge, needs a crowbar,
+     * for every action but a tool's work (the tool key, ToolKey), sneak + use to pick a container up, none for prompts that only tell (cannot charge, needs a crowbar,
      * needs a container).
      */
     private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keysFor(Minecraft mc,Component label) {
@@ -200,7 +200,10 @@ public final class WorldInteractionHint {
         if(key.endsWith(".pickup_t15.close_door")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")||key.endsWith(".pickup_t15.no_key")||key.endsWith(".pick.needed")) return java.util.List.of();
         if(key.endsWith(".tunnel_fixture.dismantle")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyAttack));
-        if(key.endsWith(".shovel.scrape")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
+        // the tools' work takes the tool key (ToolKey: the attack key, 2026-10-28)
+        var tool=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(ToolKey.key(mc));
+        if(key.endsWith(".shovel.scrape")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),tool);
+        if(key.contains(".shovel.")||key.endsWith(".pick.strike")) return java.util.List.of(tool);
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }

@@ -13,13 +13,13 @@ The ground can be dug out and filled in one shovelful at a time. Granite boulder
 
 ## Shovel
 
-Hold the round point shovel, aim at loose ground and press Use once for one stroke. Holding the key does not repeat it
+Hold the round point shovel, aim at loose ground and press Attack (left click) once for one stroke. Holding the key does not repeat it
 
 - Empty shovel: digs up a shovelful, costs <V d="stamina/stamina_v1#costs.shovel_dig" /> stamina
 - Loaded shovel: pours it where you aim, costs <V d="stamina/stamina_v1#costs.shovel_pour" /> stamina
 - Sneaking: scrapes the ground level, costs <V d="stamina/stamina_v1#costs.shovel_scrape" /> stamina
 
-The round point shovel is 1.6 m long. One stroke digs about 300 L, a shallow hole a little ahead of your feet. A stroke takes about 2.2 seconds: the blade goes into the ground, your right foot stamps it in, you lever it back and lift the load. The earth stays on the shovel: aim somewhere out of the way and press Use again to pour it out, about 1.2 seconds. A scrape takes about 1.4 seconds
+The round point shovel is 1.6 m long. One stroke digs about 300 L, a shallow hole a little ahead of your feet. A stroke takes about 2.2 seconds: the blade goes into the ground, your right foot stamps it in, you lever it back and lift the load. The earth stays on the shovel: aim somewhere out of the way and press Attack again to pour it out, about 1.2 seconds. A scrape takes about 1.4 seconds
 
 You carry the shovel two-handed across your body, the blade low ahead to the right. A loaded shovel can't dig until it is poured out
 
@@ -27,7 +27,7 @@ The shovel ends in a D grip. An empty shovel hangs from a peg of the wooden tool
 
 When the blade hits rock it says "Rock here, can't dig". Dig down beside a boulder to bare the part buried in the soil. The same goes for the rock under the soil: switch to the pick mattock
 
-Ground that has been dug or poured on takes only the shovel. Bare hands can't break it: it says "Dig this ground with a shovel"
+Natural soil, sand and gravel take only the shovel. In Survival bare hands and other tools (the pick mattock too) can't break a block of it: it says "Dig this ground with a shovel"
 
 A thin soil lying straight on rock can be dug and poured on too. The shovel can't work these places, and a pour that can't go down says so:
 
@@ -36,6 +36,13 @@ A thin soil lying straight on rock can be dug and poured on too. The shovel can'
 - Under a block less than two blocks overhead
 
 <StatusTag s="test" /> Waterlogged lake and sea beds and their shores can be dug and poured on too: where the dig goes below the water's surface, the lake's water fills it, level with the lake beside it
+
+## Collapses and Craters
+
+- <StatusTag s="test" /> Once bare rock is cut lower, the soil beside it that can't stand that steep slumps into the cut
+- <StatusTag s="test" /> Loose ground such as sand, gravel and soil falls when the space under it is hollowed out: what falls fills the space under it from the bottom up, the surface sinks into a funnel and the soil around slides in. A tunnel with soil overhead caves in a block at a time as it is cut; one with rock overhead stands. A thin layer of soil over a deep space (soil over a cleft, say) drops all the way to the bottom. Soil next to roads, houses and tree roots doesn't fall
+- <StatusTag s="test" /> A blast near the ground digs a shallow, wide crater: half its soil is thrown round its edge as a ring of loose earth, thickest against the edge and thinner further out, and the other half scatters; the rock in it shatters into rubble left on its floor. The ground is never blown out as blocks. The higher the blast above the ground, the shallower the crater, and none at all once it is more than the crater's radius up. A blast in a cave doesn't break its rock walls
+- Breaking blocks in Creative or changing them with commands never sets off a collapse
 
 ## Boulders
 
@@ -46,7 +53,7 @@ Boulders are rock half sunk into the ground: round erratics, flat slabs, talus b
 
 Strike it with a pick mattock:
 
-- Hold the pick mattock, aim at the boulder and press Use once for one strike, about <V j="BoulderStrike.DURATION" x="0.05" u="s" />
+- Hold the pick mattock, aim at the boulder and press Attack (left click) once for one strike, about <V j="BoulderStrike.DURATION" x="0.05" u="s" />
 - Only rock close to your feet can be struck: within <V j="BoulderStrike.REACH" u="blocks" /> of your eyes
 - Every strike that lands costs <V d="stamina/stamina_v1#costs.pick_strike" /> stamina. Out of stamina, you can't strike
 - It is loud: infected nearby hear it
@@ -60,7 +67,7 @@ Strike it with a pick mattock:
 
 Every strike takes the rock a little lower, no shovel needed:
 
-- Hold the pick mattock, aim at bare rock in the open and press Use once for one strike. The swing, stamina and sound are a boulder strike's
+- Hold the pick mattock, aim at bare rock in the open and press Attack once for one strike. The swing, stamina and sound are a boulder strike's
 - Where it lands the rock is cut straight down, leaving no rubble. One strike takes away up to about 50 L
 - Strike after strike you dig one continuous pit, and its sides can be steep
 - Where soil still lies over the rock, dig the soil off with the shovel first, then strike the rock. Rubble or poured earth on the spot comes off first under the pick
@@ -137,7 +144,7 @@ Out in the wild a few stones lie on the ground here and there: some pebbles, som
 
 - Aim at loose stones and press Use once to pick one up: the big stone first, then the flint, then the pebbles one by one
 - No tool needed, bare hands will do. The stones you pick up count towards your load
-- With the round point shovel in hand, Use digs. Digging where loose stones lie knocks them out as items
+- With the round point shovel in hand, Attack digs. Digging where loose stones lie knocks them out as items
 
 ## Stones, Pebbles and Flint
 

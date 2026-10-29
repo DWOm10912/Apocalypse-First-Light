@@ -433,6 +433,7 @@ public final class RockCarve {
                     taken.addTo(states.get(en.getLongKey()), CarveChunk.CELLS - n);
                     c.remove(p.getX(), p.getY(), p.getZ());
                     level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                    Earthwork.loosened(level, p);   // terrain rework R4b: loose ground on it falls
                     emptied++;
                 } else {
                     System.arraycopy(b, 0, c.edit(p.getX(), p.getY(), p.getZ()), 0, N);

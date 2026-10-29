@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -95,6 +96,13 @@ public final class Earthwork {
     public static volatile ClientHooks clientHooks;
 
     private static boolean converting;
+    /** R4b: a column whose loose ground lies over a void may be edited (#why asks for no solid block under it; #fall) */
+    private static boolean undermining;
+    /**
+     * Terrain rework R4 (#loosened, #disturbed): cells play emptied (BlockPos#asLong) and columns play disturbed
+     * (EarthGrid#key), each to its generation (how many columns from the first), worked off at the tick's end.
+     */
+    private static final Long2IntLinkedOpenHashMap FALLS = new Long2IntLinkedOpenHashMap(), SLUMPS = new Long2IntLinkedOpenHashMap();
     private static final LongOpenHashSet DIRTY = new LongOpenHashSet();
     private static final List<BlockPos> RECONCILE = new ArrayList<>();
     public static long mismatches;
@@ -354,10 +362,11 @@ public final class Earthwork {
             return w != null ? w : cliffEdited(level, x, z, t);
         }
         if (!soil(level.getBlockState(p).getBlock())) return "its top is " + name(level.getBlockState(p)) + ", not loose ground";
-        // round 2 (2026-10-22): a thin soil straight on rock is loose ground too, its hard floor the rock's top (#hardFloor)
+        // round 2 (2026-10-22): a thin soil straight on rock is loose ground too, its hard floor the rock's top (#hardFloor);
+        // terrain rework R4b: loose ground over a void is edited to fall into it (#fall), whatever lies under it
         Block under1 = level.getBlockState(p.setY(t - 1)).getBlock();
-        if (!soil(under1) && !rock(under1)) return "under its top is " + name(level.getBlockState(p)) + ", neither loose ground nor rock";
-        if (soil(under1)) {
+        if (!undermining && !soil(under1) && !rock(under1)) return "under its top is " + name(level.getBlockState(p)) + ", neither loose ground nor rock";
+        if (!undermining && soil(under1)) {
             BlockState under = level.getBlockState(p.setY(t - 2));
             if (!under.isSolidRender(level, p)) return "two below its top is " + name(under) + ", not a solid block";
         }
@@ -866,7 +875,10 @@ public final class Earthwork {
     /** The same with the brush depth at the middle given (U3a-2: a softer rock gives more to a strike, RockTypes#strikeScale). */
     public static Result strike(ServerLevel level, double cx, double cz, double depth) {
         Long2IntOpenHashMap w = brush(cx, cz, STRIKE_RADIUS, depth, -1);
-        return edit(level, w.keySet(), (v, h) -> w.get(v), true, -1, Long.MAX_VALUE, null, true);
+        Result r = edit(level, w.keySet(), (v, h) -> w.get(v), true, -1, Long.MAX_VALUE, null, true);
+        // terrain rework R4a: the rock stands where it is cut, the loose ground beside it slumps into the cut (#slump)
+        if (r.moved() != 0) for (long c : columns(w.keySet())) SLUMPS.putIfAbsent(c, 0);
+        return r;
     }
 
     /**
@@ -913,6 +925,194 @@ public final class Earthwork {
         Result r = edit(level, w.keySet(), d, true, cut ? -1 : material, room, cut ? null : lifts(on));
         lift(level, on);
         return r;
+    }
+
+    // ------------------------------------------------------------------------------------------------- play disturbs the ground
+
+    /*
+     * Terrain rework R4 (docs/worldgen/terrain_rework_v1_design.md 15, user 2026-10-28): what play does to the ground beyond
+     * the shovel (a pick's strike, a block a survival player breaks, a cell the pick carves out, a blast) slumps the ground
+     * around at its angles (the shovel's rule), and loose ground left over nothing falls into the space under it. Worked
+     * off at the tick's end, at most DISTURB_PER_TICK a tick, so a wide collapse goes on over a few ticks. Not for world
+     * generation, commands or creative breaks: #blockChanged follows those as before (the skin goes down, nothing slumps).
+     */
+
+    /**
+     * R4: disturbances worked off a tick; how many columns on a slump goes beyond the first; how deep a void under loose
+     * ground is followed (cells) to the ground under it (round 1, 2026-10-28: 16 left a plug hanging in a deeper cleft).
+     */
+    public static final int DISTURB_PER_TICK = 32, DISTURB_REACH = 4, VOID_REACH = 64;
+
+    /** R4b: play emptied cell pos (the pick carved it out, a blast or a survival break took it): what lies on it may fall (#fall). */
+    public static void loosened(Level level, BlockPos pos) {
+        if (level instanceof ServerLevel s && s == s.getServer().overworld()) FALLS.putIfAbsent(pos.asLong(), 0);
+    }
+
+    /** R4a: play changed column (x, z)'s ground: it and the ground around slump at their angles (#slump). */
+    public static void disturbed(Level level, int x, int z) {
+        if (level instanceof ServerLevel s && s == s.getServer().overworld()) SLUMPS.putIfAbsent(key(x, z), 0);
+    }
+
+    /** R4b: a cell loose ground falls into: air, a plant, snow, loose stones or water. */
+    static boolean empty(BlockState s) { return open(s) || waterBlock(s); }
+
+    /** The 25 vertices of column (x, z) (global keys). */
+    private static LongArrayList vertices(int x, int z) {
+        LongArrayList out = new LongArrayList(SIDE * SIDE);
+        for (int j = 0; j <= PER_BLOCK; j++) for (int i = 0; i <= PER_BLOCK; i++) out.add(key(x * PER_BLOCK + i, z * PER_BLOCK + j));
+        return out;
+    }
+
+    /** The columns reading any of these vertices. */
+    private static LongOpenHashSet columns(it.unimi.dsi.fastutil.longs.LongCollection vertices) {
+        LongOpenHashSet out = new LongOpenHashSet();
+        for (long v : vertices) for (long c : columnsOf(keyX(v), keyZ(v))) out.add(c);
+        return out;
+    }
+
+    /**
+     * R4a: column (x, z) and the ground around it slump at their angles: an edit wanting nothing, with slopes (#edit), which
+     * first edits the free columns around that read its vertices, so the ground next to a cut or a hole moves too. Where
+     * anything moved, the columns around go on (one generation further, DISTURB_REACH at most).
+     */
+    private static void slump(ServerLevel level, int x, int z, int gen) {
+        if (!loaded(level, x, z)) return;
+        Result r = edit(level, vertices(x, z), (v, h) -> 0, true, -1, Long.MAX_VALUE, null);
+        if (r.vertices() == 0 || gen >= DISTURB_REACH) return;
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) if ((dx | dz) != 0) SLUMPS.putIfAbsent(key(x + dx, z + dz), gen + 1);
+    }
+
+    /**
+     * R4b (design 15.2): cell pos was emptied. When loose ground lies on it, that ground falls straight down into the void
+     * (the cells under it a loose ground falls into, down to the ground under them, VOID_REACH at most) and fills it from
+     * the bottom: the column's hard
+     * floor goes down to the void's bottom and its skin down by the void's volume, whole quanta, so the earth is the same;
+     * then the ground around slumps into the funnel (#slump). Rock holds (no roof fall: the structure stability work). Loose
+     * ground under rock or a building (a pocket, no skin over it), or thinner than the void under it, drops by blocks to the
+     * void's bottom (#drop; an edited column let go first, #release); a column that cannot be edited (a road, a tree, a
+     * house next to it) keeps hanging.
+     */
+    private static void fall(ServerLevel level, BlockPos pos, int gen) {
+        int x = pos.getX(), y = pos.getY(), z = pos.getZ();
+        if (!loaded(level, x, z) || !empty(level.getBlockState(pos)) || !soil(level.getBlockState(pos.above()).getBlock())) return;
+        var p = new BlockPos.MutableBlockPos(x, y, z);
+        int low = y;
+        while (low > y - VOID_REACH + 1 && low > level.getMinBuildHeight() && empty(level.getBlockState(p.setY(low - 1)))) low--;
+        int top = y + 1;
+        while (top < level.getMaxBuildHeight() - 2 && soil(level.getBlockState(p.setY(top + 1)).getBlock())) top++;
+        EarthChunk e = get(level, x >> 4, z >> 4);
+        int col = column(x, z);
+        boolean edited = e != null && e.edited(col);
+        BlockState over = level.getBlockState(p.setY(top + 1));
+        // round 1 (2026-10-28): a stack thinner than the void under it (a soil column over a deep cleft) cannot fill it from
+        // its skin: it all drops to the bottom by blocks, as a pocket under rock or a building does
+        if (!open(over) && !waterBlock(over) || top - y < y - low + 1) {
+            if (edited && top >= Math.floorDiv(e.bottom(col), Q)) release(level, x, z);
+            drop(level, x, z, low, y + 1, top);
+            return;
+        }
+        LongArrayList where = vertices(x, z);
+        if (!edited) {
+            undermining = true;
+            try {
+                edit(level, where, (v, h) -> 0, false, -1, Long.MAX_VALUE, null);   // edits it and the free columns reading its vertices
+            } finally {
+                undermining = false;
+            }
+            e = get(level, x >> 4, z >> 4);
+            if (e == null || !e.edited(col)) return;
+        }
+        e.mark(col, e.top0(col), e.topState(col), Math.min(e.floor(col), low * Q), NONE);
+        long volume = (long) (y - low + 1) * Q * PER_BLOCK * PER_BLOCK;
+        edit(level, where, (v, h) -> -(1 << 20), false, -1, volume, null);   // as far as each may go, the volume shared out by that
+        SLUMPS.putIfAbsent(key(x, z), gen);
+    }
+
+    /**
+     * R4b: edited column (x, z) no longer edited, its blocks as they are (its ground drops by blocks next, #drop); its
+     * vertices no other edited column reads are cleared, the ones they read stay theirs (EarthSkin closes their sides).
+     */
+    private static void release(ServerLevel level, int x, int z) {
+        get(level, x >> 4, z >> 4).unmark(column(x, z));
+        for (int j = 0; j <= PER_BLOCK; j++) for (int i = 0; i <= PER_BLOCK; i++) {
+            int vx = x * PER_BLOCK + i, vz = z * PER_BLOCK + j;
+            boolean read = false;
+            for (long r : columnsOf(vx, vz)) if (editedTop(level, keyX(r), keyZ(r)) != Integer.MIN_VALUE) read = true;
+            if (!read) get(level, vx >> 6, vz >> 6).clear(vertex(vx & 63, vz & 63));
+            DIRTY.add(ChunkPos.asLong(vx >> 6, vz >> 6));
+        }
+    }
+
+    /** R4b: the loose ground in cells from..to of column (x, z) drops onto cell low (no skin over it: blocks, quietly). */
+    private static void drop(ServerLevel level, int x, int z, int low, int from, int to) {
+        var p = new BlockPos.MutableBlockPos();
+        List<BlockState> stack = new ArrayList<>();
+        for (int y = from; y <= to; y++) stack.add(level.getBlockState(p.set(x, y, z)));
+        quietly(() -> {
+            for (int y = low; y <= to; y++)
+                level.setBlock(p.set(x, y, z), y - low < stack.size() ? stack.get(y - low) : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        });
+    }
+
+    /**
+     * R4c (design 15.2): a crater's radius from a blast's power (vanilla's explosion radius), its depth at the middle from
+     * the radius; the soil thrown round its rim (the rest scatters), from RIM_IN radii inside the crater (its shallow edge)
+     * to its thickest at the edge, out to RIM_OUT radii (round 1, 2026-10-28: it began at the edge, leaving a strip of turf
+     * between). Starting values, to be tuned in game.
+     */
+    public static final double CRATER_RADIUS = 0.6, CRATER_DEPTH = 0.4, RIM_SHARE = 0.5, RIM_IN = 0.5, RIM_OUT = 1.6;
+
+    /**
+     * R4c: the crater of a blast of power p centred above m over the ground: {radius, depth at its middle} (m). Its depth
+     * falls off to 0 as the blast's centre rises a radius over the ground.
+     */
+    public static double[] crater(double power, double above) {
+        double r = CRATER_RADIUS * power;
+        return new double[]{r, r <= 0 ? 0 : CRATER_DEPTH * r * Math.max(0, Math.min(1, 1 - Math.max(0, above) / r))};
+    }
+
+    /** The ground's height (blocks) under (x, z): an edited column's skin, else its natural surface's top; NaN where none. */
+    private static double groundAt(ServerLevel level, double x, double z) {
+        double s = surfaceAt(level, x, z);
+        if (!Double.isNaN(s)) return s;
+        int t = topOf(level, (int) Math.floor(x), (int) Math.floor(z));
+        return t == SmoothRules.NO_SURFACE ? Double.NaN : t + 1;
+    }
+
+    /**
+     * R4c: the crater of a blast at (cx, cy, cz) of power (#crater), when its centre lies at most a block under the ground
+     * there (not a cave's: no crater in a cave). The soil comes out (a shovel's dig, with slopes), RIM_SHARE of each
+     * material laid round the rim as loose earth (EarthGrid#ring); the rock under it shatters (a pick's cut down to the
+     * crater's shape) and lies in the pit as rubble; then the crater's columns slump (#slump).
+     */
+    static void blast(ServerLevel level, double cx, double cy, double cz, double power) {
+        double ground = groundAt(level, cx, cz);
+        if (Double.isNaN(ground) || cy < ground - 1) return;
+        double[] cr = crater(power, cy - ground);
+        if (cr[1] <= 0) return;
+        Long2IntOpenHashMap w = brush(cx, cz, cr[0], cr[1], -1), h0 = new Long2IntOpenHashMap();
+        Result soil = edit(level, w.keySet(), (v, h) -> {
+            h0.put(v, h);
+            return w.get(v);
+        }, true, -1, Long.MAX_VALUE, null);
+        Result rock = edit(level, w.keySet(), (v, h) -> h0.containsKey(v) ? Math.min(0, h0.get(v) + w.get(v) - h) : w.get(v),
+                true, -1, Long.MAX_VALUE, null, true);
+        long broken = 0;
+        for (long q : rock.taken().values()) broken += q;
+        if (broken > 0) {
+            Long2IntOpenHashMap weights = new Long2IntOpenHashMap();
+            for (var en : w.long2IntEntrySet()) weights.put(en.getLongKey(), -en.getIntValue());
+            Long2IntOpenHashMap d = distribute(broken, weights);
+            edit(level, d.keySet(), (v, h) -> d.get(v), true, BulkMaterials.table().index("rubble"), broken, null);
+        }
+        Long2IntOpenHashMap ring = ring(cx, cz, cr[0] * RIM_IN, cr[0], cr[0] * RIM_OUT);
+        for (var en : soil.taken().int2LongEntrySet()) {
+            long amount = Math.round(en.getLongValue() * RIM_SHARE);
+            if (amount <= 0) continue;
+            Long2IntOpenHashMap d = distribute(amount, ring);
+            edit(level, d.keySet(), (v, h) -> d.get(v), true, en.getIntKey(), amount, null);
+        }
+        for (long c : columns(w.keySet())) SLUMPS.putIfAbsent(c, 0);
     }
 
     private static final ThreadLocal<int[]> GROUND_HEIGHTS = ThreadLocal.withInitial(() -> new int[SIDE * SIDE]);
@@ -1069,10 +1269,29 @@ public final class Earthwork {
         if (!(event.getLevel() instanceof ServerLevel level) || !ground(event.getState().getBlock())) return;
         int[] h = new int[SIDE * SIDE];
         BlockPos pos = event.getPos();
-        if (!heights(level, pos.getX(), pos.getZ(), h, null) || kind(min(h), max(h), pos.getY()) == AIR) return;
+        boolean edited = heights(level, pos.getX(), pos.getZ(), h, null) && kind(min(h), max(h), pos.getY()) != AIR;
+        if (!edited && !shovelOnly(event.getPlayer(), event.getState())) return;
         event.setCanceled(true);
         event.getPlayer().displayClientMessage(Component.translatable(rock(event.getState().getBlock())
                 ? "message.apocalypse_firstlight.pick.needs_pick" : "message.apocalypse_firstlight.earthwork.needs_shovel"), true);
+    }
+
+    /**
+     * Terrain rework R4 (user 2026-10-28: "生存模式下所有天然土都不能整块拆"): in survival no loose ground ever breaks as a
+     * block, edited or not, whatever the tool: the shovel moves it (bulk material is never a block, design 4 rule 1).
+     */
+    private static boolean shovelOnly(net.minecraft.world.entity.player.Player player, BlockState state) {
+        return !player.isCreative() && !player.isSpectator() && soil(state.getBlock());
+    }
+
+    /**
+     * Whether a survival player's attack on pos breaks nothing, whatever the tool (both sides; the client cancels the click
+     * so no vanilla crack, hit sound, particles or swing play, client/NoToolDigClient, round 2 2026-10-28): loose ground
+     * (#shovelOnly), natural rock (boulder.RockFace: the pick's strike, ToolKey), an edited column's ground.
+     */
+    public static boolean unbreakable(net.minecraft.world.entity.player.Player player, Level level, BlockPos pos, BlockState state) {
+        if (player.isCreative() || player.isSpectator()) return false;
+        return soil(state.getBlock()) || rock(state.getBlock()) || editedGround(level, pos, state);
     }
 
     /** Whether pos holds ground of an edited column (a skin cell or below it): the shovel's and the pick's, not a hand's. */
@@ -1089,23 +1308,35 @@ public final class Earthwork {
     @SubscribeEvent
     public static void breakSpeed(net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed event) {
         if (event.getEntity().isCreative() || event.getPosition().isEmpty()) return;
-        if (editedGround(event.getEntity().level(), event.getPosition().get(), event.getState())) event.setNewSpeed(0);
+        if (shovelOnly(event.getEntity(), event.getState()) || editedGround(event.getEntity().level(), event.getPosition().get(), event.getState()))
+            event.setNewSpeed(0);
     }
 
     /** The first hit there says what it takes (server side, once per press; rock: boulder.RockFace). */
     @SubscribeEvent
     public static void hit(net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock event) {
         if (event.getLevel().isClientSide() || event.getAction() != net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action.START
-                || event.getEntity().isCreative()) return;
+                || event.getEntity().isCreative()
+                || event.getEntity().getMainHandItem().getItem() instanceof com.antaurora.apofirstlight.item.ShovelItem) return;   // it digs with the use key
         BlockState s = event.getLevel().getBlockState(event.getPos());
-        if (!rock(s.getBlock()) && editedGround(event.getLevel(), event.getPos(), s))
+        if (!rock(s.getBlock()) && (shovelOnly(event.getEntity(), s) || editedGround(event.getLevel(), event.getPos(), s)))
             event.getEntity().displayClientMessage(Component.translatable("message.apocalypse_firstlight.earthwork.needs_shovel"), true);
     }
 
     @SubscribeEvent
     public static void serverTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || (DIRTY.isEmpty() && RECONCILE.isEmpty())) return;
+        if (event.phase != TickEvent.Phase.END || (DIRTY.isEmpty() && RECONCILE.isEmpty() && FALLS.isEmpty() && SLUMPS.isEmpty())) return;
         ServerLevel level = event.getServer().overworld();
+        // R4: what play disturbed, falls first (a slump then reads the ground they leave)
+        for (int n = 0; n < DISTURB_PER_TICK && !(FALLS.isEmpty() && SLUMPS.isEmpty()); n++) {
+            if (!FALLS.isEmpty()) {
+                long k = FALLS.firstLongKey();
+                fall(level, BlockPos.of(k), FALLS.removeFirstInt());
+            } else {
+                long k = SLUMPS.firstLongKey();
+                slump(level, keyX(k), keyZ(k), SLUMPS.removeFirstInt());
+            }
+        }
         if (!RECONCILE.isEmpty()) {
             List<BlockPos> list = new ArrayList<>(RECONCILE);
             RECONCILE.clear();
@@ -1156,10 +1387,39 @@ public final class Earthwork {
         if (e != null && !e.isEmpty()) event.getData().put(TAG, e.save());
     }
 
+    /**
+     * R4 (design 15.2): a survival player's break (a creative one never): what lay on the cell may fall (#loosened), broken
+     * ground slumps (#disturbed). Earthwork-edited ground never gets here (#breaking refuses it).
+     */
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST)
+    public static void broken(BlockEvent.BreakEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || event.getPlayer().isCreative() || event.getPlayer().isSpectator()) return;
+        loosened(level, event.getPos());
+        if (ground(event.getState().getBlock())) disturbed(level, event.getPos().getX(), event.getPos().getZ());
+    }
+
+    /**
+     * R4c (design 15.2): a blast digs a crater (#blast) instead of blowing the natural ground out as blocks: natural ground it
+     * reached stays out of vanilla's list (none goes as a block), and what lay on a block it takes may fall (#loosened).
+     */
+    @SubscribeEvent
+    public static void exploded(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || level != level.getServer().overworld()
+                || !TerrainSmooth.applies(level) || !TerrainSmooth.SERVER.enabled()) return;
+        var ex = event.getExplosion();
+        if (!ex.interactsWithBlocks()) return;   // a blast that breaks no blocks digs no crater
+        var c = ex.getPosition();
+        blast(level, c.x, c.y, c.z, ((com.antaurora.apofirstlight.mixin.ExplosionAccessor) ex).afl$getRadius());
+        event.getAffectedBlocks().removeIf(p -> ground(level.getBlockState(p).getBlock()));
+        for (BlockPos p : event.getAffectedBlocks()) loosened(level, p);
+    }
+
     @SubscribeEvent
     public static void serverStopped(ServerStoppedEvent event) {
         DIRTY.clear();
         RECONCILE.clear();
+        FALLS.clear();
+        SLUMPS.clear();
         CARRIED.clear();
     }
 
