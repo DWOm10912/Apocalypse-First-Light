@@ -29,8 +29,13 @@ import static com.antaurora.apofirstlight.earthwork.CarveChunk.N;
  *   by the rock's look: granite (and vanilla stone, gneiss, schist) jointed into flat facets at angles; limestone (and
  *   dolomite, marl) dissolved into broad rounded hollows; shale (and rock salt) in thin beds standing out and set back in
  *   horizontal bands; sandstone in thick beds, rounded off.</li>
- *   <li>Open: air only. Anything placed against a face (a torch, a ladder, a block) closes that side, so the face behind it
- *   is the flat block face it was placed on; water and lava leave their bed as it was.</li>
+ *   <li>Open: air, and water (terrain rework R3c, docs/worldgen/terrain_rework_v1_design.md 14.4: rock under a cave's
+ *   pool, a lake's or a river's rocky bed): above and below, and on the four walls where the water is deep there (the
+ *   block over the water is water or solid). At the water's surface a wall worn back would show a dry slot under the
+ *   water from above, so it stays flat (#open). Vanilla water draws
+ *   no face toward the rock (a full cube to it), so the worn face shows through the water. Anything placed against a face
+ *   (a torch, a ladder, a block) closes that side, so the face behind it is the flat block face it was placed on; lava
+ *   leaves its bed as it was.</li>
  *   <li>Not here: rock the earthwork manages (an edited column's skin and its pick floor), and blocks a neighbour not
  *   loaded may border (counted as rock).</li>
  * </ul>
@@ -83,16 +88,37 @@ public final class RockRelief {
         return e.bits == WHOLE ? null : e.bits;
     }
 
-    /** The open sides of the block at pos (bits by Direction ordinal): air beside it; a neighbour not loaded is closed. */
+    /** The open sides of the block at pos (bits by Direction ordinal, #open): a neighbour not loaded is closed. */
     static int openSides(BlockGetter getter, BlockPos pos) {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        int open = 0;
+        int air = 0, water = 0;
         for (int d = 0; d < 6; d++) {
             p.set(pos.getX() + (d == 4 ? -1 : d == 5 ? 1 : 0), pos.getY() + (d == 0 ? -1 : d == 1 ? 1 : 0), pos.getZ() + (d == 2 ? -1 : d == 3 ? 1 : 0));
             BlockState s = stateNow(getter, p);
-            if (s != null && s.isAir()) open |= 1 << d;
+            if (s == null) continue;
+            if (s.isAir()) air |= 1 << d;
+            else if (water(s)) {
+                if (d <= UP) water |= 1 << d;
+                else {   // a wall: only where the water goes on above (not its surface)
+                    p.move(0, 1, 0);
+                    BlockState over = stateNow(getter, p);
+                    if (over != null && (water(over) || over.isSolidRender(getter, p))) water |= 1 << d;
+                }
+            }
         }
-        return open;
+        return open(air, water);
+    }
+
+    private static boolean water(BlockState s) {
+        return s.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock && s.getFluidState().is(net.minecraft.tags.FluidTags.WATER);
+    }
+
+    /**
+     * The sides worn (R3c): those open to air and those toward deep water, water a block toward which (still or flowing)
+     * lies above or below, or beside with water or a solid block over it (a wall at the water's surface stays flat).
+     */
+    public static int open(int air, int water) {
+        return air | water;
     }
 
     private static BlockState stateNow(BlockGetter getter, BlockPos p) {

@@ -10,7 +10,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -21,8 +20,9 @@ import java.util.UUID;
 
 /**
  * The shovel's input and strokes on the client (docs/worldgen/earthwork_a2.md 5): aiming at loose ground within reach
- * with the shovel in the main hand, the use key works the ground instead of the vanilla use. One press is one whole
- * stroke (user 2026-10-21: no holding): sneaking it scrapes; else an empty blade digs, a loaded one pours. Letting go
+ * with the shovel in the main hand, the tool key (ToolKey: the attack key since 2026-10-28, the use key before) works the
+ * ground. One press is one whole stroke (user 2026-10-21: no holding): sneaking it scrapes; else an empty blade digs, a
+ * loaded one pours. Letting go
  * changes nothing; switching slots, a screen, dying cancel a stroke before its commit.
  * The server (interaction/ShovelAction) runs every stroke and sends its phases to everyone tracking the player; this
  * keeps them for the skeleton's poses (client/skeleton/SkeletonActions: {@link #elapsed}, {@link #mode}, {@link #target}).
@@ -37,8 +37,16 @@ public final class ShovelClient {
 
     private static final Map<UUID, Stroke> STROKES = new HashMap<>();
     private static int clock, asked = Integer.MIN_VALUE / 2, slot;
-    /** the use key was down last tick (a stroke starts on the press, not while held) */
+    /** the tool key was down last tick (a stroke starts on the press, not while held) */
     private static boolean wasDown;
+
+    static {
+        ToolKey.register(new ToolKey.Tool() {
+            @Override public boolean targets(Minecraft mc) { return aim(mc) != null; }
+
+            @Override public boolean busy() { return active(); }
+        });
+    }
 
     /** The own stroke, or null. */
     private static Stroke own() {
@@ -129,7 +137,7 @@ public final class ShovelClient {
         STROKES.values().removeIf(s -> clock - s.start > ShovelAction.DURATION[s.mode] + 100);   // a lost END
         var p = mc.player;
         Stroke own = own();
-        boolean down = mc.options.keyUse.isDown() && mc.screen == null, press = down && !wasDown;
+        boolean down = ToolKey.down(mc), press = down && !wasDown;
         wasDown = down;
         if (own != null) {
             if (p.getInventory().selected != slot || !p.getMainHandItem().is(AflItems.ROUND_POINT_SHOVEL.get()) || mc.screen != null
@@ -138,19 +146,9 @@ public final class ShovelClient {
             }
             return;
         }
-        if (!press || p.isSpectator() || !p.isAlive() || aim(mc) == null) return;
+        if (!press || p.isSpectator() || !p.isAlive() || ToolKey.onEntity(mc) || aim(mc) == null) return;
         var load = ShovelItem.load(p.getMainHandItem());
         start(p.isShiftKeyDown() ? ShovelAction.SCRAPE : load.stored() <= 0 ? ShovelAction.DIG : ShovelAction.POUR);
-    }
-
-    /** Aiming the shovel at loose ground, or mid-stroke, the use key is the shovel's: no vanilla use, no swing. */
-    @SubscribeEvent
-    public static void input(InputEvent.InteractionKeyMappingTriggered e) {
-        var mc = Minecraft.getInstance();
-        if (!e.isUseItem() && !(e.isAttack() && active())) return;
-        if (!active() && aim(mc) == null) return;
-        e.setCanceled(true);
-        e.setSwingHand(false);
     }
 
     private ShovelClient() {}

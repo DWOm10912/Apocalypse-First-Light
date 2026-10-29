@@ -1,4 +1,4 @@
-"""Dump a square of a Minecraft 1.20 world's columns around the player: for each column every block name from y_lo to
+"""Dump a square of a Minecraft 1.20 world's columns around the player (or around x z given after y_hi): for each column every block name from y_lo to
 y_hi (palette indices), as a compact text file a Java check can read. Stdlib only."""
 import gzip, io, os, struct, sys, zlib
 
@@ -68,6 +68,7 @@ def main():
     f = [x for x in os.listdir(pd) if x.endswith('.dat')][0]
     pl = nbt(io.BytesIO(gzip.decompress(open(os.path.join(pd, f), 'rb').read())))
     px, py, pz = (int(v) for v in pl['Pos'])
+    if len(sys.argv) > 7: px, pz = int(sys.argv[6]), int(sys.argv[7])   # another centre (terrain rework R3 survey)
     yaw = pl['Rotation'][0]
     names = {}
     rows = []

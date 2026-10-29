@@ -431,11 +431,19 @@ public final class TerrainSmooth {
 
     /** The same, walls allowed (SmoothRules#notFree(Cells, int, int, int, int, boolean): the foot of a natural step). */
     public static String notFree(Level level, int x, int y, int z, boolean walls) {
+        return notFree(level, x, y, z, walls, false, false);
+    }
+
+    /**
+     * The same with cliffs and water (SmoothRules#notFree(Cells, int, int, int, int, boolean, boolean, boolean): the rim of
+     * a cliff, R3b; a lake's wet bed and its shore, R3a).
+     */
+    public static String notFree(Level level, int x, int y, int z, boolean walls, boolean cliffs, boolean water) {
         LevelCells c = CELLS.get();
         c.level = level;
         c.owner = owner(level);
         try {
-            return SmoothRules.notFree(c, MODE, x, y, z, walls);
+            return SmoothRules.notFree(c, MODE, x, y, z, walls, cliffs, water);
         } finally {
             c.reset();
         }

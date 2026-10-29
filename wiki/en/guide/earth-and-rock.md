@@ -13,13 +13,13 @@ The ground can be dug out and filled in one shovelful at a time. Granite boulder
 
 ## Shovel
 
-Hold the round point shovel, aim at loose ground and press Use once for one stroke. Holding the key does not repeat it
+Hold the round point shovel, aim at loose ground and press Attack (left click) once for one stroke. Holding the key does not repeat it
 
 - Empty shovel: digs up a shovelful, costs <V d="stamina/stamina_v1#costs.shovel_dig" /> stamina
 - Loaded shovel: pours it where you aim, costs <V d="stamina/stamina_v1#costs.shovel_pour" /> stamina
 - Sneaking: scrapes the ground level, costs <V d="stamina/stamina_v1#costs.shovel_scrape" /> stamina
 
-The round point shovel is 1.6 m long. One stroke digs about 300 L, a shallow hole a little ahead of your feet. A stroke takes about 2.2 seconds: the blade goes into the ground, your right foot stamps it in, you lever it back and lift the load. The earth stays on the shovel: aim somewhere out of the way and press Use again to pour it out, about 1.2 seconds. A scrape takes about 1.4 seconds
+The round point shovel is 1.6 m long. One stroke digs about 300 L, a shallow hole a little ahead of your feet. A stroke takes about 2.2 seconds: the blade goes into the ground, your right foot stamps it in, you lever it back and lift the load. The earth stays on the shovel: aim somewhere out of the way and press Attack again to pour it out, about 1.2 seconds. A scrape takes about 1.4 seconds
 
 You carry the shovel two-handed across your body, the blade low ahead to the right. A loaded shovel can't dig until it is poured out
 
@@ -27,13 +27,22 @@ The shovel ends in a D grip. An empty shovel hangs from a peg of the wooden tool
 
 When the blade hits rock it says "Rock here, can't dig". Dig down beside a boulder to bare the part buried in the soil. The same goes for the rock under the soil: switch to the pick mattock
 
-Ground that has been dug or poured on takes only the shovel. Bare hands can't break it: it says "Dig this ground with a shovel"
+Natural soil, sand and gravel take only the shovel. In Survival bare hands and other tools (the pick mattock too) can't break a block of it: it says "Dig this ground with a shovel"
 
 A thin soil lying straight on rock can be dug and poured on too. The shovel can't work these places, and a pour that can't go down says so:
 
-- The top edge of a natural bank or cliff three blocks or higher. <StatusTag s="test" /> The top of a two-block bank can be dug and poured on
+- A soil cliff three blocks or higher: its top and its foot can't both be dug. Once one side is dug, the block of the other side right against the cliff can't be, and the cliff's very edge never moves. <StatusTag s="test" /> The top of a two-block bank can be dug and poured on, and so can the top of a soil cliff three blocks or higher
 - Next to roads, houses and tree roots (a block of asphalt road can be dug once all its asphalt is broken out, see [Roads](../world/roads#digging-up-a-road))
 - Under a block less than two blocks overhead
+
+<StatusTag s="test" /> Waterlogged lake and sea beds and their shores can be dug and poured on too: where the dig goes below the water's surface, the lake's water fills it, level with the lake beside it
+
+## Collapses and Craters
+
+- <StatusTag s="test" /> Once bare rock is cut lower, the soil beside it that can't stand that steep slumps into the cut
+- <StatusTag s="test" /> Loose ground such as sand, gravel and soil falls when the space under it is hollowed out: what falls fills the space under it from the bottom up, the surface sinks into a funnel and the soil around slides in. A tunnel with soil overhead caves in a block at a time as it is cut; one with rock overhead stands. A thin layer of soil over a deep space (soil over a cleft, say) drops all the way to the bottom. Soil next to roads, houses and tree roots doesn't fall
+- <StatusTag s="test" /> A blast near the ground digs a shallow, wide crater: half its soil is thrown round its edge as a ring of loose earth, thickest against the edge and thinner further out, and the other half scatters; the rock in it shatters into rubble left on its floor. The ground is never blown out as blocks. The higher the blast above the ground, the shallower the crater, and none at all once it is more than the crater's radius up. A blast in a cave doesn't break its rock walls
+- Breaking blocks in Creative or changing them with commands never sets off a collapse
 
 ## Boulders
 
@@ -44,7 +53,7 @@ Boulders are rock half sunk into the ground: round erratics, flat slabs, talus b
 
 Strike it with a pick mattock:
 
-- Hold the pick mattock, aim at the boulder and press Use once for one strike, about <V j="BoulderStrike.DURATION" x="0.05" u="s" />
+- Hold the pick mattock, aim at the boulder and press Attack (left click) once for one strike, about <V j="BoulderStrike.DURATION" x="0.05" u="s" />
 - Only rock close to your feet can be struck: within <V j="BoulderStrike.REACH" u="blocks" /> of your eyes
 - Every strike that lands costs <V d="stamina/stamina_v1#costs.pick_strike" /> stamina. Out of stamina, you can't strike
 - It is loud: infected nearby hear it
@@ -58,7 +67,7 @@ Strike it with a pick mattock:
 
 Every strike takes the rock a little lower, no shovel needed:
 
-- Hold the pick mattock, aim at bare rock in the open and press Use once for one strike. The swing, stamina and sound are a boulder strike's
+- Hold the pick mattock, aim at bare rock in the open and press Attack once for one strike. The swing, stamina and sound are a boulder strike's
 - Where it lands the rock is cut straight down, leaving no rubble. One strike takes away up to about 50 L
 - Strike after strike you dig one continuous pit, and its sides can be steep
 - Where soil still lies over the rock, dig the soil off with the shovel first, then strike the rock. Rubble or poured earth on the spot comes off first under the pick
@@ -73,6 +82,7 @@ Rubble struck loose in older saves is still there: it is loose earth, and like s
 - <StatusTag s="test" /> In deep test worlds the underground is now real rock layers: granite, gneiss, schist, sandstone, limestone, dolomite, shale, marl and rock salt, laid out by the geology, and road cuts show the local rock too. Like natural stone it takes a pick in Survival, and it breaks into that rock's stones. All textures but granite's are still stand-ins
 - <StatusTag s="test" /> Natural rock away from the open ground (cave walls and roofs, cliff faces) can be cut too: each strike of the pick mattock breaks a piece off where it lands, and the hollow shows at once, never the same shape twice, its fresh faces paler than the weathered rock. A block's worth takes about 20 strikes in granite, 13 in shale, 11 in marl; a block with less than an eighth left is cleared, the rest still counted in the drops. Digging down in a pit or shaft (rock on two sides or more above the floor), the floor goes down level and takes the corners along the walls with it, so the walls stay straight and the shaft does not narrow; cleared blocks let daylight down the shaft, and drops, cut faces and what you hold in a pit or hollow are lit by the light at its mouth, darker further in. The hollows collide as they look, so you can stand in them. Ground the earthwork has dug and rock under a boulder can't be cut this way, and neither can the floor of a pit downwards yet
 - <StatusTag s="verified" d="2026-10-24" /> Cave walls, roofs, cliff faces and rock in the open are no longer block faces but continuous, irregular rock: granite breaks into jointed, tilted planes, limestone into rounded solution hollows and bulges, shale and sandstone into beds that stand out and set back in bands. Floors and ledge tops are uneven too: limestone in gentle flowstone swells, shale, sandstone and granite in shallow slab terraces that don't hinder walking; ledges and outcrops have rounded edges, but a one-block rock step has to be jumped. The rock collides as it looks, so you can step into its hollows and cut into them; a torch, ladder or block placed against a face leaves that face flat. Steep soil banks, the soil walls of cave mouths and the undersides of overhanging soil are continuous surfaces too, slumped round at the edges and joined to the rock; ordinary soil slopes stay smooth slopes. Caves in deep worlds no longer have dirt floors and dirt walls, soil lies only at the surface; vanilla ores are gone there too, see the next item for the ores to come
+- <StatusTag s="test" /> Rock under water is continuous rock too, such as the floor of a cave pool and rock walls under water. The rock wall right at the water's surface stays flat
 - <StatusTag s="test" /> Ore lies inside the rock, and cutting ore-bearing rock gives raw ore, see Ores below
 - <StatusTag s="verified" d="2026-10-24" /> With shaders on (Aureveil), rock surfaces have more relief and darker crevices. A fresh break cut with the pick shows its mineral faces: feldspar, quartz and mica in granite and gneiss, calcite in limestone, quartz grains in sandstone, mica along the foliation in schist, flashing one by one as the light or your view moves. Ores hold more grains of their metallic minerals (galena, chalcopyrite, pyrite, hematite), each catching the light its own way. Without shaders the rock looks the same, and ores show a few more mineral grains
 
@@ -134,7 +144,7 @@ Out in the wild a few stones lie on the ground here and there: some pebbles, som
 
 - Aim at loose stones and press Use once to pick one up: the big stone first, then the flint, then the pebbles one by one
 - No tool needed, bare hands will do. The stones you pick up count towards your load
-- With the round point shovel in hand, Use digs. Digging where loose stones lie knocks them out as items
+- With the round point shovel in hand, Attack digs. Digging where loose stones lie knocks them out as items
 
 ## Stones, Pebbles and Flint
 

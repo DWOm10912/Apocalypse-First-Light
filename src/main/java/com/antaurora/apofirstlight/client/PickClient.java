@@ -13,7 +13,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -24,8 +23,8 @@ import java.util.UUID;
 
 /**
  * The pick mattock's input and strikes on the client (Rock R1a, docs/gameplay/rock_r1_stones_boulders_design.md 3.4, 11.2),
- * as the shovel's (client/ShovelClient): aiming the pick at a boulder within reach, one press of the use key is one whole
- * strike; switching slots, a screen or dying cancels it before the pick lands. The server (boulder/BoulderStrike) runs
+ * as the shovel's (client/ShovelClient): aiming the pick at a boulder within reach, one press of the tool key (ToolKey:
+ * the attack key since 2026-10-28, the use key before) is one whole strike; switching slots, a screen or dying cancels it before the pick lands. The server (boulder/BoulderStrike) runs
  * it and sends its phases to everyone tracking the player; this keeps them for the skeleton's poses
  * (client/skeleton/SkeletonActions: {@link #elapsed}, {@link #target}). Rock R2: bare rock ground in reach takes a strike
  * the same way (BoulderStrike#aim); so does a road's pavement (road Mesh-ification P0, PavementMining).
@@ -40,8 +39,16 @@ public final class PickClient {
 
     private static final Map<UUID, Strike> STRIKES = new HashMap<>();
     private static int clock, asked = Integer.MIN_VALUE / 2, slot;
-    /** the use key was down last tick (a strike starts on the press, not while held) */
+    /** the tool key was down last tick (a strike starts on the press, not while held) */
     private static boolean wasDown;
+
+    static {
+        ToolKey.register(new ToolKey.Tool() {
+            @Override public boolean targets(Minecraft mc) { return holding(mc) && (onBoulder(mc) || onRock(mc) || onPavement(mc)); }
+
+            @Override public boolean busy() { return active(); }
+        });
+    }
 
     private static Strike own() {
         var mc = Minecraft.getInstance();
@@ -139,7 +146,7 @@ public final class PickClient {
         STRIKES.values().removeIf(s -> clock - s.start > BoulderStrike.DURATION + 100);   // a lost END
         var p = mc.player;
         Strike own = own();
-        boolean down = mc.options.keyUse.isDown() && mc.screen == null, press = down && !wasDown;
+        boolean down = ToolKey.down(mc), press = down && !wasDown;
         wasDown = down;
         if (own != null) {
             if (p.getInventory().selected != slot || !holding(mc) || mc.screen != null || !p.isAlive() || p.isSpectator()) {
@@ -147,23 +154,10 @@ public final class PickClient {
             }
             return;
         }
-        if (!press || p.isSpectator() || !p.isAlive() || !holding(mc) || BoulderStrike.aim(p) == null) return;
+        if (!press || p.isSpectator() || !p.isAlive() || !holding(mc) || ToolKey.onEntity(mc) || BoulderStrike.aim(p) == null) return;
         if (clock - asked < RETRY) return;
         asked = clock;
         PickPacket.start();
-    }
-
-    /** The pick on a boulder, or mid-strike, the use key is the pick's: no vanilla use, no swing; a boulder takes no attack. */
-    @SubscribeEvent
-    public static void input(InputEvent.InteractionKeyMappingTriggered e) {
-        var mc = Minecraft.getInstance();
-        if (e.isUseItem() && (active() || holding(mc) && (onBoulder(mc) || onRock(mc) || onPavement(mc)))) {
-            e.setCanceled(true);
-            e.setSwingHand(false);
-        } else if (e.isAttack() && active()) {
-            e.setCanceled(true);
-            e.setSwingHand(false);
-        }
     }
 
     private PickClient() {}
