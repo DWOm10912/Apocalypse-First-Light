@@ -3,8 +3,7 @@
   "ammo": "apocalypse_firstlight:50_ae_round",
   "casing": "apocalypse_firstlight:50_ae_casing",
   "fire_sound": "apocalypse_firstlight:blackridge_50_fire",
-  "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
-  "suppressed_fire_sound": "apocalypse_firstlight:blackridge_50_suppressed",
+  "dry_fire_sound": "apocalypse_firstlight:blackridge_50_dry_fire",
   "magazine_capacity": 7,
   "fire": {"mode": "semi", "interval_ticks": 5},
   "damage": {
@@ -26,12 +25,12 @@
     "time_seconds": 0.18,
     "fov_multiplier": 0.94,
     "profile": {
-      "anchor": "sight_anchor/rear-axis",
-      "aim": [0, 9.6, 4.1],
+      "anchor": "rear_sight",
+      "aim": [0, 7.54969, 2.76629],
       "eye_relief": 0.47,
-      "hip_translation": [3.25, -7.0, -12.25],
+      "hip_translation": [3.25, -6.46691, -11.9885],
       "hip_rotation": [0, 0, 0],
-      "scale": 0.45,
+      "scale": 0.53,
       "composition": [0, 0],
       "root_pitch": 0,
       "ads_rotation": [0, 0, 0]
@@ -40,14 +39,15 @@
   "presentation": {
     "hud": {"width": 48, "height": 22},
     "mag_in_tick": 25,
-    "empty_mag_in_tick": 23,
+    "empty_mag_in_tick": 26,
     "trail": "subtle_pistol",
     "magazine_round_visual": {
       "anchor": "magazine_round_anchor",
-      "loaded_auxiliary_anchor": "reload_magazine_round_anchor",
+      "loaded_auxiliary_anchor": "mag_out_round_anchor",
       "old_magazine_anchor": "empty_old_mag_round_anchor",
       "geometry": "apocalypse_firstlight:geo/50_ae_round.geo.json",
-      "texture": "apocalypse_firstlight:textures/item/blackridge_50ae_ammo_v1.png"
+      "texture": "apocalypse_firstlight:textures/item/blackridge_50ae_ammo_v1.png",
+      "item_rounds": [[0, -0.08829, 1.14183, -90]]
     }
   },
   "recoil": {
@@ -68,5 +68,11 @@
     "horizontalRecoveryTime": 0.2,
     "horizontalLeftMin": 0.10,
     "horizontalRightMin": 0.10
+  },
+  "magazine_slot": {
+    "hotspot_anchor": "magazine",
+    "hotspot_offset": [0, -3.64, 1.0],
+    "standard": "apocalypse_firstlight:blackridge_50_magazine",
+    "accepts": ["apocalypse_firstlight:blackridge_50_magazine"]
   }
 }

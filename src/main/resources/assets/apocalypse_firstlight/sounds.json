@@ -253,29 +253,26 @@
   "silverwood_12_close": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/silverwood_12_close", "stream": false}]
   },
-  "blackridge_50_fire": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_fire", "stream": false}]
-  },
+  "blackridge_50_fire": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.fire", "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/fire", "stream": false}]},
+  "blackridge_50_fire_near": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.fire", "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/fire_near", "stream": false}]},
+  "blackridge_50_dry_fire": {"sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/dry_fire", "stream": false}]},
+  "blackridge_50_draw": {"sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_draw", "stream": false}]},
+  "blackridge_50_put_away": {"sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_put_away", "stream": false}]},
+  "blackridge_50_foley_lower": {"sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_foley_lower", "stream": false}]},
+  "blackridge_50_magazine_release": {"sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/magazine_release", "stream": false}]},
+  "blackridge_50_magazine_out": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.magazine_out", "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/magazine_out", "stream": false}]},
+  "blackridge_50_magazine_in": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.magazine_in", "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/magazine_in", "stream": false}]},
+  "blackridge_50_magazine_seat": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.magazine_in", "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/magazine_seat", "stream": false}]},
+  "blackridge_50_slide_back": {"sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/slide_back", "stream": false}]},
+  "blackridge_50_slide_release": {"sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/slide_release", "stream": false}]},
+  "blackridge_50_safety": {"sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50_v2/safety", "stream": false}]},
+  "blackridge_50_mag_load": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.mag_load", "sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_1", "pitch": 0.85, "attenuation_distance": 8}, {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_2", "pitch": 0.85, "attenuation_distance": 8}, {"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_3", "pitch": 0.85, "attenuation_distance": 8}]},
+  "blackridge_50_mag_load_last": {"subtitle": "subtitles.apocalypse_firstlight.p9_01.mag_load", "sounds": [{"name": "apocalypse_firstlight:weapons/p9_01/p9_01_mag_load_last", "pitch": 0.85, "attenuation_distance": 8}]},
   "blackridge_50_suppressed": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_suppressed", "stream": false}]
   },
-  "blackridge_50_magazine_release": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_release", "stream": false}]
-  },
-  "blackridge_50_magazine_out": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_out", "stream": false}]
-  },
   "blackridge_50_magazine_flick": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_flick", "stream": false}]
-  },
-  "blackridge_50_magazine_in": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_in", "stream": false}]
-  },
-  "blackridge_50_slide_back": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_slide_back", "stream": false}]
-  },
-  "blackridge_50_slide_release": {
-    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_slide_release", "stream": false}]
   },
   "blackridge_50_safety_lever": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_safety_lever", "stream": false}]

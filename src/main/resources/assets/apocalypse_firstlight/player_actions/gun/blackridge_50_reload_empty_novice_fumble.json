@@ -1,0 +1,613 @@
+{
+  "format_version": 1,
+  "about": "Blackridge .50 empty reload, novice tier, fumbled (gun/blackridge_50_reload_empty_novice_fumble; docs/native_guns/blackridge_50_remake_v1.md 12.4, docs/dev/gun_proficiency_v1_plan.md 4): the gun is worked close to the body, tipped up to look into the magwell, the old magazine drops, a fresh one comes from the belt pouch and is guided in crooked, stops on the edge, comes out and goes in on the second try, then a second look; the support hand racks the slide overhand; back to the chest ready. Same beats and length as the first-person clip. Written by tools/author-blackridge-50-reload-actions.mjs.",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 60,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0.12,
+    "out": 0.2
+  },
+  "length": 6.03,
+  "props": [
+    {
+      "id": "blackridge_50",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.3,
+            6.6,
+            -7.4
+          ],
+          "rot": [
+            -156.887,
+            5.521,
+            177.648
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.8,
+            3,
+            -7.6
+          ],
+          "rot": [
+            141.384,
+            9.43,
+            -152.544
+          ],
+          "blend": 0.68
+        },
+        {
+          "at": 0.74,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.2,
+            3.4,
+            -7.4
+          ],
+          "rot": [
+            145.195,
+            11.57,
+            -148.063
+          ],
+          "blend": 1.53
+        },
+        {
+          "at": 2.59,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.8,
+            3,
+            -7.6
+          ],
+          "rot": [
+            141.384,
+            9.43,
+            -152.544
+          ],
+          "blend": 0.34
+        },
+        {
+          "at": 2.97,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.2,
+            3.4,
+            -7.4
+          ],
+          "rot": [
+            145.195,
+            11.57,
+            -148.063
+          ],
+          "blend": 0.61
+        },
+        {
+          "at": 3.6,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.6,
+            3.2,
+            -7.6
+          ],
+          "rot": [
+            140.897,
+            12.545,
+            -153.988
+          ],
+          "blend": 0.14
+        },
+        {
+          "at": 3.68,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -0.8,
+            2.8,
+            -7.6
+          ],
+          "rot": [
+            138.237,
+            15.189,
+            -154.832
+          ],
+          "blend": 0.18
+        },
+        {
+          "at": 4.05,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.4,
+            3.2,
+            -11
+          ],
+          "rot": [
+            162.574,
+            23.016,
+            156.996
+          ],
+          "blend": 0.55
+        },
+        {
+          "at": 5.27,
+          "frame": "chest",
+          "point": "grip_r",
+          "pos": [
+            -1.3,
+            6.6,
+            -7.4
+          ],
+          "rot": [
+            -156.887,
+            5.521,
+            177.648
+          ],
+          "blend": 0.54
+        }
+      ]
+    },
+    {
+      "id": "blackridge_50_mag",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5.2,
+            10.4,
+            -4.6
+          ],
+          "rot": [
+            158,
+            0,
+            -180
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.85,
+          "frame": "bone:pelvis",
+          "point": "base",
+          "pos": [
+            5.2,
+            10.4,
+            -4.6
+          ],
+          "rot": [
+            158,
+            0,
+            -180
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.87,
+          "frame": "chest",
+          "point": "base",
+          "pos": [
+            2.4,
+            8.6,
+            -6.8
+          ],
+          "rot": [
+            152.85,
+            16.126,
+            -131.894
+          ],
+          "blend": 0.55
+        },
+        {
+          "at": 1.44,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            0.697,
+            -1.279
+          ],
+          "rot": [
+            7,
+            0,
+            9
+          ],
+          "blend": 0.59
+        },
+        {
+          "at": 2.03,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            0.21,
+            -1.192
+          ],
+          "rot": [
+            7,
+            0,
+            9
+          ],
+          "blend": 0.26
+        },
+        {
+          "at": 2.59,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            1.135,
+            -1.357
+          ],
+          "rot": [
+            7,
+            0,
+            9
+          ],
+          "blend": 0.16
+        },
+        {
+          "at": 2.75,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            0.697,
+            -1.279
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.18
+        },
+        {
+          "at": 2.93,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            -2.123,
+            -0.774
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.55
+        },
+        {
+          "at": 3.56,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            -2.707,
+            -0.67
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.04
+        },
+        {
+          "at": 3.6,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            -2.707,
+            -0.67
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "blackridge_50_mag_old",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            -2.707,
+            -0.67
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0,
+          "hidden": true
+        },
+        {
+          "at": 0.89,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            -2.707,
+            -0.67
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 0.89,
+          "frame": "prop:blackridge_50",
+          "point": "top",
+          "pos": [
+            0,
+            1.135,
+            -1.357
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.08
+        },
+        {
+          "at": 0.97,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.645,
+            4.853,
+            -7.425
+          ],
+          "rot": [
+            116.276,
+            13.543,
+            -140.295
+          ],
+          "blend": 0.0998
+        },
+        {
+          "at": 1.0698,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.645,
+            7.196,
+            -7.645
+          ],
+          "rot": [
+            90.337,
+            17.533,
+            -128.323
+          ],
+          "blend": 0.0998
+        },
+        {
+          "at": 1.1695,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.645,
+            11.102,
+            -7.864
+          ],
+          "rot": [
+            64.398,
+            21.524,
+            -116.352
+          ],
+          "blend": 0.0998
+        },
+        {
+          "at": 1.2693,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.645,
+            16.57,
+            -8.084
+          ],
+          "rot": [
+            38.459,
+            25.514,
+            -104.38
+          ],
+          "blend": 0.0998
+        },
+        {
+          "at": 1.3691,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.645,
+            23.6,
+            -8.303
+          ],
+          "rot": [
+            12.52,
+            29.505,
+            -92.408
+          ],
+          "blend": 0.0998
+        },
+        {
+          "at": 1.4888,
+          "frame": "root",
+          "point": "top",
+          "pos": [
+            -0.645,
+            23.6,
+            -8.303
+          ],
+          "rot": [
+            12.52,
+            29.505,
+            -92.408
+          ],
+          "blend": 0,
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "blackridge_50_rack",
+      "keys": [
+        {
+          "at": 0,
+          "frame": "prop:blackridge_50",
+          "point": "hand",
+          "pos": [
+            0,
+            -3.639,
+            -4.21
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 4.73,
+          "frame": "prop:blackridge_50",
+          "point": "hand",
+          "pos": [
+            0,
+            -3.639,
+            -4.25
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.27
+        },
+        {
+          "at": 5.14,
+          "frame": "prop:blackridge_50",
+          "point": "hand",
+          "pos": [
+            0,
+            -3.639,
+            -4.25
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0
+        },
+        {
+          "at": 5.14,
+          "frame": "prop:blackridge_50",
+          "point": "hand",
+          "pos": [
+            0,
+            -3.639,
+            -2.125
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "blend": 0.03
+        }
+      ]
+    }
+  ],
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:blackridge_50:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.27,
+          0.89,
+          0.37
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:blackridge_50:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      },
+      {
+        "at": 0.02,
+        "target": "prop:blackridge_50_mag:base",
+        "blend": 0.83,
+        "roll": 0,
+        "pole": [
+          0.6,
+          0.6,
+          -0.3
+        ]
+      },
+      {
+        "at": 3.64,
+        "target": "prop:blackridge_50_rack:hand",
+        "blend": 0.9599999999999995,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      },
+      {
+        "at": 5.27,
+        "target": "prop:blackridge_50:grip_l",
+        "blend": 0.4400000000000004,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      }
+    ]
+  },
+  "events": []
+}

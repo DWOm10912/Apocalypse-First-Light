@@ -265,3 +265,13 @@ BR-51 改成 M14 式机构的同时接入这套弹匣规则（[BR-51 V3 游戏�
   - 30 发和弹鼓的物品抬高跟 20 发不同，压弹时用的是 20 发的道具点，它们的供弹口离子弹差 0.65 / 0.40 px（模型）。
   - 压弹动作没有自己的 AFL Rig 源文件，是从 P9 的换算出来的；要单独调时在插件里另做一份。
 
+## 11. Blackridge .50 V2（2026-10-28）
+
+Blackridge 换成 V2 模型的同时接入这套弹匣规则（[Blackridge 重做](blackridge_50_remake_v1.md) 第 12 节）。编译通过，离线核对过，**没进游戏看过**。
+
+- 弹匣物品 `blackridge_50_magazine`：7 发钢制单排，枪自己的 `magazine` 骨骼（`tools/build-blackridge-50-magazine.mjs`），用枪的贴图，不替换骨骼；物品立直 10.15°，抬高 3.55866 px；0.11 kg（估计），默认 1×1 格。
+- 最上面的子弹：枪里一发（`magazine_round_anchor`，换弹进来的 `mag_out_round_anchor`，出去的 `empty_old_mag_round_anchor`）；手里的弹匣 `item_rounds` 一行 `[0, -0.08829, 1.14183, -90]`。
+- 换弹 2.45 s / 空仓 2.70 s，弹匣在 1.25 s / 1.30 s 到位（`mag_in_tick` 25、`empty_mag_in_tick` 26）；没弹匣换弹早 0.1 s。
+- 取下弹匣 `unload` / `unload_empty`（1.45 s，和 P9 同一套节拍），第一、第三人称都有。
+- 压弹（第三人称）`gun/blackridge_50_mag_load`：`tools/build-blackridge-50-mag-load.mjs` 从 P9 的换算，道具 `player_props/blackridge_50_magazine.json`、`50_ae_round.json`；压弹声是 P9 的录音降调（0.85）。
+

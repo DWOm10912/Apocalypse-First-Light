@@ -1,0 +1,336 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.blackridge_50_v2_native",
+				"texture_width": 2048,
+				"texture_height": 2048,
+				"visible_bounds_width": 20,
+				"visible_bounds_height": 12,
+				"visible_bounds_offset": [
+					0,
+					4,
+					0
+				]
+			},
+			"bones": [
+				{
+					"name": "root",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "handling",
+					"parent": "root",
+					"pivot": [
+						0,
+						3,
+						2.06
+					]
+				},
+				{
+					"name": "gun_body",
+					"parent": "handling",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "barrel",
+					"parent": "gun_body",
+					"pivot": [
+						0,
+						6.29603,
+						-5.12063
+					]
+				},
+				{
+					"name": "muzzle_anchor",
+					"parent": "barrel",
+					"pivot": [
+						0,
+						6.29603,
+						-10.00581
+					]
+				},
+				{
+					"name": "chamber_round_anchor",
+					"parent": "barrel",
+					"pivot": [
+						0,
+						6.29603,
+						-1.76575
+					],
+					"rotation": [
+						90,
+						0,
+						0
+					]
+				},
+				{
+					"name": "front_sight",
+					"parent": "barrel",
+					"pivot": [
+						0,
+						7.54969,
+						-9.35838
+					]
+				},
+				{
+					"name": "sight_anchor",
+					"parent": "barrel",
+					"pivot": [
+						0,
+						7.87341,
+						-9.35838
+					]
+				},
+				{
+					"name": "trigger",
+					"parent": "gun_body",
+					"pivot": [
+						0,
+						4.5303,
+						-0.38259
+					]
+				},
+				{
+					"name": "hammer",
+					"parent": "gun_body",
+					"pivot": [
+						0,
+						5.06002,
+						3.67858
+					]
+				},
+				{
+					"name": "slide_stop",
+					"parent": "gun_body",
+					"pivot": [
+						0.82401,
+						4.50087,
+						1.648
+					]
+				},
+				{
+					"name": "magazine_release",
+					"parent": "gun_body",
+					"pivot": [
+						0.82401,
+						2.85286,
+						0.23541
+					]
+				},
+				{
+					"name": "slide",
+					"parent": "handling",
+					"pivot": [
+						0,
+						6.29603,
+						1.648
+					]
+				},
+				{
+					"name": "bolt",
+					"parent": "slide",
+					"pivot": [
+						0,
+						6.33723,
+						-1.05945
+					]
+				},
+				{
+					"name": "safety",
+					"parent": "slide",
+					"pivot": [
+						0,
+						6.27837,
+						2.97229
+					]
+				},
+				{
+					"name": "rear_sight",
+					"parent": "slide",
+					"pivot": [
+						0,
+						7.54969,
+						2.76629
+					]
+				},
+				{
+					"name": "ejection_anchor",
+					"parent": "slide",
+					"pivot": [
+						-0.52972,
+						6.64917,
+						-1.35374
+					]
+				},
+				{
+					"name": "magazine",
+					"parent": "handling",
+					"pivot": [
+						0,
+						5.47202,
+						1.35371
+					]
+				},
+				{
+					"name": "follower",
+					"parent": "magazine",
+					"pivot": [
+						0,
+						5.47202,
+						1.35371
+					]
+				},
+				{
+					"name": "magazine_round_anchor",
+					"parent": "magazine",
+					"pivot": [
+						0,
+						5.38373,
+						2.49555
+					],
+					"rotation": [
+						90,
+						0,
+						0
+					]
+				},
+				{
+					"name": "righthand",
+					"parent": "handling",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "right_hand_anchor",
+					"parent": "righthand",
+					"pivot": [
+						0,
+						3,
+						2.06
+					]
+				},
+				{
+					"name": "lefthand",
+					"parent": "root",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "lefthand_pos",
+					"parent": "lefthand",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "left_hand_anchor",
+					"parent": "lefthand_pos",
+					"pivot": [
+						1.5,
+						4,
+						0.5
+					]
+				},
+				{
+					"name": "mag_out",
+					"parent": "root",
+					"pivot": [
+						0,
+						5.47202,
+						1.35371
+					]
+				},
+				{
+					"name": "reload_magazine",
+					"parent": "mag_out",
+					"pivot": [
+						0,
+						5.47202,
+						1.35371
+					]
+				},
+				{
+					"name": "mag_out_round_anchor",
+					"parent": "reload_magazine",
+					"pivot": [
+						0,
+						5.38373,
+						2.49555
+					],
+					"rotation": [
+						90,
+						0,
+						0
+					]
+				},
+				{
+					"name": "empty_old_mag",
+					"parent": "root",
+					"pivot": [
+						0,
+						5.47202,
+						1.35371
+					]
+				},
+				{
+					"name": "empty_old_mag_round_anchor",
+					"parent": "empty_old_mag",
+					"pivot": [
+						0,
+						5.38373,
+						2.49555
+					],
+					"rotation": [
+						90,
+						0,
+						0
+					]
+				},
+				{
+					"name": "positioning",
+					"parent": "root",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "maintenance_anchor",
+					"parent": "root",
+					"pivot": [
+						0,
+						4.00058,
+						-2.17775
+					]
+				},
+				{
+					"name": "camera",
+					"pivot": [
+						0,
+						12,
+						18
+					]
+				}
+			]
+		}
+	]
+}

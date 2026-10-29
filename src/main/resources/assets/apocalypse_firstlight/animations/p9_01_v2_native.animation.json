@@ -2096,11 +2096,6 @@
             }
           }
         }
-      },
-      "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:p9_01_draw"
-        }
       }
     },
     "put_away": {
@@ -2953,11 +2948,6 @@
               ]
             }
           }
-        }
-      },
-      "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:p9_01_put_away"
         }
       }
     },
@@ -5512,9 +5502,6 @@
         }
       },
       "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:p9_01_draw"
-        },
         "0.45": {
           "effect": "apocalypse_firstlight:p9_01_slide_back"
         },

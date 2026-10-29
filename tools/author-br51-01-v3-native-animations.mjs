@@ -220,7 +220,7 @@ clips.push(clip('draw', 0.6, 'once', () => {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
         lefthand: lhTracks(LH),
         camera: {rotation: t => sum(mul([-1.2, 0.5, 1.0], 1 - go(t, 0.02, 0.32, {antic: 0, over: 0.1})), jolt(t, 0.38, [0.5, -0.15, -0.3]))},
-    }, sounds: [[0, 'draw']]};
+    }, sounds: []};   // no draw / put-away sound on any gun: the material differs per gun (user 2026-10-29)
 }));
 
 // Put away: the support hand off the forend first, then down out low right.
@@ -232,7 +232,7 @@ clips.push(clip('put_away', 0.55, 'once', () => {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
         lefthand: lhTracks(LH),
         camera: {rotation: t => mul([-1.0, 0.4, 0.9], ease(t, 0.1, 0.48))},
-    }, sounds: [[0, 'put_away']]};
+    }, sounds: []};   // no draw / put-away sound on any gun: the material differs per gun (user 2026-10-29)
 }));
 
 // The firing hand racks the operating rod: off the wrist (the support hand holds the forend), onto the handle, pulled to
@@ -266,7 +266,7 @@ clips.push(clip('first_draw', 1.4, 'once', () => {
         lefthand: lhTracks(LH),
         ...mechT(c.op),
         camera: {rotation: t => sum(mul([-1.2, 0.5, 1.0], 1 - go(t, 0.02, 0.34, {antic: 0, over: 0.1})), mul(c.hits(t), 0.35))},
-    }, sounds: [[0, 'draw'], [T.pull - 0.01, 'charging_back'], [T.let - 0.01, 'charging_release']], timing: T};
+    }, sounds: [[T.pull - 0.01, 'charging_back'], [T.let - 0.01, 'charging_release']], timing: T};
 }));
 
 // ---------- reloads and inspects: hand-keyed (docs/native_guns/br51_animation_redo_v1.md) ----------

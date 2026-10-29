@@ -1,8 +1,8 @@
 {
   "loader": "forge:separate_transforms",
   "gui_light": "front",
-  "textures": {"particle": "apocalypse_firstlight:item/blackridge_50"},
-  "base": {"parent": "apocalypse_firstlight:item/blackridge_50_in_hand"},
+  "textures": {"particle": "apocalypse_firstlight:item/blackridge_50_v2_native"},
+  "base": {"parent": "apocalypse_firstlight:item/blackridge_50_v2_native_in_hand"},
   "perspectives": {
     "gui": {
       "parent": "minecraft:item/generated",

@@ -74,10 +74,22 @@ public final class AflItems {
                             "muzzle_right_anchor", null)));
     public static final RegistryObject<Item> BLACKRIDGE_50 = ITEMS.register("blackridge_50", () ->
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "blackridge_50"),
-                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("blackridge_50", "static_idle",
-                            java.util.List.of("static_idle", "static_bolt_caught", "shoot", "draw", "put_away",
-                                    "reload_tactical", "reload_empty", "inspect", "inspect_empty"),
-                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor",
+                    // V2 (docs/native_guns/blackridge_50_remake_v1.md 11-12): the game model on the P9 hand point, its own
+                    // clips (tools/author-blackridge-50-v2-native-animations.mjs); the old blackridge_50 rig stays in the tree
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("blackridge_50_v2_native", "static_idle",
+                            java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty", "reload_tactical_no_mag",
+                                    "reload_empty_no_mag", "shoot", "draw", "first_draw", "put_away", "inspect", "inspect_empty",
+                                    "inspect_no_mag", "inspect_empty_no_mag", "unload", "unload_empty",
+                                    // round 2: the ADS reloads
+                                    "reload_tactical_ads", "reload_empty_ads", "reload_tactical_no_mag_ads", "reload_empty_no_mag_ads",
+                                    // round 3: proficiency tiers (NativeReloadTiers)
+                                    "reload_tactical_experienced", "reload_empty_experienced", "reload_tactical_novice", "reload_empty_novice",
+                                    "reload_tactical_novice_fumble", "reload_empty_novice_fumble",
+                                    "reload_tactical_experienced_ads", "reload_empty_experienced_ads",
+                                    "reload_tactical_no_mag_experienced", "reload_empty_no_mag_experienced", "reload_tactical_no_mag_novice",
+                                    "reload_empty_no_mag_novice", "reload_tactical_no_mag_novice_fumble", "reload_empty_no_mag_novice_fumble",
+                                    "reload_tactical_no_mag_experienced_ads", "reload_empty_no_mag_experienced_ads"),
+                            java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> CAT = ITEMS.register("cat", () ->
             new com.antaurora.apofirstlight.weapon.CatNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "cat"),
@@ -208,6 +220,10 @@ public final class AflItems {
     public static final RegistryObject<Item> BR51_DRUM_MAGAZINE_50 = ITEMS.register("br51_drum_magazine_50",
             () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",50,
                     java.util.Set.of("magazine","reload_magazine","empty_old_mag"),false,4.14022f,0f,"br51_01_v3_mags"));
+    // Blackridge .50 V2 7-round magazine (tools/build-blackridge-50-magazine.mjs): the gun's own magazine bone as an item,
+    // drawn with the gun's texture, replaces no bone; the 10.15 deg rake taken out for the item.
+    public static final RegistryObject<Item> BLACKRIDGE_50_MAGAZINE = ITEMS.register("blackridge_50_magazine",
+            () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("blackridge_50",7,java.util.Set.of(),false,3.55866f,10.15f,"blackridge_50_v2_native"));
     public static final RegistryObject<Item> PISTOL_SUPPRESSOR_01 = ITEMS.register("pistol_suppressor_01",
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> RIFLE_SUPPRESSOR_01 = ITEMS.register("rifle_suppressor_01",

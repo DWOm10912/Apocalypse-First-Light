@@ -1,0 +1,24 @@
+{
+  "about": "Where the support hand takes the Blackridge .50's slide for an overhand rack (docs/native_guns/blackridge_50_remake_v1.md 12.4): no look of its own; keyed on the gun prop at the slide's rear top, moved with the slide. Written by tools/author-blackridge-50-reload-actions.mjs.",
+  "items": [],
+  "scale": 0.49467,
+  "bounds": [
+    [
+      -0.01,
+      -0.01,
+      -0.01
+    ],
+    [
+      0.01,
+      0.01,
+      0.01
+    ]
+  ],
+  "points": {
+    "hand": [
+      0,
+      0.459716,
+      0.268537
+    ]
+  }
+}

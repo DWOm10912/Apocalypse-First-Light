@@ -169,7 +169,11 @@ public final class GunStance {
             "br51_01", new Carried(Kind.RIFLE, 0.307F, "br51_01_v3_native", 1.25F, new Vector3f(0F, 7F, 26.7F),
                     new Support(new Vector3f(-0.2F, 8.6F, SUPPORT_Z), SUPPORT_DOWN, SUPPORT_OUT, SUPPORT_ROLL, SUPPORT_POLE), 0F, 0F),
             "p9_01", new Carried(Kind.PISTOL, 0.261F, "p9_01_v3_native", 0.49467F / 0.261F, null, null, GunStance.P9_HAND_DROP,
-                    GunStance.P9_SUPPORT_DROP));
+                    GunStance.P9_SUPPORT_DROP),
+            // the Blackridge V2 on the P9's ruler and hand point: the P9's size on the body and its hands, so every pistol
+            // is held alike (user 2026-10-28; docs/native_guns/blackridge_50_remake_v1.md 12)
+            "blackridge_50", new Carried(Kind.PISTOL, 0.261F, "blackridge_50_v2_native", 0.49467F / 0.261F, null, null,
+                    GunStance.P9_HAND_DROP, GunStance.P9_SUPPORT_DROP));
 
     /**
      * The P9's hands under their anchors (model px; Carried#handDrop, #supportDrop), measured on the posed block hands in

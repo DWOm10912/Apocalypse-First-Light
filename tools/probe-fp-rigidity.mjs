@@ -13,7 +13,7 @@ import {fileURLToPath} from 'node:url';
 const root = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), 'src/main/resources/assets/apocalypse_firstlight');
 const guns = process.argv.length > 2 ? process.argv.slice(2) : ['p9_01_v3_native', 'br51_01_v3_native'];
 // forearm length = 12 px x 0.78 presentation / the gun's FP display scale (tools/build-*-native.mjs ARM_LEN)
-const ARM_LEN = {p9_01_v3_native: 12 * 0.78 / 0.53, br51_01_v3_native: 12 * 0.78 / 0.45};
+const ARM_LEN = {p9_01_v3_native: 12 * 0.78 / 0.53, blackridge_50_v2_native: 12 * 0.78 / 0.53, br51_01_v3_native: 12 * 0.78 / 0.45};
 const D = Math.PI / 180;
 const BUTT = {br51_01_v3_native: [0.44, 9.28, 26.75]};   // rear of the buttplate (aflmesh gun_body, geo x negated)
 const mm = (a, b) => a.map(r => [0, 1, 2].map(j => r[0] * b[0][j] + r[1] * b[1][j] + r[2] * b[2][j]));

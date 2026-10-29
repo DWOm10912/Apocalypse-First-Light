@@ -1,0 +1,42 @@
+{
+  "about": "The Blackridge .50 magazine in the hand while it is loaded (gun/blackridge_50_mag_load; docs/native_guns/magazine_system_v1.md 4, docs/native_guns/blackridge_50_remake_v1.md 12): the held magazine item as NativeMagazineRendering draws it, straightened (item block units: the magazine pivot at (0.5, 0.5 + lift / 16, 0.5), the lips up, the front at -z). Scale as the pistols on the body (GunStance.Carried, the P9-01's), so it is the gun's own magazine size. Points from the straightened item mesh: top (the feed lips, where a round is pressed in), grip (the middle of the body), base (the base pad), hold_l (the left palm on the magazine's left side, low, as the P9-01's). Symmetry x. Written by tools/build-blackridge-50-mag-load.mjs.",
+  "items": [
+    "blackridge_50_magazine"
+  ],
+  "scale": 0.49467,
+  "symmetry": "x",
+  "bounds": [
+    [
+      0.4529,
+      0.2607,
+      0.3775
+    ],
+    [
+      0.5471,
+      0.7393,
+      0.5804
+    ]
+  ],
+  "points": {
+    "top": [
+      0.5,
+      0.7393,
+      0.5016
+    ],
+    "grip": [
+      0.5,
+      0.5,
+      0.479
+    ],
+    "base": [
+      0.5,
+      0.2607,
+      0.5544
+    ],
+    "hold_l": [
+      0.2201,
+      0.3962,
+      0.53
+    ]
+  }
+}

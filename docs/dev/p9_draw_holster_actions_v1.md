@@ -200,3 +200,7 @@
   - `client/skeleton/PlayerSkeleton.java`：拿枪时只放 `gun/` 动作，不拿枪时不放。
 - 插件和工具：`tools/blockbench/afl_rig.js`（第 11 节）、`GunPropExport.java` + `build.gradle` 任务 `gunPropExport`、`AflRigParity` 加两个动作、`ActionCheck` 加 7 个场景。
 - 资源：`player_props/p9_01.json`、两个动作、`animations/player/gun.animation.json`、`src/main/blockbench/player_actions/p9_01_actions.bbmodel`（原 `p9_01_draw_holster.bbmodel`）。
+
+### 2026-10-29：掏枪、收枪不放音效
+
+用户 2026-10-29：「我觉得不能给掏枪和收枪做音效，因为每把枪的材质不一样，P9的可能很不错，但是BR就不行，干脆都别做了」。所有枪的 `draw` / `put_away` / `first_draw` 片段都去掉了掏枪 / 收枪音效（`first_draw` 的上膛声保留），见 [blackridge_50_remake_v1.md](../native_guns/blackridge_50_remake_v1.md) 12.7。以后新枪也不做。

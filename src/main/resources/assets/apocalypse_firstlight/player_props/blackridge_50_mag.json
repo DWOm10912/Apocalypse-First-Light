@@ -1,0 +1,33 @@
+{
+  "about": "The Blackridge .50's fresh magazine as a player action's prop (docs/native_guns/blackridge_50_remake_v1.md 12): the gun's own mag_out bone, drawn by the gun renderer where the action places this prop (gun_part); its frame is the gun's (the magazine seated when it sits on the gun prop unturned), same scale. Points: top (the magazine pivot), base (the base plate). Written by tools/author-blackridge-50-reload-actions.mjs.",
+  "items": [],
+  "gun_part": {
+    "gun": "blackridge_50",
+    "bone": "mag_out"
+  },
+  "scale": 0.49467,
+  "bounds": [
+    [
+      -0.047086,
+      -0.099431,
+      0.001838
+    ],
+    [
+      0.047086,
+      0.361682,
+      0.239108
+    ]
+  ],
+  "points": {
+    "top": [
+      0,
+      0.342001,
+      0.084607
+    ],
+    "base": [
+      0,
+      -0.099431,
+      0.218876
+    ]
+  }
+}

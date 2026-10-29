@@ -329,9 +329,14 @@ public final class AflSounds {
             .map(action -> SOUND_EVENTS.register("silverwood_12_" + action, () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "silverwood_12_" + action))))
             .toList();
+    /** Blackridge .50 V2 (tools/build-blackridge-50-sounds.mjs): the clips' cues (animations/blackridge_50_v2_native), its own
+     *  dry fire, the magazine press (NativeMagazineLoading: the P9's takes pitched down in sounds.json); foley_lower is the P9's;
+     *  draw and put_away (the P9's) stay registered, no clip plays them (no gun has draw / put-away sounds, user 2026-10-29).
+     *  suppressed, magazine_flick and safety_lever: the old clips' cues, on the old files. */
     public static final java.util.List<RegistryObject<SoundEvent>> BLACKRIDGE_50 = java.util.stream.Stream.of(
-            "fire", "suppressed", "magazine_release", "magazine_out", "magazine_flick", "magazine_in",
-            "slide_back", "slide_release", "safety_lever")
+            "fire", "suppressed", "dry_fire", "draw", "put_away", "foley_lower", "magazine_release", "magazine_out",
+            "magazine_flick", "magazine_in", "magazine_seat", "slide_back", "slide_release", "safety", "safety_lever",
+            "mag_load", "mag_load_last")
             .map(action -> SOUND_EVENTS.register("blackridge_50_" + action, () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "blackridge_50_" + action))))
             .toList();

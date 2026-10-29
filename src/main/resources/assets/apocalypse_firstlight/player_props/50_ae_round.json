@@ -1,0 +1,42 @@
+{
+  "about": "A loose .50 AE round in the fingers while a Blackridge .50 magazine is loaded (gun/blackridge_50_mag_load): the round item as client/AflStaticMeshItemClient draws it (upright, base at y 0.431217, centred on x / z), at the magazine prop's scale so it matches the magazine. Points: base, mid, tip, and pinch (1.7 px behind the base along the round, 1.5 px off it on +z, as the 9x19 mm round's). Symmetry x. Written by tools/build-blackridge-50-mag-load.mjs.",
+  "items": [
+    "50_ae_round"
+  ],
+  "scale": 0.49467,
+  "symmetry": "x",
+  "bounds": [
+    [
+      0.4767,
+      0.4312,
+      0.4767
+    ],
+    [
+      0.5233,
+      0.5688,
+      0.5233
+    ]
+  ],
+  "points": {
+    "base": [
+      0.5,
+      0.4312,
+      0.5
+    ],
+    "mid": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "tip": [
+      0.5,
+      0.5688,
+      0.5
+    ],
+    "pinch": [
+      0.5,
+      0.2164,
+      0.6895
+    ]
+  }
+}

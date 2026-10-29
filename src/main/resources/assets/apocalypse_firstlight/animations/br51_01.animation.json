@@ -3957,11 +3957,6 @@
             0
           ]
         }
-      },
-      "sound_effects": {
-        "0.0333": {
-          "effect": "apocalypse_firstlight:br51_01_put_away"
-        }
       }
     },
     "draw": {
@@ -4213,11 +4208,6 @@
             0,
             0
           ]
-        }
-      },
-      "sound_effects": {
-        "0.0667": {
-          "effect": "apocalypse_firstlight:br51_01_draw"
         }
       }
     },

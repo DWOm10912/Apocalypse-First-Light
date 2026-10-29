@@ -1,0 +1,68 @@
+{
+  "format_version": 1,
+  "about": "P9 idle, the chest ready (gun/<id>_idle, a stance loop under SkeletonGunStance#hold; docs/dev/p9_stance_loops_v1.md, docs/dev/first_person_gun_view_v1_design.md 4.5): both hands on the gun before the lower chest, the arms angled down to it, the muzzle ahead and 23 degrees down. Keyed in the chest frame: it turns and bends with the chest, not with the look. Third person and the own body only: the own first person shows the gun through its old view model. A shot, aiming, a reload or an inspect raise it (no hip_fire). Weight (1 - raise)(1 - sprint). Keyed in the AFL Rig Blockbench plugin. -- Copied for the blackridge_50 by tools/build-pistol-shared-actions.mjs (every pistol held alike), its own gun prop; do not edit, edit gun/p9_01_idle.",
+  "afl_rig": {
+    "plugin": "0.1.0",
+    "animation": "gun.p9_01_idle"
+  },
+  "layer": "action",
+  "mask": "upper",
+  "priority": 40,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0,
+    "out": 0
+  },
+  "loop": "time",
+  "length": 4,
+  "prop": {
+    "id": "blackridge_50",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip_r",
+        "pos": [
+          -1.3,
+          6.6,
+          -7.4
+        ],
+        "rot": [
+          -156.887,
+          5.521,
+          177.648
+        ],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.27,
+          0.89,
+          0.37
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      }
+    ]
+  },
+  "events": []
+}

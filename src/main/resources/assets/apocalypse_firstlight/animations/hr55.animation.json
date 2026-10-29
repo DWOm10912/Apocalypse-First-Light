@@ -29073,11 +29073,6 @@
             ]
           }
         }
-      },
-      "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:hr55_draw"
-        }
       }
     },
     "put_away": {
@@ -29340,11 +29335,6 @@
               0
             ]
           }
-        }
-      },
-      "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:hr55_put_away"
         }
       }
     },

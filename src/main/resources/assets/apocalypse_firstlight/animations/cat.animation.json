@@ -4401,11 +4401,6 @@
             ]
           }
         }
-      },
-      "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:cat_draw"
-        }
       }
     },
     "put_away": {
@@ -4652,11 +4647,6 @@
               1
             ]
           }
-        }
-      },
-      "sound_effects": {
-        "0.0": {
-          "effect": "apocalypse_firstlight:cat_put_away"
         }
       }
     },

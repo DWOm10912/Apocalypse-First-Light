@@ -199,7 +199,7 @@ clips.push(clip('draw', 0.5, 'once', () => {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
         lefthand: lhTracks(LH),
         camera: {rotation: t => sum(mul([-1.2, 0.5, 1.0], 1 - go(t, 0.02, 0.24, {antic: 0, over: 0.1})), jolt(t, 0.3, [0.6, -0.15, -0.3]))},
-    }, sounds: [[0, 'draw']]};
+    }, sounds: []};   // no draw / put-away sound on any gun: the material differs per gun (user 2026-10-29)
 }));
 
 // Put away: support hand off first, then the gun rolls in and drops out low right.
@@ -211,7 +211,7 @@ clips.push(clip('put_away', 0.5, 'once', () => {
         handling: {position: t => H(t).pos, rotation: t => H(t).rot},
         lefthand: lhTracks(LH),
         camera: {rotation: t => mul([-1.0, 0.4, 0.9], go(t, 0.08, 0.42, {antic: 0, over: 0}))},
-    }, sounds: [[0, 'put_away']]};
+    }, sounds: []};   // no draw / put-away sound on any gun: the material differs per gun (user 2026-10-29)
 }));
 
 // First draw (first equip / empty chamber): up to chest-left with the slide rolled toward the eye, the support hand
@@ -234,7 +234,7 @@ clips.push(clip('first_draw', 1.2, 'once', () => {
         slide: {position: t => [0, 0, slide(t)]},
         lefthand: lhTracks(LH),
         camera: {rotation: t => sum(mul([-1.4, 0.6, 1.2], 1 - go(t, 0.02, 0.3, {antic: 0, over: 0.1})), mul(hits(t), 0.35))},
-    }, sounds: [[0, 'draw'], [T.pull - 0.01, 'slide_back'], [T.let - 0.005, 'slide_release']]};
+    }, sounds: [[T.pull - 0.01, 'slide_back'], [T.let - 0.005, 'slide_release']]};
 }));
 
 // ---------- trained-tier reloads and inspects (docs/dev/p9_reload_inspect_v1.md, 2026-10-17) ----------

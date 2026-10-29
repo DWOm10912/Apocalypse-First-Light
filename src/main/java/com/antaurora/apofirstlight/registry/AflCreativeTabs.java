@@ -283,6 +283,7 @@ public final class AflCreativeTabs {
             AflItems.HEAVY_SUPPRESSOR_01,
             AflItems.P9_01_MAGAZINE,
             AflItems.P9_01_EXTENDED_MAGAZINE,
+            AflItems.BLACKRIDGE_50_MAGAZINE,
             AflItems.BR51_01_MAGAZINE,
             AflItems.BR51_01_EXTENDED_MAGAZINE,
             AflItems.BR51_DRUM_MAGAZINE_50);

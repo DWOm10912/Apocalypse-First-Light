@@ -1,0 +1,30 @@
+{
+  "about": "The blackridge_50 as a player action's prop (docs/dev/p9_draw_holster_actions_v1.md 2.1-2.3), written by ./gradlew gunPropExport (src/test/.../skeleton/GunPropExport): its bare GeckoLib frame (blocks), its size on the body (GunStance), the hand anchors at static_idle 0 s (each hand's drop lower) with the kind's grips, the thigh holster at rest. Do not edit.",
+  "items": ["blackridge_50"],
+  "gun": "blackridge_50",
+  "scale": 0.49467,
+  "bounds": [[-0.072101, -0.099431, -0.623524], [0.072101, 0.467699, 0.378895]],
+  "points": {
+    "grip_r": [0.0, -0.070255, 0.059372],
+    "grip_l": [-0.031846, -0.149154, 0.128908],
+    "muzzle": [0.0, 0.393502, -0.625363]
+  },
+  "grips": {
+    "grip_r": {
+      "pos": [0.0, -0.070255, 0.059372],
+      "quat": [0.0, -0.710634, 0.703562, 0.0],
+      "grip": [-5.0, 15.0, -10.0]
+    },
+    "grip_l": {
+      "pos": [-0.031846, -0.149154, 0.128908],
+      "quat": [0.124098, 0.702809, -0.688935, 0.126597],
+      "grip": [-35.0, 15.0, 30.0]
+    }
+  },
+  "carry": {
+    "bone": "thigh_r",
+    "pos": [-5.15, 14.214981, 2.721708],
+    "quat": [0.0, -0.707107, -0.707107, 0.0],
+    "scale": 1.0
+  }
+}

@@ -2,7 +2,7 @@
 // Rebuilds the in-game chain: [P9 composition offset] -> item Display -> GeckoLib bone matrices (Blockbench source
 // values) -> NativePlayerArmRenderer (canonical anchor, presentation scale .62/.78/.62, Vanilla 4x12x4 arm).
 //   node tools/preview-fp-arms.mjs <gun> <clip> <t1,t2,...> <out.png> [--gun2 <gun> <clip>]
-//   gun = p9_01 (legacy rig) | p9_01_v2_native | p9_01_v3_native | blackridge_50 | br51_01_v3_native; <gun>@ads = fully aimed down the sights;
+//   gun = p9_01 (legacy rig) | p9_01_v2_native | p9_01_v3_native | blackridge_50 | blackridge_50_v2_native | br51_01_v3_native; <gun>@ads = fully aimed down the sights;
 //   <gun>=<path.bbmodel> = the same rig read from a saved copy of its source (old / new comparisons)
 //   (guns with a `def`: NativeGunAds#apply's correction ads() * hip()^-1 on the display, the FOV times ads.fov_multiplier)
 // Colours: grey = gun meshes, amber = magazines, blue = right arm, green = left arm (darker: the elbow and upper arm; FP_UPPER=0 hides them).
@@ -21,6 +21,8 @@ const GUNS = {
   p9_01_v3_native: {src: 'src/main/blockbench/p9_01_v3_native.bbmodel', display: 'models/item/p9_01_v3_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor', kind: 'pistol',
     def: 'src/main/resources/data/apocalypse_firstlight/native_guns/p9_01.json'},
   blackridge_50: {src: 'src/main/blockbench/blackridge_50.bbmodel', display: 'models/item/blackridge_50_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor'},
+  blackridge_50_v2_native: {src: 'src/main/blockbench/blackridge_50_v2_native.bbmodel', display: 'models/item/blackridge_50_v2_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor', kind: 'pistol',
+    def: 'src/main/resources/data/apocalypse_firstlight/native_guns/blackridge_50.json'},
   br51_01_v3_native: {src: 'src/main/blockbench/br51_01_v3_native.bbmodel', display: 'models/item/br51_01_v3_native_in_hand.json', comp: [0, 0], right: 'right_hand_anchor', left: 'left_hand_anchor', kind: 'rifle',
     def: 'src/main/resources/data/apocalypse_firstlight/native_guns/br51_01.json'},
 };
@@ -57,11 +59,11 @@ export function rig(name) {
   const cfg = GUNS[gun], src = read(path.resolve(root, srcOverride ?? cfg.src)), disp = read(path.join(assets, cfg.display)).display.firstperson_righthand;
   const def = cfg.def ? read(path.join(root, cfg.def)) : null;
   if (ads && !def) throw new Error(gun + ': no gun definition for @ads');
-  const fovHalf = 35 * (ads ? def.ads.fov_multiplier : 1);   // vanilla FOV 70 (vertical), ADS times fov_multiplier
+  const fovHalf = +(process.env.FP_FOV || 70) / 2 * (ads ? def.ads.fov_multiplier : 1);   // vanilla FOV 70 (vertical; FP_FOV), ADS times fov_multiplier
   const groups = new Map(src.groups.map(g => [g.uuid, g])), by = new Map(src.groups.map(g => [g.name, g])), parents = new Map(), owner = new Map();
   (function walk(nodes, parent) { for (const n of nodes) { if (typeof n === 'string') owner.set(n, parent); else { const g = groups.get(n.uuid); parents.set(g.name, parent); walk(n.children || [], g.name); } } })(src.outliner, null);
   const r = disp.rotation || [0, 0, 0], tr = disp.translation.map(n => n / 16);
-  const base = ads ? adsBase(def) : chain(T([cfg.comp[0], cfg.comp[1], 0]), T(tr), R(0, r[0]), R(1, r[1]), R(2, r[2]), S(disp.scale), T([0, 0.01, 0]));
+  const base = chain(slide(), ads ? adsBase(def) : chain(T([cfg.comp[0], cfg.comp[1], 0]), T(tr), R(0, r[0]), R(1, r[1]), R(2, r[2]), S(disp.scale), T([0, 0.01, 0])));
   function scene(clip, t) {
     const anim = src.animations.find(a => a.name === clip || a.name.endsWith('.' + clip)), cache = new Map();
     const matrix = name => { if (!name) return base; if (cache.has(name)) return cache.get(name);
@@ -88,14 +90,21 @@ const ARM_BOX = right => right ? [[-3, -2, -2], [1, 10, 2]] : [[-1, -2, -2], [3,
 // The shoulder: the third person's shoulder pivot off the eye (rig afl_humanoid_v1: pivot [±5, 22, 0], eye [0, 27.63, -2.5],
 // chest pivot y 18), the gun kind's shrug and chest twist (GunStance.Kind), model px at the player's 0.9375; FP_SHOULDER_SCALE
 // times that (the view model's own scale shrinks the body about the eye), or FP_SHOULDER=[x,y,z] for both arms mirrored.
+// FP_SLIDE (0..1): the look-down slide out of view (FirstPersonBody#gunSlide, ConfiguredGunFirstPerson), camera space: down
+// 0.7 blocks, and (FP_TILT deg, at most) tipped down about the eye over the second half; the shoulder slides with it
+// (FP_SHOULDER_FIXED=1: it stays, as before 2026-10-28)
+export function slide() {
+  const s = +(process.env.FP_SLIDE || 0), u = Math.min(1, Math.max(0, (s - 0.5) / 0.5));
+  return chain(R(0, -(+process.env.FP_TILT || 0) * u * u * (3 - 2 * u)), T([0, -0.7 * s, 0]));
+}
 const KIND = {rifle: {twist: 30, right: [1.5, 0, -3], left: [0, 0, 0]}, pistol: {twist: 0, right: [0.5, 0, -2], left: [-0.5, 0, -2]}};
 export function shoulder(kind, right) {
   if (process.env.FP_SHOULDER) return JSON.parse(process.env.FP_SHOULDER).map((v, i) => i === 0 && !right ? -v : v);
   const k = KIND[kind] ?? {twist: 0, right: [0, 0, 0], left: [0, 0, 0]}, sh = right ? k.right : k.left, side = right ? 1 : -1;
   const x = side * (5 - sh[0]), y = 4 - sh[1], z = sh[2], a = k.twist * Math.PI / 180;
   const p = [x * Math.cos(a) - z * Math.sin(a), y, x * Math.sin(a) + z * Math.cos(a)];   // the twist: left shoulder forward
-  const s = 0.9375 / 16 * +(process.env.FP_SHOULDER_SCALE || 1);
-  return [p[0] * s, (p[1] - 9.63) * s, (p[2] + 2.5) * s];
+  const s = 0.9375 / 16 * +(process.env.FP_SHOULDER_SCALE || 1), at = [p[0] * s, (p[1] - 9.63) * s, (p[2] + 2.5) * s];
+  return process.env.FP_SHOULDER_FIXED === '1' ? at : pt(slide(), at);
 }
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const nrm = v => sc(v, 1 / Math.hypot(...v));

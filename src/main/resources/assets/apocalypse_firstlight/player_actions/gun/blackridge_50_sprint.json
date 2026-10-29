@@ -1,0 +1,65 @@
+{
+  "format_version": 1,
+  "about": "P9 sprint, the chest ready on the run (gun/<id>_sprint, a stance loop under SkeletonGunStance#hold; docs/dev/p9_stance_loops_v1.md): both hands on the gun before the lower chest as in the idle (the same key, chest frame); its clip gun.p9_01_sprint turns the chest 22 degrees left and right once a stride against the hips (the run's 9), so the arms swing the gun from side to side. Third person and the own body only: the own first person shows the gun through its old view model. Weight: the sprint (SkeletonGunStance lower). User 2026-10-17: run with the idle's hold, the arms swinging left and right (no more one-handed lowered pistol). -- Copied for the blackridge_50 by tools/build-pistol-shared-actions.mjs (every pistol held alike), its own gun prop; do not edit, edit gun/p9_01_sprint.",
+  "clip": "gun.p9_01_sprint",
+  "layer": "action",
+  "mask": "upper",
+  "priority": 40,
+  "first_person": "view_model",
+  "blend": {
+    "in": 0,
+    "out": 0
+  },
+  "loop": "stride",
+  "length": 1,
+  "prop": {
+    "id": "blackridge_50",
+    "keys": [
+      {
+        "at": 0,
+        "frame": "chest",
+        "point": "grip_r",
+        "pos": [
+          -1.3,
+          6.6,
+          -7.4
+        ],
+        "rot": [
+          -156.887,
+          5.521,
+          177.648
+        ],
+        "blend": 0
+      }
+    ]
+  },
+  "hands": {
+    "right": [
+      {
+        "at": 0,
+        "target": "prop:grip_r",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          -0.27,
+          0.89,
+          0.37
+        ]
+      }
+    ],
+    "left": [
+      {
+        "at": 0,
+        "target": "prop:grip_l",
+        "blend": 0,
+        "roll": 0,
+        "pole": [
+          0.26,
+          0.95,
+          0.16
+        ]
+      }
+    ]
+  },
+  "events": []
+}
