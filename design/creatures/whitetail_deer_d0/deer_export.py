@@ -159,6 +159,43 @@ def death_keys():
     return [(0.0, {}, 0), (0.25, fold, 0), (0.55, give, 0), (0.9, lie, 0)]
 
 
+# Bedded (D2b, doc 13): sternal, the forelegs folded under the chest (forearm forward along the ground, the knees just
+# showing under the brisket, cannon folded back under it); the left hind leg folded under the belly, the right one folded
+# out beside it (stifle forward, hock back, cannon and hoof forward along the flank); head up chewing the cud.
+FOLD_F = {"fl_upper.L": (12, 0, 0), "fl_lower.L": (-90, 0, 0), "fl_cannon.L": (162, 0, 0), "fl_hoof.L": (20, 0, 0),
+          "fl_upper.R": (8, 0, 0), "fl_lower.R": (-86, 0, 0), "fl_cannon.R": (158, 0, 0), "fl_hoof.R": (20, 0, 0)}
+FOLD_H = {"hl_thigh.L": (-28, 0, 0), "hl_shin.L": (62, 0, 0), "hl_cannon.L": (-122, 0, 0), "hl_hoof.L": (20, 0, 0),
+          "hl_thigh.R": (-30, 34, 0), "hl_shin.R": (64, 0, 0), "hl_cannon.R": (-124, 0, 0), "hl_hoof.R": (24, 0, 0)}
+BED_HEAD = {"neck_1": (-8, 0, 0), "neck_2": (-4, 0, 0), "head": (6, 0, 0), "tail": (20, 0, 0)}
+REST_HEAD = {"neck_1": (62, 0, 0), "neck_2": (14, 0, 0), "head": (-30, 0, 0), "tail": (20, 0, 0),
+             "ear.L": (30, 0, 10), "ear.R": (30, 0, -10)}
+BED = add(FOLD_F, FOLD_H, BED_HEAD)
+# On the knees in front, the hind legs still standing: the forearms near upright, the cannons folded back flat; pelvis
+# tipped 17 deg puts the knees and the hind hooves on the ground together (measured).
+KNEEL_F = {"fl_upper.L": (0, 0, 0), "fl_lower.L": (-14, 0, 0), "fl_cannon.L": (104, 0, 0), "fl_hoof.L": (20, 0, 0),
+           "fl_upper.R": (-4, 0, 0), "fl_lower.R": (-10, 0, 0), "fl_cannon.R": (100, 0, 0), "fl_hoof.R": (20, 0, 0)}
+KNEEL_TIP = 17
+BED_SINK = -1.0      # px: the folded hooves press into the litter, so the belly is down on it
+REST = add(FOLD_F, FOLD_H, REST_HEAD)
+
+
+def lie_keys():
+    """2.2 s: down on the knees in front with the hind legs still up, then the hindquarters drop, then it settles."""
+    kneel = add(KNEEL_F, {"pelvis": (KNEEL_TIP, 0, 0), "neck_1": (-14, 0, 0), "head": (8, 0, 0)})
+    drop = add(FOLD_F, {"pelvis": (-4, 0, 0), "neck_1": (-10, 0, 0), "head": (6, 0, 0),
+                        "hl_thigh.L": (-20, 0, 0), "hl_shin.L": (44, 0, 0), "hl_cannon.L": (-90, 0, 0),
+                        "hl_thigh.R": (-18, 0, 0), "hl_shin.R": (40, 0, 0), "hl_cannon.R": (-86, 0, 0)})
+    return [(0.0, {}, 0), (0.35, {"neck_1": (14, 0, 0), "head": (-8, 0, 0)}, 0), (1.0, kneel, 0), (1.6, drop, BED_SINK / 2), (2.2, BED, BED_SINK)]
+
+
+def rise_keys():
+    """1.4 s: the hindquarters up first, still on the knees in front, then a foreleg at a time and it stands."""
+    rump = add(KNEEL_F, {"pelvis": (KNEEL_TIP, 0, 0), "neck_1": (-16, 0, 0), "head": (10, 0, 0)})
+    one = add({k: v for k, v in KNEEL_F.items() if k.endswith(".R")},
+              {"pelvis": (10, 0, 0), "neck_1": (-14, 0, 0), "head": (8, 0, 0), "fl_upper.L": (-24, 0, 0), "fl_cannon.L": (10, 0, 0)})
+    return [(0.0, BED, BED_SINK), (0.5, rump, 0), (0.95, one, 0), (1.4, {}, 0)]
+
+
 def clip_defs():
     n = 16
     stomp_up = add(ALERT, {"fl_upper.R": (-16, 0, 0), "fl_lower.R": (56, 0, 0), "fl_cannon.R": (12, 0, 0)})
@@ -179,6 +216,10 @@ def clip_defs():
                                                        (0.24, {"head": (0, 20, 0)}, 0), (0.33, {"head": (0, -12, 0)}, 0), (0.5, {}, 0)]),
         "sniff": dict(loop=False, ease="smooth", keys=[(0.0, {}, 0), (0.3, sniff, 0), (0.5, add(sniff, {"head": (-4, 0, 0)}), 0),
                                                        (0.7, sniff, 0), (0.9, add(sniff, {"head": (-4, 0, 0)}), 0), (1.4, {}, 0)]),
+        "lie_down": dict(loop=False, ease="smooth", keys=lie_keys()),
+        "bedded": dict(loop=True, ease="smooth", keys=[(0.0, BED, BED_SINK), (1.0, BED, BED_SINK)]),
+        "bedded_rest": dict(loop=True, ease="smooth", keys=[(0.0, REST, BED_SINK), (1.0, REST, BED_SINK)]),
+        "get_up": dict(loop=False, ease="smooth", keys=rise_keys()),
         "shift": dict(loop=False, ease="smooth", keys=[(0.0, {}, 0), (0.25, {"fl_upper.L": (-14, 0, 0), "fl_cannon.L": (50, 0, 0)}, 0),
                                                        (0.5, {"fl_upper.L": (-4, 0, 0), "fl_cannon.L": (6, 0, 0)}, 0), (0.8, {}, 0)]),
     }
@@ -282,20 +323,25 @@ def export():
                      "quads": {f.kind: len(f.ob.data.polygons) for f in (buck, doe)}})
 
 
-def check():
-    """Every clip's keys side on (and the bound and death three-quarter too), one sheet per clip, for looking at."""
+def check(only=None):
+    """Every clip's keys side on (and the bound and death three-quarter too), one sheet per clip, for looking at; only:
+    the clips to shoot (all if None)."""
     out = HERE + "/r1/clips"
     os.makedirs(out, exist_ok=True)
     buck, doe, player = DB.build_all()
     figs = [buck, doe, player]
     for name, c in clip_defs().items():
+        if only and name not in only:
+            continue
         keys = c["keys"]
         if name in ("walk", "trot"):
             keys = keys[:-1:2]
         for i, (t, k, extra) in enumerate(keys):
             buck.pose(k, lift=extra)
             DB.shoot([buck], figs, (1, 0, 0.05), f"{out}/{name}_{i:02d}.png", res=(420, 360), target=(0, 0.05, 0.7), size=1.75, lens=50)
-            if name in ("bound", "death", "look_back", "stomp"):
+            if name in ("lie_down", "bedded", "bedded_rest", "get_up"):
+                DB.shoot([buck], figs, (-0.85, -1, 0.3), f"{out}/{name}_{i:02d}_r.png", res=(420, 360), target=(0, 0, 0.5), size=1.7, lens=50)
+            if name in ("bound", "death", "look_back", "stomp", "lie_down", "bedded", "bedded_rest", "get_up"):
                 DB.shoot([buck], figs, (0.85, -1, 0.25), f"{out}/{name}_{i:02d}_q.png", res=(420, 360), target=(0, 0, 0.7), size=1.9, lens=50)
     buck.pose({})
     print("CHECK done")
@@ -303,4 +349,7 @@ def check():
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    {"export": export, "check": check}[argv[0] if argv else "check"]()
+    if argv and argv[0] == "export":
+        export()
+    else:
+        check(argv[1:] or None)

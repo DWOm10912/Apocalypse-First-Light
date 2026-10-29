@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.creature.deer;
 
 import com.antaurora.apofirstlight.creature.infected.InfectedEntity;
 import com.antaurora.apofirstlight.noise.NoiseType;
+import com.antaurora.apofirstlight.time.AflTime;
 import com.antaurora.apofirstlight.weather.AflWeather;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -21,11 +22,14 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.BodyRotationControl;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.pathfinder.Node;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -55,12 +59,18 @@ import java.util.UUID;
  * player up to 60 blocks upwind within 30° is smelled and it runs; <b>hearing</b> through noise/NoiseSystem
  * ({@link #heard}). An infected within 30 blocks in sight, or 12 anyway, makes it run.
  *
+ * <p>D2b, the day's round (doc 13): at bed time by the clock (DeerSchedule#bedTime, the herd together) it walks to a bed
+ * in cover away from roads (DeerBeds; a follower near its leader's), lies down and stays, chewing the cud or resting. Lying
+ * low in cover it sees less (0.6) and holds tight: what it notices it watches from the bed, head up (BED_ALERT), and it
+ * only bursts up and runs when a walker comes within 8 blocks (sneaking 4, sprinting 14), anything within 2.5, a shot, a
+ * scent or a wound. When bed time is over it gets up and goes feeding.
+ *
  * <p>No loot or experience yet (D3 butchers it), no vanilla step or ambient sounds (DeerSounds), never despawns. On death it
  * is replaced at once by its carcass (DeerCorpse), which plays the fall and stays. The world places deer by DeerPopulation
  * (D2a), which counts them per 512 m cell: a deer remembers its home cell, and its death takes it off that count.
  */
 public class DeerEntity extends PathfinderMob {
-    public static final byte STAND = 0, GRAZE = 1, ALERT = 2, FLEE = 3;
+    public static final byte STAND = 0, GRAZE = 1, ALERT = 2, FLEE = 3, BED = 4, BED_ALERT = 5;
     public static final byte EVENT_STOMP = 90;
     private static final EntityDataAccessor<Byte> KIND = SynchedEntityData.defineId(DeerEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> STATE = SynchedEntityData.defineId(DeerEntity.class, EntityDataSerializers.BYTE);
@@ -76,16 +86,20 @@ public class DeerEntity extends PathfinderMob {
     static final double WALK_CYCLE = 0.922, TROT_CYCLE = 1.862, BOUND_CYCLE = 5.2;
     /** {@code /afl dev deer calm true}: the deer notice nothing (to watch them up close); not saved. */
     static boolean devCalm;
+    /** {@code /afl dev deer bed on|off|clock}: bed time forced on or off, or (null) by the clock; not saved. */
+    @Nullable static Boolean devBed;
+    /** Ticks a calm get-up takes (clips.json get_up, 1.4 s) before it walks off. */
+    static final int RISE_TICKS = 28;
 
     private enum Mode { CALM, ALERT, FLEE }
 
-    private enum Calm { GRAZE, STAND, WALK }
+    private enum Calm { GRAZE, STAND, WALK, TO_BED, BED }
 
     // server
     private Mode mode = Mode.CALM;
     private Calm calm = Calm.GRAZE;
     private long until, stompAt = -1, stompSoundAt = -1, fakeGrazeAt = -1, fakeGrazeEnd = -1, sprintUntil, nextPath, nextVoice, nextLook,
-            pendingFleeAt = -1, nextGrazeStep, fleeGo;
+            pendingFleeAt = -1, nextGrazeStep, fleeGo, nextBedCheck, riseUntil;
     private boolean lookBack;
     @Nullable private Vec3 threatPos, pendingFleePos;
     @Nullable private Entity threat;
@@ -94,6 +108,8 @@ public class DeerEntity extends PathfinderMob {
     @Nullable private UUID leaderId;
     /** The 512 m cell whose count it is in (DeerPopulation), or NO_CELL (placed by a command). */
     private long homeCell = DeerPopulation.NO_CELL;
+    /** Where it lies or is going to lie (a follower's bed is near its leader's). */
+    @Nullable private BlockPos bedSpot;
     @Nullable private Entity leader;
     private final Map<Integer, Vec3> playerLast = new HashMap<>();
     private double stepDistance, boundDistance;
@@ -113,8 +129,17 @@ public class DeerEntity extends PathfinderMob {
      * Vanilla MoveControl turns a mob up to 90° a tick toward its next path point, so the deer swung round like a turret
      * (user 2026-10-28: "这鹿的AI怎么有点呆呆的"). It turns at most 7° a tick walking, 12 trotting, 16 bounding, and slows
      * down into a sharp turn: it walks arcs, and a turn on the spot is a few slow steps round.
+     *
+     * <p>It steers at a point 1.2 blocks further along its path (trotting 1.8, bounding 3), not at the next node, and
+     * passes a node once within two thirds of that: the corners of the block path become arcs it can turn at its rate.
+     * Steering at the node with the turn capped, it slowed at every corner (the push goes with the speed squared: a
+     * right-angle bend took a walk from 1.31 to 0.48 m/s for 0.4 s, a bound from 9.1 to 1.4) and the user saw it "偶尔会顿一
+     * 下" (2026-10-28; design/creatures/whitetail_deer_d0/turn_sim.py and pursuit_sim.py, offline: no dip under 80 %, the body at most 0.4 block off the path's middle
+     * walking, 0.8 bounding). It now slows only for an aim more than 60° off its heading (U-turns), and eases in and out.
      */
     private static final class Move extends MoveControl {
+        private float factor = 1F, off;
+
         Move(DeerEntity deer) {
             super(deer);
         }
@@ -123,16 +148,61 @@ public class DeerEntity extends PathfinderMob {
         public void tick() {
             float before = mob.getYRot();
             boolean moving = operation == Operation.MOVE_TO;
+            if (moving) aimAlongPath();
             super.tick();
-            if (!moving) return;
+            if (!moving) {
+                factor = 1F;
+                return;
+            }
             float wanted = Mth.wrapDegrees(mob.getYRot() - before);
             float max = speedModifier >= RUN * 0.9 ? 16F : speedModifier >= TROT * 0.9 ? 12F : 7F;
-            if (Math.abs(wanted) <= max) return;
-            mob.setYRot(before + Math.copySign(max, wanted));
-            // still far off its heading: slow down rather than circle the point
-            float left = Math.abs(wanted) - max;
-            mob.setSpeed(mob.getSpeed() * Mth.clamp(1F - left / 100F, 0.3F, 1F));
+            if (Math.abs(wanted) > max) mob.setYRot(before + Math.copySign(max, wanted));
+            float goal = off <= 60F ? 1F : Math.max(0.45F, 1F - (off - 60F) / 120F);
+            factor += Mth.clamp(goal - factor, -0.1F, 0.1F);
+            mob.setSpeed(mob.getSpeed() * factor);
         }
+
+        /** Passes the nodes it is close to and puts the wanted point a little way ahead along the path. */
+        private void aimAlongPath() {
+            Path path = mob.getNavigation().getPath();
+            double look = speedModifier >= RUN * 0.9 ? 3.0 : speedModifier >= TROT * 0.9 ? 1.8 : 1.2;
+            if (path != null && !path.isDone()) {
+                double pass = look * 2.0 / 3.0;
+                while (path.getNextNodeIndex() < path.getNodeCount() - 1) {
+                    Node n = path.getNextNode();
+                    if (Math.hypot(mob.getX() - n.x - 0.5, mob.getZ() - n.z - 0.5) < pass && Math.abs(mob.getY() - n.y) < 1.0) path.advance();
+                    else break;
+                }
+                double ax = mob.getX(), ay = mob.getY(), az = mob.getZ(), left = look;
+                for (int j = path.getNextNodeIndex(); j < path.getNodeCount(); j++) {
+                    Node n = path.getNode(j);
+                    double nx = n.x + 0.5, nz = n.z + 0.5, d = Math.hypot(nx - ax, nz - az);
+                    if (d >= left || j == path.getNodeCount() - 1) {
+                        double f = d > 1e-6 ? Math.min(1.0, left / d) : 0.0;
+                        wantedX = ax + (nx - ax) * f;
+                        wantedY = ay + (n.y - ay) * f;
+                        wantedZ = az + (nz - az) * f;
+                        break;
+                    }
+                    left -= d;
+                    ax = nx;
+                    ay = n.y;
+                    az = nz;
+                }
+            }
+            off = Math.abs(Mth.wrapDegrees((float) (Mth.atan2(wantedZ - mob.getZ(), wantedX - mob.getX()) * Mth.RAD_TO_DEG) - 90F - mob.getYRot()));
+        }
+    }
+
+    /** Lying, the body stays as it lay: no turning to the head (vanilla turns a still mob's body after its look). */
+    @Override
+    protected BodyRotationControl createBodyControl() {
+        return new BodyRotationControl(this) {
+            @Override
+            public void clientTick() {
+                if (!bedded()) super.clientTick();
+            }
+        };
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -171,19 +241,27 @@ public class DeerEntity extends PathfinderMob {
         return doe() ? 0.92F : 1.0F;
     }
 
+    /** Lying it is a little over half as tall (and its eyes as low). */
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(kindScale());
+        EntityDimensions d = super.getDimensions(pose).scale(kindScale());
+        return bedded() ? d.scale(1F, 0.55F) : d;
     }
 
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         super.onSyncedDataUpdated(key);
-        if (KIND.equals(key)) refreshDimensions();
+        if (KIND.equals(key) || STATE.equals(key)) refreshDimensions();
     }
 
     public byte state() {
         return entityData.get(STATE);
+    }
+
+    /** Lying down, lying or lying watching. */
+    public boolean bedded() {
+        byte s = entityData.get(STATE);
+        return s == BED || s == BED_ALERT;
     }
 
     /** Game time (as an int) the current state began: DeerSchedule's grazing beat. */
@@ -241,21 +319,25 @@ public class DeerEntity extends PathfinderMob {
 
     private void perceive(long now) {
         if (devCalm || !(level() instanceof ServerLevel level)) return;
+        boolean bedded = bedded();
         for (Player p : level.players()) {
             if (p.isSpectator() || !p.isAlive()) continue;
             double d = distanceTo(p);
             Vec3 last = playerLast.put(p.getId(), p.position());
             if (d > 110) continue;
             double moved = last == null ? 0 : Math.hypot(p.getX() - last.x, p.getZ() - last.z) / 4.0;
-            if (smells(p, d)) {
+            if (smells(p, d) || (bedded && d < 2.5)) {
                 startFlee(p.position(), p, now, true);
                 return;
             }
             double sight = p.isSprinting() ? 100 : moved > 0.03 ? (p.isCrouching() ? 15 : 60) : 8;
             if (level.isNight()) sight *= 0.5;
             if (headDown(now)) sight *= 0.5;
+            if (bedded) sight *= 0.6;   // low down in cover
             if (d < sight && sees(p)) {
-                if (d < Math.max(10, sight * 0.35)) {
+                // lying it holds tight and lets you come close, then bursts up
+                double flush = bedded ? (p.isSprinting() ? 14 : moved > 0.03 ? (p.isCrouching() ? 4 : 8) : 3) : Math.max(10, sight * 0.35);
+                if (d < flush) {
                     startFlee(p.position(), p, now, true);
                     return;
                 }
@@ -271,8 +353,10 @@ public class DeerEntity extends PathfinderMob {
         }
     }
 
+    /** Grazing head down, or lying resting: it sees half as far. */
     private boolean headDown(long now) {
-        return state() == GRAZE && DeerSchedule.headDown(getId(), stateAt(), now, new int[1]);
+        byte s = state();
+        return s == GRAZE ? DeerSchedule.headDown(getId(), stateAt(), now, new int[1]) : s == BED && DeerSchedule.resting(getId(), stateAt(), now);
     }
 
     /** In front or to the side (not the 60° behind) and nothing solid between. */
@@ -311,11 +395,12 @@ public class DeerEntity extends PathfinderMob {
             enterAlert(at, source, d, now, false);
             return;
         }
-        // already alert: coming closer, or still in sight after 4 s, and it runs
+        // already alert: coming closer, or still in sight after 4 s, and it runs (lying: coming a good way closer, or 10 s)
         threatPos = at;
         if (source != null) threat = source;
         seenTicks += 4;
-        if (d < alertDistance - 3 || seenTicks > 80) startFlee(at, source, now, true);
+        boolean bedded = bedded();
+        if (bedded ? (d < alertDistance - 8 && d < 20) || seenTicks > 200 : d < alertDistance - 3 || seenTicks > 80) startFlee(at, source, now, true);
         else until = Math.max(until, now + 40);
     }
 
@@ -327,10 +412,12 @@ public class DeerEntity extends PathfinderMob {
         seenTicks = 0;
         lookBack = back;
         getNavigation().stop();
-        setState(ALERT);
+        // lying, it watches from the bed, head up, and neither stamps nor feigns grazing
+        boolean bedded = bedded();
+        setState(bedded ? BED_ALERT : ALERT);
         until = now + (back ? 100 + random.nextInt(100) : 40 + random.nextInt(260));
-        stompAt = !back && random.nextFloat() < 0.5F ? now + 20 + random.nextInt(30) : -1;
-        fakeGrazeAt = !back && random.nextFloat() < 0.3F ? now + 60 + random.nextInt(80) : -1;
+        stompAt = !back && !bedded && random.nextFloat() < 0.5F ? now + 20 + random.nextInt(30) : -1;
+        fakeGrazeAt = !back && !bedded && random.nextFloat() < 0.3F ? now + 60 + random.nextInt(80) : -1;
         fakeGrazeEnd = -1;
     }
 
@@ -352,7 +439,10 @@ public class DeerEntity extends PathfinderMob {
             fakeGrazeEnd = -1;
             setState(ALERT);
         }
-        if (now >= until) enterCalm(Calm.GRAZE, now);
+        if (now >= until) {
+            if (state() == BED_ALERT) settle(now);
+            else enterCalm(Calm.GRAZE, now);
+        }
     }
 
     private void startFlee(Vec3 from, @Nullable Entity source, long now, boolean spread) {
@@ -360,8 +450,10 @@ public class DeerEntity extends PathfinderMob {
         if (source != null) threat = source;
         if (mode == Mode.FLEE) return;
         mode = Mode.FLEE;
-        // a startle first: it freezes, head up, for 0.3–0.7 s, then wheels and goes
-        fleeGo = now + 6 + random.nextInt(8);
+        // a startle first: it freezes, head up, for 0.3–0.7 s, then wheels and goes; lying, it springs up (get_up at four
+        // times its pace, 0.35 s) and is off
+        fleeGo = now + (bedded() ? 6 + random.nextInt(3) : 6 + random.nextInt(8));
+        bedSpot = null;
         getNavigation().stop();
         sprintUntil = fleeGo + 60 + random.nextInt(60);
         until = sprintUntil + 100 + random.nextInt(100);
@@ -412,10 +504,10 @@ public class DeerEntity extends PathfinderMob {
             case STAND -> {
                 getNavigation().stop();
                 setState(STAND);
-                until = now + 60 + random.nextInt(140);
+                until = Math.max(now, riseUntil) + 60 + random.nextInt(140);
                 nextLook = now + 10;
-                // now and then it turns where it stands: a couple of slow steps round to a new heading
-                if (random.nextFloat() < 0.4F) stepToward(yBodyRot + (random.nextBoolean() ? 1 : -1) * (60 + random.nextInt(80)), 1.2, WALK * 0.8);
+                // now and then it turns where it stands: a couple of slow steps round to a new heading (not while getting up)
+                if (now >= riseUntil && random.nextFloat() < 0.4F) stepToward(yBodyRot + (random.nextBoolean() ? 1 : -1) * (60 + random.nextInt(80)), 1.2, WALK * 0.8);
             }
             case WALK -> {
                 setState(STAND);
@@ -426,11 +518,63 @@ public class DeerEntity extends PathfinderMob {
                 if (to != null) getNavigation().moveTo(to.x, to.y, to.z, WALK);
                 until = now + 400;
             }
+            case TO_BED -> {
+                setState(STAND);
+                BlockPos spot = null;
+                Entity lead = leader();
+                if (lead instanceof DeerEntity d && d.bedSpot != null && distanceTo(d) < 48 && level() instanceof ServerLevel level) {
+                    spot = DeerBeds.near(level, d.bedSpot, random);
+                }
+                if (spot == null) spot = DeerBeds.find(this);
+                bedSpot = spot;
+                if (spot != null) getNavigation().moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, WALK);
+                until = now + 1200;
+            }
+            case BED -> {
+                getNavigation().stop();
+                setState(BED);
+                bedSpot = blockPosition();
+                nextLook = now + 100;
+            }
         }
         if (nextVoice == 0) nextVoice = now + 200 + random.nextInt(600);
     }
 
+    /** Back to lying calm after watching something from the bed. */
+    private void settle(long now) {
+        mode = Mode.CALM;
+        calm = Calm.BED;
+        setState(BED);
+        nextLook = now + 100;
+    }
+
+    /** The herd's bed time is its leader's (DeerSchedule#bedTime by the leader's id). */
+    private boolean bedTime() {
+        if (devBed != null) return devBed;
+        Entity lead = leader();
+        return DeerSchedule.bedTime(AflTime.hourOfDay(level()), lead != null ? lead.getId() : getId());
+    }
+
     private void calm(long now) {
+        if (now >= nextBedCheck) {
+            nextBedCheck = now + 40;
+            boolean bed = bedTime();
+            boolean lying = calm == Calm.TO_BED || calm == Calm.BED;
+            if (bed && !lying) {
+                // a follower waits for its calm leader to choose the bed first
+                Entity lead = leader();
+                if (!(lead instanceof DeerEntity d && d.mode == Mode.CALM && d.bedSpot == null)) {
+                    enterCalm(Calm.TO_BED, now);
+                    return;
+                }
+            } else if (!bed && lying) {
+                // gets up (1.4 s, not moving) and goes feeding
+                bedSpot = null;
+                riseUntil = calm == Calm.BED ? now + RISE_TICKS : now;
+                enterCalm(Calm.STAND, now);
+                return;
+            }
+        }
         switch (calm) {
             case GRAZE -> {
                 if (DeerSchedule.biteNow(getId(), stateAt(), now)) DeerSounds.graze(this);
@@ -451,13 +595,27 @@ public class DeerEntity extends PathfinderMob {
             case WALK -> {
                 if (getNavigation().isDone() || now >= until) enterCalm(Calm.GRAZE, now);
             }
+            case TO_BED -> {
+                if (bedSpot == null || getNavigation().isDone() || now >= until
+                        || distanceToSqr(bedSpot.getX() + 0.5, bedSpot.getY(), bedSpot.getZ() + 0.5) < 2.25) enterCalm(Calm.BED, now);
+            }
+            case BED -> {
+                // chewing the cud it looks round now and then, the body as it lies; resting it keeps still
+                if (now >= nextLook) {
+                    nextLook = now + 80 + random.nextInt(160);
+                    if (!DeerSchedule.resting(getId(), stateAt(), now)) {
+                        double a = (yBodyRot + (random.nextFloat() - 0.5F) * 140F) * Mth.DEG_TO_RAD;
+                        getLookControl().setLookAt(getX() - Math.sin(a) * 8, getEyeY(), getZ() + Math.cos(a) * 8);
+                    }
+                }
+            }
         }
         // the herd keeps together: a follower too far from its leader walks back to her
-        if (calm != Calm.WALK && (tickCount + getId()) % 40 == 0) {
+        if ((calm == Calm.GRAZE || calm == Calm.STAND) && (tickCount + getId()) % 40 == 0) {
             Entity lead = leader();
             if (lead != null && distanceTo(lead) > 10) enterCalm(Calm.WALK, now);
         }
-        if (now >= nextVoice) {
+        if (now >= nextVoice && calm != Calm.BED) {
             nextVoice = now + (doe() ? 600 + random.nextInt(1200) : 800 + random.nextInt(1600));
             if (doe()) DeerSounds.bleat(this);
             else DeerSounds.grunt(this);
@@ -588,6 +746,7 @@ public class DeerEntity extends PathfinderMob {
         tag.putBoolean("Doe", doe());
         if (leaderId != null) tag.putUUID("Leader", leaderId);
         if (homeCell != DeerPopulation.NO_CELL) tag.putLong("HomeCell", homeCell);
+        tag.putBoolean("Bedded", mode == Mode.CALM && calm == Calm.BED);
     }
 
     @Override
@@ -596,7 +755,8 @@ public class DeerEntity extends PathfinderMob {
         setDoe(tag.getBoolean("Doe"));
         leaderId = tag.hasUUID("Leader") ? tag.getUUID("Leader") : null;
         homeCell = tag.contains("HomeCell") ? tag.getLong("HomeCell") : DeerPopulation.NO_CELL;
-        enterCalm(Calm.GRAZE, level().getGameTime());
+        // lying when saved: lies on where it was (the bed time check gets it up if that is over)
+        enterCalm(tag.getBoolean("Bedded") ? Calm.BED : Calm.GRAZE, level().getGameTime());
     }
 
     // ---------------------------------------------------------------- client: what the animation reads

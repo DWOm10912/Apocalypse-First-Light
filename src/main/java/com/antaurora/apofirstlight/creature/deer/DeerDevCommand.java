@@ -28,6 +28,8 @@ import java.util.List;
  *   <li>{@code /afl dev deer spawn herd [count]}: a doe leading, the rest does and a buck (one in four), following her;</li>
  *   <li>{@code /afl dev deer calm true|false}: the deer stop seeing, smelling and hearing anything (to watch them up
  *   close); not saved;</li>
+ *   <li>{@code /afl dev deer bed on|off|clock}: bed time (D2b) forced on or off for every deer, or back to the clock; not
+ *   saved;</li>
  *   <li>{@code /afl dev deer census}: the natural population's books (DeerPopulation) in the 9 cells round the caller;</li>
  *   <li>{@code /afl dev deer clear}: removes every deer and carcass in the caller's level (the cells' counts follow).</li>
  * </ul>
@@ -47,6 +49,10 @@ public final class DeerDevCommand {
                         .then(kind("buck", 0)).then(kind("doe", 1)).then(kind("herd", 2)))
                 .then(Commands.literal("calm").then(Commands.argument("on", BoolArgumentType.bool())
                         .executes(c -> calm(c.getSource(), BoolArgumentType.getBool(c, "on")))))
+                .then(Commands.literal("bed")
+                        .then(Commands.literal("on").executes(c -> bed(c.getSource(), Boolean.TRUE)))
+                        .then(Commands.literal("off").executes(c -> bed(c.getSource(), Boolean.FALSE)))
+                        .then(Commands.literal("clock").executes(c -> bed(c.getSource(), null))))
                 .then(Commands.literal("census").executes(c -> census(c.getSource())))
                 .then(Commands.literal("clear").executes(c -> clear(c.getSource()))))));
     }
@@ -89,6 +95,14 @@ public final class DeerDevCommand {
         int n = made;
         source.sendSuccess(() -> Component.literal("放出 " + n + " 只白尾鹿"), true);
         return made;
+    }
+
+    private static int bed(CommandSourceStack source, @org.jetbrains.annotations.Nullable Boolean on) {
+        DeerEntity.devBed = on;
+        String text = on == null ? "Deer bed time: by the clock (9:30–16:30, 0:30–3:00, ±40 min a herd)"
+                : on ? "Deer bed time: forced on (they find beds and lie down)" : "Deer bed time: forced off (they get up)";
+        source.sendSuccess(() -> Component.literal(text), true);
+        return 1;
     }
 
     private static int census(CommandSourceStack source) {

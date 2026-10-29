@@ -49,6 +49,9 @@ import java.util.WeakHashMap;
  *   flight), the tail swishes and goes up in flight, the head follows the look over the neck, a tug at each bite, a slow
  *   chew with the head up, and a blink every 4–8 s (the *_blink texture).</li>
  * </ol>
+ * Lying (D2b, doc 13: BED, BED_ALERT) replaces the stance: lie_down (2.2 s) when it goes down, then bedded (head up,
+ * chewing the cud) or bedded_rest (head down) by DeerSchedule#resting; leaving the bed, get_up (1.4 s; four times as fast
+ * when it bursts up to run). Lying, the legs are not bent to the ground (the body still pitches to it).
  * The layers' state is per deer and client-only (a weak map). Vertices: x y z u v j0..j3 w0..w3 in Java model px (y down,
  * hooves at 24), as the infected's.
  */
@@ -58,6 +61,8 @@ public final class DeerModel {
     /** Drawn at the vanilla player's 0.9375, as the infected. */
     static final float SCALE = 0.9375F;
     private static final String[] IDLES = {"look_back", "shake", "sniff", "shift", "look_back", "sniff"};
+    /** A flushed deer gets up this much faster than a calm one (get_up in 0.35 s; the server's fleeGo waits as long). */
+    private static final float BURST = 4F;
     private static final float HEAD_YAW = 75F, HEAD_PITCH = 30F;
 
     @Nullable private static DeerModel buck, doe;
@@ -136,7 +141,8 @@ public final class DeerModel {
             clips.put(e.getKey(), new Clip(c.get("length").getAsFloat(), c.get("loop").getAsBoolean(),
                     "smooth".equals(c.get("ease").getAsString()), t, lift, rot));
         }
-        for (String need : new String[]{"stand", "graze", "alert", "stomp", "walk", "trot", "bound", "death", "look_back", "shake", "sniff", "shift"}) {
+        for (String need : new String[]{"stand", "graze", "alert", "stomp", "walk", "trot", "bound", "death", "look_back", "shake", "sniff", "shift",
+                "lie_down", "bedded", "bedded_rest", "get_up"}) {
             if (!clips.containsKey(need)) throw new IllegalArgumentException("deer clips: no " + need);
         }
         float px = SCALE * meshScale / 16F;
@@ -229,6 +235,10 @@ public final class DeerModel {
          *  letting go (px, faded out). */
         final boolean[] planted = new boolean[4];
         final float[] plantZ = new float[4], plantDist = new float[4], slip = new float[4];
+        /** Lying: the state last seen (-1: none yet, so a deer first seen lying is not shown lying down), when it began to
+         *  lie down and to get up (s), the get-up's pace, the weight of the resting head. */
+        byte lastState = -1;
+        float lieStart = -99F, riseStart = -99F, risePace = 1F, rest;
 
         Anim(int id) {
             random = new Random(id * 0x9E3779B97F4A7C15L);
@@ -264,6 +274,17 @@ public final class DeerModel {
         boolean headDown = state == DeerEntity.GRAZE && DeerSchedule.headDown(e.getId(), e.stateAt(), now, into);
         float speed = e.walkSpeed(partial);
         boolean still = speed < 0.01F;
+        boolean bedded = state == DeerEntity.BED || state == DeerEntity.BED_ALERT;
+        if (a.lastState >= 0) {
+            boolean was = a.lastState == DeerEntity.BED || a.lastState == DeerEntity.BED_ALERT;
+            if (bedded && !was) {
+                a.lieStart = time;
+            } else if (!bedded && was) {
+                a.riseStart = time;
+                a.risePace = state == DeerEntity.FLEE ? BURST : 1F;
+            }
+        }
+        a.lastState = state;
 
         // 1. the stance
         float wantStand = 0F, wantGraze = 0F, wantAlert = 0F;
@@ -272,7 +293,7 @@ public final class DeerModel {
                 if (headDown) wantGraze = 1F;
                 else wantStand = 1F;
             }
-            case DeerEntity.ALERT -> wantAlert = 1F;
+            case DeerEntity.ALERT, DeerEntity.BED_ALERT -> wantAlert = 1F;
             case DeerEntity.FLEE -> {
                 if (still) wantAlert = 1F;
                 else wantStand = 1F;
@@ -303,8 +324,47 @@ public final class DeerModel {
             blend(base, layer, Mth.clamp(Math.min(stomp / 0.08F, (stompClip.length - stomp) / 0.15F), 0F, 1F));
         }
 
+        // 1b. lying over the stance: lying down, lying (chewing head up, or resting head down), getting up
+        float bedW = 0F;
+        boolean lying = false;
+        if (bedded) {
+            boolean resting = state == DeerEntity.BED && DeerSchedule.resting(e.getId(), e.stateAt(), now);
+            a.rest += ((resting ? 1F : 0F) - a.rest) * ease(dt, resting ? 0.6F : 0.2F);
+            Clip down = clips.get("lie_down");
+            float t = time - a.lieStart;
+            float w = 1F;
+            if (t < down.length) {
+                sample(down, t, layer, lift);
+                w = Mth.clamp(t / 0.25F, 0F, 1F);   // from whatever stance it had
+                bedW = t / down.length;
+            } else {
+                lying = true;
+                bedW = 1F;
+                sample(clips.get("bedded"), 0F, layer, lift);
+                if (a.rest > 1e-3F) {
+                    float up = lift[0];
+                    sample(clips.get("bedded_rest"), 0F, extra, lift);
+                    blend(layer, extra, a.rest);
+                    lift[0] = Mth.lerp(a.rest, up, lift[0]);
+                }
+            }
+            blend(base, layer, w);
+            rootLift = Mth.lerp(w, rootLift, lift[0]);
+        } else {
+            a.rest = 0F;
+            Clip up = clips.get("get_up");
+            float t = (time - a.riseStart) * a.risePace;
+            if (t >= 0F && t < up.length) {
+                sample(up, t, layer, lift);
+                float w = Mth.clamp((up.length - t) / (0.2F * up.length), 0F, 1F);   // into the stance it has now
+                blend(base, layer, w);
+                rootLift = Mth.lerp(w, rootLift, lift[0]);
+                bedW = w * (1F - t / up.length);
+            }
+        }
+
         // 3. one-shot idles while it stands still with its head up
-        boolean idleOk = still && a.alert < 0.3F && a.graze < 0.3F && (state == DeerEntity.STAND || state == DeerEntity.GRAZE);
+        boolean idleOk = still && bedW <= 0F && a.alert < 0.3F && a.graze < 0.3F && (state == DeerEntity.STAND || state == DeerEntity.GRAZE);
         if (a.idle != null) {
             Clip c = clips.get(a.idle);
             float t = time - a.idleStart;
@@ -353,6 +413,8 @@ public final class DeerModel {
             if (p < 8F) base[neck2].premul(blender(-8F * Mth.sin(Mth.PI * p / 8F) * a.graze, 0F, 0F, q));
         } else if (state == DeerEntity.GRAZE && still) {
             base[head].premul(blender(1.2F * Mth.sin(time * 10F) * (1F - a.graze), 0F, 0F, q));
+        } else if (lying && state == DeerEntity.BED) {
+            base[head].premul(blender(1.5F * Mth.sin(time * 7F) * (1F - a.rest), 0F, 0F, q));   // chewing the cud
         }
 
         // 4. ears: twitches when calm, forward when alert, laid back in flight (the bound clip lays them back itself)
@@ -403,11 +465,11 @@ public final class DeerModel {
 
         matrices(base, rootLift, out);
         for (int i = 0; i < 4; i++) out[legs[i][2]].transformPosition(tip(i, hoof[i]));   // the hooves as animated, on flat ground
-        ground(e, partial, a, dt, 1F - bound, out);
+        ground(e, partial, a, dt, 1F - bound, 1F - bedW, out);
         plant(e, partial, a, dt, speed, out);
 
-        // 4. the head follows the look over the neck (not with the head down grazing)
-        float look = 1F - a.graze;
+        // 4. the head follows the look over the neck (not with the head down grazing or resting)
+        float look = (1F - a.graze) * (1F - a.rest);
         if (look > 0.01F) {
             float yaw = Mth.clamp(Mth.wrapDegrees(Mth.rotLerp(partial, e.yHeadRotO, e.yHeadRot) - Mth.rotLerp(partial, e.yBodyRotO, e.yBodyRot)),
                     -HEAD_YAW, HEAD_YAW) * look;
@@ -464,9 +526,10 @@ public final class DeerModel {
      *   <li>each leg bends (two bones in its side plane: shoulder or hip, then carpus or hock) so its hoof keeps its animated
      *   height over its own ground.</li>
      * </ol>
-     * {@code weight} fades it out in a bound, the hooves in the air.
+     * {@code weight} fades it out in a bound, the hooves in the air; {@code legs} fades out the legs' part (2 and 3) while
+     * it lies or is lying down, the legs folded under it.
      */
-    private void ground(DeerEntity e, float partial, Anim a, float dt, float weight, Matrix4f[] out) {
+    private void ground(DeerEntity e, float partial, Anim a, float dt, float weight, float legs, Matrix4f[] out) {
         if (weight <= 0.01F) return;
         GroundView view = view(e.level());
         double ex = Mth.lerp(partial, e.xo, e.getX()), ey = Mth.lerp(partial, e.yo, e.getY()), ez = Mth.lerp(partial, e.zo, e.getZ());
@@ -484,15 +547,18 @@ public final class DeerModel {
         float mean = (fore + hind) * 0.5F, slope = Mth.clamp((fore - hind) / hoofSpan, -0.47F, 0.47F);
         float drop = 0F;
         for (int i = 0; i < 4; i++) drop = Math.max(drop, mean + slope * (hoofMidZ - hoof[i].z) - a.ground[i] - 0.4F);
+        drop *= legs;
         // the body: pitched about the ground between the hooves (fore up: a turn toward -y at -z), then raised or lowered
         shift.translation(0F, -(mean - drop) * weight, 0F).translate(0F, 24F, hoofMidZ)
                 .rotateX(-(float) Math.atan(slope) * weight).translate(0F, -24F, -hoofMidZ);
         for (Matrix4f m : out) shift.mul(m, m);
         // the legs: each hoof back to its animated height over its own ground (model y is down, the floor at 24)
+        float legWeight = weight * legs;
+        if (legWeight <= 0.01F) return;
         for (int i = 0; i < 4; i++) {
-            out[legs[i][2]].transformPosition(tip(i, tip));
+            out[this.legs[i][2]].transformPosition(tip(i, tip));
             float want = 24F - a.ground[i] + (hoof[i].y - 24F);
-            float y = Mth.lerp(weight, tip.y, want);
+            float y = Mth.lerp(legWeight, tip.y, want);
             if (Math.abs(y - tip.y) > 0.02F) reach(out, i, tip.z, y);
         }
     }
