@@ -134,7 +134,8 @@ public final class AflRenderDev {
                     String value = StringArgumentType.getString(c, "value").toLowerCase(Locale.ROOT);
                     if (value.equals("on") || value.equals("off")) com.antaurora.apofirstlight.client.liquid.ClientLiquid.enabled = value.equals("on");
                     else if (!value.equals("status")) { c.getSource().sendFailure(Component.literal("on / off / status")); return 0; }
-                    c.getSource().sendSuccess(() -> Component.literal("water " + com.antaurora.apofirstlight.client.liquid.ClientLiquid.status()), false);
+                    c.getSource().sendSuccess(() -> Component.literal("water " + com.antaurora.apofirstlight.client.liquid.ClientLiquid.status()
+                            + "; " + com.antaurora.apofirstlight.client.cooking.WaterPailRenderer.status()), false);
                     return 1;
                 })))
                 // Package 3a (docs/gameplay/water_rain_v1_design.md 4.1): ground wet from natural rain on or off

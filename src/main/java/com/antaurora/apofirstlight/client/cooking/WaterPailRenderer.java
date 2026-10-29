@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.cooking.PailHeat;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.cooking.PailSlosh;
 import com.antaurora.apofirstlight.cooking.WaterPailItem;
+import com.antaurora.apofirstlight.client.ShaderPackOption;
+import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.antaurora.vextris.client.MeshRenderer;
 import com.antaurora.vextris.client.VextrisMeshes;
 import com.antaurora.vextris.mesh.MeshModel;
@@ -39,11 +41,23 @@ import java.util.List;
  * <p>
  * The world's directions in the item's frame come from the pose stack (item to view) and the camera (world to view), so
  * the same code serves first and third person.
+ * <p>
+ * A shader pack that draws the water in a pail as its own (Aureveil 1.0.0-rc.2: options AFL_WATER and AFL_CONTAINER_WATER
+ * both on; docs/rendering/afl_water_shader_interface_v1.md, container water) gets its attributes instead of the plain
+ * surface ({@link #packWater}): the UV in the third quarter (kind 2) of AFL's {@code water_surface} sprite, laid out by
+ * the pail's own (x, z) over the ring's radius; colour rg 0.5 (still), b the boil's white water, a the cover. The bubbles
+ * and droplets go in the same quarter, b how white they look. The render type is the same in every case.
  */
 public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation GEOMETRY = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/enamel_water_pail.geo.json");
     private static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/enamel_water_pail_mesh.png");
     private static final ResourceLocation WATER = new ResourceLocation("minecraft", "block/water_still");
+    /** AFL's water surface sprite, whose third quarter is a container's water for the shader pack (packWater). */
+    private static final ResourceLocation SURFACE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/liquid/water_surface");
+    /** The shader pack's options for it: AFL_WATER alone would let Aureveil 1.0.0-rc.1 draw a grey slab. */
+    private static final String PACK_WATER = "AFL_WATER", PACK_CONTAINER = "AFL_CONTAINER_WATER";
+    /** How white a rising bubble and a spat droplet look to the pack (colour b). */
+    private static final float PACK_BUBBLE = 0.4F, PACK_DROP = 0.7F;
     /** 0.5 - mesh height 25.65 / 32 (the build's verticalOffset). */
     public static final double VERTICAL_OFFSET = -0.301551;
     /** The pail's axis (mesh px: the mesh is centred on its bounding box, the laid bail behind), the ears' height. */
@@ -153,6 +167,28 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
     /** Foam on a rolling dome's top, and a bubble (rgba). */
     private static final float FR = 0.88F, FG = 0.92F, FB = 0.94F, BUBBLE_A = 0.6F;
 
+    /** Whether the shader pack in use draws the water in a pail as its own (see the class note). */
+    public static boolean packWater() {
+        return AflShaderCompat.shaderPackInUse()
+                && ShaderPackOption.on(PACK_WATER, "the pack draws AFL's water as its own; off: a plain translucent surface")
+                && ShaderPackOption.on(PACK_CONTAINER, "the pack draws the water in a pail as its own; off: a plain translucent surface");
+    }
+
+    /** Dev readout (in /afl_render water status). */
+    public static String status() {
+        return "container water (" + PACK_CONTAINER + "): " + (packWater() ? "on" : "off");
+    }
+
+    /** The pack's u, v for a point (x, z) of a surface of radius r: the centre at the middle of the third quarter, the rim
+     *  at the edge of that quarter's middle half. */
+    private static float packU(TextureAtlasSprite s, float x, float r) {
+        return s.getU0() + (s.getU1() - s.getU0()) * (2.5F + 0.25F * Mth.clamp(x / r, -1F, 1F)) / 4F;
+    }
+
+    private static float packV(TextureAtlasSprite s, float z, float r) {
+        return s.getV0() + (s.getV1() - s.getV0()) * (0.5F + 0.25F * Mth.clamp(z / r, -1F, 1F));
+    }
+
     private static float unit(double v) {
         return (float) Math.max(0, Math.min(1, v));
     }
@@ -209,7 +245,8 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
     private static void boiling(PoseStack pose, MultiBufferSource buffers, int light, int overlay, float level, double celsius, float time, long seed) {
         float nucleate = unit((celsius - NUCLEATE_C) / (SIMMER_C - NUCLEATE_C)), simmer = unit((celsius - SIMMER_C) / (ROLL_C - SIMMER_C)),
                 roll = unit((celsius - ROLL_C) / (PailHeat.BOIL - ROLL_C));
-        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(WATER);
+        boolean pack = packWater();
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(pack ? SURFACE : WATER);
         VertexConsumer out = buffers.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
         pose.pushPose();
         pose.scale(1F / 16F, 1F / 16F, 1F / 16F);   // mesh px
@@ -218,7 +255,8 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
         Matrix3f normal = pose.last().normal();
         float floor = (float) (PailSlosh.WALL * 100) + 0.15F, rim = (float) (PailSlosh.H * 100) - 0.25F;
         float y0 = Mth.clamp(level, floor, rim - BIG_H), wall = (float) (PailSlosh.radius(y0 / 100.0) * 100) - 0.1F;
-        float span = (float) (PailSlosh.RT * 200), bu = sprite.getU(8), bv = sprite.getV(8);
+        float span = (float) (PailSlosh.RT * 200);
+        float bu = pack ? packU(sprite, 0, 1) : sprite.getU(8), bv = pack ? packV(sprite, 0, 1) : sprite.getV(8);
         // a bubble or a droplet is a disc turned to the camera (round from any side): toward the camera in this frame
         Vector3f face = new Matrix3f(m).invert().transform(new Vector3f(0, 0, 1)).normalize();
         Vector3f side = new Vector3f(0, 1, 0).cross(face);
@@ -236,7 +274,7 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
             float u = cycle - n, a = (h & 0xFFFF) / 65535F * Mth.TWO_PI, d = Mth.sqrt((h >>> 16 & 0xFFFF) / 65535F) * bottomR;
             float climb = Math.min(1, u / 0.85F), y = floor + 0.3F + (y0 - floor - 0.5F) * climb * climb;
             float s = (0.1F + 0.12F * (h >>> 32 & 0xFF) / 255F) * (1 + climb * (0.5F + roll));   // 2-4 mm, swelling as they rise
-            bubble(out, m, normal, Mth.cos(a) * d, y, Mth.sin(a) * d, s, side, lift, face, 0.05F, BUBBLE_A, bu, bv, light, overlay);
+            bubble(out, m, normal, Mth.cos(a) * d, y, Mth.sin(a) * d, s, side, lift, face, 0.05F, BUBBLE_A, bu, bv, pack ? PACK_BUBBLE : -1, light, overlay);
         }
 
         // the surface: a shiver, small domes of a simmer, big rolling domes
@@ -266,7 +304,9 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
                 for (int[] c : q) {
                     float f = foam[c[0]][c[1]], x = px[c[0]][c[1]], z = pz[c[0]][c[1]];
                     Vector3f nn = pn[c[0]][c[1]];
-                    out.vertex(m, x, py[c[0]][c[1]], z).color(Mth.lerp(f, WR, FR), Mth.lerp(f, WG, FG), Mth.lerp(f, WB, FB), Mth.lerp(f, WA, 0.93F))
+                    if (pack) out.vertex(m, x, py[c[0]][c[1]], z).color(0.5F, 0.5F, f, 1F).uv(packU(sprite, x, wall), packV(sprite, z, wall))
+                            .overlayCoords(overlay).uv2(light).normal(normal, nn.x, nn.y, nn.z).endVertex();
+                    else out.vertex(m, x, py[c[0]][c[1]], z).color(Mth.lerp(f, WR, FR), Mth.lerp(f, WG, FG), Mth.lerp(f, WB, FB), Mth.lerp(f, WA, 0.93F))
                             .uv(sprite.getU(8 + 16 * x / span), sprite.getV(8 + 16 * z / span))
                             .overlayCoords(overlay).uv2(light).normal(normal, nn.x, nn.y, nn.z).endVertex();
                 }
@@ -283,7 +323,7 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
                     float a = (h & 0xFFFF) / 65535F * Mth.TWO_PI, v = 7 + 6 * (h >>> 16 & 0xFF) / 255F, out2 = 1.5F + 2 * (h >>> 24 & 0xFF) / 255F;
                     float x = d.x + Mth.cos(a) * out2 * u, z = d.z + Mth.sin(a) * out2 * u, y = y0 + d.h * 0.5F + v * u - v * u * u;
                     if (x * x + z * z > wall * wall) continue;
-                    bubble(out, m, normal, x, y, z, 0.18F, side, lift, face, 0.75F, 0.9F, bu, bv, light, overlay);
+                    bubble(out, m, normal, x, y, z, 0.18F, side, lift, face, 0.75F, 0.9F, bu, bv, pack ? PACK_DROP : -1, light, overlay);
                 }
             }
         pose.popPose();
@@ -300,26 +340,26 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
     /**
      * A round disc of radius s at (x, y, z) px, turned to the camera (side, lift: its plane; face: toward the camera): pale
      * and clear in the middle ({@code core} alpha), brightest at its edge ({@code edge}), as a bubble in water looks; a
-     * droplet has a full core.
+     * droplet has a full core. {@code white} >= 0: for the shader pack (colour b; rg 0.5), else the plain pale blue.
      */
     private static void bubble(VertexConsumer out, Matrix4f m, Matrix3f normal, float x, float y, float z, float s, Vector3f side, Vector3f lift,
-                               Vector3f face, float core, float edge, float u, float v, int light, int overlay) {
+                               Vector3f face, float core, float edge, float u, float v, float white, int light, int overlay) {
         int n = 12;
         for (int i = 0; i < n; i++) {
             float a0 = Mth.TWO_PI * i / n, a1 = Mth.TWO_PI * (i + 1) / n;
             float c0 = Mth.cos(a0) * s, s0 = Mth.sin(a0) * s, c1 = Mth.cos(a1) * s, s1 = Mth.sin(a1) * s;
             // the middle, the edge, the edge, the middle again (one quad as a triangle): the core fades out to the bright rim
-            disc(out, m, normal, x, y, z, 0, 0, side, lift, face, core, u, v, light, overlay);
-            disc(out, m, normal, x, y, z, c0, s0, side, lift, face, edge, u, v, light, overlay);
-            disc(out, m, normal, x, y, z, c1, s1, side, lift, face, edge, u, v, light, overlay);
-            disc(out, m, normal, x, y, z, 0, 0, side, lift, face, core, u, v, light, overlay);
+            disc(out, m, normal, x, y, z, 0, 0, side, lift, face, core, u, v, white, light, overlay);
+            disc(out, m, normal, x, y, z, c0, s0, side, lift, face, edge, u, v, white, light, overlay);
+            disc(out, m, normal, x, y, z, c1, s1, side, lift, face, edge, u, v, white, light, overlay);
+            disc(out, m, normal, x, y, z, 0, 0, side, lift, face, core, u, v, white, light, overlay);
         }
     }
 
     private static void disc(VertexConsumer out, Matrix4f m, Matrix3f normal, float x, float y, float z, float a, float b, Vector3f side,
-                             Vector3f lift, Vector3f face, float alpha, float u, float v, int light, int overlay) {
+                             Vector3f lift, Vector3f face, float alpha, float u, float v, float white, int light, int overlay) {
         out.vertex(m, x + side.x * a + lift.x * b, y + side.y * a + lift.y * b, z + side.z * a + lift.z * b)
-                .color(0.93F, 0.97F, 1F, alpha).uv(u, v).overlayCoords(overlay).uv2(light).normal(normal, face.x, face.y + 0.5F, face.z).endVertex();
+                .color(white >= 0 ? 0.5F : 0.93F, white >= 0 ? 0.5F : 0.97F, white >= 0 ? white : 1F, alpha).uv(u, v).overlayCoords(overlay).uv2(light).normal(normal, face.x, face.y + 0.5F, face.z).endVertex();
     }
 
     /** The player this stack is in the hand of: the camera's in first person, else the one whose main hand it is (a prop too). */
@@ -345,7 +385,8 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
      */
     private static void water(PoseStack pose, MultiBufferSource buffers, int light, int overlay, float level, Vector3f n) {
         if (n.y < 0.25F) return;   // tipped past what a plane in a pail can show
-        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(WATER);
+        boolean pack = packWater();
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(pack ? SURFACE : WATER);
         VertexConsumer out = buffers.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
         pose.pushPose();
         pose.scale(1F / 16F, 1F / 16F, 1F / 16F);   // mesh px
@@ -353,7 +394,7 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
         Matrix4f m = pose.last().pose();
         Matrix3f normal = pose.last().normal();
         float floor = (float) (PailSlosh.WALL * 100) + 0.15F, rim = (float) (PailSlosh.H * 100) - 0.25F;
-        float[] xs = new float[EDGE + 1], ys = new float[EDGE + 1], zs = new float[EDGE + 1];
+        float[] xs = new float[EDGE + 1], ys = new float[EDGE + 1], zs = new float[EDGE + 1], rs = new float[EDGE + 1];
         for (int i = 0; i <= EDGE; i++) {
             float a = (float) (2 * Math.PI * i / EDGE), c = Mth.cos(a), s = Mth.sin(a);
             float y = level, r = 0;
@@ -364,21 +405,23 @@ public final class WaterPailRenderer extends BlockEntityWithoutLevelRenderer {
             xs[i] = r * c;
             ys[i] = Mth.clamp(y, floor, rim);
             zs[i] = r * s;
+            rs[i] = r;
         }
         float span = (float) (PailSlosh.RT * 200);
         for (int i = 0; i < EDGE; i++) {
-            vertex(out, m, normal, 0, Mth.clamp(level, floor, rim), 0, sprite, span, light, overlay, n);
-            vertex(out, m, normal, xs[i], ys[i], zs[i], sprite, span, light, overlay, n);
-            vertex(out, m, normal, xs[i + 1], ys[i + 1], zs[i + 1], sprite, span, light, overlay, n);
-            vertex(out, m, normal, xs[i + 1], ys[i + 1], zs[i + 1], sprite, span, light, overlay, n);
+            vertex(out, m, normal, 0, Mth.clamp(level, floor, rim), 0, rs[i], sprite, span, pack, light, overlay, n);
+            vertex(out, m, normal, xs[i], ys[i], zs[i], rs[i], sprite, span, pack, light, overlay, n);
+            vertex(out, m, normal, xs[i + 1], ys[i + 1], zs[i + 1], rs[i + 1], sprite, span, pack, light, overlay, n);
+            vertex(out, m, normal, xs[i + 1], ys[i + 1], zs[i + 1], rs[i + 1], sprite, span, pack, light, overlay, n);
         }
         pose.popPose();
     }
 
-    private static void vertex(VertexConsumer out, Matrix4f m, Matrix3f normal, float x, float y, float z, TextureAtlasSprite sprite,
-                               float span, int light, int overlay, Vector3f n) {
-        out.vertex(m, x, y, z).color(WR, WG, WB, WA)
-                .uv(sprite.getU(8 + 16 * x / span), sprite.getV(8 + 16 * z / span))
-                .overlayCoords(overlay).uv2(light).normal(normal, n.x, n.y, n.z).endVertex();
+    /** A still surface's vertex; {@code r} the ring's radius there (for the pack's layout). */
+    private static void vertex(VertexConsumer out, Matrix4f m, Matrix3f normal, float x, float y, float z, float r, TextureAtlasSprite sprite,
+                               float span, boolean pack, int light, int overlay, Vector3f n) {
+        if (pack) out.vertex(m, x, y, z).color(0.5F, 0.5F, 0F, 1F).uv(packU(sprite, x, r), packV(sprite, z, r));
+        else out.vertex(m, x, y, z).color(WR, WG, WB, WA).uv(sprite.getU(8 + 16 * x / span), sprite.getV(8 + 16 * z / span));
+        out.overlayCoords(overlay).uv2(light).normal(normal, n.x, n.y, n.z).endVertex();
     }
 }

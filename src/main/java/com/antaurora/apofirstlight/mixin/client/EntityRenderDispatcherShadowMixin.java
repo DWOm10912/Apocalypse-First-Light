@@ -1,59 +1,29 @@
 package com.antaurora.apofirstlight.mixin.client;
 
-import com.antaurora.apofirstlight.client.camera.CameraDirector;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * A body drawn away from its entity (client/camera/CameraDirector#bodyOffset, the camera director's body offset; today
- * player actions V1's render-only approach, client/skeleton/SkeletonActions#bodyOffset) takes its round shadow along. The shadow is laid on the blocks under the stepped body: its
- * sample point moves by the offset (x and z lerps) and the pose by the same offset, so the quads land where the body is.
+ * No round blob shadows under entities (user 2026-10-28: "能不能把这种一个圈的阴影删掉，现在好像玩家/生物/皮卡都有呢"): the
+ * player, the deer and the infected, the T15, bodies and items all go without, whatever the Entity Shadows option says.
+ * The shader pack casts real shadows; without one the ground under a creature stays as lit. Cancelled at the head, as
+ * Embeddium's fast shadows do.
+ *
+ * <p>Until then this mixin moved the shadow with a body drawn away from its entity (CameraDirector#bodyOffset); with no
+ * shadow that is not needed.
  */
 @Mixin(EntityRenderDispatcher.class)
 public abstract class EntityRenderDispatcherShadowMixin {
-    @Unique
-    private static Vec3 afl$shadowShift;
-
-    @Inject(method = "renderShadow", at = @At("HEAD"))
-    private static void afl$shadowHead(PoseStack pose, MultiBufferSource buffers, Entity entity, float opacity, float partial,
-                                      LevelReader level, float radius, CallbackInfo ci) {
-        afl$shadowShift = CameraDirector.bodyOffset(entity);
-        if (afl$shadowShift == null) return;
-        pose.pushPose();
-        pose.translate(afl$shadowShift.x, 0, afl$shadowShift.z);
-    }
-
-    /**
-     * Back after the call in render, not at renderShadow's RETURN: Embeddium's fast shadows cancel renderShadow at its HEAD
-     * (after this push), and a cancelled method never reaches RETURN, so the pose was left pushed ("Pose stack not empty"
-     * after the entities, 2026-10-21, the workbench's sawing approach).
-     */
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;renderShadow(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/Entity;FFLnet/minecraft/world/level/LevelReader;F)V"))
-    private void afl$shadowDone(Entity entity, double x, double y, double z, float yaw, float partial, PoseStack pose,
-                                MultiBufferSource buffers, int light, CallbackInfo ci) {
-        if (afl$shadowShift == null) return;
-        pose.popPose();
-        afl$shadowShift = null;
-    }
-
-    @Redirect(method = "renderShadow", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;lerp(DDD)D", ordinal = 0))
-    private static double afl$shadowX(double t, double from, double to) {
-        return Mth.lerp(t, from, to) + (afl$shadowShift == null ? 0 : afl$shadowShift.x);
-    }
-
-    @Redirect(method = "renderShadow", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;lerp(DDD)D", ordinal = 2))
-    private static double afl$shadowZ(double t, double from, double to) {
-        return Mth.lerp(t, from, to) + (afl$shadowShift == null ? 0 : afl$shadowShift.z);
+    @Inject(method = "renderShadow", at = @At("HEAD"), cancellable = true)
+    private static void afl$noShadow(PoseStack pose, MultiBufferSource buffers, Entity entity, float opacity, float partial,
+                                    LevelReader level, float radius, CallbackInfo ci) {
+        ci.cancel();
     }
 }

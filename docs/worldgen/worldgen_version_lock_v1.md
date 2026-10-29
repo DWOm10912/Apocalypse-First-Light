@@ -40,7 +40,7 @@
 | `river_carving` | `river_carver#1` | HARD | 区块里的河水与河岸 |
 | `ecology` | `ecology_r1#1` | HARD | 群系映射、AFL 群系 JSON、主世界地表规则 |
 | `forest` | `mesh_forest#<ForestPlan.VERSION>` 或 `vanilla_trees` | SOFT | 天然树木 |
-| `vegetation`（B，植被 P2a，2026-10-24） | `mesh_vegetation#<VegetationPlan.VERSION>`，现在是 `#7`（2026-10-24：v2 覆盖率乘 0.6；v3 加 P4a 第 1 批四个物种；v4 覆盖率再乘 0.75、花只长在共用的花片里、林冠下不长花；v5 加 P4a 第 2 批四个物种；v6 加 P4a 第 3 批四个物种；2026-10-28 C：v7 AFL 河流加宽后的河道算水，水下只在岸边 2 m 内、0.5 m 以内的浅水里长湿地植物） | SOFT | 天然地面植物（[植被设计](../gameplay/vegetation_v1_design.md) 第 14 节）；B 的分支 AFL-Workbench，未提交；`WorldgenRules` 里还没登记，合并时由 C 对齐 |
+| `vegetation`（B，植被 P2a，2026-10-24） | `mesh_vegetation#<VegetationPlan.VERSION>`，现在是 `#8`（2026-10-24：v2 覆盖率乘 0.6；v3 加 P4a 第 1 批四个物种；v4 覆盖率再乘 0.75、花只长在共用的花片里、林冠下不长花；v5 加 P4a 第 2 批四个物种；v6 加 P4a 第 3 批四个物种；2026-10-28 C：v7 AFL 河流加宽后的河道算水，水下只在岸边 2 m 内、0.5 m 以内的浅水里长湿地植物；2026-10-28 B：v8 覆盖率再乘 0.6，用户说“太密集了，看着有点糊”） | SOFT | 天然地面植物（[植被设计](../gameplay/vegetation_v1_design.md) 第 14 节）；B 的分支 AFL-Workbench，未提交；`WorldgenRules` 里还没登记，合并时由 C 对齐 |
 
 联邦世界（C2，profile `afl_federal_experimental`，[federal_six_state_c2.md](federal_six_state_c2.md)；2026-10-14 起是新建普通世界的默认）有自己的一套子系统 id，和 r1 的同名但取值不同，所以两种世界永远不会共用基线（profile 本身也是 HARD）：
 

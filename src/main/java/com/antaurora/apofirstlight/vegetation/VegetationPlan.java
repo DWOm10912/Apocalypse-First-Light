@@ -44,11 +44,14 @@ public final class VegetationPlan {
      * 4: covers times {@value #COVER_V4}, the forbs in shared flower patches and none under the crowns (user 2026-10-24: too
      * dense, flowers everywhere; doc 22). 5: P4a batch 2's four species (doc 23). 6: batch 3's four (doc 24). 7: AFL rivers' wider channel (river R2) counts as
      * water, and under its water only the wetland plants at the shallow margin (Area#riverAllows; user 2026-10-28: plants
-     * on the bed of a pool).
+     * on the bed of a pool). 8: covers times {@value #COVER_V8} (user 2026-10-28: "现在的植被还是太密集了，看着有点糊";
+     * doc 25).
      */
-    public static final int VERSION = 7;
+    public static final int VERSION = 8;
     /** v4: every community's cover times this (doc 22.3). */
     static final double COVER_V4 = 0.75;
+    /** v8: every community's cover times this again, four tenths fewer plants (doc 25). */
+    static final double COVER_V8 = 0.6;
     /**
      * v4 flower patches (doc 22.3): a forb's weight times FORB_PATCH times clamp((n - FORB_FROM) / 0.6, 0, 1) of a shared
      * 48 m noise n, so a third of the ground has none and the forbs are about 15% of temperate grassland's plants (real
@@ -150,7 +153,7 @@ public final class VegetationPlan {
     private static void community(String biome, double cover, Object... weights) {
         double[] w = new double[Plant.values().length];
         for (int i = 0; i < weights.length; i += 2) w[((Plant) weights[i]).ordinal()] = ((Number) weights[i + 1]).doubleValue();
-        COMMUNITIES.put(biome, new Community(cover * COVER_V4, w));
+        COMMUNITIES.put(biome, new Community(cover * COVER_V4 * COVER_V8, w));
     }
 
     /** Adds species to a biome's community (doc 20.2): the weights already there scaled down so all still sum to 1. */

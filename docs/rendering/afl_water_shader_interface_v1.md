@@ -81,6 +81,30 @@ RGBA32F，4 × 1，最近邻，1 层，clamp。FMLClientSetupEvent 时注册。
 - **从水下看**：texel 0 的 g > 0 时，眼睛在 AFL 水里。AFL 的水面背面法线朝下，可以走 `avWaterUnderside` 和水下雾。
 - **阴影**：AFL 的水面不在阴影 pass 里画（和现在一样）。
 
+## ⑤ 容器里的水：搪瓷水桶（2026-10-29，Aureveil 1.0.0-rc.2 定，布局仍是 1）
+
+用户 2026-10-29：“给光影会话发消息，让它兼容水桶里面的水”。格式由 Aureveil 定，B 实现在 `client/cooking/WaterPailRenderer`。
+
+- **开关**：`AFL_WATER` 和 `AFL_CONTAINER_WATER`（Aureveil 新加的布尔选项，默认开，在 AFL 页）都为真，才改水桶的顶点；否则照原来的普通半透明面（原版 `water_still` 贴图）。单看 `AFL_WATER` 不够：已经发出的 1.0.0-rc.1 有 `AFL_WATER`，但不认识容器水，会画成一块不透明的灰板。
+- **渲染类型不变**：`entityTranslucent(BLOCK_ATLAS)`，手里、地上、柴炉上三个地方都一样。
+- **UV**：在 `water_surface` 矩形（② texel 1）里的第 2 格，按桶自己的坐标铺。w = u1 − u0，h = v1 − v0，(x, z) 是这一点在桶里的位置，r 是这一圈水面的半径：
+  - u = u0 + w × (2.5 + 0.25 × x / r) / 4
+  - v = v0 + h × (0.5 + 0.25 × z / r)
+  - 圆心在这一格的中心，桶沿在中间那一半的边上。
+- **颜色**：
+  - rg = 0.5，不流动；
+  - b = 沸腾的白水 0–1（0 静水），柴炉上滚开时的白沫照原来的算法；
+  - a = 覆盖，一般 1。
+- **法线、光照 UV2**：照原来的。法线是水面的真实法线，晃动、倒水时会倾斜。
+- **气泡和溅起的水珠**：同一格的圆心 UV，rg = 0.5，b：气泡 0.4，水珠 0.7，a 是原来的透明度（气泡中间 0.05、边 0.6；水珠 0.75、0.9）。
+- **AFL 不改**：`WaterShaderData`、布局号、动态贴图。
+- **Aureveil 的画法**（由 Aureveil 做）：
+  - 地上、炉子上、第三人称：水面写进 G-buffer 按水的材质打光；
+  - 第一人称：在 `gbuffers_hand_water` 里算反射和高光；
+  - 阴影 pass 丢掉容器水；水色用包自己的清水。
+- **对照**：`/afl_render water status` 末尾多一行 `container water (AFL_CONTAINER_WATER): on/off`。
+- **实机**：2026-10-29 和 Aureveil 1.0.0-rc.2 一起看，用户：“PASS，提交吧”。
+
 ## 不在这一版里的
 
 - AFL 的落水（水柱、水帘、水滴，`ClientFalls`）：开光影时用实体半透明类型画，不在 `gbuffers_water`。照旧，以后单独商量。

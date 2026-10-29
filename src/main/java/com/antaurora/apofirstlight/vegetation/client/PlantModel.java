@@ -92,6 +92,13 @@ public final class PlantModel implements IDynamicBakedModel {
         return (int) ((h >>> 1) % PlantShape.VARIANTS);
     }
 
+    /** A block's rank for thinning far out (VegetationClient#keep), 0..1, not tied to its variant. */
+    static float thin(BlockPos pos) {
+        long h = pos.getX() * 0xD1B54A32D192ED03L ^ pos.getZ() * 0xABC98388FB8FAC03L ^ pos.getY() * 0x8CB92BA72F3D8DD7L;
+        h ^= h >>> 32; h *= 0x9E3779B97F4A7C15L; h ^= h >>> 29;
+        return (h >>> 40) / (float) (1 << 24);
+    }
+
     /** A block state's pose number. */
     static int pose(BlockState state) {
         if (!state.hasProperty(MeshPlantBlock.TRODDEN)) return 0;
@@ -121,6 +128,9 @@ public final class PlantModel implements IDynamicBakedModel {
         int pose = pose(state);
         // a trail or a wheel's track is drawn even far out (as a flat strip at LOD2), and a tall species at every distance
         if (pose > 0 || species.tall) stage = Math.min(stage, (PlantShape.LEVELS - 1) * VegetationClient.STEPS);
+        // farther out the low plants thin out, a block at a time by its own rank (doc 25), so the ground there is not a mush
+        // of one-pixel tufts; tall plants and trails stay
+        else if (thin(pos) >= VegetationClient.keep(stage)) stage = VegetationClient.NOTHING_STAGE;
         if (stage >= VegetationClient.NOTHING_STAGE) {
             VegetationClient.count(start, 0);
             return NOTHING.data;

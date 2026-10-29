@@ -61,6 +61,22 @@ public final class AflEntities {
                     .sized(1.2F, 0.4F).noSummon().fireImmune().clientTrackingRange(8).updateInterval(100)
                     .build("infected_corpse"));
 
+    /**
+     * White-tailed deer D1 (docs/gameplay/afl_whitetail_deer_d0_design.md 11): the buck's box 0.9 x 1.4 (the doe's 0.92 of
+     * it, DeerEntity#getDimensions); never spawned by the world yet ({@code /afl dev deer spawn}).
+     */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.creature.deer.DeerEntity>> WHITETAIL_DEER =
+            ENTITY_TYPES.register("whitetail_deer", () -> EntityType.Builder.<com.antaurora.apofirstlight.creature.deer.DeerEntity>of(
+                            com.antaurora.apofirstlight.creature.deer.DeerEntity::new, MobCategory.CREATURE)
+                    .sized(0.9F, 1.4F).clientTrackingRange(10).build("whitetail_deer"));
+
+    /** A deer's carcass: saved with its chunk, no physics, not clicked yet (D3 butchers it). */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.creature.deer.DeerCorpse>> DEER_CORPSE =
+            ENTITY_TYPES.register("deer_corpse", () -> EntityType.Builder.<com.antaurora.apofirstlight.creature.deer.DeerCorpse>of(
+                            com.antaurora.apofirstlight.creature.deer.DeerCorpse::new, MobCategory.MISC)
+                    .sized(1.4F, 0.5F).noSummon().fireImmune().clientTrackingRange(10).updateInterval(100)
+                    .build("deer_corpse"));
+
     private AflEntities() {
     }
 }

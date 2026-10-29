@@ -292,6 +292,16 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> INFECTED_HURT = simple("infected_hurt");
     public static final RegistryObject<SoundEvent> INFECTED_DEATH = simple("infected_death");
     public static final RegistryObject<SoundEvent> INFECTED_DOOR_BANG = simple("infected_door_bang");
+    // White-tailed deer D1 (creature/deer/DeerSounds; tools/build-deer-sounds-v1.mjs)
+    public static final RegistryObject<SoundEvent> DEER_SNORT = simple("deer_snort");
+    public static final RegistryObject<SoundEvent> DEER_STOMP = simple("deer_stomp");
+    public static final RegistryObject<SoundEvent> DEER_BLEAT = simple("deer_bleat");
+    public static final RegistryObject<SoundEvent> DEER_GRUNT = simple("deer_grunt");
+    public static final RegistryObject<SoundEvent> DEER_HURT = simple("deer_hurt");
+    public static final RegistryObject<SoundEvent> DEER_STEP = simple("deer_step");
+    public static final RegistryObject<SoundEvent> DEER_BOUND = simple("deer_bound");
+    public static final RegistryObject<SoundEvent> DEER_BRUSH = simple("deer_brush");
+    public static final RegistryObject<SoundEvent> DEER_GRAZE = simple("deer_graze");
     /** Thunder V1 (docs/audio/thunder_sounds_v1_plan.md, tools/thunder-sounds/cut.py): by the distance to the nearest point
      *  of the channel (client/lightning/Thunder); the in-cloud roll is for the regional weather's cloud flashes. */
     public static final RegistryObject<SoundEvent> THUNDER_CRACK = simple("thunder_crack");
