@@ -826,3 +826,20 @@ tasks.register('worldDumpProbe', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.ground.WorldDumpProbe'
     args = [project.findProperty('probeIn') ?: 'dump.txt', project.findProperty('probeOut') ?: 'dump.png']
 }
+
+// Terrain rework R3 survey (docs/worldgen/terrain_rework_v1_design.md 14): natural faces still drawn as blocks, columns the
+// shovel cannot edit; on test-world dumps (-PprobeIn=a.txt;b.txt) and on every seed's planned ground
+tasks.register('groundCoverage', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.ground.GroundCoverage'
+    args = [project.findProperty('probeIn') ?: 'dump.txt']
+}
+
+tasks.register('groundCoverageSeeds', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.network.road.GroundCoverageCheck'
+    maxHeapSize = '6g'
+    if (project.findProperty('terrainPlans')) args(project.findProperty('terrainPlans').toString().split(';'))
+}

@@ -350,7 +350,8 @@ public final class Earthwork {
             if (carved != null && carved.anyInColumn(x, z, t - ROCK_DEPTH - 1, t)) return "its rock is carved by the pick block by block";
             for (int y = t + 1; y <= t + 2; y++)
                 if (!open(level.getBlockState(p.setY(y)))) return (y - t) + " above its top is " + name(level.getBlockState(p)) + ", not open";
-            return TerrainSmooth.notFree(level, x, t, z, true);
+            String w = TerrainSmooth.notFree(level, x, t, z, true);
+            return w != null ? w : cliffEdited(level, x, z, t);
         }
         if (!soil(level.getBlockState(p).getBlock())) return "its top is " + name(level.getBlockState(p)) + ", not loose ground";
         // round 2 (2026-10-22): a thin soil straight on rock is loose ground too, its hard floor the rock's top (#hardFloor)
@@ -360,19 +361,99 @@ public final class Earthwork {
             BlockState under = level.getBlockState(p.setY(t - 2));
             if (!under.isSolidRender(level, p)) return "two below its top is " + name(under) + ", not a solid block";
         }
-        for (int y = t + 1; y <= t + 2; y++)
-            if (!open(level.getBlockState(p.setY(y)))) return (y - t) + " above its top is " + name(level.getBlockState(p)) + ", not open";
-        return TerrainSmooth.notFree(level, x, t, z, true);
+        for (int y = t + 1; y <= t + 2; y++) {
+            BlockState s = level.getBlockState(p.setY(y));
+            // R3a: a lake's water over its wet bed is open to the shovel (the water follows the dig, #settle)
+            if (!open(s) && !waterBlock(s)) return (y - t) + " above its top is " + name(s) + ", not open";
+        }
+        // terrain rework R3b: the rim of a cliff of loose ground is free too (its edge toward the drop stays, #cliff); R3a: a
+        // lake's or the sea's wet bed and the shore beside the water too
+        String w = TerrainSmooth.notFree(level, x, t, z, true, true, true);
+        return w != null ? w : cliffEdited(level, x, z, t);
+    }
+
+    /**
+     * Terrain rework R3b (docs/worldgen/terrain_rework_v1_design.md 14.4): two columns whose first tops are CLIFF or more
+     * apart are a cliff's rim and foot. The vertices they share hold one height, the column's edited first: never moved
+     * (#cliff), and the other column stays as it is, its side toward the edited one closed by EarthSkin.
+     */
+    static final int CLIFF = 3;
+
+    /** Why column (x, z) with natural top t stays: a column beside it across a cliff is edited already; else null. */
+    private static String cliffEdited(ServerLevel level, int x, int z, int t) {
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+            if ((dx | dz) == 0) continue;
+            int o = editedTop(level, x + dx, z + dz);
+            if (o != Integer.MIN_VALUE && Math.abs(o - t) >= CLIFF) return "the column across the cliff beside it is edited";
+        }
+        return null;
+    }
+
+    /** A column's top for #cliff: its first top when edited, else its natural surface (NO_SURFACE when none). */
+    private static int topOf(ServerLevel level, int x, int z) {
+        int o = editedTop(level, x, z);
+        if (o != Integer.MIN_VALUE) return o;
+        LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+        SmoothChunkData d = chunk == null ? null : TerrainSmooth.data(level, chunk);
+        return d == null ? SmoothRules.NO_SURFACE : d.surface(x, z);
+    }
+
+    /** Whether vertex (vx, vz) lies on a cliff's edge (#CLIFF): two columns reading it with natural tops that far apart. */
+    static boolean cliff(ServerLevel level, int vx, int vz) {
+        int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+        for (long c : columnsOf(vx, vz)) {
+            int t = topOf(level, keyX(c), keyZ(c));
+            if (t == SmoothRules.NO_SURFACE) continue;   // no natural surface: a fixed column, which refuses the vertex anyway
+            lo = Math.min(lo, t);
+            hi = Math.max(hi, t);
+        }
+        return hi - lo >= CLIFF;
+    }
+
+    /**
+     * Terrain rework R3a (docs/worldgen/terrain_rework_v1_design.md 14.7, user 2026-10-28: lakes and the sea keep vanilla
+     * water, which follows the dig until water package 5 takes them over): a water block, still or flowing.
+     */
+    static boolean waterBlock(BlockState s) {
+        return s.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock && s.getFluidState().is(net.minecraft.tags.FluidTags.WATER);
+    }
+
+    /**
+     * R3a: whether a ground cell y of an edited column (EarthGrid#kind, its skin's lowest vertex lo in quanta) holds the water
+     * standing at level water (#waterLevel): the skin passes through it and dips below the water's surface there (a still
+     * water block's top, 8/9 up its cell); buried cells and those over the water hold none.
+     */
+    static boolean holdsWater(int kind, int y, int water, int lo) {
+        return kind == SURFACE && water != Integer.MIN_VALUE && (y < water || y == water && lo < y * Q + Q * 8 / 9);
+    }
+
+    /**
+     * R3a: the highest cell holding water (a water block, wet ground, a waterlogged plant) in column (x, z) or the eight
+     * around it from y0 to y1, or Integer.MIN_VALUE when none: the level the vanilla water beside an edited column stands
+     * at. Its cells up to there that the dig empties take water, and its ground cells there hold it (#settle).
+     */
+    private static int waterLevel(ServerLevel level, int x, int z, int y0, int y1) {
+        var p = new BlockPos.MutableBlockPos();
+        int best = Integer.MIN_VALUE;
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+            if (level.getChunkSource().getChunkNow((x + dx) >> 4, (z + dz) >> 4) == null) continue;
+            for (int y = y1; y > Math.max(y0, best); y--)
+                if (level.getBlockState(p.set(x + dx, y, z + dz)).getFluidState().is(net.minecraft.tags.FluidTags.WATER)) {
+                    best = y;
+                    break;
+                }
+        }
+        return best;
     }
 
     private static String name(BlockState s) {
         return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString();
     }
 
-    /** What an edit at these vertices may do: the vertices every reading column of which is edited or free. */
+    /** What an edit at these vertices may do: the vertices every reading column of which is edited or free, not on a cliff's edge (R3b). */
     public static boolean editable(ServerLevel level, int vx, int vz) {
         for (long c : columnsOf(vx, vz)) if (status(level, keyX(c), keyZ(c)) == FIXED) return false;
-        return true;
+        return !cliff(level, vx, vz);
     }
 
     /** Whether column (x, z) is edited or can be (the development info). */
@@ -412,7 +493,13 @@ public final class Earthwork {
         converting = true;
         try {
             var p = new BlockPos.MutableBlockPos();
-            for (int y = t + 2; y > t; y--) if (!level.getBlockState(p.set(x, y, z)).isAir()) level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            for (int y = t + 2; y > t; y--) {
+                BlockState s = level.getBlockState(p.set(x, y, z));
+                // R3a: a lake's water stays; a plant standing in it leaves its water behind
+                if (s.isAir() || waterBlock(s)) continue;
+                level.setBlock(p, s.getFluidState().is(net.minecraft.tags.FluidTags.WATER) && s.getFluidState().isSource()
+                        ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            }
         } finally {
             converting = false;
         }
@@ -487,7 +574,7 @@ public final class Earthwork {
         var p = new BlockPos.MutableBlockPos();
         for (int y = top + 1; y <= top + RAISE; y++) {
             BlockState s = level.getBlockState(p.set(x, y, z));
-            if (!open(s) && !soil(s.getBlock())) return Math.min(y * Q - CLEARANCE, (top + RAISE) * Q);
+            if (!open(s) && !soil(s.getBlock()) && !waterBlock(s)) return Math.min(y * Q - CLEARANCE, (top + RAISE) * Q);   // R3a: under a lake's water
         }
         return (top + RAISE) * Q;
     }
@@ -550,6 +637,7 @@ public final class Earthwork {
                 byte s = status.computeIfAbsent(c, k -> status(level, keyX(k), keyZ(k)));
                 if (s == FIXED) ok = false;
             }
+            if (ok && cliff(level, keyX(v), keyZ(v))) ok = false;   // R3b: a cliff's edge stays (#CLIFF)
             if (ok) keep.add(v);
             else refused++;
         }
@@ -663,6 +751,8 @@ public final class Earthwork {
         int col = column(x, z), t = e.top0(col), lo = min(h), hi = max(h), bottom = Math.floorDiv(e.bottom(col), Q);
         int mid = vertex((x * PER_BLOCK + PER_BLOCK / 2) & 63, (z * PER_BLOCK + PER_BLOCK / 2) & 63);
         BlockState fill = e.loose(mid) > 0 ? e.matBlock(e.mat(mid)) : refill(e.topState(col));
+        // R3a: vanilla water standing beside or over the column (a lake, the sea) follows the dig up to its level
+        int water = waterLevel(level, x, z, bottom, t + RAISE);
         var p = new BlockPos.MutableBlockPos();
         converting = true;
         try {
@@ -672,12 +762,22 @@ public final class Earthwork {
                 BlockState s = level.getBlockState(p.set(x, y, z));
                 if (kind(lo, hi, y) == AIR && ground(s.getBlock())) {
                     var rock = com.antaurora.apofirstlight.boulder.BoulderEarth.rockAt(level, p);
-                    level.setBlock(p, rock != null ? com.antaurora.apofirstlight.boulder.BoulderBlocks.cellState(rock) : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                    level.setBlock(p, rock != null ? com.antaurora.apofirstlight.boulder.BoulderBlocks.cellState(rock)
+                            : y <= water ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 }
             }
             for (int y = bottom; y < t + RAISE; y++) {   // bottom up: every new block stands on ground
                 BlockState s = level.getBlockState(p.set(x, y, z));
-                if (kind(lo, hi, y) != AIR && !ground(s.getBlock()) && open(s)) level.setBlock(p, fill, Block.UPDATE_ALL);
+                if (kind(lo, hi, y) != AIR && !ground(s.getBlock()) && (open(s) || waterBlock(s))) level.setBlock(p, fill, Block.UPDATE_ALL);
+            }
+            // R3a: a ground cell the skin dips into below the water's surface there (a still water block's top, 8/9 up the
+            // cell) holds that water, which vanilla draws over the skin; any other (buried, or over the water) holds none
+            for (int y = bottom; y < t + RAISE; y++) {
+                BlockState s = level.getBlockState(p.set(x, y, z));
+                if (!(s.getBlock() instanceof com.antaurora.apofirstlight.ground.NaturalGroundBlock)) continue;
+                boolean wet = holdsWater(kind(lo, hi, y), y, water, lo);
+                if (s.getValue(com.antaurora.apofirstlight.ground.NaturalGroundBlock.WATERLOGGED) != wet)
+                    level.setBlock(p, s.setValue(com.antaurora.apofirstlight.ground.NaturalGroundBlock.WATERLOGGED, wet), Block.UPDATE_ALL);
             }
         } finally {
             converting = false;

@@ -137,7 +137,7 @@ public final class WorldDumpProbe {
         why.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(12).forEach(e -> System.out.printf(Locale.ROOT, "    %5d  %s%n", e.getValue(), e.getKey()));
     }
 
-    private static int prop(String n, String key) {
+    static int prop(String n, String key) {
         int i = n.indexOf(key + "=");
         int j = i + key.length() + 1, e = j;
         while (e < n.length() && Character.isDigit(n.charAt(e))) e++;

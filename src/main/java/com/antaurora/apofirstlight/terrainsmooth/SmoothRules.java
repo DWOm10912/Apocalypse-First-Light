@@ -435,9 +435,27 @@ public final class SmoothRules {
      * to the one edited first (Earthwork#convert); EarthSkin closes the side between the skin and an unedited neighbour.
      */
     public static String notFree(Cells c, int mode, int x, int y, int z, boolean walls) {
+        return notFree(c, mode, x, y, z, walls, false);
+    }
+
+    /**
+     * The same; cliffs (terrain rework R3b, docs/worldgen/terrain_rework_v1_design.md 14.4, with walls): a neighbour three
+     * or more lower is a wall too, so the rim of a cliff of loose ground is free. The vertices it shares with the foot stay
+     * where they are (Earthwork#cliff) and EarthSkin closes the side toward the drop.
+     */
+    public static String notFree(Cells c, int mode, int x, int y, int z, boolean walls, boolean cliffs) {
+        return notFree(c, mode, x, y, z, walls, cliffs, false);
+    }
+
+    /**
+     * The same; water (terrain rework R3a, 14.7, with walls): wet ground (a lake's, the sea's bed under vanilla water) is free
+     * too, open above under its water, and a neighbour that is water (wet ground, or water over dry ground) is a wall, so the
+     * shore beside the water is free. The earthwork lets the vanilla water follow the dig (Earthwork#settle).
+     */
+    public static String notFree(Cells c, int mode, int x, int y, int z, boolean walls, boolean cliffs, boolean water) {
         int self = c.cell(x, y, z);
-        if (c.surface(x, z) != y || self != NATURAL && self != ROCK) return "its top is not Terrain Smooth's natural surface";
-        if (!open(c.cell(x, y + 1, z))) return "the block above is not open";
+        if (c.surface(x, z) != y || self != NATURAL && self != ROCK && !(water && self == WET)) return "its top is not Terrain Smooth's natural surface";
+        if (!(water ? openOver(self, c.cell(x, y + 1, z)) : open(c.cell(x, y + 1, z)))) return "the block above is not open";
         long[] col = new long[9];
         boolean wall = false;
         for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) {
@@ -445,9 +463,10 @@ public final class SmoothRules {
             col[j * 3 + i] = i == 1 && j == 1 ? pack(K_NAT, y + 1) | SOLID_HERE : column(c, nx, y, nz);
             int k = kind(col[j * 3 + i]);
             // wet ground beside (R0) is water to the earthwork: its skin must not open a shore
-            if (!(i == 1 && j == 1) && wetColumn(c, nx, nz)) return "neighbour " + nx + " " + nz + " is water";
+            if (!(i == 1 && j == 1) && wetColumn(c, nx, nz) && !water) return "neighbour " + nx + " " + nz + " is water";
             // bare rock beside (U6 V3, never sloped) is as a wall: EarthSkin closes the side toward it
-            if (walls && (k == K_HIGH || k == K_ROCK || k == K_TRUNK || k == K_LOW && stepDown(c, nx, y - 2, nz))) wall = true;
+            if (walls && (k == K_HIGH || k == K_ROCK || k == K_TRUNK || k == K_LOW && (cliffs || stepDown(c, nx, y - 2, nz))
+                    || water && (k == K_FLUID || wetColumn(c, nx, nz)))) wall = true;
             else if (k == K_LOW && walls) return "neighbour " + nx + " " + nz + " is three or more lower (a cliff)";
             else if (k != K_NAT) return "neighbour " + nx + " " + nz + " is " + KIND_NAMES[k];
         }

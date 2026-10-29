@@ -28,7 +28,8 @@ import static com.antaurora.apofirstlight.earthwork.EarthGrid.*;
  *   the neighbour's ground clipped to the cell, inward where the neighbour is higher, outward where the skin is, nothing
  *   twice;</li>
  *   <li>steps (R2 round 4): SmoothRules#notFree with walls frees the foot of a step and the rim of a two-cell step, not
- *   the rim of a three-cell cliff, not a rim without walls;</li>
+ *   the rim of a three-cell cliff, not a rim without walls; with cliffs (terrain rework R3b) the rim of a cliff three or
+ *   ten deep too, never a rim beside water; with water (R3a) the shore beside water and a wet bed under it;</li>
  *   <li>vehicle ground (A3): EarthGrid#ground's height is the skin's, its normal is a unit vector up and agrees with the
  *   skin's slope measured a step away inside the same triangle.</li>
  * </ul>
@@ -107,11 +108,33 @@ public final class EarthworkCheck {
 
     /**
      * SmoothRules#notFree on a small height map (natural ground up to each column's top, air above): a rim two above its
-     * west neighbours, the same three above, the foot of a two-cell step, a rim beside water.
+     * west neighbours, the same three above, the foot of a two-cell step, a rim beside water; with cliffs (R3b) the rim
+     * of a cliff three and ten deep, and the rim beside water.
      */
     private static void steps() {
         String rim2 = notFree(10, 8, -1, true), rim2plain = notFree(10, 8, -1, false), rim3 = notFree(10, 7, -1, true);
         String foot = notFree(8, 10, -1, true), wet = notFree(10, 8, 9, true);
+        String cliff3 = notFree(10, 7, -1, true, true), cliff10 = notFree(20, 10, -1, true, true), cliffWet = notFree(10, 6, 9, true, true);
+        check(cliff3 == null, "steps R3b: rim of a three-cell cliff locked with cliffs: " + cliff3);
+        check(cliff10 == null, "steps R3b: rim of a ten-cell cliff locked with cliffs: " + cliff10);
+        check(cliffWet != null, "steps R3b: rim of a cliff beside water free with cliffs");
+        System.out.printf("Steps R3b (cliffs): rim of 3 %s, rim of 10 %s, rim beside water %s%n", cliff3 == null ? "free" : cliff3,
+                cliff10 == null ? "free" : cliff10, cliffWet == null ? "free" : cliffWet);
+        // R3a (water): the shore beside water over dry ground, and a wet bed under a lake's water, both free; not without
+        String shore = notFree(10, 8, 9, true, true, true), bed = notFreeWet(true), bedPlain = notFreeWet(false);
+        check(shore == null, "steps R3a: shore beside water locked with water: " + shore);
+        check(bed == null, "steps R3a: wet bed under water locked with water: " + bed);
+        check(bedPlain != null, "steps R3a: wet bed free without water");
+        System.out.printf("Steps R3a (water): shore %s, wet bed %s, wet bed without water %s%n", shore == null ? "free" : shore,
+                bed == null ? "free" : bed, bedPlain == null ? "free" : bedPlain);
+        // R3a: which ground cells hold a lake's water (Earthwork#holdsWater), the water standing in cell 10
+        int Q = EarthGrid.Q;
+        check(Earthwork.holdsWater(EarthGrid.SURFACE, 9, 10, 9 * Q + Q / 2), "R3a: a skin cell under the water's level holds no water");
+        check(Earthwork.holdsWater(EarthGrid.SURFACE, 10, 10, 10 * Q + Q / 2), "R3a: a skin cell dipping below the water's surface holds no water");
+        check(!Earthwork.holdsWater(EarthGrid.SURFACE, 10, 10, 10 * Q + Q * 95 / 100), "R3a: a skin cell over the water's surface holds water");
+        check(!Earthwork.holdsWater(EarthGrid.FULL, 9, 10, 9 * Q), "R3a: a buried cell holds water");
+        check(!Earthwork.holdsWater(EarthGrid.SURFACE, 11, 10, 11 * Q), "R3a: a skin cell above the water's level holds water");
+        check(!Earthwork.holdsWater(EarthGrid.SURFACE, 9, Integer.MIN_VALUE, 9 * Q), "R3a: a skin cell holds water with no water near");
         check(rim2 == null, "steps: rim of a two-cell step locked: " + rim2);
         check(rim2plain != null, "steps: rim free without walls");
         check(rim3 != null && rim3.contains("cliff"), "steps: rim of a three-cell cliff not locked as a cliff: " + rim3);
@@ -123,6 +146,35 @@ public final class EarthworkCheck {
 
     /** notFree of column (0, 0) with top cell top, the three columns west of it at west (water standing to y water, -1 none). */
     private static String notFree(int top, int west, int water, boolean walls) {
+        return notFree(top, west, water, walls, false);
+    }
+
+    private static String notFree(int top, int west, int water, boolean walls, boolean cliffs) {
+        return notFree(top, west, water, walls, cliffs, false);
+    }
+
+    /**
+     * R3a: notFree of column (0, 0) of a lake's bed: every column wet ground up to y 8 (the west ones up to y 7), water
+     * over it up to y 10 (walls, cliffs, and water as given).
+     */
+    private static String notFreeWet(boolean water) {
+        var cells = new com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells() {
+            int top(int x, int z) { return x < 0 ? 7 : 8; }
+
+            @Override
+            public int cell(int x, int y, int z) {
+                if (y < top(x, z)) return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NATURAL;
+                if (y == top(x, z)) return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.WET;
+                return y <= 10 ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.FLUID : com.antaurora.apofirstlight.terrainsmooth.SmoothRules.AIR;
+            }
+
+            @Override
+            public int surface(int x, int z) { return top(x, z); }
+        };
+        return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.notFree(cells, com.antaurora.apofirstlight.terrainsmooth.SmoothRules.MODE_B, 0, 8, 0, true, true, water);
+    }
+
+    private static String notFree(int top, int west, int water, boolean walls, boolean cliffs, boolean wet) {
         var cells = new com.antaurora.apofirstlight.terrainsmooth.SmoothRules.Cells() {
             int top(int x, int z) { return x < 0 ? west : top; }
 
@@ -137,7 +189,7 @@ public final class EarthworkCheck {
                 return x < 0 && water > west ? com.antaurora.apofirstlight.terrainsmooth.SmoothRules.NO_SURFACE : top(x, z);
             }
         };
-        return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.notFree(cells, com.antaurora.apofirstlight.terrainsmooth.SmoothRules.MODE_B, 0, top, 0, walls);
+        return com.antaurora.apofirstlight.terrainsmooth.SmoothRules.notFree(cells, com.antaurora.apofirstlight.terrainsmooth.SmoothRules.MODE_B, 0, top, 0, walls, cliffs, wet);
     }
 
     /** EarthGrid#ground against #skin: height, and the normal against the slope a small step away in the same triangle. */

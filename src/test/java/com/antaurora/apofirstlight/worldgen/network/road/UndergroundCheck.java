@@ -636,19 +636,22 @@ public final class UndergroundCheck {
      * (every directed edge has its reverse as often); every top (cave floors, and since V3 the mass's tops under the open
      * sky) wears at most 2 sub-cells deep with no step over one sub-cell, rims (a top with an open side: rounded, its wall
      * wearing in under it) apart; no block wears through; the collision boxes hold exactly
-     * the sub-cells left. Reports the quads and the time a worn block costs.
+     * the sub-cells left. Reports the quads and the time a worn block costs. Terrain rework R3c: the corridor's far end is
+     * flooded, a pool one deep (its walls at the water's surface stay flat, RockRelief#open) and past it full to the roof; the
+     * faces toward water close as those toward air, and the rock under the water wears.
      */
     static void relief(List<String> bad) {
         final int X = 12, Y = 11, Z = 34;
         String[] names = {"granite", "sandstone", "limestone", "shale"};   // soil is no longer worn (dig R1)
         for (int look = 0; look < names.length; look++) {
-            int[] kind = new int[X * Y * Z];   // 0 air, 1 rock, 2 another full cube (an ore)
+            int[] kind = new int[X * Y * Z];   // 0 air, 1 rock, 2 another full cube (an ore), 3 water
             for (int z = 0; z < Z; z++) for (int y = 0; y < Y; y++) for (int x = 0; x < X; x++) {
                 boolean corridor = x >= 3 && x <= 7 && y >= 3 && y <= 6 && z >= 1 && z <= 32;
                 boolean alcove = x >= 9 && x <= 10 && y >= 3 && y <= 4 && z >= 10 && z <= 13;
                 boolean door = x == 8 && y >= 3 && y <= 4 && z >= 11 && z <= 12;
                 boolean pillar = x == 5 && z == 20 && y >= 3 && y <= 6;
-                kind[x + X * (y + Y * z)] = (corridor || alcove || door) && !pillar ? 0 : 1;
+                boolean water = corridor && (z >= 22 && z <= 26 && y == 3 || z >= 27);   // R3c: a pool, then flooded to the roof
+                kind[x + X * (y + Y * z)] = (corridor || alcove || door) && !pillar ? water ? 3 : 0 : 1;
             }
             kind[2 + X * (4 + Y * 15)] = 2;
             class Mass {
@@ -659,33 +662,39 @@ public final class UndergroundCheck {
                 }
 
                 int open(int bx, int by, int bz) {
-                    int o = 0;
-                    for (int d = 0; d < 6; d++)
-                        if (kindOf(bx + (d == 4 ? -1 : d == 5 ? 1 : 0), by + (d == 0 ? -1 : d == 1 ? 1 : 0), bz + (d == 2 ? -1 : d == 3 ? 1 : 0)) == 0) o |= 1 << d;
-                    return o;
+                    int air = 0, water = 0;
+                    for (int d = 0; d < 6; d++) {
+                        int nx = bx + (d == 4 ? -1 : d == 5 ? 1 : 0), ny = by + (d == 0 ? -1 : d == 1 ? 1 : 0), nz = bz + (d == 2 ? -1 : d == 3 ? 1 : 0);
+                        int k = kindOf(nx, ny, nz);
+                        if (k == 0) air |= 1 << d;
+                        else if (k == 3 && (d <= 1 || kindOf(nx, ny + 1, nz) != 0)) water |= 1 << d;   // a wall: deep water only
+                    }
+                    return com.antaurora.apofirstlight.earthwork.RockRelief.open(air, water);
                 }
 
                 long[] occ(int bx, int by, int bz) { return kindOf(bx, by, bz) == 1 ? occ.get(bx + X * (by + Y * bz)) : null; }
 
                 /** something above the air over the block (RockRelief#roofed: the world-surface heightmap above y + 1) */
                 boolean roofed(int bx, int by, int bz) {
-                    for (int y = by + 2; y < Y; y++) if (kindOf(bx, y, bz) != 0) return true;
+                    for (int y = by + 2; y < Y; y++) if (kindOf(bx, y, bz) == 1 || kindOf(bx, y, bz) == 2) return true;
                     return false;
                 }
 
                 boolean filled(int x, int y, int z) {
                     int bx = Math.floorDiv(x, 8), by = Math.floorDiv(y, 8), bz = Math.floorDiv(z, 8), k = kindOf(bx, by, bz);
-                    if (k != 1) return k == 2;
+                    if (k != 1) return k == 2;   // air and water are open
                     long[] b = occ(bx, by, bz);
                     return b == null || !com.antaurora.apofirstlight.earthwork.CarveChunk.gone(b, x & 7, y & 7, z & 7);
                 }
             }
             Mass m = new Mass();
             long reliefNanos = 0;
-            int throughs = 0, skyTops = 0, floors = 0, steps = 0, deepFloors = 0, rims = 0;
+            int throughs = 0, skyTops = 0, floors = 0, steps = 0, deepFloors = 0, rims = 0, underWater = 0;
             for (int z = 0; z < Z; z++) for (int y = 0; y < Y; y++) for (int x = 0; x < X; x++) {
                 if (m.kindOf(x, y, z) != 1) continue;
                 int open = m.open(x, y, z);
+                for (int d = 0; d < 6; d++)
+                    if ((open & 1 << d) != 0 && m.kindOf(x + (d == 4 ? -1 : d == 5 ? 1 : 0), y + (d == 0 ? -1 : d == 1 ? 1 : 0), z + (d == 2 ? -1 : d == 3 ? 1 : 0)) == 3) underWater++;
                 long t = System.nanoTime();
                 long[] b = com.antaurora.apofirstlight.earthwork.RockRelief.bits(x, y, z, open, look);
                 reliefNanos += System.nanoTime() - t;
@@ -717,6 +726,7 @@ public final class UndergroundCheck {
             if (deepFloors > 0) bad.add("rock relief " + names[look] + ": " + deepFloors + " top columns away from the rims worn deeper than 2 sub-cells");
             if (steps > 0) bad.add("rock relief " + names[look] + ": " + steps + " top steps higher than a sub-cell away from the rims");
             if (skyTops == 0) bad.add("rock relief " + names[look] + ": no top under the open sky worn (V3 wears them)");
+            if (underWater == 0) bad.add("rock relief " + names[look] + ": no face toward water worn (R3c)");
             java.util.Map<String, Integer> edges = new java.util.HashMap<>();
             int L = com.antaurora.apofirstlight.earthwork.CarveNet.L, LO = com.antaurora.apofirstlight.earthwork.CarveNet.LO;
             boolean[] solid = new boolean[L * L * L], isCarved = new boolean[27], cube = new boolean[27];
@@ -740,12 +750,12 @@ public final class UndergroundCheck {
                 meshNanos += System.nanoTime() - t;
             }
             for (int bz = 0; bz < Z; bz++) for (int by = 0; by < Y; by++) for (int bx = 0; bx < X; bx++) {
-                if (m.kindOf(bx, by, bz) == 0) continue;
+                if (m.kindOf(bx, by, bz) == 0 || m.kindOf(bx, by, bz) == 3) continue;
                 boolean worn = m.occ(bx, by, bz) != null;
                 for (int d = 0; d < 6; d++) {
                     int axis = d / 2, sgn = d % 2 == 0 ? 1 : -1;
                     int nx = bx + (axis == 0 ? sgn : 0), ny = by + (axis == 1 ? sgn : 0), nz = bz + (axis == 2 ? sgn : 0);
-                    if (m.kindOf(nx, ny, nz) != 0) continue;
+                    if (m.kindOf(nx, ny, nz) != 0 && m.kindOf(nx, ny, nz) != 3) continue;
                     exposedFaces++;
                     if (worn) continue;   // its net draws it
                     vanillaFaces++;
@@ -783,8 +793,8 @@ public final class UndergroundCheck {
             }
             if (shapesOff > 0) bad.add("rock relief " + names[look] + ": " + shapesOff + " collision shapes not the sub-cells left");
             int blocks = m.occ.size();
-            out("  rock relief %s: %d worn blocks (%d cave floors, %d tops under the sky, %d of the tops rims), %d faces toward air (%d drawn the vanilla way); worn %.1f%% of their volume; %d net quads (%.0f a worn block; %s); relief %.3f ms, net %.3f ms a block; %d unmatched edges",
-                    names[look], blocks, floors, skyTops, rims, exposedFaces, vanillaFaces, blocks == 0 ? 0.0 : 100 * worn / (blocks * 512.0), quads, blocks == 0 ? 0.0 : (double) quads / blocks,
+            out("  rock relief %s: %d worn blocks (%d cave floors, %d tops under the sky, %d of the tops rims, %d faces worn toward water), %d faces toward air or water (%d drawn the vanilla way); worn %.1f%% of their volume; %d net quads (%.0f a worn block; %s); relief %.3f ms, net %.3f ms a block; %d unmatched edges",
+                    names[look], blocks, floors, skyTops, rims, underWater, exposedFaces, vanillaFaces, blocks == 0 ? 0.0 : 100 * worn / (blocks * 512.0), quads, blocks == 0 ? 0.0 : (double) quads / blocks,
                     mg.line(), blocks == 0 ? 0.0 : reliefNanos / 1e6 / blocks, blocks == 0 ? 0.0 : meshNanos / 1e6 / blocks, open);
         }
     }
